@@ -19,7 +19,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -129,7 +129,9 @@ Polytope::LinearPrograms ConZonotope::factor_programs() const {
 ConZonotope::ConZonotope(const Tensor &c, const Tensor &G)
     : ConZonotope(c, G, zeros_block(G, 0, G.shape().back()), zeros_block(c, 0, 1)) {}
 
-ConZonotope::ConZonotope(const Zonotope &Z) : ConZonotope(Z.center(), Z.generators()) {}
+// layout: #163 step 2
+ConZonotope::ConZonotope(const Zonotope &Z)
+    : ConZonotope(detail::cora_center(Z), detail::cora_generators(Z)) {}
 
 ConZonotope::ConZonotope(const Interval &I) : ConZonotope(I.zonotope()) {}
 

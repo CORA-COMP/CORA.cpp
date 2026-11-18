@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -71,7 +71,7 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
     std::vector<Zonotope> zonotopes;
     for (const ConZonotope &S : sets) {
         const ConZonotope r = S.A().numel() == 0 ? S : S.rescale();
-        zonotopes.emplace_back(r.c(), r.generators());
+        zonotopes.push_back(detail::zonotope_of_columns(r.c(), r.generators())); // layout: #163 step 2
     }
     const Zonotope iterative = zonotopes.front().unite(
         std::vector<Zonotope>(zonotopes.begin() + 1, zonotopes.end()), "iterative");
@@ -93,7 +93,8 @@ ConZonotope aux_unite(const ConZonotope &cz, const std::vector<ConZonotope> &oth
         return Tensor::like(A, d, {k, 1});
     };
     const Zonotope Z = priv_union_linprog(iterative, support);
-    return {Z.center(), Z.generators()};
+    // layout: #163 step 2
+    return {detail::cora_center(Z), detail::cora_generators(Z)};
 }
 
 } // namespace

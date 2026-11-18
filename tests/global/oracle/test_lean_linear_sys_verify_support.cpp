@@ -82,12 +82,13 @@ void aux_verify(const std::string &name, const Tensor &A, const std::optional<Te
     // CORA.cpp's verify, and the oracle's run on the same rows
     const auto S = static_cast<int64_t>(rows.size());
     const LinearSys sys(A, B ? *B : A.zeros_like({n, 1}), C);
-    const Zonotope none(A.zeros_like({1, 1}), A.zeros_like({1, 0}));
+    const Zonotope none(A.zeros_like({1, 1}), A.zeros_like({0, 1}));
     const VerifyResult mine =
         sys.verify({R0, B ? *U : none, t_final}, specs, alg::ReachAvoidSupportFunction{});
     const lean::VerifySupportRun theirs = lean::LinearSys(A, B, C).verify_support_func(
-        R0.center(), R0.generators(), Tensor::from_data(Cs, {S, p}), Tensor::from_data(d, {S, 1}),
-        t_final, numerics::kMinTimeStep, kFuel, U);
+        // layout: #163 step 2
+        detail::cora_center(R0), detail::cora_generators(R0), Tensor::from_data(Cs, {S, p}),
+        Tensor::from_data(d, {S, 1}), t_final, numerics::kMinTimeStep, kFuel, U);
     test::oracle::check(name + " verified", mine.verified, theirs.verified);
     test::oracle::check(name + " falsified", mine.falsification.has_value(), theirs.falsified);
     test::oracle::check(name + " iterations", int64_t(mine.iterations), theirs.iterations);

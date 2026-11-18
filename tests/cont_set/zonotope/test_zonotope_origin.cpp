@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -24,7 +24,7 @@ namespace {
 void origin_is_the_point_zero(const std::string &b) {
     for (const int n : {1, 2, 5}) {
         const Zonotope Z = Zonotope::origin(n);
-        check(Z.dim() == n && Z.generators().shape() == std::vector<int64_t>({n, 0}),
+        check(Z.dim() == n && Z.generators().shape() == std::vector<int64_t>({0, n}),
               b + ": " + std::to_string(n) + " dimensions, no generators");
         check(close(Z.center(), std::vector<double>(n, 0.0), 0), b + ": the center is 0");
     }

@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/enclose.m
 // PROPERTY: contSet/@zonoBundle/enclose.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -29,11 +29,16 @@ void member_by_member(const std::string &b) {
         B2(column({0.0, 3.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
     const ZonoBundle R = ZonoBundle({A1, A2}).enclose(ZonoBundle({B1, B2}));
     check(R.parallel_sets() == 2, b + ": two members");
-    check(close(R.zonotopes()[0].generators(), A1.enclose(B1).generators(), 0) &&
-              close(R.zonotopes()[1].center(), A2.enclose(B2).center(), 0),
+    // layout: #163 step 2
+    check(close(detail::cora_generators(R.zonotopes()[0]), detail::cora_generators(A1.enclose(B1)),
+                0) &&
+              // layout: #163 step 2
+              close(detail::cora_center(R.zonotopes()[1]), detail::cora_center(A2.enclose(B2)), 0),
           b + ": the members enclosed pairwise");
     const ZonoBundle with_zonotope = ZonoBundle({A1, A2}).enclose(B1);
-    check(close(with_zonotope.zonotopes()[1].generators(), A2.enclose(B1).generators(), 0),
+    // layout: #163 step 2
+    check(close(detail::cora_generators(with_zonotope.zonotopes()[1]),
+                detail::cora_generators(A2.enclose(B1)), 0),
           b + ": a zonotope against every member");
     const Set S = Set(ZonoBundle({A1, A2})).get().enclose(Set(ZonoBundle({B1, B2})));
     check(S.is<ZonoBundle>() && S.as<ZonoBundle>().parallel_sets() == 2,
@@ -49,12 +54,17 @@ void with_a_map(const std::string &b) {
     const Tensor M({{0.0, -1.0}, {1.0, 0.0}});
     const ZonoBundle bundle({A1, A2});
     const ZonoBundle R = bundle.enclose(M, Zp);
-    check(close(R.zonotopes()[1].generators(), A2.enclose(M, Zp).generators(), 0),
+    // layout: #163 step 2
+    check(close(detail::cora_generators(R.zonotopes()[1]),
+                detail::cora_generators(A2.enclose(M, Zp)), 0),
           b + ": M Z + Zplus");
     const ZonoBundle shift({Zp, Zp, Zp});
     const ZonoBundle R2 = bundle.enclose(M, shift);
-    check(R2.parallel_sets() == 2 && close(R2.zonotopes()[0].center(),
-                                           A1.enclose(M, shift.interval().zonotope()).center(), 0),
+    // layout: #163 step 2
+    check(R2.parallel_sets() == 2 &&
+              close(detail::cora_center(R2.zonotopes()[0]),
+                    // layout: #163 step 2
+                    detail::cora_center(A1.enclose(M, shift.interval().zonotope())), 0),
           b + ": a bundle shifts as its box");
 }
 
@@ -78,7 +88,7 @@ void convex_combinations(const std::string &b) {
 /// Bundles of other sizes, a map of another size and a box are refused; the same call with the
 /// checks off.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle one({Z}), two({Z, Z});
     check(test::raises([&] { one.enclose(two); }, Error::wrong_value), "enclose: member counts");
     check(test::raises([&] { one.enclose(Tensor({{1.0}}), Z); }, Error::dimension_mismatch),

@@ -7,9 +7,9 @@
 // The bounds of the guard's inequalities are applied afterwards by CORA.cpp and are not compared.
 //
 // ORACLE: hybridDynamics/@location/guardIntersect_zonoGirard.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -46,7 +46,7 @@ int main() {
                 const Location loc("l", Polytope::inf(n), {}, LinearSys(rnd.matrix(n, n)));
                 const Tensor pca =
                     priv_calc_basis(loc, reach, guard, {alg::Enclose::pca},
-                                    Zonotope(loc.c(), loc.c().zeros_like({n, 0})))[0];
+                                    Zonotope(loc.c(), loc.c().zeros_like({0, n})))[0];
                 const std::vector<Tensor> bases = {Tensor::eye(n), rnd.matrix(n, n), pca};
                 const std::optional<Set> mine =
                     priv_guard_intersect_zono_girard(reach, guard, bases, true);

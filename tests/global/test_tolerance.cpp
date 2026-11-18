@@ -1,9 +1,9 @@
 // test_tolerance - the tolerance policy: the order of resolution, the scopes, the dtype, within_tol
 //
 // CORA.cpp only: the policy of the repository
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -142,14 +142,19 @@ void operations_resolve_at_the_entry() {
         check(I.is_intersecting(Interval(Tensor({{1.0 + 1e-10}, {0.0}}), Tensor({{2.0}, {1.0}}))),
               "... and do within a scope");
     }
-    const Zonotope Z(Tensor({{0.0}, {0.0}}), Tensor({{1.0, 0.2, 1e-12}, {0.5, 1.0, 0.0}}));
-    check(Z.contains(Z) && Z.contains(Zonotope(Z.center(), Z.generators() * 1.0)),
+    const Zonotope Z(Tensor({{0.0}, {0.0}}), Tensor({{1.0, 0.5}, {0.2, 1.0}, {1e-12, 0.0}}));
+    // layout: #163 step 2
+    check(Z.contains(Z) && Z.contains(detail::zonotope_of_columns(
+                               detail::cora_center(Z), detail::cora_generators(Z) * 1.0)),
           "zonotope: contains itself and its copy");
-    check(Z.compact().generators().shape().back() == 3,
+    // layout: #163 step 2
+    check(detail::cora_generators(Z.compact()).shape().back() == 3,
           "a generator of norm 1e-12 stays by default");
     {
         ToleranceScope scope(1e-10);
-        check(Z.compact().generators().shape().back() == 2, "... and goes within a scope");
+        // layout: #163 step 2
+        check(detail::cora_generators(Z.compact()).shape().back() == 2,
+              "... and goes within a scope");
     }
     test::raises([&] { I.contains(p, -1.0); }, Error::wrong_value);
     ChecksScope off(false);

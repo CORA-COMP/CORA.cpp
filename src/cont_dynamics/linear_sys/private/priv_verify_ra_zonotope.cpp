@@ -22,9 +22,9 @@
 //
 // CORA: contDynamics/@linearSys/private/priv_verifyRA_zonotope.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
@@ -80,10 +80,14 @@ struct InnerSet {
 
 ZHost aux_zhost(const Zonotope &Z) {
     ZHost h;
-    h.n = static_cast<int>(Z.center().shape()[0]);
-    h.m = static_cast<int>(Z.generators().shape()[1]);
-    h.c = Z.center().data();
-    h.G = Z.generators().data();
+    // layout: #163 step 2
+    h.n = static_cast<int>(detail::cora_center(Z).shape()[0]);
+    // layout: #163 step 2
+    h.m = static_cast<int>(detail::cora_generators(Z).shape()[1]);
+    // layout: #163 step 2
+    h.c = detail::cora_center(Z).data();
+    // layout: #163 step 2
+    h.G = detail::cora_generators(Z).data();
     return h;
 }
 
@@ -582,8 +586,11 @@ double aux_init_error(const Tensor &A, const std::optional<Tensor> &C, const Ten
                       const Zonotope &R0, const std::vector<Poly> &safe_sets,
                       const std::vector<Poly> &unsafe_sets, double t_final) {
     const int n = static_cast<int>(A.shape()[0]);
-    const std::vector<double> c = R0.center().data(), Gd = R0.generators().data();
-    const int m0 = static_cast<int>(R0.generators().shape()[1]);
+    // layout: #163 step 2
+    const std::vector<double> c = detail::cora_center(R0).data(),
+                              Gd = detail::cora_generators(R0).data();
+    // layout: #163 step 2
+    const int m0 = static_cast<int>(detail::cora_generators(R0).shape()[1]);
     std::vector<double> rad(n, 0.0);
     for (int i = 0; i < n; ++i)
         for (int j = 0; j < m0; ++j) rad[i] += std::abs(Gd[i * m0 + j]);

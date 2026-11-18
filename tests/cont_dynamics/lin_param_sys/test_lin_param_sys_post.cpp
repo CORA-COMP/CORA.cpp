@@ -7,7 +7,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
@@ -39,35 +39,47 @@ LinParamSys aux_sys(bool three = false) {
 /// The second step of reach; no time-point set without them.
 void second_step() {
     const LinParamSys sys = aux_sys();
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05}, {0.0}}));
+    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
     const Zonotope U(column({0.1}), Tensor({{0.2}}));
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const ReachSet R = sys.reach({R0, U, 0.15}, a);
-    const LinParamStep second = sys.post(sys.init_reach(R0, U - U.center(), U.center(), a), a);
-    check(close(R.time_interval[1].center(), second.time_interval.center(), 0) &&
-              close(R.time_interval[1].generators(), second.time_interval.generators(), 0) &&
-              close(R.time_point[2].center(), second.time_point->center(), 0),
-          "post: the second sets of reach");
+    // layout: #163 step 2
+    const LinParamStep second =
+        sys.post(sys.init_reach(R0, U - detail::cora_center(U), detail::cora_center(U), a), a);
+    // layout: #163 step 2
+    check(
+        close(detail::cora_center(R.time_interval[1]), detail::cora_center(second.time_interval),
+              0) &&
+            // layout: #163 step 2
+            close(detail::cora_generators(R.time_interval[1]),
+                  detail::cora_generators(second.time_interval), 0) &&
+            // layout: #163 step 2
+            close(detail::cora_center(R.time_point[2]), detail::cora_center(*second.time_point), 0),
+        "post: the second sets of reach");
     a.comp_time_point = false;
     const ReachSet ti = sys.reach({R0, U, 0.15}, a);
-    const LinParamStep next = sys.post(sys.init_reach(R0, U - U.center(), U.center(), a), a);
+    // layout: #163 step 2
+    const LinParamStep next =
+        sys.post(sys.init_reach(R0, U - detail::cora_center(U), detail::cora_center(U), a), a);
     check(ti.time_point.empty() && ti.time_interval.size() == 3 && !next.time_point,
           "post: no time-point sets if they are not computed");
 }
 
 /// A step of another dimension is refused; with the checks off the step is the same.
 void checks_and_their_switch() {
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05}, {0.0}}));
+    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
     const Zonotope U(column({0.0}), Tensor({{0.1}}));
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const LinParamStep first = aux_sys().init_reach(R0, U, column({0.0}), a);
     check(test::raises([&] { aux_sys(true).post(first, a); }, Error::dimension_mismatch),
           "post: a step of the system's dimension");
-    const Tensor on = aux_sys().post(first, a).time_interval.center();
+    // layout: #163 step 2
+    const Tensor on = detail::cora_center(aux_sys().post(first, a).time_interval);
     ChecksScope off(false);
-    check(close(aux_sys().post(first, a).time_interval.center(), on, 0),
+    // layout: #163 step 2
+    check(close(detail::cora_center(aux_sys().post(first, a).time_interval), on, 0),
           "post: the same with the checks off");
 }
 

@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@zonotope/representsa_.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -29,7 +29,8 @@ bool priv_is_box(const Zonotope &Z, double tol) {
     if (Z.dim() == 1) return true;
     const Tensor G = Z.generators().detach();
     const Tensor beyond = within_tol(G, G.zeros_like(), tol).negative() + 1.0;
-    const Tensor per_generator = beyond.sum(-2);
+    const Tensor per_generator = beyond.sum(-1);
+
     return per_generator.numel() == 0 || per_generator.max().item() <= 1;
 }
 

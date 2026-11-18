@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@conZonotope/zonotope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -83,7 +83,8 @@ Zonotope aux_null_space(const ConZonotope &cz) {
     }
     const Tensor center = Tensor::like(c, mid, {k, 1}), radius = Tensor::like(c, rad, {1, k});
     const Tensor offset = p + T.matmul(center);
-    return {c + G.matmul(offset), G.matmul(T.multiply(radius))};
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(c + G.matmul(offset), G.matmul(T.multiply(radius)));
 }
 
 } // namespace
@@ -98,13 +99,15 @@ Zonotope ConZonotope::zonotope(const std::string &method) const {
     });
     CORA_CHECK(c_.ndim() == 2, Error::not_supported,
                [] { return std::string("zonotope: it supports a single set, not a batch"); });
-    if (A().shape()[A().ndim() - 2] == 0) return {c_, G_};
+    // layout: #163 step 2
+    if (A().shape()[A().ndim() - 2] == 0) return detail::zonotope_of_columns(c_, G_);
     CORA_CHECK(!priv_is_empty(priv_host_con_zonotope(*this)), Error::empty_set, [] {
         return std::string("zonotope: the set is empty and CORA.cpp has no empty zonotope");
     });
     if (method == "nullSpace") return aux_null_space(*this);
     const ConZonotope reduced = reduce(int(G_.shape().back() / dim()) + 1);
-    return {reduced.c(), reduced.generators()};
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(reduced.c(), reduced.generators());
 }
 
 } // namespace cora

@@ -23,7 +23,7 @@
 // CORA authors: Mark Wetzlinger, Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -127,10 +127,11 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg) c
         validate(problem);
         alg.validate();
     }
-    CORA_CHECK(problem.initial_set->center().ndim() == 2 && (A_sparse_ || A_.ndim() == 2),
-               Error::not_supported, [] {
-                   return std::string("reach: alg::Krylov takes a single system and initial set");
-               });
+    // layout: #163 step 2
+    CORA_CHECK(
+        detail::cora_center(*problem.initial_set).ndim() == 2 && (A_sparse_ || A_.ndim() == 2),
+        Error::not_supported,
+        [] { return std::string("reach: alg::Krylov takes a single system and initial set"); });
     return aux_reach_krylov(*this, problem, alg, nullptr);
 }
 
@@ -142,10 +143,11 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg,
         validate(problem);
         alg.validate();
     }
-    CORA_CHECK(problem.initial_set->center().ndim() == 2 && (A_sparse_ || A_.ndim() == 2),
-               Error::not_supported, [] {
-                   return std::string("reach: alg::Krylov takes a single system and initial set");
-               });
+    // layout: #163 step 2
+    CORA_CHECK(
+        detail::cora_center(*problem.initial_set).ndim() == 2 && (A_sparse_ || A_.ndim() == 2),
+        Error::not_supported,
+        [] { return std::string("reach: alg::Krylov takes a single system and initial set"); });
     return aux_reach_krylov(*this, problem, alg, on_time_interval);
 }
 

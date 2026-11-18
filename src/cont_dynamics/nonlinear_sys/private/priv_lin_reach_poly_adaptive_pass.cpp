@@ -20,9 +20,9 @@
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -83,7 +83,9 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     const std::optional<PolySeries> errser = PolySeries::make(J.A, dt, alg.taylor_terms, false);
     const Zonotope Rdyn = errser->input_solution(Vdyn);
     const PolyZonotope Rstat = priv_poly_interval_map(errser->integral(), S.Vstat);
-    const Tensor GI = Tensor::concat({Rdyn.generators(), Rstat.independent_generators()}, -1);
+    // layout: #163 step 2
+    const Tensor GI =
+        Tensor::concat({detail::cora_generators(Rdyn), Rstat.independent_generators()}, -1);
     const int64_t q = GI.shape()[1];
     const Vec gi = GI.data();
     Vec abstrerr(static_cast<std::size_t>(n));

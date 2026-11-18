@@ -4,9 +4,9 @@
 // test::bundle_points(bundle, rng, N); Sets:     the members share one point (given back on
 // request), so the intersection is not empty See also: testing.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -31,7 +31,7 @@ inline cora::ZonoBundle random_zono_bundle(cora::Rng &rng, int n, int k, int m,
         rng.uniform(b.data(), b.size(), -1.0, 1.0);
         const cora::Tensor Gt = cora::Tensor::from_data(G, {n, m});
         // the center is chosen so that x0 = c + G b with |b| <= 1
-        members.emplace_back(point - Gt.matmul(column(b)), Gt);
+        members.emplace_back(point - Gt.matmul(column(b)), Gt.matrix_transpose());
     }
     if (common) *common = point;
     return cora::ZonoBundle(std::move(members));
@@ -42,7 +42,7 @@ inline cora::ZonoBundle random_zono_bundle(cora::Rng &rng, int n, int k, int m,
 inline cora::ZonoBundle two_zonotopes() {
     return cora::ZonoBundle(
         {cora::Zonotope(column({0.0, 0.0}), cora::Tensor({{2.0, 0.0}, {0.0, 1.0}})),
-         cora::Zonotope(column({1.0, 0.0}), cora::Tensor({{1.0, 1.0}, {0.0, 1.0}}))});
+         cora::Zonotope(column({1.0, 0.0}), cora::Tensor({{1.0, 0.0}, {1.0, 1.0}}))});
 }
 
 /// Whether the point p (n, 1) lies in every member of the bundle.

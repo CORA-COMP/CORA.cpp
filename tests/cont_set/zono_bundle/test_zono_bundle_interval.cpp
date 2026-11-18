@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonoBundle/interval.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -23,7 +23,7 @@ namespace {
 /// The boxes [-2, 2] x [-1, 1] and [-1, 3] x [-1, 1] meet in [-1, 2] x [-1, 1].
 void intersection_of_boxes(const std::string &b) {
     const Zonotope Z1(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
-    const Zonotope Z2(column({1.0, 0.0}), Tensor({{1.0, 1.0}, {0.0, 1.0}}));
+    const Zonotope Z2(column({1.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}));
     const Interval I = ZonoBundle({Z1, Z2}).interval();
     check(close(I.inf(), {-1.0, -1.0}, 0) && close(I.sup(), {2.0, 1.0}, 0),
           b + ": [-1, 2] x [-1, 1]");

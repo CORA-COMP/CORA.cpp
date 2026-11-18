@@ -3,9 +3,9 @@
 // intersect_strip is differentiable for a given gain and for "normGen" (matrix products, an
 // inverse).
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -21,7 +21,7 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(42);
-    const std::vector<torch::Tensor> Z = test::random_zonotope(3, 4);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(3, 4);
     const torch::Tensor C = torch::randn({2, 3}, torch::kDouble),
                         phi = torch::rand({2, 1}, torch::kDouble) + 0.5,
                         y = torch::randn({2, 1}, torch::kDouble),

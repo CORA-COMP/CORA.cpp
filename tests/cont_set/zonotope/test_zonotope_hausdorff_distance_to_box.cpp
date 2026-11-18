@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -27,7 +27,7 @@ namespace {
 
 /// One generator (1, 1): the box has radius (1, 1), every method has a hand-computed value.
 void each_method_on_one_generator(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(close(Z.hausdorff_distance_to_box("naive").item(), std::sqrt(2.0), 1e-14), b + ": naive");
     check(close(Z.hausdorff_distance_to_box("wgreedy").item(), 2.0, 1e-14), b + ": wgreedy");
     check(close(Z.hausdorff_distance_to_box("wopt").item(), std::sqrt(2.0), 1e-14), b + ": wopt");
@@ -35,18 +35,18 @@ void each_method_on_one_generator(const std::string &b) {
     check(
         close(Z.hausdorff_distance_to_box().item(), Z.hausdorff_distance_to_box("exact").item(), 0),
         b + ": the default of a plane is exact");
-    const Zonotope Z4(column({0.0, 0.0, 0.0, 0.0}), Tensor({{1.0}, {1.0}, {1.0}, {1.0}}));
+    const Zonotope Z4(column({0.0, 0.0, 0.0, 0.0}), Tensor({{1.0, 1.0, 1.0, 1.0}}));
     check(close(Z4.hausdorff_distance_to_box().item(), 2.0, 1e-14),
           b + ": the default above 3-D is naive");
-    const Zonotope Z1(column({0.0}), Tensor({{1.0, -2.0}}));
+    const Zonotope Z1(column({0.0}), Tensor({{1.0}, {-2.0}}));
     check(close(Z1.hausdorff_distance_to_box("exact").item(), 0.0, 0),
           b + ": a box in one dimension");
 }
 
 /// A batch gives one number per member.
 void a_batch_gives_a_number_per_member(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    const Zonotope Z2(column({0.0, 0.0}), Tensor({{2.0}, {0.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z2(column({0.0, 0.0}), Tensor({{2.0, 0.0}}));
     const Tensor d = Zonotope::stack({Z, Z2}).hausdorff_distance_to_box("wopt");
     check(d.shape() == std::vector<int64_t>({2, 1, 1}), b + ": shape (2, 1, 1)");
     check(close(d.data()[1], 0.0, 1e-14), b + ": a segment along an axis is its box");
@@ -79,7 +79,7 @@ void bounded_by_the_generator_lengths(const std::string &b) {
 
 /// Unknown methods and "ell" are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(test::raises([&] { Z.hausdorff_distance_to_box("fast"); }, Error::wrong_value),
           "hausdorff_distance_to_box: unknown method");
     check(test::raises([&] { Z.hausdorff_distance_to_box("ell"); }, Error::not_supported),

@@ -33,7 +33,7 @@ double max_diff(const torch::Tensor &a, const torch::Tensor &b) {
 void batched_rand_point(const torch::TensorOptions &opts, const std::string &where) {
     const int64_t S = 3, n = 3, m = 4, N = 500;
     cora::Rng rng(3);
-    const torch::Tensor c = torch::randn({S, n, 1}, opts) * 5.0, G = torch::randn({S, n, m}, opts);
+    const torch::Tensor c = torch::randn({S, n}, opts) * 5.0, G = torch::randn({S, m, n}, opts);
     const Zonotope Z(from_torch(c), from_torch(G));
     for (const bool extreme : {false, true}) {
         const torch::Tensor P = to_torch(Z.rand_point(N, rng, extreme ? "extreme" : "standard"));

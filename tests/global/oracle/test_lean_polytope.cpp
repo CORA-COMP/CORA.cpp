@@ -17,9 +17,9 @@
 // ORACLE: contSet/@polytope/convHull_.m
 // ORACLE: contSet/@polytope/enclosePoints.m
 // ORACLE: contSet/@interval/polytope.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -108,7 +108,8 @@ int main() {
         const Interval inside(c - 0.1, c + 0.1), outside(c - 5.0, c + 5.0);
         oracle::check(P.contains(inside), lean::Polytope(P).contains(inside));
         oracle::check(P.contains(outside), lean::Polytope(P).contains(outside));
-        const Zonotope near(c, rnd.matrix(3, 4) * 0.05), far(c, rnd.matrix(3, 4) * 5.0);
+        const Zonotope near(c, rnd.matrix(3, 4).matrix_transpose() * 0.05),
+            far(c, rnd.matrix(3, 4) * 5.0);
         oracle::check(P.contains(near), lean::Polytope(P).contains(near));
         // hulls
         oracle::check(P.contains(far), lean::Polytope(P).contains(far));

@@ -3,9 +3,9 @@
 // mink_diff is piecewise: "approx" and the aligned "exact" carry gradients (the facets are chosen
 // on the values); the linear-program methods compute on the host and do not.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -21,7 +21,7 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(44);
-    const std::vector<torch::Tensor> M = test::random_zonotope(3, 3);
+    const std::vector<torch::Tensor> M = test::random_zonotope_rows(3, 3);
     const torch::Tensor c = torch::zeros({3, 1}, torch::kDouble);
     const torch::Tensor G = torch::diag(torch::rand({3}, torch::kDouble) + 0.1);
     test::gradcheck("mink_diff approx",

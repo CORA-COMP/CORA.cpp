@@ -5,7 +5,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -21,7 +21,7 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(56);
-    const auto input = test::random_zonotope(2, 6);
+    const auto input = test::random_zonotope_rows(2, 6);
     for (const char *method : {"kochdumper", "raghuraman", "yang"})
         test::gradcheck(
             std::string("reduce_under_approx ") + method,

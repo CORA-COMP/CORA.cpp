@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@contSet/project.m
 // CORA authors: Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -25,7 +25,7 @@ namespace {
 /// Dimensions outside the set are refused; the projection keeps the class.
 void the_dimensions_are_checked() {
     const Zonotope Z =
-        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     const ContSet &S = Z;
     check(test::raises([&] { S.project({0, 3}); }, Error::wrong_value), "dimension 3 of 3");
     check(test::raises([&] { S.project({}); }, Error::wrong_value), "no dimension");

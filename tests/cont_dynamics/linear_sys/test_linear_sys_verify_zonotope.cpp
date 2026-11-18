@@ -10,9 +10,9 @@
 //
 // CORA: contDynamics/@linearSys/verify.m
 // CORA authors: Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
@@ -87,8 +87,10 @@ void adaptive_reach_matches_matlab() {
     Rand r = rand01();
     TaylorLinSys taylor(r.sys.A());
     AdaptiveSaveData savedata;
-    const Tensor GU = r.sys.B()->matmul(r.params.input_set->generators());
-    const Tensor u_trans = r.sys.B()->matmul(r.params.input_set->center());
+    // layout: #163 step 2
+    const Tensor GU = r.sys.B()->matmul(detail::cora_generators(*r.params.input_set));
+    // layout: #163 step 2
+    const Tensor u_trans = r.sys.B()->matmul(detail::cora_center(*r.params.input_set));
     const AdaptiveParams ap{*r.params.initial_set, GU, u_trans, r.sys.C(), r.params.t_final};
     const double emax = 0.13282709397856149;
     const AdaptiveResult R = priv_reach_adaptive(taylor, ap, {VerifyTime({{0, r.params.t_final}})},
@@ -144,8 +146,10 @@ void adaptive_reach_rand02_matches_matlab() {
     TaylorLinSys taylor(r.sys.A());
     AdaptiveSaveData savedata;
     const AdaptiveParams ap{
-        *r.params.initial_set, r.sys.B()->matmul(r.params.input_set->generators()),
-        r.sys.B()->matmul(r.params.input_set->center()), r.sys.C(), r.params.t_final};
+        // layout: #163 step 2
+        *r.params.initial_set, r.sys.B()->matmul(detail::cora_generators(*r.params.input_set)),
+        // layout: #163 step 2
+        r.sys.B()->matmul(detail::cora_center(*r.params.input_set)), r.sys.C(), r.params.t_final};
     const AdaptiveResult R = priv_reach_adaptive(taylor, ap, {VerifyTime({{0, r.params.t_final}})},
                                                  0.0021200701252661563, true, savedata);
     check(R.internal_checks_ok, "RAND02: the error bookkeeping is consistent");
@@ -241,8 +245,10 @@ void reduction_case_matches_matlab() {
     // The adaptive reachable sets of the first run (emax 4.940648 as MATLAB printed it).
     TaylorLinSys taylor(sys.A());
     AdaptiveSaveData savedata;
-    const AdaptiveParams ap{*params.initial_set, params.input_set->generators(),
-                            params.input_set->center(), sys.C(), params.t_final};
+    // layout: #163 step 2
+    const AdaptiveParams ap{*params.initial_set, detail::cora_generators(*params.input_set),
+                            // layout: #163 step 2
+                            detail::cora_center(*params.input_set), sys.C(), params.t_final};
     const AdaptiveResult R =
         priv_reach_adaptive(taylor, ap, {VerifyTime({{0, 2.0}})}, 4.940648, true, savedata);
     check(R.time_interval.size() == 5, "3-dim: five steps");
@@ -269,7 +275,8 @@ void reduction_case_matches_matlab() {
                   w + "lower");
             check(test::close(I.sup(), std::vector<double>{sup[i][0], sup[i][1]}, 1e-5),
                   w + "upper");
-            check(R.time_interval[k]->generators().shape()[1] == 10, w + "generators");
+            // layout: #163 step 2
+            check(detail::cora_generators(*R.time_interval[k]).shape()[1] == 10, w + "generators");
         }
     }
 

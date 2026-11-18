@@ -2,7 +2,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -45,13 +45,13 @@ void corners_attain_the_support(const std::string &b) {
 /// segment or point.
 void degenerate_zonotopes(const std::string &b) {
     const Zonotope cube(test::column({0, 0, 0}),
-                        Tensor({{1, 0, 0, 1}, {0, 1, 0, 1}, {0, 0, 1, 0}}));
+                        Tensor({{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}}));
     check(cube.vertices_3d()[0].size() == 12, b + ": a cube with a diagonal bar has 12 corners");
-    const Zonotope flat(test::column({0, 0, 0}), Tensor({{1, 0}, {0, 1}, {0, 0}}));
+    const Zonotope flat(test::column({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}}));
     check(flat.vertices_3d()[0].size() == 4, b + ": two generators make a square");
-    const Zonotope segment(test::column({0, 0, 0}), Tensor({{1, 2}, {1, 2}, {0, 0}}));
+    const Zonotope segment(test::column({0, 0, 0}), Tensor({{1, 1, 0}, {2, 2, 0}}));
     check(segment.vertices_3d()[0].size() == 2, b + ": parallel generators make a segment");
-    const Zonotope point(test::column({1, 2, 3}), Tensor::zeros({3, 1}));
+    const Zonotope point(test::column({1, 2, 3}), Tensor::zeros({1, 3}));
     check(point.vertices_3d()[0].size() == 1, b + ": no generator, one point");
 }
 
@@ -61,7 +61,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { S2.vertices_3d(); }, Error::not_supported),
           "vertices_3d: two dimensions");
     const Zonotope S =
-        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     const std::size_t on = S.vertices_3d()[0].size();
     ChecksScope off(false);
     check(S.vertices_3d()[0].size() == on, "vertices_3d: the same with the checks off");

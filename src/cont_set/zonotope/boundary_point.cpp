@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@zonotope/boundaryPoint.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -60,11 +60,14 @@ double aux_exit_step(const HostZonotope &Z, const std::vector<double> &dir,
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor Zonotope::boundary_point(const Tensor &dir) const { return boundary_point(dir, c_); }
+Tensor Zonotope::boundary_point(const Tensor &dir) const {
+    detail::Entry entry;
+    return boundary_point(dir, detail::cora_center(*this));
+}
 
 Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
     detail::Entry entry;
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("boundary_point: a linear program per zonotope; it supports a single "
                            "zonotope, not a batch");
     });
@@ -86,14 +89,18 @@ Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
         return std::string("boundary_point: start has to be a point of the zonotope");
     });
 
-    // in one dimension the zonotope is the segment c +- sum |G|
-    if (dim() == 1) return d[0] < 0 ? c_ - G_.abs_sum() : c_ + G_.abs_sum();
+    // in one dimension the zonotope is the segment c +- sum |G| (layout: #163 step 2, columns)
+    const Tensor c = detail::cora_center(*this);
+    if (dim() == 1) {
+        const Tensor r = G_.abs().sum(-2, true);
+        return d[0] < 0 ? c - r : c + r;
+    }
     const HostZonotope Z = priv_host_zonotope(*this);
     bool at_center = true;
     for (int64_t i = 0; i < Z.n; ++i) at_center = at_center && within_tol(Z.c[i], s[i]);
     if (at_center) { // the zonotope norm of dir is the factor 1 / t
         const HostZonotope centered{Z.n, Z.m, std::vector<double>(Z.n, 0.0), Z.G};
-        return c_ + dir / priv_zonotope_norm(centered, d);
+        return c + dir / priv_zonotope_norm(centered, d);
     }
     // from another start the program gives the step
     return start + dir * aux_exit_step(Z, d, s);

@@ -25,7 +25,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
@@ -85,10 +85,12 @@ KrylovConstantInput priv_krylov_constant_input(const HostMatVec &A, const std::v
 Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, const alg::Krylov &alg,
                                     double t_final) {
     double bound = 0; // the sum of the bounds of the errors of the subspaces
-    const int64_t n = A.n, m = V.generators().shape().back();
+    const int64_t n = A.n, m = detail::cora_generators(V).shape().back();
     const double dt = alg.time_step;
-    const Tensor &like = V.center();
-    const std::vector<double> G = V.generators().data();
+    // layout: #163 step 2
+    const Tensor &like = detail::cora_center(V);
+    // layout: #163 step 2
+    const std::vector<double> G = detail::cora_generators(V).data();
     std::vector<Tensor> terms;
     Tensor error = like.zeros_like({n, 1});
     int64_t order = 1;
@@ -130,7 +132,8 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         box = box + Interval(red.negative(), red);
     }
     const Tensor generators = terms.empty() ? like.zeros_like({n, 0}) : Tensor::concat(terms, -1);
-    return Zonotope(like.zeros_like({n, 1}), generators) + box.zonotope();
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(like.zeros_like({n, 1}), generators) + box.zonotope();
 }
 
 } // namespace cora

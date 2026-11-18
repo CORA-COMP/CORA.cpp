@@ -14,7 +14,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -31,7 +31,9 @@ namespace {
 // Shapes and checks -------------------------------------------------------------------------------
 
 /// [c G]: the center as the first column.
-Tensor aux_full(const Zonotope &Z) { return Tensor::concat({Z.center(), Z.generators()}, -1); }
+Tensor aux_full(const Zonotope &Z) {
+    return Tensor::concat({detail::cora_center(Z), detail::cora_generators(Z)}, -1);
+}
 
 /// Whether any entry of the matrix is nonzero (CORA's any(Q{i}(:))).
 bool aux_nonempty(const Tensor &Q) { return Q.abs().sum().item() != 0; }
@@ -61,8 +63,8 @@ Zonotope aux_outputs(const Tensor &like, int64_t width, const std::vector<Tensor
         rows.push_back(row.second);
     }
     const Tensor c = Tensor::concat(centers, -2), G = Tensor::concat(rows, -2);
-    if (nonempty <= 1) return {c, G.abs_sum()};
-    return Zonotope(c, G).compact("zeros", 0.0);
+    if (nonempty <= 1) return detail::zonotope_of_columns(c, G.abs_sum());
+    return detail::zonotope_of_columns(c, G).compact("zeros", 0.0);
 }
 
 } // namespace
@@ -76,7 +78,7 @@ Zonotope Zonotope::quad_map(const std::vector<Tensor> &Q) const {
     CORA_CHECK(problem.empty(), Error::dimension_mismatch, [&] { return "quad_map: " + problem; });
     // M = [c G]' Q [c G] for every output; the squares and mixed terms are its entries
     const Tensor full = aux_full(*this), full_t = full.matrix_transpose();
-    const int64_t N = G_.shape().back();
+    const int64_t N = nr_generators();
     return aux_outputs(full, N + N * (N + 1) / 2, Q, [&](const Tensor &Qi) {
         return priv_quad_map_single_row(full_t.matmul(Qi).matmul(full), N);
     });
@@ -92,7 +94,7 @@ Zonotope Zonotope::quad_map(const Zonotope &Z2, const std::vector<Tensor> &Q) co
     });
     // M = [c G]' Q [c2 G2] for every output; its entries in column-major order are the products
     const Tensor full = aux_full(*this), full2 = aux_full(Z2), full_t = full.matrix_transpose();
-    const int64_t width = (G_.shape().back() + 1) * (Z2.G_.shape().back() + 1) - 1;
+    const int64_t width = (nr_generators() + 1) * (Z2.nr_generators() + 1) - 1;
     return aux_outputs(full, width, Q, [&](const Tensor &Qi) {
         return aux_mixed_row(full_t.matmul(Qi).matmul(full2));
     });

@@ -1,8 +1,8 @@
 // test_zonotope_compact_torch - zonotope compact: gradients through torch
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -20,9 +20,9 @@ namespace {
 void compact_gradient() {
     // differences step by 1e-6: tol 1e-3 drops the tiny generator and merges the antiparallel one
     const double tol = 1e-3;
-    std::vector<torch::Tensor> Z = test::random_zonotope(3, 5);
-    Z[1].index_put_({torch::indexing::Slice(), 2}, 1e-9);
-    Z[1].index_put_({torch::indexing::Slice(), 4}, -2 * Z[1].index({torch::indexing::Slice(), 0}));
+    std::vector<torch::Tensor> Z = test::random_zonotope_rows(3, 5);
+    Z[1].index_put_({2}, 1e-9);
+    Z[1].index_put_({4}, -2 * Z[1].index({0}));
     for (const std::string method : {"zeros", "all"})
         test::gradcheck(
             "compact " + method,

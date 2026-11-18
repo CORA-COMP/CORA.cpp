@@ -2,9 +2,9 @@
 //
 // generator_length is differentiable away from zero generators.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -23,7 +23,7 @@ int main() {
     test::gradcheck(
         "generator_length",
         [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).generator_length()}; },
-        test::random_zonotope(3, 4));
+        test::random_zonotope_rows(3, 4));
     return test::finish("zonotope generator_length (torch)");
 }
 

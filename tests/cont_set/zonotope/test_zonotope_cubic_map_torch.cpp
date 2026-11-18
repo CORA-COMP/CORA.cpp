@@ -1,8 +1,8 @@
 // test_zonotope_cubic_map_torch - zonotope cubic_map: gradients through torch, and a batch
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -19,7 +19,7 @@ namespace {
 
 /// The map is a polynomial in c, G and T: differentiable in all of them.
 void cubic_map_gradient() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(2, 2);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 2);
     const torch::Tensor T = torch::randn({2, 2, 2, 2}, torch::kDouble);
     const auto grid = [](const Tensor &t) {
         std::vector<std::vector<Tensor>> out(2);
@@ -41,7 +41,7 @@ void cubic_map_gradient() {
 
 /// A batch on torch is the map of each member.
 void cubic_map_of_a_batch() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(2, 3);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 3);
     const torch::Tensor T = torch::randn({1, 2, 2, 2}, torch::kDouble);
     std::vector<std::vector<Tensor>> grid(1);
     for (int64_t k = 0; k < 2; ++k) grid[0].push_back(from_torch(T[0][k]));

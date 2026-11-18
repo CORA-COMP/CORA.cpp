@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -31,11 +31,11 @@ void convex_hull_with_each_kind_of_set(const std::string &b) {
     const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 4),
                    Z2 = Zonotope::generate_random(rng, n, std::nullopt, 4);
     const Interval I = Interval::generate_random(rng, n);
-    const Tensor &p = Z2.center();
+    const Tensor p = Z2.center().expand_dims(-1); // a point (n, 1)
     check(close(Z.convex_hull(Z2).generators(), Z.enclose(Z2).generators(), 0),
           b + ": zonotope: enclose");
     const Zonotope with_box = Z.convex_hull(I), with_point = Z.convex_hull(p);
-    check(with_point.generators().shape().back() == 5,
+    check(with_point.nr_generators() == 5,
           b + ": a point has no generators: the hull has m + 1 generators");
     for (int k = 0; k < 40; ++k) {
         const std::vector<double> d = test::random_direction(rng, n);
@@ -57,8 +57,7 @@ void convex_hull_with_each_kind_of_set(const std::string &b) {
 
 /// Operands of another dimension, and a point that is not a column, are refused.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {0.0}})),
-        Z1(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(column({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Z.convex_hull(Z1); }, Error::dimension_mismatch),
           "convex_hull: dim 1");
     check(test::raises([&] { Z.convex_hull(Interval(column({0.0}), column({1.0}))); },

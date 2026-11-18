@@ -31,9 +31,9 @@
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA: nn/@neuralNetwork/getRefinableLayers.m
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   13-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -573,21 +573,26 @@ Zonotope NeuralNetwork::evaluate(const Zonotope &X, const NnOptions &options) co
             return std::string("evaluate: a zonotope takes the poly_method singh or regression");
         });
     // the layers on the set, its generators independent; a zero generator stays for an exact neuron
-    const Tensor none = X.generators().slice(-1, 0, 0);
-    const Rows r = aux_layers(layers_, activations_, aux_rows(X.center(), none, X.generators(), {}),
-                              true, true, options);
-    return {r.c, r.GI};
+    const Tensor none = detail::cora_generators(X).slice(-1, 0, 0);
+    // layout: #163 step 2
+    const Rows r =
+        aux_layers(layers_, activations_,
+                   aux_rows(detail::cora_center(X), none, detail::cora_generators(X), {}), true,
+                   true, options);
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(r.c, r.GI);
 }
 
 Zonotope NeuralNetwork::evaluate_with_input(const Zonotope &X, const NnOptions &options) const {
     detail::Entry entry;
     // the generators of a zonotope are independent: the polynomial zonotope without dependent ones
-    const Tensor none = X.generators().slice(-1, 0, 0);
+    const Tensor none = detail::cora_generators(X).slice(-1, 0, 0);
     NnOptions opt = options;
     opt.add_approx_error_to_gi = true;
-    const PolyZonotope joint =
-        evaluate_with_input(PolyZonotope(X.center(), none, X.generators(), {}, {}), opt);
-    return {joint.center(), joint.independent_generators()};
+    const PolyZonotope joint = evaluate_with_input(
+        PolyZonotope(detail::cora_center(X), none, detail::cora_generators(X), {}, {}), opt);
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(joint.center(), joint.independent_generators());
 }
 
 PolyZonotope NeuralNetwork::evaluate_with_input(const PolyZonotope &X,

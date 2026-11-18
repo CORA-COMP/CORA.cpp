@@ -18,7 +18,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   10-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -155,7 +155,12 @@ class Random {
     /// A direction (n, 1) of unit length up to rounding.
     cora::Tensor direction(int64_t n) { return vector(n); }
 
-    cora::Zonotope zonotope(int64_t n, int64_t m) { return {vector(n), matrix(n, m)}; }
+    /// A zonotope of the numbers of CORA's columns c (n, 1) and G (n, m): the center (n) and the
+    /// generators (m, n), one per row.
+    cora::Zonotope zonotope(int64_t n, int64_t m) {
+        const cora::Tensor c = vector(n), G = matrix(n, m);
+        return {c.squeeze(-1), G.matrix_transpose()};
+    }
 
     /// A constrained zonotope of n dimensions and m generators with p constraints [I B] x = b; b is
     /// the image of a factor vector inside the box, so the set is not empty.
@@ -190,7 +195,8 @@ class Random {
             const cora::Tensor G = matrix(n, m);
             std::vector<double> b(m);
             for (double &x : b) x = uniform(-1, 1);
-            members.emplace_back(x0 - G.matmul(cora::Tensor::from_data(b, {m, 1})), G);
+            members.emplace_back((x0 - G.matmul(cora::Tensor::from_data(b, {m, 1}))).squeeze(-1),
+                                 G.matrix_transpose());
         }
         return cora::ZonoBundle(std::move(members));
     }
@@ -300,8 +306,10 @@ inline bool agree(const std::string &what, const cora::Fullspace &a, const lean:
 
 /// The nominal part of the oracle's set; its error box is not compared (at nearest it is empty).
 inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
-    const bool center = agree(what + ".c", a.center(), b.center()); // both are reported
-    return agree(what + ".G", a.generators(), b.generators()) && center;
+    // the oracle reports CORA's columns (n, 1) and (n, m); both parts are reported
+    const bool center = agree(what + ".c", cora::detail::cora_center(a), b.center());
+    // layout: #163 step 2
+    return agree(what + ".G", cora::detail::cora_generators(a), b.generators()) && center;
 }
 
 /// The oracle's polynomial zonotope against CORA.cpp's: c, G, GI in their order, then the

@@ -13,9 +13,9 @@
 // Outputs:  one line 'benchmark,instance,result,time' per instance, the width of x4 on stderr
 // See also: benchmark_nonlinear_reach_arch23_robertson.cpp, benchmark_hybrid.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -65,7 +65,7 @@ X4 aux_x4(const Reach &R) {
 /// Reaches one instance, prints the line of the script and the width of x4.
 bool aux_run(const std::string &name) {
     const NonlinearSys sys = aux_laub_loomis();
-    const Zonotope U(column({0}), Tensor::zeros({1, 0}));
+    const Zonotope U(column({0}), Tensor::zeros({0, 1}));
     const auto start = std::chrono::steady_clock::now();
     X4 x4;
     double limit = 4.5;

@@ -13,9 +13,9 @@
 // PROPERTY: contDynamics/@nonlinearSys/linReach_adaptive.m
 // PROPERTY: contSet/@polyZonotope/reduce.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -127,7 +127,7 @@ void quadratic_system_encloses_simulations(const std::string &b) {
     const NonlinearSys sys = quadratic();
     const Zonotope X0(Tensor({1.0, 0.5, 0.2}),
                       Tensor({{0.05, 0.0, 0.0}, {0.0, 0.05, 0.0}, {0.0, 0.0, 0.05}}));
-    const Zonotope U(Tensor({0.0}), Tensor::zeros({1, 0}));
+    const Zonotope U(Tensor({0.0}), Tensor::zeros({0, 1}));
     const double T = 0.6;
     const PolyReachSet R =
         sys.reach({.initial_set = PolyZonotope(X0), .input_set = U, .t_final = T},

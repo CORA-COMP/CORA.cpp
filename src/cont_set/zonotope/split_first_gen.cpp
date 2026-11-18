@@ -14,7 +14,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -33,10 +33,11 @@ std::pair<Zonotope, Zonotope> Zonotope::split_first_gen() const {
         return std::string("split_first_gen: a generator per zonotope: it supports a single "
                            "zonotope, not a batch");
     });
-    if (G_.shape().back() == 0) return {*this, *this};
+    if (nr_generators() == 0) return {*this, *this};
     // the choice is made on detached values and carries no gradient
     const Tensor values = G_.detach();
-    const Tensor score = values.matrix_transpose().matmul(values).abs().sum(-1);
+    const Tensor score = values.matmul(values.matrix_transpose()).abs().sum(-1);
+
     return priv_split_generator(*this, int64_t(score.argmax(0).item()));
 }
 

@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@polytope/zonotope.m
 // CORA authors: Mark Wetzlinger, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -60,7 +60,9 @@ Zonotope Polytope::zonotope(const std::string &method) const {
     const Tensor Y = R.pinv().matmul(V - E.q());
     const Tensor lower = Y.min(-1, true), upper = Y.max(-1, true);
     const Tensor center = (upper + lower) * 0.5, radius = (upper - lower) * 0.5;
-    return {E.q() + R.matmul(center), R.multiply(radius.matrix_transpose())};
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(E.q() + R.matmul(center),
+                                       R.multiply(radius.matrix_transpose()));
 }
 
 } // namespace cora

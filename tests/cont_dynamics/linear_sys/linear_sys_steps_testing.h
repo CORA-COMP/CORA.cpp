@@ -36,7 +36,7 @@ inline Zonotope initial_set() {
 
 /// The point u as a set.
 inline Zonotope point(const std::vector<double> &u) {
-    return {test::column(u), Tensor::zeros({int64_t(u.size()), 0})};
+    return {test::column(u), Tensor::zeros({0, int64_t(u.size())})};
 }
 
 /// The set {0} of the dimension n.

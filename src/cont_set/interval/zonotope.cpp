@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -50,9 +50,12 @@ Zonotope Interval::zonotope() const {
         for (int64_t j = 0; j < k; ++j)
             G[static_cast<size_t>(axes[static_cast<size_t>(j)] * k + j)] =
                 radius[static_cast<size_t>(axes[static_cast<size_t>(j)])];
-        return {c, k == 0 ? r.zeros_like({n, 0}) : Tensor::like(r, G, {n, k})};
+        // layout: #163 step 2
+        return detail::zonotope_of_columns(c, k == 0 ? r.zeros_like({n, 0})
+                                                     : Tensor::like(r, G, {n, k}));
     }
-    return {c, priv_select_generators(r.diag(), axes)};
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(c, priv_select_generators(r.diag(), axes));
 }
 
 } // namespace cora

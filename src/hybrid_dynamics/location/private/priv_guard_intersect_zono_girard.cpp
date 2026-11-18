@@ -21,7 +21,7 @@
 // CORA authors: Stefan Liu, Niklas Kochdumper
 // Authors:       Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       09-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -47,11 +47,12 @@ double aux_upper(const Zonotope &Z, const Tensor &normal, double gamma, const Te
         Z.linear_map(Tensor::concat({normal.matrix_transpose(), l.matrix_transpose()}, -2));
     // the dual bound at the multiplier mu
     const auto dual = [&](double mu) {
-        const Tensor direction = Tensor::like(S.center(), {-mu, 1.0}, {2, 1});
+        // layout: #163 step 2
+        const Tensor direction = Tensor::like(detail::cora_center(S), {-mu, 1.0}, {2, 1});
         return S.support_function(direction).item() + mu * gamma;
     };
     // the slopes of the generators are the breakpoints of the dual
-    const std::vector<double> G = S.generators().data();
+    const std::vector<double> G = detail::cora_generators(S).data();
     const std::size_t h = G.size() / 2;
     double least = dual(0.0);
     for (std::size_t j = 0; j < h; ++j) {
@@ -118,7 +119,8 @@ std::optional<Zonotope> aux_tighten(const Zonotope &Z, const Polytope &P) {
     } catch (const Error &) { // CORA falls back to the linear programs
         tight = cz.rescale("exact");
     }
-    return Zonotope(tight.c(), tight.generators());
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(tight.c(), tight.generators());
 }
 
 } // namespace

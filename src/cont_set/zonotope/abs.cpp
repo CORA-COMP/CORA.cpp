@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@zonotope/abs.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,7 +25,7 @@ namespace cora {
 
 Zonotope Zonotope::abs() const {
     detail::Entry entry;
-    return {c_.abs(), G_.abs()};
+    return {c_.abs(), G_.abs(), elem_rank_};
 }
 
 } // namespace cora

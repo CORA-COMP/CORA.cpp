@@ -4,7 +4,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -29,7 +29,7 @@ void plus_is_the_minkowski_sum(const std::string &b) {
     const Zonotope A = Zonotope::generate_random(rng, n, std::nullopt, 3),
                    B = Zonotope::generate_random(rng, n, std::nullopt, 2);
     const Zonotope S = A.plus(B);
-    check(S.generators().shape() == std::vector<int64_t>({n, 5}), b + ": generators are joined");
+    check(S.generators().shape() == std::vector<int64_t>({5, n}), b + ": generators are joined");
     check(close(S.center(), A.center() + B.center()), b + ": centres add");
     for (int k = 0; k < 5; ++k) {
         const std::vector<double> d = random_direction(rng, n);
@@ -41,7 +41,7 @@ void plus_is_the_minkowski_sum(const std::string &b) {
 void checks_and_their_switch() {
     const Zonotope S = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}})),
                    S3 = Zonotope(Tensor({1.0, 0.0, 0.0}),
-                                 Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+                                 Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     check(test::raises([&] { S.plus(S3); }, Error::dimension_mismatch), "plus: dimensions 2 and 3");
     const Tensor on = S.plus(S).center();
     ChecksScope off(false);

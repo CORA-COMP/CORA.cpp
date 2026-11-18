@@ -15,9 +15,9 @@
 //
 // CORA: contSet/@zonoBundle/representsa_.m
 // CORA authors: Mark Wetzlinger, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_set_type.h"
@@ -35,8 +35,12 @@ bool ZonoBundle::representsa(const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     CORA_CHECK(priv_is_set_type(type), Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
-    const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "representsa");
-    const detail::Refusal refusal = priv_batch_refusal(Z_.front().center(), "representsa");
+    // layout: #163 step 2
+    const double tol =
+        resolve_tol(entry, tol_arg, detail::cora_center(Z_.front()).dtype(), "representsa");
+    // layout: #163 step 2
+    const detail::Refusal refusal =
+        priv_batch_refusal(detail::cora_center(Z_.front()), "representsa");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     CORA_CHECK(!priv_type_in(type, {"point", "zonotope", "capsule", "ellipsoid", "conHyperplane",
                                     "parallelotope", "polygon"}),

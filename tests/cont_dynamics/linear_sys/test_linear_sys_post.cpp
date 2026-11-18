@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/post.m
 // CORA authors: Mark Wetzlinger, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -29,7 +29,7 @@ const alg::WrappingFree kWrappingFree{.time_step = kStep, .taylor_terms = kTerms
 void the_steps_enclose_the_trajectories(const std::string &b) {
     const Tensor A = diagonal(), B = Tensor::eye(2), u = test::column({0.5, -0.5});
     const LinearSys sys(A, B);
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.1}, {0.05}}));
+    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.1, 0.05}}));
     const Tensor w = u + Tensor({{0.1}, {0.05}});
     for (const alg::LinearReach &a :
          {alg::LinearReach(kStandard), alg::LinearReach(kWrappingFree)}) {
@@ -57,9 +57,11 @@ void checks_and_their_switch(const std::string &b) {
     check(test::raises([&] { sys.post(first.state, alg::Standard{.time_step = -1.0}); },
                        Error::wrong_value),
           b + ": a negative step");
-    const Tensor on = sys.post(first.state, kStandard).time_interval.center();
+    // layout: #163 step 2
+    const Tensor on = detail::cora_center(sys.post(first.state, kStandard).time_interval);
     ChecksScope off(false);
-    check(test::close(sys.post(first.state, kStandard).time_interval.center(), on, 0),
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(sys.post(first.state, kStandard).time_interval), on, 0),
           b + ": the same with the checks off");
 }
 

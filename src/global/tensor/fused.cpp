@@ -8,9 +8,9 @@
 // See also: derived.h, derived.cpp, ops.def
 //
 // CORA.cpp only: the fused Tensor primitives replace MATLAB's vectorised expressions.
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -28,6 +28,15 @@ void aux_require_matrix(const Tensor &t, const char *op) {
     if (t.ndim() < 2)
         CORA_FAIL(Error::dimension_mismatch,
                   std::string("CoraTensor::") + op + ": needs matrices (..., n, m)");
+}
+
+/// A center c (..., n) and generators G (..., m, n) whose rows have n entries.
+void aux_require_rows(const Tensor &c, const Tensor &G, int64_t n, const char *op) {
+    if (c.ndim() < 1 || G.ndim() < 2 || c.size(-1) != n || G.size(-1) != n)
+        CORA_FAIL(
+            Error::dimension_mismatch,
+            std::string("CoraTensor::") + op +
+                ": needs a center (..., n) and generators (..., m, n) for a matrix (..., k, n)");
 }
 
 /// The bounds of an interval matrix must agree in shape.
@@ -123,7 +132,8 @@ Tensor::Ptr Tensor::Impl::abs_sum() const { return derived::abs_sum(Tensor(self(
 
 std::pair<Tensor, Tensor> derived::zonotope_linear_map(const Tensor &M, const Tensor &c,
                                                        const Tensor &G) {
-    return {M.matmul(c), M.matmul(G)};
+    const Tensor Mt = M.matrix_transpose();
+    return {c.matmul(Mt), G.matmul(Mt)};
 }
 
 // T maps the zonotope; the box is R (|c| + sum|G|), R = max(|inf - T|, |sup - T|), as CORALean.
@@ -131,15 +141,16 @@ std::pair<Tensor, Tensor> derived::zonotope_interval_map(const Tensor &inf, cons
                                                          const Tensor &c, const Tensor &G) {
     const Tensor T = (inf + sup) * 0.5;
     const Tensor R = (inf - T).abs().maximum((sup - T).abs());
-    const Tensor reach = c.abs() + G.abs_sum();
-    const Tensor box = R.multiply(reach.matrix_transpose()).sum(-1, true);
-    return {T.matmul(c), Tensor::concat({T.matmul(G), box.diag()}, -1)};
+    const Tensor reach = c.abs() + G.abs().sum(-2, true);
+    const Tensor box = R.multiply(reach).sum(-1, true);
+    const Tensor Tt = T.matrix_transpose();
+    return {c.matmul(Tt), Tensor::concat({G.matmul(Tt), box.diag()}, -2)};
 }
 
 std::pair<Tensor, Tensor> derived::zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
                                                                const Tensor &c2, const Tensor &G2) {
     const Tensor mean = (G1 + G2) * 0.5, spread = (G1 - G2) * 0.5, shift = (c1 - c2) * 0.5;
-    return {(c1 + c2) * 0.5, Tensor::concat({mean, spread, shift}, -1)};
+    return {(c1 + c2) * 0.5, Tensor::concat({mean, spread, shift}, -2)};
 }
 
 // Entry (i, j) sums over q the smaller (larger) of inf_iq m_qj and sup_iq m_qj, as (.., n, q, m).
@@ -160,21 +171,23 @@ std::pair<Tensor, Tensor> derived::matmul_interval(const Tensor &M, const Tensor
 // Score sum|g| - max|g| per column, then a stable sort, largest first.
 std::pair<Tensor, Tensor> derived::girard_split(const Tensor &G, int64_t keep) {
     const Tensor A = G.abs();
-    const Tensor order = (A.sum(-2) - A.max(-2)).argsort(-1, true).expand_dims(-2);
-    return {order.slice(-1, 0, keep), order.slice(-1, keep, G.size(-1))};
+    const Tensor order = (A.sum(-1) - A.max(-1)).argsort(-1, true).expand_dims(-1);
+    return {order.slice(-2, 0, keep), order.slice(-2, keep, G.size(-2))};
 }
 
 Tensor derived::abs_sum(const Tensor &x) { return x.abs().sum(-1, true); }
 
 // The Front End -----------------------------------------------------------------------------------
 
-// The operands checked, then the backend's version.
+// The operands checked, then the backend's version on the center as a row (..., 1, n).
 std::pair<Tensor, Tensor> Tensor::zonotope_linear_map(const Tensor &M, const Tensor &c,
                                                       const Tensor &G) {
     detail::check_pair(M, c, "zonotope_linear_map");
     detail::check_pair(M, G, "zonotope_linear_map");
-    const auto [Mc, MG] = M.impl().zonotope_linear_map(c.impl(), G.impl());
-    return {Tensor(Mc), Tensor(MG)};
+    aux_require_matrix(M, "zonotope_linear_map");
+    aux_require_rows(c, G, M.size(-1), "zonotope_linear_map");
+    const auto [Mc, MG] = M.impl().zonotope_linear_map(c.expand_dims(-2).impl(), G.impl());
+    return {Tensor(Mc).squeeze(-2), Tensor(MG)};
 }
 
 // The bounds agree in shape, the inner sizes of the product match.
@@ -183,28 +196,31 @@ std::pair<Tensor, Tensor> Tensor::zonotope_interval_map(const Tensor &inf, const
     aux_require_bounds(inf, sup, "zonotope_interval_map");
     detail::check_pair(inf, c, "zonotope_interval_map");
     detail::check_pair(inf, G, "zonotope_interval_map");
-    const auto [Tc, TG] = inf.impl().zonotope_interval_map(sup.impl(), c.impl(), G.impl());
-    return {Tensor(Tc), Tensor(TG)};
+    aux_require_rows(c, G, inf.size(-1), "zonotope_interval_map");
+    const auto [Tc, TG] =
+        inf.impl().zonotope_interval_map(sup.impl(), c.expand_dims(-2).impl(), G.impl());
+    return {Tensor(Tc).squeeze(-2), Tensor(TG)};
 }
 
 std::pair<Tensor, Tensor> Tensor::zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
                                                               const Tensor &c2, const Tensor &G2) {
     for (const Tensor *t : {&G1, &c2, &G2})
         detail::check_pair(c1, *t, "zonotope_linear_combination");
-    for (const Tensor *t : {&c1, &G1, &c2, &G2})
-        aux_require_matrix(*t, "zonotope_linear_combination");
-    const int64_t n = G1.size(-2), m = G1.size(-1);
-    if (G2.size(-2) != n || G2.size(-1) != m || c1.size(-2) != n || c2.size(-2) != n ||
-        c1.size(-1) != 1 || c2.size(-1) != 1)
+    for (const Tensor *t : {&G1, &G2}) aux_require_matrix(*t, "zonotope_linear_combination");
+    // both sets of one dimension and one number of generators
+    const int64_t n = G1.size(-1), m = G1.size(-2);
+    if (G2.size(-1) != n || G2.size(-2) != m || c1.ndim() < 1 || c2.ndim() < 1 ||
+        c1.size(-1) != n || c2.size(-1) != n)
         CORA_FAIL(Error::dimension_mismatch,
-                  "CoraTensor::zonotope_linear_combination: needs centers (..., n, 1) and "
-                  "generators (..., n, m) alike");
+                  "CoraTensor::zonotope_linear_combination: needs centers (..., n) and "
+                  "generators (..., m, n) alike");
     // the shift (c1 - c2)/2 becomes a generator: all four take one batch, broadcast
-    const Shape batch = aux_common_batch({&c1, &G1, &c2, &G2}, "zonotope_linear_combination");
-    const Tensor a = aux_with_batch(c1, batch), A = aux_with_batch(G1, batch);
-    const Tensor b = aux_with_batch(c2, batch), B = aux_with_batch(G2, batch);
+    const Tensor r1 = c1.expand_dims(-2), r2 = c2.expand_dims(-2);
+    const Shape batch = aux_common_batch({&r1, &G1, &r2, &G2}, "zonotope_linear_combination");
+    const Tensor a = aux_with_batch(r1, batch), A = aux_with_batch(G1, batch);
+    const Tensor b = aux_with_batch(r2, batch), B = aux_with_batch(G2, batch);
     const auto [c, G] = a.impl().zonotope_linear_combination(A.impl(), b.impl(), B.impl());
-    return {Tensor(c), Tensor(G)};
+    return {Tensor(c).squeeze(-2), Tensor(G)};
 }
 
 // The interval products: bounds of one shape, a real matrix M, and matching inner sizes
@@ -233,9 +249,9 @@ std::pair<Tensor, Tensor> Tensor::matmul_interval(const Tensor &M, const Tensor 
 // Indices carry no gradient: a tensor that needs them is detached first.
 std::pair<Tensor, Tensor> Tensor::girard_split(int64_t keep) const {
     aux_require_matrix(*this, "girard_split");
-    if (keep < 0 || keep > size(-1))
+    if (keep < 0 || keep > size(-2))
         CORA_FAIL(Error::wrong_value, "CoraTensor::girard_split: keep " + std::to_string(keep) +
-                                          " of " + std::to_string(size(-1)) + " generators");
+                                          " of " + std::to_string(size(-2)) + " generators");
     const Tensor G = detail::without_gradient(TensorOp::girard_split, *this);
     const auto [kept, rest] = G.impl().girard_split(keep);
     return {Tensor(kept), Tensor(rest)};

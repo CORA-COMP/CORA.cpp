@@ -49,7 +49,7 @@ Polytope aux_guard(test::oracle::Random &rnd, const Tensor &x0, int64_t n, bool 
 void aux_sets(test::oracle::Random &rnd, const Tensor &x0, int64_t n, std::vector<Zonotope> &sets,
               std::vector<Set> &reach) {
     for (int k = 0; k < 4; ++k) {
-        sets.emplace_back(x0 + 0.1 * rnd.vector(n), rnd.matrix(n, n + 2));
+        sets.emplace_back(x0 + 0.1 * rnd.vector(n), rnd.matrix(n, n + 2).matrix_transpose());
         reach.emplace_back(sets.back());
     }
 }
@@ -59,9 +59,9 @@ void aux_sets(test::oracle::Random &rnd, const Tensor &x0, int64_t n, std::vecto
 void aux_dyadic(std::vector<Zonotope> &sets, std::vector<Set> &reach, Polytope &guard,
                 std::vector<Tensor> &bases) {
     sets.emplace_back(Tensor::from_data({0.25, 0.125}, {2, 1}),
-                      Tensor::from_data({0.5, 0.125, 0.0, 0.25}, {2, 2}));
+                      Tensor::from_data({0.5, 0.0, 0.125, 0.25}, {2, 2}));
     sets.emplace_back(Tensor::from_data({0.125, 0.25}, {2, 1}),
-                      Tensor::from_data({0.25, 0.0, 0.125, 0.5}, {2, 2}));
+                      Tensor::from_data({0.25, 0.125, 0.0, 0.5}, {2, 2}));
     for (const Zonotope &Z : sets) reach.emplace_back(Z);
     guard = Polytope(Tensor::from_data({1.0, 1.0}, {1, 2}), Tensor::from_data({0.3125}, {1, 1}));
     bases = {Tensor::eye(2), Tensor::from_data({0.0, 1.0, 1.0, 0.0}, {2, 2})};

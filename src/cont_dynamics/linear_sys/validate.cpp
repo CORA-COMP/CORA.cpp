@@ -9,9 +9,9 @@
 // See also: reach
 //
 // CORA.cpp only: MATLAB CORA checks params inside each reach (validateOptions).
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -44,7 +44,9 @@ void LinearSys::validate(const ReachProblem &problem) const {
         return "reach: the input set needs the dimension " + std::to_string(B_->shape().back()) +
                " of the columns of B, got " + std::to_string(U.dim());
     });
-    CORA_CHECK((A_sparse_ || A_.ndim() == 2) && problem.initial_set->center().shape().size() == 2,
+    // layout: #163 step 2
+    CORA_CHECK((A_sparse_ || A_.ndim() == 2) &&
+                   detail::cora_center(*problem.initial_set).shape().size() == 2,
                Error::not_supported, [] {
                    return std::string("reach: with an input set, one system and one initial set");
                });

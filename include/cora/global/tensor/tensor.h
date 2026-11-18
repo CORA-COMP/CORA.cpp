@@ -19,9 +19,9 @@
 // ones have portable defaults (src/global/tensor/) that a backend may override. Storage is shared
 // and immutable to users; an operation on an rvalue tensor that alone owns its memory may reuse it.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -605,15 +605,17 @@ class Tensor {
 
     // Fused primitives ----------------------------------------------------------------------------
 
-    /// M c and M G, the linear map of the zonotope (c, G).
+    /// M c and M G, the linear map of the zonotope of the center c (..., n) and the generators G
+    /// (..., m, n), one per row: c M' and G M' for M (..., k, n).
     static std::pair<Tensor, Tensor> zonotope_linear_map(const Tensor &M, const Tensor &c,
                                                          const Tensor &G);
-    /// The map of (c, G) by the interval matrix [inf, sup], CORALean's mtimesIntervalMat: T c and
-    /// [T G, diag(R (|c| + sum|G|))], T = (inf + sup) / 2, R the larger of |inf - T|, |sup - T|.
+    /// The map of (c, G) (as above) by the interval matrix [inf, sup], CORALean's
+    /// mtimesIntervalMat: T c and the rows [G T'; diag(R (|c| + sum|G|))], T = (inf + sup) / 2,
+    /// R the larger of |inf - T|, |sup - T|.
     static std::pair<Tensor, Tensor> zonotope_interval_map(const Tensor &inf, const Tensor &sup,
                                                            const Tensor &c, const Tensor &G);
-    /// CORA's linComb of (c1, G1) and (c2, G2) of one shape: (c1 + c2) / 2 and
-    /// [(G1 + G2) / 2, (G1 - G2) / 2, (c1 - c2) / 2].
+    /// CORA's linComb of (c1, G1) and (c2, G2) of one shape (centers (..., n), generators (..., m,
+    /// n)): (c1 + c2) / 2 and the rows [(G1 + G2) / 2; (G1 - G2) / 2; (c1 - c2) / 2].
     static std::pair<Tensor, Tensor> zonotope_linear_combination(const Tensor &c1, const Tensor &G1,
                                                                  const Tensor &c2,
                                                                  const Tensor &G2);
@@ -624,8 +626,8 @@ class Tensor {
     /// The bounds of M I: interval_matmul with the point matrix on the left.
     static std::pair<Tensor, Tensor> matmul_interval(const Tensor &M, const Tensor &inf,
                                                      const Tensor &sup);
-    /// The columns of G (..., n, m) by Girard's score sum|g| - max|g|, largest first and stable:
-    /// the indices (..., 1, keep) of the first `keep` and (..., 1, m - keep) of the rest.
+    /// The rows of G (..., m, n) by Girard's score sum|g| - max|g|, largest first and stable:
+    /// the indices (..., keep, 1) of the first `keep` and (..., m - keep, 1) of the rest.
     std::pair<Tensor, Tensor> girard_split(int64_t keep) const;
     /// sum(|x|) along the last axis, kept: (..., n, m) -> (..., n, 1).
     Tensor abs_sum() const;

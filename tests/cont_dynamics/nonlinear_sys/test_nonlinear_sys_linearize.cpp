@@ -9,7 +9,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -78,7 +78,9 @@ void linearize_by_hand(const std::string &b) {
               test::close(lin.u_const, {x0 * x1 + 0.5, std::sin(x0)}),
           b + ": f0 is the constant input");
     check(test::close(lin.sys.A(), {x1, x0, std::cos(x0), 0.0}), b + ": A at x*");
-    check(test::close(lin.U.center(), {0.0, 0.0}) && test::close(lin.U.generators(), {0.2, 0.0}),
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(lin.U), {0.0, 0.0}) &&
+              test::close(detail::cora_generators(lin.U), {0.2, 0.0}),
           b + ": the input set B (U - u*)");
 }
 

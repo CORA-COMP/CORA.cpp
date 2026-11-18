@@ -12,7 +12,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -26,14 +26,14 @@ namespace cora {
 
 std::pair<Zonotope, Zonotope> priv_split_generator(const Zonotope &Z, int64_t j) {
     const Tensor &G = Z.generators();
-    const int64_t m = G.shape().back();
-    const Tensor half = G.slice(-1, j, j + 1) * 0.5;
+    const int64_t m = G.size(-2);
+    const Tensor half = G.slice(-2, j, j + 1) * 0.5;
     std::vector<Tensor> parts;
-    if (j > 0) parts.push_back(G.slice(-1, 0, j));
+    if (j > 0) parts.push_back(G.slice(-2, 0, j));
     parts.push_back(half);
-    if (j + 1 < m) parts.push_back(G.slice(-1, j + 1, m));
-    const Tensor halved = Tensor::concat(parts, -1);
-    return {{Z.center() - half, halved}, {Z.center() + half, halved}};
+    if (j + 1 < m) parts.push_back(G.slice(-2, j + 1, m));
+    const Tensor halved = Tensor::concat(parts, -2), shift = half.squeeze(-2);
+    return {{Z.center() - shift, halved}, {Z.center() + shift, halved}};
 }
 
 } // namespace cora

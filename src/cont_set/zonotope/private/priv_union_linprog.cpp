@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -31,13 +31,14 @@ namespace cora {
 
 Zonotope priv_union_linprog(const Zonotope &iterative,
                             const std::function<Tensor(const Tensor &)> &support) {
-    const DType dtype = iterative.center().dtype();
+    const DType dtype = detail::cora_center(iterative).dtype();
     const Zonotope enclosure = iterative.compact("zeros", machine_eps(dtype));
-    const Tensor &G0 = enclosure.generators();
+    const Tensor &G0 = detail::cora_generators(enclosure);
     const Tensor length = G0.square().sum(-2, true).sqrt();
     const Tensor G = G0.multiply(length.ones_like().divide(length)); // unit generators
     const int64_t n = enclosure.dim(), ng = G.shape().back();
-    const auto [A, unused] = priv_zonotope_halfspaces({enclosure.center().zeros_like(), G0});
+    const auto [A, unused] =
+        priv_zonotope_halfspaces({detail::cora_center(enclosure).zeros_like(), G0});
     const Tensor d = support(A);
 
     // min sum(scal) s.t. A c + |A G| scal >= d, scal >= 0
@@ -63,7 +64,7 @@ Zonotope priv_union_linprog(const Zonotope &iterative,
     const Tensor c = Tensor::like(G, std::vector<double>(r.x.begin(), r.x.begin() + n), {n, 1});
     // the scaling of the generators is the second part of the solution
     const Tensor scal = Tensor::like(G, std::vector<double>(r.x.begin() + n, r.x.end()), {1, ng});
-    return {c, G.multiply(scal)};
+    return detail::zonotope_of_columns(c, G.multiply(scal));
 }
 
 } // namespace cora

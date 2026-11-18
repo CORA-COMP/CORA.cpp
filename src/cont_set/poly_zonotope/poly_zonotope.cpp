@@ -17,9 +17,9 @@
 // CORA: contSet/@zonotope/polyZonotope.m
 // CORA: contSet/@interval/polyZonotope.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -139,9 +139,10 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vect
 // The conversions ---------------------------------------------------------------------------------
 
 PolyZonotope::PolyZonotope(const Zonotope &Z)
-    : PolyZonotope(Z.center(), Z.generators(), Z.center().zeros_like({Z.dim(), 0}),
-                   aux_identity(Z.generators().shape().back()),
-                   aux_ids(Z.generators().shape().back())) {}
+    : PolyZonotope(detail::cora_center(Z), detail::cora_generators(Z),
+                   detail::cora_center(Z).zeros_like({Z.dim(), 0}),
+                   aux_identity(detail::cora_generators(Z).shape().back()),
+                   aux_ids(detail::cora_generators(Z).shape().back())) {}
 
 PolyZonotope::PolyZonotope(const Interval &I) : PolyZonotope(I.zonotope()) {}
 

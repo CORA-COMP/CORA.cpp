@@ -19,9 +19,9 @@
 // ORACLE: contDynamics/@nonlinearSys/nonlinearSys.m
 // ORACLE: contDynamics/@nonlinearSys/initReach.m
 // ORACLE: contDynamics/@nonlinearSys/post.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/nonlinear_sys.h"
@@ -227,17 +227,23 @@ void aux_recorded(const std::string &name, int count, bool car, bool closed_form
         std::istringstream(line) >> tag >> r.n >> r.m >> N >> M >> r.dt >> r.eta >> r.rho >> p;
         r.params = read(p);
         const std::vector<double> c = read(r.n), G = read(r.n * N);
-        Zonotope R(Tensor::from_data(c, {r.n, 1}), Tensor::from_data(G, {r.n, N}));
+        // layout: #163 step 2
+        Zonotope R = detail::zonotope_of_columns(Tensor::from_data(c, {r.n, 1}),
+                                                 Tensor::from_data(G, {r.n, N}));
         const std::vector<double> u_center = read(r.m), u_gens = read(r.m * M);
         std::optional<Zonotope> U;
         if (r.m > 0)
-            U = Zonotope(Tensor::from_data(u_center, {r.m, 1}),
-                         Tensor::from_data(u_gens, {r.m, M}));
+            U = detail::zonotope_of_columns(Tensor::from_data(u_center, {r.m, 1}),
+                                            Tensor::from_data(u_gens, {r.m, M}));
         in >> std::ws;
         // the car: the first five states, the first two inputs
         if (car) {
-            R = Zonotope(R.center().slice(-2, 0, 5), R.generators().slice(-2, 0, 5));
-            U = Zonotope(U->center().slice(-2, 0, 2), U->generators().slice(-2, 0, 2));
+            // layout: #163 step 2
+            R = detail::zonotope_of_columns(detail::cora_center(R).slice(-2, 0, 5),
+                                            detail::cora_generators(R).slice(-2, 0, 5));
+            // layout: #163 step 2
+            U = detail::zonotope_of_columns(detail::cora_center(*U).slice(-2, 0, 2),
+                                            detail::cora_generators(*U).slice(-2, 0, 2));
         }
         aux_compare(name + " step " + std::to_string(index), make(r), R, U, r.dt, r.eta, r.rho,
                     index == 0, closed_form && index == 0);
@@ -256,14 +262,14 @@ int main() {
     if (!oracle::available()) return 0;
     // the sets are made inside a pass, on its backend
     const auto vdp_R = [] {
-        return Zonotope(Tensor({1.4, 2.3}), Tensor({{0.05, 0.01, 0.002}, {0.0, 0.05, 0.003}}));
+        return Zonotope(Tensor({1.4, 2.3}), Tensor({{0.05, 0.0}, {0.01, 0.05}, {0.002, 0.003}}));
     };
     const auto vdp_U = [] { return Zonotope(Tensor({0.0}), Tensor({{0.1}})); };
     oracle::run("nonlinearSys.linReach", [&](oracle::Random &) {
         aux_compare("van der Pol", van_der_pol(), vdp_R(), vdp_U(), 0.02);
         const Zonotope rob_R(Tensor({1.0, 0.0, 0.0}),
                              Tensor({{1e-3, 0.0, 0.0}, {0.0, 1e-4, 0.0}, {0.0, 0.0, 1e-4}}));
-        aux_compare("Robertson", robertson(), rob_R, Zonotope(Tensor({0.0}), Tensor::zeros({1, 0})),
+        aux_compare("Robertson", robertson(), rob_R, Zonotope(Tensor({0.0}), Tensor::zeros({0, 1})),
                     0.001, 4, 50, true, false);
         // a time step too large for the region: the step fails in both
         aux_compare("van der Pol, large step", van_der_pol(), vdp_R(), vdp_U(), 3.0, 4, 50, false);

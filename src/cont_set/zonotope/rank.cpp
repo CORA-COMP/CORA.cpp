@@ -11,7 +11,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -29,7 +29,7 @@ int64_t Zonotope::rank(Tol tol_arg) const {
     CORA_CHECK(G_.ndim() == 2, Error::not_supported, [] {
         return std::string("rank: a rank per zonotope: it supports a single zonotope, not a batch");
     });
-    return G_.shape().back() == 0 ? 0 : G_.matrix_rank(tol);
+    return nr_generators() == 0 ? 0 : G_.matrix_rank(tol);
 }
 
 } // namespace cora

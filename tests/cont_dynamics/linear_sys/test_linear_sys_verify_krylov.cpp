@@ -9,9 +9,9 @@
 // sqrt(2) + 0 near t = 0 and its maximum is 0.62 (t about 4.8).
 //
 // CORA.cpp only: no counterpart in CORA v2026.1.0 (see priv_verify_ra_krylov.cpp)
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -62,17 +62,20 @@ double exact_maximum(const Tensor &A, const Tensor &B, const Tensor &C, const Zo
                      const Zonotope &U, const Tensor &l, double t_final, int n) {
     const Tensor d = C.matrix_transpose().matmul(l);
     const Tensor At = A.matrix_transpose();
-    const Tensor &G0 = R0.generators(), &GU = U.generators();
+    // layout: #163 step 2
+    const Tensor &G0 = detail::cora_generators(R0), &GU = detail::cora_generators(U);
     double best = -1e300, integral = 0, previous_f = 0;
     for (int i = 0; i <= n; ++i) {
         const double t = t_final * i / n;
         const Tensor z = (At * t).expm().matmul(d);
         const Tensor zb = B.matrix_transpose().matmul(z);
-        const double f = zb.matrix_transpose().matmul(U.center()).item() +
+        // layout: #163 step 2
+        const double f = zb.matrix_transpose().matmul(detail::cora_center(U)).item() +
                          zb.matrix_transpose().matmul(GU).abs().sum().item();
         if (i > 0) integral += 0.5 * (f + previous_f) * t_final / n;
         previous_f = f;
-        const double h = z.matrix_transpose().matmul(R0.center()).item() +
+        // layout: #163 step 2
+        const double h = z.matrix_transpose().matmul(detail::cora_center(R0)).item() +
                          z.matrix_transpose().matmul(G0).abs().sum().item() + integral;
         best = std::max(best, h);
     }

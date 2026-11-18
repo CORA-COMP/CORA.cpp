@@ -3,9 +3,9 @@
 // CORA: contSet/@contSet/lift.m
 // CORA: contSet/@contSet/lift_.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -44,9 +44,11 @@ void lift_by_class(const std::string &b) {
           b + ": the default positions 0..n-1");
 
     const Zonotope Z(column({1.0, 2.0, 3.0}),
-                     Tensor::from_data({1.0, 0.0, 0.0, 2.0, 0.0, 0.0}, {3, 2}));
+                     Tensor::from_data({1.0, 0.0, 0.0, 0.0, 2.0, 0.0}, {2, 3}));
     const Set P = static_cast<const ContSet &>(Z).lift(3, std::vector<int64_t>{1, 2, 0});
-    check(P.is<Zonotope>() && test::close(P.as<Zonotope>().center(), {3.0, 1.0, 2.0}),
+    // layout: #163 step 2
+    check(P.is<Zonotope>() &&
+              test::close(P.as<Zonotope>().center().expand_dims(-1), {3.0, 1.0, 2.0}),
           b + ": a zonotope is permuted");
     check(static_cast<const ContSet &>(Z).lift(3).as<Zonotope>().isequal(Z),
           b + ": the default positions of a zonotope");
@@ -56,7 +58,7 @@ void lift_by_class(const std::string &b) {
                   .lift(3, std::vector<int64_t>{1, 2, 0})
                   .as<Zonotope>()
                   .center()
-                  .shape() == Shape({2, 3, 1}),
+                  .shape() == Shape({2, 3}),
           b + ": a batch of zonotopes");
 }
 
@@ -80,7 +82,7 @@ void errors_and_their_switch() {
     check(test::raises([&] { S.lift(3, std::vector<int64_t>{-1, 0}); }, Error::wrong_value),
           "a negative position");
     check(test::raises([] { test::UnregisteredSet().lift(3); }, Error::noops), "noops");
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1.0, 0.0}, {2, 1}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1.0, 0.0}, {1, 2}));
     check(test::raises([&] { static_cast<const ContSet &>(Z).lift(3); }, Error::not_defined),
           "a zonotope cannot have unbounded dimensions");
     check(test::raises([&] { static_cast<const ContSet &>(Z).lift(2, std::vector<int64_t>{1, 1}); },

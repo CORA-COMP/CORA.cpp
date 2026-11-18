@@ -7,7 +7,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -29,8 +29,14 @@ namespace {
 
 /// CORA's unit test: eight generators in two dimensions reduced to order 1.
 Zonotope example() {
-    return {column({1.0, 0.0}), Tensor({{1.0, 3.0, -2.0, 3.0, -1.0, 0.0, 2.0, 3.0},
-                                        {2.0, -1.0, 1.0, 0.0, 3.0, -2.0, 1.0, 2.0}})};
+    return {column({1.0, 0.0}), Tensor({{1.0, 2.0},
+                                        {3.0, -1.0},
+                                        {-2.0, 1.0},
+                                        {3.0, 0.0},
+                                        {-1.0, 3.0},
+                                        {0.0, -2.0},
+                                        {2.0, 1.0},
+                                        {3.0, 2.0}})};
 }
 
 /// kochdumper by hand: the longest generator (3, 2) stays, the others (signed by their first
@@ -39,7 +45,7 @@ void kochdumper_by_hand(const std::string &b) {
     for (const char *name : {"kochdumper", "sum"}) {
         const Zonotope R = example().reduce_under_approx(name, 1);
         check(close(R.center(), std::vector<double>{1, 0}, 0), b + ": the center stays");
-        check(close(R.generators(), std::vector<double>{3, 12, 2, -2}, 1e-14),
+        check(close(R.generators(), std::vector<double>{3, 2, 12, -2}, 1e-14),
               b + ": " + name + ": generators (3, 2) and (12, -2)");
     }
 }
@@ -49,7 +55,7 @@ void kochdumper_by_hand(const std::string &b) {
 /// with, the sign pattern is applied to the generators in their original order.
 void raghuraman_by_hand(const std::string &b) {
     const Zonotope R = example().reduce_under_approx("raghuraman", 1);
-    check(close(R.generators(), std::vector<double>{2, 5, 4, 0}, 1e-14),
+    check(close(R.generators(), std::vector<double>{2, 4, 5, 0}, 1e-14),
           b + ": generators (2, 4) and (5, 0)");
     // a small generator orthogonal to the big one: CORA divides 0/0 and gets NaN, this drops it
     const Zonotope Z(column({0.0, 0.0}), Tensor({{3.0, 0.0}, {0.0, 1.0}}));
@@ -60,10 +66,10 @@ void raghuraman_by_hand(const std::string &b) {
 
 /// Few enough generators: the zonotope without its zero generators.
 void nothing_to_reduce(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0, 2.0}, {0.0, 0.0, 1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}, {2.0, 1.0}}));
     for (const char *name : {"yang", "raghuraman", "kochdumper"}) {
         const Zonotope R = Z.reduce_under_approx(name, 1);
-        check(close(R.generators(), std::vector<double>{1, 2, 0, 1}, 0),
+        check(close(R.generators(), std::vector<double>{1, 0, 2, 1}, 0),
               b + ": " + name + ": two generators in two dimensions stay");
     }
 }
@@ -76,7 +82,7 @@ void result_is_inside(const std::string &b) {
         for (const auto &[n, m, order] : {std::tuple{2, 8, 1.0}, {3, 9, 2.0}, {2, 12, 2.5}}) {
             const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
             const Zonotope R = Z.reduce_under_approx(name, order);
-            check(double(R.generators().shape().back()) <= order * n,
+            check(double(R.nr_generators()) <= order * n,
                   b + ": " + name + ": at most order * n generators");
             check(close(R.center(), Z.center(), 0), b + ": " + name + ": the center");
             check(Z.contains(R, "exact", 1e-10), b + ": " + name + ": the result is inside Z");

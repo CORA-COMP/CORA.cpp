@@ -2,9 +2,9 @@
 //
 // The result lists the members of both sets: differentiable in every one.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_gradients.h"
@@ -24,7 +24,7 @@ void intersect_gradient() {
         "intersect",
         [](const Inputs &x) {
             const ZonoBundle R = test::bundle(x, 0, 2).intersect(test::bundle(x, 4, 1));
-            return test::parts(R.intersect(Zonotope(x[6], x[7])));
+            return test::parts(R.intersect(detail::zonotope_of_columns(x[6], x[7])));
         },
         test::joined(test::random_bundle_parts(2, 2, 3), test::random_bundle_parts(2, 2, 3)));
 }

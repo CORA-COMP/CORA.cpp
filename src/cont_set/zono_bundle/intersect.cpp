@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@zonoBundle/and_.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -38,15 +38,17 @@ ZonoBundle aux_appended(const ZonoBundle &bundle, const std::vector<Zonotope> &m
 
 ZonoBundle ZonoBundle::intersect(const ZonoBundle &S) const {
     detail::Entry entry;
-    const detail::Refusal r =
-        priv_operand_refusal(*this, S.dim(), S.zonotopes().front().center(), "intersect");
+    const detail::Refusal r = priv_operand_refusal(
+        *this, S.dim(), detail::cora_center(S.zonotopes().front()), "intersect");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     return aux_appended(*this, S.zonotopes());
 }
 
 ZonoBundle ZonoBundle::intersect(const Zonotope &Z) const {
     detail::Entry entry;
-    const detail::Refusal r = priv_operand_refusal(*this, Z.dim(), Z.center(), "intersect");
+    // layout: #163 step 2
+    const detail::Refusal r =
+        priv_operand_refusal(*this, Z.dim(), detail::cora_center(Z), "intersect");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     return aux_appended(*this, {Z});
 }

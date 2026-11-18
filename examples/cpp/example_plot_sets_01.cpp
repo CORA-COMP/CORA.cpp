@@ -7,9 +7,9 @@
 // Outputs:  example_plot_sets_01_1d.svg, _2d.svg and _3d.svg
 // See also: example_plot_sets_01 of the Python examples, example_plot_tikz_01_group
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
@@ -28,7 +28,7 @@ int main() {
     // Sets ------------------------------------------------------------------------------------
 
     const Zonotope Z(Tensor({0, 0, 0}),
-                     Tensor({{1, 0, 0.5, 0.2}, {0, 1, 0.5, -0.3}, {0, 0, 1, 0.4}}));
+                     Tensor({{1, 0, 0}, {0, 1, 0}, {0.5, 0.5, 1}, {0.2, -0.3, 0.4}}));
     const Interval I(Tensor({-1.5, -1, -0.5}), Tensor({0.5, 1.5, 2}));
 
     // One Dimension ---------------------------------------------------------------------------

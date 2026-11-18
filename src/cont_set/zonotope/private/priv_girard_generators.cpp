@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -26,10 +26,10 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Tensor priv_girard_generators(const Tensor &G, int64_t keep) {
-    // the choice is made on detached values; the result takes its columns from G, with gradients
+    // the choice is made on detached values; the result takes its rows from G, with gradients
     const auto [kept, rest] = G.detach().girard_split(keep);
-    const Tensor box = G.take_along_axis(rest, -1).abs_sum().diag();
-    return keep == 0 ? box : Tensor::concat({G.take_along_axis(kept, -1), box}, -1);
+    const Tensor box = G.take_along_axis(rest, -2).abs().sum(-2).expand_dims(-1).diag();
+    return keep == 0 ? box : Tensor::concat({G.take_along_axis(kept, -2), box}, -2);
 }
 
 } // namespace cora

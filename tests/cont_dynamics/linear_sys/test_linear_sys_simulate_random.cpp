@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@contDynamics/simulateRandom.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -26,7 +26,7 @@ namespace {
 
 /// `simulate_random` draws from the initial set: same seed, same trajectories.
 void simulate_random_is_seeded(const std::string &b) {
-    const Zonotope X0(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.1, 0.1}}));
+    const Zonotope X0(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.1}, {0.0, 0.5, 0.1}}));
     const LinearSys sys(tensor_of(oscillator3()));
     cora::Rng first(5), second(5), other(6);
     const std::vector<Tensor> a = sys.simulate_random({.initial_set = X0, .t_final = 1.0},

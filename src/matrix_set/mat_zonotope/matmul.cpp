@@ -20,7 +20,7 @@
 // CORA authors: Matthias Althoff, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
@@ -102,7 +102,8 @@ MatZonotope MatZonotope::matmul(double s) const {
 // the zonotope that encloses {M z}: the generators of the product are the three kinds of CORA
 Zonotope MatZonotope::matmul(const Zonotope &Z) const {
     detail::Entry entry;
-    const Tensor &c = Z.center(), &g = Z.generators();
+    // layout: #163 step 2
+    const Tensor &c = detail::cora_center(Z), &g = detail::cora_generators(Z);
     // the dimension of the zonotope, the scalar expansion of a 1 x 1 set, and the batches
     CORA_CHECK(cols() == c.size(-2) || aux_scalar(*this), Error::dimension_mismatch, [&] {
         return "matmul: the zonotope needs " + std::to_string(cols()) + " dimensions, got " +
@@ -128,7 +129,8 @@ Zonotope MatZonotope::matmul(const Zonotope &Z) const {
     std::vector<Tensor> columns_of_g{C_.matmul(g)};
     for (const Tensor &part : {on_center, mixed})
         if (part.size(-1) > 0) columns_of_g.push_back(part);
-    return Zonotope(C_.matmul(c), Tensor::concat(columns_of_g, -1));
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(C_.matmul(c), Tensor::concat(columns_of_g, -1));
 }
 
 } // namespace cora

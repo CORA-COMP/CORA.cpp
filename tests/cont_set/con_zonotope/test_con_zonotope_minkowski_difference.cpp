@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/minkDiff.m
 // PROPERTY: contSet/@conZonotope/minkDiff.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -52,7 +52,7 @@ void minkowski_difference_property(const std::string &b) {
         const ConZonotope cz =
             test::random_con_zonotope(rng, 2, 4, 1)
                 .plus(ConZonotope(column({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 4.0}})));
-        const Zonotope S(column({0.0, 0.0}), Tensor({{0.2, 0.1}, {0.0, 0.2}}));
+        const Zonotope S(column({0.0, 0.0}), Tensor({{0.2, 0.0}, {0.1, 0.2}}));
         const ConZonotope r = cz.minkowski_difference(Set(S)).as<ConZonotope>();
         if (r.representsa("emptySet")) continue;
         const Interval sum = r.plus(S).interval(), box = cz.interval();

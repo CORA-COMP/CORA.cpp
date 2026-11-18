@@ -8,7 +8,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -120,7 +120,11 @@ void agrees_with_standard() {
                           (Ik.sup() - Is.sup()).abs().max().item()});
         same = std::max(
             same,
-            (Rk.time_point[k].generators() - Rd.time_point[k].generators()).abs().max().item());
+            // layout: #163 step 2
+            (detail::cora_generators(Rk.time_point[k]) - detail::cora_generators(Rd.time_point[k]))
+                .abs()
+                .max()
+                .item());
     }
     check(worst < 1e-9, "krylov: the time points of standard, off by " + std::to_string(worst));
     check(same == 0, "krylov: a sparse and a dense A give the same sets");
@@ -136,13 +140,15 @@ void encloses_trajectories() {
     B(3, 0) = 1.0;
     cora::Rng rng(11);
     const Zonotope R0 = Zonotope::generate_random(rng, n, std::nullopt, 2);
-    const Zonotope U(Tensor({{0.7}}), Tensor::zeros({1, 0}));
+    const Zonotope U(Tensor({{0.7}}), Tensor::zeros({0, 1}));
     const double dt = 0.1;
     const LinearSys sys(S, tensor_of(B), tensor_of(C));
     const ReachSet R = sys.reach({.initial_set = R0, .input_set = U, .t_final = 1.0},
                                  alg::Krylov{.time_step = dt});
-    const Eigen::MatrixXd c0 = host_matrix(R0.center().data(), n, 1),
-                          g0 = host_matrix(R0.generators().data(), n, 2);
+    // layout: #163 step 2
+    const Eigen::MatrixXd c0 = host_matrix(detail::cora_center(R0).data(), n, 1),
+                          // layout: #163 step 2
+        g0 = host_matrix(detail::cora_generators(R0).data(), n, 2);
     // the flow of the integrator system [A B u; 0 0] carries the constant input
     Eigen::MatrixXd Aint = Eigen::MatrixXd::Zero(n + 1, n + 1);
     Aint.topLeftCorner(n, n) = A;
@@ -180,8 +186,10 @@ void restarted_windows_enclose_trajectories() {
     const ReachSet R =
         sys.reach({.initial_set = R0, .t_final = t_final},
                   alg::Krylov{.time_step = dt, .krylov_error = 1e-8, .krylov_step = 5});
-    const Eigen::MatrixXd c0 = host_matrix(R0.center().data(), n, 1),
-                          g0 = host_matrix(R0.generators().data(), n, 2);
+    // layout: #163 step 2
+    const Eigen::MatrixXd c0 = host_matrix(detail::cora_center(R0).data(), n, 1),
+                          // layout: #163 step 2
+        g0 = host_matrix(detail::cora_generators(R0).data(), n, 2);
     // points of R0 along their exact trajectories, in the directions of the time points
     double worst = 1e9;
     for (int i = 0; i < 20; ++i) {
@@ -201,7 +209,7 @@ void restarted_windows_enclose_trajectories() {
 /// same.
 void checks_and_their_switch() {
     const LinearSys sys(heat_grid(2), Tensor::zeros({8, 1}));
-    const Zonotope R0(Tensor::ones({8, 1}), Tensor::zeros({8, 0}));
+    const Zonotope R0(Tensor::ones({8, 1}), Tensor::zeros({0, 8}));
     const ReachProblem problem{.initial_set = R0, .t_final = 0.2};
     // the options: a time step, a positive step of the order, a nonnegative error
     check(test::raises([&] { sys.reach(problem, alg::Krylov{}); }, Error::wrong_value),
@@ -222,12 +230,17 @@ void checks_and_their_switch() {
           "krylov: a batch of initial sets");
     // the result with the checks on, then off
     const double on =
-        sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back().center().sum().item();
+        // layout: #163 step 2
+        detail::cora_center(sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back())
+            .sum()
+            .item();
     ChecksScope off(false);
     // the same with the checks off
     check(
-        sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back().center().sum().item() ==
-            on,
+        // layout: #163 step 2
+        detail::cora_center(sys.reach(problem, alg::Krylov{.time_step = 0.1}).time_point.back())
+                .sum()
+                .item() == on,
         "krylov: the same with the checks off");
 }
 

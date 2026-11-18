@@ -10,7 +10,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -195,13 +195,15 @@ inline SparseMatrix read_sparse(const Json &entry, const std::string &bin) {
             std::vector<double>(vals, vals + nnz)};
 }
 
-/// A zonotope from its center (n, 1) and generators (n, m); no generators become one zero one.
+/// A zonotope from MATLAB's center (n, 1) and generator columns (n, m), the one place the exported
+/// columns become rows (#163); no generators become one zero one.
 inline Zonotope read_zonotope(const Json &matrices, const std::string &bin, const std::string &c,
                               const std::string &G) {
     const int64_t n = matrices[c]["shape"][0].integer(), m = matrices[G]["shape"][1].integer();
     const Tensor center = Tensor::from_data(read_matrix(matrices[c], bin), {n, 1});
-    if (m == 0) return Zonotope(center, Tensor::zeros({n, 1}));
-    return Zonotope(center, Tensor::from_data(read_matrix(matrices[G], bin), {n, m}));
+    if (m == 0) return Zonotope(center, Tensor::zeros({1, n}));
+    return Zonotope(center,
+                    Tensor::from_data(read_matrix(matrices[G], bin), {n, m}).matrix_transpose());
 }
 
 inline Tensor read_tensor(const Json &matrices, const std::string &bin, const std::string &name) {

@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   06-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -88,15 +88,16 @@ Tensor Zonotope::volume(const std::string &method, int order) const {
         return std::string("volume: the method 'reduce' needs the order reduction 'pca', which "
                            "reduce does not have");
     });
-    const int64_t n = dim(), m = G_.shape().back();
-    Shape shape = c_.shape();
+    const int64_t n = dim(), m = nr_generators();
+    Shape shape = detail::cora_center(*this).shape();
     shape[shape.size() - 2] = 1;
-    const Tensor zero = c_.zeros_like(shape);
+    const Tensor zero = detail::cora_center(*this).zeros_like(shape);
     if (m < n) return zero;
-    const Tensor deficient = aux_rank_deficient(G_);
+    const Tensor deficient = aux_rank_deficient(detail::cora_generators(*this));
     // the exact or the Gram volume, zero if the generators are deficient
-    const Tensor value =
-        method == "exact" ? aux_sum_of_determinants(G_) : aux_gram_volume(G_, deficient);
+    const Tensor value = method == "exact"
+                             ? aux_sum_of_determinants(detail::cora_generators(*this))
+                             : aux_gram_volume(detail::cora_generators(*this), deficient);
     // 2^n is a power of two: the scaling is exact
     return Tensor::where(deficient, zero, value * std::ldexp(1.0, int(n)));
 }

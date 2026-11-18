@@ -7,7 +7,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -29,8 +29,10 @@ using Refusal = std::optional<std::pair<Error::Id, std::string>>;
 
 // Helpers -----------------------------------------------------------------------------------------
 
-/// The given columns of G (..., n, m), in that order; none is allowed.
-Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns);
+/// The given generators of G along `axis`, in that order; none is allowed: the rows of
+/// (..., m, n) by default, the columns of CORA's (..., n, m) with axis -1.
+Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns, int axis = -2);
+
 
 /// Why is_intersecting refuses a call, if it does: a type other than "exact" and "approx", or a
 /// batch (a linear program per pair); c and other are the centers of the two sets.
@@ -39,11 +41,16 @@ Refusal priv_intersecting_refusal(const std::string &type, const Tensor &c, cons
 /// The same for points p (n, N) of a set of dimension n: p must be a matrix of that many rows.
 Refusal priv_intersecting_points_refusal(const std::string &type, const Tensor &c, const Tensor &p);
 
-/// The generators (..., r, keep + r) after Girard's reduction of G (..., r, m): the keep generators
-/// of the largest score ||g||_1 - ||g||_inf, then a box generator per row for the others.
+/// The generators (..., keep + r, r) after Girard's reduction of the rows G (..., m, r): the keep
+/// generators of the largest score ||g||_1 - ||g||_inf, then a box generator per dimension.
+
 Tensor priv_girard_generators(const Tensor &G, int64_t keep);
 
+/// A point v for Z: a column (..., n, 1) as a row (..., n), a row as it is (layout: #163 step 2).
+Tensor priv_point_row(const Tensor &v, const Zonotope &Z);
+
 /// The shape of the batch of `like` followed by (rows, cols).
+
 Shape priv_batch_shape(const Tensor &like, int64_t rows, int64_t cols);
 
 /// One output of a quadratic map: its center (..., 1, 1) and a row of generators (..., 1, width).

@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -30,7 +30,7 @@ namespace {
 std::vector<double> run(const std::string &algorithm) {
     const Tensor A({{-0.2, 1.0, 0.0}, {-1.0, -0.2, 0.3}, {0.0, -0.4, -0.1}});
     const Zonotope X0(Tensor({1.0, 0.5, -0.3}),
-                      Tensor({{0.1, 0.0, 0.05}, {0.0, 0.2, 0.0}, {0.1, 0.0, 0.1}}));
+                      Tensor({{0.1, 0.0, 0.1}, {0.0, 0.2, 0.0}, {0.05, 0.0, 0.1}}));
     const ReachSet R = LinearSys(A).reach({.initial_set = X0, .t_final = 1.0},
                                           test::lin::algorithm(algorithm, 0.1, 8));
     std::vector<double> all;

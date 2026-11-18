@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonoBundle/replace.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -22,16 +22,19 @@ using test::column;
 int main() {
     test::for_each_backend([](const std::string &b) {
         const ZonoBundle zono_bundle = test::two_zonotopes();
-        const Zonotope W(column({3.0, 3.0}), Tensor({{1.0}, {1.0}}));
+        const Zonotope W(column({3.0, 3.0}), Tensor({{1.0, 1.0}}));
         const ZonoBundle R = zono_bundle.replace(1, W);
-        check(R.parallel_sets() == 2 && close(R.zonotopes()[1].center(), {3, 3}, 0) &&
-                  close(R.zonotopes()[0].center(), {0, 0}, 0),
+        // layout: #163 step 2
+        check(R.parallel_sets() == 2 && close(detail::cora_center(R.zonotopes()[1]), {3, 3}, 0) &&
+                  // layout: #163 step 2
+                  close(detail::cora_center(R.zonotopes()[0]), {0, 0}, 0),
               b + ": member 1 replaced, member 0 kept");
-        check(close(zono_bundle.zonotopes()[1].center(), {1, 0}, 0),
+        // layout: #163 step 2
+        check(close(detail::cora_center(zono_bundle.zonotopes()[1]), {1, 0}, 0),
               b + ": the original is unchanged");
     });
     const ZonoBundle zono_bundle = test::two_zonotopes();
-    const Zonotope W(column({3.0, 3.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope W(column({3.0, 3.0}), Tensor({{1.0, 1.0}}));
     // wrong input is refused; the same call works with the checks off
     check(test::raises([&] { zono_bundle.replace(2, W); }, Error::wrong_value),
           "replace: an index too big");

@@ -10,7 +10,7 @@
 // CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   06-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "global/backend/host_tensor.h"
@@ -568,6 +568,9 @@ Tensor::Ptr HostTensor<T>::reduce(Reduce op, int axis, bool keepdims) const {
     axis = axis_of(axis, shape.size(), "reduce");
     if (backend == backend_id::eigen && op == Reduce::sum && axis + 1 == shape.size())
         return eigen::sum_last(*this, keepdims);
+    // the sum over the rows of each matrix (the generator axis), columnwise
+    if (backend == backend_id::eigen && op == Reduce::sum && axis + 2 == shape.size())
+        return eigen::sum_rows(*this, keepdims);
     const Extents e = aux_extents(shape, axis);
     auto r = fresh(aux_reduced(shape, axis, keepdims));
     if (e.len == 0 && op != Reduce::sum && op != Reduce::prod)

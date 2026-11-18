@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/mtimes.m
 // PROPERTY: contSet/@zonoBundle/mtimes.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -25,15 +25,19 @@ void linear_map_known(const std::string &b) {
     const ZonoBundle zono_bundle = test::two_zonotopes();
     const Tensor M({{1.0, 0.0}, {0.0, 2.0}});
     const ZonoBundle R = zono_bundle.linear_map(M);
-    check(R.parallel_sets() == 2 && close(R.zonotopes()[0].generators(), {2, 0, 0, 2}, 0) &&
-              close(R.zonotopes()[1].center(), {1, 0}, 0) &&
-              close(R.zonotopes()[1].generators(), {1, 1, 0, 2}, 0),
+    // layout: #163 step 2
+    check(R.parallel_sets() == 2 &&
+              close(detail::cora_generators(R.zonotopes()[0]), {2, 0, 0, 2}, 0) &&
+              // layout: #163 step 2
+              close(detail::cora_center(R.zonotopes()[1]), {1, 0}, 0) &&
+              // layout: #163 step 2
+              close(detail::cora_generators(R.zonotopes()[1]), {1, 1, 0, 2}, 0),
           b + ": the members are M c and M G");
     check(zono_bundle.linear_map(Tensor({{1.0, 1.0}})).dim() == 1,
           b + ": a row map gives one dimension");
     const Set via_set = Set(zono_bundle)->linear_map(M);
     check(via_set.is<ZonoBundle>() &&
-              close(via_set.as<ZonoBundle>().zonotopes()[1].generators(), {1, 1, 0, 2}, 0),
+              close(via_set.as<ZonoBundle>().zonotopes()[1].generators(), {1, 0, 1, 2}, 0),
           b + ": through the interface");
 }
 

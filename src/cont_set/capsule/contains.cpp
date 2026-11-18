@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -38,7 +38,7 @@ detail::Refusal aux_zonotope_refusal(const Capsule &C, const Zonotope &Z) {
         return std::pair{Error::dimension_mismatch, "the sets differ in dimension, " +
                                                         std::to_string(C.dim()) + " and " +
                                                         std::to_string(Z.dim())};
-    if (Z.compact().generators().shape().back() > Zonotope::kMaxCornerGenerators)
+    if (Z.compact().nr_generators() > Zonotope::kMaxCornerGenerators)
         return std::pair{Error::not_supported,
                          std::string("a set of more than 12 generators has too many corners to "
                                      "test one by one")};

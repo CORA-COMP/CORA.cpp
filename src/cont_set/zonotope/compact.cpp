@@ -15,7 +15,7 @@
 // CORA authors: Mark Wetzlinger, Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -30,22 +30,26 @@ namespace cora {
 
 namespace {
 
+// Zero generators ---------------------------------------------------------------------------------
+
 /// The generators of norm > tol (and not all zero), CORA's nonzeroFilter; of a batch, those that
 /// some member keeps.
 Tensor aux_nonzero_filter(const Tensor &G, double tol) {
     const Tensor values = G.detach(); // the choice carries no gradient
     const Tensor entries = values.not_equal(values.zeros_like());
-    const Tensor norm = values.vector_norm(Tensor::Norm::two, -2);
-    Tensor keep = entries.any(-2).multiply(norm.greater(norm.full_like(norm.shape(), tol)));
+    const Tensor norm = values.vector_norm(Tensor::Norm::two, -1);
+    Tensor keep = entries.any(-1).multiply(norm.greater(norm.full_like(norm.shape(), tol)));
     while (keep.ndim() > 1) keep = keep.any(0);
     return priv_select_generators(G, keep.nonzero());
 }
 
+// Parallel generators -----------------------------------------------------------------------------
+
 /// Merges the generators that are parallel to a longer one (CORA's aux_deleteAligned): the
 /// columns by ascending length, each kept one absorbs those parallel to it (those antiparallel
-/// with a minus), by tensor operations; G is (n, m).
-Tensor aux_delete_aligned(const Tensor &G_in, double tol) {
-    const Tensor G0 = aux_nonzero_filter(G_in, tol);
+/// with a minus), by tensor operations; G is CORA's (n, m).
+Tensor aux_delete_aligned(const Tensor &G_rows, double tol) {
+    const Tensor G0 = aux_nonzero_filter(G_rows, tol).matrix_transpose();
     if (G0.shape()[0] == 1) return G0.abs_sum();
     const int64_t m = G0.shape().back();
     if (m == 0) return G0;
@@ -76,7 +80,7 @@ Tensor aux_delete_aligned(const Tensor &G_in, double tol) {
         const Tensor absorbed = p.multiply(at_i.negative() + 1.0).maximum(a);
         keep = Tensor::where(merge, keep.multiply(absorbed.negative() + 1.0), keep);
     }
-    return priv_select_generators(G, keep.nonzero());
+    return priv_select_generators(G, keep.nonzero(), -1);
 }
 
 } // namespace
@@ -93,11 +97,21 @@ Zonotope Zonotope::compact(const std::optional<std::string> &method_arg, Tol tol
             return "compact: the method must be 'zeros', 'all' or 'aligned', got '" + method + "'";
         });
     if (method == "aligned") return *this;
-    if (method == "zeros") return {c_, aux_nonzero_filter(G_, tol)};
+    if (method == "zeros") {
+        if (elem_rank_ == 1) return {c_, aux_nonzero_filter(G_, tol)};
+        // a matrix zonotope as the vectors of its entries
+        Shape flat = batch_shape(), shape = G_.shape();
+        flat.push_back(nr_generators());
+        flat.push_back(dim());
+        const Tensor kept = aux_nonzero_filter(G_.reshape(flat), tol);
+        shape[flat.size() - 2] = kept.size(-2);
+        return {c_, kept.reshape(shape), elem_rank_};
+    }
     if (G_.ndim() != 2)
         CORA_FAIL(Error::not_supported, "compact: method 'all' merges generators member by "
                                         "member; it supports a single zonotope, not a batch");
-    return {c_, aux_delete_aligned(G_, tol)};
+    // layout: the merge works on CORA's columns
+    return {c_, aux_delete_aligned(G_, tol).matrix_transpose()};
 }
 
 std::optional<std::vector<std::string>> Zonotope::compact_methods_impl() const {

@@ -17,7 +17,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "global/format.h"
@@ -57,13 +57,14 @@ void aux_validate(const HybridAutomaton &HA, const HybridReachProblem &p,
         return std::string("reach: the problem needs exactly one of initial_set and "
                            "initial_poly_set");
     });
-    CORA_CHECK(
-        p.initial_poly_set ? p.initial_poly_set->dim() == n
-                           : (p.initial_set->center().shape() == std::vector<int64_t>({n, 1}) &&
-                              p.initial_set->generators().ndim() == 2),
-        Error::wrong_value, [&] {
-            return "reach: the initial set must be one set of the dimension " + std::to_string(n);
-        });
+    CORA_CHECK(p.initial_poly_set
+                   ? p.initial_poly_set->dim() == n
+                   : (detail::cora_center(*p.initial_set).shape() == std::vector<int64_t>({n, 1}) &&
+                      detail::cora_generators(*p.initial_set).ndim() == 2),
+               Error::wrong_value, [&] {
+                   return "reach: the initial set must be one set of the dimension " +
+                          std::to_string(n);
+               });
     // the algorithm goes with the class of the initial set
     CORA_CHECK(!a.polynomialization || p.initial_poly_set.has_value(), Error::wrong_value, [] {
         return std::string("reach: polynomialization = true needs initial_poly_set (the "
@@ -86,7 +87,8 @@ void aux_validate(const HybridAutomaton &HA, const HybridReachProblem &p,
     });
     for (std::size_t i = 0; i < std::size_t(count) && inputs > 0; ++i) {
         const Zonotope &U = p.input_set[inputs == 1 ? 0 : i];
-        CORA_CHECK(U.center().ndim() == 2 && U.dim() == HA.locations()[i].input_dim(),
+        // layout: #163 step 2
+        CORA_CHECK(detail::cora_center(U).ndim() == 2 && U.dim() == HA.locations()[i].input_dim(),
                    Error::dimension_mismatch, [&] {
                        return "reach: the input set of location " + std::to_string(i) +
                               " must have the dimension " +

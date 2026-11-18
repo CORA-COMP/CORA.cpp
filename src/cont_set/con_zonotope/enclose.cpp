@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@conZonotope/enclose.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -69,13 +69,15 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &cz2) {
 /// The enclosure: the zonotope part is that of Zonotope::enclose, the constraints those of the
 /// set with fewer generators (they agree on the common factors), padded with zeros.
 ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
-    const Zonotope Z =
-        Zonotope(cz.c(), cz.generators()).enclose(Zonotope(cz2.c(), cz2.generators()));
+    const Zonotope Z = detail::zonotope_of_columns(cz.c(), cz.generators())
+                           .enclose(detail::zonotope_of_columns(cz2.c(), cz2.generators()));
     const bool second_shorter = cz2.generators().shape().back() <= cz.generators().shape().back();
     const Tensor &A = second_shorter ? cz2.A() : cz.A();
-    const int64_t more = Z.generators().shape().back() - A.shape().back();
+    // layout: #163 step 2
+    const int64_t more = detail::cora_generators(Z).shape().back() - A.shape().back();
     const Tensor padded = Tensor::concat({A, zeros_block(A, A.shape()[A.ndim() - 2], more)}, -1);
-    return {Z.center(), Z.generators(), padded, cz.b()};
+    // layout: #163 step 2
+    return {detail::cora_center(Z), detail::cora_generators(Z), padded, cz.b()};
 }
 
 } // namespace

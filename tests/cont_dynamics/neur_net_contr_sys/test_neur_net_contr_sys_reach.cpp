@@ -9,9 +9,9 @@
 // CORA: contDynamics/@neurNetContrSys/neurNetContrSys.m
 // PROPERTY: contDynamics/@neurNetContrSys/reach.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -109,7 +109,9 @@ void checks_and_their_switch() {
     const ClosedLoopReach<Zonotope> on = sys.reach(X0(), U(), 0.2, options());
     ChecksScope off(false);
     const ClosedLoopReach<Zonotope> without = sys.reach(X0(), U(), 0.2, options());
-    check(test::close(on.time_point.back().center(), without.time_point.back().center(), 0),
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(on.time_point.back()),
+                      detail::cora_center(without.time_point.back()), 0),
           "reach: the same with the checks off");
 }
 

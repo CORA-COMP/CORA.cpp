@@ -6,9 +6,9 @@
 // Property: the zonotope contains the vertices of the polytope
 //
 // CORA authors: Mark Wetzlinger, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -32,7 +32,7 @@ void enclosures(const std::string &b) {
               b + ": it contains the vertices");
     }
     // a point is a zonotope without generators' volume
-    check(close(Polytope(column({1.0, 2.0})).zonotope().center(), {1.0, 2.0}, 1e-9),
+    check(close(detail::cora_center(Polytope(column({1.0, 2.0})).zonotope()), {1.0, 2.0}, 1e-9),
           b + ": a point");
 }
 

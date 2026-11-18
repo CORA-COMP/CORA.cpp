@@ -16,9 +16,9 @@
 // CORA: contSet/@polytope/minkDiff.m
 // CORA: contSet/@polytope/private/priv_minkDiff.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -84,9 +84,12 @@ Polytope aux_by_vertices(const Polytope &P, const ContSet &S) {
         const Zonotope Z = S.class_id() == ClassId::interval
                                ? static_cast<const Interval &>(S).zonotope()
                                : static_cast<const Zonotope &>(S);
-        Polytope result = P.minus(Z.center());
-        for (int64_t k = 0; k < Z.generators().shape().back(); ++k) {
-            const Tensor g = Z.generators().slice(-1, k, k + 1);
+        // layout: #163 step 2
+        Polytope result = P.minus(detail::cora_center(Z));
+        // layout: #163 step 2
+        for (int64_t k = 0; k < detail::cora_generators(Z).shape().back(); ++k) {
+            // layout: #163 step 2
+            const Tensor g = detail::cora_generators(Z).slice(-1, k, k + 1);
             result = result.plus(g).intersect(result.minus(g));
         }
         return result;

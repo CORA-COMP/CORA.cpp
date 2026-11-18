@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -30,14 +30,20 @@ namespace {
 
 /// +S equals S, down to the sign of a zero, for a zonotope and a box.
 void uplus_is_the_identity(const std::string &b) {
-    const Zonotope Z(column({-0.0, 1.0}), Tensor::from_data({0.5, 0.0, -0.0, 0.5}, {2, 2}));
+    const Zonotope Z(column({-0.0, 1.0}), Tensor::from_data({0.5, -0.0, 0.0, 0.5}, {2, 2}));
     const Interval I(column({-0.0, 0.0}), column({2.0, 3.0}));
     const Set A = static_cast<const ContSet &>(Z).uplus(),
               B = static_cast<const ContSet &>(I).uplus();
-    check(A.is<Zonotope>() && test::close(A.as<Zonotope>().center(), Z.center(), 0) &&
-              test::close(A.as<Zonotope>().generators(), Z.generators(), 0),
+    // layout: #163 step 2
+    check(A.is<Zonotope>() &&
+              test::close(A.as<Zonotope>().center().expand_dims(-1), detail::cora_center(Z), 0) &&
+              // layout: #163 step 2
+              test::close(A.as<Zonotope>().generators().matrix_transpose(),
+                          detail::cora_generators(Z), 0),
           b + ": a zonotope");
-    check(std::signbit(A.as<Zonotope>().center().slice(-2, 0, 1).item()), b + ": the sign of -0");
+    // layout: #163 step 2
+    check(std::signbit(A.as<Zonotope>().center().expand_dims(-1).slice(-2, 0, 1).item()),
+          b + ": the sign of -0");
     check(B.is<Interval>() && test::close(B.as<Interval>().inf(), I.inf(), 0) &&
               test::close(B.as<Interval>().sup(), I.sup(), 0),
           b + ": a box");

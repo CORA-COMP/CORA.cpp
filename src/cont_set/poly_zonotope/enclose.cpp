@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@polyZonotope/enclose.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -36,8 +36,11 @@ namespace {
 /// The independent generators of the enclosure of the independent parts (CORA: zonotope enclose).
 Tensor aux_independent(const PolyZonotope &A, const PolyZonotope &B) {
     const Tensor zero = A.center().zeros_like();
-    const Zonotope Z1(zero, A.independent_generators()), Z2(zero, B.independent_generators());
-    return Z1.enclose(Z2).generators();
+    // layout: #163 step 2
+    const Zonotope Z1 = detail::zonotope_of_columns(zero, A.independent_generators()),
+                   Z2 = detail::zonotope_of_columns(zero, B.independent_generators());
+    // layout: #163 step 2
+    return detail::cora_generators(Z1.enclose(Z2));
 }
 
 /// The set with the independent generators as CORA's zonotope enclose gives them, the zero column

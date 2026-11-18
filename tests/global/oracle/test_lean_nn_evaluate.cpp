@@ -23,9 +23,9 @@
 // is also checked on narrow boxes around 0 (the slope is about 1/4) and on boxes whose end lies
 // at the stationary point, a few ulps inside and outside.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   16-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -142,7 +142,8 @@ void aux_check_network(const NeuralNetwork &nn, const Zonotope &Z, const std::st
     const lean::Zonotope Y = lean::evaluate_network(layers, lean::Zonotope(Z),
                                                     error.empty() ? "singh" : "regression", error);
     oracle::check(nn.evaluate(Z, aux_options(error)),
-                  aux_without_bias_generators(Y, layers, Z.generators().shape()[1]));
+                  // layout: #163 step 2
+                  aux_without_bias_generators(Y, layers, detail::cora_generators(Z).shape()[1]));
 }
 
 /// CORA.cpp's and the oracle's polynomial zonotope (c, G, GI) of the network, the errors as
@@ -191,7 +192,8 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
 /// CORA.cpp's and the oracle's output set of one layer of the activation on Z.
 void aux_check_layer(const std::string &name, Activation activation, const Zonotope &Z,
                      const std::string &error) {
-    const int64_t n = Z.center().shape()[0];
+    // layout: #163 step 2
+    const int64_t n = detail::cora_center(Z).shape()[0];
     const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
     const lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
                                 : name == "sigmoid" ? lean::NnLayer::sigmoid()
@@ -235,7 +237,7 @@ int main() {
     oracle::run("nnLayer.evaluateZonotope", [&](oracle::Random &rnd) {
         for (const auto &[name, activation] : kinds) {
             for (const auto &[n, m] : std::vector<std::pair<int, int>>{{2, 3}, {5, 4}, {12, 12}}) {
-                const Zonotope Z(rnd.vector(n) * 2.0, rnd.matrix(n, m));
+                const Zonotope Z(rnd.vector(n) * 2.0, rnd.matrix(n, m).matrix_transpose());
                 const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
                 lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
                                       : name == "sigmoid" ? lean::NnLayer::sigmoid()
@@ -258,11 +260,13 @@ int main() {
         for (const auto &[name, activation] : kinds) {
             const NeuralNetwork nn = aux_random_network(
                 rnd, {3, 6, 5, 2}, {activation, activation, Activation::identity});
-            aux_check_network(nn, Zonotope(rnd.vector(3), rnd.matrix(3, 4) * 0.3));
+            aux_check_network(nn,
+                              Zonotope(rnd.vector(3), rnd.matrix(3, 4).matrix_transpose() * 0.3));
         }
         const NeuralNetwork mixed = aux_random_network(
             rnd, {4, 7, 7, 3}, {Activation::relu, Activation::tanh, Activation::sigmoid});
-        aux_check_network(mixed, Zonotope(rnd.vector(4), rnd.matrix(4, 9) * 0.2));
+        aux_check_network(mixed,
+                          Zonotope(rnd.vector(4), rnd.matrix(4, 9).matrix_transpose() * 0.2));
     });
 
     // the networks of the AINNCS instances on their initial sets
@@ -292,7 +296,8 @@ int main() {
             const Tensor widths =
                 Tensor::from_data({0.0, 1e-9, 1e-3, 0.05, 0.3, 3.0, 30.0, 0.7}, {n, 1});
             const Tensor G = widths.diag().matmul(rnd.matrix(n, m));
-            const Zonotope Z(rnd.vector(n) * 2.0, G);
+            // layout: #163 step 2
+            const Zonotope Z = detail::zonotope_of_columns(rnd.vector(n) * 2.0, G);
             for (const std::string &error : errors) aux_check_layer(name, activation, Z, error);
         }
     });
@@ -330,17 +335,19 @@ int main() {
         for (const auto &[name, activation] : kinds) {
             const NeuralNetwork nn = aux_random_network(
                 rnd, {3, 6, 5, 2}, {activation, activation, Activation::identity});
-            const Zonotope Z(rnd.vector(3), rnd.matrix(3, 4) * 0.3);
+            const Zonotope Z(rnd.vector(3), rnd.matrix(3, 4).matrix_transpose() * 0.3);
             const Tensor G = rnd.matrix(3, 3) * 0.2, GI = rnd.matrix(3, 2) * 0.1;
-            aux_check_gi(name + " singh", nn, Z.center(), G, GI, "");
+            // layout: #163 step 2
+            aux_check_gi(name + " singh", nn, detail::cora_center(Z), G, GI, "");
             for (const std::string &error : errors) {
                 aux_check_network(nn, Z, error);
-                aux_check_gi(name + " " + error, nn, Z.center(), G, GI, error);
+                // layout: #163 step 2
+                aux_check_gi(name + " " + error, nn, detail::cora_center(Z), G, GI, error);
             }
         }
         const NeuralNetwork mixed = aux_random_network(
             rnd, {4, 7, 7, 3}, {Activation::relu, Activation::tanh, Activation::sigmoid});
-        const Zonotope Z(rnd.vector(4), rnd.matrix(4, 9) * 0.2);
+        const Zonotope Z(rnd.vector(4), rnd.matrix(4, 9).matrix_transpose() * 0.2);
         const Tensor c = rnd.vector(4), G = rnd.matrix(4, 3) * 0.2, GI = rnd.matrix(4, 2) * 0.1;
         for (const std::string &error : errors) {
             aux_check_network(mixed, Z, error);
@@ -366,14 +373,22 @@ int main() {
         const Zonotope docking = box_zonotope({70, 70, -0.14, -0.14}, {106, 106, 0.14, 0.14});
         for (const std::string &error : errors) {
             aux_check_network(aux_prefix(bench::load_network("quad"), 2), quad, error);
-            aux_check_gi("quad " + error, aux_prefix(bench::load_network("quad"), 2), quad.center(),
-                         quad.generators(), Tensor::zeros({12, 1}), error);
+            // layout: #163 step 2
+            aux_check_gi("quad " + error, aux_prefix(bench::load_network("quad"), 2),
+                         detail::cora_center(quad),
+                         // layout: #163 step 2
+                         detail::cora_generators(quad), Tensor::zeros({12, 1}), error);
             aux_check_network(bench::load_network("nav_point"), nav, error);
-            aux_check_gi("nav " + error, bench::load_network("nav_set"), nav.center(),
-                         nav.generators(), Tensor::zeros({4, 1}), error);
+            // layout: #163 step 2
+            aux_check_gi("nav " + error, bench::load_network("nav_set"), detail::cora_center(nav),
+                         // layout: #163 step 2
+                         detail::cora_generators(nav), Tensor::zeros({4, 1}), error);
             aux_check_network(bench::load_network("cartpole"), cart, error);
-            aux_check_gi("cartpole " + error, bench::load_network("cartpole"), cart.center(),
-                         cart.generators(), Tensor::zeros({4, 1}), error);
+            // layout: #163 step 2
+            aux_check_gi("cartpole " + error, bench::load_network("cartpole"),
+                         detail::cora_center(cart),
+                         // layout: #163 step 2
+                         detail::cora_generators(cart), Tensor::zeros({4, 1}), error);
             aux_check_network(aux_narrow(bench::load_network("docking"), 3, 32), docking, error);
         }
     });

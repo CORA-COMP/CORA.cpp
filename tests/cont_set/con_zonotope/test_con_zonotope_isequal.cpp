@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@conZonotope/isequal.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -48,7 +48,7 @@ void isequal_known(const std::string &b) {
           b + ": points");
     check(square.isequal(Zonotope(column({0.0, 0.0}), Tensor({{0.0, 1.0}, {1.0, 0.0}}))) &&
               square.isequal(Interval(column({-1.0, -1.0}), column({1.0, 1.0}))) &&
-              !seg.isequal(Zonotope(seg.c(), seg.generators())),
+              !seg.isequal(detail::zonotope_of_columns(seg.c(), seg.generators())),
           b + ": a zonotope and a box");
     check(!square.isequal(ConZonotope::origin(3)), b + ": another dimension");
 }

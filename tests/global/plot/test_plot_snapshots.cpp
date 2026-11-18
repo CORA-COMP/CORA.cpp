@@ -2,9 +2,9 @@
 //
 // zonotope, a reachable set over time, a 2 x 2 group of axes and a three-dimensional zonotope
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -33,7 +33,7 @@ ReachSet oscillator() {
 Figure zonotope_figure() {
     use_cora_colors("CORA:default");
     Figure fig;
-    const Zonotope Z(test::column({1, 0.5}), Tensor({{1, 0.3, 0}, {0, 0.5, 0.2}}));
+    const Zonotope Z(test::column({1, 0.5}), Tensor({{1, 0}, {0.3, 0.5}, {0, 0.2}}));
     plot(fig, Z, {0, 1}, {.label = "$\\mathcal{Z}$"});
     fig.xlabel = "$x_1$";
     fig.ylabel = "$x_2$";
@@ -83,7 +83,7 @@ FigureGrid group_figure() {
 Figure three_dimensional_figure() {
     use_cora_colors("CORA:default");
     Figure fig;
-    const Zonotope Z(test::column({0, 0, 0}), Tensor({{1, 0, 0.5}, {0, 1, 0.5}, {0, 0, 1}}));
+    const Zonotope Z(test::column({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}, {0.5, 0.5, 1}}));
     plot(fig, Z, {0, 1, 2}, {.label = "Z"});
     fig.xlabel = "$x_1$";
     fig.ylabel = "$x_2$";

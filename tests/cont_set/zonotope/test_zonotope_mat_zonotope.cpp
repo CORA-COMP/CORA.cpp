@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonotope/matZonotope.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -23,7 +23,7 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0, 3.0}, {0.0, 2.0, 4.0}}));
+        const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {3.0, 4.0}}));
         const MatZonotope M = Z.mat_zonotope();
         check(M.rows() == 2 && M.cols() == 1 && M.num_generators() == 3,
               b + ": n x 1 matrices, one generator each");

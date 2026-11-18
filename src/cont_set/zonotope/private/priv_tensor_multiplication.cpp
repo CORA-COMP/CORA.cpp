@@ -15,7 +15,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -52,7 +52,7 @@ std::vector<int64_t> aux_column(const std::vector<std::vector<int64_t>> &perm, s
 
 Refusal priv_tensor_multiplication_refusal(const Zonotope &Z, const Tensor &M,
                                            const Zonotope::TensorLists &list) {
-    const int64_t n = Z.dim(), m = Z.generators().shape().back(), columns = list.comb.size();
+    const int64_t n = Z.dim(), m = Z.nr_generators(), columns = list.comb.size();
     // the tensor: third order, (n, n, n, n)
     if (M.ndim() == 3)
         return std::pair{Error::not_supported,
@@ -83,7 +83,7 @@ Refusal priv_tensor_multiplication_refusal(const Zonotope &Z, const Tensor &M,
                                                      ", outside [0, " + std::to_string(columns) +
                                                      ")"};
     // CORA leaves H undefined for another center and fails
-    if (Z.center().detach().abs().max().item() != 0)
+    if (detail::cora_center(Z).detach().abs().max().item() != 0)
         return std::pair{Error::wrong_value,
                          std::string("the center of the zonotope must be the origin")};
     return std::nullopt;
@@ -91,10 +91,10 @@ Refusal priv_tensor_multiplication_refusal(const Zonotope &Z, const Tensor &M,
 
 Zonotope priv_tensor_multiplication(const Zonotope &Z, const Tensor &M,
                                     const Zonotope::TensorLists &list) {
-    const Tensor &G = Z.generators();
+    const Tensor &G = detail::cora_generators(Z);
     const int64_t n = Z.dim(), P = list.perm.size(), C = list.comb.size();
-    const Tensor zero = Z.center().zeros_like();
-    if (P == 0) return {zero, G.zeros_like(aux_shape(G, {n, C}))};
+    const Tensor zero = detail::cora_center(Z).zeros_like();
+    if (P == 0) return detail::zonotope_of_columns(zero, G.zeros_like(aux_shape(G, {n, C})));
     // the three generators of every triple, side by side in (..., n, P)
     const Tensor g1 = G.take(aux_column(list.perm, 0), -1).reshape(aux_shape(G, {n, 1, 1, P}));
     const Tensor g2 = G.take(aux_column(list.perm, 1), -1).reshape(aux_shape(G, {1, n, 1, P}));
@@ -104,7 +104,7 @@ Zonotope priv_tensor_multiplication(const Zonotope &Z, const Tensor &M,
     const Tensor tilde = M.reshape({n, n * n * n}).matmul(products);
     std::vector<double> selection(std::size_t(P * C), 0.0);
     for (int64_t p = 0; p < P; ++p) selection[p * C + list.map[p]] = 1.0;
-    return {zero, tilde.matmul(Tensor::like(G, selection, {P, C}))};
+    return detail::zonotope_of_columns(zero, tilde.matmul(Tensor::like(G, selection, {P, C})));
 }
 
 } // namespace cora

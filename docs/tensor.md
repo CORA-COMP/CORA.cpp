@@ -199,10 +199,10 @@ carries over to the other backends up to these bounds of its primitives.
 
 | operation | kind | gradient | agreement | what it computes |
 |---|---|---|---|---|
-| `zonotope_linear_map` | fused | differentiable | sum 2 | M c and M G of a zonotope in one call |
-| `zonotope_interval_map` | fused | piecewise | sum 2 | T c and [T G, diag(R (|c| + sum|G|))] for the interval matrix [inf, sup], T its stored center and R the larger of |inf - T| and |sup - T| (CORALean's mtimesIntervalMat) |
-| `zonotope_linear_combination` | fused | differentiable | exact | (c1 + c2)/2 and [(G1 + G2)/2, (G1 - G2)/2, (c1 - c2)/2] (CORA's linComb) |
+| `zonotope_linear_map` | fused | differentiable | sum 2 | c Mᵀ and G Mᵀ of a zonotope of center c (..., n) and generator rows G (..., m, n) in one call (M c, M G in CORA's columns) |
+| `zonotope_interval_map` | fused | piecewise | sum 2 | on centers (..., n) and generator rows (..., m, n): T c and [T G, diag(R (|c| + sum|G|))] for the interval matrix [inf, sup], T its stored center and R the larger of |inf - T| and |sup - T| (CORALean's mtimesIntervalMat) |
+| `zonotope_linear_combination` | fused | differentiable | exact | (c1 + c2)/2 and the rows [(G1 + G2)/2; (G1 - G2)/2; (c1 - c2)/2] (CORA's linComb) |
 | `interval_matmul` | fused | piecewise | sum 2 | the bounds of I M for an interval matrix I (CORA's mtimes) |
 | `matmul_interval` | fused | piecewise | sum 2 | the bounds of M I for an interval matrix I (CORA's mtimes) |
-| `girard_split` | fused | not_differentiable | exact | the generators by Girard's score |g|_1 - |g|_inf, the k kept and the rest |
+| `girard_split` | fused | not_differentiable | exact | the generator rows by Girard's score |g|_1 - |g|_inf, the k kept and the rest |
 | `abs_sum` | fused | piecewise | sum 1 | sum(|x|) along the last axis, kept (the radius of a zonotope) |

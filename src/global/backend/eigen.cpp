@@ -5,9 +5,9 @@
 // matrix over the batch. Nothing else in the library includes Eigen for its own use.
 //
 // CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/backend/eigen.h"
@@ -95,6 +95,39 @@ void aux_products(const T *a, const Shape &sa, const T *b, const Shape &sb, T *o
     host::parallel_for(bp.batch.numel(), work, product);
 }
 
+/// C = A B' of one pair, (n, k) times (m, k)': a small product is the dot products of the rows.
+template <class T>
+void aux_product_bt(const T *A, const T *B, T *C, int64_t n, int64_t k, int64_t m) {
+    if (n * k * m > kSmallProduct) {
+        Map<T>(C, n, m).noalias() = MapC<T>(A, n, k) * MapC<T>(B, m, k).transpose();
+        return;
+    }
+    for (int64_t i = 0; i < n; ++i)
+        for (int64_t j = 0; j < m; ++j) {
+            T sum = T(0);
+            for (int64_t q = 0; q < k; ++q) sum += A[i * k + q] * B[j * k + q];
+            C[i * m + j] = sum;
+        }
+}
+
+/// out = a x b' for every pair of the batch, as aux_products.
+template <class T>
+void aux_products_bt(const T *a, const Shape &sa, const T *b, const Shape &sb, T *out,
+                     const host::BatchPairs &bp) {
+    const int64_t n = aux_rows(sa), k = sa.back(), m = aux_rows(sb);
+    const long long work = (long long)bp.batch.numel() * n * k * m;
+    const auto product = [&](int64_t z) {
+        const auto [left, right] = bp.at(z);
+        aux_product_bt(a + left * n * k, b + right * k * m, out + z * n * m, n, k, m);
+    };
+    if (work < kSerialWork) {
+        for (int64_t z = 0; z < bp.batch.numel(); ++z) product(z);
+        return;
+    }
+    const EigenThreads narrow(work);
+    host::parallel_for(bp.batch.numel(), work, product);
+}
+
 /// The batch pairs of a product, with its inner sizes checked.
 host::BatchPairs aux_pairs(const Shape &a, const Shape &b, const char *op) {
     host::BatchPairs bp = host::batch_pairs(a, b, op);
@@ -174,6 +207,24 @@ Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims) {
     return r;
 }
 
+// The rows of every matrix summed at once: one Eigen column sum per matrix.
+template <class T>
+Tensor::Ptr sum_rows(const HostTensor<T> &a, bool keepdims) {
+    const int64_t rows = aux_rows(a.shape), cols = a.shape.back();
+    Shape out(std::vector<int64_t>(a.shape.begin(), a.shape.end() - 2));
+    if (keepdims) out.push_back(1);
+    out.push_back(cols);
+    auto r = a.fresh(out);
+    const int64_t count = out.numel() / std::max<int64_t>(cols, 1);
+    for (int64_t z = 0; z < count; ++z)
+        if (rows == 0)
+            std::fill(r->p + z * cols, r->p + (z + 1) * cols, T(0));
+        else
+            Map<T>(r->p + z * cols, 1, cols) =
+                MapC<T>(a.p + z * rows * cols, rows, cols).colwise().sum();
+    return r;
+}
+
 template <class T>
 Tensor::Ptr expm(const HostTensor<T> &a) {
     const int64_t n = a.shape.back(), count = a.shape.numel() / std::max<int64_t>(n * n, 1);
@@ -188,11 +239,17 @@ Tensor::Ptr expm(const HostTensor<T> &a) {
 
 // Fused Kernels -----------------------------------------------------------------------------------
 
-// M c and M G, two products of one call.
+// c M' and G M', two products of one call, on the rows of M as they are stored.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_linear_map(const HostTensor<T> &M, const HostTensor<T> &c, const HostTensor<T> &G) {
-    return {matmul(M, c), matmul(M, G)};
+    const auto product = [&](const HostTensor<T> &a) -> Tensor::Ptr {
+        const BatchPairs bp = host::batch_pairs(a.shape, M.shape, "zonotope_linear_map");
+        auto r = a.fresh(aux_matrix_shape(bp.batch, aux_rows(a.shape), aux_rows(M.shape)));
+        aux_products_bt(a.p, a.shape, M.p, M.shape, r->p, bp);
+        return r;
+    };
+    return {product(c), product(G)};
 }
 
 // With M+ = max(M, 0), M- = min(M, 0): I M = [inf M+ + sup M-, sup M+ + inf M-]; M I likewise.
@@ -229,16 +286,16 @@ std::pair<Tensor::Ptr, Tensor::Ptr> interval_matmul(const HostTensor<T> &inf,
     return {lo, hi};
 }
 
-// T = (inf + sup) / 2, S = max(|inf - T|, |sup - T|) in scratch memory, then T c, T G, the box.
+// T = (inf + sup) / 2, S = max(|inf - T|, |sup - T|) in scratch memory, then c T', G T', the box.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const HostTensor<T> &c,
                       const HostTensor<T> &G) {
-    const BatchPairs bp = aux_pairs(inf.shape, G.shape, "zonotope_interval_map");
-    const int64_t n = aux_rows(inf.shape), k = inf.shape.back(), m = G.shape.back();
+    const BatchPairs bp = host::batch_pairs(inf.shape, G.shape, "zonotope_interval_map");
+    const int64_t n = aux_rows(inf.shape), k = inf.shape.back(), m = aux_rows(G.shape);
     const int64_t count = bp.batch.numel();
-    auto Tc = c.fresh(aux_matrix_shape(bp.batch, n, 1));
-    auto TG = G.fresh(aux_matrix_shape(bp.batch, n, m + n));
+    auto Tc = c.fresh(aux_matrix_shape(bp.batch, 1, n));
+    auto TG = G.fresh(aux_matrix_shape(bp.batch, m + n, n));
     T *t = aux_scratch<T>(2 * n * k + k + n), *s = t + n * k, *reach = s + n * k, *box = reach + k;
     const long long work = (long long)count * n * k * (m + 2);
     std::optional<EigenThreads> narrow;
@@ -251,17 +308,16 @@ zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const 
             t[i] = (lo[i] + up[i]) * T(0.5);
             s[i] = std::max(std::abs(lo[i] - t[i]), std::abs(up[i] - t[i]));
         }
-        const auto Gz = MapC<T>(G.p + r * k * m, k, m);
-        const auto cz = MapC<T>(c.p + r * k, k, 1);
-        // the box S |[c G]| 1, and T c, T G
-        Map<T>(reach, k, 1) = cz.cwiseAbs() + Gz.cwiseAbs().rowwise().sum();
+        const auto Gz = MapC<T>(G.p + r * m * k, m, k);
+        const auto cz = MapC<T>(c.p + r * k, 1, k);
+        // the box S |[c; G]|' 1, and c T', G T'
+        Map<T>(reach, 1, k) = cz.cwiseAbs() + Gz.cwiseAbs().colwise().sum();
         Map<T>(box, n, 1).noalias() = MapC<T>(s, n, k) * MapC<T>(reach, k, 1);
-        Map<T>(Tc->p + z * n, n, 1).noalias() = MapC<T>(t, n, k) * cz;
-        Eigen::Map<RowMat<T>, 0, Eigen::OuterStride<>> out(TG->p + z * n * (m + n), n, m + n,
-                                                           Eigen::OuterStride<>(m + n));
-        out.leftCols(m).noalias() = MapC<T>(t, n, k) * Gz;
-        out.rightCols(n).setZero();
-        for (int64_t i = 0; i < n; ++i) out(i, m + i) = box[i];
+        Map<T>(Tc->p + z * n, 1, n).noalias() = cz * MapC<T>(t, n, k).transpose();
+        Map<T> out(TG->p + z * (m + n) * n, m + n, n);
+        out.topRows(m).noalias() = Gz * MapC<T>(t, n, k).transpose();
+        out.bottomRows(n).setZero();
+        for (int64_t i = 0; i < n; ++i) out(m + i, i) = box[i];
     }
     return {Tc, TG};
 }
@@ -271,37 +327,39 @@ template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr>
 zonotope_linear_combination(const HostTensor<T> &c1, const HostTensor<T> &G1,
                             const HostTensor<T> &c2, const HostTensor<T> &G2) {
-    // one row per row of the centers: without generators (m = 0) the shift column is still written
-    const int64_t m = G1.shape.back(), rows = c1.shape.numel();
+    // per member: the rows (G1 + G2)/2, then (G1 - G2)/2, then the shift (c1 - c2)/2
+    const int64_t n = G1.shape.back(), m = aux_rows(G1.shape);
+    const int64_t count = c1.shape.numel() / std::max<int64_t>(n, 1);
     Shape shape = G1.shape;
-    shape.back() = 2 * m + 1;
+    shape[shape.size() - 2] = 2 * m + 1;
     auto c = c1.fresh(c1.shape), G = G1.fresh(shape);
     const int64_t nc = c1.shape.numel();
     for (int64_t i = 0; i < nc; ++i) c->p[i] = (c1.p[i] + c2.p[i]) * T(0.5);
-    for (int64_t i = 0; i < rows; ++i) {
-        const T *a = G1.p + i * m, *b = G2.p + i * m;
-        T *row = G->p + i * (2 * m + 1);
-        for (int64_t j = 0; j < m; ++j) {
-            row[j] = (a[j] + b[j]) * T(0.5);
-            row[m + j] = (a[j] - b[j]) * T(0.5);
+    for (int64_t z = 0; z < count; ++z) {
+        const T *a = G1.p + z * m * n, *b = G2.p + z * m * n;
+        T *mean = G->p + z * (2 * m + 1) * n, *spread = mean + m * n, *shift = spread + m * n;
+        for (int64_t i = 0; i < m * n; ++i) {
+            mean[i] = (a[i] + b[i]) * T(0.5);
+            spread[i] = (a[i] - b[i]) * T(0.5);
         }
-        row[2 * m] = (c1.p[i] - c2.p[i]) * T(0.5);
+        for (int64_t j = 0; j < n; ++j) shift[j] = (c1.p[z * n + j] - c2.p[z * n + j]) * T(0.5);
     }
     return {c, G};
 }
 
-// The scores of all columns at once, then a stable sort per matrix.
+// The scores of all rows at once, then a stable sort per matrix.
 template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t keep) {
-    const int64_t n = aux_rows(G.shape), m = G.shape.back(), count = G.shape.numel() / (n * m);
+    const int64_t m = aux_rows(G.shape), n = G.shape.back();
+    const int64_t count = G.shape.numel() / std::max<int64_t>(n * m, 1);
     Shape batch(std::vector<int64_t>(G.shape.begin(), G.shape.end() - 2));
-    auto kept = G.fresh(aux_matrix_shape(batch, 1, keep)),
-         rest = G.fresh(aux_matrix_shape(batch, 1, m - keep));
+    auto kept = G.fresh(aux_matrix_shape(batch, keep, 1)),
+         rest = G.fresh(aux_matrix_shape(batch, m - keep, 1));
     std::vector<int64_t> order(m);
     for (int64_t z = 0; z < count; ++z) {
-        const auto A = MapC<T>(G.p + z * n * m, n, m).cwiseAbs();
-        const Eigen::Matrix<T, 1, Eigen::Dynamic> score =
-            A.colwise().sum() - A.colwise().maxCoeff();
+        const auto A = MapC<T>(G.p + z * n * m, m, n).cwiseAbs();
+        const Eigen::Matrix<T, Eigen::Dynamic, 1> score =
+            A.rowwise().sum() - A.rowwise().maxCoeff();
         std::iota(order.begin(), order.end(), 0);
         std::stable_sort(order.begin(), order.end(),
                          [&](int64_t a, int64_t b) { return score(a) > score(b); });
@@ -330,6 +388,7 @@ Tensor::Ptr abs_sum(const HostTensor<T> &a) {
 #define CORA_EIGEN_KERNELS(T)                                                                      \
     template Tensor::Ptr matmul(const HostTensor<T> &, const HostTensor<T> &);                     \
     template Tensor::Ptr sum_last(const HostTensor<T> &, bool);                                    \
+    template Tensor::Ptr sum_rows(const HostTensor<T> &, bool);                                    \
     template Tensor::Ptr expm(const HostTensor<T> &);                                              \
     template std::pair<Tensor::Ptr, Tensor::Ptr> zonotope_linear_map(                              \
         const HostTensor<T> &, const HostTensor<T> &, const HostTensor<T> &);                      \

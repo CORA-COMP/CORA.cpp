@@ -5,9 +5,9 @@
 // CORA: contDynamics/@contDynamics/contDynamics.m
 // CORA: contDynamics/@linearSys/linearSys.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -32,10 +32,9 @@ void every_part_is_checked() {
           "no initial set");
     check(test::raises(
               [&] {
-                  sys.validate(
-                      {.initial_set = Zonotope(Tensor({1.0, 0.0, 0.0}),
-                                               Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}})),
-                       .t_final = 1});
+                  sys.validate({.initial_set = Zonotope(Tensor({1.0, 0.0, 0.0}),
+                                                        Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}})),
+                                .t_final = 1});
               },
               Error::dimension_mismatch),
           "an initial set of three dimensions");

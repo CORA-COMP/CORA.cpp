@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -26,14 +26,14 @@ namespace {
 /// Hand-computed: full rank, rank deficient, the tolerance, no generators.
 void full_dim_known(const std::string &b) {
     const Zonotope full(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 2.0}, {1.0, 2.0}}));
+    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {2.0, 2.0}}));
     check(full.is_full_dim(), b + ": the unit square is full-dimensional");
     check(!flat.is_full_dim(), b + ": parallel generators span a line");
     const Zonotope thin(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1e-7}}));
     check(!thin.is_full_dim(1e-6), b + ": a singular value 1e-7 is zero at CORA's tol 1e-6");
     check(thin.is_full_dim(), b + ": and nonzero at the repository tolerance");
     check(thin.is_full_dim(1e-8), b + ": and nonzero at tol 1e-8");
-    check(!Zonotope(column({1.0}), Tensor::zeros({1, 0})).is_full_dim(), b + ": a point is not");
+    check(!Zonotope(column({1.0}), Tensor::zeros({0, 1})).is_full_dim(), b + ": a point is not");
 
     const auto [res, basis] = flat.is_full_dim_subspace();
     check(!res, b + ": subspace: not full");
@@ -43,7 +43,7 @@ void full_dim_known(const std::string &b) {
     const auto [res2, identity] = full.is_full_dim_subspace();
     check(res2 && close(identity, std::vector<double>{1, 0, 0, 1}, 0), b + ": full: the identity");
     // a point has an empty basis
-    check(Zonotope(column({1.0}), Tensor::zeros({1, 0})).is_full_dim_subspace().second.shape() ==
+    check(Zonotope(column({1.0}), Tensor::zeros({0, 1})).is_full_dim_subspace().second.shape() ==
               std::vector<int64_t>({1, 0}),
           b + ": a point has an empty basis");
 }
@@ -60,7 +60,8 @@ void full_dim_property(const std::string &b) {
     check(!res && basis.shape() == std::vector<int64_t>({4, 3}), b + ": a basis of 3 vectors");
     // every generator lies in the span of the basis: (I - B B') G = 0
     const Tensor residual =
-        Z.generators() - basis.matmul(basis.matrix_transpose().matmul(Z.generators()));
+        Z.generators().matrix_transpose() -
+        basis.matmul(basis.matrix_transpose().matmul(Z.generators().matrix_transpose()));
     check(residual.abs().max().item() < 1e-12, b + ": the generators lie in the span");
 }
 

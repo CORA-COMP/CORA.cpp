@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@contSet/plus.m
 // CORA authors: Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -31,7 +31,7 @@ void the_registry_dispatches() {
     check(test::close(a.get().center(), b.get().center()), "commutative");
     check(test::close((Set(Z) + Set(I)).get().center(), a.get().center()), "the operator +");
     const Zonotope Z3 =
-        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     check(test::raises([&] { plus(Z, Z3); }, Error::dimension_mismatch), "dimensions 2 and 3");
     ChecksScope off(false);
     check(test::close(plus(Z, I).get().center(), a.get().center(), 0), "the checks off");

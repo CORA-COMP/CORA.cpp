@@ -20,9 +20,9 @@
 // the generators after the first (docs/cora-differences.md); CORALean's definition is followed.
 //
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
@@ -114,12 +114,16 @@ MatZonotope::ExpmOneParamResult aux_expm(const MatZonotope &A, double r, int64_t
     }
     std::optional<Zonotope> constant_input;
     if (u) {
-        const Tensor &c = u->center();
-        const Tensor g = u->generators().size(-1) == 0 ? c.zeros_like() : u->generators();
+        // layout: #163 step 2
+        const Tensor &c = detail::cora_center(*u);
+        // layout: #163 step 2
+        const Tensor g = detail::cora_generators(*u).size(-1) == 0 ? c.zeros_like()
+                                                                   : detail::cora_generators(*u);
         const auto [input_center, input_generators] =
             aux_taylor_terms(aux_input_coefficients(T, c, g), r, N, Tensor());
         // the n x 1 matrices of the input terms are the columns of the zonotope
-        constant_input = Zonotope(input_center, input_generators.squeeze(-1).matrix_transpose());
+        constant_input = detail::zonotope_of_columns(
+            input_center, input_generators.squeeze(-1).matrix_transpose());
     }
     return {MatZonotope(center, generators),
             mat_exp::exponential_remainder((A * r).interval_matrix(), N), std::move(powers),
@@ -147,14 +151,17 @@ MatZonotope::expm_one_param(double r, int64_t max_order,
     CORA_CHECK(max_order >= 1, Error::wrong_value, [&] {
         return "expm_one_param: the order must be at least 1, got " + std::to_string(max_order);
     });
+    // an input of the dimension of the matrices, with at most one generator
     CORA_CHECK(!u_trans || u_trans->dim() == rows(), Error::dimension_mismatch, [&] {
         return "expm_one_param: the input needs " + std::to_string(rows()) + " dimensions, got " +
                std::to_string(u_trans->dim());
     });
-    CORA_CHECK(!u_trans || u_trans->generators().size(-1) <= 1, Error::not_supported, [] {
-        return std::string("expm_one_param: an input with more than one generator is not "
-                           "supported, as in CORA the set it gives is meant for one");
-    });
+    // layout: #163 step 2
+    CORA_CHECK(
+        !u_trans || detail::cora_generators(*u_trans).size(-1) <= 1, Error::not_supported, [] {
+            return std::string("expm_one_param: an input with more than one generator is not "
+                               "supported, as in CORA the set it gives is meant for one");
+        });
     // without an input the series is the matrix exponential only
     return aux_expm(*this, r, max_order, u_trans ? &*u_trans : nullptr);
 }

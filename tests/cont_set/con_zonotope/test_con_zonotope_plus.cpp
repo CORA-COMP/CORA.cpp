@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/plus.m
 // PROPERTY: contSet/@conZonotope/plus.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -34,7 +34,7 @@ void plus_known(const std::string &b) {
     check(close(r.A(), {1, 1, 0, 0, 0, 4}, 0) && close(r.b(), {0.5, 1}, 0),
           b + ": the constraints on the block diagonal");
     check(close(a.plus(column({1.0, 1.0})).c(), {2, 3}, 0), b + ": a point moves the center");
-    const Zonotope Z(column({1.0, 1.0}), Tensor({{1.0}, {0.0}}));
+    const Zonotope Z(column({1.0, 1.0}), Tensor({{1.0, 0.0}}));
     check(close(a.plus(Z).generators(), {1, 0, 1, 0, 1, 0}, 0) && a.plus(Z).A().shape()[1] == 3,
           b + ": a zonotope joins as a set without constraints");
     // a box is a set without constraints whose generators are its radius

@@ -42,7 +42,7 @@ Polytope aux_guard(test::oracle::Random &rnd, const Tensor &x0, int64_t n, bool 
 void aux_sets(test::oracle::Random &rnd, const Tensor &x0, int64_t n, std::vector<Zonotope> &sets,
               std::vector<Set> &reach) {
     for (int k = 0; k < 4; ++k) {
-        sets.emplace_back(x0 + 0.1 * rnd.vector(n), rnd.matrix(n, n + 2));
+        sets.emplace_back(x0 + 0.1 * rnd.vector(n), rnd.matrix(n, n + 2).matrix_transpose());
         reach.emplace_back(sets.back());
     }
 }

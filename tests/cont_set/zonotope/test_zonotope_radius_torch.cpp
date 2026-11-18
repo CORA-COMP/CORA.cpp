@@ -4,7 +4,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -22,7 +22,7 @@ int main() {
     torch::manual_seed(51);
     test::gradcheck(
         "radius", [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).radius()}; },
-        test::random_zonotope(3, 4));
+        test::random_zonotope_rows(3, 4));
     return test::finish("zonotope radius (torch)");
 }
 

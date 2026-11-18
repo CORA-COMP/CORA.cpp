@@ -18,9 +18,9 @@
 //
 // CORA: contSet/@polytope/isIntersecting_.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -109,7 +109,7 @@ bool aux_meets_bundle(const HostH &H, const ZonoBundle &bundle) {
     const std::size_t n = std::size_t(H.n), p = H.A.size();
     std::size_t width = n + p;
     for (const Zonotope &Z : bundle.zonotopes())
-        width += std::size_t(Z.generators().shape().back());
+        width += std::size_t(detail::cora_generators(Z).shape().back());
     LinProg lp;
     lp.n = int(width);
     lp.f.assign(width, 0.0);
@@ -131,8 +131,10 @@ bool aux_meets_bundle(const HostH &H, const ZonoBundle &bundle) {
     std::size_t offset = n + p;
     for (const Zonotope &Z : bundle.zonotopes()) {
         // x - G xi = c with |xi| <= 1 for every zonotope
-        const std::vector<double> G = Z.generators().data(), c = Z.center().data();
-        const std::size_t m = std::size_t(Z.generators().shape().back());
+        const std::vector<double> G = detail::cora_generators(Z).data(),
+                                  c = detail::cora_center(Z).data();
+        // layout: #163 step 2
+        const std::size_t m = std::size_t(detail::cora_generators(Z).shape().back());
         for (std::size_t i = 0; i < n; ++i) {
             Row row(width, 0.0);
             row[i] = 1.0;

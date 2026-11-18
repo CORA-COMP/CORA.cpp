@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/reduce.m
 // PROPERTY: contSet/@conZonotope/reduce.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -37,8 +37,9 @@ void reduce_known(const std::string &b) {
           b + ": girard is the default");
     // without constraints it is the zonotope's reduction
     const ConZonotope plain(column({0.0, 0.0}), Tensor({{1.0, 0.0, 3.0}, {0.0, 1.0, 1.0}}));
-    const Zonotope Z(plain.c(), plain.generators());
-    check(close(plain.reduce(1).generators(), Z.reduce(1).generators(), 0),
+    const Zonotope Z = detail::zonotope_of_columns(plain.c(), plain.generators());
+    // layout: #163 step 2
+    check(close(plain.reduce(1).generators(), detail::cora_generators(Z.reduce(1)), 0),
           b + ": without constraints: the zonotope's reduce");
     check(close(Set(many)->reduce(1).as<ConZonotope>().generators(), r.generators(), 0),
           b + ": through the set interface");

@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -26,20 +26,20 @@ namespace {
 
 /// Centers stack, generators sit on the block diagonal; a point and a box are zonotopes first.
 void cart_prod_of_known_sets(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 2.0}, {3.0, 4.0}}));
-    const Zonotope Z2(column({5.0}), Tensor({{6.0, 7.0, 8.0}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 3.0}, {2.0, 4.0}}));
+    const Zonotope Z2(column({5.0}), Tensor({{6.0}, {7.0}, {8.0}}));
     const Zonotope P = Z.cart_prod(Z2);
     check(close(P.center(), std::vector<double>{1, 2, 5}, 0), b + ": centers stack");
     check(
-        close(P.generators(), std::vector<double>{1, 2, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 6, 7, 8}, 0),
+        close(P.generators(), std::vector<double>{1, 3, 0, 2, 4, 0, 0, 0, 6, 0, 0, 7, 0, 0, 8}, 0),
         b + ": block diagonal generators");
 
     const Zonotope with_point = Z.cart_prod(column({9.0}));
-    check(close(with_point.generators(), std::vector<double>{1, 2, 3, 4, 0, 0}, 0),
+    check(close(with_point.generators(), std::vector<double>{1, 3, 0, 2, 4, 0}, 0),
           b + ": a point adds a zero row");
     const Zonotope point_first = Zonotope::cart_prod(column({9.0}), Z);
     check(close(point_first.center(), std::vector<double>{9, 1, 2}, 0), b + ": a point first");
-    check(close(point_first.generators(), std::vector<double>{0, 0, 1, 2, 3, 4}, 0),
+    check(close(point_first.generators(), std::vector<double>{0, 1, 3, 0, 2, 4}, 0),
           b + ": a point first: zero row on top");
 
     const Interval I(column({0.0, -1.0}), column({2.0, 1.0}));
@@ -82,7 +82,7 @@ void support_function_adds(const std::string &b) {
 
 /// Wrong operands are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0}, {3.0}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 3.0}}));
     check(test::raises([&] { Z.cart_prod(Tensor({{1.0, 2.0}})); }, Error::dimension_mismatch),
           "cart_prod: a point must be a column");
     check(test::raises([&] { Z.cart_prod(Zonotope::stack({Z, Z})); }, Error::dimension_mismatch),

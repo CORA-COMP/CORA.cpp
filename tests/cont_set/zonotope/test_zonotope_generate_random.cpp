@@ -4,7 +4,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -27,8 +27,8 @@ namespace {
 void generate_random_follows_cora(const std::string &b) {
     cora::Rng rng(7);
     const Zonotope Z = Zonotope::generate_random(rng, 5, std::nullopt, 8);
-    check(Z.center().shape() == std::vector<int64_t>({5, 1}) &&
-              Z.generators().shape() == std::vector<int64_t>({5, 8}),
+    check(Z.center().shape() == std::vector<int64_t>({5}) &&
+              Z.generators().shape() == std::vector<int64_t>({8, 5}),
           b + ": shapes");
     const std::vector<double> G = Z.generators().data();
     bool short_enough = true;
@@ -49,7 +49,7 @@ void generate_random_options(const std::string &b) {
     const Tensor center = test::column({1.0, -2.0, 3.0});
     const Zonotope Z = Zonotope::generate_random(rng, std::nullopt, center);
     check(close(Z.center(), {1.0, -2.0, 3.0}, 1e-12), b + ": the given center");
-    check(Z.generators().shape() == std::vector<int64_t>({3, 6}),
+    check(Z.generators().shape() == std::vector<int64_t>({6, 3}),
           b + ": 2 n generators by default");
     double longest = 0.0;
     for (const char *distribution : {"exp", "gamma"}) {

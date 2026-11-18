@@ -6,7 +6,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Amr Alanwar
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -35,9 +35,9 @@ void boxes_intersect_exactly(const std::string &b) {
         check(close(R.generators(), std::vector<double>{0.5, 0, 0, 0.5}, 0),
               b + ": " + method + ": the box [0,1]x[-0.5,0.5]");
     }
-    const Zonotope touching = Z.intersect(Zonotope(column({2.0, 0.0}), Tensor({{1.0}, {0.0}})));
+    const Zonotope touching = Z.intersect(Zonotope(column({2.0, 0.0}), Tensor({{1.0, 0.0}})));
     check(close(touching.center(), std::vector<double>{1, 0}, 0) &&
-              touching.generators().shape() == std::vector<int64_t>({2, 0}),
+              touching.generators().shape() == std::vector<int64_t>({0, 2}),
           b + ": boxes that touch meet in a point");
     const Interval I(column({0.0, -2.0}), column({0.5, 2.0}));
     check(close(Z.intersect(I).center(), std::vector<double>{0.25, 0}, 0), b + ": with a box");
@@ -73,7 +73,7 @@ void averaging_contains_the_intersection(const std::string &b) {
     for (int trial = 0; trial < 20; ++trial) {
         const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
         const Zonotope other = Zonotope::generate_random(rng, 2, std::nullopt, 4);
-        const Zonotope Z2(Z.center() + column({0.3, -0.2}),
+        const Zonotope Z2(Z.center() + test::vec({0.3, -0.2}),
                           Z.generators() * 0.8 + other.generators() * 0.4);
         const Zonotope R = Z.intersect(Z2, "averaging");
         const Tensor points = Z.rand_point(60, rng);

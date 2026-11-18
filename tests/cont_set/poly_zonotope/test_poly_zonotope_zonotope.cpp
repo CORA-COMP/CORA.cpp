@@ -3,9 +3,9 @@
 // CORA: contSet/@polyZonotope/zonotope.m
 // PROPERTY: contSet/@polyZonotope/zonotope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -50,8 +50,11 @@ int main() {
         const PolyZonotope P(column({0.0}), Tensor::from_data({2.0, 1.0}, {1, 2}),
                              Tensor::from_data({3.0}, {1, 1}), {{2}, {1}}, {1});
         const Zonotope Z = P.zonotope();
-        check(close(Z.center(), {1.0}, 0), b + ": c + half of the even generator");
-        check(close(Z.generators(), {1.0, 1.0, 3.0}, 0) || Z.generators().shape()[1] == 3,
+        // layout: #163 step 2
+        check(close(detail::cora_center(Z), {1.0}, 0), b + ": c + half of the even generator");
+        // layout: #163 step 2
+        check(close(detail::cora_generators(Z), {1.0, 1.0, 3.0}, 0) ||
+                  detail::cora_generators(Z).shape()[1] == 3,
               b + ": the even generator halves, the others stay");
         zonotope_property(b);
     });

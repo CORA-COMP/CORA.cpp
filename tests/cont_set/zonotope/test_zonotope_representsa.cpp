@@ -26,7 +26,7 @@ namespace {
 Zonotope zonotope(const std::vector<double> &c, const Tensor &G) { return {column(c), G}; }
 
 void points_and_the_origin(const std::string &b) {
-    const Zonotope origin = Zonotope::origin(2), point = zonotope({1, 2}, Tensor::zeros({2, 0}));
+    const Zonotope origin = Zonotope::origin(2), point = zonotope({1, 2}, Tensor::zeros({0, 2}));
     const Zonotope zeros = zonotope({0, 0}, Tensor::zeros({2, 2}));
     const Zonotope seg = zonotope({0, 0}, Tensor({{1.0}, {0.0}}));
     check(origin.representsa("origin", 0) && zeros.representsa("origin", 0) &&

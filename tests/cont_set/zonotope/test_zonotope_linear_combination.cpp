@@ -6,7 +6,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -37,9 +37,9 @@ void linear_combination_encloses_both(const std::string &b) {
     rng.normal(M.data(), M.size(), 0.5);
     rng.normal(t.data(), t.size(), 1.0);
     const Zonotope mapped = Z.linear_map(Tensor::from_data(M, {n, n}));
-    const Zonotope Z2(mapped.center() + column(t), mapped.generators());
+    const Zonotope Z2(mapped.center() + test::vec(t), mapped.generators());
     const Zonotope hull = Z.linear_combination(Z2);
-    check(hull.generators().shape() == std::vector<int64_t>({n, 2 * m + 1}),
+    check(hull.generators().shape() == std::vector<int64_t>({2 * m + 1, n}),
           b + ": 2m + 1 generators");
     for (int k = 0; k < 20; ++k) {
         const std::vector<double> d = random_direction(rng, n);
@@ -49,7 +49,7 @@ void linear_combination_encloses_both(const std::string &b) {
     check(close(Z.linear_combination(Z).interval().inf(), Z.interval().inf(), 1e-12),
           b + ": linear_combination(Z, Z) is Z");
     // two points: the segment between them, the shift its one generator
-    const Zonotope p(column({0.0, 2.0}), Tensor::zeros({2, 0})),
+    const Zonotope p(column({0.0, 2.0}), Tensor::zeros({0, 2})),
         q(column({4.0, 2.0}), Tensor::zeros({2, 0}));
     const Zonotope seg = p.linear_combination(q);
     check(close(seg.center(), {2, 2}) && close(seg.generators(), {-2, 0}),
@@ -60,7 +60,7 @@ void linear_combination_encloses_both(const std::string &b) {
 void checks_and_their_switch() {
     const Zonotope Z = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}})),
                    Z3 = Zonotope(Tensor({1.0, 0.0, 0.0}),
-                                 Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+                                 Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     check(test::raises([&] { Z.linear_combination(Z3); }, Error::dimension_mismatch),
           "linear_combination: dimensions 2 and 3");
     const Tensor on = Z.linear_combination(Z).generators();

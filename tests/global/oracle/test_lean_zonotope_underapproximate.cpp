@@ -9,7 +9,7 @@
 // ORACLE: contSet/@zonotope/underapproximate.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -41,7 +41,9 @@ int main() {
     oracle::run("zonotope.underapproximate", [](oracle::Random &rnd) {
         int compared = 0;
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}, {5, 12}}) {
-            const Zonotope Z(aux_eighths(rnd.vector(n)), aux_eighths(rnd.matrix(n, m)));
+            const Zonotope Z(aux_eighths(rnd.vector(n)),
+                             aux_eighths(rnd.matrix(n, m)).matrix_transpose());
+            // random directions, the same for both
             const int directions = 4;
             std::vector<Tensor> S;
             std::vector<lean::Tensor> theirs_S;

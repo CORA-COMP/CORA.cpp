@@ -15,9 +15,9 @@
 //
 // ORACLE: contSet/@zonotope/mtimes.m
 // ORACLE: contDynamics/@linearSys/oneStep.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -75,7 +75,7 @@ int main() {
             aux_compare("self-test eta" + std::to_string(eta), A, rnd.zonotope(2, 3),
                         rnd.zonotope(2, 1), rnd.vector(2), 0.1, eta);
             aux_compare("no input generators eta" + std::to_string(eta), A, rnd.zonotope(2, 2),
-                        Zonotope(Tensor({0.0, 0.0}), Tensor::zeros({2, 0})), rnd.vector(2), 0.1,
+                        Zonotope(Tensor({0.0, 0.0}), Tensor::zeros({0, 2})), rnd.vector(2), 0.1,
                         eta);
         }
     });

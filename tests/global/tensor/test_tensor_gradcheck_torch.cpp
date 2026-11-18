@@ -5,9 +5,9 @@
 // kinks of the piecewise ones. The conventions test requires a gradcheck("<op>", ...) here for
 // each.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
@@ -263,20 +263,20 @@ void fused() {
                   const auto [Mc, MG] = Tensor::zonotope_linear_map(v[0], v[1], v[2]);
                   return V{Mc, MG};
               },
-              {aux_randn({3, 4}), aux_randn({4, 1}), aux_randn({2, 4, 5})});
+              {aux_randn({3, 4}), aux_randn({4}), aux_randn({2, 5, 4})});
     gradcheck("zonotope_interval_map",
               [](const V &v) {
                   const auto [Tc, TG] =
                       Tensor::zonotope_interval_map(v[0], v[0] + v[1].abs(), v[2], v[3]);
                   return V{Tc, TG};
               },
-              {aux_randn({3, 3}), aux_away({3, 3}), aux_away({3, 1}), aux_away({3, 4})});
+              {aux_randn({3, 3}), aux_away({3, 3}), aux_away({3}), aux_away({4, 3})});
     gradcheck("zonotope_linear_combination",
               [](const V &v) {
                   const auto [c, G] = Tensor::zonotope_linear_combination(v[0], v[1], v[2], v[3]);
                   return V{c, G};
               },
-              {aux_randn({3, 1}), aux_randn({3, 4}), aux_randn({3, 1}), aux_randn({3, 4})});
+              {aux_randn({3}), aux_randn({4, 3}), aux_randn({3}), aux_randn({4, 3})});
     gradcheck("interval_matmul",
               [](const V &v) {
                   const auto [lo, hi] = Tensor::interval_matmul(v[0], v[0] + v[1].abs(), v[2]);

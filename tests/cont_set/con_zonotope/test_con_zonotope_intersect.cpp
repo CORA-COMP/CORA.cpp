@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/and_.m
 // PROPERTY: contSet/@conZonotope/and_.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -37,7 +37,7 @@ void intersect_known(const std::string &b) {
     // the constraints of both sets stay; zero columns and rows go
     const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         column({1.0}));
-    const ConZonotope D = C.intersect(Zonotope(column({0.5, 0.5}), Tensor({{0.0}, {0.0}})));
+    const ConZonotope D = C.intersect(Zonotope(column({0.5, 0.5}), Tensor({{0.0, 0.0}})));
     check(close(D.interval().inf(), {0.5, 0.5}, 1e-9), b + ": a point of the segment");
     const ConZonotope E = A.intersect(Interval(column({1.5}), column({4.0})));
     check(close(E.interval().inf(), {1.5}, 1e-9) && close(E.interval().sup(), {2}, 1e-9),

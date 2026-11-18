@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@conZonotope/zonoBundle.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -61,14 +61,17 @@ ZonoBundle ConZonotope::zono_bundle() const {
     detail::Entry entry;
     CORA_CHECK(c_.ndim() == 2, Error::not_supported,
                [] { return std::string("zono_bundle: it supports a single set, not a batch"); });
-    if (A().shape()[A().ndim() - 2] == 0) return ZonoBundle::from(Zonotope(c_, G_));
+    // layout: #163 step 2
+    if (A().shape()[A().ndim() - 2] == 0)
+        return ZonoBundle::from(detail::zonotope_of_columns(c_, G_));
     if (priv_is_empty(priv_host_con_zonotope(*this))) return ZonoBundle::empty(dim());
     const int64_t m = A().shape()[1];
     const Tensor p0 = A().pinv().matmul(b()), T = null_space(A());
     const Tensor shift = c_ + G_.matmul(p0);
     const int64_t p = T.shape()[1];
     // no free direction: the constraints fix the factors, and the set is a point
-    if (p == 0) return ZonoBundle::from(Zonotope(shift, G_.zeros_like({dim(), 0})));
+    if (p == 0)
+        return ZonoBundle::from(detail::zonotope_of_columns(shift, G_.zeros_like({dim(), 0})));
     // the rows [T; -T] y <= [1 - p0; 1 + p0], each normalized
     const Tensor rows = Tensor::concat({T, T * -1.0}, 0);
     const Tensor offsets = Tensor::concat({p0 * -1.0 + 1.0, p0 + 1.0}, 0);

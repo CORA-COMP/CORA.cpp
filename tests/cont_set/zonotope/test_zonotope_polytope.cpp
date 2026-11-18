@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonotope/polytope.m
 // CORA authors: Niklas Kochdumper, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -33,7 +33,7 @@ void facets_bound_the_zonotope(const std::string &b) {
         check(P.A().shape()[1] == n && P.A().shape()[0] % 2 == 0,
               b + ": halfspaces in " + std::to_string(n) + "D");
         check(P.contains(Z.rand_point(30, rng, "extreme"), "exact", numerics::kPolytopeFacet) &&
-                  P.contains(Z.center()),
+                  P.contains(Z.center().expand_dims(-1)),
               b + ": the zonotope is inside, " + std::to_string(n) + "D");
         const Tensor outside = Z.center() + Z.generators().abs().sum(-1, true) * 1.1 + 1.0;
         check(!P.contains(outside),
@@ -48,7 +48,7 @@ void exact_forms(const std::string &b) {
     check(P.A().shape() == Shape{4, 2} && P.contains(column({2.0, 5.0})) &&
               !P.contains(column({2.1, 5.0})) && P.contains(column({0.0, -1.0})),
           b + ": the square");
-    const Zonotope point(column({1.0, 2.0}), Tensor::zeros({2, 0}));
+    const Zonotope point(column({1.0, 2.0}), Tensor::zeros({0, 2}));
     check(point.polytope().A().shape() == Shape{4, 2}, b + ": the box of a point");
 }
 

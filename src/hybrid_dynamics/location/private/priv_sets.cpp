@@ -10,7 +10,7 @@
 // CORA.cpp only: CORA's sets carry these operations themselves (zonoBundle.Z, isIntersecting_).
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
@@ -112,8 +112,10 @@ const Tensor &priv_flow_matrix(const Location &loc, const char *what) {
 Tensor priv_flow_at(const Location &loc, const Tensor &x, const Zonotope &U_state,
                     const char *what) {
     if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow()))
-        return sys->input_dim() == 0 ? sys->dynamics(x) : sys->dynamics(x, U_state.center());
-    return priv_flow_matrix(loc, what).matmul(x) + U_state.center();
+        return sys->input_dim() == 0 ? sys->dynamics(x)
+                                     : sys->dynamics(x, detail::cora_center(U_state));
+    // layout: #163 step 2
+    return priv_flow_matrix(loc, what).matmul(x) + detail::cora_center(U_state);
 }
 
 } // namespace cora

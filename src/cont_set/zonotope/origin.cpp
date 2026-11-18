@@ -9,7 +9,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,7 +25,7 @@ CORA_FROM_NUMBERS Zonotope Zonotope::origin(int64_t n) {
     detail::Entry entry;
     CORA_CHECK(n >= 1, Error::wrong_value,
                [&] { return "origin: the dimension must be positive, got " + std::to_string(n); });
-    return {Tensor::zeros({n, 1}), Tensor::zeros({n, 0})};
+    return {Tensor::zeros({n}), Tensor::zeros({0, n})};
 }
 
 } // namespace cora

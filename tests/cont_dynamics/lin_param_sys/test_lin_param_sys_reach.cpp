@@ -16,7 +16,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
@@ -73,8 +73,12 @@ void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U
         const Tensor &G = sys.A().generators();
         Tensor A = sys.A().center();
         for (int64_t g = 0; g < G.size(0); ++g) A = A + G.slice(0, g, g + 1).squeeze(0) * b[g];
-        const Tensor x0 = R0.center() + R0.generators().matmul(column({b[2], b[3]}));
-        const double u = U.center().item() + U.generators().abs().sum().item() * b[4];
+        // layout: #163 step 2
+        const Tensor x0 =
+            detail::cora_center(R0) + detail::cora_generators(R0).matmul(column({b[2], b[3]}));
+        // layout: #163 step 2
+        const double u =
+            detail::cora_center(U).item() + detail::cora_generators(U).abs().sum().item() * b[4];
         const Tensor v = sys.B()->matmul(column({u})) + sys.c();
         const auto step = std::size_t(k % 20);
         const double t = (double(step) + 0.5 * (b[5] + 1)) * kDt;
@@ -89,7 +93,7 @@ void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U
 /// Wrong problems and options are refused; with the checks off reach is the same.
 void checks_and_their_switch() {
     const LinParamSys sys(aux_set(1), Tensor({{0.0}, {1.0}}));
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05}, {0.0}}));
+    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
     alg::LinParamStandard a;
     a.time_step = kDt;
     // the problem: an initial set, a horizon of a step, inputs of B
@@ -111,9 +115,13 @@ void checks_and_their_switch() {
     const Zonotope away(column({0.75}), Tensor({{0.25}}));
     check(test::raises([&] { sys.reach({R0, away, 5.0}, stiff); }, Error::reach_set_explosion),
           "reach: the curvature of a constant input needs norm(A) r < taylor_terms + 2");
-    const Tensor on = sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back().center();
+    // layout: #163 step 2
+    const Tensor on =
+        detail::cora_center(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back());
     ChecksScope off(false);
-    check(close(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back().center(), on, 0),
+    // layout: #163 step 2
+    check(close(detail::cora_center(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()), on,
+                0),
           "reach: the same with the checks off");
 }
 

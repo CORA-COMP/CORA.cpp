@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@polyZonotope/cartProd_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -38,7 +38,7 @@ PolyZonotope known() {
 int main() {
     test::for_each_backend([](const std::string &b) {
         const PolyZonotope P = known();
-        const Zonotope Z(column({5.0}), Tensor::from_data({1.0, 2.0}, {1, 2}));
+        const Zonotope Z(column({5.0}), Tensor::from_data({1.0, 2.0}, {2, 1}));
         const PolyZonotope Q = P.cart_prod(Z);
         check(Q.dim() == 3 && close(Q.center(), {1.0, 0.0, 5.0}, 0), b + ": the centers stack");
         check(Q.independent_generators().shape()[1] == 3 && Q.num_dependent() == 2,
@@ -48,11 +48,11 @@ int main() {
 
     check(
         test::raises(
-            [] { known().cart_prod(Zonotope(Tensor::zeros({2, 1, 1}), Tensor::zeros({2, 1, 0}))); },
+            [] { known().cart_prod(Zonotope(Tensor::zeros({2, 1, 1}), Tensor::zeros({2, 0, 1}))); },
             Error::dimension_mismatch),
         "cart_prod: a batch");
     ChecksScope off(false);
-    check(known().cart_prod(Zonotope(column({1.0}), Tensor::zeros({1, 0}))).dim() == 3,
+    check(known().cart_prod(Zonotope(column({1.0}), Tensor::zeros({0, 1}))).dim() == 3,
           "cart_prod: valid with the checks off");
     return test::finish("poly_zonotope cart_prod");
 }

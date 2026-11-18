@@ -19,9 +19,9 @@
 // CORA: contSet/@polyZonotope/private/priv_reduceAdaptive.m
 // CORA: contDynamics/@nonlinearSys/reach_adaptive.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -341,9 +341,10 @@ PolyZonotope priv_poly_plus(const PolyZonotope &Z1, const PolyZonotope &Z2) {
 }
 
 PolyZonotope priv_poly_plus(const PolyZonotope &Z, const Zonotope &Z2) {
-    return {Z.center() + Z2.center(),
+    // layout: #163 step 2
+    return {Z.center() + detail::cora_center(Z2),
             Z.generators(),
-            Tensor::concat({Z.independent_generators(), Z2.generators()}, -1),
+            Tensor::concat({Z.independent_generators(), detail::cora_generators(Z2)}, -1),
             Z.exponents(),
             Z.ids(),
             detail::Verbatim{}};

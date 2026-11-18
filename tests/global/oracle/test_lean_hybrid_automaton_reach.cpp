@@ -16,7 +16,7 @@
 // ORACLE: hybridDynamics/@location/guardIntersect.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   16-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "../../../examples/cpp/benchmarks/benchmark_rendezvous_model.h"
@@ -136,8 +136,12 @@ std::pair<std::size_t, std::size_t> aux_compare(const HybridAutomaton &HA,
         for (std::size_t k = 0; k < t.time_interval.size() && k < m.time_interval.size(); ++k) {
             const std::string set = name + ".R[" + std::to_string(k) + "]";
             const auto &Z = m.time_interval[k].as<Zonotope>();
-            test::oracle::check(set + ".c", Z.center(), t.time_interval[k].center());
-            test::oracle::check(set + ".G", Z.generators(), t.time_interval[k].generators());
+            // layout: #163 step 2
+            test::oracle::check(set + ".c", detail::cora_center(Z),
+                                detail::cora_center(t.time_interval[k]));
+            // layout: #163 step 2
+            test::oracle::check(set + ".G", detail::cora_generators(Z),
+                                detail::cora_generators(t.time_interval[k]));
         }
         sets += t.time_interval.size();
     }
@@ -173,7 +177,8 @@ int main() {
         // small random automata: three locations, two guards of the first, a step size 1/8 and 1/16
         for (const double dt : {0.125, 0.0625}) {
             const HybridAutomaton HA = aux_build(aux_specs(rnd, dt));
-            const Zonotope R0(Tensor::from_data({0.0, 0.0}, {2, 1}), rnd.matrix(2, 2) * 0.05);
+            const Zonotope R0(Tensor::from_data({0.0, 0.0}, {2, 1}),
+                              rnd.matrix(2, 2).matrix_transpose() * 0.05);
             alg::HybridStandard alg{{dt}, 6, 8};
             const auto [n, m] = aux_compare(HA, {.initial_set = R0, .t_final = 6.0}, alg);
             stays += n;
@@ -202,7 +207,7 @@ int main() {
                 // a start near the docking guard x = -100 and a short horizon
                 problem.initial_set =
                     Zonotope(Tensor::from_data({-120, -30, 0, 0, 0}, {5, 1}),
-                             Tensor::from_data({1, 0, 0, 0, 0, 0, 1, 0, 0, 0}, {5, 2}));
+                             Tensor::from_data({1, 0, 0, 1, 0, 0, 0, 0, 0, 0}, {2, 5}));
                 problem.t_final = 10;
                 alg.time_step = std::vector<double>(alg.time_step.size() == 3 ? 3 : 2, 0.25);
                 alg.time_step[0] = 0.5;

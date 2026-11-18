@@ -19,9 +19,9 @@
 //
 // CORA: contDynamics/@linearSys/initReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -63,8 +63,10 @@ std::optional<int> aux_halvings(const Mat &A, std::size_t n, double dt) {
 Zonotope aux_zonotope(const Tensor &like, const Vec &c, const Vec &G, std::size_t n,
                       std::size_t h) {
     const auto N = static_cast<int64_t>(n), H = static_cast<int64_t>(h);
-    return {Tensor::like(like, c, {N, 1}),
-            h == 0 ? like.zeros_like({N, 0}) : Tensor::like(like, G, {N, H})};
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(Tensor::like(like, c, {N, 1}),
+                                       h == 0 ? like.zeros_like({N, 0})
+                                              : Tensor::like(like, G, {N, H}));
 }
 
 } // namespace
@@ -137,12 +139,15 @@ std::optional<PolySeries> PolySeries::make(const Tensor &A, double dt, int taylo
 // The map by an interval matrix -------------------------------------------------------------------
 
 Zonotope priv_interval_map(const Interval &M, const Zonotope &Z) {
-    const Tensor &like = Z.center();
+    // layout: #163 step 2
+    const Tensor &like = detail::cora_center(Z);
     const auto m = static_cast<std::size_t>(M.inf().size(-2)),
                n = static_cast<std::size_t>(M.inf().size(-1));
-    const auto h = static_cast<std::size_t>(Z.generators().size(-1));
-    const Vec lo = M.inf().data(), hi = M.sup().data(), c = Z.center().data(),
-              G = Z.generators().data();
+    // layout: #163 step 2
+    const auto h = static_cast<std::size_t>(detail::cora_generators(Z).size(-1));
+    // layout: #163 step 2
+    const Vec lo = M.inf().data(), hi = M.sup().data(), c = detail::cora_center(Z).data(),
+              G = detail::cora_generators(Z).data();
     // mid(M) and the residual radius of the box M - mid(M)
     Mat C(m * n), R(m * n);
     for (std::size_t e = 0; e < m * n; ++e) {
@@ -189,10 +194,13 @@ std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series,
     const int64_t n = X0.dim();
     const Tensor zero = X0.center().zeros_like();
     // the segment [0, u] of the center, V without it (a point has n zero generators)
-    const Tensor &u = V.center();
-    const Zonotope point_zero(zero, zero.zeros_like({n, n})), point_u(u, zero.zeros_like({n, n}));
+    const Tensor &u = detail::cora_center(V);
+    // layout: #163 step 2
+    const Zonotope point_zero = detail::zonotope_of_columns(zero, zero.zeros_like({n, n})),
+                   point_u = detail::zonotope_of_columns(u, zero.zeros_like({n, n}));
     const Zonotope seg = priv_lin_comb(point_zero, point_u);
-    const Zonotope V0 = Zonotope(zero, V.generators());
+    // layout: #163 step 2
+    const Zonotope V0 = detail::zonotope_of_columns(zero, detail::cora_generators(V));
     const Zonotope PuR = series.input_solution(seg).reduce_adaptive(zeta_z);
     const Zonotope PU = series.input_solution(V0).reduce_adaptive(zeta_z);
     // [F] X0, the hull of X0 and [e^{A dt}] X0, the hull of {0} and ([e^{A dt}] - I) X0
@@ -217,12 +225,15 @@ PolyZonotope priv_poly_point(const PolySeries &series, const Zonotope &V, const 
     const int64_t n = X0.dim();
     const Tensor zero = X0.center().zeros_like();
     // the input: V with the time-varying (independent) part of Vs, its center ũ held
-    const Zonotope Vt = V.plus(Zonotope(zero, Vs.independent_generators()));
-    const Tensor &u = Vt.center();
-    const Zonotope point_u(u, zero.zeros_like({n, n}));
+    const Zonotope Vt = V.plus(detail::zonotope_of_columns(zero, Vs.independent_generators()));
+    // layout: #163 step 2
+    const Tensor &u = detail::cora_center(Vt);
+    // layout: #163 step 2
+    const Zonotope point_u = detail::zonotope_of_columns(u, zero.zeros_like({n, n}));
     const Zonotope Pu = priv_interval_map(series.integral(), point_u);
     const Zonotope PU =
-        series.input_solution(Zonotope(zero, Vt.generators())).reduce_adaptive(zeta_z);
+        series.input_solution(detail::zonotope_of_columns(zero, detail::cora_generators(Vt)))
+            .reduce_adaptive(zeta_z);
     // [e^{A dt}] X0 reduced, the integral of the dependent part of Vs, the dependency on X0 kept
     const PolyZonotope e_adt_red =
         priv_reduce_adaptive_poly(priv_poly_interval_map(series.e_adt(), X0), zeta_z);

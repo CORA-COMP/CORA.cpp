@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@polyZonotope/exactPlus.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -52,7 +52,7 @@ int main() {
     });
     check(test::raises(
               [] {
-                  known().exact_plus(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({1, 0}))));
+                  known().exact_plus(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({0, 1}))));
               },
               Error::dimension_mismatch),
           "exact_plus: dimension");

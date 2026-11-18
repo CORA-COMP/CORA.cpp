@@ -16,9 +16,9 @@
 // CORA: contSet/@polyZonotope/polyZonotope.m
 // CORA: contSet/@polyZonotope/reduce.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_float_scalars.h"
@@ -114,9 +114,11 @@ PolyZonotope priv_poly_enclose_shared(const PolyZonotope &A, const PolyZonotope 
     id.push_back((id.empty() ? 0 : *std::max_element(id.begin(), id.end())) + 1);
     // the independent parts as zonotopes of the center 0, combined
     const Tensor zero = A.center().zeros_like();
-    const Zonotope Z = priv_lin_comb(Zonotope(zero, A.independent_generators()),
-                                     Zonotope(zero, B.independent_generators()));
-    Tensor GI = Z.generators();
+    // layout: #163 step 2
+    const Zonotope Z = priv_lin_comb(detail::zonotope_of_columns(zero, A.independent_generators()),
+                                     detail::zonotope_of_columns(zero, B.independent_generators()));
+    // layout: #163 step 2
+    Tensor GI = detail::cora_generators(Z);
     const int64_t q = A.independent_generators().shape()[1];
     // as many generators in both: [(G1 + G2)/2, (c1 - c2)/2, (G1 - G2)/2], the center in the middle
     if (q == B.independent_generators().shape()[1])

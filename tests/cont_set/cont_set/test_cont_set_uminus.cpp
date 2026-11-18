@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -30,13 +30,16 @@ namespace {
 
 /// -S has the center -c and the generators -G for a zonotope, the bounds [-sup, -inf] for a box.
 void uminus_negates(const std::string &b) {
-    const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.2, 0.5}, {2, 2}));
+    const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.2, 0.0, 0.5}, {2, 2}));
     const Interval I(column({-1.0, 0.0}), column({2.0, 3.0}));
     const Set A = static_cast<const ContSet &>(Z).uminus(),
               B = static_cast<const ContSet &>(I).uminus();
-    check(A.is<Zonotope>() && test::close(A.as<Zonotope>().center(), {-1.0, 0.0}) &&
-              test::close(A.as<Zonotope>().generators(), {-0.5, -0.0, -0.2, -0.5}),
-          b + ": a zonotope");
+    // layout: #163 step 2
+    check(
+        A.is<Zonotope>() && test::close(A.as<Zonotope>().center().expand_dims(-1), {-1.0, 0.0}) &&
+            // layout: #163 step 2
+            test::close(A.as<Zonotope>().generators().matrix_transpose(), {-0.5, -0.0, -0.2, -0.5}),
+        b + ": a zonotope");
     check(B.is<Interval>() && test::close(B.as<Interval>().inf(), {-2.0, -3.0}) &&
               test::close(B.as<Interval>().sup(), {1.0, 0.0}),
           b + ": a box");

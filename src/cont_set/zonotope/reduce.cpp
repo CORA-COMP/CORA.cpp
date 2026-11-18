@@ -13,9 +13,9 @@
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reduceGirard.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -35,11 +35,18 @@ Zonotope Zonotope::reduce(int order) const {
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "reduce: the zonotope order must be at least 1, got " + std::to_string(order);
     });
-    const int64_t n = dim(), m = G_.shape().back();
+    const int64_t n = dim(), m = nr_generators();
     if (m <= order * n) return *this;
 
-    // the longest generators stay and the rest becomes a box
-    return {c_, priv_girard_generators(G_, order * n - n)};
+    // the longest generators stay and the rest becomes a box; a matrix zonotope as its entries
+    if (elem_rank_ == 1) return {c_, priv_girard_generators(G_, order * n - n)};
+    const Shape batch = batch_shape();
+    Shape flat = batch, shape = G_.shape();
+    flat.push_back(m);
+    flat.push_back(n);
+    const Tensor reduced = priv_girard_generators(G_.reshape(flat), order * n - n);
+    shape[batch.size()] = reduced.size(-2);
+    return {c_, reduced.reshape(shape), elem_rank_};
 }
 
 Set Zonotope::reduce_impl(int order) const { return reduce(order); }

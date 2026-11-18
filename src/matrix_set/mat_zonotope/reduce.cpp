@@ -12,9 +12,9 @@
 //
 // CORA: matrixSet/@matZonotope/reduce.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
@@ -40,9 +40,13 @@ MatZonotope MatZonotope::reduce(int order, const std::string &method) const {
                [] { return std::string("reduce: it supports a single set, not a batch"); });
     const Zonotope Z = zonotope().reduce(order);
     // back to rows x cols: the columns of the stacked vectors are matrices read column by column
-    const int64_t h = Z.generators().shape().back();
-    return {Z.center().reshape({cols(), rows()}).matrix_transpose(),
-            Z.generators().matrix_transpose().reshape({h, cols(), rows()}).matrix_transpose()};
+    const int64_t h = detail::cora_generators(Z).shape().back();
+    // layout: #163 step 2
+    return {detail::cora_center(Z).reshape({cols(), rows()}).matrix_transpose(),
+            detail::cora_generators(Z)
+                .matrix_transpose()
+                .reshape({h, cols(), rows()})
+                .matrix_transpose()};
 }
 
 } // namespace cora

@@ -1,11 +1,16 @@
 // zonotope - the class of zonotopes Z = {c + G b | |b|_inf <= 1}, as CORA's zonotope
 //
-// The center c is a column (..., n, 1); the generators G are (..., n, m), one per column.
+// Batch first, as PyTorch: the center c is (batch..., elem...), the generators G are
+// (batch..., h, elem...), one generator per row (#163). A vector zonotope has elem = (n), a matrix
+// zonotope (Zonotope::matrix) elem = (r, c). Points and directions given to or returned by the
+// operations are still columns (..., n, 1) and (n, N), as the other sets take them.
 // Immutable: every operation returns a new zonotope. Not the competition's zonotope
 // (competition/sets): that one is tuned for speed on one library.
 //
-// Syntax:     Zonotope Z(c, G);   Zonotope Z = Zonotope::generate_random(rng);
-// Operators:  M * Z (linear_map), s * Z, Z + Z2 and Z + I (plus), Z + v, Z - v, -Z, as in CORA
+// Syntax:     Zonotope Z(c, G);   Zonotope A = Zonotope::matrix(C, G);
+//             Zonotope Z = Zonotope::generate_random(rng);
+// Operators:  M * Z and matmul(M, Z) (NumPy's M @ x for every point x), s * Z, Z + Z2 and Z + I
+//             (plus), Z + v, Z - v, -Z
 // Operations: one file each in src/cont_set/zonotope/, named as CORA's @zonotope; the constructor
 //             checks its input (zonotope.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
@@ -16,7 +21,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   11-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -44,8 +49,14 @@ class Zonotope : public ContSet {
     /// The most generators whose corners a containment test enumerates one by one.
     static constexpr int64_t kMaxCornerGenerators = 12;
 
-    /// The zonotope of the center c (..., n, 1) and the generators G (..., n, m).
+    /// The zonotope of the center c (batch..., n) and the generators G (batch..., h, n), one
+    /// generator per row; c may be a column (batch..., n, 1), as Tensor({...}) makes one.
+
     Zonotope(Tensor c, Tensor G);
+
+    /// The matrix zonotope {C + sum_i b_i G_i | |b|_inf <= 1} of the center C (batch..., r, c) and
+    /// the generators G (batch..., h, r, c).
+    static Zonotope matrix(Tensor C, Tensor G);
 
     /// A random zonotope, as CORA's generateRandom: dimension (default that of center, else
     /// 1..10), center, nr_generators (default 2 dimension), distribution of the lengths
@@ -57,9 +68,16 @@ class Zonotope : public ContSet {
 
     // Construction --------------------------------------------------------------------------------
 
-    /// The center c and the generators G.
+    /// The center c (batch..., elem...) and the generators G (batch..., h, elem...).
     const Tensor &center() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
+
+    /// The rank of the elements (1 for vectors, 2 for matrices), their shape, the batch shape and
+    /// the number h of generators.
+    int64_t elem_rank() const noexcept { return elem_rank_; }
+    Shape elem_shape() const;
+    Shape batch_shape() const;
+    int64_t nr_generators() const { return G_.size(-1 - elem_rank_); }
 
     using ContSet::rand_point;
 
@@ -69,8 +87,12 @@ class Zonotope : public ContSet {
 
     // Linear and set operations -------------------------------------------------------------------
 
-    /// M * Z for a matrix M (..., k, n): exact, c -> Mc and G -> MG.
+    /// M * Z for a matrix M (..., k, n): exact, {M x | x in Z} (NumPy's M @ x for every point; for
+    /// a matrix zonotope M (k, r) times every matrix (r, c)). The batch dims of M broadcast.
     Zonotope linear_map(const Tensor &M) const;
+
+    /// Z @ M, {x @ M | x in Z}: for a vector zonotope M' x, for a matrix zonotope X M.
+    Zonotope matmul_right(const Tensor &M) const;
 
     /// [M] * Z for an interval matrix (an Interval with (..., n, n) bounds): an enclosure.
     Zonotope linear_map(const Interval &M) const;
@@ -399,7 +421,7 @@ class Zonotope : public ContSet {
     std::pair<Tensor, Tensor> zonotope_norm_minimizer(const Tensor &p) const;
 
   protected:
-    int64_t dim_impl() const override { return c_.shape()[c_.shape().size() - 2]; }
+    int64_t dim_impl() const override;
     Tensor center_impl() const override;
     Tensor support_function_impl(const Tensor &d) const override;
     Interval interval_impl() const override;
@@ -425,28 +447,43 @@ class Zonotope : public ContSet {
     Set enclose_impl(const ContSet &S2) const override;
 
   private:
+    // the zonotope of the given element rank, and the operators that keep it
+    Zonotope(Tensor c, Tensor G, int64_t elem_rank);
+    friend Zonotope operator*(double s, const Zonotope &Z);
+    friend Zonotope operator+(const Zonotope &Z, const Tensor &v);
+    friend Zonotope operator-(const Zonotope &Z, const Tensor &v);
+    friend Zonotope operator-(const Zonotope &Z);
+
     Tensor c_, G_;
+    int64_t elem_rank_ = 1;
 };
 
-// Operators, as CORA writes them: M * Z maps, s * Z scales, Z + Z2 sums, a column v translates.
+// Operators: M * Z and matmul(M, Z) map (M @ Z), matmul(Z, M) is Z @ M; see the file docstring.
 inline Zonotope operator*(const Tensor &M, const Zonotope &Z) { return Z.linear_map(M); }
 inline Zonotope operator*(const Interval &M, const Zonotope &Z) { return Z.linear_map(M); }
-inline Zonotope operator*(double s, const Zonotope &Z) {
-    return {Z.center() * s, Z.generators() * s};
-}
+inline Zonotope matmul(const Tensor &M, const Zonotope &Z) { return Z.linear_map(M); }
+inline Zonotope matmul(const Zonotope &Z, const Tensor &M) { return Z.matmul_right(M); }
+Zonotope operator*(double s, const Zonotope &Z);
 inline Zonotope operator*(const Zonotope &Z, double s) { return s * Z; }
 inline Zonotope operator+(const Zonotope &Z, const Zonotope &Z2) { return Z.plus(Z2); }
 inline Zonotope operator+(const Zonotope &Z, const Interval &I) { return Z.plus(I); }
 inline Zonotope operator+(const Interval &I, const Zonotope &Z) { return Z.plus(I); }
-inline Zonotope operator+(const Zonotope &Z, const Tensor &v) {
-    return {Z.center() + v, Z.generators()};
-}
+Zonotope operator+(const Zonotope &Z, const Tensor &v);
 inline Zonotope operator+(const Tensor &v, const Zonotope &Z) { return Z + v; }
-inline Zonotope operator-(const Zonotope &Z, const Tensor &v) {
-    return {Z.center() - v, Z.generators()};
-}
+Zonotope operator-(const Zonotope &Z, const Tensor &v);
 /// -Z as CORA's uminus: centre and generators negated, like ContSet::uminus.
-inline Zonotope operator-(const Zonotope &Z) { return {Z.center() * -1.0, Z.generators() * -1.0}; }
+Zonotope operator-(const Zonotope &Z);
+
+namespace detail { // layout: #163 step 2 - CORA's columns, for the code not yet batch first
+/// The center as a column (batch..., n, 1).
+inline Tensor cora_center(const Zonotope &Z) { return Z.center().expand_dims(-1); }
+/// The generators as columns (batch..., n, h).
+inline Tensor cora_generators(const Zonotope &Z) { return Z.generators().matrix_transpose(); }
+/// The vector zonotope of a center column (batch..., n, 1) and generator columns (batch..., n, h).
+inline Zonotope zonotope_of_columns(const Tensor &c, const Tensor &G) {
+    return {c.squeeze(-1), G.matrix_transpose()};
+}
+} // namespace detail
 
 } // namespace cora
 

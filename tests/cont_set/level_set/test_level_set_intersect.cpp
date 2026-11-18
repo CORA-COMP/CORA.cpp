@@ -8,9 +8,9 @@
 // CORA: contSet/@levelSet/and_.m
 // PROPERTY: contSet/@levelSet/and_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "level_set_testing.h"
@@ -71,7 +71,7 @@ int main() {
         // a point on the level set stays, one off it is empty
         const LevelSet line(x1 - 1.0, 2, CompOp::eq);
         const auto pt = [&](double x) {
-            return PolyZonotope(Zonotope(column({x, 0.0}), Tensor::zeros({2, 0})));
+            return PolyZonotope(Zonotope(column({x, 0.0}), Tensor::zeros({0, 2})));
         };
         check(line.intersect(pt(1.0)).has_value(), b + ": a point on the set");
         check(!line.intersect(pt(2.0)).has_value(), b + ": a point beyond the set");

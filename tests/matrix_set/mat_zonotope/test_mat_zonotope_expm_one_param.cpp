@@ -5,9 +5,9 @@
 // CORA: matrixSet/@matZonotope/expmOneParam.m
 // PROPERTY: matrixSet/@matZonotope/expmOneParam.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "mat_zonotope_testing.h"
@@ -110,9 +110,10 @@ void series_with_an_input(const std::string &bname) {
     const double r = 0.5;
     const int64_t N = 6;
     const Tensor c = test::matrix({1, -2, 0.5}, 3, 1), g = test::matrix({0.3, 0.1, -0.4}, 3, 1);
-    const auto R = A.expm_one_param(r, N, Zonotope(c, g));
+    const auto R = A.expm_one_param(r, N, Zonotope(c, g.matrix_transpose()));
     check(R.constant_input.has_value() &&
-              R.constant_input->generators().shape() == std::vector<int64_t>({3, N}),
+              // layout: #163 step 2
+              detail::cora_generators(*R.constant_input).shape() == std::vector<int64_t>({3, N}),
           bname + ": the input's zonotope has N generators");
     bool exact = true;
     for (const double b : {-1.0, 0.3, 1.0}) {
@@ -128,15 +129,21 @@ void series_with_an_input(const std::string &bname) {
         const Zonotope &Z = *R.constant_input;
         std::vector<double> coeff = generator_coefficients(b, N);
         const Tensor point =
-            Z.center() + Z.generators().matmul(Tensor::like(Z.center(), coeff, {N, 1}));
+            // layout: #163 step 2
+            detail::cora_center(Z) +
+            detail::cora_generators(Z).matmul(Tensor::like(detail::cora_center(Z), coeff, {N, 1}));
         exact = exact && close(point, expected, 1e-12);
     }
     check(exact, bname + ": the input terms for every parameter");
     const auto fixed = A.expm_one_param(r, N, Zonotope(c, c.zeros_like()));
-    const auto zero_generators = A.expm_one_param(r, N, Zonotope(c, Tensor::zeros({3, 0})));
-    check(close(zero_generators.constant_input->center(), fixed.constant_input->center(), 0) &&
-              close(zero_generators.constant_input->generators(),
-                    fixed.constant_input->generators(), 0) &&
+    const auto zero_generators = A.expm_one_param(r, N, Zonotope(c, Tensor::zeros({0, 3})));
+    // layout: #163 step 2
+    check(close(detail::cora_center(*zero_generators.constant_input),
+                detail::cora_center(*fixed.constant_input), 0) &&
+              // layout: #163 step 2
+              close(detail::cora_generators(*zero_generators.constant_input),
+                    // layout: #163 step 2
+                    detail::cora_generators(*fixed.constant_input), 0) &&
               test::same_set(fixed.enclosure, R.enclosure, 0),
           bname + ": a zonotope without generators is a column");
     const MatZonotope batch = test::batch_of(A, A);
@@ -158,7 +165,7 @@ void checks_and_their_switch() {
           "expm_one_param: a non-square set");
     check(test::raises([&] { A.expm_one_param(1.0, 0); }, Error::wrong_value),
           "expm_one_param: the order 0");
-    const Zonotope too_long(test::matrix({1, 2, 3}, 3, 1), test::matrix({0, 0, 0}, 3, 1));
+    const Zonotope too_long(test::matrix({1, 2, 3}, 3, 1), test::matrix({0, 0, 0}, 1, 3));
     const Zonotope two(test::matrix({1, 2}, 2, 1), test::matrix({1, 0, 0, 1}, 2, 2));
     check(test::raises([&] { A.expm_one_param(1.0, 2, too_long); }, Error::dimension_mismatch),
           "expm_one_param: an input of another dimension");

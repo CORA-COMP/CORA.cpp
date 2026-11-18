@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@zonotope/isequal.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -72,16 +72,16 @@ Refusal aux_refusal(const Tensor &c, const Tensor &c2) {
 
 bool Zonotope::isequal(const Zonotope &S, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "isequal");
-    const Refusal refusal = aux_refusal(c_, S.center());
+    const double tol = resolve_tol(entry, tol_arg, detail::cora_center(*this).dtype(), "isequal");
+    const Refusal refusal = aux_refusal(detail::cora_center(*this), detail::cora_center(S));
     CORA_CHECK(!refusal, refusal->first, [&] { return "isequal: " + refusal->second; });
     return S.dim() == dim() && aux_isequal(*this, S, tol);
 }
 
 bool Zonotope::isequal(const Interval &I, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "isequal");
-    const Refusal refusal = aux_refusal(c_, I.inf());
+    const double tol = resolve_tol(entry, tol_arg, detail::cora_center(*this).dtype(), "isequal");
+    const Refusal refusal = aux_refusal(detail::cora_center(*this), I.inf());
     CORA_CHECK(!refusal, refusal->first, [&] { return "isequal: " + refusal->second; });
     // a box is the zonotope of its axes; the empty box is no zonotope
     return I.dim() == dim() && !I.is_empty() && aux_isequal(*this, I.zonotope(), tol);
@@ -89,10 +89,10 @@ bool Zonotope::isequal(const Interval &I, Tol tol_arg) const {
 
 bool Zonotope::isequal(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "isequal");
+    const double tol = resolve_tol(entry, tol_arg, detail::cora_center(*this).dtype(), "isequal");
     CORA_CHECK(p.ndim() == 2, Error::dimension_mismatch,
                [] { return std::string("isequal: a point must be a column (n, 1)"); });
-    const Refusal refusal = aux_refusal(c_, p);
+    const Refusal refusal = aux_refusal(detail::cora_center(*this), p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "isequal: " + refusal->second; });
     return p.shape()[0] == dim() && p.shape().back() == 1 &&
            aux_isequal(*this, priv_zonotope_of_point(p), tol);

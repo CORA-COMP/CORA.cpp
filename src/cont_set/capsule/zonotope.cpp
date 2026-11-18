@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@capsule/zonotope.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -32,8 +32,11 @@ Zonotope Capsule::zonotope() const {
     detail::Entry entry;
     CORA_CHECK(!is_empty(), Error::empty_set,
                [] { return std::string("zonotope: the capsule is empty"); });
-    if (priv_all(r_.equal(r_.zeros_like()))) return {c_, g_};
-    return {c_, Tensor::concat({g_, r_.multiply(c_.eye_like(dim()))}, -1)};
+    // layout: #163 step 2
+    if (priv_all(r_.equal(r_.zeros_like()))) return detail::zonotope_of_columns(c_, g_);
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(c_,
+                                       Tensor::concat({g_, r_.multiply(c_.eye_like(dim()))}, -1));
 }
 
 } // namespace cora

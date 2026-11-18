@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@zonotope/interval.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -22,7 +22,9 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Interval Zonotope::interval_impl() const {
-    const Tensor r = G_.abs_sum(); // the radius: row sums of |G|
+    const Tensor r = G_.abs().sum(-1 - int(elem_rank_)); // the radius: the sum of |G| over h
+    // layout: #163 step 2 - the box of a vector zonotope has column bounds (..., n, 1)
+    if (elem_rank_ == 1) return {(c_ - r).expand_dims(-1), (c_ + r).expand_dims(-1)};
     return {c_ - r, c_ + r};
 }
 

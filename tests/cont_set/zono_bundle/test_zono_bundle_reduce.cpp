@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/reduce.m
 // PROPERTY: contSet/@zonoBundle/reduce.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -26,12 +26,13 @@ void reduce_property(const std::string &b) {
     const ZonoBundle zono_bundle = test::random_zono_bundle(rng, 2, 3, 7, &common);
     const ZonoBundle R = zono_bundle.reduce(2);
     bool few = R.parallel_sets() == zono_bundle.parallel_sets();
-    for (const Zonotope &Z : R.zonotopes()) few = few && Z.generators().shape().back() <= 4;
+    // layout: #163 step 2
+    for (const Zonotope &Z : R.zonotopes())
+        few = few && detail::cora_generators(Z).shape().back() <= 4;
     check(few, b + ": at most order * n generators per member");
     check(R.contains(test::bundle_points(zono_bundle, rng, 15, common)),
           b + ": the points are inside");
-    check(Set(zono_bundle)->reduce(1).as<ZonoBundle>().zonotopes()[0].generators().shape().back() <=
-              2,
+    check(Set(zono_bundle)->reduce(1).as<ZonoBundle>().zonotopes()[0].nr_generators() <= 2,
           b + ": through the interface");
 }
 

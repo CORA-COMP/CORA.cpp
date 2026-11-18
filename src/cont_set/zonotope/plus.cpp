@@ -7,11 +7,12 @@
 //
 // CORA: contSet/@zonotope/plus.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
+#include "cont_set/zonotope/private/priv.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "global/format.h"
 
@@ -28,20 +29,47 @@ Zonotope Zonotope::plus(const Zonotope &Z2) const {
         return "plus: the zonotopes differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(Z2.dim());
     });
-    return {c_ + Z2.center(), Tensor::concat({G_, Z2.generators()}, -1)};
+    CORA_CHECK(Z2.elem_rank() == elem_rank_ && Z2.elem_shape() == elem_shape(),
+               Error::dimension_mismatch, [&] {
+                   return "plus: the elements differ in shape, " + shape_text(elem_shape()) +
+                          " and " + shape_text(Z2.elem_shape());
+               });
+    // the batch dims broadcast; the generators join along their own axis
+    const Tensor c = c_ + Z2.center();
+    const int64_t axis = c.ndim() - elem_rank_;
+    const auto widen = [&](const Tensor &G) {
+        Shape s(std::vector<int64_t>(c.shape().begin(), c.shape().begin() + axis));
+        for (int64_t i = G.ndim() - elem_rank_ - 1; i < G.ndim(); ++i) s.push_back(G.size(int(i)));
+        return G.shape() == s ? G : G.broadcast_to(s);
+    };
+    return {c, Tensor::concat({widen(G_), widen(Z2.generators())}, int(axis)), elem_rank_};
 }
+
 
 Zonotope Zonotope::plus(const Interval &I) const {
     detail::Entry entry;
-    CORA_CHECK(I.dim() == dim() && I.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
-        return "plus: the interval must be a box of the dimension " + std::to_string(dim()) +
-               " of the zonotope, got bounds of the shape " + shape_text(I.inf().shape());
-    });
+    CORA_CHECK(elem_rank_ == 1 && I.dim() == dim() && I.inf().shape().back() == 1,
+               Error::dimension_mismatch, [&] {
+                   return "plus: the interval must be a box of the dimension " +
+                          std::to_string(dim()) + " of the zonotope, got bounds of the shape " +
+                          shape_text(I.inf().shape());
+               });
     // the box as a zonotope: its center, and its radius as one generator per axis
-    return {c_ + I.center(), Tensor::concat({G_, I.rad().diag()}, -1)};
+    return {c_ + I.center().squeeze(-1), Tensor::concat({G_, I.rad().diag()}, -2)};
 }
 
-Set Zonotope::translate_impl(const Tensor &v) const { return Zonotope(c_ + v, G_); }
+Set Zonotope::translate_impl(const Tensor &v) const { return *this + v; }
+
+Zonotope operator+(const Zonotope &Z, const Tensor &v) {
+    return {Z.c_ + priv_point_row(v, Z), Z.G_, Z.elem_rank_};
+}
+
+Zonotope operator-(const Zonotope &Z, const Tensor &v) {
+    return {Z.c_ - priv_point_row(v, Z), Z.G_, Z.elem_rank_};
+}
+
+Zonotope operator-(const Zonotope &Z) { return {Z.c_ * -1.0, Z.G_ * -1.0, Z.elem_rank_}; }
+
 
 } // namespace cora
 

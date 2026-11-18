@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@contSet/linComb.m
 // CORA authors: Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -26,7 +26,9 @@ namespace cora {
 
 Zonotope Zonotope::linear_combination(const Zonotope &Z2) const {
     detail::Entry entry;
-    CORA_CHECK(Z2.center().shape() == c_.shape() && Z2.generators().shape() == G_.shape(),
+    CORA_CHECK(elem_rank_ == 1 && Z2.elem_rank() == 1 && Z2.center().shape() == c_.shape() &&
+                   Z2.generators().shape() == G_.shape(),
+
                Error::dimension_mismatch, [&] {
                    return "linear_combination: Z2 must have the shapes of Z (center " +
                           shape_text(c_.shape()) + ", generators " + shape_text(G_.shape()) +

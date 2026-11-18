@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/cubMap.m
 // PROPERTY: contSet/@conZonotope/cubMap.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -44,16 +44,22 @@ void cubic_map_known(const std::string &b) {
     const auto T = aux_map();
     const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope R = plain.cubic_map(T);
-    const Zonotope expected = Zonotope(plain.c(), plain.generators()).cubic_map(T);
-    check(close(R.c(), expected.center(), 0) && close(R.generators(), expected.generators(), 0),
+    const Zonotope expected =
+        detail::zonotope_of_columns(plain.c(), plain.generators()).cubic_map(T);
+    // layout: #163 step 2
+    check(close(R.c(), detail::cora_center(expected), 0) &&
+              close(R.generators(), detail::cora_generators(expected), 0),
           b + ": without constraints: the zonotope's map");
-    check(R.A().shape() == Shape{0, expected.generators().shape().back()},
+    // layout: #163 step 2
+    check(R.A().shape() == Shape{0, detail::cora_generators(expected).shape().back()},
           b + ": and no constraints");
     const ConZonotope constrained(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                                   Tensor({{1.0, 1.0}}), column({0.5}));
     const ConZonotope C = constrained.cubic_map(T);
-    check(close(C.generators(), expected.generators(), 0), b + ": the same generators");
-    check(C.A().shape() == Shape{1, expected.generators().shape().back()} &&
+    // layout: #163 step 2
+    check(close(C.generators(), detail::cora_generators(expected), 0), b + ": the same generators");
+    // layout: #163 step 2
+    check(C.A().shape() == Shape{1, detail::cora_generators(expected).shape().back()} &&
               close(C.A().slice(1, 0, 2), {1, 1}, 0) &&
               close(C.A().slice(1, 2, C.A().shape()[1]).abs().sum(), {0}, 0),
           b + ": the constraints on the linear monomials, zero elsewhere");

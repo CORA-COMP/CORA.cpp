@@ -13,7 +13,7 @@
 // CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -26,15 +26,15 @@ namespace cora {
 
 namespace {
 
-/// The rows of [c G] (..., n, k) at the positions dims of N rows, zero rows elsewhere.
-Tensor aux_embed(const Tensor &rows, int64_t N, const std::vector<int64_t> &dims) {
-    const int64_t n = rows.shape()[rows.ndim() - 2];
-    Shape zero_shape = rows.shape();
-    zero_shape[rows.ndim() - 2] = 1;
-    // the zero row is row n of the padded matrix; a position nobody maps to selects it
+/// The entries of the center or generators (..., n) at the positions dims of N, zero elsewhere.
+Tensor aux_embed(const Tensor &x, int64_t N, const std::vector<int64_t> &dims) {
+    const int64_t n = x.size(-1);
+    Shape zero_shape = x.shape();
+    zero_shape.back() = 1;
+    // the zero entry is entry n of the padded vectors; a position nobody maps to selects it
     std::vector<int64_t> source(N, n);
     for (int64_t i = 0; i < n; ++i) source[dims[i]] = i;
-    return Tensor::concat({rows, rows.zeros_like(zero_shape)}, -2).take(source, -2);
+    return Tensor::concat({x, x.zeros_like(zero_shape)}, -1).take(source, -1);
 }
 
 /// What is wrong with N and the positions dims for a zonotope of dimension n, or "" if nothing.
@@ -62,7 +62,9 @@ std::string aux_problem(int64_t N, const std::vector<int64_t> &dims, int64_t n) 
 Zonotope Zonotope::project_high_dim(int64_t N, const std::vector<int64_t> &dims) const {
     detail::Entry entry;
     const std::string problem = aux_problem(N, dims, dim());
-    CORA_CHECK(problem.empty(), Error::wrong_value, [&] { return "project_high_dim: " + problem; });
+    CORA_CHECK(problem.empty() && elem_rank_ == 1, Error::wrong_value,
+               [&] { return "project_high_dim: " + problem; });
+
     return {aux_embed(c_, N, dims), aux_embed(G_, N, dims)};
 }
 

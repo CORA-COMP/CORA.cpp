@@ -12,9 +12,9 @@
 // CORA: contSet/@contSet/norm_.m
 // CORA: contSet/@contSet/enclose.m
 // CORA authors: Tobias Ladner, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/zonotope_gradients.h"
@@ -32,7 +32,9 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(43);
-    const auto zonotope = [](const Inputs &x) { return Zonotope(x[0], x[1]); };
+    const auto zonotope = [](const Inputs &x) {
+        return detail::zonotope_of_columns(x[0], x[1]);
+    }; // layout: #163 step 2
     const auto S = [](const Zonotope &Z) -> const ContSet & { return Z; };
     test::gradcheck(
         "lift",
@@ -48,7 +50,8 @@ int main() {
     test::gradcheck(
         "enclose",
         [&](const Inputs &x) {
-            const Zonotope Z2(x[0] + x[0].ones_like(), x[1]);
+            const Zonotope Z1 = zonotope(x);
+            const Zonotope Z2(Z1.center() + Z1.center().ones_like(), Z1.generators());
             // gradient of enclose
             return test::parts(S(zonotope(x)).enclose(Z2).as<Zonotope>());
         },

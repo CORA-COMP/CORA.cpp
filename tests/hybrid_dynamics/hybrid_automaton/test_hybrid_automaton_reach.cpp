@@ -30,7 +30,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger, Niklas Kochdumper, Stefan Liu
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -121,7 +121,7 @@ bool aux_covered(const HybridReachSet &R, double t, const Tensor &p) {
             const Interval box = b.time_interval[k]->interval();
             // the box first, then the set
             if ((box.inf() - p).max().item() <= 1e-9 && (p - box.sup()).max().item() <= 1e-9 &&
-                contains(*b.time_interval[k], Zonotope(p, p.zeros_like({2, 0})), 1e-9))
+                contains(*b.time_interval[k], Zonotope(p, p.zeros_like({0, 2})), 1e-9))
                 return true;
         }
     return false;
@@ -222,7 +222,7 @@ void time_triggered() {
     const HybridAutomaton HA("clock", {first, second});
     // a flat initial clock: the time-point set at t = 1 lies on the guard
     HybridReachProblem p;
-    p.initial_set = Zonotope(column({1.0, 0.0}), Tensor({{0.1}, {0.0}}));
+    p.initial_set = Zonotope(column({1.0, 0.0}), Tensor({{0.1, 0.0}}));
     p.t_final = 1.5;
     const HybridReachSet R = HA.reach(p, aux_alg(alg::ZonoGirard{}));
     check(R.branches.size() == 2 && R.branches[1].location == 1, "clock: one jump");

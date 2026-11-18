@@ -24,7 +24,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -74,7 +74,8 @@ class LeanStepper {
     FloatStep operator()(const Zonotope &V) const {
         if (!closed_form_) return lean_->step(xs_, V, R_, order_);
         // the constant input is the center of V, the time-varying one V without it
-        const ClosedFormStep S = closed_->step(R_ - xs_, V - V.center(), V.center());
+        const ClosedFormStep S =
+            closed_->step(R_ - xs_, V - detail::cora_center(V), detail::cora_center(V));
         return FloatStep{S.time_interval + xs_, S.time_point + xs_};
     }
 
@@ -130,12 +131,14 @@ std::optional<Box> aux_region(const NonlinearSys &sys, const Tensor &like, const
 /// one linear step with f(x*, u*) + B (U - u*) + [-l, l] as input.
 NonlinearStep aux_region_step(const NonlinearSys &sys, const Zonotope &R,
                               const std::optional<Zonotope> &U, const alg::Linearization &alg) {
-    const Tensor &like = R.center();
+    // layout: #163 step 2
+    const Tensor &like = detail::cora_center(R);
     const int64_t n = sys.dim(), m = sys.input_dim();
     // without an input set the input is the origin
     const std::optional<Zonotope> Uz =
-        m > 0 ? std::optional<Zonotope>(
-                    U ? *U : Zonotope(like.zeros_like({m, 1}), like.zeros_like({m, 0})))
+        m > 0 ? std::optional<Zonotope>(U ? *U
+                                          : detail::zonotope_of_columns(like.zeros_like({m, 1}),
+                                                                        like.zeros_like({m, 0})))
               : std::nullopt;
     const Box X = priv_zonotope_box(R);
     const std::optional<Box> Ub = Uz ? std::optional<Box>(priv_zonotope_box(*Uz)) : std::nullopt;
@@ -145,7 +148,8 @@ NonlinearStep aux_region_step(const NonlinearSys &sys, const Zonotope &R,
                   "cora: the region check of the step failed (the time_step may be too large)");
     // x*, A, B and f(x*, u*) + B (U - u*)
     const AdaptiveLinearization L = priv_linearize_adaptive(sys, Uz, like, alg.time_step);
-    const Vec us = Uz ? Uz->center().data() : Vec{};
+    // layout: #163 step 2
+    const Vec us = Uz ? detail::cora_center(*Uz).data() : Vec{};
     // the Hessian over the region and U, both holding the expansion point
     const Box Xh = priv_hull(*Omega, L.xs);
     const std::optional<Box> Uh = Uz ? std::optional<Box>(priv_hull(*Ub, us)) : std::nullopt;
@@ -160,7 +164,7 @@ NonlinearStep aux_region_step(const NonlinearSys &sys, const Zonotope &R,
 NonlinearStep aux_loop_step(const NonlinearSys &sys, const Zonotope &R, const Tensor &error,
                             const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     auto out = priv_lin_loop<Zonotope>(
-        sys, R.center(), error, U, alg,
+        sys, detail::cora_center(R), error, U, alg,
         [&](const AdaptiveLinearization &L) { return LeanStepper(L.J.A, L.xs_t, R, alg); },
         [](const Zonotope &Z) { return Z; });
     return {std::move(out.time_interval), std::move(out.time_point), std::move(out.error)};
@@ -173,10 +177,13 @@ NonlinearStep aux_lean_step(const NonlinearSys &sys, const Zonotope &R, const Te
     const double dt = alg.time_step;
     // the affine system; its input without the error is f(x*, u*) + B (U - u*), centered at f
     const Linearized lin = sys.linearize(R, U, dt);
-    const Zonotope V_base(lin.u_const, lin.U.generators());
+    // layout: #163 step 2
+    const Zonotope V_base =
+        detail::zonotope_of_columns(lin.u_const, detail::cora_generators(lin.U));
     const LeanStepper step(lin.sys.A(), lin.x_star, R, alg);
     // the centered input set (CORA's params.U); without one, the input 0
-    const std::optional<Zonotope> U0 = priv_centered_inputs(R.center(), sys.input_dim(), U);
+    const std::optional<Zonotope> U0 =
+        priv_centered_inputs(detail::cora_center(R), sys.input_dim(), U);
 
     // the error: guessed, checked over the window it allows, and enlarged until it holds
     Tensor bound = error;
@@ -184,10 +191,12 @@ NonlinearStep aux_lean_step(const NonlinearSys &sys, const Zonotope &R, const Te
     double perf = std::numeric_limits<double>::infinity();
     while (perf > 1) {
         const Tensor applied = bound * 1.1;
-        const Zonotope V_guess(applied.zeros_like(), applied.diag());
+        // layout: #163 step 2
+        const Zonotope V_guess = detail::zonotope_of_columns(applied.zeros_like(), applied.diag());
         const Zonotope window = step(V_base + V_guess).first;
         // the error is computed relative to the point of linearization
-        const Zonotope relative(window.center() - lin.x_star, window.generators());
+        const Zonotope relative = detail::zonotope_of_columns(
+            detail::cora_center(window) - lin.x_star, detail::cora_generators(window));
         err = priv_abstrerr_lin(sys, relative, lin, U0, alg);
         perf = priv_ratio_max(err->bound, applied);
         bound = err->bound;
@@ -236,7 +245,8 @@ priv_error_loop(const Linearized &lin, TaylorLinSys &taylor, const Tensor &error
     // guess 1.1 times the last error, solve it over the step, check the error over that set
     while (perf > 1) {
         const Tensor applied = bound * 1.1;
-        const Zonotope V_guess(applied.zeros_like(), applied.diag());
+        // layout: #163 step 2
+        const Zonotope V_guess = detail::zonotope_of_columns(applied.zeros_like(), applied.diag());
         const Zonotope R_guess =
             priv_particular_time_varying(lin.sys, taylor, blocks, V_guess, dt, eta)[0];
         err = error_over(R_guess);
@@ -251,8 +261,9 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
                              const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     if (alg.linear_step != alg::LinearStep::cora) {
         // these steps compute on host numbers: a gradient would silently miss terms
-        if (R.center().requires_grad() || R.generators().requires_grad() ||
-            (U && (U->center().requires_grad() || U->generators().requires_grad())))
+        if (detail::cora_center(R).requires_grad() || detail::cora_generators(R).requires_grad() ||
+            (U && (detail::cora_center(*U).requires_grad() ||
+                   detail::cora_generators(*U).requires_grad())))
             CORA_FAIL(Error::not_supported,
                       "linearization: the closed_form, region and coralean steps compute on host "
                       "numbers and are not differentiable; use linear_step cora and error_bound "
@@ -270,7 +281,8 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
     AffineStep step = priv_affine_step(lin.sys, R - lin.x_star, lin.U, lin.u_const, dt, eta);
     const Zonotope &R_ti = step.time_interval;
     // the centered input set (CORA's params.U); without one, the input 0
-    const std::optional<Zonotope> U0 = priv_centered_inputs(R.center(), sys.input_dim(), U);
+    const std::optional<Zonotope> U0 =
+        priv_centered_inputs(detail::cora_center(R), sys.input_dim(), U);
 
     // the error: guessed, checked over the set it allows, and enlarged until it holds
     const AbstractionError err =

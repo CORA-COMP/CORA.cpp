@@ -7,9 +7,9 @@
 // Outputs:  example_plot_tikz_01_group.tikz (a tikzpicture) and _standalone.tikz (a document)
 // See also: example_plot_tikz_01_group of the Python examples, example_plot_reach_01_over_time
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -52,7 +52,7 @@ int main() {
     grid.at(1, 0).ylabel = "$x_2$";
 
     // A three-dimensional set in the last one.
-    const Zonotope Z(Tensor({0, 0, 0}), Tensor({{1, 0, 0.5}, {0, 1, 0.5}, {0, 0, 1}}));
+    const Zonotope Z(Tensor({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}, {0.5, 0.5, 1}}));
     plot(grid.at(1, 1), Z, {0, 1, 2}, {.face_color = "CORA:blue"});
     grid.at(1, 1).xlabel = "$x_1$";
     grid.at(1, 1).ylabel = "$x_2$";

@@ -13,9 +13,9 @@
 //
 // CORA: contDynamics/@linearSys/affineSolution.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
@@ -44,7 +44,7 @@ AffineSolution LinearSys::affine_solution(const Zonotope &X, const Tensor &u, do
     const Blocks blocks = priv_one_block(dim());
     const BlockSets Xb{X};
     // the constant input is a point of the state space
-    const Zonotope point(u, u.zeros_like({dim(), 0}));
+    const Zonotope point = detail::zonotope_of_columns(u, u.zeros_like({dim(), 0}));
     BlockConstant Pu =
         priv_particular_constant(*this, taylor, blocks, point, time_step, taylor_terms);
     BlockHomogeneous H = priv_homogeneous(*this, taylor, blocks, Xb, time_step, taylor_terms);

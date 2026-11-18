@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -65,7 +65,7 @@ void enclose_many_encloses(const std::string &b) {
         }
     }
     // in the frame the box is axis-aligned: inverse * G is diagonal up to the zero columns
-    const Tensor G = inverse.matmul(E.generators());
+    const Tensor G = inverse.matmul(E.generators().matrix_transpose()); // as columns
     const std::vector<double> g = G.data();
     const int64_t m = G.shape()[1];
     for (int64_t i = 0; i < 3; ++i)
@@ -79,7 +79,7 @@ void enclose_many_encloses(const std::string &b) {
 
 /// Wrong inputs are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(test::raises([&] { Zonotope::enclose_many({}, column({1.0, 0.0})); }, Error::wrong_value),
           "enclose_many: none");
     check(

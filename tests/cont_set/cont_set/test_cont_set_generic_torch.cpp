@@ -16,7 +16,7 @@
 // CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/zonotope_gradients.h"
@@ -47,7 +47,9 @@ int main() {
     const Tensor p = Tensor::from_data({0.5, -1.0, 2.0}, {3, 1});
     const Tensor c = Tensor::from_data({1.0, 2.0, 2.0}, {3, 1});
     const Tensor d = Tensor::from_data({0.7}, {1, 1});
-    const auto zonotope = [](const Inputs &x) { return Zonotope(x[0], x[1]); };
+    const auto zonotope = [](const Inputs &x) {
+        return detail::zonotope_of_columns(x[0], x[1]);
+    }; // layout: #163 step 2
     const auto S = [&](const Zonotope &Z) -> const ContSet & { return Z; };
     test::gradcheck(
         "linear_map", [&](const Inputs &x) { return aux_parts(S(zonotope(x)).linear_map(M)); },

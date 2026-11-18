@@ -8,9 +8,9 @@
 // See also: priv_zonotope_norm
 //
 // CORA.cpp only: MATLAB hands its matrices to the solver as they are
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -23,7 +23,8 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 HostZonotope priv_host_zonotope(const Zonotope &Z) {
-    return {Z.dim(), Z.generators().shape().back(), Z.center().data(), Z.generators().data()};
+    // the linear programs read CORA's n x m matrix of generator columns
+    return {Z.dim(), Z.nr_generators(), Z.center().data(), detail::cora_generators(Z).data()};
 }
 
 } // namespace cora

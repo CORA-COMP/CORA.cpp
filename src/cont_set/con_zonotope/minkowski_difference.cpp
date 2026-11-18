@@ -18,7 +18,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -63,8 +63,10 @@ ConZonotope aux_exact(const ConZonotope &cz, const Zonotope &S) {
 
 /// Translate by the center of S and, for each generator g, intersect cz + g with cz - g.
 ConZonotope aux_inner_vertices(const ConZonotope &cz, const Zonotope &S) {
-    ConZonotope result = cz.plus(S.center() * -1.0);
-    const Tensor &G = S.generators();
+    // layout: #163 step 2
+    ConZonotope result = cz.plus(detail::cora_center(S) * -1.0);
+    // layout: #163 step 2
+    const Tensor &G = detail::cora_generators(S);
     for (int64_t i = 0; i < G.shape().back(); ++i) {
         const Tensor g = G.slice(-1, i, i + 1);
         result = result.plus(g).intersect(result.plus(g * -1.0));
@@ -80,12 +82,14 @@ ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
     const Tensor pick = Tensor::concat({cz.c().eye_like(n), zeros_block(cz.c(), p, n)}, -2);
     const Tensor Gamma = lifted.pinv().matmul(pick); // (N, n)
     // the support of the centered S along row i of Gamma: sum_k |Gamma_i . g_k|
-    const Tensor support = Gamma.matmul(S.generators()).abs_sum(); // (N, 1)
+    const Tensor support = Gamma.matmul(detail::cora_generators(S)).abs_sum(); // (N, 1)
     const std::vector<double> s = support.data();
     for (const double v : s)
         if (v > 1.0) return ConZonotope::empty(n);
     const Tensor D = (support.ones_like() - support).reshape({1, N});
-    return {cz.c() - S.center(), cz.generators().multiply(D), cz.A().multiply(D), cz.b()};
+    // layout: #163 step 2
+    return {cz.c() - detail::cora_center(S), cz.generators().multiply(D), cz.A().multiply(D),
+            cz.b()};
 }
 
 // The dispatch ------------------------------------------------------------------------------------
@@ -97,13 +101,14 @@ ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::
         CORA_FAIL(Error::wrong_value, "minkowski_difference: the type must be exact, "
                                       "inner:vertices or inner:Vinod, got '" +
                                           type + "'");
-    if (cz.c().ndim() != 2 || S.center().ndim() != 2)
+    // layout: #163 step 2
+    if (cz.c().ndim() != 2 || detail::cora_center(S).ndim() != 2)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: it supports single sets, not a batch");
     if (type == "inner:vertices") return aux_inner_vertices(cz, S);
     if (type == "inner:Vinod") return aux_inner_vinod(cz, S);
     const Zonotope compacted = S.compact();
-    if (compacted.generators().shape().back() > Zonotope::kMaxCornerGenerators)
+    if (compacted.nr_generators() > Zonotope::kMaxCornerGenerators)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: a set of more than 12 generators has too many vertices "
                   "to intersect one by one");

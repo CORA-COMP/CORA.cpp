@@ -17,9 +17,9 @@
 // See also: convert.h, the C++ headers, which document every method
 //
 // CORA.cpp only: the Python package has no CORA counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   11-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "global/python/convert.h"
@@ -1337,7 +1337,8 @@ void bind_mat_zonotope(py::module_ &m) {
                 if (py::isinstance<Zonotope>(u_trans))
                     return A.expm_one_param(r, max_order, py::cast<Zonotope>(u_trans));
                 const Tensor u = tensor_of(u_trans, "u_trans"); // a column is the zonotope (u, 0)
-                return A.expm_one_param(r, max_order, Zonotope(u, u.zeros_like()));
+                return A.expm_one_param(r, max_order,
+                                        Zonotope(u, u.zeros_like().matrix_transpose()));
             },
             py::arg("r"), py::arg("max_order"), py::arg("u_trans") = py::none(),
             "The Taylor series of exp(M r) for the matrices C + b G of a set with one generator, "
@@ -1468,8 +1469,9 @@ using Indices = std::vector<std::vector<int64_t>>;
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
         .def(py::init([](const Array &c, const Array &G) {
-                 // the zonotope from center and generators
-                 return Zonotope(vector_of(c, "the center"), tensor_of(G, "the generators"));
+                 // layout: #163 step 2 - Python still gives CORA's generator columns
+                 return detail::zonotope_of_columns(vector_of(c, "the center"),
+                                                    tensor_of(G, "the generators"));
              }),
              py::arg("center"), py::arg("generators"), "center (..., n) and generators (..., n, m)")
         // the list filter and the conversions of a zonotope
@@ -1494,12 +1496,14 @@ void bind_zonotope(py::module_ &m) {
             "A random zonotope: the dimension (default that of center, else random in 1..10), a "
             "center, the number of generators (default 2 * dimension) and the distribution of "
             "their lengths ('uniform', 'exp' or 'gamma')")
-        .def_property_readonly(
-            "center", [](const Zonotope &Z) { return vector(Z.center()); }, "The center c (..., n)")
         // the center and the generators of the zonotope
         .def_property_readonly(
-            "generators", [](const Zonotope &Z) { return matrix(Z.generators()); },
+            "center", [](const Zonotope &Z) { return vector(detail::cora_center(Z)); },
+            "The center c (..., n)")
+        .def_property_readonly(
+            "generators", [](const Zonotope &Z) { return matrix(detail::cora_generators(Z)); },
             "The generator matrix G (..., n, m)")
+        // points and maps
         .def(
             "rand_point",
             [](const Zonotope &Z, int64_t N, cora::Rng &rng, const std::string &type) {

@@ -8,9 +8,9 @@
 // See also: priv_float_step.h, priv_closed_form_step.h
 //
 // CORA.cpp only: the float definitions of CORALean's MatExp.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -198,15 +198,19 @@ inline double priv_float_halved(double dt, int s) {
 /// generators (G1 + G2) / 2, then (G1 - G2) / 2, the surplus of either copied as it is, and the
 /// generator (c1 - c2) / 2. Equal counts of generators give linear_combination.
 inline Zonotope priv_lin_comb(const Zonotope &Z1, const Zonotope &Z2) {
-    const Tensor &G1 = Z1.generators(), &G2 = Z2.generators();
+    // layout: #163 step 2
+    const Tensor &G1 = detail::cora_generators(Z1), &G2 = detail::cora_generators(Z2);
     const int64_t m1 = G1.size(-1), m2 = G2.size(-1), common = std::min(m1, m2);
     const Tensor a = G1.slice(-1, 0, common), b = G2.slice(-1, 0, common);
     std::vector<Tensor> parts{(a + b) / 2.0};
     if (m1 > common) parts.push_back(G1.slice(-1, common, m1));
     parts.push_back((a - b) / 2.0);
     if (m2 > common) parts.push_back(G2.slice(-1, common, m2));
-    parts.push_back((Z1.center() - Z2.center()) / 2.0);
-    return {(Z1.center() + Z2.center()) / 2.0, Tensor::concat(parts, -1)};
+    // layout: #163 step 2
+    parts.push_back((detail::cora_center(Z1) - detail::cora_center(Z2)) / 2.0);
+    // layout: #163 step 2
+    return detail::zonotope_of_columns((detail::cora_center(Z1) + detail::cora_center(Z2)) / 2.0,
+                                       Tensor::concat(parts, -1));
 }
 
 } // namespace cora

@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@zonotope/generateRandom.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -97,10 +97,10 @@ CORA_FROM_NUMBERS Zonotope Zonotope::generate_random(Rng &rng, std::optional<int
     const int64_t m = nr_generators ? *nr_generators : 2 * n;
     std::vector<double> c(n);
     if (!center) rng.normal(c.data(), c.size(), 10.0);
-    // the generators live where the given center does, else on the current backend
+    // drawn as CORA's columns (n, m), kept as rows, on the backend of the center or the current
     const std::vector<double> G = aux_generators(n, m, distribution, rng);
-    if (center) return {*center, Tensor::like(*center, G, {n, m})};
-    return {Tensor::from_data(c, {n, 1}), Tensor::from_data(G, {n, m})};
+    if (center) return {center->squeeze(-1), Tensor::like(*center, G, {n, m}).matrix_transpose()};
+    return {Tensor::from_data(c, {n}), Tensor::from_data(G, {n, m}).matrix_transpose()};
 }
 
 } // namespace cora

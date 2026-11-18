@@ -20,7 +20,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       16-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_float_scalars.h"
@@ -38,8 +38,11 @@ namespace cora {
 
 Vec priv_error_radius_float(const Tensor &A, double dt, int eta, const Zonotope &V) {
     const auto n = static_cast<std::size_t>(A.size(-1));
-    const auto h = static_cast<std::size_t>(V.generators().size(-1));
-    const Vec a = A.data(), c = V.center().data(), G = V.generators().data();
+    // layout: #163 step 2
+    const auto h = static_cast<std::size_t>(detail::cora_generators(V).size(-1));
+    // layout: #163 step 2
+    const Vec a = A.data(), c = detail::cora_center(V).data(),
+              G = detail::cora_generators(V).data();
     // what a coordinate of V reaches: |c_j| + the row sum of |G| (priv_interval_map)
     Vec reach(n);
     for (std::size_t j = 0; j < n; ++j) {

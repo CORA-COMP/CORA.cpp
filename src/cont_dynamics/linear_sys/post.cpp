@@ -11,9 +11,9 @@
 //
 // CORA: contDynamics/@linearSys/post.m
 // CORA authors: Mark Wetzlinger, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
@@ -53,9 +53,11 @@ ReachStep LinearSys::post(const ReachState &state, const alg::LinearReach &alg) 
     Zonotope par = state.par;
     if (o.wrapping_free) {
         // only the center of the constant part is propagated, its width joins the box
-        hom = hom + trans.center();
-        hom_tp = hom_tp + trans.center();
-        par = aux_box_sum(state.par, aux, trans, trans.center());
+        hom = hom + detail::cora_center(trans);
+        // layout: #163 step 2
+        hom_tp = hom_tp + detail::cora_center(trans);
+        // layout: #163 step 2
+        par = aux_box_sum(state.par, aux, trans, detail::cora_center(trans));
     } else {
         hom = hom.plus(trans).reduce(o.zonotope_order);
         hom_tp = hom_tp.plus(trans).reduce(o.zonotope_order);

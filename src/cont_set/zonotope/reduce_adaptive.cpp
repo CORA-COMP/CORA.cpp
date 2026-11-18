@@ -16,9 +16,9 @@
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reduceAdaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -62,11 +62,12 @@ Zonotope Zonotope::reduce_adaptive(double diag_percent) const {
         return "reduce_adaptive: diag_percent must be nonnegative and finite, got " +
                std::to_string(diag_percent);
     });
-    CORA_CHECK(c_.ndim() == 2 && G_.ndim() == 2, Error::not_supported, [] {
-        return std::string("reduce_adaptive: a batch of zonotopes is not supported");
-    });
-    const int64_t n = dim(), h = G_.shape().back();
-    const std::vector<double> g = G_.data();
+    CORA_CHECK(detail::cora_center(*this).ndim() == 2 && detail::cora_generators(*this).ndim() == 2,
+               Error::not_supported, [] {
+                   return std::string("reduce_adaptive: a batch of zonotopes is not supported");
+               });
+    const int64_t n = dim(), h = nr_generators();
+    const std::vector<double> g = detail::cora_generators(*this).data();
     const auto a = [&](std::size_t at) { return std::abs(g[at]); };
 
     // the box (row sums) and Girard's metric (column sums less the largest entry) in one pass
@@ -130,7 +131,8 @@ Zonotope Zonotope::reduce_adaptive(double diag_percent) const {
             if (boxed[std::size_t(j)]) sum = a(std::size_t(i * h + j)) + sum;
         out[std::size_t(i * (q + n) + q + i)] = sum;
     }
-    return {c_, Tensor::like(c_, out, {n, q + n})};
+    const Tensor c = detail::cora_center(*this);
+    return detail::zonotope_of_columns(c, Tensor::like(c, out, {n, q + n}));
 }
 
 } // namespace cora

@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/contains_.m
 // PROPERTY: contSet/@conZonotope/contains_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Matthias Althoff, Adrian Kulmburg, Ivan Brkan
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -33,9 +33,9 @@ void contains_known(const std::string &b) {
     check(!segment.contains(Tensor({{0.5, 1.0}, {0.5, 1.0}})), b + ": several points: one out");
     check(segment.contains(column({0.5, 0.5 + 1e-9}), "exact", 1e-6),
           b + ": a tolerance admits a point off the line");
-    check(segment.contains(Zonotope(column({0.5, 0.5}), Tensor({{0.25}, {-0.25}}))),
+    check(segment.contains(Zonotope(column({0.5, 0.5}), Tensor({{0.25, -0.25}}))),
           b + ": a zonotope on it");
-    check(!segment.contains(Zonotope(column({0.5, 0.5}), Tensor({{0.25}, {0.25}}))),
+    check(!segment.contains(Zonotope(column({0.5, 0.5}), Tensor({{0.25, 0.25}}))),
           b + ": a zonotope across it");
     check(segment.contains(Interval(column({0.5, 0.5}), column({0.5, 0.5}))), b + ": a point box");
     check(!segment.contains(Interval(column({0.0, 0.0}), column({1.0, 1.0}))),
@@ -87,7 +87,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { A.contains(Tensor({{1.0, 2.0}, {1.0, 2.0}})); },
                        Error::dimension_mismatch),
           "contains: the points are (n, N)");
-    check(test::raises([&] { A.contains(Zonotope(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}))); },
+    check(test::raises([&] { A.contains(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}}))); },
                        Error::dimension_mismatch),
           "contains: another dimension");
     check(test::raises([&] { A.contains(column({0.0}), "nothing"); }, Error::no_specific_alg),
@@ -105,7 +105,7 @@ void checks_and_their_switch() {
               },
               Error::not_supported),
           "contains: a batch");
-    check(test::raises([&] { A.contains(Zonotope(column({0.0}), Tensor::ones({1, 13}))); },
+    check(test::raises([&] { A.contains(Zonotope(column({0.0}), Tensor::ones({13, 1}))); },
                        Error::not_supported),
           "contains: too many corners");
     check(A.contains(column({0.5})), "contains: the same call with the checks on");

@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@polyZonotope/plus.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -29,10 +29,17 @@ namespace cora {
 PolyZonotope PolyZonotope::plus(const Zonotope &Z) const {
     detail::Entry entry;
     // a single set of the dimension of this one
-    CORA_CHECK(Z.dim() == dim() && Z.center().ndim() == 2, Error::dimension_mismatch, [&] {
-        return "plus: the zonotope must be a single set of the dimension " + std::to_string(dim());
-    });
-    return {c_ + Z.center(),     G_, Tensor::concat({GI_, Z.generators()}, -1), E_, id_,
+    CORA_CHECK(Z.dim() == dim() && detail::cora_center(Z).ndim() == 2, Error::dimension_mismatch,
+               [&] {
+                   return "plus: the zonotope must be a single set of the dimension " +
+                          std::to_string(dim());
+               });
+    // layout: #163 step 2
+    return {c_ + detail::cora_center(Z),
+            G_,
+            Tensor::concat({GI_, detail::cora_generators(Z)}, -1),
+            E_,
+            id_,
             detail::Normalized{}};
 }
 

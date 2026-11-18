@@ -4,9 +4,9 @@
 // CORA: contSet/@interval/ellipsoid.m
 // CORA: contSet/@zonotope/ellipsoid.m
 // CORA authors: Victor Gassmann, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -100,7 +100,7 @@ void from_zonotope(const std::string &b) {
     check(close(Ellipsoid(Z, "inner:norm").Q(), {1, 0, 0, 4}, 1e-14), b + ": inner");
     check(Ellipsoid(Z, "outer:exact").contains(Z), b + ": the outer ellipsoid holds the zonotope");
     check(
-        close(Ellipsoid(Zonotope(column({1.0, 2.0}), Tensor::zeros({2, 0}))).Q(), {0, 0, 0, 0}, 0),
+        close(Ellipsoid(Zonotope(column({1.0, 2.0}), Tensor::zeros({0, 2}))).Q(), {0, 0, 0, 0}, 0),
         b + ": a point");
 }
 
@@ -113,7 +113,7 @@ void conversion_refusals() {
           "Ellipsoid(I): inner");
     check(test::raises([&] { Ellipsoid E(flat, "middle"); }, Error::wrong_value),
           "Ellipsoid(I): mode");
-    const Zonotope many(column({0.0, 0.0}), Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
+    const Zonotope many(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}}));
     check(test::raises([&] { Ellipsoid E(many); }, Error::not_supported),
           "Ellipsoid(Z): more generators");
     check(test::raises([&] { Ellipsoid E(many, "outer"); }, Error::wrong_value),

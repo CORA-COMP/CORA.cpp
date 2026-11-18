@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -46,8 +46,10 @@ void encloses_the_trajectories(const std::string &b) {
 
     for (const Case &tc : {Case{gentle, 0.1, "gentle"}, Case{rotation, 0.3, "fast rotation"}}) {
         const Zonotope X0 = Zonotope::generate_random(rng, n, std::nullopt, m);
-        const Eigen::MatrixXd c0 = host_matrix(X0.center().data(), n, 1),
-                              g0 = host_matrix(X0.generators().data(), n, m);
+        // layout: #163 step 2
+        const Eigen::MatrixXd c0 = host_matrix(detail::cora_center(X0).data(), n, 1),
+                              // layout: #163 step 2
+            g0 = host_matrix(detail::cora_generators(X0).data(), n, m);
         const Tensor A = tensor_of(tc.A);
         for (const std::string &algorithm : kAlgorithms) {
             const ReachSet r = LinearSys(A).reach({.initial_set = X0, .t_final = 2.0},

@@ -7,9 +7,9 @@
 // See also: Zonotope::compact
 //
 // CORA.cpp only: MATLAB selects with G(:, idx), which needs no function
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -23,20 +23,22 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns) {
+Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns, int axis) {
+    const int a = axis < 0 ? int(G.ndim()) + axis : axis;
     if (columns.empty()) {
         Shape shape = G.shape();
-        shape.back() = 0;
+        shape[a] = 0;
         return G.zeros_like(shape);
     }
-    // all columns in their order: the tensor itself
-    if (int64_t(columns.size()) == G.shape().back()) {
+    // all generators in their order: the tensor itself
+    if (int64_t(columns.size()) == G.shape()[a]) {
         int64_t next = 0;
         if (std::all_of(columns.begin(), columns.end(), [&](int64_t j) { return j == next++; }))
             return G;
     }
-    return G.take(columns, -1);
+    return G.take(columns, axis);
 }
+
 
 } // namespace cora
 

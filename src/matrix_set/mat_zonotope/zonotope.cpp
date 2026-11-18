@@ -9,9 +9,9 @@
 //
 // CORA: matrixSet/@matZonotope/zonotope.m
 // CORA authors: Matthias Althoff, Tobias Ladner
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
@@ -26,7 +26,8 @@ namespace cora {
 
 Zonotope MatZonotope::zonotope() const {
     detail::Entry entry;
-    return Zonotope(priv_stack_columns(C_), priv_stack_generators(G_));
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(priv_stack_columns(C_), priv_stack_generators(G_));
 }
 
 } // namespace cora

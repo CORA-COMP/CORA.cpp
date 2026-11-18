@@ -2,7 +2,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "tensor_lists.h"
@@ -20,7 +20,7 @@ namespace {
 
 /// The result is a polynomial in the generators and the tensor: differentiable in all of them.
 void tensor_multiplication_gradient() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(2, 2);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 2);
     const torch::Tensor M = torch::randn({2, 2, 2, 2}, torch::kDouble);
     test::gradcheck("tensor_multiplication",
                     [](const Inputs &x) {
@@ -32,7 +32,7 @@ void tensor_multiplication_gradient() {
 
 /// A batch on torch is the result of each member.
 void tensor_multiplication_of_a_batch() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(2, 2);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 2);
     const Tensor M = from_torch(torch::randn({2, 2, 2, 2}, torch::kDouble));
     const torch::Tensor zero = torch::zeros({2, 1}, torch::kDouble);
     const Zonotope batch(from_torch(torch::stack({zero, zero})),

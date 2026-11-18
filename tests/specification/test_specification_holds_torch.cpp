@@ -2,9 +2,9 @@
 //
 // CORA: specification/@specification/check.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -45,7 +45,7 @@ int main() {
     const torch::Tensor c =
         torch::tensor({{{0.0}, {0.0}}, {{2.0}, {0.0}}, {{4.0}, {0.0}}}, torch::kDouble);
     const torch::Tensor G = torch::eye(2, torch::kDouble).expand({3, 2, 2}).contiguous();
-    const Zonotope batch(from_torch(c), from_torch(G));
+    const Zonotope batch(from_torch(c.squeeze(-1)), from_torch(G));
     check(test::raises([&] { Specification::safe_set(right).check(batch); }, Error::not_supported),
           "a batch of sets is refused");
     return test::finish("specification (libtorch)");

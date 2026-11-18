@@ -18,7 +18,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Matthias Althoff, Adrian Kulmburg, Ivan Brkan
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -72,12 +72,13 @@ detail::Refusal aux_zonotope_refusal(const ConZonotope &cz, const Zonotope &Z,
         return std::pair{Error::dimension_mismatch, "the sets differ in dimension, " +
                                                         std::to_string(cz.dim()) + " and " +
                                                         std::to_string(Z.dim())};
-    if (cz.c().ndim() != 2 || Z.center().ndim() != 2)
+    // layout: #163 step 2
+    if (cz.c().ndim() != 2 || detail::cora_center(Z).ndim() != 2)
         return std::pair{Error::not_supported,
                          std::string("a linear program per set: it supports a single set, "
                                      "not a batch")};
     if (const detail::Refusal refusal = aux_method_refusal(method)) return refusal;
-    if (Z.compact().generators().shape().back() > Zonotope::kMaxCornerGenerators)
+    if (Z.compact().nr_generators() > Zonotope::kMaxCornerGenerators)
         return std::pair{Error::not_supported,
                          std::string("a set of more than 12 generators has too many corners to "
                                      "test one by one")};
@@ -105,7 +106,8 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
         Tensor::concat({compacted.c(), zeros_block(compacted.c(), p, 1)}, -2);
     const Tensor extended_generators = Tensor::concat({compacted.generators(), compacted.A()}, -2);
     const Tensor offsets = compacted.b().broadcast_to({p, N});
-    return Zonotope(extended_center, extended_generators)
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(extended_center, extended_generators)
         .contains(Tensor::concat({P, offsets}, -2), "exact", tol);
 }
 

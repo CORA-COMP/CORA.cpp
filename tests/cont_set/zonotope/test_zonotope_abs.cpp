@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,10 +25,10 @@ namespace {
 
 /// A hand-computed case, a batch member by member, and the zonotope of a negated one.
 void abs_of_known_zonotopes(const std::string &b) {
-    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, -3.0}, {-2.0, 0.5}}));
+    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, -2.0}, {-3.0, 0.5}}));
     const Zonotope A = Z.abs();
     check(close(A.center(), std::vector<double>{1, 2}, 0), b + ": |c|");
-    check(close(A.generators(), std::vector<double>{1, 3, 2, 0.5}, 0), b + ": |G|");
+    check(close(A.generators(), std::vector<double>{1, 2, 3, 0.5}, 0), b + ": |G|");
     const Zonotope batch = Zonotope::stack({Z, -Z});
     check(close(batch.abs().generators().slice(0, 1, 2).squeeze(0), A.generators(), 0),
           b + ": a batch member");
@@ -41,7 +41,7 @@ void abs_corner_bounds_the_set(const std::string &b) {
     const int n = 4;
     const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 6);
     const Zonotope A = Z.abs();
-    const Tensor corner = A.center() + A.generators().abs_sum();
+    const Tensor corner = (A.center() + A.generators().abs().sum(-2)).expand_dims(-1);
     const Tensor x = Z.rand_point(200, rng);
     check((x.abs() - corner).max().item() <= 1e-12, b + ": |x| <= |c| + sum |g_j|");
     check(close(A.abs().generators(), A.generators(), 0), b + ": idempotent");
@@ -58,7 +58,7 @@ int main() {
         abs_corner_bounds_the_set(b);
     });
     ChecksScope off(false);
-    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, -3.0}, {-2.0, 0.5}}));
+    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, -2.0}, {-3.0, 0.5}}));
     check(close(Z.abs().center(), std::vector<double>{1, 2}, 0),
           "abs: the same with the checks off");
     return test::finish("zonotope abs");

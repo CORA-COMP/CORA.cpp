@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/project.m
 // PROPERTY: contSet/@zonoBundle/project.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -25,13 +25,18 @@ void project_known(const std::string &b) {
     const ZonoBundle zono_bundle = test::two_zonotopes();
     const ZonoBundle one = Set(zono_bundle)->project({1}).as<ZonoBundle>();
     check(one.dim() == 1 && one.parallel_sets() == 2 &&
-              close(one.zonotopes()[0].generators(), {0, 1}, 0) &&
-              close(one.zonotopes()[1].center(), {0}, 0) &&
-              close(one.zonotopes()[1].generators(), {0, 1}, 0),
+              // layout: #163 step 2
+              close(detail::cora_generators(one.zonotopes()[0]), {0, 1}, 0) &&
+              // layout: #163 step 2
+              close(detail::cora_center(one.zonotopes()[1]), {0}, 0) &&
+              // layout: #163 step 2
+              close(detail::cora_generators(one.zonotopes()[1]), {0, 1}, 0),
           b + ": the second row of every member");
     const ZonoBundle swapped = Set(zono_bundle)->project({1, 0}).as<ZonoBundle>();
-    check(close(swapped.zonotopes()[1].center(), {0, 1}, 0) &&
-              close(swapped.zonotopes()[1].generators(), {0, 1, 1, 1}, 0),
+    // layout: #163 step 2
+    check(close(detail::cora_center(swapped.zonotopes()[1]), {0, 1}, 0) &&
+              // layout: #163 step 2
+              close(detail::cora_generators(swapped.zonotopes()[1]), {0, 1, 1, 1}, 0),
           b + ": the rows in the given order");
 }
 

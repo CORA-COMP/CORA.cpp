@@ -20,7 +20,7 @@
 // CORA authors: Mark Wetzlinger, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -53,7 +53,9 @@ bool ConZonotope::representsa(const std::string &type, Tol tol_arg) const {
     if (type == "hyperplane") return dim() == 1 && interval().representsa("point", tol);
     // a set without constraints is the zonotope of its generators
     if (type == "zonotope") return A().numel() == 0;
-    if (type == "interval") return A().numel() == 0 && Zonotope(c_, G_).representsa(type, tol);
+    // layout: #163 step 2
+    if (type == "interval")
+        return A().numel() == 0 && detail::zonotope_of_columns(c_, G_).representsa(type, tol);
     // conZonotope, polytope, polyZonotope, zonoBundle, convexSet and conPolyZono
     return true;
 }

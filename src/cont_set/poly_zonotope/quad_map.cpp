@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@polyZonotope/quadMap.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -84,8 +84,11 @@ PolyZonotope PolyZonotope::quad_map(const std::vector<Tensor> &Q) const {
     const bool independent = GI_.shape()[1] > 0;
     // no dependent part: the quadratic map of the zonotope (c, GI)
     if (num_dependent() == 0) {
-        const Zonotope Zr = Zonotope(c_, GI_).quad_map(Q);
-        return {Zr.center(), G_.zeros_like({m, 0}), Zr.generators(), {}, id_};
+        // layout: #163 step 2
+        const Zonotope Zr = detail::zonotope_of_columns(c_, GI_).quad_map(Q);
+        // layout: #163 step 2
+        return {
+            detail::cora_center(Zr), G_.zeros_like({m, 0}), detail::cora_generators(Zr), {}, id_};
     }
     // the dependent part: all products of the columns of [c, G]
     Exponents Eext = E_;
@@ -93,11 +96,16 @@ PolyZonotope PolyZonotope::quad_map(const std::vector<Tensor> &Q) const {
     const Tensor Gquad = aux_products(Tensor::concat({c_, G_}, -1), Q);
     Tensor c = c_.zeros_like({m, 1}), GI = G_.zeros_like({m, 0});
     if (independent) {
-        const Zonotope R(c_.zeros_like(), GI_);
+        // layout: #163 step 2
+        const Zonotope R = detail::zonotope_of_columns(c_.zeros_like(), GI_);
         const Zonotope Dnoc = PolyZonotope(c_, G_, G_.zeros_like({dim(), 0}), E_, id_).zonotope();
         const Zonotope A = R.quad_map(Q), B = Dnoc.quad_map(R, Q), C = R.quad_map(Dnoc, Q);
-        c = A.center() + B.center() + C.center();
-        GI = Tensor::concat({A.generators(), B.generators(), C.generators()}, -1);
+        // layout: #163 step 2
+        c = detail::cora_center(A) + detail::cora_center(B) + detail::cora_center(C);
+        // layout: #163 step 2
+        GI = Tensor::concat(
+            {detail::cora_generators(A), detail::cora_generators(B), detail::cora_generators(C)},
+            -1);
     }
     return priv_fold_constants({c, Gquad, GI, aux_exponents(Eext), id_});
 }

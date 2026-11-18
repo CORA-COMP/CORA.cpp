@@ -8,9 +8,9 @@
 //           away from the kinks of the piecewise operations
 // See also: tests/global/tensor/test_tensor_gradcheck_torch.cpp
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -87,7 +87,15 @@ inline std::vector<torch::Tensor> random_zonotope(int64_t n, int64_t m) {
     return {away({n, 1}), away({n, m})};
 }
 
+/// The same numbers as a Zonotope takes them: the center (n) and the generators (m, n), one per
+/// row.
+inline std::vector<torch::Tensor> random_zonotope_rows(int64_t n, int64_t m) {
+    const std::vector<torch::Tensor> columns = random_zonotope(n, m);
+    return {columns[0].squeeze(-1), columns[1].t().contiguous()};
+}
+
 /// The center and generators of a zonotope, as the outputs of a function.
+
 inline Inputs parts(const cora::Zonotope &Z) { return {Z.center(), Z.generators()}; }
 
 } // namespace test

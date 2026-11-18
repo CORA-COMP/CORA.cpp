@@ -15,9 +15,9 @@
 // CORA: contSet/@zonotope/private/priv_generatorVolumeFilter.m
 // CORA: contSet/@zonotope/private/priv_volumeFilter.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -41,7 +41,7 @@ Tensor aux_nonzero_generators(const Tensor &G) {
     const Tensor values = G.detach();
     const Tensor present =
         values.not_equal(values.zeros_like()).any(-2).reshape({G.shape().back()});
-    return priv_select_generators(G, present.nonzero());
+    return priv_select_generators(G, present.nonzero(), -1);
 }
 
 // Volumes -----------------------------------------------------------------------------------------
@@ -79,7 +79,8 @@ Tensor Zonotope::dominant_directions(std::optional<int> length1, std::optional<i
                            "it supports a single zonotope, not a batch");
     });
     // the choice is made on detached values; the result takes its columns from G, with gradients
-    const Tensor G = aux_nonzero_generators(G_);
+    const Tensor G = aux_nonzero_generators(detail::cora_generators(*this)); // CORA's columns
+
     const Tensor Gd = G.detach();
     const int64_t count = G.shape().back();
     CORA_CHECK(count >= n, Error::degenerate_set, [&] {

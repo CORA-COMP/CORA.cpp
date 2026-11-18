@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@zonoBundle/empty.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -33,8 +33,10 @@ CORA_FROM_NUMBERS ZonoBundle ZonoBundle::empty(int64_t n) {
     std::vector<double> axis(std::size_t(n), 0.0);
     axis[0] = 1.0;
     const Tensor no_generators = Tensor::zeros({n, 0});
-    return ZonoBundle({Zonotope(Tensor::zeros({n, 1}), no_generators),
-                       Zonotope(Tensor::from_data(axis, {n, 1}), no_generators)});
+    // layout: #163 step 2
+    return ZonoBundle(
+        {detail::zonotope_of_columns(Tensor::zeros({n, 1}), no_generators),
+         detail::zonotope_of_columns(Tensor::from_data(axis, {n, 1}), no_generators)});
 }
 
 } // namespace cora

@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@zonotope/matZonotope.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
@@ -26,10 +26,9 @@ namespace cora {
 MatZonotope Zonotope::mat_zonotope() const {
     detail::Entry entry;
     // the generators as (..., m, n, 1): one column matrix per generator
-    const Tensor rows = G_.matrix_transpose();
-    Shape shape = rows.shape();
+    Shape shape = G_.shape();
     shape.push_back(1);
-    return {c_, rows.reshape(shape)};
+    return {c_.expand_dims(-1), G_.reshape(shape)};
 }
 
 } // namespace cora

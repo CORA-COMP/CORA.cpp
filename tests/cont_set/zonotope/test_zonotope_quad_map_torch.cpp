@@ -5,7 +5,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -25,13 +25,13 @@ int main() {
                                 cora::from_torch(torch::randn({3, 3}, torch::kDouble))};
     test::gradcheck(
         "quad_map", [&](const Inputs &x) { return test::parts(Zonotope(x[0], x[1]).quad_map(Q)); },
-        test::random_zonotope(3, 3));
+        test::random_zonotope_rows(3, 3));
     test::gradcheck("quad_map (two zonotopes)",
                     [&](const Inputs &x) {
                         return test::parts(Zonotope(x[0], x[1]).quad_map(Zonotope(x[2], x[3]), Q));
                     },
-                    {test::random_zonotope(3, 2)[0], test::random_zonotope(3, 2)[1],
-                     test::random_zonotope(3, 3)[0], test::random_zonotope(3, 3)[1]});
+                    {test::random_zonotope_rows(3, 2)[0], test::random_zonotope_rows(3, 2)[1],
+                     test::random_zonotope_rows(3, 3)[0], test::random_zonotope_rows(3, 3)[1]});
     return test::finish("zonotope quad_map (torch)");
 }
 

@@ -5,7 +5,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -33,7 +33,7 @@ Inputs pieces(const std::pair<Zonotope, Zonotope> &p) {
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(55);
-    const auto input = test::random_zonotope(3, 4);
+    const auto input = test::random_zonotope_rows(3, 4);
     test::gradcheck(
         "split by a coordinate",
         [](const Inputs &x) { return pieces(Zonotope(x[0], x[1]).split(1)); }, input);

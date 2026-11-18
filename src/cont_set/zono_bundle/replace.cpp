@@ -8,9 +8,9 @@
 //
 // CORA: contSet/@zonoBundle/replace.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -29,7 +29,9 @@ ZonoBundle ZonoBundle::replace(int64_t index, const Zonotope &Z) const {
         return "replace: the index " + std::to_string(index) + " is not in [0, " +
                std::to_string(parallel_sets()) + ")";
     });
-    const detail::Refusal refusal = priv_operand_refusal(*this, Z.dim(), Z.center(), "replace");
+    // layout: #163 step 2
+    const detail::Refusal refusal =
+        priv_operand_refusal(*this, Z.dim(), detail::cora_center(Z), "replace");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     std::vector<Zonotope> members = Z_;
     members[std::size_t(index)] = Z;

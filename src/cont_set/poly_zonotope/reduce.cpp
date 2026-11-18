@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@polyZonotope/reduce.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -77,9 +77,11 @@ PolyZonotope PolyZonotope::reduce(int order) const {
         const PolyZonotope rest(c_.zeros_like(), priv_columns(G_, boxed_dep),
                                 priv_columns(GI_, boxed_ind), exponents_of(boxed_dep), id_);
         const Zonotope box = rest.zonotope().reduce(1);
-        out = PolyZonotope(c_ + box.center(), priv_columns(G_, kept_dep),
-                           Tensor::concat({priv_columns(GI_, kept_ind), box.generators()}, -1),
-                           exponents_of(kept_dep), id_);
+        // layout: #163 step 2
+        out = PolyZonotope(
+            c_ + detail::cora_center(box), priv_columns(G_, kept_dep),
+            Tensor::concat({priv_columns(GI_, kept_ind), detail::cora_generators(box)}, -1),
+            exponents_of(kept_dep), id_);
     }
     // the factors that no generator uses go
     Exponents E = out.exponents();

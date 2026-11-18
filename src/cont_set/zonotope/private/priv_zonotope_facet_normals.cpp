@@ -16,9 +16,9 @@
 //
 // CORA: contSet/@zonotope/polytope.m
 // CORA authors: Niklas Kochdumper, Matthias Althoff
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   12-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -94,7 +94,7 @@ void aux_normalize(std::vector<double> &v) {
 
 Tensor priv_zonotope_facet_normals(const Zonotope &Z) {
     const HostZonotope H = priv_host_zonotope(Z);
-    const Tensor &G = Z.generators();
+    const Tensor &G = detail::cora_generators(Z);
     if (H.n == 1) return Tensor::like(G, {1.0}, {1, 1});
     const int64_t k = H.n - 1;
     // the subsets of k generators in lexicographic order, CORA's

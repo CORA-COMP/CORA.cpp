@@ -13,7 +13,7 @@
 // CORA authors: Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -31,7 +31,7 @@ namespace {
 
 /// Why the call is refused, if it is: a batch, or a point that is not a column of the dimension.
 Refusal aux_refusal(const Zonotope &Z, const Tensor &p) {
-    if (Z.center().ndim() != 2)
+    if (detail::cora_center(Z).ndim() != 2)
         return std::pair{Error::not_supported,
                          std::string("a linear program per zonotope: it supports a single "
                                      "zonotope, not a batch")};
@@ -58,7 +58,7 @@ Tensor Zonotope::zonotope_norm(const Tensor &p) const {
     detail::Entry entry;
     const Refusal refusal = aux_refusal(*this, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "zonotope_norm: " + refusal->second; });
-    return Tensor::like(G_, {aux_solve(*this, p).value}, {1, 1});
+    return Tensor::like(detail::cora_generators(*this), {aux_solve(*this, p).value}, {1, 1});
 }
 
 std::pair<Tensor, Tensor> Zonotope::zonotope_norm_minimizer(const Tensor &p) const {
@@ -67,13 +67,17 @@ std::pair<Tensor, Tensor> Zonotope::zonotope_norm_minimizer(const Tensor &p) con
     CORA_CHECK(!refusal, refusal->first,
                [&] { return "zonotope_norm_minimizer: " + refusal->second; });
     const ZonotopeNorm solution = aux_solve(*this, p);
-    const double tol = resolve_tol(Tol{}, c_.dtype());
-    if (within_tol(c_, c_.zeros_like(), tol).all(-2).all(-1).item() == 0.0)
+    const double tol = resolve_tol(Tol{}, detail::cora_center(*this).dtype());
+    if (within_tol(detail::cora_center(*this), detail::cora_center(*this).zeros_like(), tol)
+            .all(-2)
+            .all(-1)
+            .item() == 0.0)
         warn("CORA:contSet", "zonotope_norm_minimizer: the minimizer might not be valid as the "
                              "zonotope is not zero-centered");
+    // the norm and the minimizing factors
     const int64_t m = int64_t(solution.minimizer.size());
-    return {Tensor::like(G_, {solution.value}, {1, 1}),
-            Tensor::like(G_, solution.minimizer, {m, 1})};
+    return {Tensor::like(detail::cora_generators(*this), {solution.value}, {1, 1}),
+            Tensor::like(detail::cora_generators(*this), solution.minimizer, {m, 1})};
 }
 
 } // namespace cora

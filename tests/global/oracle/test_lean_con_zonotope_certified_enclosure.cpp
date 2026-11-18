@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -37,10 +37,16 @@ int main() {
             const ConZonotope cz(Z);
             const lean::ConZonotope theirs = lean::ConZonotope::from_zonotope(lean::Zonotope(Z));
             // the center, a point near it, one inside, and one far outside
-            const Tensor near = Z.center() + Z.generators().matmul(rnd.vector(m)) * 0.01,
-                         inside = Z.center() + Z.generators().matmul(rnd.vector(m)) * 0.2,
-                         outside = Z.center() + Z.generators().matmul(rnd.vector(m).sign()) * 3.0;
-            for (const Tensor &p : {Z.center(), near, inside, outside}) {
+            const Tensor near = detail::cora_center(Z) +
+                                detail::cora_generators(Z).matmul(rnd.vector(m)) * 0.01,
+                         // layout: #163 step 2
+                inside =
+                    detail::cora_center(Z) + detail::cora_generators(Z).matmul(rnd.vector(m)) * 0.2,
+                         // layout: #163 step 2
+                outside = detail::cora_center(Z) +
+                          detail::cora_generators(Z).matmul(rnd.vector(m).sign()) * 3.0;
+            // layout: #163 step 2
+            for (const Tensor &p : {detail::cora_center(Z), near, inside, outside}) {
                 const bool theirs_proved = theirs.contains(p);
                 proved += theirs_proved;
                 test::check(!theirs_proved || cz.contains(p),

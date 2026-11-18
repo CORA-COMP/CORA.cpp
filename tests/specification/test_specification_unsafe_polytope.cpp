@@ -7,9 +7,9 @@
 //
 // CORA: specification/@specification/specification.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -62,12 +62,12 @@ void unsafe_polytope(const std::string &b) {
     check(!safe(Z1, box(-5, -5, 5, 5)), b + ": containing box");
 
     // the segment from (0, 0) to (2, 2): each halfspace alone meets it, together they may not
-    const Zonotope Z2(Tensor({1.0, 1.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope Z2(Tensor({1.0, 1.0}), Tensor({{1.0, 1.0}}));
     check(safe(Z2, {hs(-1, 0, -1.5), hs(0, 1, 0.5)}), b + ": apart, no separating halfspace");
     check(!safe(Z2, {hs(-1, 0, -0.5), hs(0, 1, 1.5)}), b + ": overlapping segment");
 
     // three generators
-    const Zonotope Z3(Tensor({0.0, 0.0}), Tensor({{1.0, 0.5, 0.2}, {0.0, 1.0, -0.3}}));
+    const Zonotope Z3(Tensor({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}, {0.2, -0.3}}));
     check(safe(Z3, {hs(-1, -1, -3.5), hs(1, 0, 5)}), b + ": separated by one halfspace");
     check(safe(Z3, {hs(-1, -1, -3.0), hs(1, 0, 5)}), b + ": separated by one halfspace, close");
     check(safe(Z3, {hs(-1, -1, -2), hs(1, -1, 0), hs(0, 1, 0.5)}), b + ": three halfspaces");

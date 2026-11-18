@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/outputSet.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -51,7 +51,9 @@ void maps_every_set_by_c(const std::string &b) {
     const std::vector<double> d{0.7, -1.1};
     const Tensor Ctd = in.C.matrix_transpose().matmul(test::column(d));
     for (std::size_t k = 0; k < R.time_interval.size(); ++k) {
-        check(close(Y.time_interval[k].center(), in.C.matmul(R.time_interval[k].center())),
+        // layout: #163 step 2
+        check(close(detail::cora_center(Y.time_interval[k]),
+                    in.C.matmul(detail::cora_center(R.time_interval[k]))),
               b + ": the center of a step");
         check(close(Y.time_interval[k].support_function(test::column(d)),
                     R.time_interval[k].support_function(Ctd)),
@@ -59,7 +61,9 @@ void maps_every_set_by_c(const std::string &b) {
     }
     // the output set maps every time point
     for (std::size_t k = 0; k < R.time_point.size(); ++k)
-        check(close(Y.time_point[k].generators(), in.C.matmul(R.time_point[k].generators())),
+        // layout: #163 step 2
+        check(close(detail::cora_generators(Y.time_point[k]),
+                    in.C.matmul(detail::cora_generators(R.time_point[k]))),
               b + ": a time point");
     check(Y.time_interval[0].dim() == 2, b + ": the output has p dimensions");
 }
@@ -70,8 +74,11 @@ void is_the_state_without_c(const std::string &b) {
     const ReachSet R = sys.reach({.initial_set = in.X0, .input_set = in.U, .t_final = 0.6},
                                  alg::Standard{.time_step = 0.2, .taylor_terms = 6});
     const ReachSet Y = sys.output_set(R);
-    check(close(Y.time_interval[1].center(), R.time_interval[1].center()) &&
-              close(Y.time_point[2].generators(), R.time_point[2].generators()),
+    // layout: #163 step 2
+    check(close(detail::cora_center(Y.time_interval[1]), detail::cora_center(R.time_interval[1])) &&
+              // layout: #163 step 2
+              close(detail::cora_generators(Y.time_point[2]),
+                    detail::cora_generators(R.time_point[2])),
           b + ": without C the output is the state");
 }
 
@@ -85,12 +92,14 @@ void checks_and_their_switch() {
                   alg::Standard{.time_step = 0.1});
     ReachSet wrong = R;
     wrong.time_point[0] =
-        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     check(test::raises([&] { sys.output_set(wrong); }, Error::dimension_mismatch),
           "output_set: a set of three dimensions");
-    const Tensor on = sys.output_set(R).time_point.back().center();
+    // layout: #163 step 2
+    const Tensor on = detail::cora_center(sys.output_set(R).time_point.back());
     ChecksScope off(false);
-    check(test::close(sys.output_set(R).time_point.back().center(), on, 0),
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(sys.output_set(R).time_point.back()), on, 0),
           "output_set: the same with the checks off");
 }
 

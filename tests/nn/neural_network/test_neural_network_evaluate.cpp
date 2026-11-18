@@ -10,9 +10,9 @@
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // PROPERTY: nn/@neuralNetwork/evaluate.m
 // CORA authors: Tobias Ladner, Lukas Koller, Sebastian Sigl
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -62,7 +62,9 @@ void an_affine_network_maps_the_set_exactly(const std::string &b) {
     const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Zonotope Y = nn.evaluate(X);
     const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b;
-    check(test::close(Y.center(), want.center()) && test::close(Y.generators(), want.generators()),
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(Y), detail::cora_center(want)) &&
+              test::close(detail::cora_generators(Y), detail::cora_generators(want)),
           b + ": W X + b");
 }
 
@@ -70,8 +72,8 @@ void an_affine_network_maps_the_set_exactly(const std::string &b) {
 void stable_neurons_are_exact(const std::string &b) {
     const Tensor I = Tensor::eye(2), zero = Tensor({0.0, 0.0});
     const NeuralNetwork nn({{I, zero}, {I, zero}});
-    const Zonotope positive(Tensor({5.0, 6.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
-    const Zonotope negative(Tensor({-5.0, -6.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
+    const Zonotope positive(Tensor({5.0, 6.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
+    const Zonotope negative(Tensor({-5.0, -6.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     cora::Rng rng(2);
     for (int k = 0; k < 10; ++k) {
         const std::vector<double> d = test::random_direction(rng, 2);
@@ -151,8 +153,10 @@ void s_shaped_enclosures_hold_the_outputs(const std::string &b) {
     check(violations == 0, b + ": " + std::to_string(violations) + " outputs left the enclosure");
     // a set of one point is mapped to the output of the point
     const Tensor p({{0.3}, {-0.2}, {0.1}});
-    const Zonotope point = nn.evaluate(Zonotope(p, p.zeros_like({3, 1})));
-    check(test::close(point.center(), nn.evaluate(p)), b + ": a point set gives the point");
+    const Zonotope point = nn.evaluate(Zonotope(p, p.zeros_like({1, 3})));
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(point), nn.evaluate(p)),
+          b + ": a point set gives the point");
 }
 
 /// evaluate_with_input: the first rows are the input set, the pairs (x, N(x)) of the points lie in

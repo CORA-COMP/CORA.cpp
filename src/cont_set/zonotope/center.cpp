@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@zonotope/center.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -21,7 +21,9 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor Zonotope::center_impl() const { return c_; }
+// layout: #163 step 2 - the generic center is a column, as every other set's
+Tensor Zonotope::center_impl() const { return elem_rank_ == 1 ? c_.expand_dims(-1) : c_; }
+
 
 } // namespace cora
 

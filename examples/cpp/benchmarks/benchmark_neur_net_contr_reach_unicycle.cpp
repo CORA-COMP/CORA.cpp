@@ -14,9 +14,9 @@
 //
 // CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_01_unicycle.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_neur_net.h"
@@ -53,7 +53,7 @@ NonlinearSys aux_unicycle() {
 std::vector<AinncsInstance> aux_instances() {
     std::vector<AinncsInstance> v;
     // Unicycle: the disturbance input is the script's default zonotope(0)
-    const Zonotope no_disturbance(Tensor::from_data({0.0}, {1, 1}), Tensor::zeros({1, 0}));
+    const Zonotope no_disturbance(Tensor::from_data({0.0}, {1, 1}), Tensor::zeros({0, 1}));
     v.push_back({"Unicycle", "reach", Verdict::verified, 8.015,
                  make_verify(aux_unicycle(), "unicycle", 0.2,
                              box_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}),

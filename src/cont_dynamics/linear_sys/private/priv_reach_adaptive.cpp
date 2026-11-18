@@ -21,9 +21,9 @@
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
@@ -338,11 +338,14 @@ void aux_set(std::vector<std::vector<T>> &list, int k, int it, T val) {
 /// as a center and the sums of its generators, see [1, Prop. 1].
 double aux_eps_f(const Interval &F, const Zonotope &startset, Tensor &box_c, Tensor &box_g) {
     const Tensor Fc = F.center(), Frad = F.rad();
-    box_c = Fc.matmul(startset.center());
+    // layout: #163 step 2
+    box_c = Fc.matmul(detail::cora_center(startset));
     // The generators of F startset: F_c G and one axis-aligned generator per dimension.
-    const Tensor rad_part =
-        Frad.matmul(Tensor::concat({startset.center(), startset.generators()}, -1).abs_sum());
-    box_g = Fc.matmul(startset.generators()).abs_sum() + rad_part;
+    const Tensor rad_part = Frad.matmul(
+        Tensor::concat({detail::cora_center(startset), detail::cora_generators(startset)}, -1)
+            .abs_sum());
+    // layout: #163 step 2
+    box_g = Fc.matmul(detail::cora_generators(startset)).abs_sum() + rad_part;
     return 2 * aux_vecnorm((box_g + box_c.abs()).data());
 }
 
@@ -402,7 +405,8 @@ bool aux_errors(const Problem &P, int k, int kIter, LinErrorBound &errs, bool fu
     aux_set(errs.seq_nonacc, k, kIter, kNaN);
     if (fullcomp) {
         // Error of the linear combination, see [1, Prop. 9].
-        const Tensor Gminus = (e_adtk - taylor.A().eye_like()).matmul(set.startset->generators());
+        const Tensor Gminus =
+            (e_adtk - taylor.A().eye_like()).matmul(detail::cora_generators(*set.startset));
         aux_set(errs.idv_lin_comb, k, kIter,
                 std::sqrt(double(Gminus.shape()[1])) * aux_norm2(Gminus));
 
@@ -580,7 +584,9 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
     }
 
     auto map_c = [&](const Tensor &M) { return params.C ? params.C->matmul(M) : M; };
-    out.time_point.emplace_back(Zonotope(map_c(params.R0.center()), map_c(params.R0.generators())));
+    // layout: #163 step 2
+    out.time_point.emplace_back(detail::zonotope_of_columns(
+        map_c(detail::cora_center(params.R0)), map_c(detail::cora_generators(params.R0))));
     out.time_point_error.push_back(0.0);
     out.time.push_back(0.0);
     std::vector<char> fullcomp;
@@ -727,15 +733,18 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             RcontError.push_back(kNaN);
             RcontTpError.push_back(kNaN);
             if (std::abs(time_step - max_time_step_spec) < numerics::kTimeStepMatch)
-                set.Hstartp = Zonotope(e_atkplus1->matmul(params.R0.center()) + set.Putotal,
-                                       e_atkplus1->matmul(params.R0.generators()));
+                set.Hstartp = detail::zonotope_of_columns(
+                    e_atkplus1->matmul(detail::cora_center(params.R0)) + set.Putotal,
+                    e_atkplus1->matmul(detail::cora_generators(params.R0)));
             out.time_interval.emplace_back(std::nullopt);
             out.time_interval_error.push_back(kNaN);
             out.time_point.emplace_back(std::nullopt);
             out.time_point_error.push_back(kNaN);
         } else {
-            set.Hstartp = Zonotope(e_adtk.matmul(set.startset->center()) + set.Pu,
-                                   e_adtk.matmul(set.startset->generators()));
+            // layout: #163 step 2
+            set.Hstartp = detail::zonotope_of_columns(
+                e_adtk.matmul(detail::cora_center(*set.startset)) + set.Pu,
+                e_adtk.matmul(detail::cora_generators(*set.startset)));
             set.enc = set.startset->linear_combination(*set.Hstartp);
             double Rc, Rtp;
             errs.full_errors(k, Rc, Rtp);
@@ -744,8 +753,10 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
 
             // The output sets: homogeneous and particular solutions are mapped by C first.
             const Tensor infty = set.G_PUtotal_infty;
-            std::vector<Tensor> Gout{map_c(set.enc->generators())};
-            std::vector<Tensor> Gtp{map_c(set.Hstartp->generators())};
+            // layout: #163 step 2
+            std::vector<Tensor> Gout{map_c(detail::cora_generators(*set.enc))};
+            // layout: #163 step 2
+            std::vector<Tensor> Gtp{map_c(detail::cora_generators(*set.Hstartp))};
             Tensor boxes = ch.box_fg + ch.GuG;
             if (P.is_u) {
                 boxes = infty + ch.box_fg + ch.GuG;
@@ -757,11 +768,12 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
                 Gtp.push_back(map_c(infty.diag()));
             }
             Gout.push_back(map_c(boxes.diag()));
-            out.time_interval.emplace_back(
-                Zonotope(map_c(set.enc->center() + ch.box_fc + ch.GuC), Tensor::concat(Gout, -1)));
+            out.time_interval.emplace_back(detail::zonotope_of_columns(
+                map_c(detail::cora_center(*set.enc) + ch.box_fc + ch.GuC),
+                Tensor::concat(Gout, -1)));
             out.time_interval_error.push_back(err_r2_y * Rc);
-            out.time_point.emplace_back(
-                Zonotope(map_c(set.Hstartp->center()), Tensor::concat(Gtp, -1)));
+            out.time_point.emplace_back(detail::zonotope_of_columns(
+                map_c(detail::cora_center(*set.Hstartp)), Tensor::concat(Gtp, -1)));
             // the error of the time-point set
             out.time_point_error.push_back(err_r2_y * Rtp);
         }

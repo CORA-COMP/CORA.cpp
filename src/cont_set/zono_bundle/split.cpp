@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@zonoBundle/split.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_coordinate.h"
@@ -30,7 +30,8 @@ namespace {
 
 /// Why the split is refused, if it is: a batch, or an empty set.
 detail::Refusal aux_refusal(const ZonoBundle &bundle) {
-    if (bundle.zonotopes().front().center().ndim() != 2)
+    // layout: #163 step 2
+    if (detail::cora_center(bundle.zonotopes().front()).ndim() != 2)
         return std::pair{Error::not_supported,
                          std::string("split: it supports a single set, not a batch")};
     if (priv_bundle_is_empty(bundle))

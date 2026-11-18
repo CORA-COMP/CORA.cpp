@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -131,7 +131,7 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
 /// With U = {0} the input adds nothing: wrapping-free gives the sets of the system without input.
 void a_zero_input_changes_nothing(const std::string &b) {
     const Setup in(matlab_reference::standard_inputs());
-    const Zonotope U0(Tensor::zeros({2, 1}), Tensor::zeros({2, 1}));
+    const Zonotope U0(Tensor::zeros({2, 1}), Tensor::zeros({1, 2}));
     const ReachSet with = LinearSys(in.A, in.B)
                               .reach({.initial_set = in.X0, .input_set = U0, .t_final = 1.0},
                                      alg::WrappingFree{.time_step = 0.2, .taylor_terms = 6});

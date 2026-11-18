@@ -14,9 +14,9 @@
 //
 // CORA: contDynamics/@linearSys/initReach.m
 // CORA authors: Mark Wetzlinger, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
@@ -84,12 +84,16 @@ ReachStep LinearSys::init_reach(const Zonotope &R_init, const std::optional<Zono
     if (U) V = U->linear_map(*B_);
     const bool has_V = V && !V->representsa("origin");
     const Solution s = aux_input_sum(*this, taylor, has_V ? V : std::nullopt, dt, o.taylor_terms);
-    const Zonotope origin{A().zeros_like({dim(), 1}), A().zeros_like({dim(), 0})};
+    // layout: #163 step 2
+    const Zonotope origin =
+        detail::zonotope_of_columns(A().zeros_like({dim(), 1}), A().zeros_like({dim(), 0}));
     const Zonotope RV =
         has_V ? s.sum->plus(V->linear_map(dt * E)) : origin; // the series and its remainder
     const Interval e_at_int{s.integral + E.inf() * dt, s.integral + E.sup() * dt};
     std::optional<Zonotope> trans_point;
-    if (u_trans) trans_point = Zonotope(B_->matmul(*u_trans), A().zeros_like({dim(), 0}));
+    // layout: #163 step 2
+    if (u_trans)
+        trans_point = detail::zonotope_of_columns(B_->matmul(*u_trans), A().zeros_like({dim(), 0}));
     const Zonotope R_trans = trans_point ? trans_point->linear_map(e_at_int) : origin;
 
     // the first step: the end of the step, then the enclosure with the curvatures

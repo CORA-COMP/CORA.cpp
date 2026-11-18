@@ -18,9 +18,9 @@
 //
 // CORA: contSet/@conZonotope/intersectStrip.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -36,6 +36,8 @@ namespace cora {
 
 namespace {
 
+// The set of the strips ---------------------------------------------------------------------------
+
 /// The set of the zonotope Z that the gain made (center, generators), with the constraints of cz
 /// and the rows C G x - phi x_new = y - C c for the new factors.
 ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tensor &C,
@@ -49,8 +51,12 @@ ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tens
         {Tensor::concat({cz.A(), zeros_block(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
          rows},
         -2);
-    return {Z.center(), Z.generators(), A, Tensor::concat({cz.b(), y - C.matmul(cz.c())}, -2)};
+    // layout: #163 step 2
+    return {detail::cora_center(Z), detail::cora_generators(Z), A,
+            Tensor::concat({cz.b(), y - C.matmul(cz.c())}, -2)};
 }
+
+// Refusals ----------------------------------------------------------------------------------------
 
 /// Why the method is refused for the strips, if it is: an unknown one, one that needs an optimizer
 /// or an observer, one for a single strip, or 'bravo' for a batch.
@@ -86,7 +92,8 @@ ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, con
     Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     if (!refusal) refusal = aux_method_refusal(*this, C, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
-    const Zonotope Z = Zonotope(c_, G_).intersect_strip(C, phi, y, method);
+    // layout: #163 step 2
+    const Zonotope Z = detail::zonotope_of_columns(c_, G_).intersect_strip(C, phi, y, method);
     // CORA's 'bravo' returns the zonotope around the strip, without the constraints
     if (method == "bravo") return ConZonotope(Z);
     return aux_with_strips(*this, Z, C, phi, y);
@@ -99,7 +106,9 @@ ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, con
     Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     if (!refusal) refusal = priv_gain_refusal(dim(), C, lambda);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
-    return aux_with_strips(*this, Zonotope(c_, G_).intersect_strip(C, phi, y, lambda), C, phi, y);
+    // layout: #163 step 2
+    return aux_with_strips(
+        *this, detail::zonotope_of_columns(c_, G_).intersect_strip(C, phi, y, lambda), C, phi, y);
 }
 
 ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
@@ -109,7 +118,9 @@ ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, con
     Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     if (!refusal) refusal = priv_observer_refusal(dim(), aux);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
-    return aux_with_strips(*this, Zonotope(c_, G_).intersect_strip(C, phi, y, aux), C, phi, y);
+    // layout: #163 step 2
+    return aux_with_strips(
+        *this, detail::zonotope_of_columns(c_, G_).intersect_strip(C, phi, y, aux), C, phi, y);
 }
 
 } // namespace cora

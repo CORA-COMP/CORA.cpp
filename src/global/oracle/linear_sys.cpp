@@ -3,7 +3,7 @@
 // See also: lean/zonotope.h
 //
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
 // Last update:   18-November-2026
 // Reviewed:      ---
@@ -117,8 +117,9 @@ bool LinearSys::is_canonical_form() const {
 
 Zonotope LinearSys::output_set(const cora::Zonotope &R) const {
     // no input and no noise: their sets have no dimension
-    const cora::Tensor none = R.center().zeros_like({0, 1});
-    const Zonotope empty(none, R.center().zeros_like({0, 0}));
+    const cora::Tensor none = detail::cora_center(R).zeros_like({0, 1});
+    // layout: #163 step 2
+    const Zonotope empty(none, detail::cora_center(R).zeros_like({0, 0}));
     return ask_system("linearSys.outputSet", {{"R", Zonotope(R)}, {"U", empty}}).get<Zonotope>("Z");
 }
 

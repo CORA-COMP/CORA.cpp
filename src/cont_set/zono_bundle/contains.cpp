@@ -18,7 +18,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -39,7 +39,9 @@ namespace {
 /// Why the call is refused, if it is: a batch, a method that is unknown, needs Polytope, or is
 /// not supported for a set.
 detail::Refusal aux_refusal(const ZonoBundle &bundle, const std::string &method, bool points) {
-    if (detail::Refusal batch = priv_batch_refusal(bundle.zonotopes().front().center(), "contains"))
+    // layout: #163 step 2
+    if (detail::Refusal batch =
+            priv_batch_refusal(detail::cora_center(bundle.zonotopes().front()), "contains"))
         return batch;
     const bool known = method == "exact" || method == "exact:zonotope" ||
                        method == "exact:polytope" || method == "approx";
@@ -80,7 +82,9 @@ bool aux_all_members(const ZonoBundle &bundle, const S &set, double tol) {
 
 bool ZonoBundle::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "contains");
+    // layout: #163 step 2
+    const double tol =
+        resolve_tol(entry, tol_arg, detail::cora_center(Z_.front()).dtype(), "contains");
     detail::Refusal r = aux_points_refusal(*this, p);
     if (!r) r = aux_refusal(*this, method, true);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
@@ -93,8 +97,11 @@ bool ZonoBundle::contains(const Tensor &p, const std::string &method, Tol tol_ar
 
 bool ZonoBundle::contains(const Zonotope &S, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "contains");
-    detail::Refusal r = priv_operand_refusal(*this, S.dim(), S.center(), "contains");
+    // layout: #163 step 2
+    const double tol =
+        resolve_tol(entry, tol_arg, detail::cora_center(Z_.front()).dtype(), "contains");
+    // layout: #163 step 2
+    detail::Refusal r = priv_operand_refusal(*this, S.dim(), detail::cora_center(S), "contains");
     if (!r) r = aux_refusal(*this, method, false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     if (method == "exact:polytope") return polytope().contains(S, "exact", tol);
@@ -103,7 +110,9 @@ bool ZonoBundle::contains(const Zonotope &S, const std::string &method, Tol tol_
 
 bool ZonoBundle::contains(const Interval &I, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "contains");
+    // layout: #163 step 2
+    const double tol =
+        resolve_tol(entry, tol_arg, detail::cora_center(Z_.front()).dtype(), "contains");
     detail::Refusal r = priv_operand_refusal(*this, I.dim(), I.inf(), "contains");
     if (!r) r = aux_refusal(*this, method, false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
@@ -115,11 +124,14 @@ bool ZonoBundle::contains(const Interval &I, const std::string &method, Tol tol_
 
 bool ZonoBundle::contains(const ZonoBundle &S, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "contains");
-    detail::Refusal r =
-        priv_operand_refusal(*this, S.dim(), S.zonotopes().front().center(), "contains");
+    // layout: #163 step 2
+    const double tol =
+        resolve_tol(entry, tol_arg, detail::cora_center(Z_.front()).dtype(), "contains");
+    detail::Refusal r = priv_operand_refusal(
+        *this, S.dim(), detail::cora_center(S.zonotopes().front()), "contains");
     if (!r) r = aux_refusal(*this, method, false);
-    if (!r) r = priv_batch_refusal(S.zonotopes().front().center(), "contains");
+    // layout: #163 step 2
+    if (!r) r = priv_batch_refusal(detail::cora_center(S.zonotopes().front()), "contains");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     if (method == "exact:polytope") return polytope().contains(S, "exact", tol);
     const ConZonotope inner = S.con_zonotope();

@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/intersectStrip.m
 // PROPERTY: contSet/@conZonotope/intersectStrip.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -41,11 +41,13 @@ void intersect_strip_known(const std::string &b) {
     check(close(S.A(), {0, 1, 0, 1, 0, -0.1}, 1e-15) && close(S.b(), {0.5, 0.5}, 1e-15),
           b + ": the rows of the set, then the strip");
     // the gains of the methods give the strip rows and the center of the zonotope's method
-    const Zonotope Z(cz.c(), cz.generators());
+    const Zonotope Z = detail::zonotope_of_columns(cz.c(), cz.generators());
     for (const char *method : {"normGen", "alamo-FRad"}) {
         const ConZonotope M = cz.intersect_strip(C, phi, y, method);
         const Zonotope expected = Z.intersect_strip(C, phi, y, method);
-        check(close(M.c(), expected.center(), 0) && close(M.generators(), expected.generators(), 0),
+        // layout: #163 step 2
+        check(close(M.c(), detail::cora_center(expected), 0) &&
+                  close(M.generators(), detail::cora_generators(expected), 0),
               b + ": the gain of " + method);
         check(M.A().shape() == Shape{1, 3}, b + ": one strip row");
     }

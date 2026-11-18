@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/conZonotope.m
 // PROPERTY: contSet/@zonoBundle/conZonotope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -37,10 +37,12 @@ void two_squares(const std::string &b) {
 
 /// One member is the zonotope itself, without constraints.
 void single_member(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     const ConZonotope cz = ZonoBundle({Z}).con_zonotope();
-    check(cz.A().shape() == Shape{0, 2} && close(cz.c(), Z.center(), 0) &&
-              close(cz.generators(), Z.generators(), 0),
+    // layout: #163 step 2
+    check(cz.A().shape() == Shape{0, 2} && close(cz.c(), detail::cora_center(Z), 0) &&
+              // layout: #163 step 2
+              close(cz.generators(), detail::cora_generators(Z), 0),
           b + ": a single member has no constraints");
 }
 
@@ -54,7 +56,9 @@ void same_points(const std::string &b) {
     check(cz.contains(inside), b + ": every point of the bundle is in the constrained zonotope");
     // a point of the first member only: the others cut it off
     const Tensor far =
-        bundle.zonotopes()[0].center() + bundle.zonotopes()[0].generators().slice(-1, 0, 1) * 1.0;
+        // layout: #163 step 2
+        detail::cora_center(bundle.zonotopes()[0]) +
+        detail::cora_generators(bundle.zonotopes()[0]).slice(-1, 0, 1) * 1.0;
     check(cz.contains(far) == test::in_every_member(bundle, far), b + ": a boundary point agrees");
     check(!cz.contains(common + common.ones_like() * 100.0), b + ": a far point is outside");
 }

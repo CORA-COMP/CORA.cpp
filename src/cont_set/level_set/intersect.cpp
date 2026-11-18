@@ -22,7 +22,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/level_set/level_set.h"
@@ -148,7 +148,9 @@ std::optional<PolyZonotope> LevelSet::intersect(const PolyZonotope &S) const {
     if (aux_is_point(S)) {
         const Tensor c = S.center() + S.generators().sum(-1, true);
         const double g = fun_han(c).item();
-        if (g < 0 || within_tol(g, 0.0)) return PolyZonotope(Zonotope(c, c.zeros_like({dim(), 0})));
+        // layout: #163 step 2
+        if (g < 0 || within_tol(g, 0.0))
+            return PolyZonotope(detail::zonotope_of_columns(c, c.zeros_like({dim(), 0})));
         return std::nullopt;
     }
     // the box of the set, contracted to the level set

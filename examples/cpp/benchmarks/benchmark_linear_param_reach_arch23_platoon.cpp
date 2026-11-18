@@ -15,7 +15,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -66,7 +66,7 @@ Tensor aux_uncontrolled() {
 
 /// The input matrix B, the initial set (the origin) and the input set [-9, 1].
 Tensor aux_B() { return column({0, 1, 0, 0, 0, 0, 0, 0, 0}); }
-Zonotope aux_R0() { return Zonotope(Tensor::zeros({9, 1}), Tensor::zeros({9, 0})); }
+Zonotope aux_R0() { return Zonotope(Tensor::zeros({9, 1}), Tensor::zeros({0, 9})); }
 Zonotope aux_U() { return Interval(column({-9}), column({1})).zonotope(); }
 
 /// The arbitrarily switching system: the matrix zonotope A_mid +- A_gen.
@@ -151,7 +151,8 @@ bool aux_plan() {
     const Zonotope R0 = R.time_interval.back().reduce(400).enlarge(1.01).as<Zonotope>();
     a.zonotope_order = 800;
     const Zonotope U = aux_U();
-    LinParamStep step = sys.init_reach(R0, U - U.center(), U.center(), a);
+    const Tensor u = U.center().expand_dims(-1); // the input center as a column
+    LinParamStep step = sys.init_reach(R0, U - u, u, a);
     constexpr int kMaxSteps = 1000000; // the script has no bound
     for (int k = 0; k < kMaxSteps; ++k) {
         low = std::min(low, aux_lowest({step.time_interval}));

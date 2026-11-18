@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@zonotope/cubMap.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -43,7 +43,9 @@ Shape aux_shape(const Tensor &like, std::initializer_list<int64_t> tail) {
 }
 
 /// [c G]: the center as the first column.
-Tensor aux_full(const Zonotope &Z) { return Tensor::concat({Z.center(), Z.generators()}, -1); }
+Tensor aux_full(const Zonotope &Z) {
+    return Tensor::concat({detail::cora_center(Z), detail::cora_generators(Z)}, -1);
+}
 
 /// The columns of T that enter output i: ind[i], or all of them.
 std::vector<std::vector<int64_t>> aux_indices(const std::vector<std::vector<Tensor>> &T,
@@ -144,7 +146,7 @@ Zonotope aux_from_rows(const std::vector<std::vector<Tensor>> &T,
     rows.reserve(T.size());
     for (std::size_t i = 0; i < T.size(); ++i) rows.push_back(row(T[i], indices[i]));
     const Tensor all = Tensor::concat(rows, -2);
-    return {all.slice(-1, 0, 1), all.slice(-1, 1, all.shape().back())};
+    return detail::zonotope_of_columns(all.slice(-1, 0, 1), all.slice(-1, 1, all.shape().back()));
 }
 
 } // namespace

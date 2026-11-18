@@ -6,9 +6,9 @@
 // CORA: contDynamics/@linearSys/private/priv_reach_fromStart.m
 // CORA: contDynamics/@linearSys/private/priv_reach_decomp.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -94,7 +94,7 @@ void simulations_stay_inside(const std::string &b) {
     const Tensor A = oscillator(), B = Tensor::eye(3);
     const LinearSys sys(A, B);
     const Zonotope X0 = coupled_set();
-    const Zonotope U(test::column({1.0, 2.0, 0.5}), Tensor({{0.1, 0.0}, {0.0, 0.2}, {0.1, 0.1}}));
+    const Zonotope U(test::column({1.0, 2.0, 0.5}), Tensor({{0.1, 0.0, 0.1}, {0.0, 0.2, 0.1}}));
     const double dt = 0.5;
     const ReachProblem problem{.initial_set = X0, .input_set = U, .t_final = 3.0};
     for (const alg::LinearReach &a :
@@ -148,10 +148,14 @@ void checks_and_their_switch(const std::string &b) {
                        Error::wrong_value),
           b + ": time_step 0");
     const Tensor on =
-        sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back().center();
+        // layout: #163 step 2
+        detail::cora_center(
+            sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back());
     ChecksScope off(false);
     check(test::close(
-              sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back().center(),
+              // layout: #163 step 2
+              detail::cora_center(
+                  sys.reach(problem, alg::FromStart{.time_step = 0.1}).time_interval.back()),
               on, 0),
           b + ": the same with the checks off");
 }

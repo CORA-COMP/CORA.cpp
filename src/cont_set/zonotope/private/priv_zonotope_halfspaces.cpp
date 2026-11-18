@@ -16,7 +16,7 @@
 // CORA authors: Niklas Kochdumper, Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -34,7 +34,7 @@ namespace {
 /// zonotope (CORA's aux_polytope_fullDim), the normals in the order of CORALean's hPolytopeFacets:
 /// the reverse of CORA's.
 std::pair<Tensor, Tensor> aux_full_dim(const Zonotope &Z) {
-    const Tensor &c = Z.center(), &G = Z.generators();
+    const Tensor &c = detail::cora_center(Z), &G = detail::cora_generators(Z);
     const Tensor facets = priv_zonotope_facet_normals(Z);
     std::vector<int64_t> reversed(std::size_t(facets.shape()[0]));
     for (std::size_t i = 0; i < reversed.size(); ++i)
@@ -57,8 +57,8 @@ std::pair<Tensor, Tensor> aux_point(const Tensor &c) {
 // ===========================================  MAIN  =========================================== //
 
 std::pair<Tensor, Tensor> priv_zonotope_halfspaces(const Zonotope &Z_in) {
-    const Zonotope Z = Z_in.compact("zeros", machine_eps(Z_in.center().dtype()));
-    const Tensor &c = Z.center(), &G = Z.generators();
+    const Zonotope Z = Z_in.compact("zeros", machine_eps(detail::cora_center(Z_in).dtype()));
+    const Tensor &c = detail::cora_center(Z), &G = detail::cora_generators(Z);
     const int64_t n = Z.dim(), m = G.shape().back();
     if (m == 0) return aux_point(c);
     if (Z.is_full_dim(numerics::kDegenerateZonotope)) return aux_full_dim(Z);

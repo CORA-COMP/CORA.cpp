@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/initReach.m
 // CORA authors: Mark Wetzlinger, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -35,7 +35,9 @@ void the_first_step_is_that_of_reach(const std::string &b) {
         check(test::close(got.inf(), want.inf(), 1e-13) &&
                   test::close(got.sup(), want.sup(), 1e-13),
               b + ": the box of the step");
-        check(test::close(s.time_point.center(), R.time_point[1].center(), 1e-14),
+        // layout: #163 step 2
+        check(test::close(detail::cora_center(s.time_point), detail::cora_center(R.time_point[1]),
+                          1e-14),
               b + ": the end of the step");
     }
 }
@@ -66,11 +68,15 @@ void checks_and_their_switch(const std::string &b) {
           b + ": no time_step");
     // the checks off give the same first step
     const Tensor on =
-        sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval.center();
+        // layout: #163 step 2
+        detail::cora_center(
+            sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval);
     ChecksScope off(false);
     check(test::close(
-              sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval.center(), on,
-              0),
+              // layout: #163 step 2
+              detail::cora_center(
+                  sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval),
+              on, 0),
           b + ": the same with the checks off");
 }
 

@@ -21,7 +21,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -67,7 +67,8 @@ std::vector<Column> aux_generators(const std::vector<Set> &R, const Column &nv, 
     std::vector<Column> cols;
     for (const Set &S : R) {
         for (const Zonotope &Z : priv_zonotopes(S)) {
-            const Tensor G = Z.generators();
+            // layout: #163 step 2
+            const Tensor G = detail::cora_generators(Z);
             const int64_t n = G.shape()[0], h = G.shape()[1];
             const std::vector<double> d = G.data();
             for (int64_t j = 0; j < h; ++j) {
@@ -191,7 +192,7 @@ Tensor aux_pca(const std::vector<Column> &G, int64_t n, const Tensor &like) {
 Tensor aux_mean_center(const std::vector<Set> &R) {
     std::vector<Tensor> c;
     for (const Set &S : R)
-        for (const Zonotope &Z : priv_zonotopes(S)) c.push_back(Z.center());
+        for (const Zonotope &Z : priv_zonotopes(S)) c.push_back(detail::cora_center(Z));
     return Tensor::concat(c, -1).mean(-1, true);
 }
 

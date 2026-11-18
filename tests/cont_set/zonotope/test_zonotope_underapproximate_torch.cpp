@@ -2,7 +2,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -18,7 +18,7 @@ namespace {
 
 /// The signs are chosen on the values (piecewise): the vertices are linear in c and G for them.
 void underapproximate_gradient() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(2, 3);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 3);
     const torch::Tensor S = torch::randn({2, 2}, torch::kDouble);
     test::gradcheck(
         "underapproximate",

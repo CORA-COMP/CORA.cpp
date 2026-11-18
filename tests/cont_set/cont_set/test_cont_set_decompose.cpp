@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -26,16 +26,20 @@ namespace {
 /// is a projection too.
 void decompose_projects_each_block(const std::string &b) {
     const Interval I(column({-1.0, 0.0, 2.0}), column({1.0, 2.0, 5.0}));
-    const Zonotope Z(column({1.0, 2.0, 3.0}), Tensor::from_data({1, 0, 0, 1, 0, 1}, {3, 2}));
+    const Zonotope Z(column({1.0, 2.0, 3.0}), Tensor::from_data({1, 0, 0, 0, 1, 1}, {2, 3}));
     const std::vector<Set> parts = static_cast<const ContSet &>(I).decompose({{0, 1}, {2, 2}});
     check(parts.size() == 2 && parts[0].as<Interval>().dim() == 2 &&
               test::close(parts[0].as<Interval>().sup(), {1.0, 2.0}) &&
               test::close(parts[1].as<Interval>().inf(), {2.0}),
           b + ": the blocks of a box");
     const std::vector<Set> zs = static_cast<const ContSet &>(Z).decompose({{1, 2}, {0, 0}});
-    check(zs.size() == 2 && test::close(zs[0].as<Zonotope>().center(), {2.0, 3.0}) &&
-              test::close(zs[1].as<Zonotope>().center(), {1.0}) &&
-              zs[0].as<Zonotope>().generators().shape()[0] == 2,
+    // layout: #163 step 2
+    check(zs.size() == 2 &&
+              test::close(zs[0].as<Zonotope>().center().expand_dims(-1), {2.0, 3.0}) &&
+              // layout: #163 step 2
+              test::close(zs[1].as<Zonotope>().center().expand_dims(-1), {1.0}) &&
+              // layout: #163 step 2
+              zs[0].as<Zonotope>().generators().matrix_transpose().shape()[0] == 2,
           b + ": the blocks of a zonotope");
     const std::vector<Set> one = static_cast<const ContSet &>(I).decompose({{0, 2}});
     check(one.size() == 1 && one[0].as<Interval>().dim() == 3, b + ": one block");

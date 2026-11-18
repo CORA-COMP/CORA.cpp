@@ -7,9 +7,9 @@
 //           iff their support function stays below every row
 //
 // CORA authors: Niklas Kochdumper, Viktor Kotsev, Adrian Kulmburg, Mark Wetzlinger, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -69,7 +69,7 @@ void sets(const std::string &b) {
         out(column({0.5, 0.5}), column({1.5, 1.0}));
     check(H.contains(in) && !H.contains(out), b + ": a box");
     check(H.contains(in, "approx") && !H.contains(out, "approx"), b + ": a box, approx");
-    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.3, 0.1}, {0.0, 0.3}}));
+    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.3, 0.0}, {0.1, 0.3}}));
     check(H.contains(Z) && H.contains(Z, "approx"), b + ": a zonotope");
     check(!H.contains(Zonotope(column({1.0, 1.0}), Tensor({{0.3, 0.0}, {0.0, 0.3}}))),
           b + ": a zonotope out");

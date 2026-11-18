@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/errorSolution_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -41,7 +41,9 @@ void the_gain_decides_where_to_stop(const std::string &b) {
     const LinearSys sys(diagonal());
     const Zonotope coarse = sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1);
     const Zonotope fine = sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 1e-9);
-    check(coarse.generators().shape().back() < fine.generators().shape().back(),
+    // layout: #163 step 2
+    check(detail::cora_generators(coarse).shape().back() <
+              detail::cora_generators(fine).shape().back(),
           b + ": a smaller zeta keeps more terms");
     // both enclose the exact solution int_0^dt e^{A s} ds Vdyn, whose support along e1 is 1 - e^-dt
     check(support(coarse, {1, 0}) >= 1 - std::exp(-kStep) - 1e-13 &&
@@ -57,8 +59,10 @@ void the_static_part_is_added(const std::string &b) {
     const Zonotope with = sys.error_solution_adaptive(dynamic_part(), Vstat, kStep, 1e-3, 10);
     const Zonotope without =
         sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 1e-3, 10);
-    check(test::close(with.center(),
-                      without.center() +
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(with),
+                      // layout: #163 step 2
+                      detail::cora_center(without) +
                           test::column({1 - std::exp(-kStep), (1 - std::exp(-2 * kStep)) / 2}),
                       1e-12),
           b + ": the center moves by the integral of the static part");
@@ -84,10 +88,14 @@ void checks_and_their_switch(const std::string &b) {
           b + ": Vstat of three dimensions");
     // the checks off give the same set
     const Tensor on =
-        sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1).generators();
+        // layout: #163 step 2
+        detail::cora_generators(
+            sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1));
     ChecksScope off(false);
     check(test::close(
-              sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1).generators(),
+              // layout: #163 step 2
+              detail::cora_generators(
+                  sys.error_solution_adaptive(dynamic_part(), std::nullopt, kStep, 0.1)),
               on, 0),
           b + ": the same with the checks off");
 }

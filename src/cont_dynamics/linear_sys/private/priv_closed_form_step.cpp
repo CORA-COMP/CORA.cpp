@@ -13,9 +13,9 @@
 // CORA evaluates oneStep with expm and A^-1; this is its closed form in CORALean's float
 // definition (LinearSys.oneStepClosedFormFloat).
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -202,17 +202,22 @@ Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &
                             const Zonotope &V) {
     // the boxes added in turn: the centers one after the other, the generators side by side
     Zonotope first = V.linear_map(terms[0]);
-    Tensor center = first.center();
-    std::vector<Tensor> generators{first.generators()};
+    // layout: #163 step 2
+    Tensor center = detail::cora_center(first);
+    // layout: #163 step 2
+    std::vector<Tensor> generators{detail::cora_generators(first)};
     generators.reserve(terms.size() + 1);
     const auto add = [&](const Interval &box) {
         const Zonotope Z = V.linear_map(box);
-        center = center + Z.center();
-        generators.push_back(Z.generators());
+        // layout: #163 step 2
+        center = center + detail::cora_center(Z);
+        // layout: #163 step 2
+        generators.push_back(detail::cora_generators(Z));
     };
     for (std::size_t i = 1; i < terms.size(); ++i) add(terms[i]);
     add(remainder);
-    return {std::move(center), Tensor::concat(generators, -1)};
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(std::move(center), Tensor::concat(generators, -1));
 }
 
 /// The corrections as host numbers, for the cache: a tensor would keep the backend of its A.
@@ -379,7 +384,7 @@ ClosedFormStep ClosedFormStepper::step(const Zonotope &X, const Zonotope &U,
                                        const Tensor &u) const {
     const Matrices &m = *m_;
     // the constant input is a point set
-    const Zonotope point(u, u.zeros_like({u.size(0), 0}));
+    const Zonotope point = detail::zonotope_of_columns(u, u.zeros_like({u.size(0), 0}));
     const Zonotope Pu = aux_input_solution(m.terms, m.remainder, point);
     const Zonotope PU = aux_input_solution(m.terms, m.remainder, U);
     // Htp = [e^{A dt}] X + Pu, Hti = hull(X, Htp) + [F] X

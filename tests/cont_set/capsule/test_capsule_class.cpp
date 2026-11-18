@@ -6,9 +6,9 @@
 // PROPERTY: contSet/@zonotope/capsule.m
 // PROPERTY: contSet/@interval/capsule.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   07-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -127,20 +127,21 @@ void from_zonotope(const std::string &b) {
     for (const int generators : {1, 2, 3, 7}) {
         std::vector<double> G(static_cast<std::size_t>(3 * generators));
         rng.normal(G.data(), G.size(), 1.0);
-        const Zonotope Z(column({1.0, -1.0, 0.5}), Tensor::from_data(G, {3, generators}));
+        const Zonotope Z(column({1.0, -1.0, 0.5}),
+                         Tensor::from_data(G, {3, generators}).matrix_transpose());
         const Capsule C(Z);
         check(C.contains(Z), b + ": the zonotope is inside the capsule of " +
                                  std::to_string(generators) + " generators");
         check(C.dim() == 3 && C.r().item() >= 0, b + ": a capsule of the dimension");
     }
     // a segment is a capsule of radius 0
-    const Capsule segment(Zonotope(column({0.0, 0.0}), Tensor({{1.0}, {1.0}})));
+    const Capsule segment(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}})));
     check(close(segment.r(), {0}, 1e-12), b + ": a zonotope with one generator has radius 0");
 }
 
 /// A batch of zonotopes and an interval matrix are refused.
 void conversion_refusals() {
-    const Zonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 2, 1}));
+    const Zonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 1, 2}));
     check(test::raises([&] { Capsule C(batch); }, Error::not_supported), "Capsule(Z): a batch");
     check(test::raises([] { Capsule C(Interval::empty(2)); }, Error::empty_set),
           "Capsule(I): empty");

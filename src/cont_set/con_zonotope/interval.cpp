@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@conZonotope/interval.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -25,7 +25,8 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Interval ConZonotope::interval_impl() const {
-    if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_, G_).interval();
+    // layout: #163 step 2
+    if (A().shape()[A().ndim() - 2] == 0) return detail::zonotope_of_columns(c_, G_).interval();
     // CORA drops the zero generators first; the ranges do not change
     const HostConZonotope H = priv_host_con_zonotope(priv_compact(*this));
     std::vector<double> inf(std::size_t(H.n)), sup(std::size_t(H.n));

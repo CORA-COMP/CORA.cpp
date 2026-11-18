@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/oneStep.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -24,16 +24,22 @@ namespace {
 /// The end of the step is e^{A dt} X plus the constant input plus the time-varying input solution.
 void the_end_is_the_sum_of_its_parts(const std::string &b) {
     const Tensor A = diagonal(), u = test::column({1.0, -1.0});
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5}, {0.25}}));
+    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5, 0.25}}));
     // the parts of the step are those of the single solutions
     const LinearSys sys(A);
     const OneStep s = sys.one_step(initial_set(), U, u, kStep, kTerms);
     const AffineSolution affine = sys.affine_solution(initial_set(), u, kStep, kTerms);
     const Zonotope PU = sys.particular_solution_time_varying(U, kStep, kTerms);
-    check(test::close(s.time_point.center(), affine.time_point.center() + PU.center(), 1e-15),
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(s.time_point),
+                      detail::cora_center(affine.time_point) + detail::cora_center(PU), 1e-15),
           b + ": the center");
-    check(test::close(s.time_varying.generators(), PU.generators(), 0), b + ": PU");
-    check(test::close(s.constant.center(), affine.constant.center(), 1e-15), b + ": Pu");
+    // layout: #163 step 2
+    check(test::close(detail::cora_generators(s.time_varying), detail::cora_generators(PU), 0),
+          b + ": PU");
+    // layout: #163 step 2
+    check(test::close(detail::cora_center(s.constant), detail::cora_center(affine.constant), 1e-15),
+          b + ": Pu");
     check(test::close(s.state_curvature.interval().sup(), affine.state_curvature.interval().sup(),
                       1e-15),
           b + ": the state curvature");
@@ -49,7 +55,7 @@ void the_end_is_the_sum_of_its_parts(const std::string &b) {
 /// Every trajectory under an input of U and the constant input stays in the sets of the step.
 void trajectories_stay_inside(const std::string &b) {
     const Tensor A = diagonal();
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5}, {0.25}}));
+    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5, 0.25}}));
     const Tensor u = test::column({0.5, 0.0});
     const OneStep s = LinearSys(A).one_step(initial_set(), U, u, kStep, kTerms);
     // the end of a trajectory under a held input w = u + factor * generator
@@ -80,10 +86,13 @@ void checks_and_their_switch(const std::string &b) {
                        Error::wrong_value),
           b + ": no terms");
     const Tensor on =
-        sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval.center();
+        // layout: #163 step 2
+        detail::cora_center(sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval);
     ChecksScope off(false);
     check(
-        test::close(sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval.center(),
+        // layout: #163 step 2
+        test::close(detail::cora_center(
+                        sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval),
                     on, 0),
         b + ": the same with the checks off");
 }

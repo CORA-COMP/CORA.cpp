@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonotope/filterOut.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -38,7 +38,7 @@ int main() {
           "filter_out: no cell");
     check(
         test::raises(
-            [&] { Zonotope::filter_out({Z, Zonotope(column({0.0, 0.0}), Tensor::zeros({2, 0}))}); },
+            [&] { Zonotope::filter_out({Z, Zonotope(column({0.0, 0.0}), Tensor::zeros({0, 2}))}); },
             Error::wrong_value),
         "filter_out: cells of another dimension");
     ChecksScope off(false);

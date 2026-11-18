@@ -101,7 +101,7 @@ std::vector<Zonotope> priv_block_origin(const Tensor &like, const Blocks &blocks
     std::vector<Zonotope> out;
     for (const std::array<int64_t, 2> &block : blocks) {
         const int64_t n = block[1] - block[0] + 1;
-        out.emplace_back(like.zeros_like({n, 1}), like.zeros_like({n, 0}));
+        out.emplace_back(like.zeros_like({n}), like.zeros_like({0, n}));
     }
     return out;
 }

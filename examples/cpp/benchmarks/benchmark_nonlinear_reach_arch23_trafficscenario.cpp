@@ -15,7 +15,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -131,7 +131,7 @@ std::vector<double> aux_values(const std::vector<Expr> &e, const std::vector<dou
 std::vector<Polygon> aux_occupancy(const Body &body, const Zonotope &S, const Zonotope &vehicle) {
     const Zonotope X = S.project({3, 4, 1}).as<Zonotope>().reduce(8).cart_prod(vehicle);
     const std::vector<double> p = X.center().data();
-    const Zonotope D = X - X.center();
+    const Zonotope D = X - X.center().expand_dims(-1);
     const std::vector<double> f = aux_values(body.f, p), A = aux_values(body.A, p);
     const std::vector<double> q = aux_values(body.Q, p);
     std::vector<Tensor> Q = {matrix(5, 5, {q.begin(), q.begin() + 25}),
@@ -175,8 +175,8 @@ std::array<double, 4> aux_input_hull(const std::vector<std::vector<Zonotope>> &R
     for (std::size_t i = 0; i < R.size(); ++i)
         for (const Zonotope &S : R[i]) {
             const Tensor &C = S.center(), &G = S.generators();
-            const Zonotope diff(C.slice(-2, 0, 5) - C.slice(-2, 5, 10),
-                                G.slice(-2, 0, 5) - G.slice(-2, 5, 10));
+            const Zonotope diff(C.slice(-1, 0, 5) - C.slice(-1, 5, 10),
+                                G.slice(-1, 0, 5) - G.slice(-1, 5, 10));
             const Interval I =
                 (diff.linear_map(matrix(2, 5, c.K[i])) + column({c.u[i][0], c.u[i][1]})).interval();
             const std::vector<double> l = I.inf().data(), h = I.sup().data();
@@ -203,7 +203,7 @@ bool aux_run(const std::string &name) {
     std::vector<double> G0(50, 0.0), x0 = c.x0;
     for (std::size_t i = 0; i < 5; ++i) G0[i * 5 + i] = v[i];
     x0.insert(x0.end(), c.x0.begin(), c.x0.end());
-    Zonotope X(column(x0), matrix(10, 5, G0));
+    Zonotope X(column(x0), matrix(10, 5, G0).matrix_transpose());
     const std::vector<double> u_rad = {0.02, 0.3, 0.0004, 0.0004, 0.006, 0.002, 0.002};
     std::vector<double> GU(49, 0.0);
     for (std::size_t i = 0; i < 7; ++i) GU[i * 7 + i] = u_rad[i];
@@ -244,11 +244,11 @@ bool aux_run(const std::string &name) {
     if (cora::bench::env_flag("CORACPP_BENCHMARK_VERBOSE"))
         for (const Zonotope *Z : {&R.front().front(), &X}) {
             const Interval I = Z->interval();
-            std::cerr << "    center " << Z->center().matrix_transpose().data().size() << ":";
+            std::cerr << "    center " << Z->center().data().size() << ":";
             for (double x : Z->center().data()) std::cerr << " " << x;
             std::cerr << "\n    radius:";
             for (double x : I.rad().data()) std::cerr << " " << x;
-            std::cerr << "\n    generators: " << Z->generators().shape()[1] << '\n';
+            std::cerr << "\n    generators: " << Z->nr_generators() << '\n';
         }
     return verified;
 }

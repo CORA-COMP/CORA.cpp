@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -36,25 +36,25 @@ void a_matrix_maps_the_zonotope(const std::string &b) {
 
 void numbers_scale(const std::string &b) {
     const Zonotope Z = -2.0 * box();
-    check(close(Z.center(), Tensor({-2.0, -4.0})) &&
+    check(close(Z.center(), test::vec({-2.0, -4.0})) &&
               close(Z.generators(), Tensor({{-1.0, 0.0}, {0.0, -0.5}})),
           b + ": s * Z");
-    check(close((box() * 2.0).center(), Tensor({2.0, 4.0})), b + ": Z * s");
+    check(close((box() * 2.0).center(), test::vec({2.0, 4.0})), b + ": Z * s");
     // unary minus negates center and generators
-    check(close((-box()).center(), Tensor({-1.0, -2.0})) &&
+    check(close((-box()).center(), test::vec({-1.0, -2.0})) &&
               close((-box()).generators(), Tensor({{-0.5, 0.0}, {0.0, -0.25}})),
           b + ": -Z negates centre and generators (CORA's uminus)");
 }
 
 void sums_and_translations(const std::string &b) {
     const Zonotope S = box() + box();
-    check(close(S.center(), Tensor({2.0, 4.0})) && S.generators().shape()[1] == 4,
+    check(close(S.center(), test::vec({2.0, 4.0})) && S.generators().shape()[1] == 4,
           b + ": Z + Z2 is the Minkowski sum");
     const Tensor v({1.0, -1.0});
-    check(close((box() + v).center(), Tensor({2.0, 1.0})) &&
-              close((v + box()).center(), Tensor({2.0, 1.0})),
+    check(close((box() + v).center(), test::vec({2.0, 1.0})) &&
+              close((v + box()).center(), test::vec({2.0, 1.0})),
           b + ": Z + v translates");
-    check(close((box() - v).center(), Tensor({0.0, 3.0})), b + ": Z - v");
+    check(close((box() - v).center(), test::vec({0.0, 3.0})), b + ": Z - v");
     check(close((box() + v).generators(), box().generators()),
           b + ": translation keeps the generators");
 }

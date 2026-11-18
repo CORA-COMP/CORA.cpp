@@ -1,8 +1,8 @@
 // test_zonotope_abs_torch - zonotope abs: gradients through torch, and a batch on torch
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -19,14 +19,14 @@ namespace {
 
 /// abs is piecewise: the gradient is the sign of the entry, away from zero.
 void abs_gradient() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(3, 4);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(3, 4);
     test::gradcheck(
         "abs", [](const Inputs &x) { return test::parts(Zonotope(x[0], x[1]).abs()); }, Z);
 }
 
 /// A batch on torch is the abs of each member.
 void abs_of_a_batch() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(3, 4);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(3, 4);
     const Zonotope batch(from_torch(torch::stack({Z[0], -Z[0]})),
                          from_torch(torch::stack({Z[1], -Z[1]})));
     const torch::Tensor G = to_torch(batch.abs().generators());

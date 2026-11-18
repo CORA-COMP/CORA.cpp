@@ -19,9 +19,9 @@
 //
 // CORA: contSet/@polyZonotope/quadMap.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -186,8 +186,12 @@ SecondOrder priv_second_order_error(const Zonotope &Zdelta, const Zonotope &Zdif
                                     const std::vector<Tensor> &Q) {
     const int64_t d = Zdelta.dim(), m = int64_t(Q.size());
     const std::vector<Vec> Qv = aux_matrices(Q);
-    const std::vector<Vec> cd = aux_columns(Zdelta.center(), Zdelta.generators());
-    const std::vector<Vec> cf = aux_columns(Zdiff.center(), Zdiff.generators());
+    // layout: #163 step 2
+    const std::vector<Vec> cd =
+        aux_columns(detail::cora_center(Zdelta), detail::cora_generators(Zdelta));
+    // layout: #163 step 2
+    const std::vector<Vec> cf =
+        aux_columns(detail::cora_center(Zdiff), detail::cora_generators(Zdiff));
     Columns gens; // the generators kept whole, in column order
     gens.m = std::size_t(m);
     std::vector<Vec> shift; // the shifts into the center, in column order
@@ -218,7 +222,8 @@ SecondOrder priv_second_order_error(const Zonotope &Zdelta, const Zonotope &Zdif
     Vec s(static_cast<std::size_t>(m), 0.0);
     for (std::size_t l = shift.size(); l-- > 0;)
         for (std::size_t i = 0; i < s.size(); ++i) s[i] = shift[l][i] + s[i];
-    return {aux_matrix(Zdelta.center(), gens), s};
+    // layout: #163 step 2
+    return {aux_matrix(detail::cora_center(Zdelta), gens), s};
 }
 
 } // namespace cora

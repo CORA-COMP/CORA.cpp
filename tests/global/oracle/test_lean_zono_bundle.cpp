@@ -21,7 +21,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -44,7 +44,8 @@ Tensor aux_rows(const Tensor &T, int64_t from, int64_t to) { return T.slice(0, f
 ZonoBundle aux_shifted(const ZonoBundle &bundle, const Tensor &offset) {
     std::vector<Zonotope> members;
     for (const Zonotope &Z : bundle.zonotopes())
-        members.emplace_back(Z.center() + offset, Z.generators());
+        // layout: #163 step 2
+        members.push_back(detail::zonotope_of_columns(detail::cora_center(Z) + offset, detail::cora_generators(Z)));
     return ZonoBundle(std::move(members));
 }
 

@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@zonotope/simplex.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -31,7 +31,7 @@ namespace cora {
 
 Polytope Zonotope::simplex() const {
     detail::Entry entry;
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(detail::cora_center(*this).ndim() == 2, Error::not_supported,
                [] { return std::string("simplex: it supports a single zonotope, not a batch"); });
     const int64_t n = dim();
     // the basis orthogonal to the ones vector: column j of its remainder is vertex j of a simplex
@@ -46,8 +46,9 @@ Polytope Zonotope::simplex() const {
         for (int64_t k = 0; k < n; ++k)
             normals[std::size_t(j * n + k)] = -B[std::size_t(k + 1)][std::size_t(j)] / norm;
     }
-    const Tensor A = Tensor::like(c_, normals, {n + 1, n});
-    return {A, A.matmul(c_) + A.matmul(G_).abs_sum()};
+    const Tensor A = Tensor::like(detail::cora_center(*this), normals, {n + 1, n});
+    return {A, A.matmul(detail::cora_center(*this)) +
+                   A.matmul(detail::cora_generators(*this)).abs_sum()};
 }
 
 } // namespace cora

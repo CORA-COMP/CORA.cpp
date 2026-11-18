@@ -12,7 +12,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   06-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -130,6 +130,8 @@ template <class T>
 Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T> &b);
 template <class T>
 Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims);
+template <class T>
+Tensor::Ptr sum_rows(const HostTensor<T> &a, bool keepdims);
 template <class T>
 Tensor::Ptr expm(const HostTensor<T> &a);
 template <class T>

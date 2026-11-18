@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,7 +25,9 @@ namespace {
 
 /// CORA's unit test: the zonotope [-4 -3 -2 -1; 1 2 3 4] (center (-4, 1)), cut along the box
 /// coordinates, a direction and a halfspace.
-Zonotope example() { return {column({-4.0, 1.0}), Tensor({{-3.0, -2.0, -1.0}, {2.0, 3.0, 4.0}})}; }
+Zonotope example() {
+    return {column({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}, {-1.0, 4.0}})};
+}
 
 void split_by_coordinates(const std::string &b) {
     const auto all = example().split();
@@ -40,7 +42,7 @@ void split_by_coordinates(const std::string &b) {
               close(upper.generators(), std::vector<double>{6, 0, 0, 4.5}, 1e-14),
           b + ": coordinate 1");
     // a flat coordinate: CORA indexes the nonzero generators and breaks; here both halves are a box
-    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0}, {0.0}}));
+    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
     const auto [a, c] = flat.split(1);
     check(close(a.center(), c.center(), 0) &&
               close(a.generators(), std::vector<double>{1, 0, 0, 0}, 0),
@@ -55,7 +57,7 @@ void split_along_a_generator(const std::string &b) {
               close(upper.generators(), std::vector<double>{2, 0, 0, 2}, 0),
           b + ": generator 1, no reduction needed");
     // a reduction to order 1 leaves two generators: the kept longest one and a box generator
-    const Zonotope W(column({0.0, 0.0}), Tensor({{4.0, 0.0, 1.0}, {0.0, 3.0, 1.0}}));
+    const Zonotope W(column({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 3.0}, {1.0, 1.0}}));
     const auto [l2, u2] = W.split(0, 1);
     check(l2.generators().shape() == std::vector<int64_t>({2, 2}), b + ": reduced to order 1");
     check(close(u2.center(), std::vector<double>{2.5, 0}, 0),
@@ -67,10 +69,10 @@ void split_by_a_direction(const std::string &b) {
     check(close(one.center(), std::vector<double>{-5.25, -0.25}, 1e-14) &&
               close(two.center(), std::vector<double>{-2.75, 2.25}, 1e-14),
           b + ": the centers of CORA's example");
-    check(close(one.generators(), std::vector<double>{1.25, -2.5, -2.5, -2.5, 1.25, 2.5, 2.5, 2.5},
+    check(close(one.generators(), std::vector<double>{1.25, 1.25, -2.5, 2.5, -2.5, 2.5, -2.5, 2.5},
                 1e-14) &&
               close(two.generators(),
-                    std::vector<double>{-1.25, -2.5, -2.5, -2.5, -1.25, 2.5, 2.5, 2.5}, 1e-14),
+                    std::vector<double>{-1.25, -1.25, -2.5, 2.5, -2.5, 2.5, -2.5, 2.5}, 1e-14),
           b + ": the generators of CORA's example");
     // the plane normal to aux_dir minus its part along orig_dir: (1, 0) and (1, 1) give (0, 1)
     const auto [p, q] = example().split(column({1.0, 0.0}), column({1.0, 1.0}));
@@ -153,7 +155,7 @@ void checks_and_their_switch() {
     // a batch splits by coordinate
     check(test::raises([&] { batch.split(column({1.0, 1.0}), 0.0); }, Error::not_supported),
           "split: batch halfspace");
-    check(batch.split(0).first.center().shape() == std::vector<int64_t>({2, 2, 1}),
+    check(batch.split(0).first.center().shape() == std::vector<int64_t>({2, 2}),
           "split: a batch splits by coordinate");
     ChecksScope off(false);
     check(close(Z.split(0).first.center(), std::vector<double>{-7, 1}, 1e-14), "split: checks off");

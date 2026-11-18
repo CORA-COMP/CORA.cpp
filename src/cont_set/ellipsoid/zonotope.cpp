@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@ellipsoid/zonotope.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -47,12 +47,14 @@ Zonotope Ellipsoid::zonotope(const std::string &mode,
                [] { return std::string("zonotope: it supports a single ellipsoid, not a batch"); });
     const Tensor G = priv_range_factor(*this);
     const int64_t rank = G.shape().back(), n = dim();
-    if (rank == 0) return {q_, G};
+    // layout: #163 step 2
+    if (rank == 0) return detail::zonotope_of_columns(q_, G);
     // a full-rank ellipsoid uses the symmetric root U sqrt(D) U'; a degenerate one the range factor
     Tensor generators = G;
     if (rank == n) generators = G.matmul(Q_.svd()[0].matrix_transpose());
     if (mode == "inner:box") generators = generators / std::sqrt(static_cast<double>(rank));
-    return {q_, generators};
+    // layout: #163 step 2
+    return detail::zonotope_of_columns(q_, generators);
 }
 
 } // namespace cora

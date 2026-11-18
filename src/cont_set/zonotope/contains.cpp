@@ -18,7 +18,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Adrian Kulmburg, Ivan Brkan
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -56,9 +56,10 @@ bool aux_contains_points(const HostZonotope &Z, const std::vector<double> &p, in
 /// it is not full-dimensional.
 Zonotope aux_prepared(const Zonotope &Z, double tol) {
     const Zonotope compacted = Z.compact();
-    const int64_t m = compacted.generators().shape().back();
+    const int64_t m = compacted.nr_generators();
     if (m > 0 && compacted.generators().matrix_rank(tol) == Z.dim()) return compacted;
-    const Tensor r = compacted.center().full_like(compacted.center().shape(), tol);
+    const Tensor c = detail::cora_center(compacted);
+    const Tensor r = c.full_like(c.shape(), tol);
     return compacted.plus(Interval(r.negative(), r));
 }
 
@@ -66,7 +67,7 @@ Zonotope aux_prepared(const Zonotope &Z, double tol) {
 bool aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
     const int64_t N = p.shape().back();
     const Zonotope compacted = Z.compact();
-    if (compacted.generators().shape().back() == 0) { // a point
+    if (compacted.nr_generators() == 0) { // a point
         const std::vector<double> c = compacted.center().data(), x = p.data();
         for (int64_t i = 0; i < Z.dim(); ++i)
             for (int64_t k = 0; k < N; ++k)
@@ -88,7 +89,9 @@ bool aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
 /// polytope(Z) by 'exact:polymax'): one matrix product, fast for many generators in low dimension.
 bool aux_contains_polymax(const Zonotope &Z, const Zonotope &S, double tol) {
     const auto [C, d] = priv_zonotope_halfspaces(Z);
-    const Tensor support = C.matmul(S.center()) + C.matmul(S.generators()).abs_sum();
+    // layout: the product with CORA's columns
+    const Tensor support =
+        C.matmul(detail::cora_center(S)) + C.matmul(detail::cora_generators(S)).abs_sum();
     const std::vector<double> b = d.data(), b_ = support.data();
     for (size_t i = 0; i < b.size(); ++i)
         if (b_[i] > b[i] && !within_tol(b[i], b_[i], tol)) return false;
@@ -99,9 +102,9 @@ bool aux_contains_polymax(const Zonotope &Z, const Zonotope &S, double tol) {
 bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::string &method,
                            double tol) {
     const Zonotope inner = S.compact();
-    if (inner.generators().shape().back() == 0) return aux_contains_matrix(Z, inner.center(), tol);
+    if (inner.nr_generators() == 0) return aux_contains_matrix(Z, detail::cora_center(inner), tol);
     const Zonotope compacted = Z.compact();
-    if (compacted.generators().shape().back() == 0) return false; // a point holds no set
+    if (compacted.nr_generators() == 0) return false; // a point holds no set
     if (priv_is_box(compacted, tol)) { // a box contains S iff it contains the box around S
         const Interval box = compacted.interval(), around = inner.interval();
         return box.contains(around.inf(), tol) && box.contains(around.sup(), tol);
@@ -149,7 +152,7 @@ bool Zonotope::contains(const Tensor &p, const std::string &method, Tol tol_arg)
         return "contains: the points must be a matrix (" + std::to_string(dim()) +
                ", N) of columns, got the shape " + shape_text(p.shape());
     });
-    const auto refusal = aux_refusal(c_.ndim() != 2, method, true);
+    const auto refusal = aux_refusal(c_.ndim() != 1, method, true);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     return aux_contains_matrix(*this, p, tol);
 }
@@ -162,7 +165,7 @@ bool Zonotope::contains(const Zonotope &S, const std::string &method, Tol tol_ar
         return "contains: the zonotopes differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(S.dim());
     });
-    const auto refusal = aux_refusal(c_.ndim() != 2 || S.center().ndim() != 2, method, false);
+    const auto refusal = aux_refusal(c_.ndim() != 1 || S.center().ndim() != 1, method, false);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     return aux_contains_zonotope(*this, S, method, tol);
 }
@@ -174,7 +177,8 @@ bool Zonotope::contains(const Interval &I, const std::string &method, Tol tol_ar
         return "contains: the interval must be a box of the dimension " + std::to_string(dim()) +
                " of the zonotope, got bounds of the shape " + shape_text(I.inf().shape());
     });
-    const auto refusal = aux_refusal(c_.ndim() != 2 || I.inf().ndim() != 2, method, false);
+    const auto refusal = aux_refusal(c_.ndim() != 1 || I.inf().ndim() != 2, method, false);
+
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a box is the zonotope of its axes
     return aux_contains_zonotope(*this, I.zonotope(), method, tol);
