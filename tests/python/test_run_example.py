@@ -1,8 +1,11 @@
 """test_run_example - scripts/run_example.py, the F5 of VS Code, runs Python and C++ examples
 
-Authors:       Claude Sonnet 5.5
+The examples are built in ctest's build directory, whose settings scripts/build.sh keeps; without
+one (unittest run by hand) the tests that build are skipped rather than configure a new tree.
+
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       29-September-2026
-Last update:   30-September-2026
+Last update:   18-November-2026
 Reviewed:      ---
 """
 import os
@@ -18,6 +21,9 @@ import unittest
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SCRIPT = os.path.join(ROOT, "scripts", "run_example.py")
+# the build directory the examples are built in: ctest names its own; without one, nothing is built
+BUILD = os.environ.get("CORACPP_BUILD", "")
+CONFIGURED = bool(BUILD) and os.path.isfile(os.path.join(BUILD, "CMakeCache.txt"))
 
 
 def run(path):
@@ -29,18 +35,21 @@ def run(path):
 
 @unittest.skipIf(sys.platform == "win32", "the helper scripts of the repository need bash")
 class RunExample(unittest.TestCase):
+    @unittest.skipUnless(CONFIGURED, "no configured CORACPP_BUILD to build the examples in")
     def test_a_python_example_runs_with_its_blocks(self):
         with tempfile.TemporaryDirectory() as folder:
             path = os.path.join(folder, "example_run_check.py")
             with open(path, "w", encoding="utf-8") as f:
                 f.write("import cora\nprint('example body')\n")
             result = run(path)
+        # the block markers and the header frame the output of the example
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("CORA START", result.stdout)
         self.assertIn("CORA.cpp | example_run_check.py | default backend:", result.stdout)
         self.assertIn("example body", result.stdout)
         self.assertIn("CORA END", result.stdout)
 
+    @unittest.skipUnless(CONFIGURED, "no configured CORACPP_BUILD to build the examples in")
     def test_a_failing_python_example_fails(self):
         with tempfile.TemporaryDirectory() as folder:
             path = os.path.join(folder, "example_run_fails.py")
@@ -56,6 +65,7 @@ class RunExample(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("neither a .py nor a .cpp example", result.stderr)
 
+    @unittest.skipUnless(CONFIGURED, "no configured CORACPP_BUILD to build the examples in")
     def test_a_cpp_example_is_built_and_run(self):
         result = run(os.path.join(ROOT, "examples", "cpp", "example_linear_reach_03_specification.cpp"))
         self.assertEqual(result.returncode, 0, result.stderr)
