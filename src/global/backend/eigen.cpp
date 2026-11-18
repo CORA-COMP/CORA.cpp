@@ -347,10 +347,11 @@ zonotope_interval_map(const HostTensor<T> &inf, const HostTensor<T> &sup, const 
         const auto Gz = MapC<T>(G.p + r * m * k, m, k);
         const auto cz = MapC<T>(c.p + r * k, 1, k);
         // the box S |[c; G]|' 1, and c T', G T'
-        auto sum = Map<T>(reach, 1, k); // the rows of |G| added in order, then |c|
+        // CORALean's order: |c| + (|g_0| + (|g_1| + ... + (|g_{m-1}| + 0))), the rows from the last
+        auto sum = Map<T>(reach, 1, k);
         sum.setZero();
-        for (int64_t i = 0; i < m; ++i) sum += Gz.row(i).cwiseAbs();
-        sum += cz.cwiseAbs();
+        for (int64_t i = m; i-- > 0;) sum = Gz.row(i).cwiseAbs() + sum;
+        sum = cz.cwiseAbs() + sum;
         Map<T>(box, n, 1).noalias() = MapC<T>(s, n, k) * MapC<T>(reach, k, 1);
         Map<T>(Tc->p + z * n, 1, n).noalias() = cz * MapC<T>(t, n, k).transpose();
         Map<T> out(TG->p + z * (m + n) * n, m + n, n);
