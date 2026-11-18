@@ -2,9 +2,9 @@
 #
 # Included by CMakeLists.txt; lib_sources is its.
 #
-# Authors:       Claude Sonnet 5.5
+# Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 # Written:       01-October-2026
-# Last update:   ---
+# Last update:   18-November-2026
 # Reviewed:      ---
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -61,11 +61,15 @@ if(CMAKE_GENERATOR MATCHES "Ninja")
 else()
   set(report_comment "")
 endif()
+# The files a line covers go into a file, one per line and per configuration: a folder's object
+# list passes cmd.exe's 8191 characters on Windows (src/cont_set/interval/ alone has 105 objects).
 function(cora_report name covers stamp label bold previous)
+  set(list_file "${CMAKE_BINARY_DIR}/progress/${name}-$<CONFIG>.txt")
+  file(GENERATE OUTPUT "${list_file}" CONTENT "${covers}")
   add_custom_target(${name}
     COMMENT "${report_comment}"
-    COMMAND ${CMAKE_COMMAND} "-DCOVERS=${covers}" "-DSTAMP=${stamp}" "-DLABEL=${label}" "-DBOLD=${bold}"
-            -P "${report_script}"
+    COMMAND ${CMAKE_COMMAND} "-DCOVERS_FILE=${list_file}" "-DSTAMP=${stamp}" "-DLABEL=${label}"
+            "-DBOLD=${bold}" -P "${report_script}"
     VERBATIM)
   if(previous)
     add_dependencies(${name} ${previous})
@@ -111,14 +115,14 @@ foreach(top IN LISTS tops)
     endif()
     # a progress line per group, printed when its objects were rebuilt
     set(stamp "${CMAKE_BINARY_DIR}/progress/${id}.stamp")
-    cora_report(cora_done_${id} "$<JOIN:$<TARGET_OBJECTS:cora_${id}>,|>" "${stamp}" "${label}" OFF
+    cora_report(cora_done_${id} "$<JOIN:$<TARGET_OBJECTS:cora_${id}>,\n>" "${stamp}" "${label}" OFF
                 "${previous}")
     add_dependencies(cora_done_${id} cora_${id})
     list(APPEND top_stamps "${stamp}")
     set(previous cora_done_${id})
   endforeach()
   if(top IN_LIST top_names)
-    string(REPLACE ";" "|" covers "${top_stamps}")
+    string(REPLACE ";" "\n" covers "${top_stamps}")
     cora_report(cora_done_top_${top} "${covers}" "${CMAKE_BINARY_DIR}/progress/top_${top}.stamp"
                 "${done_mark} ${top}/" ON "${previous}")
     set(previous cora_done_top_${top})
