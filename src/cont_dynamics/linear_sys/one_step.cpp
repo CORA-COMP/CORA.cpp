@@ -47,8 +47,7 @@ OneStep LinearSys::one_step(const Zonotope &X, const Zonotope &U, const Tensor &
     });
     // the powers of A are shared by the solutions; the constant input is a point set
     TaylorLinSys taylor(A());
-    // layout: #163 step 2
-    const Zonotope point = detail::zonotope_of_columns(u, u.zeros_like({dim(), 0}));
+    const Zonotope point(u.squeeze(-1), u.zeros_like({0, dim()}));
     BlockStep s =
         priv_one_step(*this, taylor, priv_one_block(dim()), X, U, point, time_step, taylor_terms);
     return {s.time_point[0],

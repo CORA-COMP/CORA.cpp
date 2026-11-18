@@ -64,13 +64,10 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
         problem.initial_set.has_value() && problem.input_set.has_value(), Error::wrong_value,
         [] { return std::string("verify: the problem needs an initial_set and an input_set"); });
     const Zonotope &R0 = *problem.initial_set, &U = *problem.input_set;
-    // layout: #163 step 2
-    CORA_CHECK(detail::cora_center(R0).shape() == std::vector<int64_t>({n, 1}) &&
-                   detail::cora_generators(R0).shape().size() == 2,
+    CORA_CHECK(R0.center().shape() == Shape{n} && R0.generators().ndim() == 2,
                Error::dimension_mismatch, [&] {
                    return "verify: the initial set must be one zonotope of the dimension " +
-                          std::to_string(n) + ", got the center " +
-                          shape_text(detail::cora_center(R0).shape());
+                          std::to_string(n) + ", got the center " + shape_text(R0.center().shape());
                });
     CORA_CHECK(problem.t_final > 0 && std::isfinite(problem.t_final), Error::wrong_value, [&] {
         return "verify: t_final must be positive and finite, got " +
@@ -78,17 +75,14 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
     });
     // the input set: of the columns of B, and zero without B
     const int64_t m = B_ ? B_->shape()[1] : U.dim();
-    // layout: #163 step 2
-    CORA_CHECK(detail::cora_center(U).shape() == std::vector<int64_t>({m, 1}) &&
-                   detail::cora_generators(U).shape().size() == 2,
+    CORA_CHECK(U.center().shape() == Shape{m} && U.generators().ndim() == 2,
                Error::dimension_mismatch, [&] {
                    return "verify: the input set must be one zonotope of the dimension " +
                           std::to_string(m) + " of the columns of B, got the center " +
-                          shape_text(detail::cora_center(U).shape());
+                          shape_text(U.center().shape());
                });
     CORA_CHECK(
-        B_ || (aux_all_zero(detail::cora_center(U)) && aux_all_zero(detail::cora_generators(U))),
-        Error::wrong_value,
+        B_ || (aux_all_zero(U.center()) && aux_all_zero(U.generators())), Error::wrong_value,
         [] { return std::string("verify: a nonzero input set needs B; use LinearSys(A, B)"); });
     // the specifications: halfspace sets of the output dimension, none of them custom
     CORA_CHECK(!specs.empty(), Error::wrong_value,

@@ -42,14 +42,11 @@ CanonicalForm LinearSys::canonical_form(const Zonotope &U,
                           std::to_string(U.dim()) + " rows, got " + shape_text(u_vec->shape());
                });
     const Tensor &B = *B_;
-    // layout: #163 step 2
-    const Tensor &center = detail::cora_center(U);
-    // the center of U moves to the constant input, the rest stays as the input set
+    // the center of U (a column of the input) moves to the constant input, the rest stays
+    const Tensor center = U.center().expand_dims(-1);
     const Tensor u_input = u_vec ? *u_vec : center.zeros_like();
     const Tensor u = B.matmul(u_input) + B.matmul(center);
-    // layout: #163 step 2
-    const Zonotope U_centered =
-        detail::zonotope_of_columns(center.zeros_like(), detail::cora_generators(U));
+    const Zonotope U_centered(U.center().zeros_like(), U.generators());
     return {LinearSys(A(), A().eye_like(), C_), U_centered.linear_map(B), u};
 }
 

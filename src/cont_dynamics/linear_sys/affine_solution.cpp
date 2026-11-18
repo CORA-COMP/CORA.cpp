@@ -44,7 +44,7 @@ AffineSolution LinearSys::affine_solution(const Zonotope &X, const Tensor &u, do
     const Blocks blocks = priv_one_block(dim());
     const BlockSets Xb{X};
     // the constant input is a point of the state space
-    const Zonotope point = detail::zonotope_of_columns(u, u.zeros_like({dim(), 0}));
+    const Zonotope point = Zonotope(u.squeeze(-1), u.zeros_like({0, dim()}));
     BlockConstant Pu =
         priv_particular_constant(*this, taylor, blocks, point, time_step, taylor_terms);
     BlockHomogeneous H = priv_homogeneous(*this, taylor, blocks, Xb, time_step, taylor_terms);

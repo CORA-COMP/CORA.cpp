@@ -100,7 +100,7 @@ class Stepper {
         // the curvature acts on the state at the start of the step
         const DirectionWindow &window = dir_.windows[window_ - 1];
         const int64_t k = y_.shape()[0];
-        const Interval curvature = detail::zonotope_of_columns(y_, y_.zeros_like({k, 0}))
+        const Interval curvature = Zonotope(y_.squeeze(-1), y_.zeros_like({0, k}))
                                        .linear_map(*F_)
                                        .interval()
                                        .linear_map(window.W);
@@ -200,15 +200,15 @@ VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, con
     const auto start = std::chrono::steady_clock::now();
     VerifyResult res;
     const int64_t n = sys.dim();
-    // layout: #163 step 2
-    const Tensor &like = detail::cora_center(R0);
+    const Tensor &like = R0.center(); // the backend and the dtype
 
     // the vectors whose dot products with z(t) the support function needs, and their norms
     const CanonicalInput input = priv_canonical_input(sys, U);
-    // layout: #163 step 2
-    const int64_t m0 = detail::cora_generators(R0).shape().back();
+    // the vectors as columns [c G u GU]
+    const int64_t m0 = R0.nr_generators();
     const Tensor vectors = Tensor::concat(
-        {detail::cora_center(R0), detail::cora_generators(R0), input.u_trans, input.GU}, -1);
+        {R0.center().expand_dims(-1), R0.generators().matrix_transpose(), input.u_trans, input.GU},
+        -1);
     const VectorNorms norms = aux_norms(vectors, m0);
     const Tensor vectors_t = vectors.matrix_transpose();
     const LinearSys dual = sys.A_sparse()

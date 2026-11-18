@@ -24,6 +24,9 @@ namespace cora {
 
 namespace {
 
+/// A point as a vector (n): a column (n, 1) loses its last axis.
+Tensor aux_vector(const Tensor &p) { return p.ndim() >= 2 && p.size(-1) == 1 ? p.squeeze(-1) : p; }
+
 // The series -------------------------------------------------------------------------------------
 
 /// The data of a step of length r: the powers of [A] and what the sets of the step are made of.
@@ -128,30 +131,21 @@ FloatStep FloatStepper::step(const Tensor &xs, const Zonotope &V, const Zonotope
     const Series &series = m_->series;
     const int64_t n = m_->n;
     // CORALean's canonical system maps V by B = I and adds c = 0 (-0 becomes 0)
-    const Tensor zero = xs.zeros_like();
+    const Tensor x = aux_vector(xs), zero = x.zeros_like();
     const Zonotope Vi = V.linear_map(m_->eye);
-    // layout: #163 step 2
-    const Zonotope Vc =
-        detail::zonotope_of_columns(detail::cora_center(Vi) + zero, detail::cora_generators(Vi));
+    const Zonotope Vc(Vi.center() + zero, Vi.generators());
     // the input is V's center and V without it; a point has n zero generators (Interval.zonotope)
-    const Zonotope u = detail::zonotope_of_columns(detail::cora_center(Vc),
-                                                   zero.zeros_like({n, n})),
-                   U = detail::zonotope_of_columns(zero, detail::cora_generators(Vc));
-    // layout: #163 step 2
-    const Zonotope X =
-        detail::zonotope_of_columns(detail::cora_center(R) - xs, detail::cora_generators(R));
+    const Zonotope u(Vc.center(), zero.zeros_like({n, n})), U(zero, Vc.generators());
+    const Zonotope X(R.center() - x, R.generators());
     const Zonotope Pu = series.input_solution(u);
-    const Zonotope PuR = series.input_solution(
-        priv_lin_comb(detail::zonotope_of_columns(zero, zero.zeros_like({n, n})), u));
+    const Zonotope PuR =
+        series.input_solution(priv_lin_comb(Zonotope(zero, zero.zeros_like({n, n})), u));
     const Zonotope PU = series.input_solution(U);
     // H(t_1) = reduce([e^{A dt}] X + Pu), H(tau_0) = hull(X, [e^{A dt}] X) + [F] X + P^R
     const Zonotope e_adt_x = X.linear_map(m_->e_adt);
     const Zonotope Htp = e_adt_x.plus(Pu).reduce(zonotope_order);
     const Zonotope Hti = priv_lin_comb(X, e_adt_x).plus(X.linear_map(m_->F)).plus(PuR);
-    // layout: #163 step 2
-    const auto back = [&](const Zonotope &Z) {
-        return detail::zonotope_of_columns(detail::cora_center(Z) + xs, detail::cora_generators(Z));
-    };
+    const auto back = [&](const Zonotope &Z) { return Zonotope(Z.center() + x, Z.generators()); };
     return FloatStep{back(Hti.plus(PU)), back(Htp.plus(PU))};
 }
 
@@ -167,18 +161,13 @@ FloatStepper::Run FloatStepper::run(const Zonotope &V, const Zonotope &X0,
     const Series &series = m_->series;
     const int64_t n = m_->n;
     // the canonical system again: V mapped by B = I with c = 0, the center split off as u
-    const Tensor zero = detail::cora_center(X0).zeros_like();
+    const Tensor zero = X0.center().zeros_like();
     const Zonotope Vi = V.linear_map(m_->eye);
-    // layout: #163 step 2
-    const Zonotope Vc =
-        detail::zonotope_of_columns(detail::cora_center(Vi) + zero, detail::cora_generators(Vi));
-    // layout: #163 step 2
-    const Zonotope u = detail::zonotope_of_columns(detail::cora_center(Vc),
-                                                   zero.zeros_like({n, n})),
-                   U = detail::zonotope_of_columns(zero, detail::cora_generators(Vc));
+    const Zonotope Vc(Vi.center() + zero, Vi.generators());
+    const Zonotope u(Vc.center(), zero.zeros_like({n, n})), U(zero, Vc.generators());
     Zonotope Pu = series.input_solution(u);
-    const Zonotope PuR = series.input_solution(
-        priv_lin_comb(detail::zonotope_of_columns(zero, zero.zeros_like({n, n})), u));
+    const Zonotope PuR =
+        series.input_solution(priv_lin_comb(Zonotope(zero, zero.zeros_like({n, n})), u));
     Zonotope PU = series.input_solution(U);
     // H(t_1) = reduce([e^{A dt}] X0 + Pu), H(tau_0) = hull(X0, [e^{A dt}] X0) + [F] X0 + P^R
     const Zonotope e_adt_x = X0.linear_map(m_->e_adt);

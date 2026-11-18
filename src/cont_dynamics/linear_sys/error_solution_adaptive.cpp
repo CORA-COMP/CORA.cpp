@@ -32,7 +32,7 @@ namespace cora {
 namespace {
 
 /// The sum of the lengths of the generators per coordinate (n, 1).
-Tensor aux_radius(const Zonotope &Z) { return detail::cora_generators(Z).abs_sum(); }
+Tensor aux_radius(const Zonotope &Z) { return Z.generators().abs().sum(-2).expand_dims(-1); }
 
 /// The value of r (n, 1) at the coordinate where `at` (1, 1) points.
 double aux_entry(const Tensor &r, const Tensor &at) { return r.take_along_axis(at, -2).item(); }

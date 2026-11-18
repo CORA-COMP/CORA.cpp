@@ -127,11 +127,10 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg) c
         validate(problem);
         alg.validate();
     }
-    // layout: #163 step 2
-    CORA_CHECK(
-        detail::cora_center(*problem.initial_set).ndim() == 2 && (A_sparse_ || A_.ndim() == 2),
-        Error::not_supported,
-        [] { return std::string("reach: alg::Krylov takes a single system and initial set"); });
+    CORA_CHECK(problem.initial_set->center().ndim() == 1 && (A_sparse_ || A_.ndim() == 2),
+               Error::not_supported, [] {
+                   return std::string("reach: alg::Krylov takes a single system and initial set");
+               });
     return aux_reach_krylov(*this, problem, alg, nullptr);
 }
 
@@ -143,11 +142,10 @@ ReachSet LinearSys::reach(const ReachProblem &problem, const alg::Krylov &alg,
         validate(problem);
         alg.validate();
     }
-    // layout: #163 step 2
-    CORA_CHECK(
-        detail::cora_center(*problem.initial_set).ndim() == 2 && (A_sparse_ || A_.ndim() == 2),
-        Error::not_supported,
-        [] { return std::string("reach: alg::Krylov takes a single system and initial set"); });
+    CORA_CHECK(problem.initial_set->center().ndim() == 1 && (A_sparse_ || A_.ndim() == 2),
+               Error::not_supported, [] {
+                   return std::string("reach: alg::Krylov takes a single system and initial set");
+               });
     return aux_reach_krylov(*this, problem, alg, on_time_interval);
 }
 

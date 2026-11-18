@@ -58,15 +58,13 @@ ReachSet priv_reach_from_start(const LinearSys &sys, const Zonotope &X0,
                                int taylor_terms, int zonotope_order, const Blocks &blocks,
                                int steps) {
     // the constant input comes from the center of the input set, as in canonical_form
-    const Zonotope origin = detail::zonotope_of_columns(
-        detail::cora_center(X0).zeros_like(), detail::cora_center(X0).zeros_like({sys.dim(), 0}));
+    const Zonotope origin(X0.center().zeros_like(), X0.center().zeros_like({0, sys.dim()}));
     const bool has_input = input_set.has_value();
     Zonotope U = origin, u = origin;
     if (has_input) {
         const CanonicalForm cf = sys.canonical_form(*input_set);
         U = cf.U;
-        // layout: #163 step 2
-        u = detail::zonotope_of_columns(cf.u, cf.u.zeros_like({sys.dim(), 0}));
+        u = Zonotope(cf.u.squeeze(-1), cf.u.zeros_like({0, sys.dim()}));
     }
     TaylorLinSys taylor(sys.A());
     const Zonotope X = X0.linear_map(sys.A().eye_like()); // the identity broadcasts a batch of sets

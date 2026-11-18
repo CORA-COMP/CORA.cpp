@@ -30,12 +30,10 @@ CanonicalInput priv_canonical_input(const LinearSys &sys, const Zonotope &U) {
                       sys.C() ? sys.C()->shape()[0] : n};
     if (!sys.B()) return in;
     const Tensor &B = *sys.B();
-    // layout: #163 step 2
-    in.u_trans = B.matmul(detail::cora_center(U));
-    // layout: #163 step 2
-    if (detail::cora_generators(U).shape()[1] == 0) return in;
-    // layout: #163 step 2
-    const Tensor GU = B.matmul(detail::cora_generators(U));
+    // the constant input B c and the generators B G as columns, CORA's matrices
+    in.u_trans = B.matmul(U.center().expand_dims(-1));
+    if (U.nr_generators() == 0) return in;
+    const Tensor GU = B.matmul(U.generators().matrix_transpose());
     // zero generators add no uncertainty; dropping them keeps the path without an input set
     if (GU.abs().sum().item() != 0) in.GU = GU;
     return in;

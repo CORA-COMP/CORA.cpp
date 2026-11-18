@@ -85,12 +85,10 @@ KrylovConstantInput priv_krylov_constant_input(const HostMatVec &A, const std::v
 Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, const alg::Krylov &alg,
                                     double t_final) {
     double bound = 0; // the sum of the bounds of the errors of the subspaces
-    const int64_t n = A.n, m = detail::cora_generators(V).shape().back();
+    const int64_t n = A.n, m = V.nr_generators();
     const double dt = alg.time_step;
-    // layout: #163 step 2
-    const Tensor &like = detail::cora_center(V);
-    // layout: #163 step 2
-    const std::vector<double> G = detail::cora_generators(V).data();
+    const Tensor &like = V.center();                     // the backend and the dtype
+    const std::vector<double> G = V.generators().data(); // one generator per row
     std::vector<Tensor> terms;
     Tensor error = like.zeros_like({n, 1});
     int64_t order = 1;
@@ -99,7 +97,7 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         std::vector<double> u(static_cast<size_t>(n));
         bool zero = true;
         for (int64_t r = 0; r < n; ++r) {
-            u[size_t(r)] = G[size_t(r * m + g)];
+            u[size_t(r)] = G[size_t(g * n + r)];
             zero = zero && within_tol(u[size_t(r)], 0.0);
         }
         if (zero) continue;
@@ -131,9 +129,10 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         const Tensor red = like.full_like({n, 1}, bound);
         box = box + Interval(red.negative(), red);
     }
-    const Tensor generators = terms.empty() ? like.zeros_like({n, 0}) : Tensor::concat(terms, -1);
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(like.zeros_like({n, 1}), generators) + box.zonotope();
+    // the terms are columns; as generator rows
+    const Tensor generators =
+        terms.empty() ? like.zeros_like({0, n}) : Tensor::concat(terms, -1).matrix_transpose();
+    return Zonotope(like.zeros_like({n}), generators) + box.zonotope();
 }
 
 } // namespace cora

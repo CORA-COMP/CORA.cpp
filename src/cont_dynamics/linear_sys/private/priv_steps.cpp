@@ -21,8 +21,8 @@ namespace {
 /// conv(0, Ptp) for every block.
 BlockSets aux_hull_with_origin(const BlockSets &Ptp) {
     BlockSets out;
-    // layout: #163 step 2
-    for (const Zonotope &P : Ptp) out.push_back(P.convex_hull(detail::cora_center(P).zeros_like()));
+    for (const Zonotope &P : Ptp)
+        out.push_back(P.convex_hull(P.center().zeros_like().expand_dims(-1)));
     return out;
 }
 
@@ -77,8 +77,8 @@ BlockSets priv_particular_time_varying(const LinearSys &sys, TaylorLinSys &taylo
                                        const Blocks &blocks, const Zonotope &U, double time_step,
                                        int taylor_terms) {
     // a batch has no single answer to representsa; its zero members give zero sets anyway
-    if (detail::cora_center(U).ndim() == 2 && U.representsa("origin"))
-        return priv_block_origin(detail::cora_center(U), blocks);
+    if (U.center().ndim() == 1 && U.representsa("origin"))
+        return priv_block_origin(U.center(), blocks);
     const BlockSets Ub = priv_decompose(U, blocks);
     // dt I U: a batch of systems batches the first term as well, like all the others
     BlockSets P = priv_block_mtimes(sys.A().eye_like() * time_step, blocks, Ub);
@@ -94,10 +94,8 @@ BlockSets priv_particular_time_varying(const LinearSys &sys, TaylorLinSys &taylo
 BlockConstant priv_particular_constant(const LinearSys &sys, TaylorLinSys &taylor,
                                        const Blocks &blocks, const Zonotope &U, double time_step,
                                        int taylor_terms) {
-    // layout: #163 step 2
-    if (detail::cora_center(U).ndim() == 2 && U.representsa("origin")) {
-        // layout: #163 step 2
-        const BlockSets zero = priv_block_origin(detail::cora_center(U), blocks);
+    if (U.center().ndim() == 1 && U.representsa("origin")) {
+        const BlockSets zero = priv_block_origin(U.center(), blocks);
         return {zero, zero, zero};
     }
     const BlockSets Ub = priv_decompose(U, blocks);

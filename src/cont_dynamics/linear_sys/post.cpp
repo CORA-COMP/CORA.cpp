@@ -53,11 +53,9 @@ ReachStep LinearSys::post(const ReachState &state, const alg::LinearReach &alg) 
     Zonotope par = state.par;
     if (o.wrapping_free) {
         // only the center of the constant part is propagated, its width joins the box
-        hom = hom + detail::cora_center(trans);
-        // layout: #163 step 2
-        hom_tp = hom_tp + detail::cora_center(trans);
-        // layout: #163 step 2
-        par = aux_box_sum(state.par, aux, trans, detail::cora_center(trans));
+        hom = hom + trans.center();
+        hom_tp = hom_tp + trans.center();
+        par = aux_box_sum(state.par, aux, trans, trans.center().expand_dims(-1));
     } else {
         hom = hom.plus(trans).reduce(o.zonotope_order);
         hom_tp = hom_tp.plus(trans).reduce(o.zonotope_order);

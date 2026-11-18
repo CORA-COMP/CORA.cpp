@@ -38,10 +38,8 @@ namespace {
 /// The scalar interval [mid - rad, mid + rad] times a zonotope, as CORA's matZonotope times
 /// zonotope: the center mid c, the generators mid G, rad c and rad G.
 Zonotope aux_scale(const Zonotope &Z, double mid, double rad) {
-    // layout: #163 step 2
-    const Tensor &c = detail::cora_center(Z), &G = detail::cora_generators(Z);
-    // layout: #163 step 2
-    return detail::zonotope_of_columns(c * mid, Tensor::concat({G * mid, c * rad, G * rad}, -1));
+    const Tensor &c = Z.center(), &G = Z.generators();
+    return {c * mid, Tensor::concat({G * mid, (c * rad).expand_dims(-2), G * rad}, -2)};
 }
 
 // Time powers -------------------------------------------------------------------------------------
@@ -91,17 +89,10 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
     // the sets of the expansion: the centered set, the start point and the input as a point
     TaylorLinSys taylor(A());
     const TimePowers t = aux_time_powers(t_min, t_max, order);
-    // layout: #163 step 2
-    const Zonotope x0 = detail::zonotope_of_columns(detail::cora_center(R0),
-                                                    detail::cora_center(R0).zeros_like({dim(), 0}));
-    // layout: #163 step 2
-    const Zonotope Y = detail::zonotope_of_columns(detail::cora_center(R0).zeros_like(),
-                                                   detail::cora_generators(R0));
-    // layout: #163 step 2
-    const Zonotope origin = detail::zonotope_of_columns(
-        detail::cora_center(R0).zeros_like(), detail::cora_center(R0).zeros_like({dim(), 0}));
-    // layout: #163 step 2
-    const Zonotope u_set = detail::zonotope_of_columns(u, u.zeros_like({dim(), 0}));
+    const Tensor &c0 = R0.center();
+    const Zonotope x0(c0, c0.zeros_like({0, dim()})), Y(c0.zeros_like(), R0.generators());
+    const Zonotope origin(c0.zeros_like(), c0.zeros_like({0, dim()}));
+    const Zonotope u_set(u.squeeze(-1), u.zeros_like({0, dim()}));
     // powers of the expansion point, t_c^i
     std::vector<double> tc(order + 1, 1.0);
     for (int i = 1; i <= order; ++i) tc[i] = tc[i - 1] * t_c;
@@ -134,8 +125,7 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
     // the remainder of the series of e^{|A| t_max}
     const Interval E = expm_remainder(t_max, order);
     // the flow gap f1 - f2 enters scaled by the time interval
-    const Zonotope flow_gap =
-        detail::zonotope_of_columns(f[0] - f.back(), f[0].zeros_like({dim(), 0}));
+    const Zonotope flow_gap((f[0] - f.back()).squeeze(-1), f[0].zeros_like({0, dim()}));
     const Zonotope gap = aux_scale(flow_gap, t.mid[0], t.rad[0]);
     const Zonotope remainder_u = u_set.linear_map(t_max * E);
     E_err = E_err.plus(R0.linear_map(E)).plus(remainder_u).plus(gap);
