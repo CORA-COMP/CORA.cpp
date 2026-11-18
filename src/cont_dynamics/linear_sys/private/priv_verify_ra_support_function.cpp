@@ -24,9 +24,10 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
+#include "cont_dynamics/linear_sys/private/priv_float_scalars.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_correction.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_energy.h"
@@ -534,7 +535,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
     return pass;
 }
 
-// The sound pass of a homogeneous system ----------------------------------------------------------
+// The sound pass ----------------------------------------------------------------------------------
 // Sound in the nearest model, as the oracle's `nearest`: no rounding terms, so FTZ is no loss.
 
 constexpr int kStepsDiv = 100; // the first step size is t_final / ceil(t_final / (t_final/100))
@@ -550,14 +551,37 @@ double aux_sum_up(int64_t n, const F &f) {
     return sum;
 }
 
+// The input's boxes -------------------------------------------------------------------------------
+
+/// The input in state space, B u_c and B G_U (row-major (n, k)), as
+/// LinearSys.verifySupportFuncFloat brackets them (points at nearest), and whether either is not
+/// zero.
+struct SoundInput {
+    std::vector<double> u0, M;
+    int64_t k = 0;
+    bool has_u = false, has_m = false;
+};
+
 /// What a run keeps over its passes: the scales, the growth bound kappa e^{t mu}, the initial set's
-/// bounds, the rows C_s C and their errors (0 at nearest).
+/// bounds, the rows C_s C and their errors (0 at nearest), the input.
 struct SoundRun {
     std::vector<double> s, v, d, E0;
     double kappa = 1, mu = 0, beta_x = 0;
     Tensor L; // (S, n)
     int S = 0;
+    SoundInput in;
 };
+
+/// One step's input at dt (LinearSys.verifyInputSolutionFloat and the box of G u0): the box of w =
+/// (int_0^dt e^{sA} ds) u0, the orders P_i M (i < eta, each (n, k)) and their sum, the remainder
+/// rho, the box of G u0, and the bounds beta of their scaled row sums.
+struct SoundInputBoxes {
+    std::vector<double> w_lo, w_hi, Vs, rho, g_lo, g_hi;
+    std::vector<std::vector<double>> V;
+    double beta_w = 0, beta_g = 0, beta_u = 0;
+};
+
+// The support bounds ------------------------------------------------------------------------------
 
 /// The support bounds of X0 = <c, G> along the rows `ltc`, `ltg` (rows of LT times c and G), with
 /// the errors E: (lc + sum_j |lg_j|) + E beta and (lc + sum_j |lg_j|) - E beta.
@@ -610,6 +634,153 @@ int64_t aux_steps_to(const ExactTime &tf, double dt) {
     return N;
 }
 
+// The input's series ------------------------------------------------------------------------------
+
+/// max(0, max_l x_l / s_l): CORALean's maximum zero (maximumOver fun l => divUp (x l) (s l)).
+double aux_scaled_max(const std::vector<double> &x, const std::vector<double> &s) {
+    double beta = 0;
+    for (std::size_t l = 0; l < x.size(); ++l) beta = std::max(beta, x[l] / s[l]);
+    return beta;
+}
+
+/// LinearSys.step_verifySupportInputBoxesFloat at nearest: empty if a series does not stop by
+/// order 74 or a remainder is not admissible. Order i is [dt^{i+1}/(i+1)] A^i/i! applied to u0 and
+/// M; zero terms of a sum are skipped (they change no sum that starts at +0).
+std::optional<SoundInputBoxes> aux_input_boxes(Expmat &E, const SoundRun &run, int64_t n,
+                                               double dt) {
+    const SoundInput &in = run.in;
+    const int64_t k = in.k;
+    const std::size_t nk = std::size_t(n) * k;
+    SoundInputBoxes b;
+    b.w_lo.assign(n, 0.0);
+    b.w_hi.assign(n, 0.0);
+    b.Vs.assign(nk, 0.0);
+    b.rho.assign(n, 0.0);
+    b.g_lo.assign(n, 0.0);
+    b.g_hi.assign(n, 0.0);
+    if (in.has_u || in.has_m) {
+        constexpr int kOrders = 75; // the search's fuel: orders 0 to 74
+        const double eps = machine_eps();
+        // the nonzeros of u0 and of each column of M, from the last index down
+        std::vector<int64_t> nzu;
+        for (int64_t j = n - 1; j >= 0; --j)
+            if (in.u0[j] != 0) nzu.push_back(j);
+        std::vector<std::vector<int64_t>> nzm(k);
+        for (int64_t j = n - 1; j >= 0; --j)
+            for (int64_t c = 0; c < k; ++c)
+                if (in.M[std::size_t(j) * k + c] != 0) nzm[c].push_back(j);
+        std::vector<double> S(n, 0.0), wsum(n, 0.0);
+        int eta = -1;
+        for (int i = 0; i < kOrders && eta < 0; ++i) {
+            // the coefficient dt^{i+1}/(i+1) and the power A^i/i! (the identity at i = 0)
+            const double coef = priv_float_power(i + 1, dt) / double(i + 1);
+            const std::vector<double> *P = i == 0 ? nullptr : &E.powers->power(i);
+            auto entry = [&](int64_t l, int64_t j) {
+                return P ? coef * (*P)[std::size_t(l) * n + j] : (l == j ? coef * 1.0 : 0.0);
+            };
+            // [P_i] u0 and [P_i] M, each entry summed from the last index down
+            std::vector<double> tw(n, 0.0), tv(nk, 0.0), a(n);
+            for (int64_t l = 0; l < n; ++l) {
+                double sum = 0;
+                for (const int64_t j : nzu) sum = entry(l, j) * in.u0[j] + sum;
+                tw[l] = sum;
+                double rs = 0; // sumUp over the columns of |[P_i M]_lc|, from the last
+                for (int64_t c = k - 1; c >= 0; --c) {
+                    double v = 0;
+                    for (const int64_t j : nzm[c])
+                        v = entry(l, j) * in.M[std::size_t(j) * k + c] + v;
+                    tv[std::size_t(l) * k + c] = v;
+                    rs = std::abs(v) + rs;
+                }
+                a[l] = std::abs(tw[l]) + rs;
+            }
+            // CORA's stop: the order's row sums at most eps times those of the orders before it
+            bool stop = i >= 1;
+            for (int64_t l = 0; l < n && stop; ++l) stop = a[l] <= eps * S[l];
+            if (stop) {
+                eta = i;
+                break;
+            }
+            for (int64_t l = 0; l < n; ++l) {
+                S[l] = S[l] + a[l];
+                wsum[l] = wsum[l] + tw[l];
+            }
+            for (std::size_t e = 0; e < nk; ++e) b.Vs[e] = b.Vs[e] + tv[e];
+            b.V.push_back(std::move(tv));
+        }
+        if (eta < 0) return std::nullopt;
+        // the remainder past the orders i < eta: dt W |u0| and dt W sum_c |M_c|
+        const std::optional<std::vector<double>> W =
+            priv_verify_scaled_remainder(E.powers->A(), E.scales, n, dt, eta - 1);
+        if (!W) return std::nullopt;
+        std::vector<double> m_abs(n);
+        for (int64_t j = 0; j < n; ++j) {
+            double rs = 0;
+            for (int64_t c = k - 1; c >= 0; --c) rs = std::abs(in.M[std::size_t(j) * k + c]) + rs;
+            m_abs[j] = rs;
+        }
+        for (int64_t l = 0; l < n; ++l) {
+            const double *Wl = &(*W)[std::size_t(l) * n];
+            const double ru =
+                dt * aux_sum_up(n, [&](int64_t j) { return Wl[j] * std::abs(in.u0[j]); });
+            b.rho[l] = dt * aux_sum_up(n, [&](int64_t j) { return Wl[j] * m_abs[j]; });
+            b.w_lo[l] = wsum[l] - ru;
+            b.w_hi[l] = wsum[l] + ru;
+        }
+    }
+    // G u0, the box of the constant input's curvature term
+    if (in.has_u) {
+        const std::optional<VerifyCorrection> G =
+            priv_verify_correction_input(*E.powers, E.scales, dt);
+        if (!G) return std::nullopt;
+        for (int64_t l = 0; l < n; ++l) {
+            double lo = 0, hi = 0;
+            for (int64_t j = n - 1; j >= 0; --j) {
+                const double u = in.u0[j];
+                if (u == 0) continue;
+                const double p = G->inf[std::size_t(l) * n + j] * u;
+                const double q = G->sup[std::size_t(l) * n + j] * u;
+                lo = std::min(p, q) + lo;
+                hi = std::max(p, q) + hi;
+            }
+            b.g_lo[l] = lo;
+            b.g_hi[l] = hi;
+        }
+    }
+    // the bounds of the scaled row sums of w, G u0, and the orders with the remainder
+    std::vector<double> mw(n), mg(n), mu(n);
+    for (int64_t l = 0; l < n; ++l) {
+        mw[l] = std::max(std::abs(b.w_lo[l]), std::abs(b.w_hi[l])) + 0.0;
+        mg[l] = std::max(std::abs(b.g_lo[l]), std::abs(b.g_hi[l])) + 0.0;
+        double acc = 0;
+        for (const std::vector<double> &Vi : b.V) {
+            double rs = 0;
+            for (int64_t c = k - 1; c >= 0; --c) rs = std::abs(Vi[std::size_t(l) * k + c]) + rs;
+            acc = acc + rs;
+        }
+        mu[l] = acc + b.rho[l];
+    }
+    b.beta_w = aux_scaled_max(mw, run.s);
+    b.beta_g = aux_scaled_max(mg, run.s);
+    b.beta_u = aux_scaled_max(mu, run.s);
+    return b;
+}
+
+/// sum_{l = n-1 .. 0} max(x_l lo_l, x_l hi_l) and the same with min: the dot product of a row with
+/// a box, from above and below.
+std::array<double, 2> aux_box_dot(const double *x, const std::vector<double> &lo,
+                                  const std::vector<double> &hi, int64_t n) {
+    double up = 0, dn = 0;
+    for (int64_t l = n - 1; l >= 0; --l) {
+        const double a = x[l] * lo[l], b = x[l] * hi[l];
+        up = std::max(a, b) + up;
+        dn = std::min(a, b) + dn;
+    }
+    return {up, dn};
+}
+
+// One sound pass ----------------------------------------------------------------------------------
+
 /// The outcome of a sound pass.
 struct SoundPass {
     enum class Kind { not_converged, no_bound, falsified, decided } kind = Kind::decided;
@@ -633,6 +804,12 @@ SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const 
     }
     const std::optional<VerifyExpBall> ball = priv_verify_exp_ball(A, E.scales, dt);
     if (!ball) {
+        out.kind = SoundPass::Kind::not_converged;
+        return out;
+    }
+    // the input's boxes at dt
+    const std::optional<SoundInputBoxes> inb = aux_input_boxes(E, run, n, dt);
+    if (!inb) {
         out.kind = SoundPass::Kind::not_converged;
         return out;
     }
@@ -676,16 +853,51 @@ SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const 
         for (int64_t k = 0; k < N; ++k) rows.push_back(rows.back().matmul(D));
         LT = Tensor::concat(rows, -2);
     }
-    // the parts of the supports along every row: c, G, F_c c, F_c G, F_r v and the scales
-    const int64_t m0 = R0.generators().shape()[1];
-    const std::vector<double> ltc = LT.matmul(R0.center()).data();
-    out.ltg = LT.matmul(R0.generators()).data();
+    // along every row by l: c, G, F_c c, F_c G, P_i M and their sum; by |l|: F_r v, s and rho
+    const int64_t m0 = R0.generators().shape()[1], mw = WG.shape()[1];
+    const bool has_input = run.in.has_u || run.in.has_m;
+    const int64_t k_in = has_input ? run.in.k : 0;
+    const int64_t nv = has_input ? static_cast<int64_t>(inb->V.size()) : 0;
+    std::vector<Tensor> cols{R0.center()};
+    if (m0 > 0) cols.push_back(R0.generators());
+    cols.push_back(wc);
+    if (mw > 0) cols.push_back(WG);
+    if (k_in > 0 && nv > 0) {
+        // the orders side by side, order by order
+        std::vector<double> cat(std::size_t(n) * k_in * nv);
+        for (int64_t l = 0; l < n; ++l)
+            for (int64_t i = 0; i < nv; ++i)
+                for (int64_t c = 0; c < k_in; ++c)
+                    cat[(std::size_t(l) * nv + i) * k_in + c] =
+                        inb->V[std::size_t(i)][std::size_t(l) * k_in + c];
+        cols.push_back(Tensor::like(A, cat, {n, nv * k_in}));
+        cols.push_back(Tensor::like(A, inb->Vs, {n, k_in}));
+    }
+    const std::vector<double> lp = LT.matmul(Tensor::concat(cols, -1)).data();
     const Tensor LTabs = LT.abs();
-    const std::vector<double> lw = LT.matmul(wc).data(), lg1 = LT.matmul(WG).data();
-    const std::vector<double> lr = LTabs.matmul(wr).data();
-    const std::vector<double> wn = LTabs.matmul(Tensor::like(A, run.s, {n, 1})).data();
-    // the error sums acc_k = E0 + sum_{j<k} ||l_j||_s r and the errors Y acc_k
+    std::vector<Tensor> acols{wr, Tensor::like(A, run.s, {n, 1})};
+    if (has_input) acols.push_back(Tensor::like(A, inb->rho, {n, 1}));
+    const std::vector<double> la = LTabs.matmul(Tensor::concat(acols, -1)).data();
+    // the columns of the two products, row by row
     const std::size_t rows = std::size_t(N + 1) * S;
+    const int64_t wp = 1 + m0 + 1 + mw + (k_in > 0 && nv > 0 ? nv * k_in + k_in : 0);
+    const int64_t wa = has_input ? 3 : 2;
+    auto columns = [&](const std::vector<double> &P, int64_t width, int64_t from, int64_t count) {
+        std::vector<double> out_cols(rows * std::size_t(count));
+        for (std::size_t r = 0; r < rows; ++r)
+            for (int64_t j = 0; j < count; ++j) out_cols[r * count + j] = P[r * width + from + j];
+        return out_cols;
+    };
+    const std::vector<double> ltc = columns(lp, wp, 0, 1);
+    out.ltg = columns(lp, wp, 1, m0);
+    const std::vector<double> lw = columns(lp, wp, 1 + m0, 1);
+    const std::vector<double> lg1 = columns(lp, wp, 2 + m0, mw);
+    const std::vector<double> lv = columns(lp, wp, 2 + m0 + mw, k_in > 0 ? nv * k_in : 0);
+    const std::vector<double> lvs = columns(lp, wp, 2 + m0 + mw + nv * k_in, k_in > 0 ? k_in : 0);
+    const std::vector<double> lr = columns(la, wa, 0, 1);
+    const std::vector<double> wn = columns(la, wa, 1, 1);
+    const std::vector<double> lrho = has_input ? columns(la, wa, 2, 1) : std::vector<double>{};
+    // the error sums acc_k = E0 + sum_{j<k} ||l_j||_s r and the errors Y acc_k
     std::vector<double> err(rows);
     {
         std::vector<double> acc = run.E0;
@@ -697,36 +909,108 @@ SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const 
             }
     }
     const SupportBounds sb = aux_support_bounds(ltc, out.ltg, m0, err, run.beta_x);
+    // the input along every row l_k, k < N: l'w, l'(G u0), the outer and inner support, summed
+    const std::size_t steps = std::size_t(N) * S;
+    std::vector<double> w_up(steps, 0.0), w_down(steps, 0.0), g_up(steps, 0.0), outer(steps, 0.0),
+        inner(steps, 0.0);
+    if (has_input) { // without an input every term is 0, as in CORALean
+        const int64_t k = k_in;
+        const std::vector<double> LTd = LT.data();
+        [[maybe_unused]] const int threads = threads_for(static_cast<int64_t>(steps), n);
+#pragma omp parallel for num_threads(threads) schedule(static) if (threads > 1)
+        for (int64_t ri = 0; ri < static_cast<int64_t>(steps); ++ri) {
+            const auto r = static_cast<std::size_t>(ri);
+            const double *x = &LTd[r * n];
+            const double e = err[r];
+            const std::array<double, 2> wd = aux_box_dot(x, inb->w_lo, inb->w_hi, n);
+            const std::array<double, 2> gd = aux_box_dot(x, inb->g_lo, inb->g_hi, n);
+            w_up[r] = (wd[0] + 0.0) + e * inb->beta_w;
+            w_down[r] = (wd[1] + 0.0) - e * inb->beta_w;
+            g_up[r] = (gd[0] + 0.0) + e * inb->beta_g;
+            // the orders' |l' V_i,c| in their order, the remainder, the error
+            double t1 = 0;
+            for (int64_t i = 0; i < nv; ++i) {
+                double rs = 0;
+                for (int64_t c = k - 1; c >= 0; --c) rs = std::abs(lv[(r * nv + i) * k + c]) + rs;
+                t1 = t1 + rs;
+            }
+            const double t2 = lrho[r];
+            outer[r] = (t1 + t2) + e * inb->beta_u;
+            double mig = 0;
+            for (int64_t c = k - 1; c >= 0; --c) mig = std::abs(lvs[r * k + c]) + mig;
+            inner[r] = (mig - t2) - e * inb->beta_u;
+        }
+    }
+    // the sums over the steps before: cw, cwd (l'w), cov (outer), cin (inner), at k = 0 .. N
+    const std::size_t rows_all = std::size_t(N + 1) * S;
+    std::vector<double> cw(rows_all, 0.0), cwd(rows_all, 0.0), cov(rows_all, 0.0),
+        cin(rows_all, 0.0);
+    for (int64_t k = 0; k < N; ++k)
+        for (int q = 0; q < S; ++q) {
+            const std::size_t r = std::size_t(k) * S + q, next = r + S;
+            cw[next] = cw[r] + w_up[r];
+            cwd[next] = cwd[r] + w_down[r];
+            cov[next] = cov[r] + outer[r];
+            cin[next] = cin[r] + inner[r];
+        }
     // falsification: the first time point k dt <= T, in order, whose lower distance is above 0
     const ExactTime step(dt);
     for (int64_t k = 1; k <= N; ++k)
-        for (int q = 0; q < S; ++q)
-            if (0 < sb.down[std::size_t(k) * S + q] - run.d[q] &&
+        for (int q = 0; q < S; ++q) {
+            const std::size_t r = std::size_t(k) * S + q;
+            if (0 < ((sb.down[r] + cwd[r]) + cin[r]) - run.d[q] &&
                 step.times(static_cast<std::uint32_t>(k)) <= T) {
                 out.kind = SoundPass::Kind::falsified;
                 out.k = k;
                 out.q = q;
                 return out;
             }
-    // the steps: the larger end plus the curvature term below 0
-    const int64_t mw = WG.shape()[1];
+        }
+    // the steps: the larger end plus the curvature terms and the outer input below 0
     out.flag.assign(S, std::vector<char>(N, 0));
     for (int64_t k = 0; k < N; ++k)
         for (int q = 0; q < S; ++q) {
             const std::size_t r = std::size_t(k) * S + q, next = r + S;
             const double t2 = aux_sum_up(mw, [&](int64_t j) { return std::abs(lg1[r * mw + j]); });
             const double cb = ((lw[r] + t2) + lr[r]) + err[r] * beta_f;
-            const double a0 = sb.up[r] - run.d[q], a1 = sb.up[next] - run.d[q];
-            out.flag[q][k] = (std::max(a0, a1) + cb) < 0;
+            const double a0 = (sb.up[r] + cw[r]) - run.d[q];
+            const double a1 = (sb.up[next] + cw[next]) - run.d[q];
+            out.flag[q][k] = (((std::max(a0, a1) + cb) + g_up[r]) + cov[next]) < 0;
         }
     return out;
 }
 
 // The passes --------------------------------------------------------------------------------------
 
-/// LinearSys.verifySupportFuncFloat at nearest for a homogeneous system.
-VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, double t_final,
-                              const SpecRows &rows, Expmat &E, std::optional<double> kappa,
+/// B u_c and B G_U, each entry summed from the last index down (CORALean's brackets at nearest),
+/// and whether either is not zero; no input without B.
+SoundInput aux_sound_input(const LinearSys &sys, const Zonotope &U, int64_t n) {
+    SoundInput in;
+    in.u0.assign(n, 0.0);
+    if (!sys.B()) return in;
+    const std::vector<double> B = sys.B()->data(), uc = U.center().data();
+    const std::vector<double> GU = U.generators().data();
+    const int64_t q = sys.B()->shape()[1], k = U.generators().shape()[1];
+    in.k = k;
+    in.M.assign(std::size_t(n) * k, 0.0);
+    for (int64_t l = 0; l < n; ++l) {
+        const double *Bl = &B[std::size_t(l) * q];
+        in.u0[l] = aux_sum_up(q, [&](int64_t j) { return Bl[j] * uc[j]; });
+        for (int64_t c = 0; c < k; ++c)
+            in.M[std::size_t(l) * k + c] =
+                aux_sum_up(q, [&](int64_t j) { return Bl[j] * GU[std::size_t(j) * k + c]; });
+    }
+    for (double v : in.u0) in.has_u = in.has_u || v != 0;
+    for (double v : in.M) in.has_m = in.has_m || v != 0;
+    return in;
+}
+
+// The sound run -----------------------------------------------------------------------------------
+
+/// LinearSys.verifySupportFuncFloat at nearest.
+VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, const Zonotope &U,
+                              double t_final, const SpecRows &rows, Expmat &E,
+                              std::optional<double> kappa,
                               std::chrono::steady_clock::time_point start) {
     VerifyResult res;
     auto finish = [&]() {
@@ -754,6 +1038,7 @@ VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, double t
     const Tensor Cs = Tensor::like(A, rows.Cs, {run.S, int64_t(rows.Cs.size()) / run.S});
     run.L = sys.C() ? Cs.matmul(*sys.C()) : Cs;
     run.E0.assign(run.S, 0.0); // the bracket of C_s C is a point at nearest
+    run.in = aux_sound_input(sys, U, n);
     // the initial set
     {
         const std::vector<double> lc = run.L.matmul(R0.center()).data();
@@ -847,14 +1132,15 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     E.powers.emplace(A.data(), A.shape()[0]);
     E.scales = priv_verify_balance_scales(A.data(), A.shape()[0]);
     aux_init_sparse(E, A);
-    // a homogeneous system with a growth bound: the sound algorithm (others, #45)
-    if (!isu && !is_u) {
+    // a system with a growth bound: the sound algorithm (others, #45)
+    {
         const int64_t n = A.shape()[0];
         const std::vector<double> a = A.data();
         const std::optional<double> kappa =
             priv_verify_energy_growth(a, E.scales, n, 1.0 / t_final);
         if (kappa || std::max(priv_verify_log_norm_up(a, E.scales, n), 0.0) * t_final <= 1.0)
-            return aux_verify_sound(sys, R0, t_final, aux_spec_rows(specs, false), E, kappa, start);
+            return aux_verify_sound(sys, R0, U, t_final, aux_spec_rows(specs, false), E, kappa,
+                                    start);
     }
     [[maybe_unused]] const FlushDenormals flush; // a no-op off x86
     if (isu || is_u) E.Ainv = priv_inverse(A);

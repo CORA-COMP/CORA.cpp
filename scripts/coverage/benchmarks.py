@@ -62,10 +62,10 @@ A header counts a row only if the .cpp file that implements it executed a line.
 # What keeps the rows of each family from `oracle`: one entry each, written by hand.
 WHY = """## What keeps the rows of each family from `oracle`
 
-- Linear verify (CBC, CBF, HEAT01/02, ISS, RAND): the oracle serves no `linearSys.verify` (CORALean's
-  `verifyFloat` takes the reach function and the distance routines as arguments), and its reach is
-  CORALean's algorithm, not CORA's step (the tests compare by tolerance: `property`). The classes
-  `zonotope`, `contSet`, `polytope` are constructors and accessors: no op to compare.
+- Linear verify (CBC, CBF, HEAT01/02, ISS): `linearSys/verify` is CORALean's sound support-function
+  run (`linearSys.verifySupportFunc`); RAND's `priv_verifyRA_zonotope` reach is CORALean's algorithm,
+  not CORA's step. The classes `zonotope`, `contSet`, `polytope` are constructors and accessors: no op
+  to compare.
 - HEAT03, HEAT04, RND02, RND04-06: the subspaces are CORALean's float definitions (bit-exact, `test_lean_krylov`); the
   restart windows, their lifting and the assembly of `linearSys/reach` and of the support function bound are not
   (docs/oracle-requests.md).

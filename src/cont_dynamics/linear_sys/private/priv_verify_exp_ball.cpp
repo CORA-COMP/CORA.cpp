@@ -18,7 +18,7 @@
 // step_scaledNormUpFloat and logNormUpFloat.
 // Authors:       Claude Opus 5.5
 // Written:       17-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify_exp_ball.h"
@@ -67,10 +67,12 @@ Rows aux_rows(const std::vector<double> &m, int64_t n) {
 
 /// X P for X by rows of nonzeros and a dense P: each entry sums x_ik p_kj over k from the last
 /// down, zero terms skipped (a sum from +0 is never -0, so the skips change no bit). Rows in
-/// parallel.
+/// parallel from 2^24 flops: idle threads spin after a region, about a millisecond of CPU each.
 std::vector<double> aux_rows_times(const Rows &X, const std::vector<double> &P, int64_t n) {
+    constexpr long long kFlopsPerWork = 256; // threads_for's work units in flops of this product
     std::vector<double> out(std::size_t(n) * n, 0.0);
-    [[maybe_unused]] const int threads = threads_for(n, static_cast<long long>(X.val.size()) * n);
+    [[maybe_unused]] const int threads =
+        threads_for(n, static_cast<long long>(X.val.size()) * n / kFlopsPerWork);
 #pragma omp parallel for num_threads(threads) schedule(static) if (threads > 1)
     for (int64_t i = 0; i < n; ++i) {
         double *row = &out[std::size_t(i) * n];
