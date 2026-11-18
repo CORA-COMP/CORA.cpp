@@ -29,6 +29,7 @@
 #include "hybrid_dynamics/location/private/priv.h"
 
 #include <algorithm>
+#include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -45,17 +46,20 @@ double aux_upper(const Zonotope &Z, const Tensor &normal, double gamma, const Te
     // the plane image [n'; l'] Z, a zonogon
     const Zonotope S =
         Z.linear_map(Tensor::concat({normal.matrix_transpose(), l.matrix_transpose()}, -2));
-    // the dual bound at the multiplier mu
+    // the zonogon's center and generator rows (h, 2) on the host
+    const std::vector<double> c = S.center().data(), G = S.generators().data();
+    const std::size_t h = G.size() / 2;
+    // the dual bound h_S(-mu, 1) + mu gamma, summed as lean's support function
     const auto dual = [&](double mu) {
-        const Tensor direction = Tensor::like(S.center().expand_dims(-1), {-mu, 1.0}, {2, 1});
-        return S.support_function(direction).item() + mu * gamma;
+        double spread = 0.0;
+        for (std::size_t j = h; j-- > 0;)
+            spread = std::abs(G[2 * j] * -mu + G[2 * j + 1] * 1.0) + spread;
+        return (c[0] * -mu + c[1] * 1.0) + spread + mu * gamma;
     };
     // the slopes of the generators are the breakpoints of the dual
-    const std::vector<double> G = S.generators().matrix_transpose().data();
-    const std::size_t h = G.size() / 2;
     double least = dual(0.0);
     for (std::size_t j = 0; j < h; ++j) {
-        const double a = G[h + j], b = G[j];
+        const double a = G[2 * j + 1], b = G[2 * j];
         const double slope = 0.0 <= b ? (b <= 0.0 ? 0.0 : a / b) : (-a) / (-b);
         least = std::min(least, dual(slope));
     }
