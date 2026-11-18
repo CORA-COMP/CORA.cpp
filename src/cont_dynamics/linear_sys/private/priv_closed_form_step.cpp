@@ -217,7 +217,7 @@ Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &
     for (std::size_t i = 1; i < terms.size(); ++i) add(terms[i]);
     add(remainder);
     // layout: #163 step 2
-    return detail::zonotope_of_columns(std::move(center), Tensor::concat(generators, -1));
+    return detail::zonotope_of_columns(center, Tensor::concat(generators, -1));
 }
 
 /// The corrections as host numbers, for the cache: a tensor would keep the backend of its A.
