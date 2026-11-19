@@ -50,13 +50,14 @@ jobs:
       - name: configure
         env:
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
-        run: cmake --preset coverage -DCORACPP_ORACLE=DOWNLOAD
-      # the test programs of the two suites only: the examples and the benchmarks are not built
+        run: cmake --preset coverage -G Ninja -DCORACPP_ORACLE=DOWNLOAD
+      # the test programs of the two suites only: the examples and the benchmarks are not built; Ninja
+      # because the Makefile generator builds the targets of one command one after another
       - name: build
         run: |
           ctest --test-dir build/coverage -N -L '^(unit|oracle)$' | sed -nE 's/^ *Test +#[0-9]+: //p' \
             | sed -E 's#.*/##; s/:.*$//' | sort -u > wanted.txt
-          cmake --build build/coverage --target help | sed -nE 's/^\.\.\. //p' | sort -u > targets.txt
+          cmake --build build/coverage --target help | sed -nE 's/^([^:]+): phony$/\1/p' | sort -u > targets.txt
           cmake --build build/coverage --parallel "$(nproc)" --target $(comm -12 wanted.txt targets.txt | tr '\n' ' ')
       - name: unit
         run: |
