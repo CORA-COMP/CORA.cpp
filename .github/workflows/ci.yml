@@ -81,6 +81,8 @@ jobs:
           if [ -f scripts/coverage/coverage.py ]; then python3 scripts/coverage/coverage.py --check
             python3 scripts/coverage/coverage.py --summary >> "$GITHUB_STEP_SUMMARY"
           else echo "scripts/coverage/coverage.py is absent: skipped"; fi
+      - name: backing report files
+        run: python3 scripts/coverage/benchmarks.py --files
       - name: select the affected tests
         id: select
         env:

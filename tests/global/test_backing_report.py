@@ -13,6 +13,7 @@ Last update:   ---
 Reviewed:      ---
 """
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -131,6 +132,33 @@ class BackingReport(unittest.TestCase):
             "// priv_x - x\n//\n// CORA: contDynamics/@linearSys/private/priv_x.m\n\nint x;\n", encoding="utf-8")
         s = bench.summarize({"A": {"files": ["src/priv_x.cpp"]}}, STATUS, GROUPS, self.root)["A"]
         self.assertEqual(s["steps"], ["contDynamics/@linearSys/private/priv_x.m"])
+
+    # a PR that deletes or renames a measured source must say which instances to measure again
+    def test_a_missing_file_names_the_instances_to_measure_again(self):
+        measured = {"A": {"files": ["src/plus.cpp", "src/gone.cpp"]}, "B": {"files": ["src/center.cpp"]},
+                    "C": {"skipped": "x"}, "D": {"files": ["src/old.cpp", "src/gone.cpp"]}}
+        text = "\n".join(bench.missing_files(self.root, measured))
+        self.assertIn("A: src/gone.cpp no longer exists", text)
+        self.assertIn("D: src/old.cpp no longer exists", text)
+        self.assertNotIn("B:", text)
+        self.assertIn("benchmarks.py --only A --only D", text)
+        self.assertEqual(bench.missing_files(self.root, {"B": measured["B"], "C": measured["C"]}), [])
+
+    def test_files_flag_fails_on_a_benchmarks_json_with_a_missing_file(self):
+        (self.root / "coverage").mkdir()
+        (self.root / "coverage" / "benchmarks.json").write_text(
+            json.dumps({"instances": {"A": {"files": ["src/gone.cpp"]}}}), encoding="utf-8")
+        script = ROOT / "scripts" / "coverage" / "benchmarks.py"
+        # a copy of the script under the fake root: REPO is the root two levels above it
+        (self.root / "scripts" / "coverage").mkdir(parents=True)
+        for source in script.parent.glob("*.py"):
+            (self.root / "scripts" / "coverage" / source.name).write_text(
+                source.read_text(encoding="utf-8"), encoding="utf-8")
+        run = subprocess.run([sys.executable, str(self.root / "scripts" / "coverage" / "benchmarks.py"), "--files"],
+                             capture_output=True, text=True)
+        self.assertEqual(run.returncode, 1, run.stderr)
+        self.assertIn("A: src/gone.cpp no longer exists", run.stdout, run.stderr)
+        self.assertIn("benchmarks.py --only A", run.stdout)
 
     def test_report_and_table_are_rendered_and_spliced(self):
         measured = {"A": {"files": ["src/plus.cpp", "src/center.cpp"]}}

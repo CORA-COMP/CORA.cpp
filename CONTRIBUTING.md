@@ -235,7 +235,7 @@ scripts/with_env.sh python scripts/ci/check_quality.py tidy          # clang-tid
 
 Two tiers (`.github/workflows/`); the one check to require in the ruleset is `ci-gate`.
 - **Every push to a pull request, and the merge queue** (`ci.yml`, under 10 minutes): `checks` (whitespace, clang-format,
-  ruff, conventions, coverage when `scripts/coverage/coverage.py` exists), `tidy` (clang-tidy on the changed sources), then `linux-core`
+  ruff, conventions, coverage when `scripts/coverage/coverage.py` exists, `benchmarks.py --files`: no file listed in `coverage/benchmarks.json` is gone, else measure the named instances again with `--only`), `tidy` (clang-tidy on the changed sources), then `linux-core`
   (labels `unit`, `oracle`, `backend-eigen`, `example`) and `linux-python` (`python`), one step per label on one build,
   with the CORALean oracle: on a pull request only the tests the change can affect, in the merge queue every test of
   the group on the `main` it lands on. `instructions` (pull requests only) fails when a micro-benchmark of
