@@ -94,13 +94,22 @@ std::vector<lean::VerifyZonotopeGridStep> aux_lean_grid(const std::vector<Verify
 }
 
 /// The pass on the grid, CORA.cpp's against the oracle's, step by step.
-void aux_pass(const std::string &name, const Problem &P, const std::vector<VerifyGridStep> &grid) {
+/// The oracle's form of a weight (none if P is empty).
+std::optional<lean::VerifyWeight> aux_weight(const LyapunovWeight &w, int64_t n) {
+    if (w.P.empty()) return std::nullopt;
+    return lean::VerifyWeight{Tensor::from_data(w.P, {n, n}), Tensor::from_data(w.L, {n, n}), w.a};
+}
+
+/// The pass on the grid, CORA.cpp's against the oracle's, step by step (in the weight if given).
+void aux_pass(const std::string &name, const Problem &P, const std::vector<VerifyGridStep> &grid,
+              const LyapunovWeight &weight = {}) {
     VerifyZonotopePass pass(aux_system(P));
+    if (!weight.P.empty()) pass.set_weight(weight.P, weight.L, weight.a);
     const auto mine = pass.run(P.specs, grid);
     // the oracle on the same grid
     const Lean L = aux_lean(P);
-    const auto theirs =
-        L.sys.verify_zonotope_pass(L.x0, L.G0, L.uc, L.GU, L.specs, aux_lean_grid(grid));
+    const auto theirs = L.sys.verify_zonotope_pass(
+        L.x0, L.G0, L.uc, L.GU, L.specs, aux_lean_grid(grid), aux_weight(weight, P.A.shape()[0]));
     test::check(mine.has_value() == theirs.has_value(), name + ": computed by both or neither");
     if (!mine || !theirs) return;
     test::check(mine->size() == theirs->size(), name + ": the same steps");
@@ -177,12 +186,13 @@ void aux_verify(const std::string &name, const Problem &P, double t_final) {
         witnesses.push_back({int64_t(w.spec), w.t, Tensor::from_data(w.b, {int64_t(w.b.size()), 1}),
                              Tensor::from_data(w.beta, {int64_t(w.beta.size()), 1})});
     const std::optional<bool> theirs =
-        L.sys.verify_zonotope_run(L.x0, L.G0, L.uc, L.GU, L.specs, passes, witnesses, t_final);
+        L.sys.verify_zonotope_run(L.x0, L.G0, L.uc, L.GU, L.specs, passes, witnesses, t_final,
+                                  aux_weight(trace.weight, P.A.shape()[0]));
     test::oracle::check(name + " verified", mine.verified, theirs.value_or(false));
     test::oracle::check(name + " falsified", mine.falsification.has_value(),
                         theirs.has_value() && !*theirs);
     for (std::size_t i = 0; i < trace.passes.size(); ++i)
-        aux_pass(name + " pass " + std::to_string(i), P, trace.passes[i]);
+        aux_pass(name + " pass " + std::to_string(i), P, trace.passes[i], trace.weight);
 }
 
 /// A box about c of radius r in every coordinate.
@@ -258,6 +268,19 @@ int main() {
         std::vector<VerifyGridStep> g6(12, {0.04, true, 0.05});
         g6[3].full = false;
         aux_pass("six states", Q, g6);
+        // a stable non-normal matrix: the scaled errors grow, the weight carries them smaller
+        const Tensor T({{1.0, 2.0}, {-2.0, 0.5}});
+        const Tensor J({{-0.2, 1.0}, {-1.0, -0.2}});
+        const Tensor An = T.matmul(J).matmul(T.inv());
+        Problem N = aux_rotation({missed, half});
+        N.A = An;
+        const LyapunovWeight wn =
+            priv_lyapunov_solve(SparseMatrix::from_dense(An), LyapunovMethod::schur);
+        const std::vector<VerifyGridStep> long_grid(56, {0.5, true, 0.0});
+        test::check(priv_lyapunov_certificate(SparseMatrix::from_dense(An), wn.P, wn.L, wn.a).ok,
+                    "weighted: the weight is accepted");
+        aux_pass("weighted", N, long_grid, wn);
+        aux_pass("unweighted", N, long_grid);
     });
     test::oracle::run("linearSys.verifyZonotopeRun", [](test::oracle::Random &) {
         const VerifySpecSet entered = aux_unsafe_box({0.0, -0.85}, {0.35, -0.6});

@@ -65,6 +65,14 @@ Json aux_grid_json(const std::vector<VerifyZonotopeGridStep> &grid) {
     return jg;
 }
 
+/// The optional weight as the fields P, L and a (none: no fields).
+void aux_weight_fields(std::vector<Operand> &fields, const std::optional<VerifyWeight> &weight) {
+    if (!weight) return;
+    fields.push_back({"P", Tensor(weight->P)});
+    fields.push_back({"L", Tensor(weight->L)});
+    fields.push_back({"a", weight->a});
+}
+
 } // namespace
 
 
@@ -333,13 +341,13 @@ Zonotope LinearSys::error_solution_adaptive(const Zonotope &Vdyn,
 
 // The zonotope verification ----------------------------------------------------------------------
 
-std::optional<std::vector<std::optional<VerifyZonotopeStep>>>
-LinearSys::verify_zonotope_pass(const cora::Tensor &x0, const cora::Tensor &G0,
-                                const cora::Tensor &uc, const cora::Tensor &GU,
-                                const std::vector<VerifyZonotopeSpec> &specs,
-                                const std::vector<VerifyZonotopeGridStep> &grid) const {
+std::optional<std::vector<std::optional<VerifyZonotopeStep>>> LinearSys::verify_zonotope_pass(
+    const cora::Tensor &x0, const cora::Tensor &G0, const cora::Tensor &uc, const cora::Tensor &GU,
+    const std::vector<VerifyZonotopeSpec> &specs, const std::vector<VerifyZonotopeGridStep> &grid,
+    const std::optional<VerifyWeight> &weight) const {
     std::vector<Operand> fields = aux_zonotope_fields(A_, B_, C_, x0, G0, uc, GU, specs);
     fields.push_back({"grid", Wire(aux_grid_json(grid), "")});
+    aux_weight_fields(fields, weight);
     const Reply r = ask("linearSys.verifyZonotopePass", fields);
     // null steps: a step's enclosures are not computed (an empty grid has no steps either way)
     const std::vector<Reply> steps = r.list("steps");
@@ -359,11 +367,15 @@ LinearSys::verify_zonotope_pass(const cora::Tensor &x0, const cora::Tensor &G0,
     return out;
 }
 
-std::optional<bool> LinearSys::verify_zonotope_run(
-    const cora::Tensor &x0, const cora::Tensor &G0, const cora::Tensor &uc, const cora::Tensor &GU,
-    const std::vector<VerifyZonotopeSpec> &specs,
-    const std::vector<std::vector<VerifyZonotopeGridStep>> &passes,
-    const std::vector<VerifyZonotopeWitness> &witnesses, double t_final) const {
+// The zonotope verification run -------------------------------------------------------------------
+
+std::optional<bool>
+LinearSys::verify_zonotope_run(const cora::Tensor &x0, const cora::Tensor &G0,
+                               const cora::Tensor &uc, const cora::Tensor &GU,
+                               const std::vector<VerifyZonotopeSpec> &specs,
+                               const std::vector<std::vector<VerifyZonotopeGridStep>> &passes,
+                               const std::vector<VerifyZonotopeWitness> &witnesses, double t_final,
+                               const std::optional<VerifyWeight> &weight) const {
     std::vector<Operand> fields = aux_zonotope_fields(A_, B_, C_, x0, G0, uc, GU, specs);
     // the passes' grids and the witnesses
     Json jp = Json::array();
@@ -378,6 +390,7 @@ std::optional<bool> LinearSys::verify_zonotope_run(
     fields.push_back({"passes", Wire(jp, "")});
     fields.push_back({"witnesses", Wire(jw, "")});
     fields.push_back({"tFinal", t_final});
+    aux_weight_fields(fields, weight);
     // true, false, or null for undecided
     const Reply r = ask("linearSys.verifyZonotopeRun", fields);
     const Reply v = r.member("verdict");

@@ -29,6 +29,7 @@
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_exp_ball.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_time.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_zonotope_pass.h"
 #include "cora/global/error.h"
@@ -705,6 +706,8 @@ double aux_init_error(const Tensor &A, const std::optional<Tensor> &C, const Ten
 constexpr double kTimeMargin = numerics::kTimeStepMatch;
 /// The passes after CORA's tuning has verified everything while the sound flags have not.
 constexpr int kSoundRefinements = 3;
+/// Tuning: the growth e^x of the scaled errors over the horizon above which a weight is tried.
+constexpr double kWeightGrowth = 20.0;
 /// The halvings of a step size whose enclosures are not computed.
 constexpr int kGridSplits = 20;
 /// The times of a step at which a witness is sought, as shares of the step.
@@ -744,6 +747,24 @@ VerifyZonoSystem aux_sound_system(const LinearSys &sys, const Zonotope &R0, cons
         for (int64_t i = 0; i < S.n; ++i) S.C[std::size_t(i * S.n + i)] = 1.0;
     }
     return S;
+}
+
+/// Tuning: a Lyapunov weight of A for the pass where the scaled errors could grow by more than
+/// e^kWeightGrowth over the horizon (the balanced log norm times t_final): the first weight that
+/// Krylov.lyapunovCertificateFloat accepts, by the sign function iteration or the Schur form.
+void aux_attach_weight(VerifyZonotopePass &pass, double t_final) {
+    const VerifyZonoSystem &S = pass.system();
+    const std::vector<double> a = S.A.data();
+    const std::vector<double> s = priv_verify_balance_scales(a, S.n);
+    if (!(priv_verify_log_norm_up(a, s, S.n) * t_final > kWeightGrowth)) return;
+    const SparseMatrix A = SparseMatrix::from_dense(S.A);
+    for (const LyapunovMethod method :
+         {LyapunovMethod::sign_single, LyapunovMethod::sign, LyapunovMethod::schur}) {
+        LyapunovWeight w = priv_lyapunov_solve(A, method);
+        if (w.P.empty() || !priv_lyapunov_certificate(A, w.P, w.L, w.a).ok) continue;
+        pass.set_weight(std::move(w.P), std::move(w.L), w.a);
+        return;
+    }
 }
 
 /// The specifications as the sound pass checks them: their own rows a'y <= b, not normalized.
@@ -927,6 +948,8 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
 
     // The sound pass, the specifications as it checks them and their exact unverified times
     VerifyZonotopePass pass(aux_sound_system(sys, R0, U));
+    aux_attach_weight(pass, t_final);
+    if (trace) trace->weight = pass.weight();
     const std::vector<VerifySpecSet> sound_specs = aux_sound_specs(specs);
     const ExactTime T(t_final);
     std::vector<ExactIntervals> unsat(specs.size(), ExactIntervals{{ExactTime(), T}});

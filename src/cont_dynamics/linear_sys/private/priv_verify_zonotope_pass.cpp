@@ -5,7 +5,9 @@
 // to the right), a fold over a list from its first element (List.foldl), and CORALean's maximum,
 // minimum and absolute (so the signs of zeros agree). The products of point matrices are point
 // boxes at nearest, so one sum serves both ends; zero terms of a sum are skipped (a sum that
-// starts at +0 is never -0, so a zero term changes no bit).
+// starts at +0 is never -0, so a zero term changes no bit). Given a Lyapunov weight of A that
+// Krylov.lyapunovCertificateFloat accepts (set_weight), the errors are also carried in it and the
+// smaller of the two carries is kept (Krylov.carryMinFloat).
 //
 // Syntax:   VerifyZonotopePass pass(sys);   auto steps = pass.run(specs, grid);
 // Inputs:   sys - the system, its initial set and its input set on the host
@@ -119,6 +121,8 @@ struct State {
     Vecs P;
     Vec b;
     double rho = 0;
+    double beta = 0, psi = 0;  ///< the errors of the zonotope and of Phi in the Lyapunov weight
+    double loc1 = 0, loc2 = 0; ///< the step's local errors (step_verifyZonoLocalFloat), scratch
 };
 
 /// step_verifyZonoMagFloat: |c| + sum_j |g_j|.
@@ -157,12 +161,41 @@ State aux_carry(const Vec &s, const Vec &D, double r, const Vec &w_lo, const Vec
                                 })) +
                  wh;
     }
-    out.h = ((norm_e * st.h) + r * aux_scaled_vec(s, aux_mag(st, n, m))) + aux_scaled_vec(s, gap);
+    // the zonotope's error at t_{k+1}: the carried one, the ball's and the gap (its local error)
+    const double local_z = r * aux_scaled_vec(s, aux_mag(st, n, m));
+    const double gap_z = aux_scaled_vec(s, gap);
+    out.h = ((norm_e * st.h) + local_z) + gap_z;
+    out.loc1 = local_z + gap_z;
+    // Phi and its error, the same way
     out.Phi = aux_matmul(D, st.Phi, n, n, n);
     Vec width(out.Phi.size());
     for (std::size_t e = 0; e < width.size(); ++e) width[e] = out.Phi[e] - out.Phi[e];
-    out.phi = ((norm_e * st.phi) + r * aux_scaled_norm(s, st.Phi)) + aux_scaled_norm(s, width);
+    const double local_p = r * aux_scaled_norm(s, st.Phi);
+    const double width_p = aux_scaled_norm(s, width);
+    out.phi = ((norm_e * st.phi) + local_p) + width_p;
+    out.loc2 = local_p + width_p;
     return out;
+}
+
+/// step_verifyZonoWeightFloat: the errors carried in the weight c, beta' = e^{mu dt} beta +
+/// sqrt(b) sqrt(n) max s loc, back in the scales by sqrt(1/a) max 1/s_i; h and phi the smaller of
+/// these and the Gershgorin carry (Krylov.carryMinFloat).
+void aux_weight(const LyapunovCertificate &c, const Vec &s, double dt, const State &st,
+                State &st2) {
+    const auto n = int64_t(s.size());
+    const double g = std::exp(c.rate * dt);
+    double count = 0.0;
+    for (int64_t i = 0; i < n; ++i) count = 1.0 + count;
+    const double kn =
+        (std::sqrt(c.upper) * std::sqrt(count)) * aux_max_over(n, [&](int64_t i) { return s[i]; });
+    const double back =
+        std::sqrt(1.0 / c.lower) * aux_max_over(n, [&](int64_t i) { return 1.0 / s[i]; });
+    const double beta = g * st.beta + kn * st2.loc1;
+    const double psi = g * st.psi + kn * st2.loc2;
+    st2.h = RestartedBound::carry_min(st2.h, beta * back);
+    st2.phi = RestartedBound::carry_min(st2.phi, psi * back);
+    st2.beta = beta;
+    st2.psi = psi;
 }
 
 // The reduction -----------------------------------------------------------------------------------
@@ -440,6 +473,11 @@ VerifyZonotopePass::VerifyZonotopePass(VerifyZonoSystem sys)
     for (double v : MU_) has_m_ = has_m_ || !(v <= 0 && 0 <= v);
 }
 
+void VerifyZonotopePass::set_weight(std::vector<double> P, std::vector<double> L, double a) {
+    cert_ = priv_lyapunov_certificate(SparseMatrix::from_dense(sys_.A), P, L, a);
+    weight_ = {std::move(P), std::move(L), a};
+}
+
 VerifyZonotopePass::Step &VerifyZonotopePass::step(double dt, bool full) {
     const int64_t n = sys_.n, p = sys_.p;
     auto [it, fresh] = steps_.try_emplace(dt);
@@ -546,6 +584,13 @@ VerifyZonotopePass::run(const std::vector<VerifySpecSet> &specs,
         st2.P = std::move(P);
         st2.b = std::move(box);
         st2.rho = rho;
+        // step_verifyZonoWeightedFloat: the weight's carry, if a certificate is accepted
+        if (cert_ && cert_->ok) {
+            double range = 1.0;
+            for (int i = 0; i < 29; ++i) range = range + range;
+            if (!(cert_->rate * g.dt <= range)) return std::nullopt;
+            aux_weight(*cert_, s_, g.dt, st, st2);
+        }
         // a full step: the time-interval set in the outputs, and its flags
         if (!g.full) {
             out.emplace_back(std::nullopt);

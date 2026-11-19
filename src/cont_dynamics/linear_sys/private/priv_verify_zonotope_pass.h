@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "cont_dynamics/linear_sys/private/priv_krylov.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_correction.h"
 #include "cont_dynamics/linear_sys/private/priv_verify_exp_ball.h"
 #include "cora/global/tensor/tensor.h"
@@ -107,6 +108,12 @@ class VerifyZonotopePass {
 
     const VerifyZonoSystem &system() const { return sys_; }
 
+    /// The Lyapunov weight P of A (row-major), its factor L of P - aI and a: checked by
+    /// Krylov.lyapunovCertificateFloat; if accepted, the errors are also carried in it.
+    void set_weight(std::vector<double> P, std::vector<double> L, double a);
+    /// The weight given (P empty if none), for the oracle tests.
+    const LyapunovWeight &weight() const { return weight_; }
+
   private:
     /// What a step of size dt needs: the ball of e^{A dt}, the input's solution, G u0, F.
     struct Step {
@@ -124,6 +131,8 @@ class VerifyZonotopePass {
     bool scales_ok_ = true, has_u_ = false, has_m_ = false;
     VerifyPowers powers_;
     std::map<double, Step> steps_;
+    LyapunovWeight weight_;
+    std::optional<LyapunovCertificate> cert_;
 };
 
 // The trace ---------------------------------------------------------------------------------------
@@ -137,10 +146,11 @@ struct VerifyZonoWitness {
 };
 
 /// What priv_verify_ra_zonotope passed to the sound pass, for the oracle tests: the grids of its
-/// passes and the witnesses it tried.
+/// passes, the witnesses it tried and the weight it gave (P empty if none).
 struct VerifyZonotopeTrace {
     std::vector<std::vector<VerifyGridStep>> passes;
     std::vector<VerifyZonoWitness> witnesses;
+    LyapunovWeight weight;
 };
 
 } // namespace cora

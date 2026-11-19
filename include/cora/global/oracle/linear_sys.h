@@ -111,6 +111,12 @@ struct VerifyZonotopeStep {
     std::vector<bool> flags;
 };
 
+/// A Lyapunov weight P of A, the factor L of P - a I and a (Krylov.lyapunovCertificateFloat).
+struct VerifyWeight {
+    cora::Tensor P, L;
+    double a = 0;
+};
+
 /// A witness of verify_zonotope_run: the specification, the time, the coefficients b (m, 1) of the
 /// initial point and beta (p, 1) of the constant input.
 struct VerifyZonotopeWitness {
@@ -201,12 +207,13 @@ class LinearSys {
                                          const std::optional<Zonotope> &U = std::nullopt) const;
 
     /// CORALean's LinearSys.verifyZonotopePassFloat of x' = A x + B u, y = C x from <x0, G0>, u in
-    /// <uc, GU> (none without B) on the grid: per step none (propagated only) or its output set and
-    /// flags; none if a step's enclosures are not computed.
+    /// <uc, GU> (none without B) on the grid, errors also in an accepted weight: per step none
+    /// (propagated only) or its output set and flags; none if a step's enclosures are not computed.
     std::optional<std::vector<std::optional<VerifyZonotopeStep>>>
     verify_zonotope_pass(const cora::Tensor &x0, const cora::Tensor &G0, const cora::Tensor &uc,
                          const cora::Tensor &GU, const std::vector<VerifyZonotopeSpec> &specs,
-                         const std::vector<VerifyZonotopeGridStep> &grid) const;
+                         const std::vector<VerifyZonotopeGridStep> &grid,
+                         const std::optional<VerifyWeight> &weight = std::nullopt) const;
 
     /// CORALean's LinearSys.verifyZonotopeRunFloat on the passes' grids and the witnesses: true
     /// (verified), false (a witness holds) or none (undecided).
@@ -214,7 +221,8 @@ class LinearSys {
     verify_zonotope_run(const cora::Tensor &x0, const cora::Tensor &G0, const cora::Tensor &uc,
                         const cora::Tensor &GU, const std::vector<VerifyZonotopeSpec> &specs,
                         const std::vector<std::vector<VerifyZonotopeGridStep>> &passes,
-                        const std::vector<VerifyZonotopeWitness> &witnesses, double t_final) const;
+                        const std::vector<VerifyZonotopeWitness> &witnesses, double t_final,
+                        const std::optional<VerifyWeight> &weight = std::nullopt) const;
 
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;
