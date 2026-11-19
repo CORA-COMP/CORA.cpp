@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "global/exact_time.h"
+
 #include <array>
 #include <vector>
 
@@ -58,6 +60,13 @@ class VerifyTime {
     /// The union of the intervals of several objects.
     static VerifyTime unify(const std::vector<VerifyTime> &times);
 };
+
+/// Exact unverified times (CORALean's lists of rationals): sorted, disjoint [lower, upper] pairs.
+using ExactIntervals = std::vector<std::array<ExactTime, 2>>;
+
+/// The removal of the times [t0, t1] from the unverified intervals (LinearSys.verifyTimeSetdiff):
+/// exact, and nothing dropped.
+void priv_verify_setdiff_exact(ExactIntervals &U, const ExactTime &t0, const ExactTime &t1);
 
 } // namespace cora
 

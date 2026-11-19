@@ -59,6 +59,8 @@ struct AdaptiveResult {
     std::vector<std::optional<Zonotope>> time_interval, time_point;
     std::vector<double> time_interval_error, time_point_error;
     std::vector<double> time;       ///< the time points 0, t_1, ..., t_K
+    std::vector<double> time_step;  ///< the step sizes, t_{k+1} = t_k + time_step[k] (rounded)
+    std::vector<double> budget;     ///< the bound of the reduction of the input's solution per step
     bool res = true;                ///< false: a specification is violated (not used: always true)
     bool internal_checks_ok = true; ///< the error bookkeeping was consistent
 };

@@ -17,10 +17,16 @@
 #include <chrono>
 #include <optional>
 #include <vector>
+#if defined(__SSE2__) || defined(_M_X64)
+#include <xmmintrin.h>
+#endif
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+struct VerifyZonotopeTrace; // the grids and witnesses of a run, priv_verify_zonotope_pass.h
+struct VerifyKrylovTrace;   // the directions and windows of a run, priv_verify_krylov.h
 
 /// The input in canonical form x' = A x + u, u in u_trans + GU [-1, 1]^k: u_trans = B center(U)
 /// and GU = B generators(U), without zero generators (GU (n, 0) if there are none); n states
@@ -51,13 +57,15 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
 /// The algorithm "reachavoid:zonotope": adaptive zonotope reachable sets with a bound on their
 /// error to the exact sets, refined until the outer and inner approximations decide.
 VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, const Zonotope &U,
-                                     double t_final, const std::vector<Specification> &specs);
+                                     double t_final, const std::vector<Specification> &specs,
+                                     VerifyZonotopeTrace *trace = nullptr);
 
 /// The algorithm "reach_avoid_krylov": Krylov subspaces of the specification directions under A',
 /// the support function of the output set bounded per step, the step halved until it decides.
 VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, const Zonotope &U,
                                    double t_final, const std::vector<Specification> &specs,
-                                   const alg::ReachAvoidKrylov &alg);
+                                   const alg::ReachAvoidKrylov &alg,
+                                   VerifyKrylovTrace *trace = nullptr);
 
 /// The seconds since `start`: the computation time of verify (CORA's tComp).
 inline double priv_seconds_since(std::chrono::steady_clock::time_point start) {
@@ -66,6 +74,16 @@ inline double priv_seconds_since(std::chrono::steady_clock::time_point start) {
 
 /// The inverse of a square matrix, empty if it is (numerically) singular.
 std::optional<Tensor> priv_inverse(const Tensor &A);
+
+/// Flushes denormal numbers to zero while it lives: the powers and squarings of a stiff matrix
+/// underflow through the denormal range, where every product is slow, and nothing there counts.
+struct VerifyFlushDenormals {
+#if defined(__SSE2__) || defined(_M_X64)
+    unsigned saved = _mm_getcsr();
+    VerifyFlushDenormals() { _mm_setcsr(saved | 0x8040); }
+    ~VerifyFlushDenormals() { _mm_setcsr(saved); }
+#endif
+};
 
 } // namespace cora
 

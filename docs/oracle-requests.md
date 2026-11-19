@@ -86,23 +86,22 @@ What is not formalized, and so oracle debt (the coverage rows stay below `oracle
 
 | op (proposed) | CORA.cpp step | what it needs |
 |---|---|---|
-| `krylov.restart` | `KrylovWindows` (`priv_krylov_windows.cpp`): the longest window whose bound at its end meets `tol`, the restart from `\|s\| V e^{T t} e_1`, the error carried on by `e^{t mu_A}` (and, if the horizon makes that large, in the Lyapunov weight above; the smaller of the two is reported, as `carryMinFloat`, and inside a window the weighted bound is `(beta + sqrt(upper) eps) / sqrt(lower)`, the decay of `beta` within it not counted; a weight with a positive rate is not used) | the weighted bound and the carry in a window are `krylov.windowBound`; the float window length and the Gershgorin carry for any `A` have no definition (oracle debt) |
+| `krylov.restart` | the window length of `KrylovWindows` (`priv_krylov_windows.cpp`): the longest window whose bound at its end meets `tol` | tuning, not checked: each window it plans is `step_verifyKrylovWindowFloat` (`linearSys.verifyKrylovPass` below) |
 | `krylov.lift` | the windows lifted through `\|s\| C V` and the ball of the bound added in the output rows (`\|C_r\|` times it) | `windowsFloat` stops at the small space |
 | `linearSys.reachKrylov` | the assembly of `priv_reach_krylov`: the sum over the vectors of `R0`, the generator curvature scaled by `[-1, 1]` | `Krylov.alg2Corrected` for one vector |
 | `krylov.inputSolution`, `krylov.constantInput` | `priv_inputSolution_Krylov`, `priv_krylov_R_uTrans`: the subspace of the integrator system `[A u; 0 0]` (the order search above applies to it), the Taylor terms `V H^i e_1 dt^i / i!`, the box of their remainders, the correction `C V G(H) e_1` | the input solution of the printed corollaries fails (`Krylov.partial_input_solution_counterexample`, `varying_input_reach_counterexample`); its corrected form has no float definition |
 
-## Krylov support function verify (PR "port/arch26-rnd")
+## Krylov support function verify (PR "verify/krylov-port", part of #45)
 
 `alg::ReachAvoidKrylov` (the verify of the random benchmarks RND02, RND04-06) follows no CORA file of
 v2026.1.0: the competition's copy of CORA has `reachSuppFuncsKrylov`, which is not in the release. Its
-subspaces are CORALean's (`krylov.subspace`, tested above, in the restart windows above); per step it
-bounds the support function by the hull of the time points plus the curvature `F(H) y_k` of the
-subspace, the integral of the input by the step times the largest integrand, and the error of the
-subspace times the length of each vector of `R0` and `B U`. The loop and these bounds are not in CORALean:
+decision is CORALean's `LinearSys.verifyKrylovPassFloat`, served as `linearSys.verifyKrylovPass`; the
+plan of each direction's windows (order, steps), the halving of the step and the stop when no finer
+step can help are CORA.cpp's tuning and are not checked.
 
-| op (proposed) | request fields | reply |
+| op | test | compared |
 |---|---|---|
-| `linearSys.verifyKrylov` (the loop of `priv_verify_ra_krylov`) | `A`, `B`, `C`, `R0`, `U`, `tFinal`, `timeStep`, `taylorTerms`, `krylovError`, `krylovStep`, specifications as rows | `res`, `iterations`, `timeStep`, `nrSteps` |
+| `linearSys.verifyKrylovPass` (`verifyKrylovWindowsFloat`, `verifyKrylovBoundsFloat`, `verifyKrylovPassFloat`) | `test_lean_linear_sys_verify_krylov` | bit for bit: the verdict of the last pass, every direction's windows (`order`, `nu`, `err`: the next start from the ball of `e^{H L}` with its error, the Gershgorin carry and the smaller weighted one) and its bounds on every step (the iterates of the ball of `e^{H dt}` with their carried error), on systems of two to twenty states: a safe set that holds and one that does not, an unsafe set, inputs, an output matrix, a non-normal matrix, restart windows, halved steps; the Lyapunov weight of `A'` is the one CORA.cpp tried |
 
 The algorithm is tested by properties (`test_linear_sys_verify_krylov`: the verdicts of a system whose
 support function is known in closed form, agreement with `alg::ReachAvoidSupportFunction`, sparse

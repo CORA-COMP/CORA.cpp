@@ -21,6 +21,60 @@
 
 namespace cora::lean {
 
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// The fields of a zonotope verification: x0, G0, the input (with B), C (the identity without one)
+/// and the specifications {safe, A, b}.
+std::vector<Operand> aux_zonotope_fields(const Tensor &A, const std::optional<Tensor> &B,
+                                         const std::optional<Tensor> &C, const cora::Tensor &x0,
+                                         const cora::Tensor &G0, const cora::Tensor &uc,
+                                         const cora::Tensor &GU,
+                                         const std::vector<VerifyZonotopeSpec> &specs) {
+    const int64_t n = A.rows();
+    std::vector<double> eye(std::size_t(n) * n, 0.0);
+    for (int64_t i = 0; i < n; ++i) eye[std::size_t(i) * n + i] = 1.0;
+    // the system, the initial set and the input
+    std::vector<Operand> fields{{"A", A}, {"x0", Tensor(x0)}, {"G0", Tensor(G0)}};
+    if (B) {
+        fields.push_back({"B", *B});
+        fields.push_back({"uc", Tensor(uc)});
+        fields.push_back({"GU", Tensor(GU)});
+    }
+    fields.push_back({"C", C ? *C : Tensor(cora::Tensor::like(x0, eye, {n, n}))});
+    // the specifications, each {safe, A, b}
+    Json js = Json::array();
+    for (const VerifyZonotopeSpec &S : specs)
+        js.push(Json::object()
+                    .set("safe", Json(S.safe))
+                    .set("A", Tensor(S.A).to_json())
+                    .set("b", Tensor(S.b).to_json()));
+    fields.push_back({"specs", Wire(js, "")});
+    return fields;
+}
+
+/// A grid as the wire's array of {timeStep, full, budget}.
+Json aux_grid_json(const std::vector<VerifyZonotopeGridStep> &grid) {
+    Json jg = Json::array();
+    for (const VerifyZonotopeGridStep &g : grid)
+        jg.push(Json::object()
+                    .set("timeStep", Wire(g.time_step).json)
+                    .set("full", Json(g.full))
+                    .set("budget", Wire(g.budget).json));
+    return jg;
+}
+
+/// The optional weight as the fields P, L and a (none: no fields).
+void aux_weight_fields(std::vector<Operand> &fields, const std::optional<VerifyWeight> &weight) {
+    if (!weight) return;
+    fields.push_back({"P", Tensor(weight->P)});
+    fields.push_back({"L", Tensor(weight->L)});
+    fields.push_back({"a", weight->a});
+}
+
+} // namespace
+
 
 // ===========================================  MAIN  =========================================== //
 
@@ -283,6 +337,113 @@ Zonotope LinearSys::error_solution_adaptive(const Zonotope &Vdyn,
     return ask_system("linearSys.errorSolution_adaptive",
                       {{"Vdyn", Vdyn}, {"Vstat", *Vstat}, times, order})
         .get<Zonotope>("Z");
+}
+
+// The zonotope verification ----------------------------------------------------------------------
+
+std::optional<std::vector<std::optional<VerifyZonotopeStep>>> LinearSys::verify_zonotope_pass(
+    const cora::Tensor &x0, const cora::Tensor &G0, const cora::Tensor &uc, const cora::Tensor &GU,
+    const std::vector<VerifyZonotopeSpec> &specs, const std::vector<VerifyZonotopeGridStep> &grid,
+    const std::optional<VerifyWeight> &weight) const {
+    std::vector<Operand> fields = aux_zonotope_fields(A_, B_, C_, x0, G0, uc, GU, specs);
+    fields.push_back({"grid", Wire(aux_grid_json(grid), "")});
+    aux_weight_fields(fields, weight);
+    const Reply r = ask("linearSys.verifyZonotopePass", fields);
+    // null steps: a step's enclosures are not computed (an empty grid has no steps either way)
+    const std::vector<Reply> steps = r.list("steps");
+    if (steps.empty() && !grid.empty()) return std::nullopt;
+    // per step: none (propagated only), or its output set and flags
+    std::vector<std::optional<VerifyZonotopeStep>> out;
+    for (const Reply &s : steps) {
+        if (s.is_null()) {
+            out.emplace_back(std::nullopt);
+            continue;
+        }
+        const Reply set = s.member("set");
+        out.emplace_back(VerifyZonotopeStep{set.get<Tensor>("c"), set.get<Tensor>("r"),
+                                            set.get<std::vector<Tensor>>("G"),
+                                            s.get<std::vector<bool>>("flags")});
+    }
+    return out;
+}
+
+// The zonotope verification run -------------------------------------------------------------------
+
+std::optional<bool>
+LinearSys::verify_zonotope_run(const cora::Tensor &x0, const cora::Tensor &G0,
+                               const cora::Tensor &uc, const cora::Tensor &GU,
+                               const std::vector<VerifyZonotopeSpec> &specs,
+                               const std::vector<std::vector<VerifyZonotopeGridStep>> &passes,
+                               const std::vector<VerifyZonotopeWitness> &witnesses, double t_final,
+                               const std::optional<VerifyWeight> &weight) const {
+    std::vector<Operand> fields = aux_zonotope_fields(A_, B_, C_, x0, G0, uc, GU, specs);
+    // the passes' grids and the witnesses
+    Json jp = Json::array();
+    for (const std::vector<VerifyZonotopeGridStep> &grid : passes) jp.push(aux_grid_json(grid));
+    Json jw = Json::array();
+    for (const VerifyZonotopeWitness &w : witnesses)
+        jw.push(Json::object()
+                    .set("spec", Json(w.spec))
+                    .set("t", Wire(w.t).json)
+                    .set("b", Tensor(w.b).to_json())
+                    .set("beta", Tensor(w.beta).to_json()));
+    fields.push_back({"passes", Wire(jp, "")});
+    fields.push_back({"witnesses", Wire(jw, "")});
+    fields.push_back({"tFinal", t_final});
+    aux_weight_fields(fields, weight);
+    // true, false, or null for undecided
+    const Reply r = ask("linearSys.verifyZonotopeRun", fields);
+    const Reply v = r.member("verdict");
+    if (v.is_null()) return std::nullopt;
+    return r.get<bool>("verdict");
+}
+
+// The Krylov verification ------------------------------------------------------------------------
+
+VerifyKrylovPass LinearSys::verify_krylov_pass(const cora::Tensor &x0, const cora::Tensor &G0,
+                                               const cora::Tensor &uc, const cora::Tensor &GU,
+                                               const std::vector<VerifyKrylovDirection> &dirs,
+                                               int64_t groups, double dt0, int64_t halvings,
+                                               int64_t steps, double eps,
+                                               const std::optional<VerifyWeight> &cert) const {
+    // the system, the initial set, the input in the state space
+    std::vector<Operand> fields{
+        {"A", A_}, {"x0", Tensor(x0)}, {"G0", Tensor(G0)}, {"uc", Tensor(uc)}, {"GU", Tensor(GU)}};
+    // the directions, each {w, plan, limit, strict, group}
+    Json jd = Json::array();
+    for (const VerifyKrylovDirection &d : dirs) {
+        Json plan = Json::array();
+        for (const auto &[k, m] : d.plan) plan.push(Json::array().push(Json(k)).push(Json(m)));
+        jd.push(Json::object()
+                    .set("w", Tensor(d.w).to_json())
+                    .set("plan", plan)
+                    .set("limit", Wire(d.limit).json)
+                    .set("strict", Json(d.strict))
+                    .set("group", Json(d.group)));
+    }
+    fields.push_back({"dirs", Wire(jd, "")});
+    fields.push_back({"groups", groups});
+    fields.push_back({"timeStep", dt0});
+    fields.push_back({"halvings", halvings});
+    fields.push_back({"steps", steps});
+    fields.push_back({"eps", eps});
+    aux_weight_fields(fields, cert);
+    const Reply r = ask("linearSys.verifyKrylovPass", fields);
+    // the verdict, then per direction its windows and bounds (null: not computed)
+    VerifyKrylovPass out;
+    out.verified = r.get<bool>("verified");
+    for (const Reply &d : r.list("dirs")) {
+        VerifyKrylovDirectionResult res;
+        if (!d.member("windows").is_null()) {
+            std::vector<VerifyKrylovDirectionResult::Window> ws;
+            for (const Reply &w : d.list("windows"))
+                ws.push_back({w.get<int64_t>("order"), w.get<double>("nu"), w.get<double>("err")});
+            res.windows = std::move(ws);
+        }
+        if (!d.member("bounds").is_null()) res.bounds = d.get<std::vector<double>>("bounds");
+        out.dirs.push_back(std::move(res));
+    }
+    return out;
 }
 
 } // namespace cora::lean

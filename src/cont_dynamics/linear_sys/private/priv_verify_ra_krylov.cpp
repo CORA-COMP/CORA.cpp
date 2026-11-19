@@ -1,15 +1,13 @@
 // priv_verify_ra_krylov - reach-avoid verification of a high-dimensional system by Krylov supports
 //
 // Every halfspace a'y <= d of a specification becomes a direction l (a safe set: a; an unsafe set:
-// -a, so that the set is avoided where the support function stays below -d). The support function
-// of y = C x over x' = A x + B u, x(0) in R0, u in U along l is, with z(t) = e^{A' t} C' l, the sum
-// of z(t)'c + sum |z(t)'g| over the center c and generators g of R0, plus the integral over [0, t]
-// of the same sum for B U. z stays in the Krylov subspace of C' l under A', where only the products
-// A' x are needed: z(t) = |s| V e^{H t} e_1, in restart windows of the first step size
-// (KrylovWindows) whose error bound enters the support function with the length of each vector of
-// R0 and B U. The step starts at t_final / 1000 and is halved until the specifications hold on
-// every step or it is below min_time_step: all halfspaces of a safe set, one halfspace of an unsafe
-// set per step (a sufficient test). The bounds are those of the Stepper below.
+// -a, avoided where the support function stays below -d). With z(t) = e^{A' t} C' l the support
+// function of y = C x is z'c + sum |z'g| over R0 plus the integral of the same over B U; z lives in
+// restart windows of Krylov subspaces of A' (KrylovWindows: their plan is tuning, each window
+// CORALean's sound one). The decision is CORALean's LinearSys.verifyKrylovPassFloat: on each step
+// every group needs a direction whose sound bound (priv_verify_krylov.h) stays below its limit. The
+// step starts at t_final / 1000 and is halved until the pass holds, no finer step can help, or it
+// is below min_time_step (tuning, like the plan); a pass that does not hold is undecided.
 //
 // Syntax:   res = priv_verify_ra_krylov(sys, R0, U, t_final, specs, alg);
 // Inputs:   sys - the system, A dense or sparse
@@ -26,11 +24,13 @@
 // Krylov machinery of reach, with a support function bound per step, not a port of that file
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_krylov.h"
+#include "cont_dynamics/linear_sys/private/priv_krylov_rounding.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_krylov.h"
 #include "cora/cont_set/interval/interval.h"
 
 #include <algorithm>
@@ -46,141 +46,49 @@ namespace cora {
 
 namespace {
 
-// Directions and norms ----------------------------------------------------------------------------
+// Directions --------------------------------------------------------------------------------------
 
 /// One direction l = C' (normal) with the support value its set must stay below.
-struct DirectionWindow {
-    Tensor W;          ///< (q, k): the dot products of the vectors of R0 and B U with V, times |s|
-    Tensor H;          ///< (k, k): the Hessenberg matrix
-    int64_t steps = 0; ///< the steps of the first pass it covers
-    double error = 0;  ///< the bound of the error of z(t) in the 2-norm at every time of it
-};
 struct Direction {
-    std::vector<DirectionWindow> windows; ///< the restart windows of z(t) = e^{A' t} C' l
-    double limit = 0;                     ///< the support function must stay below this
-    bool strict = true;                   ///< below, else at most
-    bool zero = false;                    ///< the direction is zero: the support function is 0
+    std::vector<double> w;             ///< C' l in the state space
+    std::vector<KrylovWindow> windows; ///< the restart windows of z(t) = e^{A' t} C' l
+    double limit = 0;                  ///< the support function must stay below this
+    bool strict = true;                ///< below, else at most
+    bool zero = false;                 ///< the direction is zero: the support function is 0
     size_t group = 0; ///< the specification of the direction: one of its rows must hold per step
 };
 
-/// The norms of the columns of the matrix, and their sums over the R0 columns and the input ones.
-struct VectorNorms {
-    double r0 = 0, input = 0;
-};
-VectorNorms aux_norms(const Tensor &columns, int64_t m0) {
-    const int64_t rows = columns.shape()[0], cols = columns.shape()[1];
-    const std::vector<double> v = columns.data();
-    VectorNorms out;
-    for (int64_t j = 0; j < cols; ++j) {
-        double sq = 0.0;
-        for (int64_t r = 0; r < rows; ++r) sq += v[size_t(r * cols + j)] * v[size_t(r * cols + j)];
-        (j <= m0 ? out.r0 : out.input) += std::sqrt(sq);
-    }
-    return out;
-}
-
-// Bounds step by step -----------------------------------------------------------------------------
-
-/// The bound of a direction step by step: the hull of the time points and the curvature F(H) y_k
-/// (as alg::Krylov) for R0 and B U, the integral by the step times the integrand, the error of the
-/// subspace of the window (z is restarted at every window, as in KrylovWindows).
-class Stepper {
-  public:
-    Stepper(const Direction &dir, int64_t m0, const VectorNorms &norms, double dt, double dt0,
-            const alg::ReachAvoidKrylov &alg)
-        : dir_(dir), m0_(m0), norms_(norms), dt_(dt), ratio_(std::llround(dt0 / dt)), alg_(alg) {}
-
-    /// Whether the last step fails whatever the step size (points and subspace error alone).
-    bool hopeless() const { return hopeless_; }
-
-    /// limit - bound on the next step (positive: it holds); a zero direction has the bound 0.
-    double next_margin() {
-        if (dir_.zero) return dir_.limit;
-        if (left_ == 0) start_window();
-        // the curvature acts on the state at the start of the step
-        const DirectionWindow &window = dir_.windows[window_ - 1];
-        const int64_t k = y_.shape()[0];
-        const Interval curvature = Zonotope(y_.squeeze(-1), y_.zeros_like({0, k}))
-                                       .linear_map(*F_)
-                                       .interval()
-                                       .linear_map(window.W);
-        y_ = e_hdt_.matmul(y_);
-        --left_;
-        const std::vector<double> current = window.W.matmul(y_).data();
-        const std::vector<double> c_inf = curvature.inf().data(), c_sup = curvature.sup().data();
-        // the bound of the homogeneous part and of the integrand over this step
-        double homogeneous = window.error * norms_.r0, integrand = window.error * norms_.input;
-        // what no finer step removes: the points of R0, the error, the input integral's lower end
-        double floor = homogeneous, center_low = 0.0;
-        for (size_t i = 0; i < current.size() && int64_t(i) <= m0_; ++i)
-            floor += (i == 0) ? current[i] : std::abs(current[i]);
-        for (size_t i = 0; i < current.size(); ++i) {
-            const double lo = std::min(previous_[i], current[i]) + c_inf[i];
-            const double hi = std::max(previous_[i], current[i]) + c_sup[i];
-            // index 0 is the center of R0, 1..m0 its generators, m0 + 1 the input center
-            const bool signed_term = i == 0 || int64_t(i) == m0_ + 1;
-            const double term = signed_term ? hi : std::max(std::abs(lo), std::abs(hi));
-            (int64_t(i) <= m0_ ? homogeneous : integrand) += term;
-            if (int64_t(i) == m0_ + 1) center_low = lo;
-        }
-        const double step_low = center_low + window.error * norms_.input;
-        floor += integral_low_ + dt_ * std::max(step_low, 0.0);
-        hopeless_ = dir_.strict ? dir_.limit - floor <= 0 : dir_.limit - floor < 0;
-        const double bound = homogeneous + integral_ + dt_ * std::max(integrand, 0.0);
-        integral_ += dt_ * integrand;
-        integral_low_ += dt_ * step_low;
-        previous_ = current;
-        return dir_.limit - bound;
-    }
-
-  private:
-    // The next window: e^{H dt}, F(H) and y = e_1 of it.
-    void start_window() {
-        const DirectionWindow &window = dir_.windows[window_];
-        e_hdt_ = (window.H * dt_).expm();
-        F_ = LinearSys(window.H).correction_matrix_state(dt_, alg_.taylor_terms);
-        y_ = window.H.eye_like(window.H.shape()[0]).slice(-1, 0, 1);
-        left_ = window.steps * ratio_;
-        if (window_ == 0) previous_ = window.W.matmul(y_).data();
-        ++window_;
-    }
-
-    // the direction, the step, and the state of the window being stepped through
-    const Direction &dir_;
-    int64_t m0_;
-    VectorNorms norms_;
-    double dt_;
-    int64_t ratio_;
-    const alg::ReachAvoidKrylov &alg_;
-    double integral_ = 0.0, integral_low_ = 0.0;
-    bool hopeless_ = false;
-    size_t window_ = 0;
-    int64_t left_ = 0;
-    Tensor e_hdt_, y_;
-    std::optional<Interval> F_;
-    std::vector<double> previous_;
-};
+// The pass ----------------------------------------------------------------------------------------
 
 /// How a pass ends: every group holds on every step, or some step fails (for good if no finer step
 /// size can help: the points and the subspace error alone exceed the limit of every direction).
 enum class Pass { holds, fails, hopeless };
 
-/// The steps in order, stopping at the first step on which a group has no direction that holds.
-Pass aux_pass(const std::vector<Direction> &dirs, size_t groups, int64_t m0,
-              const VectorNorms &norms, double dt, double dt0, int64_t steps,
-              const alg::ReachAvoidKrylov &alg) {
-    std::vector<Stepper> steppers;
+/// LinearSys.verifyKrylovPassFloat with CORA.cpp's tuning: the steps in order, stopping at the
+/// first step on which a group has no direction whose sound bound holds; a bound that is not
+/// computed fails the pass. Whether a finer step can help is tuning (the floor of the stepper).
+Pass aux_pass(const std::vector<Direction> &dirs, size_t groups, const VerifyKrylovVectors &vec,
+              double dt, int64_t ratio, int64_t steps) {
+    std::vector<VerifyKrylovStepper> steppers;
     steppers.reserve(dirs.size());
-    for (const Direction &dir : dirs) steppers.emplace_back(dir, m0, norms, dt, dt0, alg);
+    for (const Direction &dir : dirs) steppers.emplace_back(vec, dir.windows, ratio, dt);
     std::vector<char> held(groups), hope(groups);
     for (int64_t step = 1; step <= steps; ++step) {
         std::fill(held.begin(), held.end(), 0);
         std::fill(hope.begin(), hope.end(), 0);
         // a direction holds the step, or leaves hope that a finer step will
         for (size_t d = 0; d < dirs.size(); ++d) {
-            const double margin = steppers[d].next_margin();
-            if (dirs[d].strict ? margin > 0 : margin >= 0) held[dirs[d].group] = 1;
-            if (!steppers[d].hopeless()) hope[dirs[d].group] = 1;
+            const Direction &dir = dirs[d];
+            if (dir.zero) {
+                if (dir.strict ? 0.0 < dir.limit : 0.0 <= dir.limit) held[dir.group] = 1;
+                hope[dir.group] = 1;
+                continue;
+            }
+            const std::optional<double> b = steppers[d].next();
+            if (!b) return Pass::fails;
+            if (dir.strict ? *b < dir.limit : *b <= dir.limit) held[dir.group] = 1;
+            const double floor = steppers[d].floor();
+            if (dir.strict ? floor < dir.limit : floor <= dir.limit) hope[dir.group] = 1;
         }
         if (std::all_of(held.begin(), held.end(), [](char c) { return c != 0; })) continue;
         const bool hopeful = std::all_of(hope.begin(), hope.end(), [](char c) { return c != 0; });
@@ -196,21 +104,26 @@ Pass aux_pass(const std::vector<Direction> &dirs, size_t groups, int64_t m0,
 
 VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, const Zonotope &U,
                                    double t_final, const std::vector<Specification> &specs,
-                                   const alg::ReachAvoidKrylov &alg) {
+                                   const alg::ReachAvoidKrylov &alg, VerifyKrylovTrace *trace) {
     const auto start = std::chrono::steady_clock::now();
     VerifyResult res;
     const int64_t n = sys.dim();
     const Tensor &like = R0.center(); // the backend and the dtype
 
-    // the vectors whose dot products with z(t) the support function needs, and their norms
+    // the vectors whose dot products with z(t) the support function needs: [c G] and [u GU]
     const CanonicalInput input = priv_canonical_input(sys, U);
-    // the vectors as columns [c G u GU]
-    const int64_t m0 = R0.nr_generators();
-    const Tensor vectors = Tensor::concat(
-        {R0.center().expand_dims(-1), R0.generators().matrix_transpose(), input.u_trans, input.GU},
-        -1);
-    const VectorNorms norms = aux_norms(vectors, m0);
-    const Tensor vectors_t = vectors.matrix_transpose();
+    auto columns = [](const Tensor &M) {
+        const int64_t r = M.shape()[0], c = M.shape()[1];
+        const std::vector<double> d = M.data();
+        std::vector<std::vector<double>> out(static_cast<size_t>(c),
+                                             std::vector<double>(static_cast<size_t>(r)));
+        for (int64_t j = 0; j < c; ++j)
+            for (int64_t i = 0; i < r; ++i) out[size_t(j)][size_t(i)] = d[size_t(i * c + j)];
+        return out;
+    };
+    const VerifyKrylovVectors vectors =
+        priv_verify_krylov_vectors(R0.center().data(), columns(R0.generators().matrix_transpose()),
+                                   input.u_trans.data(), columns(input.GU));
     const LinearSys dual = sys.A_sparse()
                                ? LinearSys(sys.A_sparse()->transpose(), like.zeros_like({n, 1}))
                                : LinearSys(sys.A().matrix_transpose());
@@ -219,10 +132,11 @@ VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, con
     const double dt0 = alg.time_step > 0 ? alg.time_step : t_final / 1000.0;
     const auto steps0 = int64_t(std::ceil(t_final / dt0));
     // Directions ----------------------------------------------------------------------------------
-    // one direction C' l and its Krylov subspace per halfspace of the specifications
+    // one direction C' l and its restart windows per halfspace of the specifications
     std::vector<Direction> dirs;
     int64_t order = 15;
     size_t groups = 0;
+    bool sound = true, weighted = false;
     for (const Specification &spec : specs) {
         const bool unsafe = spec.type() == SpecType::unsafe_set;
         // an unsafe set is avoided where a halfspace of it is, every halfspace of a safe set holds
@@ -238,39 +152,69 @@ VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, con
             const Tensor d = sys.C() ? sys.C()->matrix_transpose().matmul(lt) : lt;
             dir.limit = sign * row.b;
             dir.strict = unsafe;
-            // the Krylov subspace of C' l under A' (none for the zero direction)
-            const std::vector<double> dv = d.data();
-            double sum = 0.0;
-            for (double x : dv) sum += x * x;
-            dir.zero = sum == 0.0;
+            dir.w = d.data();
+            // LinearSys.verifyKrylovBoundsFloat's zero direction: every entry 0
+            dir.zero = std::all_of(dir.w.begin(), dir.w.end(),
+                                   [](double x) { return x <= 0.0 && 0.0 <= x; });
             if (!dir.zero) {
                 // z(t) in restart windows of the first step size, a whole number of its steps each
-                KrylovWindows trajectory(At, dv, dt0, steps0, alg.krylov_error, alg.krylov_step,
+                KrylovWindows trajectory(At, dir.w, dt0, steps0, alg.krylov_error, alg.krylov_step,
                                          order, like);
                 while (!trajectory.done()) {
-                    const KrylovWindow w = trajectory.next();
-                    order = w.order;
-                    dir.windows.push_back({vectors_t.matmul(w.V) * w.norm, w.H, w.steps, w.error});
+                    dir.windows.push_back(trajectory.next());
+                    order = dir.windows.back().order;
                 }
+                sound = sound && trajectory.sound();
+                weighted = weighted || trajectory.certificate().has_value();
             }
             dirs.push_back(std::move(dir));
         }
         if (unsafe) ++groups;
     }
 
-    // the adaptive loop: the step is halved until every direction holds
+    // the adaptive loop (tuning): the step is halved until every direction holds
     double dt = dt0;
-    while (dt >= alg.min_time_step) {
+    int64_t halvings = 0, ratio = 1, steps = steps0;
+    double last_dt = dt;
+    int64_t last_halvings = 0, last_ratio = 1;
+    while (sound && dt >= alg.min_time_step) {
         ++res.iterations;
-        const auto steps = int64_t(std::ceil(t_final / dt));
+        last_dt = dt;
+        last_halvings = halvings;
+        last_ratio = ratio;
+        steps = int64_t(std::ceil(t_final / dt));
         res.time_step = dt;
         res.num_steps = int(std::min<int64_t>(steps, std::numeric_limits<int>::max()));
-        const Pass pass = aux_pass(dirs, groups, m0, norms, dt, dt0, steps, alg);
+        const Pass pass = aux_pass(dirs, groups, vectors, dt, ratio, steps);
         res.verified = pass == Pass::holds;
         if (pass != Pass::fails) break;
-        dt /= 2;
+        dt = lean_half(dt);
+        ratio *= 2;
+        ++halvings;
     }
     res.computation_time = priv_seconds_since(start);
+    // the last pass for the oracle: its directions, windows, bounds and the weight
+    if (trace) {
+        trace->groups = int64_t(groups);
+        trace->halvings = last_halvings;
+        trace->steps = steps;
+        trace->dt0 = dt0;
+        trace->verified = res.verified;
+        if (weighted && At.lyapunov_slot->formed) {
+            trace->P = At.lyapunov_slot->P;
+            trace->L = At.lyapunov_slot->L;
+            trace->a = At.lyapunov_slot->a;
+        }
+        // per direction: its plan, its windows and its bounds on the last pass
+        for (const Direction &dir : dirs) {
+            VerifyKrylovTraceDirection td{
+                dir.w, {}, dir.limit, dir.strict, int64_t(dir.group), dir.windows, std::nullopt};
+            for (const KrylovWindow &w : dir.windows) td.plan.emplace_back(w.order, w.steps);
+            td.bounds = priv_verify_krylov_bounds(vectors, dir.zero, dir.windows, last_ratio,
+                                                  last_dt, steps);
+            trace->dirs.push_back(std::move(td));
+        }
+    }
     return res;
 }
 

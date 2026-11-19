@@ -1,10 +1,10 @@
 // priv_verify_ra_zonotope - reach-avoid verification of a linear system with zonotopes [1]
 //
-// An outer approximation of the reachable output sets with a bound on its error to the exact sets
-// (priv_reach_adaptive) is checked against the specifications: if it lies inside every safe set
-// and misses every unsafe set, the specifications hold; the inner approximation (the outer one
-// minus the ball of the error bound) proves a violation if it leaves a safe set or hits an unsafe
-// one. Otherwise the error bound shrinks by the distances and the set is computed again.
+// CORA's tuning (priv_reach_adaptive with an error bound, its distances to the specifications)
+// chooses the grids; on each, CORALean's sound pass (LinearSys.verifyZonotopeRunFloat) decides:
+// its flags remove the verified times, and a violation is shown by a witness trajectory that is
+// enclosed and checked, never by the inner approximation; otherwise the result is undecided. The
+// error bound shrinks by CORA's distances until the sound flags settle every time.
 // Supported as in the ARCH benchmarks: x' = A x + B u, y = C x, a zonotope R0 and a constant
 // zonotope U, no offsets; every specification applies over the whole horizon [0, t_final].
 //
@@ -24,11 +24,14 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_exp_ball.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_time.h"
+#include "cont_dynamics/linear_sys/private/priv_verify_zonotope_pass.h"
 #include "cora/global/error.h"
 #include "cora/global/linprog.h"
 #include "cora/global/tensor/tolerance.h"
@@ -67,6 +70,7 @@ struct Poly {
     int rows = 0, dim = 0;
     std::vector<double> A, b;
     VerifyTime time;
+    std::size_t spec = 0; ///< the specification it comes from
     bool is_bounded = false, fast_inner = false;
     std::vector<double> lo, hi;
 };
@@ -329,17 +333,22 @@ bool aux_polytope_hull(Poly &P) {
 /// intersected. All are to be verified over [0, t_final].
 void aux_get_sets_from_spec(const std::vector<Specification> &specs, int64_t p, double t_final,
                             std::vector<Poly> &safe_sets, std::vector<Poly> &unsafe_sets) {
-    for (const Specification &spec : specs) {
+    for (std::size_t i = 0; i < specs.size(); ++i) {
+        const Specification &spec = specs[i];
         const std::vector<SpecRow> rows = priv_spec_rows(spec);
+        // a safe set as it is; an unsafe one of one halfspace as the safe complement
         switch (spec.type()) {
         case SpecType::safe_set:
             safe_sets.push_back(aux_polytope(rows, p, 1.0));
+            safe_sets.back().spec = i;
             break;
         case SpecType::unsafe_set:
             if (rows.size() == 1) {
                 safe_sets.push_back(aux_polytope(rows, p, -1.0));
+                safe_sets.back().spec = i;
             } else {
                 unsafe_sets.push_back(aux_polytope(rows, p, 1.0));
+                unsafe_sets.back().spec = i;
                 unsafe_sets.back().is_bounded = aux_polytope_hull(unsafe_sets.back());
             }
             break;
@@ -690,19 +699,246 @@ double aux_init_error(const Tensor &A, const std::optional<Tensor> &C, const Ten
     return err;
 }
 
+// The sound pass ----------------------------------------------------------------------------------
+
+/// The share of the horizon by which the tuning's unverified times are widened: the exact ends of
+/// the grid's steps differ from the double times of the tuning by a few rounding errors.
+constexpr double kTimeMargin = numerics::kTimeStepMatch;
+/// The passes after CORA's tuning has verified everything while the sound flags have not.
+constexpr int kSoundRefinements = 3;
+/// Tuning: no refinement for the sound pass starts after this many seconds (CORA has no such pass;
+/// each refinement tightens the tuning's bound tenfold, and its reach can take very long).
+constexpr double kSoundRefineSeconds = 60.0;
+/// Tuning: the growth e^x of the scaled errors over the horizon above which a weight is tried.
+constexpr double kWeightGrowth = 20.0;
+/// The halvings of a step size whose enclosures are not computed.
+constexpr int kGridSplits = 20;
+/// The times of a step at which a witness is sought, as shares of the step.
+constexpr double kWitnessShares[] = {1.0, 0.0, 0.5, 0.25, 0.75};
+
+/// The total length of the unverified times, rounded: whether a pass made progress.
+double aux_unverified_length(const std::vector<ExactIntervals> &unsat) {
+    double total = 0;
+    for (const ExactIntervals &U : unsat)
+        for (const auto &iv : U) total += (iv[1] - iv[0]).nearest();
+    return total;
+}
+
+// The sound problem and its grids -----------------------------------------------------------------
+
+/// The system on the host, as the sound pass takes it: G0 (n, m), B (n, k), GU (k, p), C (q, n).
+VerifyZonoSystem aux_sound_system(const LinearSys &sys, const Zonotope &R0, const Zonotope &U) {
+    VerifyZonoSystem S;
+    S.A = sys.A();
+    S.n = S.A.shape()[0];
+    S.x0 = R0.center().data();
+    S.m = R0.nr_generators();
+    S.G0 = R0.generators().matrix_transpose().data();
+    // the input with B, C the identity without one
+    if (sys.B()) {
+        S.k = sys.B()->shape()[1];
+        S.B = sys.B()->data();
+        S.uc = U.center().data();
+        S.p = U.nr_generators();
+        S.GU = U.generators().matrix_transpose().data();
+    }
+    S.q = sys.C() ? sys.C()->shape()[0] : S.n;
+    if (sys.C()) {
+        S.C = sys.C()->data();
+    } else {
+        S.C.assign(std::size_t(S.n * S.n), 0.0);
+        for (int64_t i = 0; i < S.n; ++i) S.C[std::size_t(i * S.n + i)] = 1.0;
+    }
+    return S;
+}
+
+/// Tuning: a Lyapunov weight of A for the pass where the scaled errors could grow by more than
+/// e^kWeightGrowth over the horizon (the balanced log norm times t_final): the first weight that
+/// Krylov.lyapunovCertificateFloat accepts, by the sign function iteration or the Schur form.
+void aux_attach_weight(VerifyZonotopePass &pass, double t_final) {
+    const VerifyZonoSystem &S = pass.system();
+    const std::vector<double> a = S.A.data();
+    const std::vector<double> s = priv_verify_balance_scales(a, S.n);
+    if (!(priv_verify_log_norm_up(a, s, S.n) * t_final > kWeightGrowth)) return;
+    const SparseMatrix A = SparseMatrix::from_dense(S.A);
+    for (const LyapunovMethod method :
+         {LyapunovMethod::sign_single, LyapunovMethod::sign, LyapunovMethod::schur}) {
+        LyapunovWeight w = priv_lyapunov_solve(A, method);
+        if (w.P.empty() || !priv_lyapunov_certificate(A, w.P, w.L, w.a).ok) continue;
+        pass.set_weight(std::move(w.P), std::move(w.L), w.a);
+        return;
+    }
+}
+
+/// The specifications as the sound pass checks them: their own rows a'y <= b, not normalized.
+std::vector<VerifySpecSet> aux_sound_specs(const std::vector<Specification> &specs) {
+    std::vector<VerifySpecSet> out;
+    for (const Specification &spec : specs) {
+        VerifySpecSet S;
+        S.safe = spec.type() == SpecType::safe_set;
+        for (const SpecRow &h : priv_spec_rows(spec)) {
+            S.a.push_back(h.a);
+            S.b.push_back(h.b);
+        }
+        out.push_back(std::move(S));
+    }
+    return out;
+}
+
+/// The unverified times of the tuning: the exact ones widened by the margin, merged, in [0, T].
+VerifyTime aux_tuning_time(const ExactIntervals &U, double margin, double t_final) {
+    VerifyTime out;
+    for (const auto &iv : U) {
+        const double lo = std::max(0.0, iv[0].nearest() - margin);
+        const double hi = std::min(t_final, iv[1].nearest() + margin);
+        if (!out.bounds.empty() && lo <= out.bounds.back()[1])
+            out.bounds.back()[1] = std::max(out.bounds.back()[1], hi);
+        else
+            out.bounds.push_back({lo, hi});
+    }
+    return out;
+}
+
+/// The grid of a run of the tuning: its step sizes, the steps it computed in full, its budgets. A
+/// last step that ends the horizon in doubles is lengthened to end it exactly.
+std::vector<VerifyGridStep> aux_grid(const AdaptiveResult &R, const ExactTime &T, double margin,
+                                     double t_final) {
+    std::vector<VerifyGridStep> grid;
+    ExactTime t;
+    for (std::size_t j = 0; j < R.time_step.size(); ++j) {
+        grid.push_back({R.time_step[j], R.time_interval[j].has_value(), R.budget[j]});
+        if (j + 1 < R.time_step.size()) t = t + ExactTime(R.time_step[j]);
+    }
+    if (!grid.empty() && R.time.back() >= t_final - margin) {
+        const ExactTime rest = T - t;
+        double dt = rest.nearest();
+        if (ExactTime(dt) < rest) dt = std::nextafter(dt, kInf);
+        grid.back().dt = std::max(grid.back().dt, dt);
+    }
+    return grid;
+}
+
+// The witnesses -----------------------------------------------------------------------------------
+
+/// The point of the box [-1, 1]^m that is extreme along v: the signs of v (1 for 0).
+std::vector<double> aux_signs(const std::vector<double> &v) {
+    std::vector<double> s(v.size());
+    for (std::size_t i = 0; i < v.size(); ++i) s[i] = v[i] < 0 ? -1.0 : 1.0;
+    return s;
+}
+
+/// Candidates of a violation of S at t, an initial point and a constant input: the trajectory map
+/// y = y0 + Mb b + Mu beta from expm of [A B; 0 0], then the extreme point along each row of a safe
+/// set, or the point deepest inside an unsafe set by a linear program.
+std::vector<std::pair<std::vector<double>, std::vector<double>>>
+aux_witness_candidates(const VerifyZonoSystem &S, const VerifySpecSet &spec, double t) {
+    const int64_t n = S.n, m = S.m, k = S.k, p = S.p, q = S.q, N = n + k;
+    std::vector<double> aug(std::size_t(N * N), 0.0);
+    const std::vector<double> a = S.A.data();
+    for (int64_t i = 0; i < n; ++i) {
+        for (int64_t j = 0; j < n; ++j) aug[std::size_t(i * N + j)] = a[std::size_t(i * n + j)] * t;
+        for (int64_t j = 0; j < k; ++j)
+            aug[std::size_t(i * N + n + j)] = S.B[std::size_t(i * k + j)] * t;
+    }
+    const std::vector<double> E = Tensor::like(S.A, aug, {N, N}).expm().data();
+    // y0 = C (Phi x0 + Gamma uc), Mb = C Phi G0, Mu = C Gamma GU
+    std::vector<double> x(n, 0.0), Xb(std::size_t(n * m), 0.0), Xu(std::size_t(n * p), 0.0);
+    for (int64_t i = 0; i < n; ++i) {
+        for (int64_t j = 0; j < n; ++j) {
+            const double e = E[std::size_t(i * N + j)];
+            x[i] += e * S.x0[j];
+            for (int64_t c = 0; c < m; ++c)
+                Xb[std::size_t(i * m + c)] += e * S.G0[std::size_t(j * m + c)];
+        }
+        for (int64_t j = 0; j < k; ++j) {
+            const double g = E[std::size_t(i * N + n + j)];
+            x[i] += g * S.uc[j];
+            for (int64_t c = 0; c < p; ++c)
+                Xu[std::size_t(i * p + c)] += g * S.GU[std::size_t(j * p + c)];
+        }
+    }
+    // the rows of the specification on the coefficients: h'y = h'y0 + (h'Mb) b + (h'Mu) beta
+    const std::size_t rows = spec.b.size();
+    std::vector<double> off(rows, 0.0);
+    std::vector<std::vector<double>> rb(rows, std::vector<double>(m, 0.0)),
+        ru(rows, std::vector<double>(p, 0.0));
+    for (std::size_t r = 0; r < rows; ++r)
+        for (int64_t l = 0; l < q; ++l)
+            for (int64_t i = 0; i < n; ++i) {
+                const double hc = spec.a[r][l] * S.C[std::size_t(l * n + i)];
+                off[r] += hc * x[i];
+                for (int64_t c = 0; c < m; ++c) rb[r][c] += hc * Xb[std::size_t(i * m + c)];
+                for (int64_t c = 0; c < p; ++c) ru[r][c] += hc * Xu[std::size_t(i * p + c)];
+            }
+    std::vector<std::pair<std::vector<double>, std::vector<double>>> out;
+    if (spec.safe) {
+        for (std::size_t r = 0; r < rows; ++r) out.emplace_back(aux_signs(rb[r]), aux_signs(ru[r]));
+        return out;
+    }
+    // max s subject to the rows h_r'y + s <= b_r over the box of the coefficients
+    LinProg lp;
+    lp.n = int(m + p + 1);
+    lp.f.assign(lp.n, 0.0);
+    lp.f.back() = -1.0;
+    lp.lb.assign(lp.n, -1.0);
+    lp.ub.assign(lp.n, 1.0);
+    lp.lb.back() = -kInf;
+    lp.ub.back() = kInf;
+    // one row per halfspace: the coefficients of b and beta, then s
+    for (std::size_t r = 0; r < rows; ++r) {
+        std::vector<double> row(rb[r]);
+        row.insert(row.end(), ru[r].begin(), ru[r].end());
+        row.push_back(1.0);
+        lp.Aineq.insert(lp.Aineq.end(), row.begin(), row.end());
+        lp.bineq.push_back(spec.b[r] - off[r]);
+    }
+    const LinProgResult res = linprog(lp);
+    if (res.status != LinProgResult::Status::optimal || !(res.fval < 0)) return out;
+    auto clamp = [](double v) { return std::min(1.0, std::max(-1.0, v)); };
+    std::vector<double> b(m), beta(p);
+    for (int64_t c = 0; c < m; ++c) b[c] = clamp(res.x[c]);
+    for (int64_t c = 0; c < p; ++c) beta[c] = clamp(res.x[m + c]);
+    out.emplace_back(std::move(b), std::move(beta));
+    return out;
+}
+
+/// A witness of a violation of specification `spec` in the step [t0, t1]: the candidates at a few
+/// times of the step, each checked by the sound pass; the falsifying initial state if one holds.
+std::optional<Falsification> aux_falsify(VerifyZonotopePass &pass,
+                                         const std::vector<VerifySpecSet> &specs, std::size_t spec,
+                                         double t0, double t1, double t_final,
+                                         VerifyZonotopeTrace *trace) {
+    const VerifyZonoSystem &S = pass.system();
+    for (const double share : kWitnessShares) {
+        const double t = std::min(t_final, t0 + share * (t1 - t0));
+        if (!(t > 0)) continue;
+        for (const auto &[b, beta] : aux_witness_candidates(S, specs[spec], t)) {
+            if (trace) trace->witnesses.push_back({spec, t, b, beta});
+            if (!pass.witness(specs[spec], t, b, beta)) continue;
+            std::vector<double> x0(S.x0);
+            for (int64_t i = 0; i < S.n; ++i)
+                for (int64_t c = 0; c < S.m; ++c) x0[i] += S.G0[std::size_t(i * S.m + c)] * b[c];
+            return Falsification{Tensor::like(S.A, x0, {S.n}), t};
+        }
+    }
+    return std::nullopt;
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
 VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, const Zonotope &U,
-                                     double t_final, const std::vector<Specification> &specs) {
+                                     double t_final, const std::vector<Specification> &specs,
+                                     VerifyZonotopeTrace *trace) {
     const auto start = std::chrono::steady_clock::now();
     VerifyResult res;
     auto finish = [&]() {
         res.computation_time = priv_seconds_since(start);
         return res;
     };
+    [[maybe_unused]] const VerifyFlushDenormals flush; // a no-op off x86
 
     // The system and the input in canonical form ------------------------------------------------
     const Tensor &A = sys.A();
@@ -713,6 +949,15 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
     std::vector<Poly> safe_sets, unsafe_sets;
     aux_get_sets_from_spec(specs, p, t_final, safe_sets, unsafe_sets);
 
+    // The sound pass, the specifications as it checks them and their exact unverified times
+    VerifyZonotopePass pass(aux_sound_system(sys, R0, U));
+    aux_attach_weight(pass, t_final);
+    if (trace) trace->weight = pass.weight();
+    const std::vector<VerifySpecSet> sound_specs = aux_sound_specs(specs);
+    const ExactTime T(t_final);
+    std::vector<ExactIntervals> unsat(specs.size(), ExactIntervals{{ExactTime(), T}});
+    const double margin = kTimeMargin * t_final;
+
     // Adaptive loop ------------------------------------------------------------------------------
     // The maximum allowed error: an estimate from simulations (CORA centers U), then refined.
     const Tensor no_input = A.zeros_like({n, 1});
@@ -720,26 +965,61 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
     TaylorLinSys taylor(A);
     AdaptiveSaveData savedata;
     const AdaptiveParams ap{R0, GU, u_trans, sys.C(), t_final};
+    int sound_refinements = 0;
     while (true) {
         ++res.iterations;
         if (!(emax > 0) || !std::isfinite(emax))
             CORA_FAIL(Error::special_error,
                       "LinearSys::verify: the error bound left the valid range");
 
-        // The outer approximation of the reachable set with the error bound emax.
+        // The tuning's outer approximation with the bound emax, where the flags have not verified.
         std::vector<VerifyTime> times;
-        times.reserve(unsafe_sets.size());
-        for (const Poly &P : unsafe_sets) times.push_back(P.time);
-        for (const Poly &P : safe_sets) times.push_back(P.time);
+        times.reserve(unsafe_sets.size() + safe_sets.size());
+        for (std::vector<Poly> *sets : {&unsafe_sets, &safe_sets})
+            for (Poly &P : *sets) {
+                P.time = aux_tuning_time(unsat[P.spec], margin, t_final);
+                times.push_back(P.time);
+            }
         const AdaptiveResult R = priv_reach_adaptive(taylor, ap, times, emax, true, savedata);
         res.num_steps = static_cast<int>(R.time_interval.size());
         res.time_step = kInf;
         for (std::size_t j = 0; j + 1 < R.time.size(); ++j)
             res.time_step = std::min(res.time_step, R.time[j + 1] - R.time[j]);
 
-        // Specifications verified at all times already?
+        // The sound pass on the tuning's grid: its flags remove the verified steps.
+        std::vector<VerifyGridStep> grid = aux_grid(R, T, margin, t_final);
+        std::size_t failed = 0;
+        auto steps = pass.run(sound_specs, grid, &failed);
+        // a step size whose enclosures are not computed is halved (the tuning leaves it free)
+        for (int split = 0; !steps && failed < grid.size() && split < kGridSplits; ++split) {
+            const VerifyGridStep bad = grid[failed];
+            std::vector<VerifyGridStep> finer;
+            for (const VerifyGridStep &g : grid) {
+                if (g.dt != bad.dt || (bad.full && !g.full)) {
+                    finer.push_back(g);
+                    continue;
+                }
+                finer.push_back({0.5 * g.dt, g.full, g.budget});
+                finer.push_back({0.5 * g.dt, g.full, g.budget});
+            }
+            grid = std::move(finer);
+            steps = pass.run(sound_specs, grid, &failed);
+        }
+        // the flags remove the verified steps of every specification
+        if (trace) trace->passes.push_back(grid);
+        const double left_before = aux_unverified_length(unsat);
+        if (steps) {
+            ExactTime t0;
+            for (std::size_t j = 0; j < grid.size(); ++j) {
+                const ExactTime t1 = t0 + ExactTime(grid[j].dt);
+                if ((*steps)[j])
+                    for (std::size_t s = 0; s < specs.size(); ++s)
+                        if ((*steps)[j]->flags[s]) priv_verify_setdiff_exact(unsat[s], t0, t1);
+                t0 = t1;
+            }
+        }
         bool all_verified = true;
-        for (const VerifyTime &T : times) all_verified = all_verified && T.empty();
+        for (const ExactIntervals &u : unsat) all_verified = all_verified && u.empty();
         if (all_verified) {
             res.verified = true;
             return finish();
@@ -748,6 +1028,7 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
         // Distances of the outer (Go, Fo) and inner (Gi, Fi) approximations to the sets G and F.
         double d_go = -kInf, d_gi = -kInf, d_fo = -kInf, d_fi = kInf;
         int ind_go = -1, ind_gi = -1, ind_fo = -1, ind_fi = -1;
+        const Poly *poly_fi = nullptr;
         std::vector<std::optional<InnerSet>> inner(R.time_interval.size());
         auto inner_of = [&](std::size_t j) -> const InnerSet & {
             if (!inner[j]) {
@@ -757,27 +1038,29 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
             }
             return *inner[j];
         };
-        auto falsified = [&]() {
+        // CORA's falsification: a witness checked by the sound pass, else undecided.
+        auto falsified = [&](const Poly &P, std::size_t j) {
+            res.falsification =
+                aux_falsify(pass, sound_specs, P.spec, R.time[j], R.time[j + 1], t_final, trace);
             res.verified = false;
             return finish();
         };
 
         // Safe sets -------------------------------------------------------------------------------
         // The outer approximation inside the safe sets, the inner one not inside: unsafe.
-        for (Poly &P : safe_sets)
+        for (const Poly &P : safe_sets)
             for (std::size_t j = 0; j < R.time_interval.size(); ++j) {
                 if (!R.time_interval[j] || !P.time.is_intersecting(R.time[j], R.time[j + 1]))
                     continue;
                 const ZHost Z = aux_zhost(*R.time_interval[j]);
                 const double err = R.time_interval_error[j];
                 double d = aux_containment_check_zono(Z, P);
-                if (d < 0) P.time.setdiff(R.time[j], R.time[j + 1]);
                 if (d > d_go) d_go = d, ind_go = static_cast<int>(j);
                 // One halfspace perpendicular to an axis: no need for the inner approximation.
-                if (P.fast_inner && d > err) return falsified();
+                if (P.fast_inner && d > err) return falsified(P, j);
                 if (d > err) {
                     d = aux_containment_check_inner(inner_of(j), P);
-                    if (d > 0) return falsified();
+                    if (d > 0) return falsified(P, j);
                 } else {
                     d = d - err;
                 }
@@ -786,30 +1069,34 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
 
         // Unsafe sets -----------------------------------------------------------------------------
         // The outer approximation outside the unsafe sets, the inner one inside: unsafe.
-        for (Poly &P : unsafe_sets)
+        for (const Poly &P : unsafe_sets)
             for (std::size_t j = 0; j < R.time_interval.size(); ++j) {
                 if (!R.time_interval[j] || !P.time.is_intersecting(R.time[j], R.time[j + 1]))
                     continue;
                 const ZHost Z = aux_zhost(*R.time_interval[j]);
-                if (!aux_intersection_check_fast(Z, P)) {
-                    // No intersection: the time interval is verified for this set.
-                    P.time.setdiff(R.time[j], R.time[j + 1]);
-                    continue;
-                }
+                if (!aux_intersection_check_fast(Z, P)) continue;
                 double d = aux_distance_intersection_zono(Z, P);
                 if (d > d_fo) d_fo = d, ind_fo = static_cast<int>(j);
-                if (P.fast_inner && d > R.time_interval_error[j]) return falsified();
+                if (P.fast_inner && d > R.time_interval_error[j]) return falsified(P, j);
                 d = aux_intersection_check_inner(inner_of(j), P);
                 // The program returns 0 for an intersection up to its accuracy.
                 if (d <= numerics::kLpDistanceZero) d = 0;
-                if (d < 0) return falsified();
-                if (d < d_fi) d_fi = d, ind_fi = static_cast<int>(j);
+                if (d < 0) return falsified(P, j);
+                if (d < d_fi) d_fi = d, ind_fi = static_cast<int>(j), poly_fi = &P;
             }
 
-        // Decided: verified, or an inner approximation that violates a specification.
-        if ((d_go <= 0 && d_fo <= 0) || d_gi > 0 || d_fi == 0) {
-            res.verified = d_go <= 0 && d_fo <= 0;
-            return finish();
+        // Decided by the tuning: a violation to witness, or verified where the flags are not yet.
+        if (d_fi == 0 && !(d_go <= 0 && d_fo <= 0)) return falsified(*poly_fi, std::size_t(ind_fi));
+        if (d_go <= 0 && d_fo <= 0) {
+            // the sound pass gained nothing on a finer bound: the error carry it cannot shrink
+            const bool progress = aux_unverified_length(unsat) < left_before;
+            ++sound_refinements;
+            // the cap (tuning): undecided once the refinements are spent, gain nothing or take long
+            if (sound_refinements > kSoundRefinements || (sound_refinements > 1 && !progress) ||
+                priv_seconds_since(start) > kSoundRefineSeconds)
+                return finish();
+            emax *= 0.1;
+            continue;
         }
 
         // Update the error bound by the distance that is closest to being decided.
@@ -822,8 +1109,9 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
             d = d_fi;
             ind = ind_fi;
         }
-        if (!unsafe_sets.empty() && d_fo != 0 && d_fo < d) d = d_fo, ind = ind_fo;
-        if (!safe_sets.empty() && d_go >= 0 && d_go < d) d = d_go, ind = ind_go;
+        // an outer distance counts only where some step met the set (else it is -Inf)
+        if (ind_fo >= 0 && d_fo != 0 && d_fo < d) d = d_fo, ind = ind_fo;
+        if (ind_go >= 0 && d_go >= 0 && d_go < d) d = d_go, ind = ind_go;
         if (ind < 0)
             CORA_FAIL(Error::special_error,
                       "LinearSys::verify: no step to refine the error bound by");

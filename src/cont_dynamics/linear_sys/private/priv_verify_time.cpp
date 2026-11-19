@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,6 +30,8 @@ namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// The time intervals ------------------------------------------------------------------------------
 
 VerifyTime VerifyTime::compact() const {
     if (bounds.size() <= 1) return *this;
@@ -107,6 +110,22 @@ VerifyTime VerifyTime::unify(const std::vector<VerifyTime> &times) {
             out.bounds.push_back(iv);
     }
     return out;
+}
+
+// The exact intervals -----------------------------------------------------------------------------
+
+void priv_verify_setdiff_exact(ExactIntervals &U, const ExactTime &t0, const ExactTime &t1) {
+    ExactIntervals kept;
+    for (const auto &iv : U) {
+        if (t1 <= iv[0] || iv[1] <= t0) {
+            kept.push_back(iv);
+            continue;
+        }
+        // the parts before t0 and after t1 stay
+        if (iv[0] < t0) kept.push_back({iv[0], t0});
+        if (t1 < iv[1]) kept.push_back({t1, iv[1]});
+    }
+    U = std::move(kept);
 }
 
 } // namespace cora

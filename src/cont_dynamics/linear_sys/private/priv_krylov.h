@@ -16,7 +16,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -48,6 +48,8 @@ struct LyapunovCertificate {
 struct LyapunovSlot {
     bool formed = false;
     LyapunovCertificate certificate;
+    std::vector<double> P, L; ///< the weight that was checked (empty if none), its factor
+    double a = 0;             ///< and the shift
     double solve_seconds = 0, check_seconds = 0;
     const char *method =
         "none"; ///< the weight that was accepted ("sign_single", "sign" or "schur")
@@ -223,12 +225,14 @@ struct KrylovWindow {
     double norm = 0;
     int64_t order = 0, steps = 0;
     double error = 0;
+    std::vector<double> V_host, H_host; ///< V (n, k) and H (k, k) row-major on the host
 };
 
 /// One window's carry in the weight: the window length, the local 2-norm error, the Gershgorin
 /// carry g = e^{dt mu_A} E_prev + eps, the weighted bound and the smaller of the two.
 struct KrylovCarry {
     double length = 0, local = 0, gershgorin = 0, bound = 0, carry = 0;
+    double transition = 0; ///< the local error plus the start's: what the weight carries on
 };
 
 /// The windows of e^{tA} v over `steps` steps of `time_step`, one after the other (see
@@ -246,6 +250,9 @@ class KrylovWindows {
     const std::optional<LyapunovCertificate> &certificate() const { return certificate_; }
     /// The carries of the windows so far (empty without the weight), for the oracle test.
     const std::vector<KrylovCarry> &carries() const { return carries_; }
+    /// Whether every window so far passed LinearSys.step_verifyKrylovWindowFloat's range checks;
+    /// a window that did not is still returned (tuning), but certifies nothing.
+    bool sound() const { return sound_; }
 
   private:
     HostMatVec A_;
@@ -254,6 +261,7 @@ class KrylovWindows {
     std::optional<RestartedBound> weighted_;
     std::optional<LyapunovCertificate> certificate_;
     std::vector<KrylovCarry> carries_;
+    bool sound_ = true;
     int64_t steps_, done_ = 0, first_order_;
     int step_;
     Tensor like_;

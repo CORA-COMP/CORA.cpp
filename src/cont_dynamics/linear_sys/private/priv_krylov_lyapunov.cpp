@@ -23,9 +23,9 @@
 //
 // CORA.cpp only: CORA carries the error of nothing; CORALean's Krylov.lyapunovCertificateFloat
 // and Krylov.restartedErrorBoundFloat are the definitions
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_krylov.h"
@@ -179,7 +179,12 @@ const LyapunovCertificate &HostMatVec::lyapunov() const {
         const auto t0 = std::chrono::steady_clock::now();
         const LyapunovWeight w = priv_lyapunov_solve(*M, method);
         const auto t1 = std::chrono::steady_clock::now();
-        if (!w.P.empty()) slot.certificate = priv_lyapunov_certificate(*M, w.P, w.L, w.a);
+        if (!w.P.empty()) {
+            slot.certificate = priv_lyapunov_certificate(*M, w.P, w.L, w.a);
+            slot.P = w.P;
+            slot.L = w.L;
+            slot.a = w.a;
+        }
         const auto t2 = std::chrono::steady_clock::now();
         solve += std::chrono::duration<double>(t1 - t0).count();
         check += std::chrono::duration<double>(t2 - t1).count();
