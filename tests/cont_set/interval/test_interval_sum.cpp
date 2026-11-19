@@ -58,7 +58,7 @@ void sum_encloses_the_sums(const std::string &b) {
     cora::Rng rng(51);
     for (int trial = 0; trial < 10; ++trial) {
         const Interval I = Interval::generate_random(rng, 4), R = I.sum();
-        const Tensor x = I.rand_point(20, rng);
+        const Tensor x = I.rand_point(20, rng).matrix_transpose();
         bool inside = true;
         for (int k = 0; k < 20; ++k)
             inside = inside && R.contains(x.slice(-1, k, k + 1).squeeze(-1).sum());

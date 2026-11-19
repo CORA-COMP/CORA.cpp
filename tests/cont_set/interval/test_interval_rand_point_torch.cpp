@@ -28,7 +28,7 @@ void batched_interval_rand_point(const torch::TensorOptions &opts, const std::st
     const torch::Tensor lo = torch::randn({S, n, 1}, opts),
                         hi = lo + torch::rand({S, n, 1}, opts) + 0.1;
     const Interval I(from_torch(lo.squeeze(-1)), from_torch(hi.squeeze(-1)));
-    const torch::Tensor P = to_torch(I.rand_point(N, rng));
+    const torch::Tensor P = to_torch(I.rand_point(N, rng)).transpose(-1, -2); // columns (S, n, N)
     check(P.sizes().vec() == std::vector<int64_t>({S, n, N}), where + ": batched box points");
     check((P - lo).min().item<double>() >= 0.0 && (hi - P).min().item<double>() >= 0.0,
           where + ": batched box points stay in their box");

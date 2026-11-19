@@ -7,7 +7,7 @@
 // Inputs:   N - the number of points
 //           rng - the generator of the random numbers
 //           type - "standard" (default), "uniform" or "extreme"
-// Outputs:  p - the points as columns (n, N)
+// Outputs:  p - the points as rows (N, n)
 // See also: Zonotope::rand_point
 //
 // CORA: contSet/@ellipsoid/randPoint_.m
@@ -52,12 +52,12 @@ Tensor Ellipsoid::rand_point_impl(int64_t N, Rng &rng, const std::string &type) 
     if (priv_is_empty(*this)) CORA_FAIL(Error::empty_set, "rand_point: the ellipsoid is empty");
     if (Q_.ndim() != 2)
         CORA_FAIL(Error::not_supported, "rand_point: it supports a single ellipsoid, not a batch");
-    // the points are columns (n, N), as ContSet::rand_point's
+    // CORA's columns (n, N), as rows (N, n)
     const Tensor q = q_.expand_dims(-1);
-    if (priv_is_point(*this)) return q.tile({1, N});
+    if (priv_is_point(*this)) return q.tile({1, N}).matrix_transpose();
     const Tensor G = priv_range_factor(*this);
     const int64_t rank = G.shape().back();
-    if (rank == 0) return q.tile({1, N});
+    if (rank == 0) return q.tile({1, N}).matrix_transpose();
     // directions: Gaussian columns of unit length
     std::vector<double> x(static_cast<std::size_t>(rank * N));
     rng.normal(x.data(), x.size(), 1.0);
@@ -69,7 +69,7 @@ Tensor Ellipsoid::rand_point_impl(int64_t N, Rng &rng, const std::string &type) 
         rng.uniform(radius.data(), radius.size(), 0.0, 1.0);
         u = u.multiply(Tensor::like(q_, radius, {1, N}).pow(1.0 / static_cast<double>(rank)));
     }
-    return q.add(G.matmul(u));
+    return q.add(G.matmul(u)).matrix_transpose();
 }
 
 } // namespace cora

@@ -86,7 +86,9 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
         Q.push_back(Tensor::from_data(data, {n, n}));
     }
     const Zonotope R = Z.quad_map(Q), M = Z.quad_map(Z2, Q);
-    const Tensor x = Z.rand_point(60, rng, "extreme"), y = Z2.rand_point(60, rng);
+    // the points as CORA's columns (n, 60)
+    const Tensor x = Z.rand_point(60, rng, "extreme").matrix_transpose(),
+                 y = Z2.rand_point(60, rng).matrix_transpose();
     for (int k = 0; k < 60; ++k) {
         const Tensor p = x.slice(-1, k, k + 1), q = y.slice(-1, k, k + 1);
         Tensor image = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(p),
@@ -96,8 +98,9 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
         Tensor mixed = Tensor::concat({p.matrix_transpose().matmul(Q[0]).matmul(q),
                                        p.matrix_transpose().matmul(Q[1]).matmul(q)},
                                       0);
-        check(R.contains(image, "exact", 1e-9), b + ": the image of a point of Z");
-        check(M.contains(mixed, "exact", 1e-9), b + ": the image of points of Z and Z2");
+        check(R.contains(image.squeeze(-1), "exact", 1e-9), b + ": the image of a point of Z");
+        check(M.contains(mixed.squeeze(-1), "exact", 1e-9),
+              b + ": the image of points of Z and Z2");
     }
 }
 

@@ -32,32 +32,31 @@ Zonotope diamond() { return Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.
 /// Points: inside, on the boundary, outside, and the tolerance that relaxes the boundary.
 void points_in_a_diamond(const std::string &b) {
     const Zonotope Z = diamond();
-    check(Z.contains(column({0.0, 0.0})), b + ": the center");
-    check(Z.contains(column({1.0, 1.0})), b + ": the boundary");
-    check(Z.contains(Tensor({{0.5, 2.0, -1.0}, {0.5, 0.0, 0.5}})), b + ": three points, all in");
-    check(!Z.contains(Tensor({{0.5, 1.5}, {0.5, 1.5}})), b + ": one of two points is out");
-    check(!Z.contains(column({1.0 + 1e-10, 1.0})), b + ": just outside, default tol");
-    check(Z.contains(column({1.0 + 1e-10, 1.0}), "exact", 1e-6), b + ": just outside, tol 1e-6");
-    check(Z.contains(column({1.0, 1.0}), "exact:venum") && Z.contains(column({1.0, 1.0}), "approx"),
+    check(Z.contains(vec({0.0, 0.0})), b + ": the center");
+    check(Z.contains(vec({1.0, 1.0})), b + ": the boundary");
+    check(Z.contains(Tensor({{0.5, 0.5}, {2.0, 0.0}, {-1.0, 0.5}})), b + ": three points, all in");
+    check(!Z.contains(Tensor({{0.5, 0.5}, {1.5, 1.5}})), b + ": one of two points is out");
+    check(!Z.contains(vec({1.0 + 1e-10, 1.0})), b + ": just outside, default tol");
+    check(Z.contains(vec({1.0 + 1e-10, 1.0}), "exact", 1e-6), b + ": just outside, tol 1e-6");
+    check(Z.contains(vec({1.0, 1.0}), "exact:venum") && Z.contains(vec({1.0, 1.0}), "approx"),
           b + ": the other point methods");
 }
 
 /// The special cases of CORA's contains_: a point, a box, and a flat zonotope.
 void special_zonotopes(const std::string &b) {
     const Zonotope point(column({1.0, 2.0}), Tensor({{0.0, 0.0}}));
-    check(point.contains(column({1.0, 2.0})) && !point.contains(column({1.0, 2.5})),
-          b + ": a point");
+    check(point.contains(vec({1.0, 2.0})) && !point.contains(vec({1.0, 2.5})), b + ": a point");
     check(point.contains(Zonotope(column({1.0, 2.0}), Tensor({{0.0, 0.0}}))),
           b + ": a point holds itself");
     check(!point.contains(diamond()), b + ": a point holds no set");
     const Zonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    check(box.contains(column({1.0, -1.0})) && !box.contains(column({1.1, 0.0})), b + ": a box");
+    check(box.contains(vec({1.0, -1.0})) && !box.contains(vec({1.1, 0.0})), b + ": a box");
     check(box.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.0}))), b + ": a box holds a box");
     check(!box.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.5}))),
           b + ": a box, not a larger one");
     const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
-    check(segment.contains(column({0.5, 0.5})), b + ": a segment holds its points");
-    check(!segment.contains(column({0.5, 0.6})), b + ": and no other");
+    check(segment.contains(vec({0.5, 0.5})), b + ": a segment holds its points");
+    check(!segment.contains(vec({0.5, 0.6})), b + ": and no other");
 }
 
 /// Sets: a zonotope in a zonotope by both exact methods and by Sadraddini and Tedrake.
@@ -72,7 +71,7 @@ void sets_in_the_diamond(const std::string &b) {
     check(Z.contains(Z), b + ": a zonotope holds itself");
     check(Z.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 0.5}))), b + ": a box inside");
     check(!Z.contains(Interval(vec({-1.5, -1.5}), vec({1.5, 1.5}))), b + ": a box too large");
-    check(Z.contains(small + column({0.5, 0.0})) && !Z.contains(small + column({1.5, 0.0})),
+    check(Z.contains(small + vec({0.5, 0.0})) && !Z.contains(small + vec({1.5, 0.0})),
           b + ": shifted");
     check(contains(Z, small) && !contains(Z, large), b + ": through the registry");
     check(contains(Z, Interval(vec({-0.5, -0.5}), vec({0.5, 0.5}))),
@@ -113,7 +112,7 @@ void polymax_agrees_with_venum(const std::string &b) {
     const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const Zonotope half(column({0.0, 0.0}), Tensor({{0.5, 0.5}}));
     check(segment.contains(half, "exact:polymax"), b + ": a flat zonotope holds half of itself");
-    check(!segment.contains(half + column({0.0, 0.1}), "exact:polymax"), b + ": not off its line");
+    check(!segment.contains(half + vec({0.0, 0.1}), "exact:polymax"), b + ": not off its line");
 }
 
 /// A zonogon of 4000 generators (the platoon benchmark's projections have thousands): polymax
@@ -133,14 +132,14 @@ void large_zonogon(const std::string &b) {
 /// Wrong operands and methods are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const Zonotope Z = diamond();
-    check(test::raises([&] { Z.contains(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { Z.contains(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "contains: a point of dimension 3");
     check(test::raises([&] { Z.contains(Zonotope(column({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "contains: a zonotope of dimension 1");
-    check(test::raises([&] { Z.contains(column({0.0, 0.0}), "exact", -1.0); }, Error::wrong_value),
+    check(test::raises([&] { Z.contains(vec({0.0, 0.0}), "exact", -1.0); }, Error::wrong_value),
           "contains: tol < 0");
-    check(test::raises([&] { Z.contains(column({0.0, 0.0}), "simplex"); }, Error::no_specific_alg),
+    check(test::raises([&] { Z.contains(vec({0.0, 0.0}), "simplex"); }, Error::no_specific_alg),
           "contains: unknown method");
     check(test::raises([&] { Z.contains(Z, "approx:stDual"); }, Error::not_supported),
           "contains: approx:stDual");

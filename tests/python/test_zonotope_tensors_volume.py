@@ -67,15 +67,15 @@ class TensorMultiplication(unittest.TestCase):
 class Underapproximate(unittest.TestCase):
     def test_cora_unit_test(self):
         Z = zonotope([-4, 1], [[-3, 2], [-2, 3], [-1, 4]])
-        np.testing.assert_allclose(Z.underapproximate(), [[-10, 2, -10, 2], [10, -8, 10, -8]], atol=1e-12)
+        np.testing.assert_allclose(Z.underapproximate(), [[-10, 10], [2, -8], [-10, 10], [2, -8]], atol=1e-12)
         # the under-approximation
-        np.testing.assert_allclose(Z.underapproximate(np.array([[1.0, 1], [0, 1]])),
-                                   [[2, -10, -4, -4], [-8, 10, 6, -4]], atol=1e-12)
+        np.testing.assert_allclose(Z.underapproximate(np.array([[1.0, 0], [1, 1]])),
+                                   [[2, -8], [-10, 10], [-4, 6], [-4, -4]], atol=1e-12)
 
     def test_errors(self):
         Z = zonotope([0, 0], [[1, 0], [0, 1], [1, 1]])
         with self.assertRaises(cora.errors.DimensionMismatch):
-            Z.underapproximate(np.ones((3, 1)))
+            Z.underapproximate(np.ones((1, 3)))
 
 
 class Volume(unittest.TestCase):

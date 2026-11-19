@@ -16,6 +16,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -35,7 +36,7 @@ void embedding_known(const std::string &b) {
           b + ": the identity");
     check(close(Z.project_high_dim(2, {1, 1}).center(), std::vector<double>{0, 2}, 0),
           b + ": a repeated position keeps the last state");
-    const Zonotope batch = Zonotope::stack({Z, Z + column({1.0, 1.0})}).project_high_dim(3, {2, 0});
+    const Zonotope batch = Zonotope::stack({Z, Z + vec({1.0, 1.0})}).project_high_dim(3, {2, 0});
     check(batch.center().shape() == std::vector<int64_t>({2, 3}) &&
               close(batch.center().slice(0, 1, 2).squeeze(0), std::vector<double>{3, 0, 2}, 0),
           b + ": a batch");

@@ -51,7 +51,8 @@ void linear_map_property(const std::string &b) {
         rng.normal(m.data(), m.size(), k % 2 ? 0.3 : 2.0);
         const Tensor M = Tensor::from_data(m, {2, 3});
         const Tensor points = test::sample_points(C, rng, 30);
-        check(C.linear_map(M).contains(M.matmul(points)), b + ": the image points are inside");
+        check(C.linear_map(M).contains(points.matmul(M.matrix_transpose())),
+              b + ": the image points are inside");
     }
 }
 

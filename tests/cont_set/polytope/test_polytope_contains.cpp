@@ -156,7 +156,7 @@ void properties(const std::string &b) {
             same = same && V.contains(p) == H.contains(p);
         }
         check(same, b + ": vertices and halfspaces agree, " + std::to_string(n) + "D");
-        const Interval inner(Q.center().squeeze(-1) - 0.05, Q.center().squeeze(-1) + 0.05);
+        const Interval inner(Q.center() - 0.05, Q.center() + 0.05);
         // a small box about the center
         check(Q.contains(inner), b + ": a small box about the center, " + std::to_string(n) + "D");
     }

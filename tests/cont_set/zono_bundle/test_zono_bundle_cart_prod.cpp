@@ -45,14 +45,12 @@ void one_set_against_every_member(const std::string &b) {
     const Interval I(vec({0.0}), vec({2.0}));
     check(bundle.cart_prod(I).parallel_sets() == 2 && bundle.cart_prod(I).dim() == 3,
           b + ": a box");
-    check(close((bundle.cart_prod(column({7.0})).zonotopes()[1]).center().expand_dims(-1),
+    check(close((bundle.cart_prod(vec({7.0})).zonotopes()[1]).center().expand_dims(-1),
                 {1.0, 2.0, 7.0}, 0),
           b + ": a point behind");
-    check(
-        close(
-            (ZonoBundle::cart_prod(column({7.0}), bundle).zonotopes()[0]).center().expand_dims(-1),
-            {7.0, 1.0, 2.0}, 0),
-        b + ": a point in front");
+    check(close((ZonoBundle::cart_prod(vec({7.0}), bundle).zonotopes()[0]).center().expand_dims(-1),
+                {7.0, 1.0, 2.0}, 0),
+          b + ": a point in front");
     check(bundle.cart_prod(Z).dim() == 4, b + ": a zonotope");
     const Set S = cart_prod(Set(bundle), Set(Z));
     check(S.is<ZonoBundle>() && S.as<ZonoBundle>().dim() == 4, b + ": through the registry");
@@ -68,7 +66,7 @@ void points_of_the_product(const std::string &b) {
     const Tensor xs = test::bundle_points(A, rng, 6, x0), ys = test::bundle_points(B, rng, 6, y0);
     for (int k = 0; k < 6; ++k)
         check(test::in_every_member(
-                  P, Tensor::concat({xs.slice(-1, k, k + 1), ys.slice(-1, k, k + 1)}, -2)),
+                  P, Tensor::concat({xs.slice(-2, k, k + 1), ys.slice(-2, k, k + 1)}, -1)),
               b + ": a pair of points");
 }
 
@@ -77,9 +75,10 @@ void points_of_the_product(const std::string &b) {
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({Z});
-    check(test::raises([&] { bundle.cart_prod(Tensor({{1.0, 2.0}})); }, Error::dimension_mismatch),
-          "cart_prod: a point must be a column");
-    check(test::raises([&] { ZonoBundle::cart_prod(Tensor({{1.0, 2.0}}), bundle); },
+    check(
+        test::raises([&] { bundle.cart_prod(Tensor::zeros(Shape{})); }, Error::dimension_mismatch),
+        "cart_prod: a point must be a column");
+    check(test::raises([&] { ZonoBundle::cart_prod(Tensor::zeros(Shape{}), bundle); },
                        Error::dimension_mismatch),
           "cart_prod: a point in front must be a column");
     check(

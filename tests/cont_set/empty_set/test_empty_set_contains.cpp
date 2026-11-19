@@ -28,8 +28,8 @@ void only_the_empty_set_is_contained(const std::string &b) {
     check(E.contains(Interval::empty(2)), b + ": the empty interval");
     check(!E.contains(Interval(test::vec({0.0, 0.0}), test::vec({0.0, 0.0}))),
           b + ": a point is not contained");
-    check(E.contains(Tensor::zeros({2, 0})), b + ": no points");
-    check(!E.contains(test::column({0.0, 0.0})), b + ": a point");
+    check(E.contains(Tensor::zeros({0, 2})), b + ": no points");
+    check(!E.contains(test::vec({0.0, 0.0})), b + ": a point");
     // random nonempty sets are never contained, also through the registry
     Rng rng(14);
     for (int trial = 0; trial < 10; ++trial) {
@@ -47,9 +47,8 @@ void checks_and_their_switch() {
           "contains: a set of 3 dimensions");
     check(test::raises([&] { E.contains(EmptySet(2), -1.0); }, Error::wrong_value),
           "contains: tol = -1");
-    check(
-        test::raises([&] { E.contains(test::column({0.0, 0.0, 0.0})); }, Error::dimension_mismatch),
-        "contains: a point of 3 dimensions");
+    check(test::raises([&] { E.contains(test::vec({0.0, 0.0, 0.0})); }, Error::dimension_mismatch),
+          "contains: a point of 3 dimensions");
     ChecksScope off(false);
     check(E.contains(EmptySet(2)), "contains: the same with the checks off");
 }

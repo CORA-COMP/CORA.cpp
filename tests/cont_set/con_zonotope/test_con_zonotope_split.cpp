@@ -50,7 +50,8 @@ void split_property(const std::string &b) {
         const Tensor points = test::sample_points(cz, rng, 12);
         for (int64_t j = 0; j < points.shape()[1]; ++j) {
             const Tensor p = points.slice(1, j, j + 1);
-            check(low.contains(p) || high.contains(p), b + ": a point is in a half");
+            check(low.contains(p.squeeze(-1)) || high.contains(p.squeeze(-1)),
+                  b + ": a point is in a half");
         }
     }
 }

@@ -26,12 +26,12 @@ void rand_point_property(const std::string &b) {
         const ConZonotope cz = test::random_con_zonotope(rng, 3, 5, k);
         for (const char *type : {"standard", "extreme"}) {
             const Tensor points = cz.rand_point(8, rng, type);
-            check(points.shape() == Shape{3, 8} && cz.contains(points),
+            check(points.shape() == Shape{8, 3} && cz.contains(points),
                   b + ": " + type + " points are inside");
         }
         check(cz.contains(Set(cz)->rand_point(4, rng)), b + ": through the interface");
     }
-    check(ConZonotope::empty(2).rand_point(3, rng, "standard").shape() == Shape{2, 0},
+    check(ConZonotope::empty(2).rand_point(3, rng, "standard").shape() == Shape{0, 2},
           b + ": the empty set has no point");
 }
 

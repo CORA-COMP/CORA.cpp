@@ -35,12 +35,12 @@ inline cora::PolyZonotope random_poly(cora::Rng &rng, int64_t n) {
     return {c, G.matrix_transpose(), GI.matrix_transpose(), E, {1, 2}};
 }
 
-/// Whether every column of the points lies in the zonotope up to a small tolerance.
+/// Whether every row of the points lies in the zonotope up to a small tolerance.
 inline bool inside(const cora::Zonotope &Z, const cora::Tensor &points) {
     return Z.contains(points, "exact", 1e-8);
 }
 
-/// The points of a set: N random ones.
+/// The points of a set: N random ones, one per row (N, n).
 inline cora::Tensor sample(const cora::ContSet &S, cora::Rng &rng, int64_t N) {
     return S.rand_point(N, rng);
 }

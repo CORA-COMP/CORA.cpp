@@ -31,22 +31,19 @@ namespace {
 /// Hand-computed along the axes and a diagonal; a point; the empty ellipsoid has -Inf.
 void support_known(const std::string &b) {
     const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
-    check(close(E.support_function(column({1.0, 0.0})), {3.0}, 1e-14), b + ": d = (1, 0)");
-    check(close(E.support_function(column({0.0, 1.0})), {3.0}, 1e-14), b + ": d = (0, 1)");
-    check(close(E.support_function(column({1.0, 1.0})), {3.0 + std::sqrt(5.0)}, 1e-14),
+    check(close(E.support_function(vec({1.0, 0.0})), {3.0}, 1e-14), b + ": d = (1, 0)");
+    check(close(E.support_function(vec({0.0, 1.0})), {3.0}, 1e-14), b + ": d = (0, 1)");
+    check(close(E.support_function(vec({1.0, 1.0})), {3.0 + std::sqrt(5.0)}, 1e-14),
           b + ": d = (1, 1)");
-    check(
-        close(
-            Ellipsoid(vec({1.0, 2.0}), Tensor::zeros({2, 2})).support_function(column({2.0, 1.0})),
-            {4.0}, 0),
-        b + ": a point");
-    check(Ellipsoid::empty(2).support_function(column({1.0, 0.0})).item() ==
+    check(close(Ellipsoid(vec({1.0, 2.0}), Tensor::zeros({2, 2})).support_function(vec({2.0, 1.0})),
+                {4.0}, 0),
+          b + ": a point");
+    check(Ellipsoid::empty(2).support_function(vec({1.0, 0.0})).item() ==
               -std::numeric_limits<double>::infinity(),
           b + ": empty");
     const Ellipsoid batch(Tensor::stack({vec({0.0}), vec({1.0})}, 0),
                           Tensor::stack({Tensor({{4.0}}), Tensor({{9.0}})}, 0));
-    check(close(batch.support_function(column({1.0})),
-                Tensor::stack({Tensor({{2.0}}), Tensor({{4.0}})}, 0), 0),
+    check(close(batch.support_function(vec({1.0})), Tensor::from_data({2.0, 4.0}, {2}), 0),
           b + ": a batch");
 }
 
@@ -70,10 +67,10 @@ void support_property(const std::string &b) {
 /// A direction of the wrong size is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
     const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
-    check(test::raises([&] { E.support_function(column({1.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { E.support_function(vec({1.0})); }, Error::dimension_mismatch),
           "support_function: dimension");
     ChecksScope off(false);
-    check(close(E.support_function(column({1.0, 0.0})), {3.0}, 1e-14),
+    check(close(E.support_function(vec({1.0, 0.0})), {3.0}, 1e-14),
           "support_function: same with the checks off");
 }
 

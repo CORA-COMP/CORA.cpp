@@ -86,15 +86,15 @@ class Plumbing(unittest.TestCase):
         # simulations every half step: the even samples are time points, the odd ones inside a step
         sys = cora.LinearSys(A, np.eye(3))
         rng = cora.Rng(11)
-        points = X0.rand_point(30, rng, "standard")
-        inputs = U.rand_point(30, rng, "standard")
+        points = X0.rand_point(30, rng, "standard").T
+        inputs = U.rand_point(30, rng, "standard").T
         x = sys.simulate(points, time_step=0.25, t_final=3.0, input=inputs)
         for alg, options in (("from_start", {}), ("decomposition", {"partition": [[0, 1], [2, 2]]})):
             R = sys.reach(X0, t_final=3.0, input_set=U, alg=alg, time_step=0.5, taylor_terms=8, **options)
             self.assertEqual((len(R.time_interval), len(R.time_point)), (6, 7))
             for k in range(13):
                 sets = R.time_point[k // 2] if k % 2 == 0 else R.time_interval[k // 2]
-                self.assertTrue(sets.contains(x[k]))
+                self.assertTrue(sets.contains(x[k].T))
         with self.assertRaises(cora.errors.CORAError):
             sys.reach(X0, t_final=1.0, alg="decomposition", time_step=0.1)
 

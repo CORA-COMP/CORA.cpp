@@ -6,7 +6,7 @@
 //
 // Syntax:   res = cz.is_intersecting(S);   res = cz.is_intersecting(S, "approx");
 //           res = cz.is_intersecting(points, "exact", tol);
-// Inputs:   S - a constrained zonotope, a zonotope, a box, or points (n, N)
+// Inputs:   S - a constrained zonotope, a zonotope, a box, or points (..., n), one per row
 //           type - "exact" (default) or "approx"
 //           tol - for points, the tolerance of contains; default: the repository tolerance
 // Outputs:  res - "exact": the intersection is not empty (a linear program); "approx": a bound
@@ -96,7 +96,7 @@ bool ConZonotope::is_intersecting(const Tensor &p, const std::string &type, Tol 
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     // points are in the set or not: both types decide by containment, after the checks on p
-    const Refusal refusal = priv_intersecting_points_refusal(type, center(), p);
+    const Refusal refusal = priv_intersecting_points_refusal(type, c_, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     return contains(p, "exact", tol);
 }

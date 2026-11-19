@@ -4,7 +4,7 @@
 // call to contains_ has a missing argument and fails). Not a batch.
 //
 // Syntax:   res = Z.is_intersecting(S);   res = Z.is_intersecting(S, "approx", tol);
-// Inputs:   S - a zonotope, a box, or points (n, N), of the dimension of Z
+// Inputs:   S - a zonotope, a box, or points (..., n), one per row, of the dimension of Z
 //           type - "exact" (default) decides by a linear program, "approx" tests the boxes only
 //           tol - S enlarged by tol in every coordinate; default: the repository tolerance
 // Outputs:  res - true if the sets intersect; for points all of them must lie in Z
@@ -93,7 +93,7 @@ bool Zonotope::is_intersecting(const Tensor &p, const std::string &type, Tol tol
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     // points are in the set or not: both types decide by containment
-    const Refusal refusal = priv_intersecting_points_refusal(type, c_.expand_dims(-1), p);
+    const Refusal refusal = priv_intersecting_points_refusal(type, c_, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     return contains(p, "exact", tol);
 }

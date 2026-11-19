@@ -53,7 +53,7 @@ int main() {
     // Evaluation ------------------------------------------------------------------------------
 
     // The extent of an enclosure along x1 is its support function in the direction (1, 0).
-    const Tensor x1({1.0, 0.0});
+    const Tensor x1 = Tensor::from_data({1.0, 0.0}, {2});
     std::cout << std::fixed << std::setprecision(5) << "step   standard   wrapping-free\n";
     for (std::size_t k = 0; k < Rstandard.time_interval.size(); ++k)
         std::cout << std::setw(4) << k << "   "

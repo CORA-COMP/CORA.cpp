@@ -8,7 +8,8 @@
 // it takes no set.
 //
 // Syntax:   res = bundle.contains(p);   res = bundle.contains(S, "exact", tol);
-// Inputs:   S - points (n, N), a zonotope, a box or a bundle of the dimension of bundle
+// Inputs:   S - points (..., n), one per row,, a zonotope, a box or a bundle of the dimension of
+// bundle
 //           method - "exact" (default), "exact:zonotope", "exact:polytope" or "approx"
 //           tol - relaxes the norm of the points and the facet tests; default: the repository one
 // Outputs:  res - true if all points (S) are in the bundle; not for a batch
@@ -54,12 +55,12 @@ detail::Refusal aux_refusal(const ZonoBundle &bundle, const std::string &method,
     return std::nullopt;
 }
 
-/// Why the points are refused, if they are: not a matrix (n, N) of columns.
+/// Why the points are refused, if they are: not (..., n).
 detail::Refusal aux_points_refusal(const ZonoBundle &bundle, const Tensor &p) {
-    if (p.ndim() == 2 && p.shape()[0] == bundle.dim()) return std::nullopt;
+    if (is_vector(p, bundle.dim())) return std::nullopt;
     return std::pair{Error::dimension_mismatch,
-                     "contains: the points must be a matrix (" + std::to_string(bundle.dim()) +
-                         ", N) of columns, got the shape " + shape_text(p.shape())};
+                     "contains: the points must be (..., " + std::to_string(bundle.dim()) +
+                         "), one per row, got the shape " + shape_text(p.shape())};
 }
 
 // Members -----------------------------------------------------------------------------------------
@@ -86,8 +87,7 @@ bool ZonoBundle::contains(const Tensor &p, const std::string &method, Tol tol_ar
     if (!r) r = aux_refusal(*this, method, true);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     if (method == "exact:zonotope") return aux_all_members(*this, p, tol);
-    // the polytope takes one point per row (#163), the bundle still columns
-    if (method == "exact:polytope") return polytope().contains(p.matrix_transpose(), "exact", tol);
+    if (method == "exact:polytope") return polytope().contains(p, "exact", tol);
     return con_zonotope().contains(p, "exact", tol);
 }
 

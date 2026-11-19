@@ -38,8 +38,9 @@ void the_steps_enclose_the_trajectories(const std::string &b) {
             // the end of the step k from the corner (2, 2.5) under the constant input w
             const Tensor x = flow(A, k * kStep, test::column({2.0, 2.5})) +
                              A.inv().matmul((A * (k * kStep)).expm() - Tensor::eye(2)).matmul(w);
-            check(s.time_point.contains(x), b + ": time point " + std::to_string(k));
-            check(s.time_interval.contains(x), b + ": time interval " + std::to_string(k));
+            check(s.time_point.contains(x.squeeze(-1)), b + ": time point " + std::to_string(k));
+            check(s.time_interval.contains(x.squeeze(-1)),
+                  b + ": time interval " + std::to_string(k));
             s = sys.post(s.state, a);
         }
     }

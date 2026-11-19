@@ -118,35 +118,40 @@ std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &dir) const {
     CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("split: a split by a direction supports a single zonotope");
     });
-    CORA_CHECK(is_column(dir, dim()), Error::dimension_mismatch, [&] {
-        return "split: dir must be a column of " + std::to_string(dim()) +
+    CORA_CHECK(is_vector(dir, dim()) && dir.ndim() == 1, Error::dimension_mismatch, [&] {
+        return "split: dir must be a vector of " + std::to_string(dim()) +
                " entries, got the "
                "shape " +
                shape_text(dir.shape());
     });
     CORA_CHECK(dir.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: dir must not be zero"); });
-    const auto [rest, new_gen] = aux_decompose(G_, aux_unit(dir));
+    // CORA's column of the direction
+    const auto [rest, new_gen] = aux_decompose(G_, aux_unit(dir.expand_dims(-1)));
     return aux_cut(c_, rest, new_gen, 0.0);
 }
 
 std::pair<Zonotope, Zonotope> Zonotope::split(const Tensor &orig_dir, const Tensor &aux_dir) const {
     detail::Entry entry;
-    CORA_CHECK(
-        is_column(orig_dir, dim()) && is_column(aux_dir, dim()), Error::dimension_mismatch, [&] {
-            // both directions must be (dim, 1) columns, or the split is undefined
-            return "split: the directions must be columns of " + std::to_string(dim()) + " entries";
-        });
+    CORA_CHECK(orig_dir.ndim() == 1 && is_vector(orig_dir, dim()) && aux_dir.ndim() == 1 &&
+                   is_vector(aux_dir, dim()),
+               Error::dimension_mismatch, [&] {
+                   // both directions must be (dim) vectors, or the split is undefined
+                   return "split: the directions must be vectors of " + std::to_string(dim()) +
+                          " entries";
+               });
+    // CORA's columns of the directions
+    const Tensor orig = orig_dir.expand_dims(-1), aux = aux_dir.expand_dims(-1);
     // the split direction is not zero
-    CORA_CHECK(orig_dir.abs().sum().item() > 0, Error::wrong_value,
+    CORA_CHECK(orig.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: orig_dir must not be zero"); });
     // aux_dir minus its part along orig_dir, as CORA computes it
-    const Tensor length = orig_dir.vector_norm(Tensor::Norm::two, -2, true);
-    const Tensor part = aux_dir.matrix_transpose().matmul(orig_dir).divide(length);
-    const Tensor perpendicular = aux_dir - orig_dir.multiply(part).divide(length);
+    const Tensor length = orig.vector_norm(Tensor::Norm::two, -2, true);
+    const Tensor part = aux.matrix_transpose().matmul(orig).divide(length);
+    const Tensor perpendicular = aux - orig.multiply(part).divide(length);
     CORA_CHECK(perpendicular.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: aux_dir must not be parallel to orig_dir"); });
-    return split(perpendicular);
+    return split(perpendicular.squeeze(-1));
 }
 
 std::vector<Zonotope> Zonotope::split(const Tensor &a, double d) const {
@@ -154,8 +159,8 @@ std::vector<Zonotope> Zonotope::split(const Tensor &a, double d) const {
     CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("split: a split by a halfspace supports a single zonotope");
     });
-    CORA_CHECK(is_column(a, dim()), Error::dimension_mismatch, [&] {
-        return "split: a must be a column of " + std::to_string(dim()) +
+    CORA_CHECK(is_vector(a, dim()) && a.ndim() == 1, Error::dimension_mismatch, [&] {
+        return "split: a must be a vector of " + std::to_string(dim()) +
                " entries, got the "
                "shape " +
                shape_text(a.shape());
@@ -163,8 +168,9 @@ std::vector<Zonotope> Zonotope::split(const Tensor &a, double d) const {
     CORA_CHECK(a.abs().sum().item() > 0, Error::wrong_value,
                [] { return std::string("split: a must not be zero"); });
     // the plane's position along the new generator, in its units
-    const auto [rest, new_gen] = aux_decompose(G_, aux_unit(a));
-    const Tensor at = a.matrix_transpose();
+    const Tensor column = a.expand_dims(-1);
+    const auto [rest, new_gen] = aux_decompose(G_, aux_unit(column));
+    const Tensor at = column.matrix_transpose();
     const double beta =
         (d - at.matmul(c_.expand_dims(-1)).item()) / at.matmul(new_gen.expand_dims(-1)).item();
     if (!(std::abs(beta) < 1)) return {*this};

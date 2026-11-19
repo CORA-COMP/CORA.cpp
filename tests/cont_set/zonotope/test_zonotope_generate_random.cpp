@@ -46,7 +46,7 @@ void generate_random_follows_cora(const std::string &b) {
 /// distribution.
 void generate_random_options(const std::string &b) {
     cora::Rng rng(9);
-    const Tensor center = test::column({1.0, -2.0, 3.0});
+    const Tensor center = test::vec({1.0, -2.0, 3.0});
     const Zonotope Z = Zonotope::generate_random(rng, std::nullopt, center);
     check(close(Z.center(), {1.0, -2.0, 3.0}, 1e-12), b + ": the given center");
     check(Z.generators().shape() == std::vector<int64_t>({6, 3}),

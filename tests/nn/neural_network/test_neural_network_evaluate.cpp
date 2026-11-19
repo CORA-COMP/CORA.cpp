@@ -61,7 +61,7 @@ void an_affine_network_maps_the_set_exactly(const std::string &b) {
     const NeuralNetwork nn = random_network(rng, {3, 2});
     const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Zonotope Y = nn.evaluate(X);
-    const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b;
+    const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b.squeeze(-1);
     check(test::close(Y.center(), want.center()) && test::close(Y.generators(), want.generators()),
           b + ": W X + b");
 }
@@ -98,7 +98,8 @@ void the_enclosure_contains_the_outputs(const std::string &b) {
     const Zonotope Y = nn.evaluate(X);
     int violations = 0;
     for (const std::string type : {"standard", "extreme"}) {
-        const std::vector<double> y = nn.evaluate(X.rand_point(200, rng, type)).data(); // rows 0, 1
+        const std::vector<double> y =
+            nn.evaluate(X.rand_point(200, rng, type).matrix_transpose()).data(); // rows 0, 1
         for (int k = 0; k < 10; ++k) {
             const std::vector<double> d = test::random_direction(rng, 2);
             const double bound = test::support(Y, d);
@@ -140,7 +141,8 @@ void s_shaped_enclosures_hold_the_outputs(const std::string &b) {
     const Zonotope Y = nn.evaluate(X);
     int violations = 0;
     for (const std::string type : {"standard", "extreme"}) {
-        const std::vector<double> y = nn.evaluate(X.rand_point(200, rng, type)).data();
+        const std::vector<double> y =
+            nn.evaluate(X.rand_point(200, rng, type).matrix_transpose()).data();
         for (int k = 0; k < 10; ++k) {
             const std::vector<double> d = test::random_direction(rng, 2);
             const double bound = test::support(Y, d);
@@ -174,7 +176,7 @@ void the_joint_set_holds_the_pairs(const std::string &b) {
           b + ": the input part is the input set");
     // a pair (x, N(x)) of a point x of X lies in the set: the support along random directions
     int violations = 0;
-    const Tensor x = X.rand_point(300, rng, "extreme");
+    const Tensor x = X.rand_point(300, rng, "extreme").matrix_transpose(); // columns (n, N)
     const Tensor y = nn.evaluate(x);
     const std::vector<double> xs = x.data(), ys = y.data();
     for (int k = 0; k < 20; ++k) {

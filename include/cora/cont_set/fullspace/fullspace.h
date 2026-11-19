@@ -102,7 +102,7 @@ class Fullspace : public detail::DimensionSet {
 
     // Maps and embeddings -----------------------------------------------------------------------
 
-    /// The whole space of the dimension of the points (..., n, N) (CORA's enclosePoints).
+    /// The whole space of the dimension of the points (..., N, n) (CORA's enclosePoints).
     static Fullspace enclose_points(const Tensor &points);
 
     /// The set in N >= n dimensions, the new ones unbounded (CORA's lift_): the whole space of N

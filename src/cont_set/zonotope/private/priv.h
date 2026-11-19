@@ -38,16 +38,13 @@ Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &colum
 /// batch (a linear program per pair); c and other are the centers of the two sets.
 Refusal priv_intersecting_refusal(const std::string &type, const Tensor &c, const Tensor &other);
 
-/// The same for points p (n, N) of a set of dimension n: p must be a matrix of that many rows.
+/// The same for points p (..., n) of a set of center c (..., n): p must have n coordinates.
 Refusal priv_intersecting_points_refusal(const std::string &type, const Tensor &c, const Tensor &p);
 
 /// The generators (..., keep + r, r) after Girard's reduction of the rows G (..., m, r): the keep
 /// generators of the largest score ||g||_1 - ||g||_inf, then a box generator per dimension.
 
 Tensor priv_girard_generators(const Tensor &G, int64_t keep);
-
-/// A point v for Z: a column (..., n, 1) as a row (..., n), a row as it is.
-Tensor priv_point_row(const Tensor &v, const Zonotope &Z);
 
 /// The shape of the batch of `like` followed by (rows, cols).
 

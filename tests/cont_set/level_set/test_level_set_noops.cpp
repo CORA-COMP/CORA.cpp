@@ -21,7 +21,7 @@ int main() {
     Rng rng(1);
     check(test::raises([&] { ls.center(); }, Error::noops), "center");
     check(test::raises([&] { ls.interval(); }, Error::noops), "interval");
-    check(test::raises([&] { ls.support_function(test::column({1.0, 0.0})); }, Error::noops),
+    check(test::raises([&] { ls.support_function(test::vec({1.0, 0.0})); }, Error::noops),
           "support_function");
     check(test::raises([&] { ls.rand_point(1, rng); }, Error::noops), "rand_point");
     check(test::raises([&] { ls.project({0}); }, Error::noops), "project");

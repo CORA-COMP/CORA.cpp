@@ -69,11 +69,13 @@ void product_with_other_sets(const std::string &b) {
     check(
         close(R.generators().matrix_transpose(), test::matrix({1.5, 0, 3, 0, 1.5, 2, 0, 3}, 2, 4)),
         b + ": the generators [T G, diag(R (|c| + sum|G|))]");
+    // a member times a point of Z, the point as CORA's column (2, 1)
     Rng rng(13);
     bool inside = true;
-    for (int trial = 0; trial < 30; ++trial)
-        inside =
-            inside && R.contains(test::member(A, rng).matmul(Z.rand_point(1, rng)), "exact", 1e-12);
+    for (int trial = 0; trial < 30; ++trial) {
+        const Tensor x = Z.rand_point(1, rng).matrix_transpose();
+        inside = inside && R.contains(test::member(A, rng).matmul(x).squeeze(-1), "exact", 1e-12);
+    }
     check(inside, b + ": the products of members and points are inside");
     check(EmptySet(2).linear_map(A).dim() == 2, b + ": the empty set stays empty");
     const Tensor six = test::matrix({1, 2, 3, 4, 5, 6}, 3, 2);

@@ -51,7 +51,7 @@ void sums_and_translations(const std::string &b) {
     const Zonotope S = box() + box();
     check(close(S.center(), test::vec({2.0, 4.0})) && S.nr_generators() == 4,
           b + ": Z + Z2 is the Minkowski sum");
-    const Tensor v({1.0, -1.0});
+    const Tensor v = test::vec({1.0, -1.0});
     check(close((box() + v).center(), test::vec({2.0, 1.0})) &&
               close((v + box()).center(), test::vec({2.0, 1.0})),
           b + ": Z + v translates");

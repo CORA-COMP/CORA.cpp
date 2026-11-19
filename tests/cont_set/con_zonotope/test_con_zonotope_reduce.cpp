@@ -59,7 +59,8 @@ void reduce_property(const std::string &b) {
         // order * n + p = 6 < 7 generators: (order - 1) n = 2 stay and n + p = 4 box generators
         check(r.generators().matrix_transpose().shape() == Shape{2, 6},
               b + ": the generator count");
-        check(r.contains(test::sample_points(cz, rng, 15)), b + ": the reduced set encloses");
+        check(r.contains(test::sample_points(cz, rng, 15).matrix_transpose()),
+              b + ": the reduced set encloses");
     }
 }
 

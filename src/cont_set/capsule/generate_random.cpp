@@ -13,7 +13,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -37,13 +37,12 @@ CORA_FROM_NUMBERS Capsule Capsule::generate_random(Rng &rng, std::optional<int64
         return "generate_random: the dimension must be at least 1, got " +
                std::to_string(*dimension);
     });
-    CORA_CHECK(
-        !center || (center->ndim() >= 2 && center->shape().back() == 1), Error::wrong_value,
-        [] { return std::string("generate_random: the center must be a column (..., n, 1)"); });
-    CORA_CHECK(!(dimension && center) || center->size(-2) == *dimension, Error::dimension_mismatch,
+    CORA_CHECK(!center || center->ndim() >= 1, Error::wrong_value,
+               [] { return std::string("generate_random: the center must be a vector (..., n)"); });
+    CORA_CHECK(!(dimension && center) || center->size(-1) == *dimension, Error::dimension_mismatch,
                [] { return std::string("generate_random: the center and the dimension differ"); });
     const int64_t n = dimension ? *dimension
-                      : center  ? center->size(-2)
+                      : center  ? center->size(-1)
                                 : priv_random_dimension(rng);
     CORA_CHECK(!radius || *radius >= 0.0, Error::wrong_value, [&] {
         return "generate_random: the radius must be nonnegative, got " + format_number(*radius);
@@ -53,8 +52,8 @@ CORA_FROM_NUMBERS Capsule Capsule::generate_random(Rng &rng, std::optional<int64
     if (!center) rng.normal(c.data(), c.size(), 5.0);
     if (!radius) rng.uniform(r.data(), 1, 0.0, 5.0);
     rng.uniform(g.data(), g.size(), 0.0, 1.0);
-    const Tensor generator = Tensor::from_data(g, {n, 1});
-    return {center ? *center : Tensor::from_data(c, {n, 1}), generator, radius ? *radius : r[0]};
+    const Tensor generator = Tensor::from_data(g, {n});
+    return {center ? *center : Tensor::from_data(c, {n}), generator, radius ? *radius : r[0]};
 }
 
 } // namespace cora

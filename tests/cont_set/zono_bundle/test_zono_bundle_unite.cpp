@@ -34,7 +34,7 @@ void unite_property(const std::string &b) {
     const Tensor y = test::bundle_points(second, rng, 10, other);
     check(zono_bundle.unite(Z).contains(x) && zono_bundle.unite(Z).contains(Z.rand_point(8, rng)),
           b + ": a zonotope");
-    check(zono_bundle.unite(I).contains(x) && zono_bundle.unite(I).contains(column({5.5, 6.0})),
+    check(zono_bundle.unite(I).contains(x) && zono_bundle.unite(I).contains(vec({5.5, 6.0})),
           b + ": a box");
     check(zono_bundle.unite(second).contains(x) && zono_bundle.unite(second).contains(y),
           b + ": a bundle");

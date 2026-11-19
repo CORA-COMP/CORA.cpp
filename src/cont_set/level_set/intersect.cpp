@@ -146,10 +146,9 @@ std::optional<PolyZonotope> LevelSet::intersect(const PolyZonotope &S) const {
     });
     // a set with no extent is a point: kept if it fulfills f <= 0 (CORA's "< 0 or within tol")
     if (aux_is_point(S)) {
-        const Tensor c = (S.center() + S.generators().sum(-2)).expand_dims(-1);
+        const Tensor c = S.center() + S.generators().sum(-2);
         const double g = fun_han(c).item();
-        if (g < 0 || within_tol(g, 0.0))
-            return PolyZonotope(Zonotope(c.squeeze(-1), c.zeros_like({0, dim()})));
+        if (g < 0 || within_tol(g, 0.0)) return PolyZonotope(Zonotope(c, c.zeros_like({0, dim()})));
         return std::nullopt;
     }
     // the box of the set, contracted to the level set

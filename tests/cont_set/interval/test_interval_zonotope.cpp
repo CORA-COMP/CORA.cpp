@@ -52,9 +52,10 @@ void zonotope_is_the_box(const std::string &b) {
         const Interval H = Z.interval();
         check(close(H.inf(), I.inf(), 1e-12) && close(H.sup(), I.sup(), 1e-12),
               b + ": the interval hull of the zonotope is the box");
-        const Tensor x = I.rand_point(20, rng);
+        const Tensor x = I.rand_point(20, rng).matrix_transpose();
         bool inside = true;
-        for (int k = 0; k < 20; ++k) inside = inside && Z.contains(x.slice(-1, k, k + 1));
+        for (int k = 0; k < 20; ++k)
+            inside = inside && Z.contains(x.slice(-1, k, k + 1).matrix_transpose());
         check(inside, b + ": a sample of the box is in the zonotope");
     }
 }

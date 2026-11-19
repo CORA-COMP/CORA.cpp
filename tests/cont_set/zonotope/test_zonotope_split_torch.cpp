@@ -43,9 +43,9 @@ int main() {
     test::gradcheck(
         "split by a direction",
         [](const Inputs &x) {
-            return pieces(Zonotope(x[0], x[1])
-                              .split(cora::from_torch(
-                                  torch::tensor({{1.0}, {2.0}, {-1.0}}, torch::kDouble))));
+            return pieces(
+                Zonotope(x[0], x[1])
+                    .split(cora::from_torch(torch::tensor({1.0, 2.0, -1.0}, torch::kDouble))));
         },
         input);
     // gradients of the split

@@ -56,7 +56,7 @@ pendulum = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)
 
 def measure(count, seed):
     """Noisy trajectories from `count` random points of X0: (steps + 1, 2, count)."""
-    x0 = X0.rand_point(count, cora.Rng(seed))
+    x0 = X0.rand_point(count, cora.Rng(seed)).T  # the points as columns
     truth = pendulum.simulate(x0, time_step=time_step, t_final=t_final)
     generator = torch.Generator().manual_seed(seed)
     return truth + noise * torch.randn(truth.shape, generator=generator, dtype=truth.dtype)

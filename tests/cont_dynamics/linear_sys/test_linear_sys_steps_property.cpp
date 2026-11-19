@@ -31,20 +31,20 @@ namespace {
 
 constexpr int kSystems = 6, kPoints = 8;
 
-/// The state at t of x' = A x + w from x0, by the matrix exponential of [A w; 0 0].
+/// The state (n) at t of x' = A x + w from the column x0, by the matrix exponential of [A w; 0 0].
 Tensor exact_state(const Tensor &A, const Tensor &x0, const Tensor &w, double t) {
     const int64_t n = A.shape()[0];
     const Tensor top = Tensor::concat({A, w}, -1);
     const Tensor M = Tensor::concat({top, A.zeros_like({1, n + 1})}, -2);
     const Tensor start = Tensor::concat({x0, A.ones_like({1, 1})}, -2);
-    return (M * t).expm().matmul(start).slice(-2, 0, n);
+    return (M * t).expm().matmul(start).slice(-2, 0, n).squeeze(-1);
 }
 
 /// A random stable system with inputs, sets, sample points and one constant input of U.
 struct Case {
     LinearSys sys;
     Zonotope X, U;
-    Tensor u, points, inputs;
+    Tensor u, points, inputs; // the points and inputs as columns (n, N)
 };
 
 Case random_case(cora::Rng &rng) {
@@ -59,11 +59,11 @@ Case random_case(cora::Rng &rng) {
             X,
             U,
             u,
-            X.rand_point(kPoints, rng, "standard"),
-            U.rand_point(kPoints, rng, "standard")};
+            X.rand_point(kPoints, rng, "standard").matrix_transpose(),
+            U.rand_point(kPoints, rng, "standard").matrix_transpose()};
 }
 
-/// Column j of a matrix of points.
+/// Column j of a matrix of points, CORA's columns (n, N) as the dynamics take them.
 Tensor column_of(const Tensor &P, int64_t j) { return P.slice(-1, j, j + 1); }
 
 /// The state at the end of the step and inside it stays in the sets of every solution of a step.

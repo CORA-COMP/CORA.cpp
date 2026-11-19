@@ -41,7 +41,7 @@ void tensors_stay_on_their_own_backend() {
     check(!throws([&] { Z.rand_point(5, rng, "extreme"); }), "extreme points of an eigen zonotope");
     check(!throws([&] { I.rand_point(5, rng); }), "rand_point of an eigen interval, torch current");
     check(!throws([&] {
-        sys.simulate({.initial_state = Z.rand_point(5, rng), .t_final = 0.5},
+        sys.simulate({.initial_state = Z.rand_point(5, rng).matrix_transpose(), .t_final = 0.5},
                      alg::Exact{.time_step = 0.1});
     }),
           "simulate on eigen, torch current");

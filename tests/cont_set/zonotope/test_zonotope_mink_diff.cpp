@@ -43,8 +43,7 @@ void mink_diff_known_2d(const std::string &b) {
     for (const char *method : {"approx", "inner", "outer", "outer:coarse", "exact"})
         check(close(square(1.0).mink_diff(segment, method).generators(), half.generators(), 1e-9),
               std::string(b + ": in two dimensions the method ") + method + " is the exact one");
-    check(close(square(1.0).mink_diff(column({0.25, 0.0})).center(), std::vector<double>{-0.25, 0},
-                0),
+    check(close(square(1.0).mink_diff(vec({0.25, 0.0})).center(), std::vector<double>{-0.25, 0}, 0),
           b + ": a point shifts the center");
     check(close(square(1.0).mink_diff(Zonotope(column({0.5, 0.0}), Tensor::zeros({0, 2}))).center(),
                 std::vector<double>{-0.5, 0}, 0),

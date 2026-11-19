@@ -1,12 +1,12 @@
 // center - a point of the constrained zonotope near its middle, as CORA's conZonotope.center
 //
 // The Chebyshev center is taken over the factors {|x|_inf <= 1, A x = b} (in the null space of A
-// if the set is full-dimensional); an empty set gives a column without entries (n, 0). Not a
-// batch if there are constraints.
+// if the set is full-dimensional); an empty set gives NaN, as the empty box (CORA's has no
+// entries, (n, 0)). Not a batch if there are constraints.
 //
 // Syntax:   Tensor c = cz.center();
 // Inputs:   -
-// Outputs:  c - the offset c without constraints; else c + G x with x the Chebyshev center
+// Outputs:  c - (..., n): c without constraints, else c + G x with x the Chebyshev center
 // See also: interval, is_full_dim
 //
 // CORA: contSet/@conZonotope/center.m
@@ -69,11 +69,12 @@ Tensor aux_center_full(const ConZonotope &cz) {
 // ===========================================  MAIN  =========================================== //
 
 Tensor ConZonotope::center_impl() const {
-    if (A().shape()[A().ndim() - 2] == 0) return c_.expand_dims(-1);
+    if (A().shape()[A().ndim() - 2] == 0) return c_;
     const HostConZonotope H = priv_host_con_zonotope(*this);
     // an empty set has no center
-    if (priv_is_empty(H)) return c_.expand_dims(-1).zeros_like({H.n, 0});
-    return is_full_dim() ? aux_center_full(*this) : aux_center_flat(*this, H);
+    if (priv_is_empty(H)) return c_.full_like(c_.shape(), std::numeric_limits<double>::quiet_NaN());
+    // the products run on CORA's columns
+    return (is_full_dim() ? aux_center_full(*this) : aux_center_flat(*this, H)).squeeze(-1);
 }
 
 } // namespace cora

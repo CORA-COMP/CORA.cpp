@@ -25,10 +25,13 @@ void center_known(const std::string &b) {
     const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
     check(close(C.center(), {1, 2}, 0), b + ": the stored center");
     check(close(Capsule(column({5.0})).center(), {5}, 0), b + ": a point is its own center");
-    check(Capsule::empty(2).center().shape() == Shape{2, 0}, b + ": empty: no column");
+    check(Capsule::empty(2).center().shape() == Shape{2} &&
+              std::isnan(Capsule::empty(2).center().data()[0]),
+          b + ": empty: NaN, as the empty box");
     const Tensor c = Tensor::from_data({1, 2, 3, 4}, {2, 2, 1});
-    check(close(Capsule(c, c, 0.1).center(), c, 0), b + ": a batch gives the stored centers");
-    check(Capsule(column({1.0, 2.0})).center().shape() == Shape{2, 1}, b + ": a column");
+    check(close(Capsule(c, c, 0.1).center(), c.squeeze(-1), 0),
+          b + ": a batch gives the stored centers");
+    check(Capsule(column({1.0, 2.0})).center().shape() == Shape{2}, b + ": a vector");
 }
 
 /// The center is a point of the capsule: random capsules contain their centers.

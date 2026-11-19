@@ -43,8 +43,7 @@ AffineStep priv_affine_step(const LinearSys &sys, const Zonotope &R_delta, const
 std::optional<Zonotope> priv_centered_inputs(const Tensor &like, int64_t m,
                                              const std::optional<Zonotope> &U) {
     if (m == 0) return std::nullopt;
-    return U ? *U - U->center().expand_dims(-1)
-             : Zonotope(like.zeros_like({m}), like.zeros_like({0, m}));
+    return U ? *U - U->center() : Zonotope(like.zeros_like({m}), like.zeros_like({0, m}));
 }
 
 void priv_check_exploded(const Tensor &error) {

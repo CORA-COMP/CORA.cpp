@@ -51,9 +51,10 @@ ClosedLoopTrajectories NeurNetContrSys::simulate_random(const Zonotope &X0,
         CORA_CHECK(U.has_value(), Error::wrong_value, [] {
             return std::string("simulate_random: the system has external inputs; give their set");
         });
-        u = U->rand_point(points, rng, "standard");
+        u = U->rand_point(points, rng, "standard").matrix_transpose();
     }
-    return simulate(Tensor::concat(starts, 1), u, t_final, time_step);
+    // the points as the columns (n, N) of the simulation
+    return simulate(Tensor::concat(starts, -2).matrix_transpose(), u, t_final, time_step);
 }
 
 } // namespace cora

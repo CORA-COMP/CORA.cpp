@@ -1,10 +1,10 @@
 // cart_prod - the Cartesian product of a zonotope with a zonotope, a box or a point
 //
 // The centers stack and the generators sit on the block diagonal; a point adds zero rows. As the
-// first operand the point p is (n1, 1).
+// first operand the point p is (n1).
 //
 // Syntax:   Zres = Z.cart_prod(Z2);   Zres = Z.cart_prod(I);   Zres = Zonotope::cart_prod(p, Z);
-// Inputs:   Z2, I, p - a zonotope, a box or a point (n2, 1), of any dimension
+// Inputs:   Z2, I, p - a zonotope, a box or a point (n2), of any dimension
 // Outputs:  Zres - exact, of dimension n + n2 in the order of the operands
 // See also: plus, ContSet cart_prod
 //
@@ -82,28 +82,23 @@ Zonotope Zonotope::cart_prod(const Interval &I) const {
 Zonotope Zonotope::cart_prod(const Tensor &p) const {
     // the product with a point
     detail::Entry entry;
-    // a point is a column; the product adds its rows
-    CORA_CHECK(elem_rank_ == 1 && p.ndim() >= 2 && p.shape().back() == 1, Error::dimension_mismatch,
-               [&] {
-                   return "cart_prod: the point must be a column (n, 1), got the shape " +
-                          shape_text(p.shape());
-               });
-    const int64_t n2 = p.shape()[p.ndim() - 2];
+    // a point (..., n2); the product adds its coordinates
+    CORA_CHECK(elem_rank_ == 1 && p.ndim() >= 1, Error::dimension_mismatch, [&] {
+        return "cart_prod: the point must be a vector (n), got the shape " + shape_text(p.shape());
+    });
+    const int64_t n2 = p.size(-1);
     // the point has no generators: its entries of every generator are zero
-    return {Tensor::concat({c_, p.squeeze(-1)}, -1),
-            Tensor::concat({G_, aux_zeros(G_, G_.size(-2), n2)}, -1)};
+    return {Tensor::concat({c_, p}, -1), Tensor::concat({G_, aux_zeros(G_, G_.size(-2), n2)}, -1)};
 }
 
 Zonotope Zonotope::cart_prod(const Tensor &p, const Zonotope &Z) {
     detail::Entry entry;
-    CORA_CHECK(Z.elem_rank() == 1 && p.ndim() >= 2 && p.shape().back() == 1,
-               Error::dimension_mismatch, [&] {
-                   return "cart_prod: the point must be a column (n, 1), got the shape " +
-                          shape_text(p.shape());
-               });
-    const int64_t n1 = p.shape()[p.ndim() - 2];
+    CORA_CHECK(Z.elem_rank() == 1 && p.ndim() >= 1, Error::dimension_mismatch, [&] {
+        return "cart_prod: the point must be a vector (n), got the shape " + shape_text(p.shape());
+    });
+    const int64_t n1 = p.size(-1);
     // the point has no generators: its entries of every generator are zero
-    return {Tensor::concat({p.squeeze(-1), Z.center()}, -1),
+    return {Tensor::concat({p, Z.center()}, -1),
             Tensor::concat({aux_zeros(Z.generators(), Z.nr_generators(), n1), Z.generators()}, -1)};
 }
 

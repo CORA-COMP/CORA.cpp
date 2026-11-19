@@ -6,7 +6,7 @@
 // Syntax:   ConZonotope cz = ConZonotope::generate_random(rng);   ConZonotope::generate_random(rng,
 // n, c, m, p); Inputs:   rng - random numbers
 //           dimension - n (default: that of center, else 1..10)
-//           center - the center (n, 1) (default: 5 randn)
+//           center - the center (n) (default: 5 randn)
 //           nr_generators - default 2 n
 //           nr_constraints - default random from 0 to nr_generators - n
 // Outputs:  cz - a constrained zonotope; no constraints if there are none
@@ -16,7 +16,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -50,7 +50,7 @@ CORA_FROM_NUMBERS ConZonotope ConZonotope::generate_random(Rng &rng,
                std::to_string(*nr_constraints);
     });
     const int64_t n =
-        dimension ? *dimension : (center ? center->size(-2) : priv_random_dimension(rng));
+        dimension ? *dimension : (center ? center->size(-1) : priv_random_dimension(rng));
     const int64_t m = nr_generators ? *nr_generators : 2 * n;
     // the number of constraints: given, else one of 0 .. m - n (CORA's randi)
     int64_t p = 0;

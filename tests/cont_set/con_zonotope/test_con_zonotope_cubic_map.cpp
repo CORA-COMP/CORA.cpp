@@ -74,7 +74,7 @@ void cubic_map_property(const std::string &b) {
         const ConZonotope R = A.cubic_map(T);
         const Tensor points = test::sample_points(A, rng, 12);
         for (int64_t j = 0; j < 12; ++j)
-            check(R.contains(aux_image(T, points.slice(1, j, j + 1)), "exact", 1e-6),
+            check(R.contains(aux_image(T, points.slice(1, j, j + 1)).squeeze(-1), "exact", 1e-6),
                   b + ": the image of a point is in the enclosure");
         const std::vector<std::vector<int64_t>> ind{{0}, {1}};
         const ConZonotope S = A.cubic_map(T, ind);
@@ -95,8 +95,7 @@ void cubic_map_property(const std::string &b) {
         double z = 0;
         for (int64_t kk = 0; kk < 2; ++kk)
             z += x3.data()[kk] * x1.matrix_transpose().matmul(M[0][kk]).matmul(x2).item();
-        check(R.contains(Tensor::like(x1, {z}, {1, 1}), "exact", 1e-6),
-              b + ": the mixed image is in");
+        check(R.contains(Tensor::like(x1, {z}, {1}), "exact", 1e-6), b + ": the mixed image is in");
     }
     check(R.A().shape()[0] == 2 && R.b().shape()[0] == 2,
           b + ": the rows of both constrained sets");

@@ -81,12 +81,8 @@ Interval Interval::enlarge(double factor) const {
     return with(std::move(lo), std::move(hi));
 }
 
-Set Interval::enlarge_impl(const Tensor &factor) const {
-    // ContSet's factor is a column (..., n, 1); a box takes it as (..., n)
-    if (elem_rank_ == 1 && factor.ndim() >= 2 && factor.size(-1) == 1)
-        return enlarge(factor.squeeze(-1));
-    return enlarge(factor);
-}
+Set Interval::enlarge_impl(const Tensor &factor) const { return enlarge(factor); }
+
 
 } // namespace cora
 

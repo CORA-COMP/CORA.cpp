@@ -66,8 +66,7 @@ double aux_box_support(const Tensor &like, const Row &lb, const Row &ub, const R
     Row direction = a;
     if (!upper)
         for (double &x : direction) x = -x;
-    const double value =
-        box.support_function(priv_vector_tensor(like, direction).expand_dims(-1)).item();
+    const double value = box.support_function(priv_vector_tensor(like, direction)).item();
     return upper ? value : -value;
 }
 

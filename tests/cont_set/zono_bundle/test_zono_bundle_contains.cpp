@@ -32,17 +32,16 @@ ZonoBundle squares() {
 void points(const std::string &b) {
     const ZonoBundle bundle = squares();
     for (const std::string method : {"exact", "exact:zonotope", "approx"}) {
-        check(bundle.contains(column({0.5, 0.5}), method), b + ": inside, " + method);
-        check(!bundle.contains(column({-0.5, -0.5}), method),
-              b + ": in one member only, " + method);
-        check(!bundle.contains(column({5.0, 0.0}), method), b + ": outside, " + method);
+        check(bundle.contains(vec({0.5, 0.5}), method), b + ": inside, " + method);
+        check(!bundle.contains(vec({-0.5, -0.5}), method), b + ": in one member only, " + method);
+        check(!bundle.contains(vec({5.0, 0.0}), method), b + ": outside, " + method);
     }
-    const Tensor two_points = Tensor({{0.5, 0.25}, {0.5, 0.75}});
-    check(bundle.contains(two_points), b + ": all columns must be inside");
-    check(!bundle.contains(Tensor({{0.5, 5.0}, {0.5, 5.0}})), b + ": one column outside");
-    check(bundle.contains(column({1.0 + 1e-15, 0.5})),
+    const Tensor two_points = Tensor({{0.5, 0.5}, {0.25, 0.75}});
+    check(bundle.contains(two_points), b + ": all rows must be inside");
+    check(!bundle.contains(Tensor({{0.5, 0.5}, {5.0, 5.0}})), b + ": one row outside");
+    check(bundle.contains(vec({1.0 + 1e-15, 0.5})),
           b + ": a point on the border, up to the tolerance");
-    check(!bundle.contains(column({1.001, 0.5}), "exact", 1e-6), b + ": beyond the tolerance");
+    check(!bundle.contains(vec({1.001, 0.5}), "exact", 1e-6), b + ": beyond the tolerance");
 }
 
 /// A zonotope or a box is inside if every member holds it; a bundle if each facet of each member
@@ -94,20 +93,20 @@ void checks_and_their_switch() {
     const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25, 0.0}}));
     check(test::raises([&] { bundle.contains(Z, "approx"); }, Error::not_supported),
           "contains: approx for a set");
-    check(test::raises([&] { bundle.contains(column({0.5, 0.5}), "sampling"); },
-                       Error::no_specific_alg),
-          "contains: an unknown method");
-    check(test::raises([&] { bundle.contains(column({0.5})); }, Error::dimension_mismatch),
+    check(
+        test::raises([&] { bundle.contains(vec({0.5, 0.5}), "sampling"); }, Error::no_specific_alg),
+        "contains: an unknown method");
+    check(test::raises([&] { bundle.contains(vec({0.5})); }, Error::dimension_mismatch),
           "contains: points of another dimension");
     check(
         test::raises([&] { bundle.contains(Zonotope::stack({Z, Z})); }, Error::dimension_mismatch),
         "contains: a batch operand");
-    check(test::raises([&] { bundle.contains(column({0.5, 0.5}), "exact", -1.0); },
-                       Error::wrong_value),
-          "contains: tol < 0");
+    check(
+        test::raises([&] { bundle.contains(vec({0.5, 0.5}), "exact", -1.0); }, Error::wrong_value),
+        "contains: tol < 0");
     ChecksScope off(false);
     // the same with the checks off
-    check(bundle.contains(column({0.5, 0.5})), "contains: the same with the checks off");
+    check(bundle.contains(vec({0.5, 0.5})), "contains: the same with the checks off");
 }
 
 } // namespace

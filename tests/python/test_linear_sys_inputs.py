@@ -137,9 +137,9 @@ class ReachWithInputs(unittest.TestCase):
         for lin_alg in ("standard", "wrapping_free"):
             order = {"zonotope_order": 2} if lin_alg == "standard" else {}  # wrapping_free has none
             R = sys.reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg=lin_alg, input_set=U, **order)
-            x = X0.rand_point(30, rng, "extreme")
+            x = X0.rand_point(30, rng, "extreme").T
             for k in range(5):
-                x = sys.simulate(x, time_step=0.2, t_final=0.2, input=U.rand_point(30, rng, "extreme"))[-1]
+                x = sys.simulate(x, time_step=0.2, t_final=0.2, input=U.rand_point(30, rng, "extreme").T)[-1]
                 for d in np.random.default_rng(k).normal(size=(10, 3)):
                     self.assertLessEqual((d @ x).max(), R.time_point[k + 1].support_function(d) + 1e-9)
 

@@ -25,8 +25,7 @@ void enlarge_gradient() {
         [](const Inputs &x) {
             return test::parts(Set(test::bundle(x, 0, 2))->enlarge(x[4]).as<ZonoBundle>());
         },
-        test::joined(test::random_bundle_parts(2, 3, 2),
-                     {torch::rand({3, 1}, torch::kDouble) + 0.5}));
+        test::joined(test::random_bundle_parts(2, 3, 2), {torch::rand({3}, torch::kDouble) + 0.5}));
 }
 
 } // namespace

@@ -44,7 +44,8 @@ void the_step_is_enclosed(const std::string &b) {
     // the corners of X flow along the curve between the two time points
     for (const std::vector<double> &x : {std::vector<double>{2, 2.5}, {0, 1.5}, {2, 1.5}, {0, 2.5}})
         for (const double t : {0.0, 0.03, 0.05, 0.08, kStep})
-            check(H.time_interval.contains(flow(A, t, test::column(x))), b + ": a trajectory");
+            check(H.time_interval.contains(flow(A, t, test::column(x)).squeeze(-1)),
+                  b + ": a trajectory");
     // the curvature is F X
     const Interval F = LinearSys(A).correction_matrix_state(kStep, kTerms);
     check(test::close(H.state_curvature.interval().sup(), X.linear_map(F).interval().sup(), 1e-15),

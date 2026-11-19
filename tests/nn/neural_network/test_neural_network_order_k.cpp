@@ -141,7 +141,7 @@ void order_1_is_the_line_bit_for_bit(const std::string &b) {
 
 /// The outputs of the points of a network enclosed by the zonotope of the output set.
 int aux_outside(const NeuralNetwork &nn, const PolyZonotope &X, const PolyZonotope &Y, Rng &rng) {
-    const Tensor x = X.rand_point(400, rng);
+    const Tensor x = X.rand_point(400, rng).matrix_transpose(); // columns (n, N)
     const std::vector<double> y = nn.evaluate(x).data();
     const Interval I = Y.zonotope().interval();
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();

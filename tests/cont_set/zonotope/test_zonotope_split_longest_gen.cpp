@@ -55,7 +55,7 @@ void halves_cover_the_set(const std::string &b) {
           b + ": the longest generator");
     const Tensor points = Z.rand_point(40, rng);
     for (int k = 0; k < 40; ++k) {
-        const Tensor p = points.slice(-1, k, k + 1);
+        const Tensor p = points.slice(-2, k, k + 1);
         check(first.contains(p, "exact", 1e-9) || second.contains(p, "exact", 1e-9),
               b + ": a point of Z is in neither half");
     }

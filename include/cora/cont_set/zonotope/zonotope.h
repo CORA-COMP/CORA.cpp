@@ -4,8 +4,8 @@
 // (batch..., h, elem...), one generator per row (#163). A vector zonotope has elem = (n), a matrix
 // zonotope (Zonotope::matrix, CORA's matZonotope) elem = (r, c): a set of matrix-shaped points,
 // whose box, sum, reduction, containment and volume are the zonotope's; its exponential is in
-// mat_exp. Points and directions given to or returned by the operations are still columns
-// (..., n, 1) and (n, N), as the other sets take them. Immutable. Not the competition's zonotope.
+// mat_exp. Points and directions given to or returned by the operations are (..., n), N points
+// (..., N, n), as for every set. Immutable. Not the competition's zonotope.
 //
 // Syntax:     Zonotope Z(c, G);   Zonotope A = Zonotope::matrix(C, G);
 //             Zonotope Z = Zonotope::generate_random(rng);
@@ -87,7 +87,7 @@ class Zonotope : public ContSet {
 
     using ContSet::rand_point;
 
-    /// N random points c + G b, columns (..., n, N): b ~ U[-1, 1]^m for type "standard", b from
+    /// N random points c + G b, rows (..., N, n): b ~ U[-1, 1]^m for type "standard", b from
     /// the corners {-1, 1}^m (points on the boundary) for "extreme".
     Tensor rand_point(int64_t N, Rng &rng, const std::string &type) const;
 
@@ -144,13 +144,13 @@ class Zonotope : public ContSet {
 
     // Combining with other sets -------------------------------------------------------------------
 
-    /// The Cartesian product with a zonotope, a box or a point (n2, 1): centers stack,
+    /// The Cartesian product with a zonotope, a box or a point (n2): centers stack,
     /// generators go on the block diagonal.
     Zonotope cart_prod(const Zonotope &Z2) const;
     Zonotope cart_prod(const Interval &I) const;
     Zonotope cart_prod(const Tensor &p) const;
 
-    /// The Cartesian product of a point p (n1, 1) with a zonotope.
+    /// The Cartesian product of a point p (n1) with a zonotope.
     static Zonotope cart_prod(const Tensor &p, const Zonotope &Z);
 
     /// A zonotope that encloses both (CORA's enclose): the generators in common are combined
@@ -197,7 +197,7 @@ class Zonotope : public ContSet {
     Tensor dominant_directions(std::optional<int> filter_length1 = std::nullopt,
                                std::optional<int> filter_length2 = std::nullopt) const;
 
-    /// Whether the zonotope contains the points p (n, N), a zonotope or a box, up to tol; method
+    /// Whether the zonotope contains the points p (..., n), a zonotope or a box, up to tol; method
     /// "exact", "exact:venum", "approx" or "approx:st". Not a batch.
     bool contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
@@ -207,7 +207,7 @@ class Zonotope : public ContSet {
                   Tol tol = std::nullopt) const;
 
     /// The point where the ray from `start` (a point of the zonotope; default: the center) in
-    /// direction dir leaves the zonotope, a column (n, 1). Not a batch.
+    /// direction dir (n) leaves the zonotope, a point (n). Not a batch.
     Tensor boundary_point(const Tensor &dir) const;
     Tensor boundary_point(const Tensor &dir, const Tensor &start) const;
 
@@ -261,15 +261,15 @@ class Zonotope : public ContSet {
     bool is_full_dim(Tol tol = std::nullopt) const;
     std::pair<bool, Tensor> is_full_dim_subspace(Tol tol = std::nullopt) const;
 
-    /// Whether the zonotope equals a zonotope, a box or a point (n, 1): the centers agree (as
+    /// Whether the zonotope equals a zonotope, a box or a point (n): the centers agree (as
     /// within_tol) and so do the generators after compact "all", up to order and sign. Not a batch.
     /// tol default: the repository tolerance.
     bool isequal(const Zonotope &S, Tol tol = std::nullopt) const;
     bool isequal(const Interval &I, Tol tol = std::nullopt) const;
     bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
-    /// Whether the zonotope and a zonotope, a box or points (n, N) (all of them) intersect, with S
-    /// enlarged by tol (default: the repository tolerance). type "exact" decides by a linear
+    /// Whether the zonotope and a zonotope, a box or points (..., n) (all of them) intersect, with
+    /// S enlarged by tol (default: the repository tolerance). type "exact" decides by a linear
     /// program, "approx" tests the boxes around the sets. Not a batch.
     bool is_intersecting(const Zonotope &S, const std::string &type = "exact",
                          Tol tol = std::nullopt) const;
@@ -282,12 +282,12 @@ class Zonotope : public ContSet {
     /// would be unbounded). CORA's lift_ projects onto dims, the inverse permutation.
     Zonotope lift(int64_t N, const std::vector<int64_t> &dims) const;
 
-    /// An upper bound (..., 1, 1) of the norm (type 1, 2 or infinity) of the points: mode "ub"
+    /// An upper bound (...) of the norm (type 1, 2 or infinity) of the points: mode "ub"
     /// (default) is the norm of the box around the set; "exact" and "ub_convex" are not supported.
     Tensor norm(double type = 2, const std::string &mode = "ub") const;
 
     /// The distance from the center to the boundary (1, 1) (the largest ball about the center in
-    /// the set; 0 if the set is flat) and the nearest point of the boundary (n, 1). Not a batch.
+    /// the set; 0 if the set is flat) and the nearest point of the boundary (n). Not a batch.
     std::pair<Tensor, Tensor> minnorm() const;
 
     /// The matrices E, F, A, C of an observer, for the gain "wang-FRad" of intersect_strip.
@@ -304,12 +304,12 @@ class Zonotope : public ContSet {
     Zonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
                              const StripObserver &aux) const;
 
-    /// A zonotope that contains the points (n, N): method "maiga" (default) or "stursberg"; with a
+    /// A zonotope that contains the points (N, n): method "maiga" (default) or "stursberg"; with a
     /// frame U (n, n) (orthogonal) the box around the points in that frame.
     static Zonotope enclose_points(const Tensor &points, const std::string &method = "maiga");
     static Zonotope enclose_points(const Tensor &points, const Tensor &U);
 
-    /// A box in the frame whose first axis is the direction (n, 1), as a zonotope, around the
+    /// A box in the frame whose first axis is the direction (n), as a zonotope, around the
     /// zonotopes (each reduced to order 1), and the inverse of the frame. Not a batch.
     static std::pair<Zonotope, Tensor> enclose_many(const std::vector<Zonotope> &Zs,
                                                     const Tensor &direction);
@@ -422,25 +422,25 @@ class Zonotope : public ContSet {
                                         const std::vector<Tensor> &M_generators,
                                         const TensorLists &list) const;
 
-    /// The corners c + G s for every sign vector s in {-1, 1}^m, as columns (..., n, 2^m): they
+    /// The corners c + G s for every sign vector s in {-1, 1}^m, as rows (..., 2^m, n): they
     /// contain the vertices, so a convex set holds Z if it holds them. At most 30 generators.
     Tensor corners() const;
 
-    /// The vertices c +- sum_j sign(s_i' g_j) g_j for the directions s_i, the columns of S (n,
-    /// k), as (..., n, 2k); a subset of the zonotope. Not a batch without S.
+    /// The vertices c +- sum_j sign(s_i' g_j) g_j for the directions s_i, the rows of S_rows
+    /// (k, n), as rows (..., 2k, n); a subset of the zonotope. Not a batch without S_rows.
     Tensor underapproximate() const;
-    Tensor underapproximate(const Tensor &S) const;
+    Tensor underapproximate(const Tensor &S_rows) const;
 
     /// The volume (..., 1, 1): method "exact" (default) is 2^n times the sum of |det| over the
     /// n-subsets of generators, "alamo" is a lower bound.
     Tensor volume(const std::string &method = "exact", int order = 5) const;
 
-    /// The norm (1, 1) of the point p (n, 1) w.r.t. the zonotope centered at the origin (its
+    /// The norm (1, 1) of the point p (n) w.r.t. the zonotope centered at the origin (its
     /// center is ignored): min s with G beta = p, |beta|_inf <= s, by a linear program; infinity if
     /// p is not in the span of the generators. Not a batch.
     Tensor zonotope_norm(const Tensor &p) const;
 
-    /// The norm and the minimizer beta (m, 1) (an empty (0, 1) if the norm is infinite); a
+    /// The norm and the minimizer beta (m) (an empty (0) if the norm is infinite); a
     /// warning if the center is not the origin, as the minimizer is then not valid.
     std::pair<Tensor, Tensor> zonotope_norm_minimizer(const Tensor &p) const;
 

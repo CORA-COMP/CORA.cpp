@@ -34,9 +34,10 @@ namespace {
 
 constexpr double kAgree = 1e-9;
 
-/// The oracle's lower bound against CORA.cpp's norm, which is `independent` for n generators.
+/// The oracle's lower bound against CORA.cpp's norm, which is `independent` for n generators; the
+/// point p is CORA's column (n, 1).
 void aux_check(const Zonotope &Z, const Tensor &p, bool independent) {
-    const double norm = Z.zonotope_norm(p).item();
+    const double norm = Z.zonotope_norm(p.squeeze(-1)).item();
     const double bound = lean::Zonotope(Z).zonotope_norm(lean::Tensor::from(p));
     const double slack = kAgree * std::max(1.0, std::abs(norm));
     if (std::isinf(bound))

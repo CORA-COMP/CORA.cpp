@@ -80,10 +80,10 @@ void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U
         const Tensor v = sys.B()->matmul(column({u})) + sys.c();
         const auto step = std::size_t(k % 20);
         const double t = (double(step) + 0.5 * (b[5] + 1)) * kDt;
-        check(R.time_interval[step].contains(aux_exact(A, v, x0, t), "exact", kTol),
+        check(R.time_interval[step].contains(aux_exact(A, v, x0, t).squeeze(-1), "exact", kTol),
               name + ": an exact state in its time-interval set");
-        check(R.time_point[step + 1].contains(aux_exact(A, v, x0, double(step + 1) * kDt), "exact",
-                                              kTol),
+        check(R.time_point[step + 1].contains(
+                  aux_exact(A, v, x0, double(step + 1) * kDt).squeeze(-1), "exact", kTol),
               name + ": an exact state at a step time");
     }
 }

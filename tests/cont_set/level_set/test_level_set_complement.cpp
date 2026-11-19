@@ -22,8 +22,7 @@ int main() {
         // the complement of the closed disc is the open outside: the circle is in the first only
         const LevelSet disc(test::circle(0, 0, 1), 2, CompOp::le);
         const LevelSet outside = disc.complement();
-        const Tensor on = Tensor::from_data({1, 0}, {2, 1}),
-                     far = Tensor::from_data({2, 0}, {2, 1});
+        const Tensor on = Tensor::from_data({1, 0}, {2}), far = Tensor::from_data({2, 0}, {2});
         // the complement excludes what the disc holds on its boundary
         check(disc.contains(on, 0.0) && !outside.contains(on, 0.0),
               b + ": the circle is not outside");

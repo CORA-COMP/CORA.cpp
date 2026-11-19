@@ -21,7 +21,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -70,6 +70,8 @@ class Shape {
     int64_t &back() { return d_[rank_ - 1]; }
     const int64_t *begin() const { return d_; }
     const int64_t *end() const { return d_ + rank_; }
+    /// Drops the last axis (the shape must have one).
+    void pop_back() { --rank_; }
     void push_back(int64_t v) {
         if (rank_ == kMaxRank) aux_too_many_axes();
         // append the size of the next axis

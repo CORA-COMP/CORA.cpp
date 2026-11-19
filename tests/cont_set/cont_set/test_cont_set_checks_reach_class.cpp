@@ -49,7 +49,7 @@ class ProbeSet : public test::UnregisteredSet {
     // each hook of the unchecked core records itself, then returns a trivial result
     Tensor center_impl() const override {
         aux("center");
-        return Tensor({0.0, 0.0});
+        return test::vec({0.0, 0.0});
     }
     // the interval and the support function
     Interval interval_impl() const override {
@@ -63,7 +63,7 @@ class ProbeSet : public test::UnregisteredSet {
     }
     Tensor rand_point_impl(int64_t, Rng &) const override {
         aux("rand_point");
-        return Tensor({0.0, 0.0});
+        return Tensor::from_data({0.0, 0.0}, {1, 2});
     }
     Set project_impl(const std::vector<int64_t> &) const override { return other("project"); }
     // the vertices
@@ -133,7 +133,7 @@ class ProbeSet : public test::UnregisteredSet {
 void every_operation_hands_over_to_checking_class() {
     // every operation of ContSet that hands over to a hook of the class is called once
     const ProbeSet P;
-    const Tensor I2 = Tensor({{1.0, 0.0}, {0.0, 1.0}}), v = Tensor({0.0, 0.0});
+    const Tensor I2 = Tensor({{1.0, 0.0}, {0.0, 1.0}}), v = test::vec({0.0, 0.0});
     Rng rng(1);
     static_cast<void>(P.center());
     static_cast<void>(P.interval());

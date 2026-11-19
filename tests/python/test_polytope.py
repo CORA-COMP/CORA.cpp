@@ -61,10 +61,6 @@ def point(*x):
     return np.array(x, dtype=float)
 
 
-def column(*x):
-    return np.array(x, dtype=float).reshape(-1, 1)
-
-
 # ===========================================  MAIN  =========================================== #
 
 
@@ -149,10 +145,10 @@ class Polytope(unittest.TestCase):
         T = triangle()
         for method in ("exact:supportFunc", "exact:vertices"):
             cz = T.con_zonotope(method)
-            self.assertTrue(cz.contains(column(0.5, 0.5)))
-            self.assertFalse(cz.contains(column(1.5, 1.5)))
+            self.assertTrue(cz.contains(point(0.5, 0.5)))
+            self.assertFalse(cz.contains(point(1.5, 1.5)))
         wide = cora.Interval(np.array([-1.0, -1.0]), np.array([3.0, 3.0]))
-        self.assertTrue(T.con_zonotope("exact:supportFunc", wide).contains(column(1.0, 0.5)))
+        self.assertTrue(T.con_zonotope("exact:supportFunc", wide).contains(point(1.0, 0.5)))
         with self.assertRaises(cora.errors.WrongValue):
             T.con_zonotope("nope")
         with self.assertRaises(cora.errors.SpecialError):

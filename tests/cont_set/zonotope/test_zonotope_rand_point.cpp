@@ -41,8 +41,9 @@ void rand_point_samples_the_set(const std::string &b) {
     const int n = 3, m = 4, N = 3000;
     const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
     const Tensor P = Z.rand_point(N, rng);
-    check(P.shape() == std::vector<int64_t>({n, N}), b + ": rand_point shape");
-    const std::vector<double> points = P.data(), c = Z.center().data();
+    check(P.shape() == std::vector<int64_t>({N, n}), b + ": rand_point shape");
+    // the points as CORA's columns (n, N), row-major
+    const std::vector<double> points = P.matrix_transpose().data(), c = Z.center().data();
 
     double worst_excess = -1e9, reached = 1e9;
     for (int k = 0; k < 20; ++k) {
@@ -74,7 +75,7 @@ void extreme_points_are_corners(const std::string &b) {
     cora::Rng rng(9);
     const int n = 3, m = 4, N = 40;
     const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
-    const std::vector<double> points = Z.rand_point(N, rng, "extreme").data();
+    const std::vector<double> points = Z.rand_point(N, rng, "extreme").matrix_transpose().data();
     const std::vector<double> c = Z.center().data(), G = Z.generators().data();
     double worst = 0.0;
     for (int j = 0; j < N; ++j) {

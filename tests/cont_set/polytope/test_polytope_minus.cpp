@@ -32,8 +32,8 @@ void shifts(const std::string &b) {
           b + ": vertices");
     check(close((test::square_h() - v).b(), {0.0, -1.0, 1.0, 2.0}), b + ": the operator");
     // the generic ContSet entry does the same
-    check(close(static_cast<const ContSet &>(test::square_h()).minus(v.expand_dims(-1))->center(),
-                {-0.5, -1.5}, 1e-8),
+    check(close(static_cast<const ContSet &>(test::square_h()).minus(v)->center(), {-0.5, -1.5},
+                1e-8),
           b + ": through ContSet");
 }
 

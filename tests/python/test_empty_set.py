@@ -76,8 +76,10 @@ class EmptySet(unittest.TestCase):
             cora.EmptySet.empty(-1)
 
     def test_center_points_and_support_function(self):
-        self.assertEqual(self.E.center.shape[-1], 0)
-        self.assertEqual(self.E.rand_point(3, cora.Rng(1)).shape[-1], 0)
+        # the center is NaN, there are no points
+        self.assertEqual(self.E.center.shape, (2,))
+        self.assertTrue(np.isnan(self.E.center).all())
+        self.assertEqual(self.E.rand_point(3, cora.Rng(1)).shape, (0, 2))
         self.assertEqual(self.E.support_function(np.array([1.0, 2.0])), -INF)
         # the interval of the empty set
         self.assertTrue(self.E.interval().is_bounded())
@@ -116,8 +118,8 @@ class EmptySet(unittest.TestCase):
         self.assertTrue(self.E.contains(cora.Interval.empty(2)))
         self.assertFalse(self.E.contains(Z))
         self.assertTrue(cora.contains(self.E, cora.Interval.empty(2)))
-        self.assertTrue(self.E.contains(np.zeros((2, 0))))
-        self.assertFalse(self.E.contains(np.zeros((2, 1))))
+        self.assertTrue(self.E.contains(np.zeros((0, 2))))
+        self.assertFalse(self.E.contains(np.zeros((1, 2))))
         with self.assertRaises(cora.errors.DimensionMismatch):
             self.E.contains(cora.EmptySet(3))
 

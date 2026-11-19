@@ -45,13 +45,14 @@ void zono_bundle_property(const std::string &b) {
     for (int k = 0; k < 3; ++k) {
         const ConZonotope cz = test::random_con_zonotope(rng, 3, 5, 2);
         const ZonoBundle bundle = cz.zono_bundle();
-        check(bundle.contains(test::sample_points(cz, rng, 15)), b + ": the points are inside");
+        check(bundle.contains(test::sample_points(cz, rng, 15).matrix_transpose()),
+              b + ": the points are inside");
         check(cz.contains(bundle.rand_point(8, rng, "standard"), "exact", 1e-6),
               b + ": the points of the bundle are in the set");
     }
     const ConZonotope hex = test::hexagon();
     check(hex.zono_bundle().contains(
-              Tensor::from_data({1, 1, 0, -1, -1, 0, 0, -1, -1, 0, 1, 1}, {2, 6})),
+              Tensor::from_data({1, 0, 1, -1, 0, -1, -1, 0, -1, 1, 0, 1}, {6, 2})),
           b + ": the corners of the hexagon");
 }
 

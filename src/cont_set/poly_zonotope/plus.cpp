@@ -5,7 +5,7 @@
 // those of this set; exact_plus shares equal identifiers.
 //
 // Syntax:   S = pZ.plus(Z);   S = pZ.plus(pZ2);
-// Inputs:   Z, I, v, pZ2 - a zonotope, a box, a point (n, 1) or a polynomial zonotope
+// Inputs:   Z, I, v, pZ2 - a zonotope, a box, a point (n) or a polynomial zonotope
 // Outputs:  S - the sum
 // See also: exact_plus
 //
@@ -13,7 +13,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -42,12 +42,10 @@ PolyZonotope PolyZonotope::plus(const Interval &I) const { return plus(I.zonotop
 PolyZonotope PolyZonotope::plus(const Tensor &v) const {
     detail::Entry entry;
     // a point moves the center
-    CORA_CHECK(v.ndim() == 2 && v.shape()[0] == dim() && v.shape()[1] == 1,
-               Error::dimension_mismatch, [&] {
-                   return "plus: the point must be a column of the dimension " +
-                          std::to_string(dim());
-               });
-    return {c_ + v.squeeze(-1), G_, GI_, E_, id_, detail::Normalized{}};
+    CORA_CHECK(v.ndim() == 1 && v.shape()[0] == dim(), Error::dimension_mismatch, [&] {
+        return "plus: the point must be a vector of the dimension " + std::to_string(dim());
+    });
+    return {c_ + v, G_, GI_, E_, id_, detail::Normalized{}};
 }
 
 PolyZonotope PolyZonotope::plus(const PolyZonotope &S) const {

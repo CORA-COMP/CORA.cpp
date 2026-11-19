@@ -65,7 +65,7 @@ bool aux_brkdc01() {
     for (int k = 0; k < 1000; ++k) {
         const ReachSet Rk = sys.reach(problem, a);
         sets.insert(sets.end(), Rk.time_interval.begin(), Rk.time_interval.end());
-        problem.initial_set = Rk.time_point.back().linear_map(resetA) + resetc;
+        problem.initial_set = Rk.time_point.back().linear_map(resetA) + resetc.squeeze(-1);
     }
     return aux_below(sets);
 }

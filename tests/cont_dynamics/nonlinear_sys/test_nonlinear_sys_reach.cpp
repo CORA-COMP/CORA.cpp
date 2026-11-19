@@ -87,7 +87,7 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
 
     cora::Rng rng(1);
     for (const std::string type : {"standard", "extreme"}) {
-        const Tensor x0 = X0.rand_point(30, rng, type);
+        const Tensor x0 = X0.rand_point(30, rng, type).matrix_transpose(); // columns (n, N)
         const std::vector<Tensor> x = sys.simulate({.initial_state = x0, .t_final = 2.0},
                                                    alg::RungeKutta4{.time_step = dt / 5});
         int outside = 0;

@@ -4,8 +4,8 @@
 // and directly for n = 1.
 //
 // Syntax:   x = Z.boundary_point(dir);   x = Z.boundary_point(dir, start);
-// Inputs:   dir - direction, a nonzero column (n, 1)
-//           start - a point of Z the ray starts at (default: the center)
+// Inputs:   dir - direction, a nonzero vector (n)
+//           start - a point (n) of Z the ray starts at (default: the center)
 // Outputs:  x - start + t dir for the largest t that stays in Z; not for a batch
 // See also: contains, support_function
 //
@@ -13,7 +13,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -57,7 +57,7 @@ double aux_exit_step(const HostZonotope &Z, const std::vector<double> &dir,
 
 /// The boundary point along dir from the center, which the entry with a start checks.
 Tensor aux_from_center(const Zonotope &Z, const Tensor &dir) {
-    return Z.boundary_point(dir, Z.center().expand_dims(-1)); // the center as a column
+    return Z.boundary_point(dir, Z.center());
 }
 
 } // namespace
@@ -73,12 +73,12 @@ Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
         return std::string("boundary_point: a linear program per zonotope; it supports a single "
                            "zonotope, not a batch");
     });
-    CORA_CHECK(is_column(dir, dim()) && dir.ndim() == 2, Error::dimension_mismatch, [&] {
-        return "boundary_point: dir must be a column of the dimension " + std::to_string(dim()) +
+    CORA_CHECK(is_vector(dir, dim()) && dir.ndim() == 1, Error::dimension_mismatch, [&] {
+        return "boundary_point: dir must be a vector of the dimension " + std::to_string(dim()) +
                " of the zonotope, got the shape " + shape_text(dir.shape());
     });
-    CORA_CHECK(is_column(start, dim()) && start.ndim() == 2, Error::dimension_mismatch, [&] {
-        return "boundary_point: start must be a column of the dimension " + std::to_string(dim()) +
+    CORA_CHECK(is_vector(start, dim()) && start.ndim() == 1, Error::dimension_mismatch, [&] {
+        return "boundary_point: start must be a vector of the dimension " + std::to_string(dim()) +
                " of the zonotope, got the shape " + shape_text(start.shape());
     });
     // a zero direction has no boundary point, a start outside no ray
@@ -91,10 +91,10 @@ Tensor Zonotope::boundary_point(const Tensor &dir, const Tensor &start) const {
         return std::string("boundary_point: start has to be a point of the zonotope");
     });
 
-    // in one dimension the zonotope is the segment c +- sum |G| (as columns)
-    const Tensor c = c_.expand_dims(-1);
+    // in one dimension the zonotope is the segment c +- sum |G|
+    const Tensor &c = c_;
     if (dim() == 1) {
-        const Tensor r = G_.abs().sum(-2, true);
+        const Tensor r = G_.abs().sum(-2);
         return d[0] < 0 ? c - r : c + r;
     }
     const HostZonotope Z = priv_host_zonotope(*this);

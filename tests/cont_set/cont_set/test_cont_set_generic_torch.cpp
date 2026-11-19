@@ -44,9 +44,9 @@ int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(41);
     const Tensor M = Tensor::from_data({1.0, 2.0, -1.0, 0.5, 1.5, 3.0}, {2, 3});
-    const Tensor p = Tensor::from_data({0.5, -1.0, 2.0}, {3, 1});
-    const Tensor c = Tensor::from_data({1.0, 2.0, 2.0}, {3, 1});
-    const Tensor d = Tensor::from_data({0.7}, {1, 1});
+    const Tensor p = Tensor::from_data({0.5, -1.0, 2.0}, {3});
+    const Tensor c = Tensor::from_data({1.0, 2.0, 2.0}, {3});
+    const Tensor d = Tensor::from_data({0.7}, {1}).squeeze(0);
     const auto zonotope = [](const Inputs &x) {
         return Zonotope(x[0].squeeze(-1), x[1].matrix_transpose());
     };
@@ -57,7 +57,7 @@ int main() {
     test::gradcheck(
         "enlarge",
         [&](const Inputs &x) {
-            return aux_parts(S(zonotope(x)).enlarge(Tensor::from_data({2.0, 0.5, 3.0}, {3, 1})));
+            return aux_parts(S(zonotope(x)).enlarge(Tensor::from_data({2.0, 0.5, 3.0}, {3})));
         },
         test::random_zonotope(3, 4));
     // gradients of minus and decompose

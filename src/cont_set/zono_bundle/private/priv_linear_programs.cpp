@@ -38,7 +38,7 @@ bool priv_con_zonotope_in_zonotope(const ConZonotope &A, const Zonotope &B, doub
     const Tensor &C = P.A();
     const std::vector<double> d = P.b().data();
     for (std::size_t k = 0; k < d.size(); ++k) {
-        const Tensor row = C.slice(-2, int64_t(k), int64_t(k) + 1).matrix_transpose();
+        const Tensor row = C.slice(-2, int64_t(k), int64_t(k) + 1).squeeze(-2);
         const double largest = inner.support_function_range(row).sup().item();
         if (!(largest <= d[k] || within_tol(largest, d[k], tol))) return false;
     }

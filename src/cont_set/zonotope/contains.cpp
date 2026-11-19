@@ -7,7 +7,7 @@
 // a batch.
 //
 // Syntax:   res = Z.contains(p);   res = Z.contains(S, "approx", tol);
-// Inputs:   p, S, I - points (n, N), a zonotope or a box of the dimension of Z
+// Inputs:   p, S, I - points (..., n), one per row, a zonotope or a box of the dimension of Z
 //           method - "exact" (default), "exact:venum", "exact:polymax", "approx" or "approx:st"
 //           tol - relaxes the points' norm and the flatness of Z; default: the repository tolerance
 // Outputs:  res - true if all points (S) are in Z; "approx" says true only when certain
@@ -149,9 +149,9 @@ std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const s
 /// stacked columns in the stacked zonotope (CORA's matZonotope.contains), type "exact" or "approx".
 bool aux_contains_matrices(const Zonotope &Z, const Tensor &M, const std::string &type,
                            double tol) {
-    // the points are the columns of the stacked matrices
+    // the points are the stacked matrices, one per row
     const Tensor matrices = M.ndim() == 2 ? M.expand_dims(0) : M;
-    const Tensor points = priv_stack_columns(matrices).squeeze(-1).matrix_transpose();
+    const Tensor points = priv_stack_columns(matrices).squeeze(-1);
     return Z.stacked().contains(points, type, tol);
 }
 
@@ -181,14 +181,15 @@ bool Zonotope::contains(const Tensor &p, const std::string &method, Tol tol_arg)
                    });
         return aux_contains_matrices(*this, p, method, tol);
     }
-    // points of a vector zonotope: columns (n, N)
-    CORA_CHECK(p.ndim() == 2 && p.shape()[0] == dim(), Error::dimension_mismatch, [&] {
-        return "contains: the points must be a matrix (" + std::to_string(dim()) +
-               ", N) of columns, got the shape " + shape_text(p.shape());
+    // points of a vector zonotope: rows (..., n), tested as CORA's columns (n, N)
+    CORA_CHECK(is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "contains: the points must be (..., " + std::to_string(dim()) +
+               "), one per row, got the shape " + shape_text(p.shape());
     });
     const auto refusal = aux_refusal(c_.ndim() != 1, method, true);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_contains_matrix(*this, p, tol);
+    return aux_contains_matrix(*this, p.reshape({p.numel() / dim(), dim()}).matrix_transpose(),
+                               tol);
 }
 
 bool Zonotope::contains(const Zonotope &S, const std::string &method, Tol tol_arg) const {

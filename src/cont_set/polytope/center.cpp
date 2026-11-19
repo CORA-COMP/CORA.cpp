@@ -8,7 +8,7 @@
 //
 // Syntax:   Tensor c = P.center();   Tensor c = P.center("avg");
 // Inputs:   P - polytope;  method - "chebyshev" (default) or "avg"
-// Outputs:  c - a column (n, 1)
+// Outputs:  c - a point (n)
 // See also: interval, Polytope::contains
 //
 // CORA: contSet/@polytope/center.m
@@ -19,7 +19,6 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
-#include "global/blocks.h"
 
 #include <cmath>
 #include <limits>
@@ -36,9 +35,9 @@ namespace {
 
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
-/// The tensor of the numbers as a column on the backend of the polytope's data.
+/// The tensor of the numbers as a point (n) on the backend of the polytope's data.
 Tensor aux_column(const Polytope &P, const Row &values) {
-    return priv_vector_tensor(P.is_h_rep() ? P.A() : P.V(), values).expand_dims(-1);
+    return priv_vector_tensor(P.is_h_rep() ? P.A() : P.V(), values);
 }
 
 /// The center of the empty set: NaN, as the empty box's (CORA's has no entries).
@@ -66,7 +65,7 @@ Tensor aux_center_avg(const Polytope &P) {
         const Rows points = priv_host_points(P.V());
         // of several vertices only the extreme ones count
         const Tensor V = points.size() > 1 ? P.V().take(priv_extreme_points(points), -2) : P.V();
-        return V.mean(-2, true).matrix_transpose();
+        return V.mean(-2);
     }
     const Rows vertices = priv_polytope_vertices(P);
     const int64_t n = P.dim();
@@ -141,7 +140,8 @@ Tensor Polytope::center(const std::string &method) const {
     const Tensor &like = is_h_rep() ? A_ : V_;
     const int64_t n = dim();
     // R^n has the origin as its center, a set without vertices none
-    if (priv_is_fullspace(*this)) return zeros_block(like, n, 1);
+    if (priv_is_fullspace(*this)) return like.zeros_like({n});
+
     if (priv_has_no_vertices(*this)) return aux_none(*this);
     if (n == 1) return aux_center_1d(*this);
     return method == "avg" ? aux_center_avg(*this) : aux_center_chebyshev(*this);

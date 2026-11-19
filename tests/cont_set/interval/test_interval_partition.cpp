@@ -49,7 +49,7 @@ void partition_covers_the_box(const std::string &b) {
     for (int trial = 0; trial < 10; ++trial) {
         const Interval I = Interval::generate_random(rng, 3);
         const std::vector<Interval> P = I.partition(3 + trial % 3);
-        const Tensor x = I.rand_point(40, rng);
+        const Tensor x = I.rand_point(40, rng).matrix_transpose();
         bool covered = true, inside = true;
         for (int k = 0; k < 40; ++k) {
             bool hit = false;

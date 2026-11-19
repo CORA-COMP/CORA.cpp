@@ -94,7 +94,7 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
     const PolyReachSet R = sys.reach({.initial_set = start(), .input_set = U, .t_final = 1.5},
                                      alg::PolyNonlinearReach{options(dt)});
     cora::Rng rng(1);
-    const Tensor x0 = start().rand_point(25, rng);
+    const Tensor x0 = start().rand_point(25, rng).matrix_transpose(); // columns (n, N)
     for (const double u : {-0.1, 0.0, 0.1}) {
         const std::vector<Tensor> x =
             sys.simulate({.initial_state = x0, .input = Tensor({{u}}), .t_final = 1.5},

@@ -89,7 +89,9 @@ class EmptyAndOrigin(unittest.TestCase):
         self.assertTrue(E.is_empty())
         self.assertEqual(E.dim, 3)
         self.assertEqual(E.r, -1.0)
-        self.assertEqual(E.center.shape, (3, 0))
+        # the center of the empty capsule is NaN
+        self.assertEqual(E.center.shape, (3,))
+        self.assertTrue(np.isnan(E.center).all())
         self.assertTrue(E.interval().is_empty())
         with self.assertRaises(cora.errors.WrongValue):
             cora.Capsule.empty(-1)
@@ -143,8 +145,8 @@ class Containment(unittest.TestCase):
         self.assertTrue(C.contains(np.array([0.5, 0.4])))
         self.assertTrue([0.0, 0.0] in C)
         self.assertFalse(C.contains(np.array([0.0, 0.6])))
-        self.assertTrue(C.contains(np.array([[0.0, 1.0], [0.0, 0.2]])))
-        self.assertFalse(C.contains(np.array([[0.0, 1.0], [0.0, 0.7]])))
+        self.assertTrue(C.contains(np.array([[0.0, 0.0], [1.0, 0.2]])))
+        self.assertFalse(C.contains(np.array([[0.0, 0.0], [1.0, 0.7]])))
         self.assertTrue(C.contains(np.array([0.0, 0.5001]), tol=1e-3))
         with self.assertRaises(cora.errors.DimensionMismatch):
             C.contains(np.array([0.0, 0.0, 0.0]))
@@ -190,13 +192,13 @@ class Combination(unittest.TestCase):
             C1.convex_hull(cora.Capsule(np.array([1.0])))
 
     def test_enclose_points(self):
-        line = cora.Capsule.enclose_points(np.array([[0.0, 1.0, 2.0], [0.0, 1.0, 2.0]]))
+        line = cora.Capsule.enclose_points(np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]))
         np.testing.assert_allclose(line.c, [1, 1])
         np.testing.assert_allclose(line.generator, [-1, -1])
         self.assertAlmostEqual(line.r, 0.0)
-        self.assertTrue(cora.Capsule.enclose_points(np.zeros((2, 0))).is_empty())
+        self.assertTrue(cora.Capsule.enclose_points(np.zeros((0, 2))).is_empty())
         rng = np.random.default_rng(11)
-        points = rng.standard_normal((3, 12))
+        points = rng.standard_normal((3, 12)).T
         C = cora.Capsule.enclose_points(points)
         self.assertTrue(C.contains(points))
         self.assertFalse(cora.Capsule(C.c, C.generator, C.r * 0.999).contains(points))

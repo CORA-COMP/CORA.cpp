@@ -45,7 +45,7 @@ class Box(cora.ContSet):
         return cora.Interval(self.c - self.r, self.c + self.r)
 
     def _rand_point(self, N, rng):
-        return self.c[:, None] + self.r[:, None] * (2 * np.random.default_rng(0).random((len(self.c), N)) - 1)
+        return self.c + self.r * (2 * np.random.default_rng(0).random((N, len(self.c))) - 1)
 
     def _project(self, dims):
         return Box(self.c[dims], self.r[dims])

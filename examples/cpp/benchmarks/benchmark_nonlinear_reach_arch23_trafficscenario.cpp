@@ -132,7 +132,7 @@ std::vector<double> aux_values(const std::vector<Expr> &e, const std::vector<dou
 std::vector<Polygon> aux_occupancy(const Body &body, const Zonotope &S, const Zonotope &vehicle) {
     const Zonotope X = S.project({3, 4, 1}).as<Zonotope>().reduce(8).cart_prod(vehicle);
     const std::vector<double> p = X.center().data();
-    const Zonotope D = X - X.center().expand_dims(-1);
+    const Zonotope D = X - X.center();
     const std::vector<double> f = aux_values(body.f, p), A = aux_values(body.A, p);
     const std::vector<double> q = aux_values(body.Q, p);
     std::vector<Tensor> Q = {matrix(5, 5, {q.begin(), q.begin() + 25}),
@@ -161,7 +161,7 @@ std::vector<Polygon> aux_occupancy(const Body &body, const Zonotope &S, const Zo
         rlo.push_back(rem.lo.item() / 6);
         rhi.push_back(rem.hi.item() / 6);
     }
-    const Zonotope res = (D.linear_map(matrix(2, 5, A)) + column(f) + D.quad_map(Q) * 0.5)
+    const Zonotope res = (D.linear_map(matrix(2, 5, A)) + vec(f) + D.quad_map(Q) * 0.5)
                              .plus(Interval(vec(rlo), vec(rhi)));
     return res.vertices();
 }
@@ -179,7 +179,7 @@ std::array<double, 4> aux_input_hull(const std::vector<std::vector<Zonotope>> &R
             const Zonotope diff(C.slice(-1, 0, 5) - C.slice(-1, 5, 10),
                                 G.slice(-1, 0, 5) - G.slice(-1, 5, 10));
             const Interval I =
-                (diff.linear_map(matrix(2, 5, c.K[i])) + column({c.u[i][0], c.u[i][1]})).interval();
+                (diff.linear_map(matrix(2, 5, c.K[i])) + vec({c.u[i][0], c.u[i][1]})).interval();
             const std::vector<double> l = I.inf().data(), h = I.sup().data();
             for (std::size_t k = 0; k < 2; ++k) {
                 lo[k] = std::min(lo[k], l[k]);

@@ -737,13 +737,13 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             RcontError.push_back(kNaN);
             RcontTpError.push_back(kNaN);
             if (std::abs(time_step - max_time_step_spec) < numerics::kTimeStepMatch)
-                set.Hstartp = params.R0.linear_map(*e_atkplus1) + set.Putotal;
+                set.Hstartp = params.R0.linear_map(*e_atkplus1) + set.Putotal.squeeze(-1);
             out.time_interval.emplace_back(std::nullopt);
             out.time_interval_error.push_back(kNaN);
             out.time_point.emplace_back(std::nullopt);
             out.time_point_error.push_back(kNaN);
         } else {
-            set.Hstartp = set.startset->linear_map(e_adtk) + set.Pu;
+            set.Hstartp = set.startset->linear_map(e_adtk) + set.Pu.squeeze(-1);
             set.enc = set.startset->linear_combination(*set.Hstartp);
             double Rc, Rtp;
             errs.full_errors(k, Rc, Rtp);

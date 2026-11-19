@@ -33,7 +33,7 @@ void plus_known(const std::string &b) {
         check(close(S.r(), {2.5}, 1e-14), b + ": r = 1 + 0.5 + |(1, 0)|");
     }
     // a vector shifts, a box shifts and widens by the radius of the box, a zonotope by its box
-    check(close(A.plus(column({1.0, 2.0})).c(), {1, 2}, 0), b + ": a vector");
+    check(close(A.plus(vec({1.0, 2.0})).c(), {1, 2}, 0), b + ": a vector");
     const Interval I(vec({0.0, 0.0}), vec({2.0, 4.0}));
     const Capsule with_box = A.plus(I);
     check(close(with_box.c(), {1, 2}, 0) && close(with_box.r(), {1.0 + std::sqrt(5.0)}, 1e-14),
@@ -61,7 +61,7 @@ void checks_and_their_switch() {
     const Capsule A(column({0.0, 0.0}), column({3.0, 4.0}), 1.0);
     check(test::raises([&] { A.plus(Capsule(column({1.0}))); }, Error::dimension_mismatch),
           "plus: dimension");
-    check(test::raises([&] { A.plus(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { A.plus(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "plus: vector");
     const Tensor on = A.plus(A).r();
     ChecksScope off(false);

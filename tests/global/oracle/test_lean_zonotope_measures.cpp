@@ -81,10 +81,10 @@ int main() {
 
     oracle::run("zonotope.enclosePoints", [&](oracle::Random &rnd) {
         for (const int n : {2, 3}) {
-            const Tensor points = rnd.matrix(n, 20);
+            const Tensor points = rnd.matrix(n, 20); // CORA's columns (n, 20) for the oracle
             // the oracle takes the orthogonal frame; both use the one of the identity here
             const Tensor U = points.eye_like(n);
-            oracle::check(Zonotope::enclose_points(points, U),
+            oracle::check(Zonotope::enclose_points(points.matrix_transpose(), U),
                           lean::Zonotope::enclose_points(points, U, "stursberg"));
         }
     });

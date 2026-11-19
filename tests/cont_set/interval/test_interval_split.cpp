@@ -48,7 +48,7 @@ void split_halves_cover_the_box(const std::string &b) {
         const auto [I1, I2] = I.split(n);
         check(I1.convex_hull(I2).isequal(I, 0.0), b + ": the hull of the halves is the box");
         check(I1 <= I && I2 <= I, b + ": the halves lie in the box");
-        const Tensor x = I.rand_point(20, rng);
+        const Tensor x = I.rand_point(20, rng).matrix_transpose();
         bool covered = true;
         for (int k = 0; k < 20; ++k) {
             const Tensor p = x.slice(-1, k, k + 1).squeeze(-1);

@@ -63,9 +63,8 @@ void other_operands_and_odd_counts(const std::string &b) {
     const Zonotope A = box(0, 1, 0, 1);
     const Interval I(vec({2.0, 0.0}), vec({3.0, 1.0}));
     check(close(A.unite(I).interval().sup(), std::vector<double>{3, 1}, 1e-9), b + ": a box");
-    check(
-        close(A.unite(test::column({5.0, 0.5})).interval().sup(), std::vector<double>{5, 1}, 1e-9),
-        b + ": a point");
+    check(close(A.unite(test::vec({5.0, 0.5})).interval().sup(), std::vector<double>{5, 1}, 1e-9),
+          b + ": a point");
     const Zonotope C = box(-4, -3, 0, 1);
     for (const char *method : {"linprog", "iterative", "parallelotope"}) {
         const Zonotope U = A.unite(std::vector<Zonotope>{box(2, 3, 0, 1), C}, method);

@@ -63,7 +63,7 @@ void points_of_the_intersection(const std::string &b) {
     const ZonoBundle R = bundle.intersect(Z);
     const Tensor points = test::bundle_points(bundle, rng, 20, common);
     for (int k = 0; k < 20; ++k) {
-        const Tensor p = points.slice(-1, k, k + 1);
+        const Tensor p = points.slice(-2, k, k + 1);
         check(test::in_every_member(R, p) == (test::in_every_member(bundle, p) && Z.contains(p)),
               b + ": membership of a sampled point");
     }

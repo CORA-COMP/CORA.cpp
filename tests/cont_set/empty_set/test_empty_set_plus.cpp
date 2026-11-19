@@ -24,7 +24,7 @@ namespace {
 
 void the_sum_is_empty(const std::string &b) {
     const EmptySet E(2);
-    check(E.plus(test::column({1.0, 2.0})).dim() == 2, b + ": a translation");
+    check(E.plus(test::vec({1.0, 2.0})).dim() == 2, b + ": a translation");
     check(E.plus(E).dim() == 2, b + ": with itself");
     Rng rng(12);
     for (int trial = 0; trial < 10; ++trial) {
@@ -37,7 +37,7 @@ void the_sum_is_empty(const std::string &b) {
 /// A set or a vector of another dimension is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const EmptySet E(2);
-    check(test::raises([&] { E.plus(test::column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { E.plus(test::vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "plus: a vector of 3 dimensions");
     check(test::raises([&] { E.plus(EmptySet(3)); }, Error::dimension_mismatch),
           "plus: a set of 3 dimensions");

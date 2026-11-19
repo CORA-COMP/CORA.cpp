@@ -103,15 +103,15 @@ const Expr &LevelSet::gradient(int64_t i, int64_t j) const {
 
 Tensor LevelSet::fun_han(const Tensor &x) const {
     detail::Entry entry;
-    CORA_CHECK(x.ndim() >= 2 && x.shape()[std::size_t(x.ndim() - 2)] == dim(),
-               Error::dimension_mismatch,
-               [&] { return "fun_han: the points must have " + std::to_string(dim()) + " rows"; });
-    // one tensor per state, all of one shape, then one row per constraint
-    const int rows = int(x.ndim()) - 2;
+    CORA_CHECK(is_vector(x, dim()), Error::dimension_mismatch, [&] {
+        return "fun_han: the points must be (..., " + std::to_string(dim()) +
+               "), one per row, got the shape " + shape_text(x.shape());
+    });
+    // one tensor per state, all of one shape, then one entry per constraint
     std::vector<Tensor> state;
     state.reserve(std::size_t(dim()));
-    for (int64_t j = 0; j < dim(); ++j) state.push_back(x.slice(rows, j, j + 1));
-    return Tensor::concat(Expr::eval_tensor(eq_, state), rows);
+    for (int64_t j = 0; j < dim(); ++j) state.push_back(x.slice(-1, j, j + 1));
+    return Tensor::concat(Expr::eval_tensor(eq_, state), -1);
 }
 
 Interval LevelSet::fun_han(const Interval &I) const {

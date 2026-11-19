@@ -54,7 +54,7 @@ DaeLinearized NonlinDASys::linearize(const Tensor &x0, const Tensor &y0,
     const Tensor B_lin = J.B - CF_inv.matmul(J.E);
     // the input of the affine system: B_lin (U - center), the constant part in u_const
     Zonotope BU = Zonotope(x0.zeros_like({n_}), x0.zeros_like({0, n_}));
-    if (m_ > 0 && U) BU = (*U - u_center).linear_map(B_lin);
+    if (m_ > 0 && U) BU = (*U - u_center.squeeze(-1)).linear_map(B_lin);
     return {x_star, y_star, u_star, g0, J.D, J.E, F_inv, CF_inv, LinearSys(A_lin), BU, f0};
 }
 

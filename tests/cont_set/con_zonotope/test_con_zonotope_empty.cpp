@@ -13,6 +13,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,8 +31,9 @@ void empty_set_data() {
     check(ConZonotope::empty().dim() == 0, "empty: the dimension 0 by default");
     check(E.interval().is_empty(), "empty: its box is empty");
     check(!E.is_full_dim(), "empty: it has no interior");
-    check(!E.contains(column({0.0, 0.0, 0.0})), "empty: it contains no point");
-    check(E.center().shape() == Shape{3, 0}, "empty: its center has no column");
+    check(!E.contains(vec({0.0, 0.0, 0.0})), "empty: it contains no point");
+    check(E.center().shape() == Shape{3} && std::isnan(E.center().data()[0]),
+          "empty: its center is NaN, as the empty box's");
     check(Set(E).is<ConZonotope>(), "empty: a Set holds it");
 }
 

@@ -16,6 +16,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -65,7 +66,7 @@ void split_along_a_generator(const std::string &b) {
 }
 
 void split_by_a_direction(const std::string &b) {
-    const auto [one, two] = example().split(column({1.0, 1.0}));
+    const auto [one, two] = example().split(vec({1.0, 1.0}));
     check(close(one.center(), std::vector<double>{-5.25, -0.25}, 1e-14) &&
               close(two.center(), std::vector<double>{-2.75, 2.25}, 1e-14),
           b + ": the centers of CORA's example");
@@ -75,23 +76,23 @@ void split_by_a_direction(const std::string &b) {
                     std::vector<double>{-1.25, -1.25, -2.5, 2.5, -2.5, 2.5, -2.5, 2.5}, 1e-14),
           b + ": the generators of CORA's example");
     // the plane normal to aux_dir minus its part along orig_dir: (1, 0) and (1, 1) give (0, 1)
-    const auto [p, q] = example().split(column({1.0, 0.0}), column({1.0, 1.0}));
-    const auto [r, s] = example().split(column({0.0, 1.0}));
+    const auto [p, q] = example().split(vec({1.0, 0.0}), vec({1.0, 1.0}));
+    const auto [r, s] = example().split(vec({0.0, 1.0}));
     check(close(p.center(), r.center(), 1e-14) && close(q.generators(), s.generators(), 1e-14),
           b + ": the perpendicular direction");
 }
 
 void split_by_a_halfspace(const std::string &b) {
-    const auto pieces = example().split(column({1.0, -1.0}), -2.0);
+    const auto pieces = example().split(vec({1.0, -1.0}), -2.0);
     check(pieces.size() == 2, b + ": the plane meets the set");
     check(close(pieces[0].center(), std::vector<double>{-7, 4}, 1e-14) &&
               close(pieces[1].center(), std::vector<double>{0.5, -3.5}, 1e-14) &&
               close(pieces[0].generators(),
                     std::vector<double>{4.5, -4.5, -0.5, -0.5, 0.5, 0.5, 1.5, 1.5}, 1e-14),
           b + ": CORA's example");
-    check(example().split(column({1.0, 0.0}), 100.0).size() == 1,
+    check(example().split(vec({1.0, 0.0}), 100.0).size() == 1,
           b + ": a plane that misses: the set");
-    check(example().split(column({1.0, 0.0}), -100.0).size() == 1,
+    check(example().split(vec({1.0, 0.0}), -100.0).size() == 1,
           b + ": a plane beyond the other side");
 }
 
@@ -101,20 +102,20 @@ void pieces_cover_the_set(const std::string &b) {
     cora::Rng rng(91);
     const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Tensor points = Z.rand_point(40, rng);
-    const Tensor normal = column({1.0, -2.0, 0.5}), orig = column({0.0, 1.0, 0.0});
+    const Tensor normal = vec({1.0, -2.0, 0.5}), orig = vec({0.0, 1.0, 0.0});
     const std::vector<std::pair<Zonotope, Zonotope>> cuts{Z.split(1, 4), Z.split(normal),
-                                                          Z.split(orig, column({1.0, 1.0, 0.0}))};
+                                                          Z.split(orig, vec({1.0, 1.0, 0.0}))};
     for (const auto &[first, second] : cuts)
         for (int k = 0; k < 40; ++k) {
-            const Tensor p = points.slice(-1, k, k + 1);
+            const Tensor p = points.slice(-2, k, k + 1);
             check(first.contains(p, "exact", 1e-9) || second.contains(p, "exact", 1e-9),
                   b + ": a point of Z is in neither piece");
         }
-    const Tensor lift = column({1.0, 1.0, 1.0});
-    const auto planes = Z.split(lift, Z.center().expand_dims(-2).matmul(lift).item() + 0.1);
+    const Tensor lift = vec({1.0, 1.0, 1.0});
+    const auto planes = Z.split(lift, Z.center().multiply(lift).sum().item() + 0.1);
     check(planes.size() == 2, b + ": a plane near the center cuts the set");
     for (int k = 0; k < 40; ++k) {
-        const Tensor p = points.slice(-1, k, k + 1);
+        const Tensor p = points.slice(-2, k, k + 1);
         // a point of Z is in one piece
         check(planes[0].contains(p, "exact", 1e-9) || planes[1].contains(p, "exact", 1e-9),
               b + ": a point of Z is in neither piece of the halfspace cut");
@@ -138,22 +139,20 @@ void checks_and_their_switch() {
     check(test::raises([&] { Z.split(-1); }, Error::wrong_value), "split: a negative coordinate");
     check(test::raises([&] { Z.split(0, 0); }, Error::wrong_value), "split: an order below 1");
     check(test::raises([&] { Z.split(5, 1); }, Error::wrong_value), "split: a generator beyond");
-    check(test::raises([&] { Z.split(column({0.0, 0.0})); }, Error::wrong_value),
-          "split: dir zero");
-    check(test::raises([&] { Z.split(column({1.0, 0.0, 0.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { Z.split(vec({0.0, 0.0})); }, Error::wrong_value), "split: dir zero");
+    check(test::raises([&] { Z.split(vec({1.0, 0.0, 0.0})); }, Error::dimension_mismatch),
           "split: dir of the wrong size");
-    check(
-        test::raises([&] { Z.split(column({1.0, 2.0}), column({2.0, 4.0})); }, Error::wrong_value),
-        "split: parallel directions");
-    check(test::raises([&] { Z.split(column({1.0, 0.0, 0.0}), 1.0); }, Error::dimension_mismatch),
+    check(test::raises([&] { Z.split(vec({1.0, 2.0}), vec({2.0, 4.0})); }, Error::wrong_value),
+          "split: parallel directions");
+    check(test::raises([&] { Z.split(vec({1.0, 0.0, 0.0}), 1.0); }, Error::dimension_mismatch),
           "split: a of the wrong size");
-    check(test::raises([&] { Z.split(column({0.0, 0.0}), 1.0); }, Error::wrong_value),
+    check(test::raises([&] { Z.split(vec({0.0, 0.0}), 1.0); }, Error::wrong_value),
           "split: a zero");
     const Zonotope batch = Zonotope::stack({Z, Z});
-    check(test::raises([&] { batch.split(column({1.0, 1.0})); }, Error::not_supported),
+    check(test::raises([&] { batch.split(vec({1.0, 1.0})); }, Error::not_supported),
           "split: batch dir");
     // a batch splits by coordinate
-    check(test::raises([&] { batch.split(column({1.0, 1.0}), 0.0); }, Error::not_supported),
+    check(test::raises([&] { batch.split(vec({1.0, 1.0}), 0.0); }, Error::not_supported),
           "split: batch halfspace");
     check(batch.split(0).first.center().shape() == std::vector<int64_t>({2, 2}),
           "split: a batch splits by coordinate");

@@ -38,6 +38,9 @@
 #include "cora/global/oracle/empty_set.h"
 #include "oracle_testing.h"
 
+#include <algorithm>
+#include <cmath>
+
 using namespace cora;
 using test::oracle::check;
 using test::oracle::Random;
@@ -109,10 +112,12 @@ int main() {
     test::oracle::run("emptySet.isFullDim", each_dimension([](Random &, int64_t n) {
                           check(EmptySet(n).is_full_dim(), lean::EmptySet(n).is_full_dim());
                       }));
-    test::oracle::run("emptySet.center", each_dimension([](Random &, int64_t n) {
-                          check(EmptySet(n).center().shape().back() == 0,
-                                !lean::EmptySet(n).center().has_value());
-                      }));
+    test::oracle::run(
+        "emptySet.center", each_dimension([](Random &, int64_t n) {
+            const std::vector<double> c = EmptySet(n).center().data();
+            check(std::all_of(c.begin(), c.end(), [](double x) { return std::isnan(x); }),
+                  !lean::EmptySet(n).center().has_value());
+        }));
     test::oracle::run("emptySet.vertices", [](Random &) {
         const lean::Tensor V = lean::EmptySet(2).vertices();
         check(EmptySet(2).vertices().empty() && V.rows() == 2, V.cols() == 0);

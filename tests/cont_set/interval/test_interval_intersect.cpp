@@ -71,7 +71,7 @@ void intersect_is_the_set_intersection(const std::string &b) {
         const Interval I1 = Interval::generate_random(rng, 3),
                        I2 = Interval::generate_random(rng, 3);
         const Interval R = I1.intersect(I2);
-        const Tensor x = I1.rand_point(10, rng);
+        const Tensor x = I1.rand_point(10, rng).matrix_transpose();
         for (int k = 0; k < 10; ++k) {
             const Tensor p = x.slice(-1, k, k + 1).squeeze(-1);
             const bool in_both = I2.contains(p, 0.0),

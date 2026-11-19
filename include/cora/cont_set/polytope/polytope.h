@@ -135,7 +135,7 @@ class Polytope : public ContSet {
     Polytope box() const;
 
     /// The center: "chebyshev" (default), the center of the largest ball, or "avg", the mean of
-    /// the extreme vertices, a column (n, 1). R^n gives the origin, the empty set NaN. Not a batch.
+    /// the extreme vertices, a point (n). R^n gives the origin, the empty set NaN. Not a batch.
     using ContSet::center;
     Tensor center(const std::string &method) const;
 

@@ -65,7 +65,8 @@ bool Capsule::contains(const Tensor &p, Tol tol_arg) const {
     const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "contains");
     const detail::Refusal refusal = priv_points_refusal(*this, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_points_inside(*this, p, tol);
+    // a point, or N points (..., N, n) per member, as CORA's columns (..., n, N)
+    return aux_points_inside(*this, p.ndim() == 1 ? p.expand_dims(-1) : p.matrix_transpose(), tol);
 }
 
 bool Capsule::contains(const Capsule &S, Tol tol_arg) const {
@@ -90,7 +91,7 @@ bool Capsule::contains(const Zonotope &Z, Tol tol_arg) const {
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a convex set holds a zonotope exactly if it holds its corners
-    return aux_points_inside(*this, Z.compact().corners(), tol);
+    return aux_points_inside(*this, Z.compact().corners().matrix_transpose(), tol);
 }
 
 bool Capsule::contains(const Interval &I, Tol tol_arg) const {
@@ -107,7 +108,7 @@ bool Capsule::contains(const Interval &I, Tol tol_arg) const {
     const Zonotope Z = I.zonotope();
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_points_inside(*this, Z.compact().corners(), tol);
+    return aux_points_inside(*this, Z.compact().corners().matrix_transpose(), tol);
 }
 
 } // namespace cora

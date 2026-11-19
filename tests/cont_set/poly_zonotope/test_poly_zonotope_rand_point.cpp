@@ -39,7 +39,7 @@ int main() {
         Rng rng(1);
         const PolyZonotope P = known();
         const Tensor x = P.rand_point(50, rng);
-        check(x.shape() == std::vector<int64_t>({2, 50}), b + ": the shape");
+        check(x.shape() == std::vector<int64_t>({50, 2}), b + ": the shape");
         check(test::inside(P.zonotope(), x), b + ": the points are in the enclosure");
     });
 
@@ -53,7 +53,7 @@ int main() {
     check(
         [&] {
             Rng r(2);
-            return known().rand_point(3, r).shape()[1] == 3;
+            return known().rand_point(3, r).shape()[0] == 3;
         }(),
         "rand_point: valid with the checks off");
     return test::finish("poly_zonotope rand_point");

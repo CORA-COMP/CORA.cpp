@@ -75,7 +75,7 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
             row.push_back(Tensor::from_data(data, {n, n}));
         }
     const Zonotope R = Z.cubic_map(T);
-    const Tensor points = Z.rand_point(100, rng);
+    const Tensor points = Z.rand_point(100, rng).matrix_transpose(); // as columns (n, N)
     for (int s = 0; s < 100; ++s) {
         const Tensor x = points.slice(-1, s, s + 1);
         std::vector<double> z(2, 0.0);

@@ -5,14 +5,14 @@
 //
 // Syntax:   val = E.norm();
 // Inputs:   -
-// Outputs:  val - the largest 2-norm, (..., 1, 1)
+// Outputs:  val - the largest 2-norm, (...)
 // See also: radius, ContSet::norm
 //
 // CORA: contSet/@ellipsoid/norm_.m
 // CORA authors: Victor Gassmann
 // Authors:       Claude Sonnet 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -31,11 +31,12 @@ namespace cora {
 Tensor Ellipsoid::norm_impl(Tensor::Norm type, const std::string &) const {
     if (type != Tensor::Norm::two)
         CORA_FAIL(Error::no_exact_alg, "norm: the ellipsoid has only the Euclidean norm");
-    if (priv_is_empty(*this)) return q_.full_like({1, 1}, -std::numeric_limits<double>::infinity());
+    if (priv_is_empty(*this))
+        return q_.full_like(Shape{}, -std::numeric_limits<double>::infinity());
     if (q_.abs().max().item() != 0.0)
         CORA_FAIL(Error::not_supported, "norm: not yet implemented for a nonzero center");
     // the eigenvalues ascend, so the last is the largest
-    return Q_.eigh().first.max(static_cast<int>(Q_.ndim()) - 2, true).sqrt();
+    return Q_.eigh().first.max(static_cast<int>(Q_.ndim()) - 2).squeeze(-1).sqrt();
 }
 
 } // namespace cora

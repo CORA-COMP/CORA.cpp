@@ -115,7 +115,7 @@ void a_weak_nonlinearity_and_a_linear_system(const std::string &b) {
     check_times(R, T, b);
     // the corners of the start set, simulated to the end
     cora::Rng rng(5);
-    const Tensor x0 = X0.rand_point(40, rng, "extreme");
+    const Tensor x0 = X0.rand_point(40, rng, "extreme").matrix_transpose(); // columns (n, N)
     const std::vector<Tensor> x =
         sys.simulate({.initial_state = x0, .t_final = T}, alg::RungeKutta4{.time_step = 1e-3});
     int outside = 0;

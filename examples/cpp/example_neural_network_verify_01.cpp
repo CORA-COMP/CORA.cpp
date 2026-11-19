@@ -56,19 +56,19 @@ int main() {
 
     // sampled outputs must lie in the output set: check them against its support function
     cora::Rng rng(0);
-    const Tensor outputs = nn.evaluate(X.rand_point(500, rng, "standard"));
+    const Tensor outputs = nn.evaluate(X.rand_point(500, rng, "standard").matrix_transpose());
     const std::vector<double> y = outputs.data();
     int outside = 0;
     for (int k = 0; k < 20; ++k) {
         std::vector<double> d(2);
         rng.normal(d.data(), d.size(), 1.0);
-        const double bound = Y.support_function(Tensor({d[0], d[1]})).data()[0];
+        const double bound = Y.support_function(Tensor::from_data({d[0], d[1]}, {2})).data()[0];
         for (int j = 0; j < 500; ++j) outside += d[0] * y[j] + d[1] * y[500 + j] > bound + 1e-9;
     }
     std::cout << "sampled outputs outside the output set: " << outside << " of 10000 checks\n";
 
     // the largest first output over the output set, from the support function along (1, 0)
-    const double largest = Y.support_function(Tensor({1.0, 0.0})).data()[0];
+    const double largest = Y.support_function(Tensor::from_data({1.0, 0.0}, {2})).data()[0];
     std::cout << "largest first output: " << largest
               << (largest < 2.0 ? " (verified < 2)" : " (not verified)") << "\n";
 

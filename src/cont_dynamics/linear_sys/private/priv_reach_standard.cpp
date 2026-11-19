@@ -65,12 +65,12 @@ Zonotope StandardSteps::next() {
     if (k_++ == 0) {
         // First step: the affine solution of the time point and of the interval, without C_input.
         const Zonotope &X = time_point_;
-        Htp_ = X.linear_map(e_adt_) + in_.Pu;
+        Htp_ = X.linear_map(e_adt_) + in_.Pu.squeeze(-1);
         Hti_ = X.linear_combination(Htp_).plus(X.linear_map(F_));
     } else {
         // later steps map both affine solutions and add the time-varying input of one more step
-        Htp_ = (Htp_.linear_map(e_adt_) + in_.Pu).reduce(zonotope_order_);
-        Hti_ = (Hti_.linear_map(e_adt_) + in_.Pu).reduce(zonotope_order_);
+        Htp_ = (Htp_.linear_map(e_adt_) + in_.Pu.squeeze(-1)).reduce(zonotope_order_);
+        Hti_ = (Hti_.linear_map(e_adt_) + in_.Pu.squeeze(-1)).reduce(zonotope_order_);
         PUnext_ = PUnext_.linear_map(e_adt_);
         PU_ = PU_.plus(PUnext_).reduce(zonotope_order_);
     }

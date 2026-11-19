@@ -4,7 +4,7 @@
 //
 // Syntax:   R = S.enlarge(factor);   R = S.enlarge(2.0);
 // Inputs:   S - set of dimension n
-//           factor - a number or a column (..., n, 1) of one factor per coordinate
+//           factor - a number or a vector (..., n) of one factor per coordinate
 // Outputs:  R - c + F (S - c) for the center c and F = diag(factor), in the class of S
 // See also: minus, linear_map, Interval::enlarge
 //
@@ -12,7 +12,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/cont_set.h"
@@ -28,8 +28,8 @@ namespace cora {
 
 Set ContSet::enlarge(const Tensor &factor) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(factor, dim()) || factor.numel() == 1, Error::dimension_mismatch, [&] {
-        return "enlarge: the factor must be a number or a column of the set's dimension " +
+    CORA_CHECK(is_vector(factor, dim()) || factor.numel() == 1, Error::dimension_mismatch, [&] {
+        return "enlarge: the factor must be a number or a vector of the set's dimension " +
                std::to_string(dim()) + ", got the shape " + shape_text(factor.shape());
     });
     entry.release();
@@ -39,13 +39,14 @@ Set ContSet::enlarge(const Tensor &factor) const {
 Set ContSet::enlarge(double factor) const {
     detail::Entry entry;
     entry.release();
-    return enlarge_impl(center_impl().full_like({1, 1}, factor));
+    return enlarge_impl(center_impl().full_like({1}, factor));
 }
 
 Set ContSet::enlarge_impl(const Tensor &factor) const {
     const Tensor c = center_impl();
     // S = S - c; S = S .* factor; S = S + c
-    const Tensor scale = c.ones_like().multiply(factor).diag();
+    const Tensor scale = c.ones_like().multiply(factor).expand_dims(-1).diag();
+
     return minus(c)->linear_map_impl(scale)->translate_impl(c);
 }
 

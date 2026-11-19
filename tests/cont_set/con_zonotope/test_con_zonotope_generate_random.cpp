@@ -30,7 +30,7 @@ int main() {
                   plain.generators().matrix_transpose().shape() == Shape{2, 3},
               b + ": no constraints");
         const ConZonotope centered =
-            ConZonotope::generate_random(rng, std::nullopt, Tensor::from_data({1.0, 2.0}, {2, 1}));
+            ConZonotope::generate_random(rng, std::nullopt, Tensor::from_data({1.0, 2.0}, {2}));
         check(centered.dim() == 2 && centered.nr_generators() == 4, b + ": the center gives n");
         const ConZonotope any = ConZonotope::generate_random(rng);
         check(any.dim() >= 1 && any.dim() <= 10, b + ": the defaults");

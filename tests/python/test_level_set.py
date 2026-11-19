@@ -48,15 +48,15 @@ class Constraints(unittest.TestCase):
         self.assertEqual(ls.dim, 2)
         self.assertEqual(ls.num_equations, 1)
         self.assertEqual(ls.comp_ops, ["=="])
-        points = np.array([[0.0, 1.0, 2.0], [0.0, 0.0, 0.0]])
-        np.testing.assert_allclose(ls.fun_han(points), [[-1.0, 0.0, 3.0]])
+        points = np.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]])
+        np.testing.assert_allclose(ls.fun_han(points), [[-1.0], [0.0], [3.0]])
         self.assertAlmostEqual(ls.gradient(0, 0).eval([3.0, 4.0]), 6.0)
         F = ls.fun_han(box([0, 0], [1, 1]))
         np.testing.assert_allclose([F.inf[0], F.sup[0]], [-1.0, 1.0])
 
     # the empty set and the whole space
     def test_empty_and_inf(self):
-        pts = np.array([[0.0], [0.0]])
+        pts = np.array([[0.0, 0.0]])
         np.testing.assert_allclose(cora.LevelSet.empty(2).fun_han(pts), [[1.0]])
         np.testing.assert_allclose(cora.LevelSet.inf(2).fun_han(pts), [[-1.0]])
 
@@ -73,7 +73,7 @@ class Queries(unittest.TestCase):
     def test_contains_and_intersecting(self):
         disc = cora.LevelSet(circle(), 2, "<=")
         self.assertTrue(disc.contains(np.array([0.5, 0.0])))
-        self.assertFalse(disc.contains(np.array([[2.0], [0.0]])))
+        self.assertFalse(disc.contains(np.array([[2.0, 0.0]])))
         self.assertTrue(disc.contains(box([-0.5, -0.5], [0.5, 0.5])))
         self.assertFalse(disc.contains(box([0, 0], [1, 1])))
         circ = cora.LevelSet(circle(), 2, "==")
@@ -110,7 +110,7 @@ class Operations(unittest.TestCase):
         self.assertEqual(ineq.comp_ops, ["<="])
         lifted = cora.LevelSet(circle(), 2, "==").lift(3, [2, 0])
         self.assertEqual(lifted.dim, 3)
-        np.testing.assert_allclose(lifted.fun_han(np.array([[0.6], [7.0], [0.8]])), [[0.0]], atol=1e-12)
+        np.testing.assert_allclose(lifted.fun_han(np.array([[0.6, 7.0, 0.8]])), [[0.0]], atol=1e-12)
         with self.assertRaises(cora.errors.Noops):
             disc.interval()
         self.assertIn("levelSet", disc.display())

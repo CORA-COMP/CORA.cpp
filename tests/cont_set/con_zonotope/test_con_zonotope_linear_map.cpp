@@ -43,7 +43,8 @@ void linear_map_property(const std::string &b) {
         const ConZonotope cz = test::random_con_zonotope(rng, 3, 4, 2);
         const Tensor M = Tensor::like(cz.c().expand_dims(-1), {1, 2, 0, -1, 0.5, 3}, {2, 3});
         const ConZonotope r = cz.linear_map(M);
-        check(r.contains(M.matmul(test::sample_points(cz, rng, 20))), b + ": images are inside");
+        check(r.contains(M.matmul(test::sample_points(cz, rng, 20)).matrix_transpose()),
+              b + ": images are inside");
     }
 }
 

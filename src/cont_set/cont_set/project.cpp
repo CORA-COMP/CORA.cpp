@@ -9,9 +9,10 @@
 // CORA authors: Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
+#include "cont_set/cont_set/private/priv_matrix_set.h"
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -26,9 +27,8 @@ namespace cora {
 
 Set ContSet::project(const std::vector<int64_t> &dims) const {
     detail::Entry entry;
-    // only a box is a matrix; a bundle's center would cost linear programs
-    const bool matrix_set = id_ == ClassId::interval || id_ == ClassId::custom;
-    CORA_CHECK(!matrix_set || center().shape().back() <= 1, Error::not_supported, [] {
+    // only a box is projected here as a matrix: a matrix zonotope refuses in its own project
+    CORA_CHECK(id_ != ClassId::interval || !priv_is_matrix_set(*this), Error::not_supported, [] {
         return std::string("project: needs a set of vectors, not an interval matrix");
     });
     CORA_CHECK(!dims.empty(), Error::wrong_value,

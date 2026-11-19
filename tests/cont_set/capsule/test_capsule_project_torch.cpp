@@ -23,7 +23,7 @@ int main() {
         [](const Inputs &x) { return test::parts(test::capsule(x).project({2, 0}).as<Capsule>()); },
         test::random_capsule_parts(3));
     std::vector<torch::Tensor> d = test::random_capsule_parts(3);
-    d.push_back(torch::randn({3, 1}, torch::kDouble));
+    d.push_back(torch::randn({3}, torch::kDouble));
     test::gradcheck(
         "support_function",
         [](const Inputs &x) { return Inputs{test::capsule(x).support_function(x[3])}; }, d);

@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -54,7 +55,7 @@ int main() {
         check(close(S.center(), {2.0, 1.0}, 0) && S.independent_generators().shape()[0] == 2 &&
                   S.num_dependent() == P.num_dependent(),
               b + ": a zonotope joins the independent part");
-        check(close(P.plus(column({1.0, 1.0})).center(), {2.0, 1.0}, 0), b + ": a point");
+        check(close(P.plus(vec({1.0, 1.0})).center(), {2.0, 1.0}, 0), b + ": a point");
         // a polynomial zonotope brings factors of its own
         const PolyZonotope PP = P.plus(P);
         check(PP.num_factors() == 4 && PP.num_dependent() == 4,
@@ -62,14 +63,13 @@ int main() {
         check(plus(P, Z).is<PolyZonotope>(), b + ": through the registry");
         plus_property(b);
     });
-    check(test::raises([] { known().plus(column({1.0})); }, Error::dimension_mismatch),
-          "plus: point");
+    check(test::raises([] { known().plus(vec({1.0})); }, Error::dimension_mismatch), "plus: point");
     check(test::raises(
               [] { known().plus(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({0, 1})))); },
               Error::dimension_mismatch),
           "plus: set");
     ChecksScope off(false);
-    check(known().plus(column({1.0, 1.0})).dim() == 2, "plus: valid with the checks off");
+    check(known().plus(vec({1.0, 1.0})).dim() == 2, "plus: valid with the checks off");
     return test::finish("poly_zonotope plus");
 }
 

@@ -133,8 +133,7 @@ class PolytopeMaps(unittest.TestCase):
         self.assertEqual(P.dim, 2)
         points = P.rand_point(5, rng)
         for k in range(5):
-            # rand_point still gives CORA's columns (n, N)
-            self.assertTrue(P.contains(points[:, k], tol=1e-9))
+            self.assertTrue(P.contains(points[k], tol=1e-9))
         self.assertTrue(P.zonotope().contains(points))
 
     # the pieces of the difference cover what lies outside the subtrahend

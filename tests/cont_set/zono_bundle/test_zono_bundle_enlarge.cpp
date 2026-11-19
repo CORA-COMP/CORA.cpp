@@ -13,6 +13,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,7 +30,7 @@ void scaling(const std::string &b) {
     check(close((twice.zonotopes()[0]).generators().matrix_transpose(), {2.0, 0.0, 0.0, 2.0}, 0) &&
               close((twice.zonotopes()[1]).center(), Z2.center(), 0),
           b + ": a number scales every generator");
-    const ZonoBundle per_row = Set(bundle)->enlarge(column({1.0, 3.0})).as<ZonoBundle>();
+    const ZonoBundle per_row = Set(bundle)->enlarge(vec({1.0, 3.0})).as<ZonoBundle>();
     check(close((per_row.zonotopes()[1]).generators().matrix_transpose(), {1.0, 6.0}, 0),
           b + ": a column scales rows");
     check(close((per_row.zonotopes()[0]).center(), Z1.center(), 0), b + ": the center stays");
@@ -40,7 +41,7 @@ void scaling(const std::string &b) {
 void members_about_their_centers(const std::string &b) {
     Rng rng(29);
     const ZonoBundle bundle = test::random_zono_bundle(rng, 3, 3, 4);
-    const Tensor factor = column({0.5, 2.0, 3.0});
+    const Tensor factor = vec({0.5, 2.0, 3.0});
     const ZonoBundle R = Set(bundle)->enlarge(factor).as<ZonoBundle>();
     for (std::size_t i = 0; i < 3; ++i)
         check(close((R.zonotopes()[i]).generators(),
@@ -52,11 +53,11 @@ void members_about_their_centers(const std::string &b) {
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({Z, Z});
-    check(test::raises([&] { Set(bundle)->enlarge(column({1.0, 2.0, 3.0})); },
+    check(test::raises([&] { Set(bundle)->enlarge(vec({1.0, 2.0, 3.0})); },
                        Error::dimension_mismatch),
           "enlarge: the factor has the wrong size");
     ChecksScope off(false);
-    check(Set(bundle)->enlarge(column({1.0, 2.0})).as<ZonoBundle>().parallel_sets() == 2,
+    check(Set(bundle)->enlarge(vec({1.0, 2.0})).as<ZonoBundle>().parallel_sets() == 2,
           "enlarge: the same with the checks off");
 }
 

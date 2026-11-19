@@ -80,7 +80,7 @@ class ZonotopeConversions(unittest.TestCase):
         Z = cora.Zonotope.generate_random(rng, 3)
         P = Z.simplex()
         self.assertEqual(P.A.shape, (4, 3))
-        self.assertTrue(P.contains(Z.rand_point(20, rng, "extreme").T))
+        self.assertTrue(P.contains(Z.rand_point(20, rng, "extreme")))
         M = zonotope([1.0, 2.0], [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]]).mat_zonotope()
         self.assertEqual((M.elem_rank, M.center.shape, M.generators.shape), (2, (2, 1), (3, 2, 1)))
         np.testing.assert_array_equal(M.stacked().generators, [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]])

@@ -26,9 +26,9 @@ void center_known(const std::string &b) {
     const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
     check(close(E.center(), {1, 2}, 0), b + ": q");
     const Ellipsoid batch(Tensor::ones({2, 2}), Tensor::zeros({2, 2, 2}));
-    check(close(batch.center(), Tensor::ones({2, 2, 1}), 0), b + ": a batch");
+    check(close(batch.center(), Tensor::ones({2, 2}), 0), b + ": a batch");
     const Tensor none = Ellipsoid::empty(2).center();
-    check(none.shape() == Shape{2, 1} && std::isnan(none.data()[0]), b + ": the empty ellipsoid");
+    check(none.shape() == Shape{2} && std::isnan(none.data()[0]), b + ": the empty ellipsoid");
 }
 
 /// Stated property: the center is in the ellipsoid, at norm 0.
@@ -36,8 +36,8 @@ void center_property(const std::string &b) {
     cora::Rng rng(11);
     for (int k = 0; k < 6; ++k) {
         const Ellipsoid E = test::random_ellipsoid(rng, 3, k % 2 == 0 ? -1 : 2);
-        check(E.contains(E.center().squeeze(-1), "exact"), b + ": the center is in the set");
-        check(test::finite_near(E.ellipsoid_norm(E.center().squeeze(-1) - E.q()), 0.0, 1e-12),
+        check(E.contains(E.center(), "exact"), b + ": the center is in the set");
+        check(test::finite_near(E.ellipsoid_norm(E.center() - E.q()), 0.0, 1e-12),
               b + ": at norm zero");
     }
 }

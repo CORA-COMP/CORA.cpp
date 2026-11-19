@@ -55,7 +55,7 @@ inline double axis_distance(const cora::Capsule &C, const std::vector<double> &p
     return best;
 }
 
-/// N points of the capsule as columns (n, N): a point of the axis plus a point of the ball.
+/// N points of the capsule as rows (N, n): a point of the axis plus a point of the ball.
 inline cora::Tensor sample_points(const cora::Capsule &C, cora::Rng &rng, int N) {
     const int64_t n = C.dim();
     const std::vector<double> c = C.c().data(), g = C.generator().data();
@@ -70,9 +70,9 @@ inline cora::Tensor sample_points(const cora::Capsule &C, cora::Rng &rng, int N)
         // a point of the ball of radius r (not uniform in volume)
         const double scale = r * radius[0] / std::sqrt(length);
         for (int64_t i = 0; i < n; ++i)
-            points[i * N + k] = c[i] + t[0] * g[i] + scale * direction[i];
+            points[k * n + i] = c[i] + t[0] * g[i] + scale * direction[i];
     }
-    return cora::Tensor::from_data(points, {n, int64_t(N)});
+    return cora::Tensor::from_data(points, {int64_t(N), n});
 }
 
 } // namespace test

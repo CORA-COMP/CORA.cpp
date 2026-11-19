@@ -34,7 +34,7 @@ void center_and_dim_of_any_set(const std::string &b) {
     check(test::close(B.center(), {1.0, 0.0}), b + ": the center of a zonotope");
     const Interval batch = Interval::stack({I, I});
     const ContSet &C = batch;
-    check(C.center().shape() == std::vector<int64_t>({2, 3, 1}) && C.dim() == 3,
+    check(C.center().shape() == std::vector<int64_t>({2, 3}) && C.dim() == 3,
           b + ": a batch has a center per member");
     check(test::UnregisteredSet().dim() == 2, b + ": the dimension of a custom set");
 }

@@ -40,7 +40,7 @@ namespace {
 /// The rows [from, to) of a matrix.
 Tensor aux_rows(const Tensor &T, int64_t from, int64_t to) { return T.slice(0, from, to); }
 
-/// The bundle with every member shifted by `offset` (n, 1): the same shape, far from the original.
+/// The bundle with every member shifted by `offset` (n): the same shape, far from the original.
 ZonoBundle aux_shifted(const ZonoBundle &bundle, const Tensor &offset) {
     std::vector<Zonotope> members;
     for (const Zonotope &Z : bundle.zonotopes()) members.push_back(Z + offset);
@@ -87,7 +87,7 @@ int main() {
     });
     oracle::run("zonoBundle.enlarge", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 3, 4);
-        const Tensor factor = rnd.vector(3);
+        const Tensor factor = rnd.point(3);
         // enlarge a bundle
         oracle::check(Set(a)->enlarge(factor).as<ZonoBundle>(),
                       lean::ZonoBundle(a).enlarge(factor));
@@ -102,7 +102,7 @@ int main() {
     });
     oracle::run("zonoBundle.isIntersecting", [](oracle::Random &rnd) {
         const ZonoBundle a = rnd.zono_bundle(3, 2, 4), b = rnd.zono_bundle(3, 2, 3);
-        const ZonoBundle far = aux_shifted(b, Tensor::from_data({100.0, 100.0, 100.0}, {3, 1}));
+        const ZonoBundle far = aux_shifted(b, Tensor::from_data({100.0, 100.0, 100.0}, {3}));
         oracle::check(a.is_intersecting(b, "approx", 0.0), lean::ZonoBundle(a).is_intersecting(b));
         oracle::check(a.is_intersecting(far, "approx", 0.0),
                       lean::ZonoBundle(a).is_intersecting(far));

@@ -128,7 +128,7 @@ int main() {
             // the point after the box, as the oracle's op takes them
             const Interval I = rnd.box(s.n);
             oracle::check("plus I", P.plus(I), aux_lean(r).plus(I));
-            const Tensor v = rnd.vector(s.n);
+            const Tensor v = rnd.point(s.n);
             oracle::check("plus v", P.plus(v), aux_lean(r).plus(v));
         }
     });

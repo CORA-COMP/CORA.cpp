@@ -27,7 +27,7 @@ namespace {
 void enclosures(const std::string &b) {
     for (const Polytope &P : {test::square_h(), test::square_v(), test::triangle_h()}) {
         const Zonotope Z = P.zonotope();
-        check(Z.dim() == 2 && Z.contains(test::vertices_of(P).matrix_transpose(), "exact", 1e-8),
+        check(Z.dim() == 2 && Z.contains(test::vertices_of(P), "exact", 1e-8),
               b + ": it contains the vertices");
     }
     // a point is a zonotope without generators' volume
@@ -42,8 +42,7 @@ void properties(const std::string &b) {
     bool contained = true;
     for (int n = 2; n <= 4; ++n) {
         const Polytope P = test::random_polytope(rng, n, n + 2);
-        contained = contained &&
-                    P.zonotope().contains(test::vertices_of(P).matrix_transpose(), "exact", 1e-7);
+        contained = contained && P.zonotope().contains(test::vertices_of(P), "exact", 1e-7);
     }
     check(contained, b + ": it contains the vertices");
 }

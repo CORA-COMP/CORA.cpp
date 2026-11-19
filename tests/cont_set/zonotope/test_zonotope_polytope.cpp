@@ -33,9 +33,7 @@ void facets_bound_the_zonotope(const std::string &b) {
         const Polytope P = Z.polytope();
         check(P.A().shape()[1] == n && P.A().shape()[0] % 2 == 0,
               b + ": halfspaces in " + std::to_string(n) + "D");
-        // the zonotope's random points are CORA's columns, the polytope's points rows
-        check(P.contains(Z.rand_point(30, rng, "extreme").matrix_transpose(), "exact",
-                         numerics::kPolytopeFacet) &&
+        check(P.contains(Z.rand_point(30, rng, "extreme"), "exact", numerics::kPolytopeFacet) &&
                   P.contains(Z.center()),
               b + ": the zonotope is inside, " + std::to_string(n) + "D");
         const Tensor outside = Z.center() + Z.generators().abs().sum(-2) * 1.1 + 1.0;

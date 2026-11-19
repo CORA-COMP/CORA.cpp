@@ -69,7 +69,8 @@ DaeStep priv_dae_lin_reach(const NonlinDASys &sys, const Zonotope &R, const Tens
     const int64_t n = sys.dim(), p = sys.constraint_dim(), m = sys.input_dim();
     // the affine system and its step from R - x*
     const DaeLinearized lin = sys.linearize(R.center().expand_dims(-1), y0, U, u_trans, dt);
-    AffineStep step = priv_affine_step(lin.sys, R - lin.x_star, lin.U, lin.u_const, dt, eta);
+    AffineStep step =
+        priv_affine_step(lin.sys, R - lin.x_star.squeeze(-1), lin.U, lin.u_const, dt, eta);
     const Zonotope &R_ti = step.time_interval;
     // the centered input set (CORA's params.U); without one, the input 0
     const std::optional<Zonotope> U0 = priv_centered_inputs(R.center().expand_dims(-1), m, U);
@@ -107,8 +108,8 @@ DaeStep priv_dae_lin_reach(const NonlinDASys &sys, const Zonotope &R, const Tens
     // the solution of the error moves both sets, which return to the coordinates of the state
     const Zonotope R_error =
         priv_particular_time_varying(lin.sys, step.taylor, step.blocks, err->set, dt, eta)[0];
-    return {(R_ti + lin.x_star) + R_error, (step.time_point + lin.x_star) + R_error, err->algebraic,
-            bound_x, bound_y};
+    return {(R_ti + lin.x_star.squeeze(-1)) + R_error,
+            (step.time_point + lin.x_star.squeeze(-1)) + R_error, err->algebraic, bound_x, bound_y};
 }
 
 } // namespace cora

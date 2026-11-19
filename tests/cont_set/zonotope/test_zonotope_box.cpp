@@ -16,6 +16,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,7 +30,7 @@ void box_of_a_known_zonotope(const std::string &b) {
     const Zonotope B = Z.box();
     check(close(B.center(), Z.center(), 0), b + ": the center stays");
     check(close(B.generators(), std::vector<double>{4.5, 0, 0, 2.5}, 0), b + ": diag(sum |G|)");
-    const Zonotope batch = Zonotope::stack({Z, Z + column({1.0, 1.0})}).box();
+    const Zonotope batch = Zonotope::stack({Z, Z + vec({1.0, 1.0})}).box();
     check(batch.generators().shape() == std::vector<int64_t>({2, 2, 2}), b + ": batch shape");
 }
 

@@ -30,8 +30,8 @@ void an_invertible_a_integrates_in_closed_form(const std::string &b) {
           b + ": the end of the step");
     check(P.time_point.nr_generators() == 0, b + ": exact, no remainder");
     // the enclosure holds the origin, the end of the step and the curvature of the input
-    check(P.time_interval.contains(test::column({0.0, 0.0})), b + ": the origin");
-    check(P.time_interval.contains(P.time_point.center().expand_dims(-1)), b + ": the end");
+    check(P.time_interval.contains(test::vec({0.0, 0.0})), b + ": the origin");
+    check(P.time_interval.contains(P.time_point.center()), b + ": the end");
 }
 
 /// The double integrator is singular: x' = x2 + 0, with x2' = u, the series ends after A^1.
@@ -45,8 +45,8 @@ void a_singular_a_sums_the_series(const std::string &b) {
     check(support(P.input_curvature, {-1, 0}) > 1e-4 &&
               std::abs(support(P.input_curvature, {0, 1})) < 1e-15,
           b + ": the curvature");
-    check(P.time_interval.contains(test::column({0.0, 0.0})) &&
-              P.time_interval.contains(P.time_point.center().expand_dims(-1)),
+    check(P.time_interval.contains(test::vec({0.0, 0.0})) &&
+              P.time_interval.contains(P.time_point.center()),
           b + ": the enclosure");
 }
 

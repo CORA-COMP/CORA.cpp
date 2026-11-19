@@ -42,7 +42,8 @@ void project_property(const std::string &b) {
         const ConZonotope cz = test::random_con_zonotope(rng, 4, 5, 2);
         const ConZonotope r = cz.project({3, 1}).as<ConZonotope>();
         const Tensor points = test::sample_points(cz, rng, 20);
-        check(r.contains(points.take({3, 1}, 0)), b + ": projections are inside");
+        check(r.contains(points.take({3, 1}, 0).matrix_transpose()),
+              b + ": projections are inside");
     }
 }
 

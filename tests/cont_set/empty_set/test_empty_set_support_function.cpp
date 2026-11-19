@@ -28,13 +28,12 @@ const double kInf = std::numeric_limits<double>::infinity();
 void the_support_function_is_minus_infinity(const std::string &b) {
     const EmptySet E(2);
     check(test::support(E, {1.0, 2.0}) == -kInf, b + ": -Inf");
-    const Tensor batch = Tensor::from_data({1, 0, 0, 1, 1, 1}, {3, 2, 1});
+    const Tensor batch = Tensor::from_data({1, 0, 0, 1, 1, 1}, {3, 2});
     const Tensor rho = E.support_function(batch);
-    check(rho.shape() == std::vector<int64_t>({3, 1, 1}) && rho.min().item() == -kInf &&
+    check(rho.shape() == std::vector<int64_t>({3}) && rho.min().item() == -kInf &&
               rho.max().item() == -kInf,
           b + ": a batch of three directions");
-    check(EmptySet(0).support_function(Tensor::zeros({0, 1})).data()[0] == -kInf,
-          b + ": dimension 0");
+    check(EmptySet(0).support_function(Tensor::zeros({0})).data()[0] == -kInf, b + ": dimension 0");
 }
 
 /// The empty set lies in every set, so its support function bounds nothing above that of any set
@@ -54,7 +53,7 @@ void the_empty_set_lies_below_every_set(const std::string &b) {
 /// A direction of the wrong dimension is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const EmptySet E(2);
-    check(test::raises([&] { E.support_function(test::column({1.0, 2.0, 3.0})); },
+    check(test::raises([&] { E.support_function(test::vec({1.0, 2.0, 3.0})); },
                        Error::dimension_mismatch),
           "support_function: a direction of 3 dimensions");
     ChecksScope off(false);

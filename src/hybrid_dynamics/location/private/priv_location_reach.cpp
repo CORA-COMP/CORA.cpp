@@ -114,7 +114,7 @@ class BundleSteps {
         const Tensor &c = sys.c();
         Zonotope Uc = U ? *U : Zonotope(c.zeros_like({m}), c.zeros_like({0, m}));
         const Tensor u_trans = Uc.center().expand_dims(-1);
-        Uc = Uc - u_trans;
+        Uc = Uc - Uc.center();
         mappings_.emplace(priv_mappings(sys, Uc, u_trans, *param_alg_));
     }
 
@@ -293,7 +293,7 @@ Zonotope priv_state_input(const Location &loc, const std::optional<Zonotope> &U)
     if (!U || !loc.B()) return Zonotope(loc.c().squeeze(-1), loc.c().zeros_like({0, n}));
     const Tensor &B = *loc.B();
     // B U, then the constant input c, as CORALean's inputSetFloat
-    return U->linear_map(B) + loc.c();
+    return U->linear_map(B) + loc.c().squeeze(-1);
 }
 
 // The reach ---------------------------------------------------------------------------------------

@@ -30,9 +30,9 @@ void the_support_function_is_infinite_unless_the_direction_is_zero(const std::st
     check(test::support(F, {1.0, 0.0, 0.0}) == kInf, b + ": along an axis");
     check(test::support(F, {0.0, -2.0, 1e-300}) == kInf, b + ": a tiny entry still counts");
     check(test::support(F, {0.0, 0.0, 0.0}) == 0.0, b + ": the zero direction gives 0 (CORALean)");
-    const Tensor batch = Tensor::from_data({1, 0, 0, 0, 0, 0, 0, 1, 1}, {3, 3, 1});
+    const Tensor batch = Tensor::from_data({1, 0, 0, 0, 0, 0, 0, 1, 1}, {3, 3});
     const Tensor rho = F.support_function(batch);
-    check(rho.shape() == std::vector<int64_t>({3, 1, 1}) && rho.data()[0] == kInf &&
+    check(rho.shape() == std::vector<int64_t>({3}) && rho.data()[0] == kInf &&
               rho.data()[1] == 0.0 && rho.data()[2] == kInf,
           b + ": a batch of three directions");
 }
@@ -53,7 +53,7 @@ void the_whole_space_lies_above_every_set(const std::string &b) {
 /// A direction of the wrong dimension is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const Fullspace F(2);
-    check(test::raises([&] { F.support_function(test::column({1.0, 2.0, 3.0})); },
+    check(test::raises([&] { F.support_function(test::vec({1.0, 2.0, 3.0})); },
                        Error::dimension_mismatch),
           "support_function: a direction of 3 dimensions");
     ChecksScope off(false);

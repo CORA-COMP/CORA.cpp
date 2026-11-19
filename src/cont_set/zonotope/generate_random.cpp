@@ -16,7 +16,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -87,10 +87,10 @@ CORA_FROM_NUMBERS Zonotope Zonotope::generate_random(Rng &rng, std::optional<int
     if (dimension)
         n = *dimension;
     else if (center)
-        n = center->size(-2);
+        n = center->size(-1);
     else
         n = priv_random_dimension(rng);
-    const Shape vector{n, 1};
+    const Shape vector{n};
     CORA_CHECK(!center || center->shape() == vector, Error::wrong_value, [&] {
         return "generate_random: the center must be a vector of the dimension " + std::to_string(n);
     });
@@ -99,7 +99,7 @@ CORA_FROM_NUMBERS Zonotope Zonotope::generate_random(Rng &rng, std::optional<int
     if (!center) rng.normal(c.data(), c.size(), 10.0);
     // drawn as CORA's columns (n, m), kept as rows, on the backend of the center or the current
     const std::vector<double> G = aux_generators(n, m, distribution, rng);
-    if (center) return {center->squeeze(-1), Tensor::like(*center, G, {n, m}).matrix_transpose()};
+    if (center) return {*center, Tensor::like(*center, G, {n, m}).matrix_transpose()};
     return {Tensor::from_data(c, {n}), Tensor::from_data(G, {n, m}).matrix_transpose()};
 }
 

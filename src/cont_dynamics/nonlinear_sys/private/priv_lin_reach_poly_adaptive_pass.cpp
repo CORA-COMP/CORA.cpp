@@ -53,7 +53,7 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     if (!series) return std::nullopt;
 
     // the start set relative to x*, and the static error over it
-    const PolyZonotope Rdelta = R.plus(xs_t * -1.0);
+    const PolyZonotope Rdelta = R.plus(xs_t.squeeze(-1) * -1.0);
     const PolyStatic S = priv_precomp_stat_error_adaptive(sys, xs, U, alg.zeta_z, Rdelta);
     const Zonotope Vsz = S.Vstat.zonotope();
 
@@ -65,7 +65,7 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
             for (std::size_t i = 0; i < adm.size(); ++i) ebox.lo[i] = -adm[i];
             const auto window = priv_poly_window(*series, Vbase + priv_box_zonotope(like, ebox),
                                                  Rdelta, alg.zeta_z);
-            const Zonotope Rmax = (Rdelta.zonotope() + window.second.zonotope()) + xs_t;
+            const Zonotope Rmax = (Rdelta.zonotope() + window.second.zonotope()) + xs_t.squeeze(-1);
             Verror =
                 priv_abstr_err_poly_adaptive(sys, xs, Rmax, S.Zdelta, window.second, U, alg.zeta_z);
             return priv_norm_mag(priv_zonotope_box(*Verror + Vsz));
@@ -96,7 +96,13 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     const Vec error_radius = priv_row_sums(Vdyn);
     std::vector<char> gzero(static_cast<std::size_t>(n));
     for (std::size_t i = 0; i < gzero.size(); ++i) gzero[i] = error_radius[i] <= 0;
-    return PolyAdaptivePass{Rti.plus(xs_t), Rtp.plus(xs_t), J.A, xs, true_error, abstrerr, gzero};
+    return PolyAdaptivePass{Rti.plus(xs_t.squeeze(-1)),
+                            Rtp.plus(xs_t.squeeze(-1)),
+                            J.A,
+                            xs,
+                            true_error,
+                            abstrerr,
+                            gzero};
 }
 
 } // namespace cora

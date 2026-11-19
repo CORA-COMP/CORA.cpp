@@ -3,7 +3,7 @@
 // Not the enlargement of the intersection about a common center.
 //
 // Syntax:   Set R = bundle.enlarge(factor);
-// Inputs:   factor - a number or a column (..., n, 1): the scaling of every coordinate
+// Inputs:   factor - a number or a vector (..., n): the scaling of every coordinate
 // Outputs:  R - the bundle of the enlarged members
 // See also: ContSet::enlarge
 //

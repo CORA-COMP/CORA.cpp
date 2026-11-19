@@ -49,12 +49,12 @@ void maps_every_set_by_c(const std::string &b) {
               Y.time_point.size() == R.time_point.size(),
           b + ": the number of sets");
     const std::vector<double> d{0.7, -1.1};
-    const Tensor Ctd = in.C.matrix_transpose().matmul(test::column(d));
+    const Tensor Ctd = in.C.matrix_transpose().matmul(test::column(d)).squeeze(-1);
     for (std::size_t k = 0; k < R.time_interval.size(); ++k) {
         check(close(Y.time_interval[k].center().expand_dims(-1),
                     in.C.matmul(R.time_interval[k].center().expand_dims(-1))),
               b + ": the center of a step");
-        check(close(Y.time_interval[k].support_function(test::column(d)),
+        check(close(Y.time_interval[k].support_function(test::vec(d)),
                     R.time_interval[k].support_function(Ctd)),
               b + ": the support of a step along C'd");
     }

@@ -200,7 +200,7 @@ class QueriesAndSampling(unittest.TestCase):
         zB = two_zonotopes()
         for kind in ("standard", "extreme"):
             points = zB.rand_point(6, rng, kind)
-            self.assertEqual(points.shape, (2, 6))
+            self.assertEqual(points.shape, (6, 2))
             self.assertTrue(zB.contains(points))
         self.assertTrue(zB.contains(zB.rand_point(3, rng)))
         # the pieces are cut at the middle of the box [-1, 2] x [-1, 1]

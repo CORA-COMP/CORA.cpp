@@ -9,9 +9,10 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
+#include "cont_set/cont_set/private/priv_matrix_set.h"
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/set.h"
@@ -26,7 +27,7 @@ namespace cora {
 
 std::vector<Polygon> ContSet::vertices() const {
     detail::Entry entry;
-    CORA_CHECK(dim() == 2 && center().shape().back() <= 1, Error::not_supported, [&] {
+    CORA_CHECK(dim() == 2 && !priv_is_matrix_set(*this), Error::not_supported, [&] {
         return "vertices: needs a two-dimensional set of vectors, this one has " +
                std::to_string(dim()) + " dimensions; project it first, e.g. S.project({0, 1})";
     });

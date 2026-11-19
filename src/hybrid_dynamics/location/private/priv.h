@@ -78,7 +78,7 @@ bool priv_meets(const Region &R, const Set &S);
 /// constraints, a level set by the range of one constraint over the whole space.
 bool priv_region_empty(const Region &R);
 
-/// Whether the point c (n, 1) lies in the region, up to 100 eps (CORA's contains_ 'exact').
+/// Whether the point c (n) lies in the region, up to 100 eps (CORA's contains_ 'exact').
 bool priv_region_contains(const Region &R, const Tensor &c);
 
 /// Whether the set may meet the polytope of C: no row lies strictly beyond it (CORALean's test,

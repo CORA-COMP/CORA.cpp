@@ -4,7 +4,7 @@
 //
 // Syntax:   cZres = cz.plus(S);   cZres = cz.plus(v);   cZres = cz + S;
 // Inputs:   S - a constrained zonotope, a zonotope or a box of the dimension of cz
-//           v - a column (..., n, 1)
+//           v - a point (..., n)
 // Outputs:  cZres - exact: the centers add, the generators of both join
 // See also: linear_map, Zonotope::plus
 //
@@ -12,7 +12,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -47,12 +47,11 @@ ConZonotope ConZonotope::plus(const Interval &I) const { return aux_sum(*this, C
 
 ConZonotope ConZonotope::plus(const Tensor &v) const {
     detail::Entry entry;
-    CORA_CHECK(v.ndim() >= 2 && v.shape().back() == 1 && v.shape()[v.ndim() - 2] == dim(),
-               Error::dimension_mismatch, [&] {
-                   return "plus: the point must be a column of " + std::to_string(dim()) +
-                          " entries, got the shape " + shape_text(v.shape());
-               });
-    return {c_.expand_dims(-1) + v, G_, F_};
+    CORA_CHECK(is_vector(v, dim()), Error::dimension_mismatch, [&] {
+        return "plus: the point must be a vector of " + std::to_string(dim()) +
+               " entries, got the shape " + shape_text(v.shape());
+    });
+    return {c_ + v, G_, F_};
 }
 
 Set ConZonotope::translate_impl(const Tensor &v) const { return plus(v); }

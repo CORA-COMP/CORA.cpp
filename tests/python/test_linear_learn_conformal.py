@@ -32,7 +32,7 @@ with cora.backend("torch"):
 
 
 def trajectories(count, seed):
-    return PENDULUM.simulate(X0.rand_point(count, cora.Rng(seed)), time_step=0.1, t_final=2.0)
+    return PENDULUM.simulate(X0.rand_point(count, cora.Rng(seed)).T, time_step=0.1, t_final=2.0)
 
 
 def scores(trajectories, inf, sup):

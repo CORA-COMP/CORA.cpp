@@ -9,8 +9,8 @@
 // decided as stated (docs/cora-differences.md). The empty box is contained in every level set.
 //
 // Syntax:   res = ls.contains(points, tol);   res = ls.contains(I, tol);
-// Inputs:   points - states as columns (n, N)
-//           I - a box (n, 1)
+// Inputs:   points - states as rows (..., n)
+//           I - a box (n)
 //           tol - the tolerance
 // Outputs:  res - true if all points (the box) satisfy every constraint
 // See also: is_intersecting, fun_han
@@ -70,15 +70,16 @@ bool aux_box_holds(CompOp op, double lo, double hi, double tol) {
 bool LevelSet::contains(const Tensor &points, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, points.dtype(), "contains");
-    CORA_CHECK(points.ndim() == 2 && points.shape()[0] == dim(), Error::dimension_mismatch, [&] {
-        return "contains: the points must be a matrix with " + std::to_string(dim()) + " rows";
+    CORA_CHECK(is_vector(points, dim()), Error::dimension_mismatch, [&] {
+        return "contains: the points must be (..., " + std::to_string(dim()) +
+               "), one per row, got the shape " + shape_text(points.shape());
     });
-    // the values per constraint (rows) and point (columns), row-major
+    // the values per point (rows) and constraint (columns), row-major
     const std::vector<double> v = fun_han(points).data();
-    const auto cols = std::size_t(points.shape()[1]);
-    for (std::size_t i = 0; i < eq_.size(); ++i)
-        for (std::size_t j = 0; j < cols; ++j)
-            if (!aux_point_holds(ops_[i], v[i * cols + j], tol)) return false;
+    const std::size_t m = eq_.size(), count = m == 0 ? 0 : v.size() / m;
+    for (std::size_t i = 0; i < m; ++i)
+        for (std::size_t j = 0; j < count; ++j)
+            if (!aux_point_holds(ops_[i], v[j * m + i], tol)) return false;
     return true;
 }
 

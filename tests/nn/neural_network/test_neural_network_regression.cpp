@@ -120,7 +120,8 @@ void the_regression_enclosure_holds_the_outputs(const std::string &b) {
     // the supports of both sets along random directions bound the outputs of sampled points
     int violations = 0;
     for (const std::string type : {"standard", "extreme"}) {
-        const std::vector<double> y = nn.evaluate(X.rand_point(200, rng, type)).data();
+        const std::vector<double> y =
+            nn.evaluate(X.rand_point(200, rng, type).matrix_transpose()).data();
         for (int k = 0; k < 10; ++k) {
             const std::vector<double> d = test::random_direction(rng, 2);
             const double bound = test::support(Y, d), bound_poly = test::support(Q.zonotope(), d);

@@ -6,7 +6,7 @@
 // Syntax:   val = S.norm();   val = S.norm(type, mode);
 // Inputs:   S - set
 //           type - one, two (default), inf or fro; mode - "ub" (default), "exact" or "ub_convex"
-// Outputs:  val - the bound, (..., 1, 1); -Inf for the empty set
+// Outputs:  val - the bound, (...); -Inf for the empty set
 // See also: Interval::norm, Zonotope::norm
 //
 // CORA: contSet/@contSet/norm.m
@@ -14,7 +14,7 @@
 // CORA authors: Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"

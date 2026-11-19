@@ -74,7 +74,9 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
         const ReachSet R = sys.reach({.initial_set = X0, .t_final = t_final},
                                      test::lin::algorithm(algorithm, dt, 8));
         for (const bool extreme : {false, true}) {
-            const Tensor start = X0.rand_point(N, rng, extreme ? "extreme" : "standard");
+            // the start points as the columns (n, N) of the simulation
+            const Tensor start =
+                X0.rand_point(N, rng, extreme ? "extreme" : "standard").matrix_transpose();
             const std::vector<Tensor> x = sys.simulate({.initial_state = start, .t_final = t_final},
                                                        alg::Exact{.time_step = dt / refine});
             double worst = 1e9;

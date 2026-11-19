@@ -76,7 +76,7 @@ def random_set(rng, n, m, p):
 
 
 def sample(cZ, rng, count):
-    """Points of a set made by random_set, as columns (n, count)."""
+    """Points of a set made by random_set, as rows (count, n)."""
     G, A, b, c = cZ.generators, cZ.A, cZ.b, cZ.c
     p, m = A.shape
     points = []
@@ -85,7 +85,7 @@ def sample(cZ, rng, count):
         xi[:p] = b - A[:, p:] @ xi[p:]
         if np.all(np.abs(xi) <= 1):
             points.append(c + xi @ G)
-    return np.array(points).T
+    return np.array(points)
 
 
 # -===========================================  MAIN  ===========================================- #
@@ -130,7 +130,7 @@ class ConZonotope(unittest.TestCase):
         self.assertEqual(E.dim, 3)
         self.assertTrue(is_empty_box(E.interval()))
         self.assertFalse(E.is_full_dim())
-        self.assertEqual(E.center.shape[-1], 0)
+        self.assertTrue(np.isnan(E.center).all())
         self.assertTrue(E.is_bounded())
         self.assertTrue(segment().is_bounded())
         self.assertEqual(cora.ConZonotope.empty().dim, 0)
@@ -222,7 +222,7 @@ class ConZonotope(unittest.TestCase):
     def test_contains(self):
         S = segment()
         self.assertTrue(S.contains(np.array([0.5, 0.5])))
-        self.assertTrue(S.contains(np.array([[0.5, 1.0], [0.5, 0.0]])))
+        self.assertTrue(S.contains(np.array([[0.5, 0.5], [1.0, 0.0]])))
         self.assertFalse(S.contains(np.array([0.5, 0.6])))
         self.assertTrue(S.contains(cora.Zonotope(np.array([0.5, 0.5]), np.array([[0.25, -0.25]]))))
         self.assertFalse(S.contains(cora.Interval(np.array([0.0, 0.0]), np.array([1.0, 1.0]))))
@@ -367,10 +367,11 @@ class ConZonotope(unittest.TestCase):
         A = random_set(rng, 2, 3, 1)
         B = random_set(rng, 2, 3, 1)
         Q = [np.array([[1.0, 0.5], [-1.0, 2.0]]), np.array([[0.0, 1.0], [1.0, 0.0]])]
-        x, y = sample(A, rng, 10), sample(B, rng, 10)
-        image = np.vstack([np.sum(x * (Qi @ x), axis=0) for Qi in Q])
+        # the points as columns (n, count) for the images, which are rows again
+        x, y = sample(A, rng, 10).T, sample(B, rng, 10).T
+        image = np.vstack([np.sum(x * (Qi @ x), axis=0) for Qi in Q]).T
         self.assertTrue(A.quad_map(Q).contains(image, tol=1e-7))
-        cross = np.vstack([np.sum(x * (Qi @ y), axis=0) for Qi in Q])
+        cross = np.vstack([np.sum(x * (Qi @ y), axis=0) for Qi in Q]).T
         # quadratic maps and rescale
         self.assertTrue(A.quad_map(B, Q).contains(cross, tol=1e-7))
         a = con_zonotope([0.0, 0.0], np.eye(2), [[1.0, 1.0]], [1.5])

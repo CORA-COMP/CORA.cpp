@@ -56,10 +56,10 @@ void quad_map_property(const std::string &b) {
         const ConZonotope r = cz.quad_map(Q);
         const ConZonotope mixed = cz.quad_map(other, Q);
         const Tensor images = Tensor::concat({aux_image(Q[0], x), aux_image(Q[1], x)}, 0);
-        check(r.contains(images), b + ": the single map encloses");
+        check(r.contains(images.matrix_transpose()), b + ": the single map encloses");
         const Tensor cross = Tensor::concat(
             {x.multiply(Q[0].matmul(y)).sum(0, true), x.multiply(Q[1].matmul(y)).sum(0, true)}, 0);
-        check(mixed.contains(cross), b + ": the mixed map encloses");
+        check(mixed.contains(cross.matrix_transpose()), b + ": the mixed map encloses");
     }
 }
 

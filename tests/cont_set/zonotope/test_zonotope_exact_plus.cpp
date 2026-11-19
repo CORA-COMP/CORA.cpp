@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -58,7 +59,7 @@ void exact_plus_is_inside_the_plus(const std::string &b) {
         if (k == 0) check(close(S.generators(), P.generators(), 0), b + ": k = 0 is the plus");
     }
     const Zonotope batch =
-        Zonotope::stack({Z, Z + column({1.0, 1.0, 1.0})}).exact_plus(Zonotope::stack({Z2, Z2}));
+        Zonotope::stack({Z, Z + vec({1.0, 1.0, 1.0})}).exact_plus(Zonotope::stack({Z2, Z2}));
     check(close(batch.generators().slice(0, 1, 2).squeeze(0), Z.exact_plus(Z2).generators(), 0),
           b + ": a batch, member 2");
 }

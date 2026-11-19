@@ -29,8 +29,10 @@ void rand_point_samples_the_box(const std::string &b) {
     const int n = 3, N = 2000;
     const Interval I = Interval::generate_random(rng, n);
     const Tensor P = I.rand_point(N, rng);
-    check(P.shape() == std::vector<int64_t>({n, N}), b + ": rand_point shape");
-    const std::vector<double> points = P.data(), lo = I.inf().data(), hi = I.sup().data();
+    check(P.shape() == std::vector<int64_t>({N, n}), b + ": rand_point shape");
+    // the points as CORA's columns (n, N), row-major
+    const std::vector<double> points = P.matrix_transpose().data(), lo = I.inf().data(),
+                              hi = I.sup().data();
     bool inside = true;
     for (int i = 0; i < n; ++i) {
         double smallest = 1e300, largest = -1e300, mean = 0.0;

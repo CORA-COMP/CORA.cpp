@@ -39,7 +39,7 @@ torch::Tensor loss(const torch::Tensor &A, const torch::Tensor &c, const torch::
     const ReachSet r =
         LinearSys(from_torch(A, custom_backward))
             .reach({.initial_set = X0, .t_final = 1.0}, test::lin::algorithm(algorithm, 0.1, 6));
-    const Tensor direction = from_torch(d.unsqueeze(-1), custom_backward);
+    const Tensor direction = from_torch(d, custom_backward);
     torch::Tensor total = torch::zeros({}, A.options());
     for (const Zonotope &Z : r.time_interval)
         total = total + to_torch(Z.support_function(direction)).sum();
@@ -92,7 +92,7 @@ void gradients(const torch::TensorOptions &opts, const std::string &where) {
 void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts,
                                          const std::string &where) {
     const torch::Tensor A0 = torch::tensor({{-0.2, 1.0}, {-1.0, -0.2}}, opts);
-    const Tensor wall_a = from_torch(torch::tensor({{1.0}, {0.0}}, opts));
+    const Tensor wall_a = from_torch(torch::tensor({1.0, 0.0}, opts));
     const double wall_b = 2.0;
     auto margin = [&](const torch::Tensor &A) {
         const Zonotope X0(from_torch(torch::tensor({{1.0}, {0.5}}, opts)),

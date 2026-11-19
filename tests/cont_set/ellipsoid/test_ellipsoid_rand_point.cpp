@@ -32,18 +32,16 @@ void rand_point_property(const std::string &b) {
     Rng rng(131);
     for (int k = 0; k < 4; ++k) {
         const Ellipsoid E = test::random_ellipsoid(rng, 3, k == 3 ? 2 : -1);
-        check(test::all_inside(E, E.rand_point(30, rng).matrix_transpose(), 1e-6),
-              b + ": standard points are inside");
-        check(test::all_inside(E, E.rand_point(30, rng, "uniform").matrix_transpose(), 1e-6),
+        check(test::all_inside(E, E.rand_point(30, rng), 1e-6), b + ": standard points are inside");
+        check(test::all_inside(E, E.rand_point(30, rng, "uniform"), 1e-6),
               b + ": uniform points are inside");
         const Tensor P = E.rand_point(30, rng, "extreme");
         bool boundary = true;
-        for (const double x : test::norms_of(E, P.matrix_transpose()))
-            boundary = boundary && std::abs(x - 1.0) < 1e-6;
-        check(P.shape() == Shape({3, 30}) && boundary, b + ": extreme points are on the boundary");
+        for (const double x : test::norms_of(E, P)) boundary = boundary && std::abs(x - 1.0) < 1e-6;
+        check(P.shape() == Shape({30, 3}) && boundary, b + ": extreme points are on the boundary");
     }
     const Ellipsoid point(vec({1.0, 2.0}), Tensor::zeros({2, 2}));
-    check(close(point.rand_point(3, rng), {1, 1, 1, 2, 2, 2}, 0),
+    check(close(point.rand_point(3, rng), {1, 2, 1, 2, 1, 2}, 0),
           b + ": a point repeats its center");
 }
 
@@ -55,7 +53,7 @@ void rand_point_uniform(const std::string &b) {
     const Tensor P = E.rand_point(4000, rng);
     // the unit disk of radius 1 inside the disk of radius 2 has a quarter of the area
     const double share =
-        P.square().sum(0).sqrt().less_equal(P.square().sum(0).sqrt().ones_like()).sum().item() /
+        P.square().sum(-1).sqrt().less_equal(P.square().sum(-1).sqrt().ones_like()).sum().item() /
         4000.0;
     check(std::abs(share - 0.25) < 0.04, b + ": uniform in the volume");
 }

@@ -1,9 +1,10 @@
 // con_zonotope - the class of constrained zonotopes, as CORA's conZonotope
 //
-// The center c is a column (..., n, 1), the generators G are (..., n, m), the constraint matrix A
-// is (..., p, m) and its offset b a column (..., p, 1); p = 0 is a zonotope. Immutable: every
-// operation returns a new set. center() is CORA's center (a point inside the set), c() the stored
-// offset. The set is empty if the constraints have no solution in the box; empty(n) is such a set.
+// Batch first (#163): the center c is (..., n), the generators G (..., m, n), one per row, the
+// constraint matrix A (..., p, m) and its offset b a column (..., p, 1); p = 0 is a zonotope.
+// Points are (..., n), N points (..., N, n). Immutable: every operation returns a new set.
+// center() is CORA's center (a point inside the set), c() the stored offset. The set is empty if
+// the constraints have no solution in the box; empty(n) is such a set.
 //
 // Syntax:     ConZonotope cz(c, G, A, b);   ConZonotope cz(Z);   ConZonotope::empty(n);
 // Operations: constructors (con_zonotope.cpp), empty, center, interval, is_bounded, is_full_dim,
@@ -121,7 +122,7 @@ class ConZonotope : public ContSet {
     bool is_full_dim(Tol tol = std::nullopt) const;
     std::pair<bool, Tensor> is_full_dim_subspace(Tol tol = std::nullopt) const;
 
-    /// Whether the set contains the points p (n, N), a zonotope or a box, up to tol in the norm
+    /// Whether the set contains the points p (..., n), a zonotope or a box, up to tol in the norm
     /// of the set (a linear program per point). Not a batch.
     bool contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
@@ -130,7 +131,7 @@ class ConZonotope : public ContSet {
     bool contains(const Interval &I, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
 
-    /// The least and the largest value of d'x over the set for a direction d (n, 1) (CORA's
+    /// The least and the largest value of d'x over the set for a direction d (n) (CORA's
     /// supportFunc_ with 'range'): two linear programs over the factors, with or without
     /// constraints; the empty box if the set is empty. Not a batch.
     Interval support_function_range(const Tensor &d) const;
@@ -143,14 +144,14 @@ class ConZonotope : public ContSet {
     ConZonotope compact(const std::optional<std::string> &method = std::nullopt,
                         Tol tol = std::nullopt) const;
 
-    /// The Cartesian product with a constrained zonotope, a zonotope, a box or a point (n2, 1):
+    /// The Cartesian product with a constrained zonotope, a zonotope, a box or a point (n2):
     /// exact; centers stack, generators and constraints sit on the block diagonal.
     ConZonotope cart_prod(const ConZonotope &S) const;
     ConZonotope cart_prod(const Zonotope &Z) const;
     ConZonotope cart_prod(const Interval &I) const;
     ConZonotope cart_prod(const Tensor &p) const;
 
-    /// The Cartesian product of a point p (n1, 1) with a constrained zonotope.
+    /// The Cartesian product of a point p (n1) with a constrained zonotope.
     static ConZonotope cart_prod(const Tensor &p, const ConZonotope &cz);
 
     /// The intersection with a constrained zonotope, a zonotope or a box (CORA's and_): exact; the
@@ -233,7 +234,7 @@ class ConZonotope : public ContSet {
     ConZonotope enclose(const Tensor &M, const ConZonotope &S) const;
     ConZonotope enclose(const Tensor &M, const Tensor &t) const;
 
-    /// The convex hull with a constrained zonotope, a zonotope, a box or a point (n, 1) (CORA's
+    /// The convex hull with a constrained zonotope, a zonotope, a box or a point (n) (CORA's
     /// convHull_): exact. method "exact" and "exact:Raghuraman" (default) or "exact:Kochdumper".
     ConZonotope convex_hull(const ConZonotope &S,
                             const std::string &method = "exact:Raghuraman") const;
@@ -273,7 +274,7 @@ class ConZonotope : public ContSet {
     /// The origin {0} in n dimensions (no generators, no constraints), n >= 1.
     static ConZonotope origin(int64_t n);
 
-    /// The Minkowski sum with a constrained zonotope, a zonotope, a box or a column v (n, 1)
+    /// The Minkowski sum with a constrained zonotope, a zonotope, a box or a point v (..., n)
     /// (CORA's plus): exact; centers add, generators join, constraints on the block diagonal.
     ConZonotope plus(const ConZonotope &S) const;
     ConZonotope plus(const Zonotope &Z) const;
@@ -309,7 +310,7 @@ class ConZonotope : public ContSet {
 
     using ContSet::rand_point;
 
-    /// N random points as columns (n, N): type "standard" is a random convex combination of the
+    /// N random points as rows (N, n): type "standard" is a random convex combination of the
     /// candidate vertices (the set's zonotope formula without constraints), "extreme" the support
     /// point in a random direction. Not a batch with constraints.
     Tensor rand_point(int64_t N, Rng &rng, const std::string &type) const;
@@ -325,7 +326,7 @@ class ConZonotope : public ContSet {
     bool isequal(const Zonotope &Z, Tol tol = std::nullopt) const;
     bool isequal(const Interval &I, Tol tol = std::nullopt) const;
 
-    /// Whether the set and a constrained zonotope, a zonotope, a box or points (n, N) intersect:
+    /// Whether the set and a constrained zonotope, a zonotope, a box or points (..., n) intersect:
     /// type "exact" (a linear program) or "approx" (the boxes overlap). Not a batch.
     bool is_intersecting(const ConZonotope &S, const std::string &type = "exact",
                          Tol tol = std::nullopt) const;
@@ -356,7 +357,7 @@ class ConZonotope : public ContSet {
                       std::optional<int> order = std::nullopt) const;
 
     /// The Minkowski difference {x | x + S in this set} (CORA's minkDiff) with a zonotope, a box
-    /// or a point (n, 1): type "exact" (default), "inner:vertices" or "inner:Vinod". Not a batch.
+    /// or a point (n): type "exact" (default), "inner:vertices" or "inner:Vinod". Not a batch.
     using ContSet::minkowski_difference;
     ConZonotope minkowski_difference(const Tensor &p) const;
 
@@ -415,7 +416,7 @@ class ConZonotope : public ContSet {
     Polytope F_;
 };
 
-// Operators, as CORA writes them: M * cz maps, s * cz scales, cz + S sums, a column v translates.
+// Operators, as CORA writes them: M * cz maps, s * cz scales, cz + S sums, a point v translates.
 inline ConZonotope operator*(const Tensor &M, const ConZonotope &cz) { return cz.linear_map(M); }
 inline ConZonotope operator+(const ConZonotope &cz, const ConZonotope &S) { return cz.plus(S); }
 inline ConZonotope operator+(const ConZonotope &cz, const Tensor &v) { return cz.plus(v); }

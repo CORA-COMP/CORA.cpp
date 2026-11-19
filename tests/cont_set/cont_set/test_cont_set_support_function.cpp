@@ -28,7 +28,7 @@ void the_direction_is_checked() {
     const Zonotope Z = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     const Interval I = Interval(test::vec({0, -1}), test::vec({1, 1}));
     for (const ContSet *S : {static_cast<const ContSet *>(&Z), static_cast<const ContSet *>(&I)}) {
-        check(test::raises([&] { S->support_function(test::column({1, 0, 0})); },
+        check(test::raises([&] { S->support_function(test::vec({1, 0, 0})); },
                            Error::dimension_mismatch),
               S->class_name() + ": a direction of the wrong dimension");
         const double on = test::support(*S, {0, 1});

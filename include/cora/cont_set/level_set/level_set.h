@@ -65,15 +65,15 @@ class LevelSet : public detail::DimensionSet {
     /// The derivative of constraint i with respect to state j (CORA's der.grad).
     const Expr &gradient(int64_t i, int64_t j) const;
 
-    /// The constraints at the points x (..., n, N): the values (..., m, N) (CORA's funHan).
+    /// The constraints at the points x (..., n), one per row: the values (..., m) (CORA's funHan).
     Tensor fun_han(const Tensor &x) const;
 
-    /// A box (..., m, 1) that holds the values of the constraints over the box I (n, 1).
+    /// A box (m) that holds the values of the constraints over the box I (n).
     Interval fun_han(const Interval &I) const;
 
     // Queries -------------------------------------------------------------------------------------
 
-    /// Whether all points (n, N) satisfy every constraint: f_i < tol for '<' and '<=' (up to
+    /// Whether all points (..., n) satisfy every constraint: f_i < tol for '<' and '<=' (up to
     /// within_tol), |f_i| <= tol for '=='. tol default: the repository tolerance.
     bool contains(const Tensor &points, Tol tol = std::nullopt) const;
 

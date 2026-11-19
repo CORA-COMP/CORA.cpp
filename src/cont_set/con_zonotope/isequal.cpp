@@ -56,7 +56,7 @@ bool aux_same_columns(const Tensor &M1, const Tensor &M2, double tol) {
 
 /// Whether all points of P (n, K) are in the set up to tol; the empty list is.
 bool aux_holds(const ConZonotope &cz, const Tensor &P, double tol) {
-    return P.shape().back() == 0 || cz.contains(P, "exact", tol);
+    return P.shape().back() == 0 || cz.contains(P.matrix_transpose(), "exact", tol);
 }
 
 /// Whether two single nonempty sets of one dimension are equal.

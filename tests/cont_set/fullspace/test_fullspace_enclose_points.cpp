@@ -22,12 +22,11 @@ using test::check;
 namespace {
 
 void enclose_points_takes_the_number_of_rows(const std::string &b) {
-    const Tensor points = Tensor::from_data({1, 2, 3, 4, 5, 6}, {3, 2});
+    const Tensor points = Tensor::from_data({1, 3, 5, 2, 4, 6}, {2, 3});
     const Fullspace F = Fullspace::enclose_points(points);
-    check(F.dim() == 3, b + ": three rows");
-    check(F.contains(Interval(points.matrix_transpose(), points.matrix_transpose())),
-          b + ": the points are in it");
-    check(Fullspace::enclose_points(Tensor::zeros({2, 3, 4})).dim() == 3,
+    check(F.dim() == 3, b + ": three coordinates");
+    check(F.contains(Interval(points, points)), b + ": the points are in it");
+    check(Fullspace::enclose_points(Tensor::zeros({2, 4, 3})).dim() == 3,
           b + ": a batch of points");
 }
 

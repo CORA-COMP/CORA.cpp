@@ -6,7 +6,7 @@
 //
 // Syntax:   Tensor v = I.norm();   Tensor v = I.norm(type)   with type one, two, inf or fro
 // Inputs:   -
-// Outputs:  v - (..., 1, 1); -Inf for an empty interval
+// Outputs:  v - (...); -Inf for an empty interval
 // See also: rad, center
 //
 // CORA: contSet/@interval/norm_.m
@@ -48,10 +48,8 @@ Tensor Interval::norm(Tensor::Norm type) const {
     return largest.vector_norm(Tensor::Norm::two, -2).squeeze(-1);
 }
 
-Tensor Interval::norm_impl(Tensor::Norm type, const std::string &) const {
-    // ContSet's norm is (..., 1, 1)
-    return norm(type).expand_dims(-1).expand_dims(-1);
-}
+Tensor Interval::norm_impl(Tensor::Norm type, const std::string &) const { return norm(type); }
+
 
 } // namespace cora
 

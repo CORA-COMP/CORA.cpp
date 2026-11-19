@@ -37,7 +37,7 @@ void empty_set(const std::string &b) {
 void properties(const std::string &b) {
     const Polytope P = Polytope::empty(2);
     check(!P.contains(Tensor({{0.0, 0.0}})), b + ": it holds no point");
-    check(P.center().shape() == Shape{2, 1} && std::isnan(P.center().data()[0]),
+    check(P.center().shape() == Shape{2} && std::isnan(P.center().data()[0]),
           b + ": it has no center");
     check(P.interval().is_empty(), b + ": its box is empty");
 }

@@ -79,7 +79,7 @@ void averaging_contains_the_intersection(const std::string &b) {
         const Zonotope R = Z.intersect(Z2, "averaging");
         const Tensor points = Z.rand_point(60, rng);
         for (int k = 0; k < 60; ++k) {
-            const Tensor x = points.slice(-1, k, k + 1);
+            const Tensor x = points.slice(-2, k, k + 1);
             if (!Z2.contains(x)) continue;
             ++shared;
             check(R.contains(x, "exact", 1e-9), b + ": a common point stays in the average");

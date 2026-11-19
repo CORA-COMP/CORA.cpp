@@ -5,8 +5,8 @@
 // the projection onto the axis, which is |g|, far more; for n = 1 its generator is max(points) -
 // c, which misses the minimum (docs/cora-differences.md)
 //
-// Syntax:   Capsule C = Capsule::enclose_points(points);
-// Inputs:   points - the points as columns (..., n, N)
+// Syntax:   Capsule C = Capsule::enclose_points(rows);
+// Inputs:   rows - the points as rows (..., N, n)
 // Outputs:  C - center the mean c, generator g from c to the farthest point (the first of them)
 // See also: Interval::enclose_points, Zonotope::enclose_points
 //
@@ -14,7 +14,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -28,11 +28,13 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Capsule Capsule::enclose_points(const Tensor &points) {
+Capsule Capsule::enclose_points(const Tensor &rows) {
     detail::Entry entry;
-    CORA_CHECK(points.defined() && points.ndim() >= 2, Error::wrong_value, [&] {
-        return std::string("enclose_points: the points must be a matrix (..., n, N) of columns");
+    CORA_CHECK(rows.defined() && rows.ndim() >= 2, Error::wrong_value, [&] {
+        return std::string("enclose_points: the points must be a matrix (..., N, n) of rows");
     });
+    // CORA's columns (..., n, N)
+    const Tensor points = rows.matrix_transpose();
     std::vector<int64_t> column_shape = points.shape(), radius_shape = column_shape;
     column_shape.back() = 1;
     radius_shape.back() = 1;

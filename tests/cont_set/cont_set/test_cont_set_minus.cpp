@@ -28,7 +28,7 @@ namespace {
 void minus_shifts_the_set(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0}));
     const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
-    const Tensor p = column({1.0, 1.0});
+    const Tensor p = vec({1.0, 1.0});
     const Set A = static_cast<const ContSet &>(I).minus(p),
               B = static_cast<const ContSet &>(Z).minus(p);
     check(test::close(A.as<Interval>().inf(), {-2.0, -1.0}) &&
@@ -53,13 +53,13 @@ void minus_shifts_the_set(const std::string &b) {
 void errors_and_their_switch() {
     const Interval I(vec({0.0, 0.0}), vec({1.0, 1.0}));
     const ContSet &S = I;
-    check(test::raises([&] { S.minus(column({1.0})); }, Error::dimension_mismatch), "one entry");
-    check(test::raises([&] { ContSet::minus(column({1.0}), S); }, Error::dimension_mismatch),
+    check(test::raises([&] { S.minus(vec({1.0})); }, Error::dimension_mismatch), "one entry");
+    check(test::raises([&] { ContSet::minus(vec({1.0}), S); }, Error::dimension_mismatch),
           "one entry, from the left");
-    check(test::raises([] { test::UnregisteredSet().minus(column({1.0, 1.0})); }, Error::noops),
+    check(test::raises([] { test::UnregisteredSet().minus(vec({1.0, 1.0})); }, Error::noops),
           "noops");
     ChecksScope off(false);
-    check(S.minus(column({1.0, 1.0})).is<Interval>(), "the checks off");
+    check(S.minus(vec({1.0, 1.0})).is<Interval>(), "the checks off");
 }
 
 } // namespace

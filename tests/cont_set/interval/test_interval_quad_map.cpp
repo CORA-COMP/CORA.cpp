@@ -59,7 +59,9 @@ void quad_map_is_the_hull_of_the_zonotope_map(const std::string &b) {
     check(close(R.inf(), via_zonotope.inf(), 1e-12) && close(R.sup(), via_zonotope.sup(), 1e-12),
           b + ": the hull of the zonotope's map");
     const Interval M = I.quad_map(J, Q);
-    const Tensor x = ZI.rand_point(50, rng), y = ZJ.rand_point(50, rng);
+    // the points as CORA's columns (n, 50)
+    const Tensor x = ZI.rand_point(50, rng).matrix_transpose(),
+                 y = ZJ.rand_point(50, rng).matrix_transpose();
     for (int k = 0; k < 50; ++k) {
         const Tensor p = x.slice(-1, k, k + 1), q = y.slice(-1, k, k + 1);
         // the image of points of both boxes

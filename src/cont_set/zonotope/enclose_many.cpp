@@ -6,7 +6,7 @@
 //
 // Syntax:   [Zenclose, rot_inv] = Zonotope::enclose_many(Zs, direction);
 // Inputs:   Zs - zonotopes of one dimension n
-//           direction - a nonzero column (n, 1)
+//           direction - a nonzero vector (n)
 // Outputs:  Zenclose - the smallest box in the frame of the direction containing every Z
 //           rot_inv - the inverse of that frame (n, n)
 // See also: enclose, reduce
@@ -15,7 +15,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -37,21 +37,23 @@ std::pair<Zonotope, Tensor> Zonotope::enclose_many(const std::vector<Zonotope> &
     CORA_CHECK(!Zs.empty(), Error::wrong_value,
                [] { return std::string("enclose_many: at least one zonotope is needed"); });
     const int64_t n = Zs.front().dim();
-    CORA_CHECK(is_column(direction, n) && direction.ndim() == 2, Error::dimension_mismatch, [&] {
-        return "enclose_many: the direction must be a column (" + std::to_string(n) +
-               ", 1), got the shape " + shape_text(direction.shape());
+    CORA_CHECK(is_vector(direction, n) && direction.ndim() == 1, Error::dimension_mismatch, [&] {
+        return "enclose_many: the direction must be a vector (" + std::to_string(n) +
+               "), got the shape " + shape_text(direction.shape());
     });
     for (const Zonotope &Z : Zs)
         CORA_CHECK(Z.dim() == n && Z.center().ndim() == 1, Error::dimension_mismatch, [&] {
             return "enclose_many: the zonotopes must be single sets of one dimension, " +
                    std::to_string(n);
         });
-    const Tensor length = direction.vector_norm(Tensor::Norm::two, -2, true);
+    // the frame is built from CORA's column of the direction
+    const Tensor column = direction.expand_dims(-1);
+    const Tensor length = column.vector_norm(Tensor::Norm::two, -2, true);
     CORA_CHECK(length.detach().item() > 0, Error::wrong_value,
                [] { return std::string("enclose_many: the direction must not be zero"); });
 
     // the frame: the direction, then the standard axes by growing alignment, without the last
-    const Tensor new_gen = direction.divide(length);
+    const Tensor new_gen = column.divide(length);
     const Tensor order = new_gen.abs().reshape({n}).argsort();
     const Tensor axes = new_gen.eye_like(n).take(order.slice(0, 0, n - 1), -1);
     const Tensor rotation = Tensor::concat({new_gen, axes}, -1);

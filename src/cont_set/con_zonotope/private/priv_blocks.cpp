@@ -8,7 +8,7 @@
 // CORA.cpp only: MATLAB writes blkdiag and horizontal concatenation inline
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -87,7 +87,7 @@ ConZonotope priv_compact(const ConZonotope &cz) {
 ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
                               const std::optional<Tensor> &t) {
     auto [c, G] = Tensor::zonotope_linear_map(M, cz.c(), cz.generators());
-    if (t) c = c + t->squeeze(-1); // the offset is a column (..., n, 1)
+    if (t) c = c + *t; // the offset is a point (..., n)
     return {c, G, cz.factor_polytope()};
 }
 

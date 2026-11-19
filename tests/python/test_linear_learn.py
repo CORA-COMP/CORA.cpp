@@ -43,7 +43,7 @@ def loss(A, measurements):
 class LearnDynamics(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("torch"))  # torch is never the default
-        self.measurements = cora.LinearSys(A_TRUE).simulate(X0.rand_point(10, cora.Rng(0)), time_step=0.1,
+        self.measurements = cora.LinearSys(A_TRUE).simulate(X0.rand_point(10, cora.Rng(0)).T, time_step=0.1,
                                                             t_final=1.0)
 
     def test_a_gradient_step_updates_the_matrix(self):

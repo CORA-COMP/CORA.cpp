@@ -51,7 +51,7 @@ int main() {
                 S.push_back(rnd.direction(n));
                 theirs_S.push_back(lean::Tensor::from(S.back()));
             }
-            const Tensor V = Z.underapproximate(Tensor::concat(S, -1));
+            const Tensor V = Z.underapproximate(Tensor::stack(S, 0));
             const std::vector<lean::Zonotope::VertexPair> pairs =
                 lean::Zonotope(Z).underapproximate(theirs_S);
             test::check(pairs.size() == S.size(), "underapproximate: a pair per direction");
@@ -62,7 +62,8 @@ int main() {
                 for (int side = 0; side < 2; ++side)
                     if (vertices[side] && ++compared)
                         oracle::check(oracle::op_name(),
-                                      V.slice(-1, 2 * k + side, 2 * k + side + 1), *vertices[side]);
+                                      V.slice(-2, 2 * k + side, 2 * k + side + 1).squeeze(-2),
+                                      *vertices[side]);
             }
         }
         test::check(compared > 0, "underapproximate: the oracle certifies some vertices");

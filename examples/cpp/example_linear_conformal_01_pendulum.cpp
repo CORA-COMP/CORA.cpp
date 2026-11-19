@@ -60,9 +60,9 @@ int main() {
     // noisy trajectories from random points of X0: time k holds the 2 x count points
     const auto measure = [&](int64_t count, uint64_t seed) {
         cora::Rng rng(seed);
-        std::vector<Tensor> trajectories =
-            pendulum.simulate({.initial_state = X0.rand_point(count, rng), .t_final = t_final},
-                              alg::RungeKutta4{.time_step = time_step});
+        std::vector<Tensor> trajectories = pendulum.simulate(
+            {.initial_state = X0.rand_point(count, rng).matrix_transpose(), .t_final = t_final},
+            alg::RungeKutta4{.time_step = time_step});
         std::vector<double> jitter(2 * count);
         for (Tensor &x : trajectories) {
             rng.normal(jitter.data(), jitter.size(), noise);

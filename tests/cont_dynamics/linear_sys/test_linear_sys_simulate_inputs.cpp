@@ -76,10 +76,10 @@ void random_inputs_come_from_the_set(const std::string &b) {
     cora::Rng rng(3), same(3);
     const std::vector<Tensor> x = sys.simulate_random(
         {.initial_set = X0, .input_set = U, .t_final = 0.5}, alg::Exact{.time_step = 0.1}, 7, rng);
-    const Tensor x0 = X0.rand_point(7, same);
-    const std::vector<Tensor> y =
-        sys.simulate({.initial_state = x0, .input = U.rand_point(7, same), .t_final = 0.5},
-                     alg::Exact{.time_step = 0.1});
+    const Tensor x0 = X0.rand_point(7, same).matrix_transpose();
+    const std::vector<Tensor> y = sys.simulate(
+        {.initial_state = x0, .input = U.rand_point(7, same).matrix_transpose(), .t_final = 0.5},
+        alg::Exact{.time_step = 0.1});
     check(x.size() == y.size() && close(x.back(), y.back(), 1e-14),
           b + ": simulate_random with inputs");
     check(x[0].shape() == std::vector<int64_t>({3, 7}), b + ": one trajectory per point");

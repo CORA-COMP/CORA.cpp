@@ -48,10 +48,10 @@ void the_step_is_enclosed(const std::string &b) {
             // the state at t under the constant input u
             const Tensor xt = flow(A, t, test::column(x)) +
                               A.inv().matmul((A * t).expm() - Tensor::eye(2)).matmul(u);
-            check(S.time_interval.contains(xt), b + ": a trajectory");
+            check(S.time_interval.contains(xt.squeeze(-1)), b + ": a trajectory");
         }
     }
-    check(S.time_interval.contains(S.time_point.center().expand_dims(-1)), b + ": the end");
+    check(S.time_interval.contains(S.time_point.center()), b + ": the end");
     check(test::close(G.matmul(u), S.constant.center().expand_dims(-1), 1e-14),
           b + ": the same constant part");
 }
