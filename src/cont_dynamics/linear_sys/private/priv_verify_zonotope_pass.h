@@ -123,6 +123,7 @@ class VerifyZonotopePass {
         std::vector<double> gu_lo, gu_hi;
         std::optional<VerifyCorrection> F;
         bool F_done = false;
+        std::vector<double> D, vs; ///< the ball's center on the host; sum_i of V_i's row magnitudes
     };
     Step &step(double dt, bool full);
 

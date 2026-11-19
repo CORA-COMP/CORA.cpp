@@ -480,6 +480,11 @@ VerifyZonotopePass::Step &VerifyZonotopePass::step(double dt, bool full) {
             S.input = VerifyInputSolution{
                 Vec(n, 0.0), Vec(n, 0.0), {}, Vec(std::size_t(n * p), 0.0), Vec(n, 0.0)};
         }
+        // the ball's center on the host, and the row magnitudes of the orders folded in order
+        if (S.ball) S.D = S.ball->D.data();
+        S.vs.assign(n, 0.0);
+        for (int64_t l = 0; S.input && l < n; ++l)
+            for (const Vec &V : S.input->V) S.vs[l] = S.vs[l] + aux_row_mag(V, l, p);
         // G u0 as a box, each entry summed from the last index
         S.gu_lo.assign(n, 0.0);
         S.gu_hi.assign(n, 0.0);
@@ -534,13 +539,24 @@ VerifyZonotopePass::run(const std::vector<VerifySpecSet> &specs,
         const VerifyInputSolution &I = *S.input;
         // step_verifyZonoInputStepFloat: the orders carried by Phi, the remainder, the reduction
         Vecs added;
-        Vec box(n, 0.0), first(n, 0.0), later(n, 0.0), beta_u(n, 0.0);
+        Vec box(n, 0.0), first(n, 0.0), later(n, 0.0), beta_u(n, 0.0), row(p);
         for (std::size_t i = 0; i < I.V.size(); ++i) {
-            const Vec X = aux_matmul(st.Phi, I.V[i], n, n, p);
             if (i > 0) {
-                for (int64_t l = 0; l < n; ++l) later[l] = later[l] + aux_row_mag(X, l, p);
+                // a later order: only the row magnitudes of Phi V_i, each row as aux_matmul sums it
+                for (int64_t l = 0; l < n; ++l) {
+                    std::fill(row.begin(), row.end(), 0.0);
+                    for (int64_t k = n - 1; k >= 0; --k) {
+                        const double x = st.Phi[std::size_t(l * n + k)];
+                        if (x == 0) continue;
+                        const double *r = &I.V[i][std::size_t(k * p)];
+                        for (int64_t j = 0; j < p; ++j) row[j] = x * r[j] + row[j];
+                    }
+                    later[l] =
+                        later[l] + lean_sum(p, [&](int64_t j) { return lean_absolute(row[j]); });
+                }
                 continue;
             }
+            const Vec X = aux_matmul(st.Phi, I.V[i], n, n, p);
             // the first order: its columns are generators, its widths (0 at nearest) the box
             for (int64_t l = 0; l < n; ++l)
                 first[l] = lean_sum(p, [&](int64_t j) {
@@ -560,15 +576,12 @@ VerifyZonotopePass::run(const std::vector<VerifySpecSet> &specs,
                 return lean_absolute(st.Phi[std::size_t(l * n + j)]) * I.rho[j];
             });
             box[l] = (st.b[l] + ord) + rem;
-            double vs = 0;
-            for (const Vec &V : I.V) vs = vs + aux_row_mag(V, l, p);
-            beta_u[l] = vs + I.rho[l];
+            beta_u[l] = S.vs[l] + I.rho[l];
         }
         const double rho = st.rho + st.phi * aux_scaled_vec(s_, beta_u);
         Vecs P = priv_verify_girard_reduce(st.P, std::move(added), box, g.budget);
         // the zonotope, Phi and their errors at t_{k+1}
-        const Vec D = S.ball->D.data();
-        State st2 = aux_carry(s_, D, S.ball->r, I.w_lo, I.w_hi, st, n, m);
+        State st2 = aux_carry(s_, S.D, S.ball->r, I.w_lo, I.w_hi, st, n, m);
         st2.P = std::move(P);
         st2.b = std::move(box);
         st2.rho = rho;
