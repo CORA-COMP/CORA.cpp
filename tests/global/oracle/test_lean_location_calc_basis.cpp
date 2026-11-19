@@ -6,9 +6,9 @@
 // which stays CORA's.
 //
 // ORACLE: hybridDynamics/@location/calcBasis.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/location.h"
@@ -31,14 +31,14 @@ int main() {
             const std::vector<Set> R = {rnd.zonotope(n, n)};
             const std::vector<Tensor> mine =
                 priv_calc_basis(loc, R, guard, {alg::Enclose::box, alg::Enclose::box},
-                                Zonotope(loc.c(), loc.c().zeros_like({n, 0})));
+                                Zonotope(loc.c(), loc.c().zeros_like({0, n})));
             const std::vector<Tensor> theirs = lean::Location::calc_basis(n, {"box", "box"});
             for (std::size_t k = 0; k < mine.size(); ++k) test::oracle::check(mine[k], theirs[k]);
         }
         // pca: the sets of a crossing, with and without a hyperplane guard
         for (const int64_t n : {2, 3, 5}) {
             const Location loc("l", Polytope::inf(n), {}, LinearSys(rnd.matrix(n, n)));
-            const Zonotope U(loc.c(), loc.c().zeros_like({n, 0}));
+            const Zonotope U(loc.c(), loc.c().zeros_like({0, n}));
             std::vector<Zonotope> sets;
             std::vector<Set> R;
             for (int k = 0; k < 3; ++k) {

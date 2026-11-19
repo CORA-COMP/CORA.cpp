@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/plus.m
 // PROPERTY: contSet/@zonoBundle/plus.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -26,22 +26,25 @@ namespace {
 void plus_known(const std::string &b) {
     const ZonoBundle zono_bundle = test::two_zonotopes();
     const ZonoBundle moved = zono_bundle.plus(column({1.0, 2.0}));
-    check(close(moved.zonotopes()[0].center(), {1, 2}, 0) &&
-              close(moved.zonotopes()[1].center(), {2, 2}, 0),
+    check(close((moved.zonotopes()[0]).center().expand_dims(-1), {1, 2}, 0) &&
+              close((moved.zonotopes()[1]).center().expand_dims(-1), {2, 2}, 0),
           b + ": a point moves the centers");
-    const Zonotope W(column({0.0, 0.0}), Tensor({{1.0}, {0.0}}));
-    check(close(zono_bundle.plus(W).zonotopes()[0].generators(), {2, 0, 1, 0, 1, 0}, 0),
+    const Zonotope W(column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
+    check(close((zono_bundle.plus(W).zonotopes()[0]).generators().matrix_transpose(),
+                {2, 0, 1, 0, 1, 0}, 0),
           b + ": a zonotope joins its generators");
     const ZonoBundle boxed = zono_bundle.plus(Interval(column({0.0, 0.0}), column({2.0, 4.0})));
-    check(close(boxed.zonotopes()[0].center(), {1, 2}, 0) &&
-              close(boxed.zonotopes()[0].generators(), {2, 0, 1, 0, 0, 1, 0, 2}, 0),
+    check(close((boxed.zonotopes()[0]).center().expand_dims(-1), {1, 2}, 0) &&
+              close((boxed.zonotopes()[0]).generators().matrix_transpose(),
+                    {2, 0, 1, 0, 0, 1, 0, 2}, 0),
           b + ": a box is added as its zonotope");
     // a bundle is added pair by pair, the first one varying slowest
-    const Zonotope W2(column({5.0, 5.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope W2(column({5.0, 5.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle pairs = zono_bundle.plus(ZonoBundle({W, W2}));
-    check(pairs.parallel_sets() == 4 && close(pairs.zonotopes()[1].center(), {5, 5}, 0) &&
-              close(pairs.zonotopes()[2].center(), {1, 0}, 0) &&
-              close(pairs.zonotopes()[3].center(), {6, 5}, 0),
+    check(pairs.parallel_sets() == 4 &&
+              close((pairs.zonotopes()[1]).center().expand_dims(-1), {5, 5}, 0) &&
+              close((pairs.zonotopes()[2]).center().expand_dims(-1), {1, 0}, 0) &&
+              close((pairs.zonotopes()[3]).center().expand_dims(-1), {6, 5}, 0),
           b + ": a bundle gives the pairs");
     check(zono_bundle.plus(Interval::empty(2)).representsa("emptySet"),
           b + ": the empty box gives the empty set");
@@ -77,7 +80,7 @@ int main() {
     check(test::raises([&] { zono_bundle.plus(column({1.0})); }, Error::dimension_mismatch),
           "plus: a point of another dimension");
     check(test::raises(
-              [&] { zono_bundle.plus(Zonotope(column({0.0, 0.0, 0.0}), Tensor::zeros({3, 0}))); },
+              [&] { zono_bundle.plus(Zonotope(column({0.0, 0.0, 0.0}), Tensor::zeros({0, 3}))); },
               Error::dimension_mismatch),
           "plus: a zonotope of another dimension");
     ChecksScope off(false);

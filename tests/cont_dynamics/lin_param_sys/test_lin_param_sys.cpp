@@ -25,9 +25,9 @@ using test::column;
 namespace {
 
 /// The set {[-1 2; -2 -1] + b [0.1 0; 0 0.1] | b in [-1, 1]}.
-MatZonotope aux_set() {
-    return MatZonotope(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}),
-                       Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0));
+Zonotope aux_set() {
+    return Zonotope::matrix(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}),
+                            Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0));
 }
 
 /// The parts of a system with and without B and c.
@@ -40,13 +40,13 @@ void construction() {
                            ParamType::varying);
     check(full.input_dim() == 1 && close(full.c(), {0.5, 0}) && full.type() == ParamType::varying,
           "constructor: B, c and varying parameters");
-    check(close(full.A().center(), {-1, 2, -2, -1}) && full.A().num_generators() == 1,
+    check(close(full.A().center(), {-1, 2, -2, -1}) && full.A().nr_generators() == 1,
           "constructor: the matrix set");
 }
 
 /// Shapes that do not fit are refused; with the checks off the system is the same.
 void checks_and_their_switch() {
-    const MatZonotope wide(Tensor::zeros({2, 3}));
+    const Zonotope wide = Zonotope::matrix(Tensor::zeros({2, 3}), Tensor::zeros({0, 2, 3}));
     check(test::raises([&] { LinParamSys{wide}; }, Error::wrong_input_in_constructor),
           "constructor: A must be square");
     check(test::raises([] { LinParamSys(aux_set(), Tensor::zeros({3, 1})); },

@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/contains_.m
 // PROPERTY: contSet/@zonoBundle/contains_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -92,7 +92,7 @@ void sampled_points(const std::string &b) {
 /// with the checks off.
 void checks_and_their_switch() {
     const ZonoBundle bundle = squares();
-    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25}, {0.0}}));
+    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25, 0.0}}));
     check(test::raises([&] { bundle.contains(Z, "approx"); }, Error::not_supported),
           "contains: approx for a set");
     check(test::raises([&] { bundle.contains(column({0.5, 0.5}), "sampling"); },

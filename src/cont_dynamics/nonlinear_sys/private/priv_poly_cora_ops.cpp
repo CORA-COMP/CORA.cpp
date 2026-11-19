@@ -16,9 +16,9 @@
 // CORA: contSet/@polyZonotope/polyZonotope.m
 // CORA: contSet/@polyZonotope/reduce.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_float_scalars.h"
@@ -39,15 +39,15 @@ namespace {
 /// The squared length of each of the h dependent (an even one halved) and q independent
 /// generators, added over the coordinates from the first, and their order: the longest first.
 std::vector<std::size_t> aux_ranked(const PolyZonotope &Z) {
-    const int64_t n = Z.dim(), h = Z.num_dependent(), q = Z.independent_generators().shape()[1];
+    const int64_t n = Z.dim(), h = Z.num_dependent(), q = Z.independent_generators().shape()[0];
     const Vec g = Z.generators().data(), gi = Z.independent_generators().data();
     std::vector<std::pair<double, std::size_t>> rank(std::size_t(h + q));
     for (int64_t r = 0; r < h + q; ++r) {
         const bool even = r < h && priv_is_even(Z.exponents()[std::size_t(r)]);
         double len = 0;
         for (int64_t i = 0; i < n; ++i) {
-            const double x = r >= h ? gi[std::size_t(i * q + (r - h))]
-                                    : g[std::size_t(i * h + r)] * (even ? 0.5 : 1.0);
+            const double x = r >= h ? gi[std::size_t((r - h) * n + i)]
+                                    : g[std::size_t(r * n + i)] * (even ? 0.5 : 1.0);
             len = x * x + len;
         }
         rank[std::size_t(r)] = {len, std::size_t(r)};
@@ -69,12 +69,12 @@ PolyZonotope aux_pick(const PolyZonotope &Z, const std::vector<int64_t> &dep,
     const int64_t n = Z.dim();
     Exponents E;
     for (const int64_t l : dep) E.push_back(Z.exponents()[std::size_t(l)]);
-    const auto columns = [&](const Tensor &M, const std::vector<int64_t> &idx) {
-        return idx.empty() ? M.zeros_like({n, 0}) : priv_columns(M, idx);
+    const auto rows = [&](const Tensor &M, const std::vector<int64_t> &idx) {
+        return idx.empty() ? M.zeros_like({0, n}) : priv_rows(M, idx);
     };
     return {with_center ? Z.center() : Z.center().zeros_like(),
-            columns(Z.generators(), dep),
-            columns(Z.independent_generators(), ind),
+            rows(Z.generators(), dep),
+            rows(Z.independent_generators(), ind),
             std::move(E),
             Z.ids(),
             detail::Verbatim{}};
@@ -95,10 +95,10 @@ PolyZonotope priv_poly_construct(const PolyZonotope &Z) {
 
 PolyZonotope priv_poly_enclose_shared(const PolyZonotope &A, const PolyZonotope &B) {
     // the midpoints and half-differences of the generators and of the centers
-    const Tensor G =
-        Tensor::concat({(A.generators() + B.generators()) * 0.5,
-                        (A.generators() - B.generators()) * 0.5, (A.center() - B.center()) * 0.5},
-                       -1);
+    const Tensor G = Tensor::concat({(A.generators() + B.generators()) * 0.5,
+                                     (A.generators() - B.generators()) * 0.5,
+                                     ((A.center() - B.center()) * 0.5).expand_dims(0)},
+                                    -2);
     // the exponents: the new factor 0 on the first block, 1 on the second and on the center column
     Exponents E;
     for (int block = 0; block < 2; ++block)
@@ -117,11 +117,11 @@ PolyZonotope priv_poly_enclose_shared(const PolyZonotope &A, const PolyZonotope 
     const Zonotope Z = priv_lin_comb(Zonotope(zero, A.independent_generators()),
                                      Zonotope(zero, B.independent_generators()));
     Tensor GI = Z.generators();
-    const int64_t q = A.independent_generators().shape()[1];
-    // as many generators in both: [(G1 + G2)/2, (c1 - c2)/2, (G1 - G2)/2], the center in the middle
-    if (q == B.independent_generators().shape()[1])
+    const int64_t q = A.independent_generators().shape()[0];
+    // as many generators in both: [(G1 + G2)/2; (c1 - c2)/2; (G1 - G2)/2], the center in the middle
+    if (q == B.independent_generators().shape()[0])
         GI = Tensor::concat(
-            {GI.slice(-1, 0, q), GI.slice(-1, 2 * q, 2 * q + 1), GI.slice(-1, q, 2 * q)}, -1);
+            {GI.slice(-2, 0, q), GI.slice(-2, 2 * q, 2 * q + 1), GI.slice(-2, q, 2 * q)}, -2);
     return priv_poly_construct(
         {(A.center() + B.center()) * 0.5, G, GI, std::move(E), std::move(id), detail::Verbatim{}});
 }
@@ -129,7 +129,7 @@ PolyZonotope priv_poly_enclose_shared(const PolyZonotope &A, const PolyZonotope 
 // The reduction ----------------------------------------------------------------------------------
 
 PolyZonotope priv_poly_reduce_cora(const PolyZonotope &Z, int order) {
-    const int64_t n = Z.dim(), h = Z.num_dependent(), q = Z.independent_generators().shape()[1];
+    const int64_t n = Z.dim(), h = Z.num_dependent(), q = Z.independent_generators().shape()[0];
     PolyZonotope out = Z;
     if (int64_t(order) * n < h + q) {
         // the removed generators past (order - 1) n of the ranking, the kept ones in their order

@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/quadMap.m
 // PROPERTY: contSet/@conZonotope/quadMap.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -29,15 +29,19 @@ Tensor aux_image(const Tensor &Q, const Tensor &x) { return x.multiply(Q.matmul(
 void quad_map_known(const std::string &b) {
     const ConZonotope unit(column({0.0}), Tensor({{1.0}}));
     const ConZonotope r = unit.quad_map({Tensor({{1.0}})});
-    check(close(r.c(), {0.5}, 0) && close(r.generators(), {0.5, 0}, 0), b + ": x^2");
-    const ConZonotope a(column({0.0}), Tensor({{1.0, 1.0}}), Tensor({{1.0, 1.0}}), column({0.0}));
+    check(close(r.c().expand_dims(-1), {0.5}, 0) &&
+              close(r.generators().matrix_transpose(), {0.5, 0}, 0),
+          b + ": x^2");
+    const ConZonotope a(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), column({0.0}));
     const ConZonotope q = a.quad_map({Tensor({{1.0}})});
     check(close(q.A(), {0, 0, 1, 1, 0}, 0) && close(q.b(), {0}, 0),
           b + ": the constraint on the linear block");
     const ConZonotope plain(column({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope m = plain.quad_map(plain, {Tensor({{1.0, 0.0}, {0.0, 1.0}})});
     // [c G]' [c G] has the center 1 and the entries of the products in column order
-    check(close(m.c(), {1}, 0) && m.generators().shape() == Shape{1, 8}, b + ": the mixed map");
+    check(close(m.c().expand_dims(-1), {1}, 0) &&
+              m.generators().matrix_transpose().shape() == Shape{1, 8},
+          b + ": the mixed map");
 }
 
 /// Stated property: the image of every sampled point (pair) is in the enclosure.
@@ -69,7 +73,7 @@ int main() {
         quad_map_known(b);
         quad_map_property(b);
     });
-    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(test::raises([&] { a.quad_map({Tensor({{1.0}})}); }, Error::dimension_mismatch),
           "quad_map: a matrix of the wrong size");
     check(test::raises([&] { a.quad_map({}); }, Error::dimension_mismatch), "quad_map: no matrix");

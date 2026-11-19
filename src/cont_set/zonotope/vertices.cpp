@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@zonotope/vertices_.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Daniel Heß
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -75,8 +75,8 @@ Polygon aux_polygon(const double *c, const double *G, int64_t m) {
 // ===========================================  MAIN  =========================================== //
 
 std::vector<Polygon> Zonotope::vertices_impl() const {
-    const std::vector<double> cs = c_.data(), Gs = G_.data();
-    const int64_t m = G_.shape().back();
+    const std::vector<double> cs = c_.data(), Gs = G_.matrix_transpose().data();
+    const int64_t m = nr_generators();
     const std::size_t batch = cs.size() / 2;
     std::vector<Polygon> out;
     out.reserve(batch);

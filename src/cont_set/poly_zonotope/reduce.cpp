@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@polyZonotope/reduce.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -36,17 +36,17 @@ PolyZonotope PolyZonotope::reduce(int order) const {
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "reduce: the order must be at least 1, got " + std::to_string(order);
     });
-    const int64_t n = dim(), h = num_dependent(), q = GI_.shape()[1], m = h + q;
+    const int64_t n = dim(), h = num_dependent(), q = GI_.shape()[0], m = h + q;
     PolyZonotope out = *this;
     // too many generators: the shortest ones are enclosed by a zonotope
     if (m > n * order) {
         // the squared lengths, an even dependent generator at half its length
-        const std::vector<double> g = Tensor::concat({G_, GI_}, -1).data();
+        const std::vector<double> g = Tensor::concat({G_, GI_}, -2).data(); // (m, n)
         std::vector<double> len(static_cast<std::size_t>(m), 0.0);
         for (int64_t j = 0; j < m; ++j) {
             const double w = (j < h && priv_is_even(E_[std::size_t(j)])) ? 0.25 : 1.0;
             for (int64_t i = 0; i < n; ++i)
-                len[std::size_t(j)] += w * g[std::size_t(i * m + j)] * g[std::size_t(i * m + j)];
+                len[std::size_t(j)] += w * g[std::size_t(j * n + i)] * g[std::size_t(j * n + i)];
         }
         // the order * n - n longest stay (a stable sort, as MATLAB's), the others are boxed
         std::vector<int64_t> by_length(static_cast<std::size_t>(m));
@@ -74,11 +74,11 @@ PolyZonotope PolyZonotope::reduce(int order) const {
             return E;
         };
         // the boxed generators as a zonotope of order 1: its center and generators join
-        const PolyZonotope rest(c_.zeros_like(), priv_columns(G_, boxed_dep),
-                                priv_columns(GI_, boxed_ind), exponents_of(boxed_dep), id_);
+        const PolyZonotope rest(c_.zeros_like(), priv_rows(G_, boxed_dep),
+                                priv_rows(GI_, boxed_ind), exponents_of(boxed_dep), id_);
         const Zonotope box = rest.zonotope().reduce(1);
-        out = PolyZonotope(c_ + box.center(), priv_columns(G_, kept_dep),
-                           Tensor::concat({priv_columns(GI_, kept_ind), box.generators()}, -1),
+        out = PolyZonotope(c_ + box.center(), priv_rows(G_, kept_dep),
+                           Tensor::concat({priv_rows(GI_, kept_ind), box.generators()}, -2),
                            exponents_of(kept_dep), id_);
     }
     // the factors that no generator uses go

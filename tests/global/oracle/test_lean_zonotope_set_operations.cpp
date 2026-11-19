@@ -13,7 +13,7 @@
 // ORACLE: contSet/@zonotope/enclose.m
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -49,12 +49,13 @@ std::vector<std::vector<double>> aux_sorted_columns(const std::vector<double> &d
 /// linComb (G+G2)/2, (G-G2)/2, (c-c2)/2: the same center and the same generators, in another order.
 void aux_check_same_generators(const Zonotope &mine, const lean::Zonotope &theirs) {
     const Zonotope other = theirs.gather().first;
-    const int64_t n = mine.dim(), m = mine.generators().shape().back();
-    test::check(other.generators().shape().back() == m, oracle::op_name() + ": generator count");
-    test::check(oracle::agree(oracle::op_name() + ".c", mine.center(), other.center()),
+    const int64_t n = mine.dim(), m = mine.nr_generators();
+    test::check(other.nr_generators() == m, oracle::op_name() + ": generator count");
+    test::check(oracle::agree(oracle::op_name() + ".c", mine.center().expand_dims(-1),
+                              other.center().expand_dims(-1)),
                 oracle::op_name() + ": the same center");
-    test::check(aux_sorted_columns(mine.generators().data(), n, m) ==
-                    aux_sorted_columns(other.generators().data(), n, m),
+    test::check(aux_sorted_columns(mine.generators().matrix_transpose().data(), n, m) ==
+                    aux_sorted_columns(other.generators().matrix_transpose().data(), n, m),
                 oracle::op_name() + ": the same generators, in another order");
 }
 
@@ -88,17 +89,19 @@ int main() {
     oracle::run("zonotope.compact", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
-            const Tensor &G = Z.generators();
+            const Tensor &G = Z.generators().matrix_transpose();
             // a generator of zeros in the middle and at the end
             const Tensor zero = G.slice(-1, 0, 1).zeros_like();
-            const Zonotope Zz(
-                Z.center(), Tensor::concat({G.slice(-1, 0, 2), zero, G.slice(-1, 2, m), zero}, -1));
+            const Zonotope Zz = Zonotope(
+                Z.center(), (Tensor::concat({G.slice(-1, 0, 2), zero, G.slice(-1, 2, m), zero}, -1))
+                                .matrix_transpose());
             oracle::check(Zz.compact("zeros", 0.0), lean::Zonotope(Zz).compact("zeros", 0.0));
         }
     });
     oracle::run("zonotope.constrSat", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
+            // constraints just above and just below the support of Z
             const Tensor C = rnd.matrix(3, n);
             const Tensor sup = Z.linear_map(C).interval().sup();
             for (const double margin : {1e-3, -1e-3}) {
@@ -125,8 +128,9 @@ int main() {
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             const Zonotope Z = rnd.zonotope(n, m);
             // half of Z about its center is in Z, one and a half times is not
-            const Zonotope inner(Z.center(), Z.generators() * 0.5);
-            const Zonotope outer(Z.center(), Z.generators() * 1.5);
+            const Zonotope inner = Zonotope(Z.center(), Z.generators() * 0.5);
+            const Zonotope outer = Zonotope(Z.center(), Z.generators() * 1.5);
+            // both answers agree with the oracle
             oracle::check(Z.contains(inner, "approx:st"),
                           lean::Zonotope(Z).contains(lean::Zonotope(inner)));
             oracle::check(Z.contains(outer, "approx:st"),

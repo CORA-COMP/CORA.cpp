@@ -15,7 +15,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
@@ -51,14 +51,14 @@ ReachSet LinParamSys::reach(const ReachProblem &problem, const alg::LinParamReac
     const Zonotope &R0 = *problem.initial_set;
     // the input set without its center, which is the constant input (CORA's uTrans)
     const int64_t m = B_ ? input_dim() : 1;
-    Zonotope U(R0.center().zeros_like({m, 1}), R0.center().zeros_like({m, 0}));
-    Tensor u_trans = U.center();
+    Zonotope U = Zonotope(R0.center().zeros_like({m}), R0.center().zeros_like({0, m}));
+    Tensor u_trans = U.center().expand_dims(-1);
     if (problem.input_set) {
         U = *problem.input_set;
         bool shifted = false;
         for (double v : U.center().data()) shifted = shifted || v != 0;
         if (shifted) {
-            u_trans = U.center();
+            u_trans = U.center().expand_dims(-1);
             U = U - u_trans;
         }
     }

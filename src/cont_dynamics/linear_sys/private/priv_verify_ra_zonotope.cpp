@@ -22,9 +22,9 @@
 //
 // CORA: contDynamics/@linearSys/private/priv_verifyRA_zonotope.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
@@ -80,10 +80,10 @@ struct InnerSet {
 
 ZHost aux_zhost(const Zonotope &Z) {
     ZHost h;
-    h.n = static_cast<int>(Z.center().shape()[0]);
-    h.m = static_cast<int>(Z.generators().shape()[1]);
+    h.n = static_cast<int>(Z.dim());
+    h.m = static_cast<int>(Z.nr_generators());
     h.c = Z.center().data();
-    h.G = Z.generators().data();
+    h.G = Z.generators().matrix_transpose().data(); // the host loops read CORA's columns
     return h;
 }
 
@@ -583,10 +583,10 @@ double aux_init_error(const Tensor &A, const std::optional<Tensor> &C, const Ten
                       const std::vector<Poly> &unsafe_sets, double t_final) {
     const int n = static_cast<int>(A.shape()[0]);
     const std::vector<double> c = R0.center().data(), Gd = R0.generators().data();
-    const int m0 = static_cast<int>(R0.generators().shape()[1]);
+    const int m0 = static_cast<int>(R0.nr_generators());
     std::vector<double> rad(n, 0.0);
     for (int i = 0; i < n; ++i)
-        for (int j = 0; j < m0; ++j) rad[i] += std::abs(Gd[i * m0 + j]);
+        for (int j = 0; j < m0; ++j) rad[i] += std::abs(Gd[j * n + i]);
 
     // The points: centers of the facets of the interval hull (the 10 longest edges at most).
     std::vector<int> dims;

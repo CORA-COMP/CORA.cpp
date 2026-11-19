@@ -13,9 +13,9 @@
 // Outputs:  one line 'benchmark,instance,result,time' (on stderr: the number of sets, the width)
 // See also: benchmark_run.h, nonlinear_sys.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -74,8 +74,8 @@ void aux_print_details(const ReachSet &R) {
     std::cerr << "\n    steps:";
     for (std::size_t k = 0; k < R.time.size() - 1; ++k)
         std::cerr << " " << R.time[k + 1] - R.time[k];
-    std::cerr << "\n    generators of the last point set: "
-              << R.time_point.back().generators().shape()[1] << '\n';
+    std::cerr << "\n    generators of the last point set: " << R.time_point.back().nr_generators()
+              << '\n';
 }
 
 /// Reaches one case, prints the line of the script and reports the width of s at the end.
@@ -88,8 +88,8 @@ bool aux_run(const std::string &name) {
 
     // the start set, the (unused) input set, and reach until t = 40
     const NonlinearSys sys = aux_robertson(c->beta, c->gamma);
-    const Zonotope X0(column({1, 0, 0}), Tensor::zeros({3, 0}));
-    const Zonotope U(column({0}), Tensor::zeros({1, 0}));
+    const Zonotope X0(column({1, 0, 0}), Tensor::zeros({0, 3}));
+    const Zonotope U(column({0}), Tensor::zeros({0, 1}));
     const auto start = std::chrono::steady_clock::now();
     alg::LinearizationAdaptive alg = c->alg;
     alg.linear_step = cora::bench::linear_step();

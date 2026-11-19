@@ -13,9 +13,9 @@
 // PROPERTY: contDynamics/@nonlinearSys/linReach_adaptive.m
 // PROPERTY: contSet/@polyZonotope/reduce.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -127,7 +127,7 @@ void quadratic_system_encloses_simulations(const std::string &b) {
     const NonlinearSys sys = quadratic();
     const Zonotope X0(Tensor({1.0, 0.5, 0.2}),
                       Tensor({{0.05, 0.0, 0.0}, {0.0, 0.05, 0.0}, {0.0, 0.0, 0.05}}));
-    const Zonotope U(Tensor({0.0}), Tensor::zeros({1, 0}));
+    const Zonotope U(Tensor({0.0}), Tensor::zeros({0, 1}));
     const double T = 0.6;
     const PolyReachSet R =
         sys.reach({.initial_set = PolyZonotope(X0), .input_set = U, .t_final = T},
@@ -142,7 +142,7 @@ void quadratic_system_encloses_simulations(const std::string &b) {
 /// part; reduce_only_dep keeps the longest generators; restructure leaves no independent part.
 void reductions_keep_a_superset(const std::string &b) {
     const Tensor c({0.5, -1.0});
-    Tensor G({{0.3, 0.02, 0.5, 0.001, 0.04}, {0.1, 0.03, -0.4, 0.002, 0.05}});
+    const Tensor G({{0.3, 0.1}, {0.02, 0.03}, {0.5, -0.4}, {0.001, 0.002}, {0.04, 0.05}});
     const Tensor GI({{0.01, 0.0}, {0.0, 0.002}});
     const Exponents E{{1, 0, 0, 1, 2}, {0, 1, 0, 1, 1}, {0, 0, 1, 0, 0}};
     PolyZonotope Z(c, G, GI, {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {2, 1, 0}}, {1, 2, 3});
@@ -154,7 +154,7 @@ void reductions_keep_a_superset(const std::string &b) {
     check(only.num_dependent() == 2 && box_in(Z, only, 1e-12),
           b + ": reduce_only_dep keeps order * n generators and a superset");
     const PolyZonotope flat = priv_restructure(Z);
-    check(flat.independent_generators().shape()[1] == 0 && box_in(Z, flat, 1e-12),
+    check(flat.independent_generators().shape()[0] == 0 && box_in(Z, flat, 1e-12),
           b + ": restructure makes the independent part dependent and encloses");
     check(!priv_volume_ratio_exceeds(Z, 10.0) && priv_volume_ratio_exceeds(Z, 1e-9),
           b + ": the volume ratio of the independent part");

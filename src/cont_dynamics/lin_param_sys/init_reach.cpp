@@ -17,7 +17,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
@@ -36,15 +36,15 @@ LinParamStep LinParamSys::init_reach(const Zonotope &R_init, const Zonotope &U,
     const auto &a = std::get<alg::LinParamStandard>(alg);
     if (entry.check()) a.validate();
     // the initial set in the state space, the inputs of the columns of B
-    CORA_CHECK(R_init.center().shape() == std::vector<int64_t>({dim(), 1}) &&
+    CORA_CHECK(R_init.center().expand_dims(-1).shape() == std::vector<int64_t>({dim(), 1}) &&
                    R_init.generators().ndim() == 2,
                Error::dimension_mismatch, [&] {
                    return "init_reach: R_init must be one zonotope of the dimension " +
                           std::to_string(dim()) + ", got the center " +
-                          shape_text(R_init.center().shape());
+                          shape_text(R_init.center().expand_dims(-1).shape());
                });
     const int64_t m = B_ ? input_dim() : U.dim();
-    CORA_CHECK(U.dim() == m && U.center().ndim() == 2 &&
+    CORA_CHECK(U.dim() == m && U.center().ndim() == 1 &&
                    u_trans.shape() == std::vector<int64_t>({m, 1}),
                Error::dimension_mismatch, [&] {
                    return "init_reach: U and u_trans (m, 1) need the " + std::to_string(m) +

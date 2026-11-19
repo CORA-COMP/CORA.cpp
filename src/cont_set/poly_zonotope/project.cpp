@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@polyZonotope/project.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -28,7 +28,8 @@ namespace cora {
 Set PolyZonotope::project_impl(const std::vector<int64_t> &dims) const {
     // the rows of the identity that are kept, so it runs on every backend and has gradients
     const Tensor P = select_dims(c_, dims, dim());
-    return PolyZonotope(P.matmul(c_), P.matmul(G_), P.matmul(GI_), E_, id_);
+    const auto [c, G] = Tensor::zonotope_linear_map(P, c_, G_);
+    return PolyZonotope(c, G, GI_.matmul(P.matrix_transpose()), E_, id_);
 }
 
 } // namespace cora

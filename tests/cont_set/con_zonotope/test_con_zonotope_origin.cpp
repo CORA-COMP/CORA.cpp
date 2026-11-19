@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@conZonotope/origin.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -21,8 +21,8 @@ using test::close;
 int main() {
     test::for_each_backend([](const std::string &b) {
         const ConZonotope O = ConZonotope::origin(3);
-        check(O.dim() == 3 && close(O.c(), {0, 0, 0}, 0), b + ": the center is 0");
-        check(O.generators().shape() == Shape{3, 0} && O.A().shape()[0] == 0,
+        check(O.dim() == 3 && close(O.c().expand_dims(-1), {0, 0, 0}, 0), b + ": the center is 0");
+        check(O.generators().matrix_transpose().shape() == Shape{3, 0} && O.A().shape()[0] == 0,
               b + ": no generators, no constraints");
         check(O.interval().sup().abs().sum().item() == 0, b + ": the box is the origin");
         check(O.representsa("origin"), b + ": it represents the origin");

@@ -26,7 +26,7 @@ import cora
 
 t_final = 2.4
 R0 = cora.Zonotope(cora.Tensor([1.0, 0.5]),
-                   cora.Tensor([[0.15, 0.05], [-0.05, 0.1]]))
+                   cora.Tensor([[0.15, -0.05], [0.05, 0.1]]))
 
 # Reachability Settings ---------------------------------------------------------------------
 

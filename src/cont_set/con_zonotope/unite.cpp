@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -52,7 +52,7 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const std::vector<ConZonotope
         return std::pair{Error::not_supported,
                          std::string("unite: reducing the order needs the reduction methods "
                                      "'methC' and 'pca', which are not supported")};
-    if (cz.c().ndim() != 2)
+    if (cz.c().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("unite: it supports single sets, not a batch")};
     for (const ConZonotope &S : others)
@@ -140,7 +140,7 @@ ConZonotope ConZonotope::unite(const Interval &I, const std::string &method,
 ConZonotope ConZonotope::unite(const Tensor &p, const std::string &method,
                                std::optional<int> order) const {
     detail::Entry entry;
-    const ConZonotope S(p, zeros_block(p, p.shape()[p.ndim() - 2], 0));
+    const ConZonotope S(p, zeros_block(p, 0, p.shape()[p.ndim() - 2]));
     const detail::Refusal refusal = aux_refusal(*this, {S}, method, order);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_unite(*this, {S});

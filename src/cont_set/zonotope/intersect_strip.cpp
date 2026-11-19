@@ -19,9 +19,9 @@
 //
 // CORA: contSet/@zonotope/intersectStrip.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -45,17 +45,19 @@ namespace {
 /// The zonotope for the gain lambda (n, k): CORA's aux_zonotopeFromLambda.
 Zonotope aux_from_lambda(const Zonotope &Z, const Tensor &phi, const Tensor &C, const Tensor &y,
                          const Tensor &lambda) {
-    const Tensor &c = Z.center();
+    const Tensor &c = Z.center().expand_dims(-1);
     const Tensor c_new = c + lambda.matmul(y - C.matmul(c));
     const Tensor I = c.eye_like(Z.dim());
-    const Tensor G_new = Tensor::concat(
-        {(I - lambda.matmul(C)).matmul(Z.generators()), lambda.matmul(phi.diag())}, -1);
-    return {c_new, G_new};
+    const Tensor G_new =
+        Tensor::concat({(I - lambda.matmul(C)).matmul(Z.generators().matrix_transpose()),
+                        lambda.matmul(phi.diag())},
+                       -1);
+    return Zonotope(c_new.squeeze(-1), G_new.matrix_transpose());
 }
 
 /// The gain "normGen": G G' C' (C G G' C' + diag(phi^2))^-1.
 Tensor aux_gain_norm_gen(const Zonotope &Z, const Tensor &C, const Tensor &phi) {
-    const Tensor &G = Z.generators();
+    const Tensor &G = Z.generators().matrix_transpose();
     const Tensor GG = G.matmul(G.matrix_transpose());
     const Tensor numerator = GG.matmul(C.matrix_transpose());
     const Tensor den = C.matmul(numerator) + phi.square().diag();
@@ -64,7 +66,7 @@ Tensor aux_gain_norm_gen(const Zonotope &Z, const Tensor &C, const Tensor &phi) 
 
 /// The gain "alamo-FRad" for one strip: G G' c1' / (c1 G G' c1' + phi1^2).
 Tensor aux_gain_alamo_frad(const Zonotope &Z, const Tensor &C, const Tensor &phi) {
-    const Tensor &G = Z.generators();
+    const Tensor &G = Z.generators().matrix_transpose();
     const Tensor GG = G.matmul(G.matrix_transpose());
     const Tensor c1 = C.slice(-2, 0, 1);
     const Tensor numerator = GG.matmul(c1.matrix_transpose());
@@ -73,7 +75,7 @@ Tensor aux_gain_alamo_frad(const Zonotope &Z, const Tensor &C, const Tensor &phi
 
 /// The gain "wang-FRad": R C' (C R C' + F F')^-1 with R = A G G' A' + E E'.
 Tensor aux_gain_wang_frad(const Zonotope &Z, const Zonotope::StripObserver &aux) {
-    const Tensor &G = Z.generators();
+    const Tensor &G = Z.generators().matrix_transpose();
     const Tensor P = G.matmul(G.matrix_transpose());
     const Tensor Rbar =
         aux.A.matmul(P).matmul(aux.A.matrix_transpose()) + aux.E.matmul(aux.E.matrix_transpose());
@@ -87,7 +89,7 @@ Tensor aux_gain_wang_frad(const Zonotope &Z, const Zonotope::StripObserver &aux)
 /// The zonotope of "bravo" for the first strip: of the zonotope itself and one candidate per
 /// generator that crosses the strip, the one of least det(G G'), the first on a tie.
 Zonotope aux_bravo(const Zonotope &Z, const Tensor &C, const Tensor &phi, const Tensor &y) {
-    const Tensor &G = Z.generators(), &p = Z.center();
+    const Tensor &G = Z.generators().matrix_transpose(), &p = Z.center().expand_dims(-1);
     const int64_t n = Z.dim(), m = G.shape().back();
     const Tensor c1 = C.slice(-2, 0, 1), phi1 = phi.slice(-2, 0, 1), y1 = y.slice(-2, 0, 1);
     const Tensor along = c1.matmul(G); // (1, m): the strip's row against each generator
@@ -111,7 +113,7 @@ Zonotope aux_bravo(const Zonotope &Z, const Tensor &C, const Tensor &phi, const 
         const double vol = volume(T);
         if (vol < least) {
             least = vol;
-            best = Zonotope(v, T);
+            best = Zonotope(v.squeeze(-1), T.matrix_transpose());
         }
     }
     return best;
@@ -145,7 +147,7 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
     });
     CORA_CHECK(method == "normGen" || method == "bravo" || C.shape()[0] == 1, Error::special_error,
                [&] { return "intersect_strip: '" + method + "' is for a single strip"; });
-    CORA_CHECK(method != "bravo" || c_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(method != "bravo" || c_.ndim() == 1, Error::not_supported, [] {
         // a single strip: the other methods differ in the gain only
         return std::string("intersect_strip: 'bravo' chooses among candidates per zonotope; it "
                            "supports a single zonotope, not a batch");

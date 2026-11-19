@@ -9,9 +9,9 @@
 // CORA: contDynamics/@neurNetContrSys/neurNetContrSys.m
 // PROPERTY: contDynamics/@neurNetContrSys/reach.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"

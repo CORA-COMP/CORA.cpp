@@ -13,10 +13,11 @@
 //
 // CORA: contSet/@zonotope/representsa_.m
 // CORA: contSet/@contSet/representsa.m
+// CORA: matrixSet/@matZonotope/representsa.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -54,7 +55,13 @@ bool Zonotope::representsa(const std::string &type, Tol tol_arg) const {
                Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "representsa");
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported, [] {
+    // a matrix zonotope as the zonotope of its stacked matrices (CORA's matZonotope.representsa)
+    if (elem_rank_ == 2) {
+        CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+                   [] { return std::string("representsa: not supported for a batch of sets"); });
+        return stacked().representsa(type, tol);
+    }
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("representsa: it supports a single zonotope, not a batch");
     });
     CORA_CHECK(type != "conHyperplane" && type != "ellipsoid" && type != "polygon",
@@ -64,13 +71,18 @@ bool Zonotope::representsa(const std::string &type, Tol tol_arg) const {
                });
     // CORA judges the zonotope without its zero generators
     const Zonotope Z = compact("zeros", machine_eps(c_.dtype()));
-    const int64_t n = Z.dim(), gens = Z.G_.shape().back();
+    const int64_t n = Z.dim(), gens = Z.nr_generators();
     const auto norm_of_radius = [&] {
-        return Z.G_.abs_sum().vector_norm(Tensor::Norm::two, -2, true).item();
+        return Z.generators()
+            .matrix_transpose()
+            .abs_sum()
+            .vector_norm(Tensor::Norm::two, -2, true)
+            .item();
     };
     // the special types first, then the sets that every zonotope is and the ones that none is
     if (type == "origin")
-        return (gens == 0 && aux_all(within_tol(Z.c_, Z.c_.zeros_like(), tol))) ||
+        return (gens == 0 && aux_all(within_tol(Z.center().expand_dims(-1),
+                                                Z.center().expand_dims(-1).zeros_like(), tol))) ||
                Z.interval().norm().item() <= tol;
     if (type == "point") return gens == 0 || norm_of_radius() <= tol;
     if (type == "capsule") return n == 1 || gens <= 1;

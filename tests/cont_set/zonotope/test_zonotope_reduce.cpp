@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonotope/reduce.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -27,7 +27,7 @@ void reduce_limits_the_generators(const std::string &b) {
     const int n = 3;
     const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 20);
     const Zonotope R = Z.reduce(2);
-    check(R.generators().shape() == std::vector<int64_t>({n, 2 * n}),
+    check(R.generators().shape() == std::vector<int64_t>({2 * n, n}),
           b + ": order 2 leaves 2 n generators");
     check(test::close(R.center(), Z.center()), b + ": the center stays");
 }

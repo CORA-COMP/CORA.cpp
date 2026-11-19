@@ -12,7 +12,7 @@
 // CORA.cpp only: containment tests need only the corners, which MATLAB takes from vertices
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -26,17 +26,18 @@ namespace cora {
 
 Tensor Zonotope::corners() const {
     detail::Entry entry;
-    const int64_t m = G_.shape().back();
+    const int64_t m = nr_generators();
     CORA_CHECK(m <= 30, Error::not_supported, [&] {
         return "corners: " + std::to_string(m) + " generators give 2^" + std::to_string(m) +
                " corners, at most 30 generators are supported";
     });
-    // sign j of corner k is bit j of k
+    // sign j of corner k is bit j of k; the corners as rows s' G + c', returned as columns
     const int64_t count = int64_t{1} << m;
     std::vector<double> signs(std::size_t(m * count));
-    for (int64_t j = 0; j < m; ++j)
-        for (int64_t k = 0; k < count; ++k) signs[j * count + k] = ((k >> j) & 1) ? 1.0 : -1.0;
-    return c_ + G_.matmul(Tensor::like(c_, signs, {m, count}));
+    for (int64_t k = 0; k < count; ++k)
+        for (int64_t j = 0; j < m; ++j) signs[k * m + j] = ((k >> j) & 1) ? 1.0 : -1.0;
+    const Tensor rows = Tensor::like(c_, signs, {count, m}).matmul(G_);
+    return (c_.expand_dims(-2) + rows).matrix_transpose();
 }
 
 } // namespace cora

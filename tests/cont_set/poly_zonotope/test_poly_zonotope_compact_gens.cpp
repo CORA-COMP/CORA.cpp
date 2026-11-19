@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@polyZonotope/compact_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -21,33 +21,33 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        // columns 0, 2, 3 have the exponent (1, 0), 1 has (0, 1), 4 has (0, 0), 5 is zero (2, 1)
+        // generators 0, 2, 3 have the exponent (1, 0), 1 has (0, 1), 4 has (0, 0), 5 is zero (2, 1)
         const PolyZonotope P(column({1.0, 2.0}),
-                             Tensor::from_data({1.0, 0.5, 0.25, 4.0, 1.0, 0.0, //
-                                                -1.0, 3.0, 0.125, 8.0, 2.0, 0.0},
-                                               {2, 6}),
-                             Tensor::from_data({0.5, 0.0}, {2, 1}),
+                             Tensor::from_data({1.0, -1.0, 0.5, 3.0, 0.25, 0.125, //
+                                                4.0, 8.0, 1.0, 2.0, 0.0, 0.0},
+                                               {6, 2}),
+                             Tensor::from_data({0.5, 0.0}, {1, 2}),
                              {{1, 0}, {0, 1}, {1, 0}, {1, 0}, {0, 0}, {2, 1}}, {1, 2},
                              cora::detail::Verbatim{});
         const PolyZonotope C = P.compact_gens();
         check(C.num_dependent() == 4, b + ": one column per exponent column");
-        const std::vector<double> g = C.generators().data();
-        // the least index keeps the sum, the other columns of its class are added by the last first
+        const std::vector<double> g = C.generators().matrix_transpose().data();
+        // the least index keeps the sum, the others of its class are added by the last first
         check(g[0] == 1.0 + (0.25 + 4.0) && g[1] == 0.5 && g[2] == 1.0 && g[3] == 0.0,
-              b + ": the first row of the merged generators");
+              b + ": the first entries of the merged generators");
         check(g[4] == -1.0 + (0.125 + 8.0) && g[5] == 3.0 && g[6] == 2.0 && g[7] == 0.0,
-              b + ": the second row of the merged generators");
+              b + ": the second entries of the merged generators");
         check(C.exponents()[2] == std::vector<int>({0, 0}) &&
                   C.exponents()[3] == std::vector<int>({2, 1}),
               b + ": the constant column and the zero column stay, in their order");
         check(C.num_factors() == 2 && close(C.center(), {1.0, 2.0}, 0) &&
-                  C.independent_generators().shape()[1] == 1,
+                  C.independent_generators().shape()[0] == 1,
               b + ": the factors, the center and the independent generators stay");
         check(P.compact().num_dependent() < C.num_dependent(),
               b + ": compact drops what this keeps");
         // distinct exponents: the set is returned as it is
-        const PolyZonotope D(column({0.0}), Tensor::from_data({1.0, 0.0}, {1, 2}),
-                             Tensor::zeros({1, 0}), {{1}, {2}}, {1}, cora::detail::Verbatim{});
+        const PolyZonotope D(column({0.0}), Tensor::from_data({1.0, 0.0}, {2, 1}),
+                             Tensor::zeros({0, 1}), {{1}, {2}}, {1}, cora::detail::Verbatim{});
         check(D.compact_gens().num_dependent() == 2,
               b + ": distinct exponents (and a zero column) stay");
     });

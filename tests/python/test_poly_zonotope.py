@@ -48,8 +48,8 @@ def known():
     """(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t on the factors a (id 1) and b (id 2)."""
     return cora.PolyZonotope(
         np.array([1.0, 0.0]),
-        np.array([[1.0, 0.0], [1.0, 2.0]]),
-        np.array([[0.0], [1.0]]),
+        np.array([[1.0, 1.0], [0.0, 2.0]]),
+        np.array([[0.0, 1.0]]),
         np.array([[1, 1], [0, 1]]),
         [1, 2],
     )
@@ -78,14 +78,14 @@ class Constructor(unittest.TestCase):
 
     # equal exponents add
     def test_merge(self):
-        P = cora.PolyZonotope(np.zeros(1), np.array([[1.0, 2.0]]), None, np.array([[1, 1]]), [1])
+        P = cora.PolyZonotope(np.zeros(1), np.array([[1.0], [2.0]]), None, np.array([[1, 1]]), [1])
         self.assertEqual(P.G.shape, (1, 1))
         np.testing.assert_allclose(P.G, [[3.0]])
 
     # generators of another dimension than the center are refused
     def test_refusals(self):
         with self.assertRaises(cora.errors.WrongInputInConstructor):
-            cora.PolyZonotope(np.zeros(1), np.zeros((2, 1)), None, np.array([[1]]), [1])
+            cora.PolyZonotope(np.zeros(1), np.zeros((1, 2)), None, np.array([[1]]), [1])
 
 
 class Operations(unittest.TestCase):
@@ -102,15 +102,15 @@ class Operations(unittest.TestCase):
     # the sums and the maps keep or free the factors
     def test_sums_and_maps(self):
         P = known()
-        Z = cora.Zonotope(np.array([1.0, 1.0]), np.array([[1.0], [0.0]]))
+        Z = cora.Zonotope(np.array([1.0, 1.0]), np.array([[1.0, 0.0]]))
         np.testing.assert_allclose(P.plus(Z).c, [2, 1])
         self.assertEqual(P.plus(P).dim, 2)
         zero = P.exact_plus(P.linear_map(-np.eye(2)))
-        self.assertEqual(zero.G.shape[1], 0)
+        self.assertEqual(zero.G.shape[0], 0)
         mapped = P.linear_map(2 * np.eye(2))
         np.testing.assert_allclose(mapped.c, [2, 0])
         widened = P.linear_map(cora.Interval.from_center_delta(np.eye(2), 0.1 * np.eye(2)))
-        self.assertEqual(widened.GI.shape[1], 3)
+        self.assertEqual(widened.GI.shape[0], 3)
         self.assertEqual(P.cart_prod(Z).dim, 4)
         self.assertEqual(P.enclose(P.linear_map(np.zeros((2, 2)))).dim, 2)
 
@@ -118,15 +118,15 @@ class Operations(unittest.TestCase):
     def test_reduce_and_quad_map(self):
         P = known()
         R = P.reduce(1)
-        self.assertEqual(R.G.shape[1], 0)
-        self.assertEqual(R.GI.shape[1], 2)
+        self.assertEqual(R.G.shape[0], 0)
+        self.assertEqual(R.GI.shape[0], 2)
         Q = P.quad_map([np.array([[0.0, 1.0], [0.0, 0.0]])])
         self.assertEqual(Q.dim, 1)
         self.assertEqual(P.compact().dim, 2)
 
     # c = 1, 2 a + 3 a^2 halved along a: 2.75 + 2.5 b + 0.75 b^2 and 0.75 - 0.5 b + 0.75 b^2
     def test_split(self):
-        P = cora.PolyZonotope(np.array([1.0]), np.array([[2.0, 3.0]]), np.zeros((1, 0)),
+        P = cora.PolyZonotope(np.array([1.0]), np.array([[2.0], [3.0]]), np.zeros((0, 1)),
                               np.array([[1, 2]]), [1])
         P1, P2 = P.split_dep_factor(1)
         # the column order is CORA's hash order, so compare the terms by exponent

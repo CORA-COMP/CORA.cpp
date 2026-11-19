@@ -130,15 +130,32 @@ struct, as CORA separates `params` from `options`.
 - An operation returns a new set, and the members are private behind accessors (`center()`,
   `generators()`), so a set cannot be changed after its checks.
 - Python sees properties (`Z.center`, `Z.generators`, `Z.dim`), the operators `+ @ * & | in -`
-  and `__repr__`. In Python, `@` is the matrix product and `*` the product with a number or a
-  matrix.
+  and `__repr__`. In Python, `@` is the linear map on every set: `M @ S` maps the points x to
+  M x and `S @ M` to x M, as NumPy's `@` on the rows of a batch. `*` is the product with a number
+  only; `*` with an array or a set raises a `TypeError` that names `@`. C++ has `*` and
+  `matmul()`.
 - Files: `include/cora/cont_set/`, `src/global/python/bindings.cpp`.
 
-**Matrix sets are sets over matrix-shaped points, as in CORALean.** CORALean has no
+**Sets are stored batch first, as PyTorch.** (#163) A set is a tensor of points, with the batch
+dimensions first:
+- a vector zonotope has the center c (batch..., n) and the generators G (batch..., h, n), one
+  generator per row; the same holds for `ConZonotope`, `PolyZonotope` (G, GI) and `Capsule`;
+- operations broadcast over the batch and the element dimensions as NumPy does, and the generator
+  axis never broadcasts;
+- points and directions given to an operation stay columns (..., n, 1) and (n, N), as every set
+  takes them;
+- CORA's n x h columns appear only where data crosses to CORA: the private MATLAB-data loader and
+  the oracle client. An algorithm that is written on CORA's columns (the linear programs of
+  `ConZonotope`, the adaptive linear reach) transposes once, explicitly. There is no public
+  conversion from CORA's columns.
+
+**Matrix sets are sets of matrix-shaped points, as in CORALean.** CORALean has no
 interval-matrix type: an interval matrix is `Interval (Mat n m)`, a set whose points are matrices,
 and its exponential lives with the linear system (`LinearSys.MatExp`). CORA.cpp does the same
 (#157): the element shape (rows, cols) of a set says which space it lives in, a column (n, 1) for
-vectors. An interval matrix is an `Interval` of matrix bounds.
+vectors. An interval matrix is an `Interval` of matrix bounds, and a matrix zonotope is a
+`Zonotope` of matrix elements, `Zonotope::matrix(C, G)` with C (..., rows, cols) and G
+(..., h, rows, cols).
 - `Interval` takes bounds (..., n, m). The methods where CORA's `intervalMatrix` and `interval`
   differ only in what they accept answer both: `contains` takes a matrix, `representsa` and
   `volume` take the entries stacked column by column, `display` shows CORA's intervalMatrix text.
@@ -151,11 +168,16 @@ vectors. An interval matrix is an `Interval` of matrix bounds.
   1 x 1 matrix too (CORA's interval squares a scalar entrywise) and a base that is not square is a
   dimension mismatch. `abs` stays the interval of absolute values; `abs().sup()` is CORA's `abs`
   of an intervalMatrix. In Python, `**` stays the elementwise power of every `Interval`.
+- A matrix zonotope has no class of its own (CORA's `matZonotope`): its box, sum, reduction,
+  containment, volume, norm and `representsa` are the zonotope's operations, which dispatch on
+  the element rank. `matmul`, `transpose`, `stacked` (CORA's `matZonotope.zonotope`, the matrices
+  stacked column by column), `vertex_matrices` and `from_interval_matrix` are `Zonotope` methods.
 - The exponential family (`expm`, `expm_independent`, `expm_mixed`, `dependent_terms`,
   `exponential_remainder`, `powers` and CORA's other algorithms) is free functions of
-  `cora::mat_exp` on an `Interval`.
-- Files: `include/cora/cont_set/interval/interval.h`, `include/cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h`,
-  `src/cont_dynamics/linear_sys/mat_exp/`.
+  `cora::mat_exp` on an `Interval`. Their matrix-zonotope overloads (`expm_one_param`,
+  `matrix_power` and the series) take a `Zonotope`.
+- Files: `include/cora/cont_set/interval/interval.h`, `include/cora/cont_set/zonotope/zonotope.h`,
+  `include/cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h`, `src/cont_dynamics/linear_sys/mat_exp/`.
 
 **One plot core, thin front ends.** `plot` decides everything about a picture once (projection,
 vertices, CORA's colors, the union of overlapping sets, z-order) and puts it into the layers of a

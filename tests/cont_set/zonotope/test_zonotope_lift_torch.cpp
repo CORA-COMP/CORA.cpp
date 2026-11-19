@@ -2,9 +2,9 @@
 //
 // lift is a permutation of the rows: differentiable.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -23,7 +23,7 @@ int main() {
     test::gradcheck(
         "lift",
         [](const Inputs &x) { return test::parts(Zonotope(x[0], x[1]).lift(3, {2, 0, 1})); },
-        test::random_zonotope(3, 4));
+        test::random_zonotope_rows(3, 4));
     return test::finish("zonotope lift (torch)");
 }
 

@@ -60,6 +60,11 @@ namespace cora {
 
 namespace {
 
+/// The center (n, 1) and the generators (n, m) of R0 as CORA's columns, as the support-function
+/// bounds of the initial set are written; each is taken once per verification.
+Tensor aux_center_column(const Zonotope &Z) { return Z.center().expand_dims(-1); }
+Tensor aux_generator_columns(const Zonotope &Z) { return Z.generators().matrix_transpose(); }
+
 // Constants and types -----------------------------------------------------------------------------
 
 constexpr int kMaxEta = 75;          // Taylor terms before a step size counts as not converged
@@ -132,7 +137,7 @@ double aux_max_all(const Tensor &t) {
 /// Whether a <= b holds for every entry.
 bool aux_all_le(const Tensor &a, const Tensor &b) { return aux_max_all(a - b) <= 0; }
 
-// Taylor sums -------------------------------------------------------------------------------------
+// Sparse products ---------------------------------------------------------------------------------
 
 /// The nonzeros of the row-major (n, n) matrix m by rows.
 Csr aux_csr(const std::vector<double> &m, int64_t n) {
@@ -241,6 +246,8 @@ bool aux_sparse_square_wins(const std::vector<double> &m, int64_t n) {
     for (int64_t k = 0; k < n; ++k) flops += col_count[k] * row_count[k];
     return flops < 0.1 * double(n) * double(n) * double(n);
 }
+
+// The exponential and the Taylor sums -------------------------------------------------------------
 
 /// e^{A time_step} by scaling and squaring with a Taylor series of the scaled A, whose terms are
 /// products with sparse A; the first squarings stay sparse too. A dense A uses the backend.
@@ -405,13 +412,14 @@ void aux_remove_from_unsat(Intervals &unsat, double t0, double t1) {
 
 /// The initial state c + G sign(l'G) of R0 that reaches the support value of row `row` of ltg.
 Tensor aux_extreme_x0(const Zonotope &R0, const std::vector<double> &ltg, std::size_t row) {
-    const int64_t m0 = R0.generators().shape()[1];
+    const int64_t m0 = R0.nr_generators();
     std::vector<double> sgn(m0);
     for (int64_t j = 0; j < m0; ++j) {
         const double v = ltg[row * m0 + j];
         sgn[j] = (v > 0) - (v < 0);
     }
-    return R0.center() + R0.generators().matmul(Tensor::like(R0.center(), sgn, {m0, 1}));
+    return aux_center_column(R0) +
+           aux_generator_columns(R0).matmul(Tensor::like(aux_center_column(R0), sgn, {m0, 1}));
 }
 
 // Propagation of the directions -------------------------------------------------------------------
@@ -468,7 +476,7 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
               const Tensor &Delta, const Tensor &Pu, const Tensor &u, const IntMat &F,
               const IntMat &G, int N, bool host_rows) {
     const int S = static_cast<int>(ds.size());
-    const int64_t m0 = R0.generators().shape()[1];
+    const int64_t m0 = R0.nr_generators();
     Pass pass;
     const int64_t n = Delta.shape()[0];
     // one direction of a sparse system on Eigen: the banded rows of Delta on the host, in threads
@@ -482,8 +490,8 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
         for (int k = 0; k < N; ++k) rows.push_back(rows.back().matmul(Delta));
         pass.LT = Tensor::concat(rows, -2);
     }
-    const std::vector<double> ltc = pass.LT.matmul(R0.center()).data();
-    pass.ltg = pass.LT.matmul(R0.generators()).data();
+    const std::vector<double> ltc = pass.LT.matmul(aux_center_column(R0)).data();
+    pass.ltg = pass.LT.matmul(aux_generator_columns(R0)).data();
 
     // The accumulated particular solution of the constant input, projected on l.
     std::vector<double> PuProj;
@@ -505,9 +513,10 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
         }
 
     // The curvature term F R0 + G u, evaluated along l_k for k < N.
-    const Tensor cx = F.center.matmul(R0.center()), G1x = F.center.matmul(R0.generators());
-    const Tensor G2x =
-        F.rad.matmul(Tensor::concat({R0.center(), R0.generators()}, -1).abs().sum(-1, true));
+    const Tensor cx = F.center.matmul(aux_center_column(R0)),
+                 G1x = F.center.matmul(aux_generator_columns(R0));
+    const Tensor G2x = F.rad.matmul(
+        Tensor::concat({aux_center_column(R0), aux_generator_columns(R0)}, -1).abs().sum(-1, true));
     std::vector<Tensor> W{cx, G2x};
     if (isu) {
         W.push_back(G.center.matmul(u));
@@ -823,7 +832,7 @@ SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const 
     }
     // the boxes F_c c, F_c G and F_r v, and beta_f >= |F| v / s
     const Tensor Fct = Tensor::like(A, Fc, {n, n});
-    const Tensor wc = Fct.matmul(R0.center()), WG = Fct.matmul(R0.generators());
+    const Tensor wc = Fct.matmul(aux_center_column(R0)), WG = Fct.matmul(aux_generator_columns(R0));
     const Tensor vt = Tensor::like(A, run.v, {n, 1});
     const Tensor wr = Tensor::like(A, Fr, {n, n}).matmul(vt);
     const std::vector<double> fv = Tensor::like(A, Fm, {n, n}).matmul(vt).data();
@@ -854,12 +863,12 @@ SoundPass aux_sound_pass(const Tensor &A, Expmat &E, const SoundRun &run, const 
         LT = Tensor::concat(rows, -2);
     }
     // along every row by l: c, G, F_c c, F_c G, P_i M and their sum; by |l|: F_r v, s and rho
-    const int64_t m0 = R0.generators().shape()[1], mw = WG.shape()[1];
+    const int64_t m0 = R0.nr_generators(), mw = WG.shape()[1];
     const bool has_input = run.in.has_u || run.in.has_m;
     const int64_t k_in = has_input ? run.in.k : 0;
     const int64_t nv = has_input ? static_cast<int64_t>(inb->V.size()) : 0;
-    std::vector<Tensor> cols{R0.center()};
-    if (m0 > 0) cols.push_back(R0.generators());
+    std::vector<Tensor> cols{aux_center_column(R0)};
+    if (m0 > 0) cols.push_back(aux_generator_columns(R0));
     cols.push_back(wc);
     if (mw > 0) cols.push_back(WG);
     if (k_in > 0 && nv > 0) {
@@ -989,8 +998,8 @@ SoundInput aux_sound_input(const LinearSys &sys, const Zonotope &U, int64_t n) {
     in.u0.assign(n, 0.0);
     if (!sys.B()) return in;
     const std::vector<double> B = sys.B()->data(), uc = U.center().data();
-    const std::vector<double> GU = U.generators().data();
-    const int64_t q = sys.B()->shape()[1], k = U.generators().shape()[1];
+    const std::vector<double> GU = U.generators().data(); // one generator per row
+    const int64_t q = sys.B()->shape()[1], k = U.nr_generators();
     in.k = k;
     in.M.assign(std::size_t(n) * k, 0.0);
     for (int64_t l = 0; l < n; ++l) {
@@ -998,7 +1007,7 @@ SoundInput aux_sound_input(const LinearSys &sys, const Zonotope &U, int64_t n) {
         in.u0[l] = aux_sum_up(q, [&](int64_t j) { return Bl[j] * uc[j]; });
         for (int64_t c = 0; c < k; ++c)
             in.M[std::size_t(l) * k + c] =
-                aux_sum_up(q, [&](int64_t j) { return Bl[j] * GU[std::size_t(j) * k + c]; });
+                aux_sum_up(q, [&](int64_t j) { return Bl[j] * GU[std::size_t(c) * q + j]; });
     }
     for (double v : in.u0) in.has_u = in.has_u || v != 0;
     for (double v : in.M) in.has_m = in.has_m || v != 0;
@@ -1028,11 +1037,11 @@ VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, const Zo
     run.d = rows.ds;
     // |c| + sum_j |g_j| and its largest scaled entry
     const std::vector<double> c = R0.center().data(), G = R0.generators().data();
-    const int64_t m0 = R0.generators().shape()[1];
+    const int64_t m0 = R0.nr_generators();
     run.v.resize(n);
     for (int64_t i = 0; i < n; ++i) {
         run.v[i] =
-            std::abs(c[i]) + aux_sum_up(m0, [&](int64_t j) { return std::abs(G[i * m0 + j]); });
+            std::abs(c[i]) + aux_sum_up(m0, [&](int64_t j) { return std::abs(G[j * n + i]); });
         run.beta_x = std::max(run.beta_x, run.v[i] / run.s[i]);
     }
     const Tensor Cs = Tensor::like(A, rows.Cs, {run.S, int64_t(rows.Cs.size()) / run.S});
@@ -1041,8 +1050,8 @@ VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, const Zo
     run.in = aux_sound_input(sys, U, n);
     // the initial set
     {
-        const std::vector<double> lc = run.L.matmul(R0.center()).data();
-        const std::vector<double> lg = run.L.matmul(R0.generators()).data();
+        const std::vector<double> lc = run.L.matmul(aux_center_column(R0)).data();
+        const std::vector<double> lg = run.L.matmul(aux_generator_columns(R0)).data();
         const SupportBounds b0 = aux_support_bounds(lc, lg, m0, run.E0, run.beta_x);
         for (int q = 0; q < run.S; ++q)
             if (0 < b0.down[q] - run.d[q]) {
@@ -1148,9 +1157,9 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
     // Initial set ---------------------------------------------------------------------------------
     // Distance of the initial output set to each halfspace; > 0 means it is already violated.
     {
-        const std::vector<double> lc = l_t.matmul(R0.center()).data();
-        const std::vector<double> lg = l_t.matmul(R0.generators()).data();
-        const int64_t m0 = R0.generators().shape()[1];
+        const std::vector<double> lc = l_t.matmul(aux_center_column(R0)).data();
+        const std::vector<double> lg = l_t.matmul(aux_generator_columns(R0)).data();
+        const int64_t m0 = R0.nr_generators();
         for (int s = 0; s < S; ++s) {
             double sum_abs = 0;
             for (int64_t j = 0; j < m0; ++j) sum_abs += std::abs(lg[s * m0 + j]);

@@ -14,9 +14,9 @@
 // CORA: contSet/@zonotope/and_.m
 // CORA: contSet/@zonotope/private/priv_andAveraging.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Amr Alanwar
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -48,16 +48,19 @@ Zonotope aux_intersect_boxes(const Zonotope &Z1, const Zonotope &Z2) {
 /// weights proportional to 1 / trace(G G'), summing to 1.
 Zonotope aux_average(const Zonotope &Z1, const Zonotope &Z2) {
     const auto trace = [](const Zonotope &Z) {
-        return Z.generators().matmul(Z.generators().matrix_transpose()).trace();
+        return Z.generators().matrix_transpose().matmul(Z.generators()).trace();
     };
     const Tensor t1 = trace(Z1), t2 = trace(Z2);
     const Tensor inverse_sum = (1.0 / t1) + (1.0 / t2);
     const Tensor w1 = 1.0 / t1.multiply(inverse_sum), w2 = 1.0 / t2.multiply(inverse_sum);
     const Tensor total = w1 + w2;
-    const Tensor c = w1.multiply(Z1.center()).add(w2.multiply(Z2.center())).divide(total);
-    const Tensor G =
-        Tensor::concat({w1.multiply(Z1.generators()), w2.multiply(Z2.generators())}, -1);
-    return {c, (1.0 / total).multiply(G)};
+    const Tensor c = w1.multiply(Z1.center().expand_dims(-1))
+                         .add(w2.multiply(Z2.center().expand_dims(-1)))
+                         .divide(total);
+    const Tensor G = Tensor::concat({w1.multiply(Z1.generators().matrix_transpose()),
+                                     w2.multiply(Z2.generators().matrix_transpose())},
+                                    -1);
+    return Zonotope(c.squeeze(-1), ((1.0 / total).multiply(G)).matrix_transpose());
 }
 
 /// An enclosure of the intersection of Z1 and Z2: exact for boxes, else by the method.

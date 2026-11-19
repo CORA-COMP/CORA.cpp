@@ -5,7 +5,7 @@
 // CORA authors: Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -31,18 +31,18 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 /// CORA's unit test: G = [1 -2 2 0; -1 1 0 1] gives 2.2 at (5, 3) and 1 at (-5, 3); the center
 /// does not matter; a point has norm 0 at the origin and infinity elsewhere.
 void cora_unit_test(const std::string &b) {
-    const Tensor G({{1.0, -2.0, 2.0, 0.0}, {-1.0, 1.0, 0.0, 1.0}});
+    const Tensor G({{1.0, -1.0}, {-2.0, 1.0}, {2.0, 0.0}, {0.0, 1.0}}); // one generator per row
     const Zonotope Z(column({0.0, 0.0}), G);
     check(close(Z.zonotope_norm(column({5.0, 3.0})), std::vector<double>{2.2}, 1e-9), b + ": 2.2");
     check(close(Z.zonotope_norm(column({-5.0, 3.0})), std::vector<double>{1}, 1e-9), b + ": 1");
     const Zonotope shifted(column({1.0, -2.0}), G);
     check(close(shifted.zonotope_norm(column({5.0, 3.0})), std::vector<double>{2.2}, 1e-9),
           b + ": the center is ignored");
-    const Zonotope point(column({0.0, 0.0}), Tensor::zeros({2, 0}));
+    const Zonotope point(column({0.0, 0.0}), Tensor::zeros({0, 2}));
     check(close(point.zonotope_norm(column({0.0, 0.0})), std::vector<double>{0}, 0),
           b + ": a point: 0");
     check(point.zonotope_norm(column({1.0, 0.0})).item() == kInf, b + ": a point: infinity");
-    const Zonotope line(column({0.0, 0.0}), Tensor({{1.0}, {0.0}}));
+    const Zonotope line(column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
     check(line.zonotope_norm(column({0.0, 1.0})).item() == kInf,
           b + ": outside the span: infinity");
     check(line.zonotope_norm_minimizer(column({0.0, 1.0})).second.shape() == Shape{0, 1},
@@ -59,7 +59,7 @@ void the_minimizer_reaches_the_point(const std::string &b) {
         const Tensor p = column(test::random_direction(rng, 3));
         const auto [value, beta] = Z.zonotope_norm_minimizer(p);
         check(beta.shape() == Shape{5, 1}, b + ": minimizer shape");
-        check(close(Z.generators().matmul(beta), p, 1e-8), b + ": G beta = p");
+        check(close(Z.generators().matrix_transpose().matmul(beta), p, 1e-8), b + ": G beta = p");
         check(close(beta.abs().max().item(), value.item(), 1e-8), b + ": |beta|_inf is the norm");
         // the point p / norm lies on the boundary: contained, and a larger multiple is not
         check(Z.contains(p / value.item(), "exact", 1e-7), b + ": p / norm is in Z");
@@ -80,8 +80,7 @@ void checks_and_their_switch() {
     int warnings = 0;
     const WarningHandler previous =
         set_warning_handler([&](const std::string &, const std::string &) { ++warnings; });
-    Zonotope(column({1.0, 0.0}), Tensor({{1.0}, {0.0}}))
-        .zonotope_norm_minimizer(column({1.0, 0.0}));
+    Zonotope(column({1.0, 0.0}), Tensor({{1.0, 0.0}})).zonotope_norm_minimizer(column({1.0, 0.0}));
     Z.zonotope_norm_minimizer(column({1.0, 0.0}));
     set_warning_handler(previous);
     check(warnings == 1, "zonotope_norm_minimizer: one warning, for the shifted zonotope");

@@ -7,9 +7,9 @@
 // recorded calls of TRAF22 and ROBE25_1 (data/quad_map_steps.txt, dumped from CORA.cpp).
 //
 // ORACLE: contSet/@zonotope/quadMap.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -42,9 +42,13 @@ void aux_compare(const std::string &what, const Zonotope &Z, const std::vector<T
         oracle::check(what, mine, theirs.compact("zeros", 0.0));
         return;
     }
-    const Zonotope boxed(theirs.center().gather(), theirs.generators().gather().abs_sum());
-    test::check(oracle::agree(what + ".c", mine.center(), theirs.center()), what + ": the center");
-    test::check(oracle::agree(what + ".box", mine.generators(), boxed.generators()),
+    // the oracle's columns
+    const Zonotope boxed = Zonotope((theirs.center().gather()).squeeze(-1),
+                                    (theirs.generators().gather().abs_sum()).matrix_transpose());
+    test::check(oracle::agree(what + ".c", mine.center().expand_dims(-1), theirs.center()),
+                what + ": the center");
+    test::check(oracle::agree(what + ".box", mine.generators().matrix_transpose(),
+                              boxed.generators().matrix_transpose()),
                 what + ": the box");
 }
 
@@ -70,7 +74,8 @@ void aux_recorded(const std::string &name) {
         char tag = 0;
         std::istringstream(line) >> tag >> n >> N >> k;
         const std::vector<double> c = read(n), G = read(n * N);
-        const Zonotope Z(Tensor::from_data(c, {n, 1}), Tensor::from_data(G, {n, N}));
+        const Zonotope Z = Zonotope(Tensor::from_data(c, {n, 1}).squeeze(-1),
+                                    Tensor::from_data(G, {n, N}).matrix_transpose());
         std::vector<Tensor> Q;
         Q.reserve(size_t(k));
         for (int64_t i = 0; i < k; ++i) Q.push_back(Tensor::from_data(read(n * n), {n, n}));

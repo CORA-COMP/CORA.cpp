@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@zonotope/filterOut.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -33,7 +33,7 @@ std::vector<int64_t> Zonotope::filter_out(const std::vector<Zonotope> &Zs) {
     CORA_CHECK(!Zs.empty(), Error::wrong_value,
                [] { return std::string("filter_out: the list of zonotopes must not be empty"); });
     for (const Zonotope &Z : Zs)
-        CORA_CHECK(Z.dim() == Zs.front().dim() && Z.center().ndim() == 2, Error::wrong_value, [&] {
+        CORA_CHECK(Z.dim() == Zs.front().dim() && Z.center().ndim() == 1, Error::wrong_value, [&] {
             return "filter_out: the zonotopes must be single sets of one dimension, got " +
                    shape_text(Z.center().shape());
         });

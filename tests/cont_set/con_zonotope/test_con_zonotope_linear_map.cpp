@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/mtimes.m
 // PROPERTY: contSet/@conZonotope/mtimes.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -26,11 +26,13 @@ void linear_map_known(const std::string &b) {
     const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         column({0.5}));
     const ConZonotope r = a.linear_map(Tensor({{2.0, 0.0}, {0.0, 3.0}, {1.0, 1.0}}));
-    check(r.dim() == 3 && close(r.c(), {2, 6, 3}, 0), b + ": the center maps");
-    check(close(r.generators(), {2, 0, 0, 3, 1, 1}, 0), b + ": the generators map");
+    check(r.dim() == 3 && close(r.c().expand_dims(-1), {2, 6, 3}, 0), b + ": the center maps");
+    check(close(r.generators().matrix_transpose(), {2, 0, 0, 3, 1, 1}, 0),
+          b + ": the generators map");
     check(close(r.A(), a.A(), 0) && close(r.b(), a.b(), 0), b + ": the constraints stay");
-    check(close((Tensor({{1.0, 0.0}}) * a).c(), {1}, 0), b + ": the operator");
-    check(close(Set(a)->linear_map(Tensor({{0.0, 1.0}})).as<ConZonotope>().c(), {2}, 0),
+    check(close((Tensor({{1.0, 0.0}}) * a).c().expand_dims(-1), {1}, 0), b + ": the operator");
+    check(close(Set(a)->linear_map(Tensor({{0.0, 1.0}})).as<ConZonotope>().c().expand_dims(-1), {2},
+                0),
           b + ": through the set interface");
 }
 
@@ -39,7 +41,7 @@ void linear_map_property(const std::string &b) {
     cora::Rng rng(42);
     for (int k = 0; k < 4; ++k) {
         const ConZonotope cz = test::random_con_zonotope(rng, 3, 4, 2);
-        const Tensor M = Tensor::like(cz.c(), {1, 2, 0, -1, 0.5, 3}, {2, 3});
+        const Tensor M = Tensor::like(cz.c().expand_dims(-1), {1, 2, 0, -1, 0.5, 3}, {2, 3});
         const ConZonotope r = cz.linear_map(M);
         check(r.contains(M.matmul(test::sample_points(cz, rng, 20))), b + ": images are inside");
     }
@@ -52,7 +54,8 @@ void checks_and_batches() {
           "linear_map: columns");
     const Tensor M = Tensor::concat(
         {Tensor({{1.0, 0.0}}).expand_dims(0), Tensor({{0.0, 2.0}}).expand_dims(0)}, 0);
-    check(a.linear_map(M).c().shape() == Shape{2, 1, 1}, "linear_map: a batch of matrices");
+    check(a.linear_map(M).c().expand_dims(-1).shape() == Shape{2, 1, 1},
+          "linear_map: a batch of matrices");
     ChecksScope off(false);
     check(a.linear_map(Tensor({{1.0, 1.0}})).dim() == 1,
           "linear_map: the same with the checks off");

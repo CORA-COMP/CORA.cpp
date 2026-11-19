@@ -4,7 +4,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -25,7 +25,7 @@ int main() {
         [](const Inputs &x) {
             return test::parts(Zonotope(x[0], x[1]).project_high_dim(5, {3, 0, 4}));
         },
-        test::random_zonotope(3, 4));
+        test::random_zonotope_rows(3, 4));
     return test::finish("zonotope project_high_dim (torch)");
 }
 

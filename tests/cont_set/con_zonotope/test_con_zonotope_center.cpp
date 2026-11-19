@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/center.m
 // PROPERTY: contSet/@conZonotope/center.m
 // CORA authors: Niklas Kochdumper, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -30,11 +30,11 @@ void center_known(const std::string &b) {
                               Tensor({{1.0, 1.0}}), column({1.0}));
     check(close(segment.center(), {0.5, 0.5}, 1e-9), b + ": the midpoint of a segment");
     // the third factor is zero: the square [-1, 1]^2, centered at the origin
-    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}}),
+    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
                              Tensor({{0.0, 0.0, 1.0}}), column({0.0}));
     check(close(square.center(), {0, 0}, 1e-9), b + ": the center of a square with a fixed factor");
     // one factor determined by the other: x = xi1 + 2, xi2 = 0.5 xi1 + ... full-dimensional in 1D
-    const ConZonotope shifted(column({2.0}), Tensor({{1.0, 1.0}}), Tensor({{1.0, -1.0}}),
+    const ConZonotope shifted(column({2.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
                               column({0.0}));
     check(close(shifted.center(), {2}, 1e-9), b + ": xi1 = xi2: the points 2 + 2 xi, center 2");
     check(ConZonotope::empty(2).center().shape() == Shape{2, 0}, b + ": empty: no column");
@@ -56,12 +56,14 @@ void center_property(const std::string &b) {
 
 /// A batch with constraints is refused; with the checks off a valid call gives the same center.
 void checks_and_their_switch() {
-    const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}),
+    const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
                             Tensor::ones({2, 1, 2}), Tensor::zeros({2, 1, 1}));
     check(test::raises([&] { batch.center(); }, Error::not_supported),
           "center: a batch with constraints");
-    check(test::close(ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2})).center(),
-                      Tensor::zeros({2, 1, 1}), 0),
+    check(test::close(
+              ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose())
+                  .center(),
+              Tensor::zeros({2, 1, 1}), 0),
           "center: a batch without constraints is its offset");
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), column({1.0}));

@@ -5,9 +5,9 @@
 // CORA: global/functions/helper/sets/contSet/polyZonotope/removeRedundantExponents.m
 // CORA: global/functions/helper/sets/contSet/polyZonotope/mergeExpMatrix.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -68,16 +68,16 @@ std::vector<int64_t> priv_least_equal_column(const Exponents &E) {
     return rep;
 }
 
-Tensor priv_columns(const Tensor &G, const std::vector<int64_t> &index) {
-    const int64_t n = G.shape()[0];
-    if (index.empty()) return G.zeros_like({n, 0});
-    // all columns in their order: the tensor itself
-    if (int64_t(index.size()) == G.shape()[1]) {
+Tensor priv_rows(const Tensor &G, const std::vector<int64_t> &index) {
+    const int64_t n = G.shape()[1];
+    if (index.empty()) return G.zeros_like({0, n});
+    // all rows in their order: the tensor itself
+    if (int64_t(index.size()) == G.shape()[0]) {
         int64_t next = 0;
         if (std::all_of(index.begin(), index.end(), [&](int64_t j) { return j == next++; }))
             return G;
     }
-    return G.take(index, -1);
+    return G.take(index, -2);
 }
 
 bool priv_is_even(const std::vector<int> &exponents) {
@@ -85,7 +85,7 @@ bool priv_is_even(const std::vector<int> &exponents) {
 }
 
 MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E) {
-    const int64_t n = G.shape()[0], h = G.shape()[1];
+    const int64_t h = G.shape()[0], n = G.shape()[1];
     if (h == 0) return {G, E};
     const std::vector<double> g = G.data();
     // the columns that are not zero, with a hash of their exponents
@@ -94,7 +94,7 @@ MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E) {
     bool changed = false;
     for (int64_t j = 0; j < h; ++j) {
         bool nonzero = false;
-        for (int64_t i = 0; i < n && !nonzero; ++i) nonzero = g[std::size_t(i * h + j)] != 0.0;
+        for (int64_t i = 0; i < n && !nonzero; ++i) nonzero = g[std::size_t(j * n + i)] != 0.0;
         if (!nonzero) {
             changed = true;
             continue;
@@ -139,7 +139,7 @@ MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E) {
     if (!repeated) {
         Exponents kept;
         for (const int64_t j : live) kept.push_back(E[std::size_t(j)]);
-        return {priv_columns(G, live), std::move(kept)};
+        return {priv_rows(G, live), std::move(kept)};
     }
     // the groups, the columns of each in order: the leaders by their first column
     std::vector<int64_t> leaders;
@@ -183,23 +183,23 @@ MergedColumns priv_merge_columns(const Tensor &G, const Exponents &E) {
         for (int64_t i = 0; i < n; ++i) {
             double sum = 0.0;
             for (std::size_t m = group.size(); m-- > 0;)
-                sum = g[std::size_t(i * h + group[m])] + sum;
-            merged[std::size_t(i) * std::size_t(k) + t] = sum;
+                sum = g[std::size_t(group[m] * n + i)] + sum;
+            merged[t * std::size_t(n) + std::size_t(i)] = sum;
         }
     }
     // sums that cancelled (x and -x) go too, as the second pass of CORA's constructor removes them
     std::vector<int64_t> nonzero;
     for (int64_t t = 0; t < k; ++t)
         for (int64_t i = 0; i < n; ++i)
-            if (merged[std::size_t(i * k + t)] != 0.0) {
+            if (merged[std::size_t(t * n + i)] != 0.0) {
                 nonzero.push_back(t);
                 break;
             }
-    const Tensor all = Tensor::like(G, merged, {n, k});
+    const Tensor all = Tensor::like(G, merged, {k, n});
     if (int64_t(nonzero.size()) == k) return {all, std::move(E_out)};
     Exponents kept;
     for (const int64_t t : nonzero) kept.push_back(E_out[std::size_t(t)]);
-    return {priv_columns(all, nonzero), std::move(kept)};
+    return {priv_rows(all, nonzero), std::move(kept)};
 }
 
 // The identifiers -------------------------------------------------------------------------------
@@ -268,9 +268,9 @@ PolyZonotope priv_fold_constants(const PolyZonotope &set) {
     // the others keep their exponents, the constants add up in the center
     Exponents E;
     for (const int64_t j : rest) E.push_back(set.exponents()[std::size_t(j)]);
-    const Tensor c = set.center() + priv_columns(set.generators(), constant).sum(-1, true);
+    const Tensor c = set.center() + priv_rows(set.generators(), constant).sum(-2);
     return {c,
-            priv_columns(set.generators(), rest),
+            priv_rows(set.generators(), rest),
             set.independent_generators(),
             std::move(E),
             set.ids(),

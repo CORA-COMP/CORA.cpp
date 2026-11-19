@@ -4,9 +4,9 @@
 //
 // CORA: contSet/@zonotope/mtimes.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -33,7 +33,7 @@ void mtimes_by_a_matrix(const std::string &b) {
     std::vector<double> M(n * n);
     rng.normal(M.data(), M.size(), 1.0);
     const Zonotope MZ = Z.linear_map(Tensor::from_data(M, {n, n}));
-    check(MZ.generators().shape() == std::vector<int64_t>({n, m}),
+    check(MZ.generators().shape() == std::vector<int64_t>({m, n}),
           b + ": linear_map keeps the generators");
     for (int k = 0; k < 5; ++k) {
         const std::vector<double> d = random_direction(rng, n);
@@ -67,7 +67,7 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
 
     const Zonotope wide = Z.linear_map(Interval(C - R, C + R));
     // one generator per dimension
-    check(wide.generators().shape() == std::vector<int64_t>({n, m + n}),
+    check(wide.generators().shape() == std::vector<int64_t>({m + n, n}),
           b + ": one generator per dimension");
     for (int trial = 0; trial < 20; ++trial) {
         std::vector<double> M = centre, u(n * n);

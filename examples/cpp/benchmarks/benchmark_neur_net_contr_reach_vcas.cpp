@@ -17,9 +17,9 @@
 //
 // CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_07_VCAS.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_neur_net.h"
@@ -169,7 +169,7 @@ ClosedLoopVerdict aux_reach(bool middle, double hdot0, const std::vector<NeuralN
             // the hull of the accelerations 0 and the choice: a segment along (-1/2, 1, 0)
             const double mid = choice / 2, half = std::abs(choice) / 2;
             R = R.plus(Zonotope(Tensor::from_data({-0.5 * mid, mid, -1.0}, {3, 1}),
-                                Tensor::from_data({-0.5 * half, half, 0.0}, {3, 1})));
+                                Tensor::from_data({-0.5 * half, half, 0.0}, {1, 3})));
         } else {
             R = R.plus(Tensor::from_data({-0.5 * choice, choice, -1.0}, {3, 1}));
         }

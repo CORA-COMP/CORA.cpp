@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -53,7 +53,7 @@ void count_and_ind(const std::string &b) {
             row.push_back(Tensor::from_data(data, {n, n}));
         }
     const Zonotope R = Z.cubic_map(T);
-    check(R.dim() == 2 && R.generators().shape().back() == 19, b + ": 2 outputs, 19 generators");
+    check(R.dim() == 2 && R.nr_generators() == 19, b + ": 2 outputs, 19 generators");
     // ind {0, 2} equals T with the matrix of column 1 set to zero
     Grid T0 = T;
     for (auto &row : T0) row[1] = row[1].zeros_like();
@@ -93,7 +93,7 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
 
 /// Wrong grids and lists are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({1.0, 0.0}), Tensor({{0.5}, {0.2}}));
+    const Zonotope Z(column({1.0, 0.0}), Tensor({{0.5, 0.2}}));
     const Tensor M({{1.0, 0.0}, {0.0, 1.0}});
     check(test::raises([&] { Z.cubic_map({}); }, Error::wrong_value), "cubic_map: no matrices");
     check(test::raises([&] { Z.cubic_map({{Tensor({{1.0}})}}); }, Error::wrong_value),

@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -35,7 +35,7 @@ void mink_diff_known_2d(const std::string &b) {
     check(close(aligned.center(), std::vector<double>{1, 0.5}, 0) &&
               close(aligned.generators(), std::vector<double>{1, 0, 0, 1}, 0),
           b + ": aligned generators: [-1, 1]^2 less [-1, 1]^2 scaled");
-    const Zonotope segment(column({0.0, 0.0}), Tensor({{0.5}, {0.5}}));
+    const Zonotope segment(column({0.0, 0.0}), Tensor({{0.5, 0.5}}));
     const Zonotope half = square(1.0).mink_diff(segment);
     check(close(half.generators(), std::vector<double>{0.5, 0, 0, 0.5}, 1e-9),
           b + ": a segment out of a square");
@@ -45,7 +45,7 @@ void mink_diff_known_2d(const std::string &b) {
     check(close(square(1.0).mink_diff(column({0.25, 0.0})).center(), std::vector<double>{-0.25, 0},
                 0),
           b + ": a point shifts the center");
-    check(close(square(1.0).mink_diff(Zonotope(column({0.5, 0.0}), Tensor::zeros({2, 0}))).center(),
+    check(close(square(1.0).mink_diff(Zonotope(column({0.5, 0.0}), Tensor::zeros({0, 2}))).center(),
                 std::vector<double>{-0.5, 0}, 0),
           b + ": a zonotope without generators is a point");
 }
@@ -61,7 +61,7 @@ void mink_diff_known_3d(const std::string &b) {
                   close(D.generators(), (Tensor::eye(3) * 1.5), 1e-9),
               std::string(b + ": the cube less a cube, ") + method);
     }
-    const Zonotope segment(column({0.0, 0.0, 0.0}), Tensor({{0.5}, {0.0}, {0.0}}));
+    const Zonotope segment(column({0.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.0}}));
     check(close(cube.mink_diff(segment, "approx").generators(),
                 std::vector<double>{1.5, 0, 0, 0, 2, 0, 0, 0, 2}, 1e-9),
           b + ": a segment along an axis shortens that generator (approx)");
@@ -101,16 +101,15 @@ void mink_diff_refuses() {
     check(
         test::raises([&] { Zonotope::stack({cube, cube}).mink_diff(small); }, Error::not_supported),
         "mink_diff: a batch");
-    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    check(
-        test::raises([&] { flat.mink_diff(Zonotope(column({0.0, 0.0}), Tensor({{0.1}, {-0.1}}))); },
-                     Error::not_supported),
-        "mink_diff: a flat minuend");
+    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    check(test::raises([&] { flat.mink_diff(Zonotope(column({0.0, 0.0}), Tensor({{0.1, -0.1}}))); },
+                       Error::not_supported),
+          "mink_diff: a flat minuend");
     check(test::raises([&] { flat.mink_diff(square(1.0)); }, Error::empty_set),
           "mink_diff: flat less full is empty");
     // a subtrahend too large
     check(test::raises(
-              [&] { square(1.0).mink_diff(Zonotope(column({0.0, 0.0}), Tensor({{3.0}, {0.0}}))); },
+              [&] { square(1.0).mink_diff(Zonotope(column({0.0, 0.0}), Tensor({{3.0, 0.0}}))); },
               Error::empty_set),
           "mink_diff: a subtrahend too large for the minuend");
     const Tensor on = square(1.0).mink_diff(square(0.5)).generators();

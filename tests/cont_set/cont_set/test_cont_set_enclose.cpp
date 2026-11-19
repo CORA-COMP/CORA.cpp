@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -58,7 +58,7 @@ void enclose_by_class(const std::string &b) {
 void errors_and_their_switch() {
     const Interval A(column({0.0, 0.0}), column({1.0, 1.0}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
-    const Zonotope Z3(column({0.0, 0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0}, {3, 1}));
+    const Zonotope Z3(column({0.0, 0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0}, {1, 3}));
     check(test::raises([&] { static_cast<const ContSet &>(A).enclose(Z3); },
                        Error::dimension_mismatch),
           "different dimensions");

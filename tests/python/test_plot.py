@@ -161,7 +161,7 @@ class Dimensions(unittest.TestCase):
         self.sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
         self.X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
         self.Z3 = cora.Zonotope(cora.Tensor([0.0, 0.0, 0.0]),
-                                cora.Tensor([[1.0, 0.0, 0.5], [0.0, 1.0, 0.5], [0.0, 0.0, 1.0]]))
+                                cora.Tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.5, 0.5, 1.0]]))
 
     def tearDown(self):
         cora.use_cora_colors("CORA:default")

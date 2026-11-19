@@ -2,9 +2,9 @@
 //
 // time-point sets, random points and the options of CORA's plot that the core knows
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -51,7 +51,7 @@ void one_dimension_is_a_bar(const std::string &b) {
     check(fig.xlabel == "x[1]" && fig.ylabel.empty(),
           b + ": the x axis is named, the y axis is not");
     Figure point;
-    plot(point, Zonotope(test::column({1, 2}), Tensor::zeros({2, 1})), {0});
+    plot(point, Zonotope(test::column({1, 2}), Tensor::zeros({1, 2})), {0});
     check(point.layers()[0].polygons[0].size() == 1, b + ": a point is one point");
     check(has(fig.svg(), "<path"), b + ": drawn as SVG");
 }

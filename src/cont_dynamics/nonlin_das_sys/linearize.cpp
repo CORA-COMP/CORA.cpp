@@ -14,9 +14,9 @@
 //
 // CORA: contDynamics/@nonlinDASys/private/priv_linearize.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
@@ -38,7 +38,7 @@ DaeLinearized NonlinDASys::linearize(const Tensor &x0, const Tensor &y0,
     CORA_CHECK(!U || m_ > 0, Error::not_supported,
                [] { return std::string("linearize: the system has no inputs; leave U empty"); });
     // the expansion point: the input's center, the state half a step on, y consistent with it
-    const Tensor u_center = U ? U->center() : x0.zeros_like({m_, 1});
+    const Tensor u_center = U ? U->center().expand_dims(-1) : x0.zeros_like({m_, 1});
     const Tensor u_star = u_center + u_trans;
     const Tensor x_star = x0 + dynamics(x0, y0, u_star) * (0.5 * time_step);
     const Tensor y_star = newton_algebraic(x_star, y0, u_star, false);
@@ -53,7 +53,7 @@ DaeLinearized NonlinDASys::linearize(const Tensor &x0, const Tensor &y0,
     const Tensor A_lin = J.A - CF_inv.matmul(J.D);
     const Tensor B_lin = J.B - CF_inv.matmul(J.E);
     // the input of the affine system: B_lin (U - center), the constant part in u_const
-    Zonotope BU(x0.zeros_like({n_, 1}), x0.zeros_like({n_, 0}));
+    Zonotope BU = Zonotope(x0.zeros_like({n_}), x0.zeros_like({0, n_}));
     if (m_ > 0 && U) BU = (*U - u_center).linear_map(B_lin);
     return {x_star, y_star, u_star, g0, J.D, J.E, F_inv, CF_inv, LinearSys(A_lin), BU, f0};
 }

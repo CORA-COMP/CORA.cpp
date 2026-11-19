@@ -16,9 +16,9 @@
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reduceAdaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -62,12 +62,14 @@ Zonotope Zonotope::reduce_adaptive(double diag_percent) const {
         return "reduce_adaptive: diag_percent must be nonnegative and finite, got " +
                std::to_string(diag_percent);
     });
-    CORA_CHECK(c_.ndim() == 2 && G_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(c_.ndim() == 1 && G_.ndim() == 2, Error::not_supported, [] {
         return std::string("reduce_adaptive: a batch of zonotopes is not supported");
     });
-    const int64_t n = dim(), h = G_.shape().back();
+    const int64_t n = dim(), h = nr_generators();
+    // entry i of generator j is at j n + i (the generator rows)
     const std::vector<double> g = G_.data();
-    const auto a = [&](std::size_t at) { return std::abs(g[at]); };
+    const auto at = [&](int64_t i, int64_t j) { return std::size_t(j * n + i); };
+    const auto a = [&](std::size_t k) { return std::abs(g[k]); };
 
     // the box (row sums) and Girard's metric (column sums less the largest entry) in one pass
     std::vector<double> box(static_cast<std::size_t>(n)), metric(static_cast<std::size_t>(h), 0.0),
@@ -75,7 +77,7 @@ Zonotope Zonotope::reduce_adaptive(double diag_percent) const {
     for (int64_t i = n; i-- > 0;) {
         double sum = 0;
         for (int64_t j = h; j-- > 0;) {
-            const double x = a(std::size_t(i * h + j));
+            const double x = a(at(i, j));
             sum = x + sum;
             metric[std::size_t(j)] = x + metric[std::size_t(j)];
             largest[std::size_t(j)] = std::max(largest[std::size_t(j)], x);
@@ -105,7 +107,7 @@ Zonotope Zonotope::reduce_adaptive(double diag_percent) const {
         // the first of the largest entries drops out
         std::size_t top = 0;
         for (std::size_t i = 0; i < col.size(); ++i) {
-            col[i] = a(i * std::size_t(h) + j);
+            col[i] = a(at(int64_t(i), int64_t(j)));
             if (col[top] < col[i]) top = i;
         }
         for (std::size_t i = 0; i < col.size(); ++i)
@@ -121,16 +123,18 @@ Zonotope Zonotope::reduce_adaptive(double diag_percent) const {
     for (int64_t j = 0; j < h; ++j)
         if (!boxed[std::size_t(j)]) kept.push_back(j);
     const int64_t q = static_cast<int64_t>(kept.size());
+    // the rows (q + n, n): the kept generators, then one box row per dimension
     std::vector<double> out(static_cast<std::size_t>(n * (q + n)), 0.0);
+    for (int64_t l = 0; l < q; ++l)
+        for (int64_t i = 0; i < n; ++i)
+            out[std::size_t(l * n + i)] = g[at(i, kept[std::size_t(l)])];
     for (int64_t i = 0; i < n; ++i) {
-        for (int64_t l = 0; l < q; ++l)
-            out[std::size_t(i * (q + n) + l)] = g[std::size_t(i * h + kept[std::size_t(l)])];
         double sum = 0;
         for (int64_t j = h; j-- > 0;)
-            if (boxed[std::size_t(j)]) sum = a(std::size_t(i * h + j)) + sum;
-        out[std::size_t(i * (q + n) + q + i)] = sum;
+            if (boxed[std::size_t(j)]) sum = a(at(i, j)) + sum;
+        out[std::size_t((q + i) * n + i)] = sum;
     }
-    return {c_, Tensor::like(c_, out, {n, q + n})};
+    return {c_, Tensor::like(c_, out, {q + n, n})};
 }
 
 } // namespace cora

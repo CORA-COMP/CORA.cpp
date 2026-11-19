@@ -3,9 +3,9 @@
 // See also: lean/tensor.h, lean/oracle.h
 //
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   11-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/zonotope.h"
@@ -28,6 +28,16 @@ void aux_same_dtype(const std::string &a, const std::string &b) {
     if (a != b)
         CORA_FAIL(Error::wrong_value, "lean: an operation on the dtypes '" + a + "' and '" + b +
                                           "' is not allowed; round one with roundTo first");
+}
+
+// the layouts cross here only: CORALean's columns (n, 1), (n, m); cora::Zonotope's rows (#163)
+
+/// CORA's column of the center of Z.
+cora::Tensor aux_center_column(const cora::Zonotope &Z) { return Z.center().expand_dims(-1); }
+
+/// The cora::Zonotope of CORA's columns c (n, 1) and G (n, m).
+cora::Zonotope aux_from_columns(const cora::Tensor &c, const cora::Tensor &G) {
+    return {c.squeeze(-1), G.matrix_transpose()};
 }
 
 Interval aux_zero_box(int64_t n, const std::string &dtype) {
@@ -69,6 +79,9 @@ Certified aux_disjoint(const char *op, std::initializer_list<Operand> operands) 
 
 Zonotope::Zonotope(const cora::Tensor &c, const cora::Tensor &G)
     : c_(Tensor::from(c)), G_(Tensor::from(G)), E_(aux_zero_box(c.shape()[0], dtype())) {}
+
+Zonotope::Zonotope(const cora::Zonotope &Z)
+    : Zonotope(aux_center_column(Z), Z.generators().matrix_transpose()) {}
 
 Zonotope::Zonotope(Tensor c, Tensor G, Interval E)
     : c_(std::move(c)), G_(std::move(G)), E_(std::move(E)) {
@@ -347,7 +360,7 @@ Interval Zonotope::interval() const {
 
 std::pair<cora::Zonotope, cora::Interval> Zonotope::gather() const {
     const auto [inf, sup] = E_.gather();
-    return {cora::Zonotope(c_.gather(), G_.gather()), cora::Interval(inf, sup)};
+    return {aux_from_columns(c_.gather(), G_.gather()), cora::Interval(inf, sup)};
 }
 
 // Crossing -----------------------------------------------------------------------------------

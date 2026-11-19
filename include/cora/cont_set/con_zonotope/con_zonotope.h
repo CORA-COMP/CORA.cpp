@@ -21,7 +21,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -48,8 +48,9 @@ class ConZonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::con_zonotope;
 
-    /// The constrained zonotope of the center c (..., n, 1), the generators G (..., n, m) and the
-    /// constraints A b = b (A (..., p, m), b (..., p, 1)); without A and b no constraint.
+    /// The constrained zonotope of the center c (..., n), the generators G (..., m, n), one per
+    /// row (#163), and the constraints A x = b (A (..., p, m), b (..., p, 1)); without A and b no
+    /// constraint. A center given as a column (..., n, 1) is the vector.
     ConZonotope(const Tensor &c, const Tensor &G);
     ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b);
 
@@ -66,10 +67,11 @@ class ConZonotope : public ContSet {
     static ConZonotope from_matrix(const Tensor &Z, const std::optional<Tensor> &A = std::nullopt,
                                    const std::optional<Tensor> &b = std::nullopt);
 
-    /// The stored center c, generators G, constraint matrix A and offset b; A and b are the
-    /// equalities of the factor polytope.
+    /// The stored center c (..., n), generator rows G (..., m, n), constraint matrix A and offset
+    /// b; A and b are the equalities of the factor polytope.
     const Tensor &c() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
+    int64_t nr_generators() const { return G_.size(-2); }
     const Tensor &A() const { return F_.Ae(); }
     const Tensor &b() const { return F_.be(); }
 
@@ -383,7 +385,7 @@ class ConZonotope : public ContSet {
                                      const std::optional<BoundsOptions> &options = std::nullopt);
 
   protected:
-    int64_t dim_impl() const override { return c_.shape()[c_.shape().size() - 2]; }
+    int64_t dim_impl() const override { return c_.shape().back(); }
     Tensor center_impl() const override;
     Tensor support_function_impl(const Tensor &d) const override;
     Interval interval_impl() const override;

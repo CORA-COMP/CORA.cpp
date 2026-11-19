@@ -6,9 +6,9 @@
 // than the box of the zonotope (the stated properties).
 //
 // CORA.cpp only: tests interval_cert, CORALean's float replacement of the programs of interval
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -103,7 +103,8 @@ void cuts(const std::string &b) {
     cora::Rng rng(9);
     for (int trial = 0; trial < 4; ++trial) {
         const ConZonotope A = test::random_con_zonotope(rng, 2, 4, 1);
-        const Polytope P(Tensor({{1.0, 0.5}, {-0.3, 1.0}}), A.c() + column({0.2, 0.1}));
+        const Polytope P(Tensor({{1.0, 0.5}, {-0.3, 1.0}}),
+                         A.c().expand_dims(-1) + column({0.2, 0.1}));
         const ConZonotope::Cut K = A.cut(P);
         const Interval I = K.interval_cert(), exact = A.intersect(P).interval();
         check(!I.is_empty() && close(I.inf(), exact.inf(), 1e-8) &&

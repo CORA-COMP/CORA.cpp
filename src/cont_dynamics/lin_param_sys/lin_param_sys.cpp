@@ -25,18 +25,19 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-LinParamSys::LinParamSys(MatZonotope A, std::optional<Tensor> B, std::optional<Tensor> c,
+LinParamSys::LinParamSys(Zonotope A, std::optional<Tensor> B, std::optional<Tensor> c,
                          ParamType type)
     : A_(std::move(A)), B_(std::move(B)), type_(type) {
     detail::Entry entry;
     // one square set of matrices, B with its rows and c a column of them
-    CORA_CHECK(A_.center().ndim() == 2 && A_.rows() == A_.cols() && A_.rows() > 0,
+    CORA_CHECK(A_.center().ndim() == 2 && A_.elem_rank() == 2 &&
+                   A_.center().size(-2) == A_.center().size(-1) && A_.center().size(-1) > 0,
                Error::wrong_input_in_constructor, [&] {
                    return "LinParamSys: A must be one square matrix zonotope (n, n), got the "
                           "center shape " +
                           shape_text(A_.center().shape());
                });
-    const int64_t n = A_.rows();
+    const int64_t n = A_.center().size(-2);
     CORA_CHECK(!B_ || (B_->ndim() == 2 && B_->shape()[0] == n), Error::wrong_input_in_constructor,
                [&] {
                    return "LinParamSys: B must be a matrix (n, m) with the " + std::to_string(n) +

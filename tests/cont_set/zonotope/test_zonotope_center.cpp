@@ -4,9 +4,9 @@
 // CORA: contSet/@zonotope/center.m
 // PROPERTY: contSet/@zonotope/center.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,7 +25,7 @@ using test::column;
 namespace {
 
 void dim_and_center(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0, 0.5}, {0.0, 2.0, 0.5}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {0.5, 0.5}}));
     check(Z.dim() == 2, b + ": dim");
     check(close(Z.center(), std::vector<double>{1, 2}), b + ": center");
     const ContSet &S = Z;
@@ -59,7 +59,7 @@ int main() {
         center_is_the_midpoint(b);
     });
     ChecksScope off(false);
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0}, {0.5}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}}));
     check(close(Z.center(), std::vector<double>{1, 2}, 0), "center: the same with the checks off");
     return test::finish("zonotope center");
 }

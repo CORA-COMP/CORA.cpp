@@ -5,9 +5,9 @@
 // the cut of an image is the image of the cut (the stated properties).
 //
 // CORA.cpp only: tests cut, CORALean's float replacement of the slack factors of polytope/and_
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -46,7 +46,8 @@ void properties(const std::string &b) {
     cora::Rng rng(17);
     for (int trial = 0; trial < 4; ++trial) {
         const ConZonotope A = test::random_con_zonotope(rng, 2, 4, 1);
-        const Polytope P(Tensor({{1.0, 0.5}, {-0.3, 1.0}}), A.c() + column({0.2, 0.1}));
+        const Polytope P(Tensor({{1.0, 0.5}, {-0.3, 1.0}}),
+                         A.c().expand_dims(-1) + column({0.2, 0.1}));
         const ConZonotope::Cut K = A.cut(P);
         const Interval I = K.interval_tight(5);
         const Tensor points = test::sample_points(A, rng, 80);

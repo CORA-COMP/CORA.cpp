@@ -16,9 +16,9 @@
 //
 // CORA: contSet/@conZonotope/cubMap.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -66,7 +66,7 @@ ConZonotope ConZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
     const std::string problem = priv_cubic_map_problem(T, ind, dim());
     CORA_CHECK(problem.empty(), Error::wrong_value, [&] { return "cubic_map: " + problem; });
     const Zonotope Z = Zonotope(c_, G_).cubic_map(T, ind);
-    const int64_t m = G_.shape().back(), total = Z.generators().shape().back();
+    const int64_t m = G_.size(-2), total = Z.nr_generators();
     // the monomials of the factors alone are the first generators
     std::vector<int64_t> linear;
     linear.reserve(static_cast<std::size_t>(m));
@@ -84,13 +84,13 @@ ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz
         return "cubic_map: the sets differ in dimension, " + std::to_string(dim()) + ", " +
                std::to_string(cz2.dim()) + " and " + std::to_string(cz3.dim());
     });
+    // the map of the three sets without their constraints
     const Zonotope Z = Zonotope(c_, G_).cubic_map(Zonotope(cz2.c(), cz2.generators()),
                                                   Zonotope(cz3.c(), cz3.generators()), T, ind);
-    const int64_t total = Z.generators().shape().back();
+    const int64_t total = Z.nr_generators();
     const std::array<const ConZonotope *, 3> sets{this, &cz2, &cz3};
     // the factors of the three sets are stacked
-    const std::array<int64_t, 3> sizes{G_.shape().back(), cz2.generators().shape().back(),
-                                       cz3.generators().shape().back()};
+    const std::array<int64_t, 3> sizes{G_.size(-2), cz2.nr_generators(), cz3.nr_generators()};
     // the rows of each set, on its own factors
     std::vector<Tensor> A, b;
     for (int s = 0; s < 3; ++s) {

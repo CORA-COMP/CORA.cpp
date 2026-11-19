@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/and_.m
 // PROPERTY: contSet/@conZonotope/and_.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -28,7 +28,8 @@ void intersect_known(const std::string &b) {
     const ConZonotope A(column({1.0}), Tensor({{1.0}}));
     const ConZonotope B(column({2.0}), Tensor({{1.0}}));
     const ConZonotope R = A.intersect(B);
-    check(close(R.c(), {1}, 0) && close(R.generators(), {1, 0}, 0),
+    check(close(R.c().expand_dims(-1), {1}, 0) &&
+              close(R.generators().matrix_transpose(), {1, 0}, 0),
           b + ": the first set's generators");
     check(close(R.A(), {1, -1}, 0) && close(R.b(), {1}, 0),
           b + ": one agreement row c + G x = c2 + G2 x2");
@@ -37,7 +38,7 @@ void intersect_known(const std::string &b) {
     // the constraints of both sets stay; zero columns and rows go
     const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         column({1.0}));
-    const ConZonotope D = C.intersect(Zonotope(column({0.5, 0.5}), Tensor({{0.0}, {0.0}})));
+    const ConZonotope D = C.intersect(Zonotope(column({0.5, 0.5}), Tensor({{0.0, 0.0}})));
     check(close(D.interval().inf(), {0.5, 0.5}, 1e-9), b + ": a point of the segment");
     const ConZonotope E = A.intersect(Interval(column({1.5}), column({4.0})));
     check(close(E.interval().inf(), {1.5}, 1e-9) && close(E.interval().sup(), {2}, 1e-9),
@@ -67,10 +68,9 @@ void intersect_property(const std::string &b) {
 /// Wrong operands are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const ConZonotope A(column({1.0}), Tensor({{1.0}}));
-    check(
-        test::raises([&] { A.intersect(ConZonotope(column({1.0, 2.0}), Tensor({{1.0}, {1.0}}))); },
-                     Error::dimension_mismatch),
-        "intersect: different dimensions");
+    check(test::raises([&] { A.intersect(ConZonotope(column({1.0, 2.0}), Tensor({{1.0, 1.0}}))); },
+                       Error::dimension_mismatch),
+          "intersect: different dimensions");
     const Tensor on = A.intersect(A).A();
     ChecksScope off(false);
     check(close(A.intersect(A).A(), on, 0), "intersect: the same with the checks off");

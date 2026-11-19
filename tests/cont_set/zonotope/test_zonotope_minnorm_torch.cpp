@@ -2,9 +2,9 @@
 //
 // minnorm is piecewise: the gradient follows the nearest facet, away from ties.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -26,7 +26,7 @@ int main() {
             const auto [value, point] = Zonotope(x[0], x[1]).minnorm();
             return Inputs{value, point};
         },
-        test::random_zonotope(2, 4));
+        test::random_zonotope_rows(2, 4));
     return test::finish("zonotope minnorm (torch)");
 }
 

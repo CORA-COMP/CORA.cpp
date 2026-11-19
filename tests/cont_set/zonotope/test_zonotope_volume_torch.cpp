@@ -2,7 +2,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -18,7 +18,7 @@ namespace {
 
 /// The exact sum of |det| and the Alamo bound are differentiable in the generators.
 void volume_gradient() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(2, 4);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 4);
     test::gradcheck(
         "volume (exact)", [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).volume()}; }, Z);
     test::gradcheck(

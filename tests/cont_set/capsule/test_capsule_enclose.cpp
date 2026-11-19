@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@capsule/enclose.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -27,7 +27,7 @@ void enclose_known(const std::string &b) {
     check(C1.enclose(C2).isequal(C1.convex_hull(C2), 0.0), b + ": the hull of the two");
     const Set S = C1;
     check(S->enclose(C2).as<Capsule>().isequal(C1.convex_hull(C2), 0.0), b + ": ContSet::enclose");
-    check(test::raises([&] { S->enclose(Zonotope(column({0.0, 0.0}), Tensor({{1.0}, {0.0}}))); },
+    check(test::raises([&] { S->enclose(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}}))); },
                        Error::noops),
           b + ": another class has no pair");
 }

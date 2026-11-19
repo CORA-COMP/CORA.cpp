@@ -5,9 +5,9 @@
 // CORA: contDynamics/@linearSys/homogeneousSolution.m
 // CORA: contDynamics/@linearSys/particularSolution_timeVarying.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -38,7 +38,7 @@ bool member_is(const Zonotope &batched, int64_t b, const Zonotope &single) {
 
 /// A set from a center (..., n) and generators (..., n, m).
 Zonotope make_set(const torch::Tensor &c, const torch::Tensor &G) {
-    return {from_torch(c.unsqueeze(-1)), from_torch(G)};
+    return {from_torch(c), from_torch(G.transpose(-1, -2))}; // generators as rows
 }
 
 /// The homogeneous solution and the time-varying input solution agree with the members.

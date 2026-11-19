@@ -11,7 +11,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -26,7 +26,7 @@ namespace cora {
 
 Interval Capsule::interval_impl() const {
     if (priv_empty_mask(r_).detach().max().item() > 0) {
-        if (c_.ndim() != 2)
+        if (cc().ndim() != 2)
             CORA_FAIL(
                 Error::not_supported,
                 "interval: a batch with an empty capsule has no box, as boxes cannot be empty "
@@ -34,8 +34,8 @@ Interval Capsule::interval_impl() const {
         return Interval::empty(dim());
     }
     // CORA reads the range of each coordinate from the support function: c_i +- (|g_i| + r)
-    const Tensor reach = g_.abs().add(r_);
-    return {c_.subtract(reach), c_.add(reach)};
+    const Tensor reach = gc().abs().add(r_);
+    return {cc().subtract(reach), cc().add(reach)};
 }
 
 } // namespace cora

@@ -3,9 +3,9 @@
 // CORA: contSet/@capsule/radius.m
 // PROPERTY: contSet/@capsule/radius.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -37,7 +37,7 @@ void radius_property(const std::string &b) {
     Rng rng(41);
     for (int k = 0; k < 5; ++k) {
         const Capsule C = test::random_capsule(rng, 3);
-        const Tensor P = test::sample_points(C, rng, 40) - C.c();
+        const Tensor P = test::sample_points(C, rng, 40) - C.c().expand_dims(-1);
         const double far = P.square().sum(0).sqrt().max().item();
         check(far <= C.radius().item() + 1e-12, b + ": the points lie in the ball of radius()");
     }

@@ -20,9 +20,9 @@
 //
 // CORA: contDynamics/@neurNetContrSys/reach.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -66,12 +66,13 @@ double aux_step(const std::vector<double> &t, std::size_t i, double h) {
 
 /// The first n states of a set of the extended system (CORA's project(R, 1:n)).
 Zonotope aux_project(const Zonotope &Z, int64_t n) {
-    return {Z.center().slice(-2, 0, n), Z.generators().slice(-2, 0, n)};
+    return Zonotope((Z.center().expand_dims(-1).slice(-2, 0, n)).squeeze(-1),
+                    (Z.generators().matrix_transpose().slice(-2, 0, n)).matrix_transpose());
 }
 
 PolyZonotope aux_project(const PolyZonotope &P, int64_t n) {
-    return {P.center().slice(0, 0, n), P.generators().slice(0, 0, n),
-            P.independent_generators().slice(0, 0, n), P.exponents(), P.ids()};
+    return {P.center().slice(0, 0, n), P.generators().slice(-1, 0, n),
+            P.independent_generators().slice(-1, 0, n), P.exponents(), P.ids()};
 }
 
 /// The set of the pairs (x, N(x)) for x in X.

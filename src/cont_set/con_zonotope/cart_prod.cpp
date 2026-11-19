@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@conZonotope/cartProd_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -27,6 +27,8 @@ namespace cora {
 
 namespace {
 
+// Refusals ----------------------------------------------------------------------------------------
+
 /// The leading (batch) axes of a tensor.
 std::vector<int64_t> aux_batch(const Tensor &t) {
     const std::vector<int64_t> shape = t.shape();
@@ -35,14 +37,17 @@ std::vector<int64_t> aux_batch(const Tensor &t) {
 
 /// Why the product is refused, if it is: the sets must have one batch shape.
 detail::Refusal aux_refusal(const ConZonotope &cz1, const ConZonotope &cz2) {
-    if (aux_batch(cz1.c()) == aux_batch(cz2.c())) return std::nullopt;
+    if (aux_batch(cz1.c().expand_dims(-1)) == aux_batch(cz2.c().expand_dims(-1)))
+        return std::nullopt;
     return std::pair{Error::dimension_mismatch,
                      "cart_prod: the sets must have the same batch shape, got " +
                          shape_text(cz1.c().shape()) + " and " + shape_text(cz2.c().shape())};
 }
 
 /// The point p as a set without generators; it must be a column.
-ConZonotope aux_point(const Tensor &p) { return {p, zeros_block(p, p.shape()[p.ndim() - 2], 0)}; }
+ConZonotope aux_point(const Tensor &p) {
+    return {p, (zeros_block(p, p.shape()[p.ndim() - 2], 0)).matrix_transpose()};
+}
 
 /// Why the point is refused, if it is.
 detail::Refusal aux_point_refusal(const Tensor &p) {
@@ -52,10 +57,14 @@ detail::Refusal aux_point_refusal(const Tensor &p) {
                          shape_text(p.shape())};
 }
 
+// The product -------------------------------------------------------------------------------------
+
 /// The product of two sets: centers stack, generators and constraints on the block diagonal.
 ConZonotope aux_product(const ConZonotope &cz1, const ConZonotope &cz2) {
-    return {Tensor::concat({cz1.c(), cz2.c()}, -2),
-            Tensor::block_diag({cz1.generators(), cz2.generators()}),
+    return {Tensor::concat({cz1.c().expand_dims(-1), cz2.c().expand_dims(-1)}, -2),
+            (Tensor::block_diag(
+                 {cz1.generators().matrix_transpose(), cz2.generators().matrix_transpose()}))
+                .matrix_transpose(),
             Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -2)};
 }
 

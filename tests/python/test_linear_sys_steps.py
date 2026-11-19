@@ -59,7 +59,7 @@ class Steps(unittest.TestCase):
         U = cora.Zonotope(np.array([1.0, -1.0]), np.array([[0.5, 0.0], [0.0, 0.25]]))
         cf = cora.LinearSys(A, B).canonical_form(U, np.array([[0.5], [0.5]]))
         np.testing.assert_allclose(cf.U.center, 0.0)
-        np.testing.assert_allclose(cf.U.generators, B @ U.generators)
+        np.testing.assert_allclose(cf.U.generators, U.generators @ B.T)
         np.testing.assert_allclose(cf.u, B @ np.array([[1.5], [-0.5]]))
         self.assertTrue(cf.sys.is_canonical_form())
         self.assertFalse(cora.LinearSys(A, B).is_canonical_form())
@@ -76,10 +76,10 @@ class Steps(unittest.TestCase):
 
     def test_particular_solutions(self):
         # the terms of the series stay apart for u(t), the closed form holds for a constant u
-        U = cora.Zonotope(np.zeros(2), np.array([[1.0], [0.0]]))
+        U = cora.Zonotope(np.zeros(2), np.array([[1.0, 0.0]]))
         PU = self.sys.particular_solution_time_varying(U, DT, TERMS)
         self.assertAlmostEqual(PU.support_function(np.array([1.0, 0.0])), np.exp(DT) - 1, places=12)
-        P = self.sys.particular_solution_constant(cora.Zonotope(np.ones(2), np.zeros((2, 0))), DT, TERMS)
+        P = self.sys.particular_solution_constant(cora.Zonotope(np.ones(2), np.zeros((0, 2))), DT, TERMS)
         expected = [1 - np.exp(-DT), (1 - np.exp(-2 * DT)) / 2]
         np.testing.assert_allclose(P.time_point.center, expected, atol=1e-14)
         self.assertTrue(P.time_interval.contains(P.time_point.center))
@@ -88,7 +88,7 @@ class Steps(unittest.TestCase):
         u = np.array([1.0, -1.0])
         S = self.sys.affine_solution(X, u, DT, TERMS)
         np.testing.assert_allclose(S.time_point.center, flow(DT, X.center, u), atol=1e-14)
-        U = cora.Zonotope(np.zeros(2), np.array([[0.5], [0.25]]))
+        U = cora.Zonotope(np.zeros(2), np.array([[0.5, 0.25]]))
         step = self.sys.one_step(X, U, u, DT, TERMS)
         PU = self.sys.particular_solution_time_varying(U, DT, TERMS)
         np.testing.assert_allclose(step.time_point.center, S.time_point.center + PU.center, atol=1e-14)
@@ -97,7 +97,7 @@ class Steps(unittest.TestCase):
     def test_init_reach_and_post_enclose_the_trajectories(self):
         # the end of the step k under a constant input of the sets, from a corner
         sys = cora.LinearSys(A, np.eye(2))
-        U = cora.Zonotope(np.zeros(2), np.array([[0.1], [0.05]]))
+        U = cora.Zonotope(np.zeros(2), np.array([[0.1, 0.05]]))
         u = np.array([0.5, -0.5])
         for alg in ("standard", "wrapping_free"):
             step = sys.init_reach(X, U, u, alg=alg, time_step=DT, taylor_terms=TERMS)
@@ -111,7 +111,7 @@ class Steps(unittest.TestCase):
 
     # a forced order is the series; a smaller zeta_tabs keeps more terms
     def test_error_solution_is_cut_by_the_gain_or_the_order(self):
-        V = cora.Zonotope(np.zeros(2), np.array([[1.0], [0.5]]))
+        V = cora.Zonotope(np.zeros(2), np.array([[1.0, 0.5]]))
         fixed = self.sys.error_solution_adaptive(V, time_step=DT, zeta_tabs=1e-3, taylor_terms=5)
         series = self.sys.particular_solution_time_varying(V, DT, 5)
         d = np.array([1.0, -2.0])
@@ -119,14 +119,14 @@ class Steps(unittest.TestCase):
         # a smaller zeta_tabs keeps more terms, so more generators
         coarse = self.sys.error_solution_adaptive(V, time_step=DT, zeta_tabs=0.1)
         fine = self.sys.error_solution_adaptive(V, time_step=DT, zeta_tabs=1e-9)
-        self.assertLess(coarse.generators.shape[1], fine.generators.shape[1])
+        self.assertLess(coarse.generators.shape[0], fine.generators.shape[0])
 
     def test_trajectory_error_vanishes_at_the_expansion_point(self):
         B = np.array([[-1.0, 2.0], [-2.0, -1.0]])
         sys, t, n = cora.LinearSys(B), 0.3, np.array([1.0, -0.5])
         R0 = cora.Zonotope(np.array([1.0, 0.5]), 0.1 * np.eye(2))
         # a point start set: with generators the series of the set does not cancel
-        point = cora.Zonotope(np.array([1.0, 0.5]), np.zeros((2, 0)))
+        point = cora.Zonotope(np.array([1.0, 0.5]), np.zeros((0, 2)))
         p = sys.trajectory_error([np.zeros(2), np.zeros(2)], np.zeros(2), point, t, t, t, 12, n)
         self.assertLess(p.error.support_function(np.array([1.0, 1.0])), 1e-8)
         e = sys.trajectory_error([np.zeros(2), np.zeros(2)], np.zeros(2), R0, t, t, t, 12, n)

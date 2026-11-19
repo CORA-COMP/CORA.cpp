@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/quadMap.m
 // PROPERTY: contSet/@zonoBundle/quadMap.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -30,8 +30,8 @@ void quad_map_known(const std::string &b) {
     const ZonoBundle R = zono_bundle.quad_map(Q);
     const Zonotope first = zono_bundle.zonotopes()[0].quad_map(Q);
     check(R.dim() == 1 && R.parallel_sets() == 2 &&
-              close(R.zonotopes()[0].center(), first.center(), 0) &&
-              close(R.zonotopes()[0].generators(), first.generators(), 0),
+              close((R.zonotopes()[0]).center(), first.center(), 0) &&
+              close((R.zonotopes()[0]).generators(), first.generators(), 0),
           b + ": the members are the zonotopes' maps");
 }
 

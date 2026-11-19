@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@conZonotope/representsa_.m
 // CORA authors: Mark Wetzlinger, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -24,7 +24,7 @@ void representsa_known(const std::string &b) {
     const ConZonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), column({1.0}));
-    const ConZonotope point(column({1.0, 2.0}), Tensor({{0.0}, {0.0}}));
+    const ConZonotope point(column({1.0, 2.0}), Tensor({{0.0, 0.0}}));
     const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), column({3.0}));
     check(box.representsa("zonotope") && box.representsa("interval"), b + ": a box");
     check(!segment.representsa("zonotope") && !segment.representsa("interval"),

@@ -18,7 +18,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   10-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -155,7 +155,12 @@ class Random {
     /// A direction (n, 1) of unit length up to rounding.
     cora::Tensor direction(int64_t n) { return vector(n); }
 
-    cora::Zonotope zonotope(int64_t n, int64_t m) { return {vector(n), matrix(n, m)}; }
+    /// A zonotope of the numbers of CORA's columns c (n, 1) and G (n, m): the center (n) and the
+    /// generators (m, n), one per row.
+    cora::Zonotope zonotope(int64_t n, int64_t m) {
+        const cora::Tensor c = vector(n), G = matrix(n, m);
+        return {c.squeeze(-1), G.matrix_transpose()};
+    }
 
     /// A constrained zonotope of n dimensions and m generators with p constraints [I B] x = b; b is
     /// the image of a factor vector inside the box, so the set is not empty.
@@ -170,15 +175,16 @@ class Random {
                 b[i] += A[i * m + j] * xi[j];
             }
         }
-        return {vector(n), matrix(n, m), cora::Tensor::from_data(A, {p, m}),
+        return {vector(n), matrix(n, m).matrix_transpose(), cora::Tensor::from_data(A, {p, m}),
                 cora::Tensor::from_data(b, {p, 1})};
     }
 
     /// A matrix zonotope of rows x cols matrices with h generators.
-    cora::MatZonotope mat_zonotope(int64_t rows, int64_t cols, int64_t h) {
+    cora::Zonotope mat_zonotope(int64_t rows, int64_t cols, int64_t h) {
         std::vector<double> data(h * rows * cols);
         for (double &x : data) x = scalar();
-        return {matrix(rows, cols), cora::Tensor::from_data(data, {h, rows, cols})};
+        return cora::Zonotope::matrix(matrix(rows, cols),
+                                      cora::Tensor::from_data(data, {h, rows, cols}));
     }
 
     /// A bundle of k zonotopes of n dimensions and m generators each, all containing one common
@@ -190,7 +196,8 @@ class Random {
             const cora::Tensor G = matrix(n, m);
             std::vector<double> b(m);
             for (double &x : b) x = uniform(-1, 1);
-            members.emplace_back(x0 - G.matmul(cora::Tensor::from_data(b, {m, 1})), G);
+            members.emplace_back((x0 - G.matmul(cora::Tensor::from_data(b, {m, 1}))).squeeze(-1),
+                                 G.matrix_transpose());
         }
         return cora::ZonoBundle(std::move(members));
     }
@@ -300,8 +307,9 @@ inline bool agree(const std::string &what, const cora::Fullspace &a, const lean:
 
 /// The nominal part of the oracle's set; its error box is not compared (at nearest it is empty).
 inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::Zonotope &b) {
-    const bool center = agree(what + ".c", a.center(), b.center()); // both are reported
-    return agree(what + ".G", a.generators(), b.generators()) && center;
+    // the oracle reports CORA's columns (n, 1) and (n, m); both parts are reported
+    const bool center = agree(what + ".c", a.center().expand_dims(-1), b.center());
+    return agree(what + ".G", a.generators().matrix_transpose(), b.generators()) && center;
 }
 
 /// The oracle's polynomial zonotope against CORA.cpp's: c, G, GI in their order, then the
@@ -310,9 +318,14 @@ inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::
 inline bool agree(const std::string &what, const cora::PolyZonotope &a,
                   const lean::PolyZonotope &b) {
     const cora::PolyZonotope other = b.gather();
-    bool same = agree(what + ".c", a.center(), other.center()); // all are reported
-    same = agree(what + ".G", a.generators(), other.generators()) && same;
-    same = agree(what + ".GI", a.independent_generators(), other.independent_generators()) && same;
+    // CORA's columns, as the oracle reports them; all are reported
+    bool same = agree(what + ".c", a.center().expand_dims(-1), other.center().expand_dims(-1));
+    same = agree(what + ".G", a.generators().matrix_transpose(),
+                 other.generators().matrix_transpose()) &&
+           same;
+    same = agree(what + ".GI", a.independent_generators().matrix_transpose(),
+                 other.independent_generators().matrix_transpose()) &&
+           same;
     if (a.exponents() != other.exponents()) {
         std::cerr << "  " << what << ": the exponent columns differ\n";
         same = false;
@@ -328,15 +341,18 @@ inline bool agree(const std::string &what, const cora::PolyZonotope &a,
 /// compared.
 inline bool agree(const std::string &what, const cora::ConZonotope &a, const lean::ConZonotope &b) {
     const cora::ConZonotope other = b.nominal();
-    bool same = agree(what + ".c", a.c(), other.c()); // all are reported
-    same = agree(what + ".G", a.generators(), other.generators()) && same;
+    bool same =
+        agree(what + ".c", a.c().expand_dims(-1), other.c().expand_dims(-1)); // all are reported
+    same = agree(what + ".G", a.generators().matrix_transpose(),
+                 other.generators().matrix_transpose()) &&
+           same;
     same = agree(what + ".A", a.A(), other.A()) && same;
     return agree(what + ".b", a.b(), other.b()) && same;
 }
 
 /// The nominal part of the oracle's matrix zonotope: the center and the generators in their order.
-inline bool agree(const std::string &what, const cora::MatZonotope &a, const lean::MatZonotope &b) {
-    const cora::MatZonotope other = b.gather().first;
+inline bool agree(const std::string &what, const cora::Zonotope &a, const lean::MatZonotope &b) {
+    const cora::Zonotope other = b.gather().first;
     // both compared, so that both mismatches are reported
     const bool center = agree(what + ".C", a.center(), other.center());
     const bool generators = agree(what + ".G", a.generators(), other.generators());

@@ -10,7 +10,7 @@
 // CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   06-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "global/backend/host_tensor.h"
@@ -342,6 +342,27 @@ void aux_require_matrix(const Shape &s, const char *op, bool square) {
                   std::string("CoraTensor::") + op + ": needs square matrices, got " + aux_text(s));
 }
 
+// The matrices of a batch transposed, (..., r, c) to (..., c, r), in tiles that stay in cache.
+template <class T>
+Tensor::Ptr aux_transpose_matrices(const HostTensor<T> &a) {
+    constexpr int64_t kTile = 16;
+    const int64_t r = a.shape[a.shape.size() - 2], c = a.shape.back();
+    Shape out = a.shape;
+    std::swap(out[out.size() - 1], out[out.size() - 2]);
+    auto t = a.fresh(out);
+    const int64_t count = a.shape.numel() / std::max<int64_t>(r * c, 1);
+    for (int64_t z = 0; z < count; ++z) {
+        const T *src = a.p + z * r * c;
+        T *dst = t->p + z * r * c;
+        for (int64_t i0 = 0; i0 < r; i0 += kTile)
+            for (int64_t j0 = 0; j0 < c; j0 += kTile)
+                for (int64_t i = i0; i < std::min(i0 + kTile, r); ++i)
+                    for (int64_t j = j0; j < std::min(j0 + kTile, c); ++j)
+                        dst[j * r + i] = src[i * c + j];
+    }
+    return t;
+}
+
 } // namespace
 
 
@@ -568,6 +589,9 @@ Tensor::Ptr HostTensor<T>::reduce(Reduce op, int axis, bool keepdims) const {
     axis = axis_of(axis, shape.size(), "reduce");
     if (backend == backend_id::eigen && op == Reduce::sum && axis + 1 == shape.size())
         return eigen::sum_last(*this, keepdims);
+    // the sum over the rows of each matrix (the generator axis), columnwise
+    if (backend == backend_id::eigen && op == Reduce::sum && axis + 2 == shape.size())
+        return eigen::sum_rows(*this, keepdims);
     const Extents e = aux_extents(shape, axis);
     auto r = fresh(aux_reduced(shape, axis, keepdims));
     if (e.len == 0 && op != Reduce::sum && op != Reduce::prod)
@@ -629,6 +653,10 @@ Tensor::Ptr HostTensor<T>::reshape(const Shape &s) const {
 // A copy that walks the source by permuted strides.
 template <class T>
 Tensor::Ptr HostTensor<T>::permute_dims(const std::vector<int> &axes) const {
+    const int64_t nd = static_cast<int64_t>(axes.size());
+    bool last_two = nd >= 2 && axes[nd - 1] == nd - 2 && axes[nd - 2] == nd - 1;
+    for (int64_t d = 0; last_two && d + 2 < nd; ++d) last_two = axes[d] == d;
+    if (last_two) return aux_transpose_matrices(*this);
     const Shape st = strides_of(shape);
     Shape out, strides;
     for (const int a : axes) {
@@ -684,6 +712,8 @@ Tensor::Ptr HostTensor<T>::take(const Tensor::Impl &idx, int axis) const {
     return r;
 }
 
+// Gathers ----------------------------------------------------------------------------------------
+
 // out[pos] = x[pos with the axis at idx[pos]], idx broadcast over the other axes.
 template <class T>
 Tensor::Ptr HostTensor<T>::take_along_axis(const Tensor::Impl &idx, int axis) const {
@@ -697,12 +727,29 @@ Tensor::Ptr HostTensor<T>::take_along_axis(const Tensor::Impl &idx, int axis) co
     auto r = fresh(out);
     const T *ix = of(idx).p;
     const int64_t len = shape[axis];
+    const auto outside = [&](int64_t l) {
+        CORA_FAIL(Error::wrong_value, "CoraTensor::take_along_axis: the index " +
+                                          std::to_string(l) + " is outside 0.." +
+                                          std::to_string(len - 1));
+    };
+    // whole rows of matrices, one index per row (the generators a reduction keeps): row copies
+    const int64_t nd = shape.size();
+    if (axis == nd - 2 && idx.shape.size() == nd && idx.shape.back() == 1 &&
+        std::equal(shape.begin(), shape.begin() + axis, idx.shape.begin())) {
+        const int64_t rows = idx.shape[axis], n = shape.back();
+        if (rows * n == 0) return r;
+        const int64_t count = out.numel() / (rows * n);
+        for (int64_t z = 0; z < count; ++z)
+            for (int64_t j = 0; j < rows; ++j) {
+                const int64_t l = static_cast<int64_t>(ix[z * rows + j]);
+                if (l < 0 || l >= len) outside(l);
+                std::copy_n(p + (z * len + l) * n, n, r->p + (z * rows + j) * n);
+            }
+        return r;
+    }
     aux_walk<3>(out, st, [&](int64_t ixx, int64_t ii, int64_t io) {
         const int64_t l = static_cast<int64_t>(ix[ii]);
-        if (l < 0 || l >= len)
-            CORA_FAIL(Error::wrong_value, "CoraTensor::take_along_axis: the index " +
-                                              std::to_string(l) + " is outside 0.." +
-                                              std::to_string(len - 1));
+        if (l < 0 || l >= len) outside(l);
         r->p[io] = p[ixx + l * axis_stride];
     });
     // every index was in range, so the result is filled
@@ -954,6 +1001,12 @@ template <class T>
 Tensor::Ptr HostTensor<T>::abs_sum() const {
     if (backend == backend_id::eigen) return eigen::abs_sum(*this);
     return Impl::abs_sum();
+}
+
+template <class T>
+Tensor::Ptr HostTensor<T>::abs_sum_rows() const {
+    if (backend == backend_id::eigen) return eigen::abs_sum_rows(*this);
+    return Impl::abs_sum_rows();
 }
 
 template struct HostTensor<double>;

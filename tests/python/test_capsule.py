@@ -205,7 +205,7 @@ class Combination(unittest.TestCase):
         C = capsule([1, 2], [1, -1], 0.5)
         # linear maps
         M = np.array([[2.0, 0.0], [0.0, 3.0]])
-        for R in (M @ C, M * C, C.linear_map(M)):
+        for R in (M @ C, C @ M.T, C.linear_map(M)):
             np.testing.assert_allclose(R.c, [2, 6])
             np.testing.assert_allclose(R.generator, [2, -3])
             self.assertAlmostEqual(R.r, 0.5 * np.sqrt(13.0))

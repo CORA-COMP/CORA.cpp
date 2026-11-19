@@ -34,7 +34,7 @@ class UnsafePolytope(unittest.TestCase):
         self.assertFalse(cora.Specification.unsafe_set(box(3, 0, 5, 2)).check(Z))  # touching
 
     def test_no_single_halfspace_separates_the_segment(self):
-        Z = cora.Zonotope(np.array([1.0, 1.0]), np.array([[1.0], [1.0]]))
+        Z = cora.Zonotope(np.array([1.0, 1.0]), np.array([[1.0, 1.0]]))
         A = np.array([[-1.0, 0], [0, 1]])
         self.assertTrue(cora.Specification.unsafe_set(cora.Polytope(A, np.array([-1.5, 0.5]))).check(Z))
         self.assertFalse(cora.Specification.unsafe_set(cora.Polytope(A, np.array([-0.5, 1.5]))).check(Z))

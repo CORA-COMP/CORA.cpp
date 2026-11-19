@@ -12,10 +12,11 @@
 //
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reduceGirard.m
+// CORA: matrixSet/@matZonotope/reduce.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -35,11 +36,18 @@ Zonotope Zonotope::reduce(int order) const {
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "reduce: the zonotope order must be at least 1, got " + std::to_string(order);
     });
-    const int64_t n = dim(), m = G_.shape().back();
+    const int64_t n = dim(), m = nr_generators();
     if (m <= order * n) return *this;
 
     // the longest generators stay and the rest becomes a box
-    return {c_, priv_girard_generators(G_, order * n - n)};
+    if (elem_rank_ == 1) return {c_, priv_girard_generators(G_, order * n - n)};
+    // a matrix zonotope as its stacked matrices (CORA's matZonotope.reduce), back column by column
+    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+               [] { return std::string("reduce: it supports a single set, not a batch"); });
+    const Zonotope Z = stacked().reduce(order);
+    const int64_t rows = c_.size(-2), cols = c_.size(-1), h = Z.nr_generators();
+    return matrix(Z.center().reshape({cols, rows}).matrix_transpose(),
+                  Z.generators().reshape({h, cols, rows}).matrix_transpose());
 }
 
 Set Zonotope::reduce_impl(int order) const { return reduce(order); }

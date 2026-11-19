@@ -2,7 +2,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -28,16 +28,16 @@ void stack_keeps_each_member() {
                                       Zonotope::generate_random(rng, n, std::nullopt, 5),
                                       Zonotope::generate_random(rng, n, std::nullopt, 3)};
     const Zonotope S = Zonotope::stack(Zs);
-    check(S.center().shape() == std::vector<int64_t>({3, n, 1}), "stack: center shape");
-    check(S.generators().shape() == std::vector<int64_t>({3, n, 5}),
+    check(S.center().shape() == std::vector<int64_t>({3, n}), "stack: center shape");
+    check(S.generators().shape() == std::vector<int64_t>({3, 5, n}),
           "stack: padded to the most generators");
     const torch::Tensor c = to_torch(S.center()), G = to_torch(S.generators());
     for (int64_t b = 0; b < 3; ++b) {
         check(torch::allclose(c[b], to_torch(Zs[b].center())), "stack: member center");
-        const int64_t m = Zs[b].generators().shape().back();
-        check(torch::allclose(G[b].slice(-1, 0, m), to_torch(Zs[b].generators())),
+        const int64_t m = Zs[b].nr_generators();
+        check(torch::allclose(G[b].slice(0, 0, m), to_torch(Zs[b].generators())),
               "stack: member generators");
-        check(G[b].slice(-1, m).abs().sum().item<double>() == 0.0, "stack: padding is zero");
+        check(G[b].slice(0, m).abs().sum().item<double>() == 0.0, "stack: padding is zero");
         const torch::Tensor d = torch::randn({n, 1}, torch::kDouble);
         // the member support functions
         check(torch::allclose(to_torch(S.support_function(from_torch(d)))[b],

@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonoBundle/isIntersecting_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -56,12 +56,12 @@ void exact_test(const std::string &b) {
 /// overlap, and false when the boxes are apart.
 void approximate_test(const std::string &b) {
     const Tensor I2({{5.0, 0.0}, {0.0, 5.0}});
-    const Zonotope diagonal(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope diagonal(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({diagonal, Zonotope(column({0.0, 0.0}), I2)});
-    const Zonotope off_diagonal(column({0.9, -0.9}), Tensor({{0.01}, {0.0}}));
+    const Zonotope off_diagonal(column({0.9, -0.9}), Tensor({{0.01, 0.0}}));
     check(!bundle.is_intersecting(off_diagonal), b + ": exact: they are apart");
     check(bundle.is_intersecting(off_diagonal, "approx"), b + ": approx: the boxes overlap");
-    check(!bundle.is_intersecting(Zonotope(column({9.0, 9.0}), Tensor({{1.0}, {1.0}})), "approx"),
+    check(!bundle.is_intersecting(Zonotope(column({9.0, 9.0}), Tensor({{1.0, 1.0}})), "approx"),
           b + ": approx: the boxes are apart");
     check(
         bundle.is_intersecting(Interval(column({1.0001, 0.0}), column({2.0, 1.0})), "approx", 0.01),
@@ -76,7 +76,7 @@ void approximate_test(const std::string &b) {
 /// checks off.
 void checks_and_their_switch() {
     const ZonoBundle bundle = squares();
-    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25}, {0.0}}));
+    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25, 0.0}}));
     check(test::raises([&] { bundle.is_intersecting(Z, "fast"); }, Error::wrong_value),
           "is_intersecting: type");
     check(test::raises([&] { bundle.is_intersecting(Zonotope(column({0.5}), Tensor({{1.0}}))); },

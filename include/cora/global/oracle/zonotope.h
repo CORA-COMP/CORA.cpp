@@ -10,9 +10,9 @@
 //             a cora::Zonotope and the error as a cora::Interval, exactly or throws
 // See also:   lean/tensor.h, lean/interval.h, lean/request.h, cora/cont_set/zonotope/zonotope.h
 //
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   11-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -29,9 +29,10 @@ namespace cora::lean {
 
 class Zonotope {
   public:
-    /// An exact zonotope (empty error box) in the current dtype.
+    /// An exact zonotope (empty error box) in the current dtype, of CORA's center column (n, 1) and
+    /// generator columns (n, m), or of a cora::Zonotope (batch first, one generator per row).
     Zonotope(const cora::Tensor &c, const cora::Tensor &G);
-    Zonotope(const cora::Zonotope &Z) : Zonotope(Z.center(), Z.generators()) {}
+    Zonotope(const cora::Zonotope &Z);
 
     Zonotope(Tensor c, Tensor G, Interval E);
 

@@ -14,7 +14,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -41,11 +41,14 @@ bool aux_boxes_overlap(const Zonotope &Z, const Interval &S, double tol) {
 /// Whether c1 + G1 a = c2 + G2 b + e, |a|, |b| <= 1, |e| <= tol has a solution: the point c2 - c1
 /// is in the zonotope with the generators [G1 G2 tol I], a linear program.
 bool aux_overlap_exact(const Zonotope &Z, const Zonotope &S, double tol) {
-    const Tensor slack = Z.center().eye_like(Z.dim()) * tol;
-    const Zonotope sum(Z.center() * 0.0,
-                       Tensor::concat({Z.generators(), S.generators(), slack}, -1));
-    const double scaling =
-        priv_zonotope_norm(priv_host_zonotope(sum), (S.center() - Z.center()).data());
+    const Tensor slack = Z.center().expand_dims(-1).eye_like(Z.dim()) * tol;
+    const Zonotope sum = Zonotope(
+        (Z.center().expand_dims(-1) * 0.0).squeeze(-1),
+        (Tensor::concat(
+             {Z.generators().matrix_transpose(), S.generators().matrix_transpose(), slack}, -1))
+            .matrix_transpose());
+    const double scaling = priv_zonotope_norm(
+        priv_host_zonotope(sum), (S.center().expand_dims(-1) - Z.center().expand_dims(-1)).data());
     return scaling <= 1 || within_tol(scaling, 1, default_tol(Z.center().dtype()));
 }
 
@@ -62,7 +65,8 @@ bool Zonotope::is_intersecting(const Zonotope &S, const std::string &type, Tol t
         return "is_intersecting: the zonotopes differ in dimension, " + std::to_string(dim()) +
                " and " + std::to_string(S.dim());
     });
-    const Refusal refusal = priv_intersecting_refusal(type, c_, S.center());
+    const Refusal refusal =
+        priv_intersecting_refusal(type, c_.expand_dims(-1), S.center().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     return type == "exact" ? aux_overlap_exact(*this, S, tol)
                            : aux_boxes_overlap(*this, S.interval(), tol);
@@ -77,7 +81,7 @@ bool Zonotope::is_intersecting(const Interval &I, const std::string &type, Tol t
                shape_text(I.inf().shape());
     });
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
-    const Refusal refusal = priv_intersecting_refusal(type, c_, I.inf());
+    const Refusal refusal = priv_intersecting_refusal(type, c_.expand_dims(-1), I.inf());
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     if (I.is_empty()) return false;
     return type == "exact" ? aux_overlap_exact(*this, I.zonotope(), tol)
@@ -88,7 +92,7 @@ bool Zonotope::is_intersecting(const Tensor &p, const std::string &type, Tol tol
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     // points are in the set or not: both types decide by containment
-    const Refusal refusal = priv_intersecting_points_refusal(type, c_, p);
+    const Refusal refusal = priv_intersecting_points_refusal(type, c_.expand_dims(-1), p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     return contains(p, "exact", tol);
 }

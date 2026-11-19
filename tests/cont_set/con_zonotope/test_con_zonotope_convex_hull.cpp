@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/convHull_.m
 // PROPERTY: contSet/@conZonotope/convHull_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -33,7 +33,8 @@ void convex_hull_known(const std::string &b) {
               b + ": the hull [0, 3] (" + method + ")");
     }
     const ConZonotope R = A.convex_hull(B);
-    check(close(R.c(), {1.5}, 0) && close(R.generators(), {0.5, 0.5, -1, 0, 0, 0, 0}, 0),
+    check(close(R.c().expand_dims(-1), {1.5}, 0) &&
+              close(R.generators().matrix_transpose(), {0.5, 0.5, -1, 0, 0, 0, 0}, 0),
           b + ": the center is the mean, the generators of both, (c-c2)/2, and the slacks");
     check(R.A().shape() == Shape{4, 7} && R.b().shape() == Shape{4, 1},
           b + ": 2 (m1 + m2) slack rows");
@@ -92,10 +93,10 @@ void convex_hull_property(const std::string &b) {
 /// Wrong operands and methods are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const ConZonotope A(column({0.5}), Tensor({{0.5}}));
-    check(test::raises(
-              [&] { A.convex_hull(ConZonotope(column({1.0, 2.0}), Tensor({{1.0}, {1.0}}))); },
-              Error::dimension_mismatch),
-          "convex_hull: different dimensions");
+    check(
+        test::raises([&] { A.convex_hull(ConZonotope(column({1.0, 2.0}), Tensor({{1.0, 1.0}}))); },
+                     Error::dimension_mismatch),
+        "convex_hull: different dimensions");
     check(test::raises([&] { A.convex_hull(A, "outer"); }, Error::wrong_value),
           "convex_hull: a method");
     check(test::raises([&] { A.convex_hull(Tensor({{1.0, 2.0}})); }, Error::dimension_mismatch),
@@ -103,7 +104,7 @@ void checks_and_their_switch() {
     check(test::raises(
               [&] {
                   A.convex_hull(std::vector<ConZonotope>{
-                      ConZonotope(column({1.0, 2.0}), Tensor({{1.0}, {1.0}}))});
+                      ConZonotope(column({1.0, 2.0}), Tensor({{1.0, 1.0}}))});
               },
               Error::dimension_mismatch),
           "convex_hull: a list of other dimensions");

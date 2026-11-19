@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonotope/interval.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,7 +25,7 @@ using test::support;
 namespace {
 
 void hull_of_a_known_zonotope(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0, 0.5}, {0.0, 2.0, 0.5}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {0.5, 0.5}}));
     check(close(Z.interval().inf(), std::vector<double>{-0.5, -0.5}),
           b + ": the hull's lower corner");
     check(close(Z.interval().sup(), std::vector<double>{2.5, 4.5}),

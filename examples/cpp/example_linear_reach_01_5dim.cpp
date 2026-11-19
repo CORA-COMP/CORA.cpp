@@ -7,9 +7,9 @@
 // Outputs:  the run time, the box around the last enclosure, and the figure as an SVG file
 // See also: example_linear_reach_02_algorithms, the Python example of the same name (which plots)
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"

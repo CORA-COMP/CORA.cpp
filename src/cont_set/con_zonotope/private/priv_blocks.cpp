@@ -8,10 +8,11 @@
 // CORA.cpp only: MATLAB writes blkdiag and horizontal concatenation inline
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/blocks.h"
 #include "global/format.h"
 
@@ -44,7 +45,7 @@ detail::Refusal priv_pair_refusal(const char *operation, const ConZonotope &a, c
     const std::string name = std::string(operation) + ": ";
     // the leading axes are the batch
     const Shape shape_a = a.c().shape(), shape_b = b.c().shape();
-    if (!std::equal(shape_a.begin(), shape_a.end() - 2, shape_b.begin(), shape_b.end() - 2))
+    if (!std::equal(shape_a.begin(), shape_a.end() - 1, shape_b.begin(), shape_b.end() - 1))
         return std::pair{Error::dimension_mismatch,
                          name + "the sets must have the same batch shape, got " +
                              shape_text(shape_a) + " and " + shape_text(shape_b)};
@@ -65,7 +66,7 @@ std::vector<int64_t> priv_nonzero_rows(const Tensor &A, const Tensor &b) {
 
 std::pair<std::vector<int64_t>, std::vector<int64_t>> priv_nonzero_parts(const ConZonotope &cz) {
     // a column is kept if [G; A] has a nonzero entry
-    const Tensor cols = Tensor::concat({cz.generators(), cz.A()}, -2);
+    const Tensor cols = Tensor::concat({cz.generators().matrix_transpose(), cz.A()}, -2);
     const Tensor col_used = cols.not_equal(cols.zeros_like()).any(-2);
     return {priv_nonzero_rows(cz.A(), cz.b()), aux_positions(col_used, cz.A().shape().back())};
 }
@@ -76,7 +77,9 @@ ConZonotope priv_compact(const ConZonotope &cz) {
     // the constraint rows 0 = 0 go, an infeasible zero row 0 = b stays
     const Tensor kept_A = rows.empty() ? zeros_block(A, 0, A.shape().back()) : A.take(rows, -2);
     const Tensor kept_b = rows.empty() ? zeros_block(cz.b(), 0, 1) : cz.b().take(rows, -2);
-    return {cz.c(), select_columns(cz.generators(), cols), kept_A, kept_b};
+    return {cz.c().expand_dims(-1),
+            (select_columns(cz.generators().matrix_transpose(), cols)).matrix_transpose(), kept_A,
+            kept_b};
 }
 
 // Set maps ----------------------------------------------------------------------------------------
@@ -84,24 +87,24 @@ ConZonotope priv_compact(const ConZonotope &cz) {
 ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
                               const std::optional<Tensor> &t) {
     auto [c, G] = Tensor::zonotope_linear_map(M, cz.c(), cz.generators());
-    if (t) c = c + *t;
+    if (t) c = c + t->squeeze(-1); // the offset is a column (..., n, 1)
     return {c, G, cz.factor_polytope()};
 }
 
 ConZonotope priv_minkowski_sum(const ConZonotope &cz1, const ConZonotope &cz2) {
-    return {cz1.c() + cz2.c(), Tensor::concat({cz1.generators(), cz2.generators()}, -1),
+    return {cz1.c() + cz2.c(), Tensor::concat({cz1.generators(), cz2.generators()}, -2),
             Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -2)};
 }
 
 ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const Tensor &Mc,
                            const Tensor &MG) {
-    const int64_t n = cz1.dim(), m2 = cz2.generators().shape().back();
+    const int64_t n = cz1.dim(), m2 = cz2.nr_generators();
     // the factors of both sets, the first set's generators carry the result
-    const Tensor G = Tensor::concat({cz1.generators(), zeros_block(cz1.generators(), n, m2)}, -1);
-    // each set keeps its constraints; the images of the generators must agree
-    const Tensor rows = Tensor::concat(
-        {Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({MG, -cz2.generators()}, -1)}, -2);
-    const Tensor b = Tensor::concat({cz1.b(), cz2.b(), cz2.c() - Mc}, -2);
+    const Tensor G = Tensor::concat({cz1.generators(), zeros_block(cz1.generators(), m2, n)}, -2);
+    // each set keeps its constraints; one row per dimension makes the images agree
+    const Tensor agree = Tensor::concat({MG, -cz2.generators()}, -2).matrix_transpose();
+    const Tensor rows = Tensor::concat({Tensor::block_diag({cz1.A(), cz2.A()}), agree}, -2);
+    const Tensor b = Tensor::concat({cz1.b(), cz2.b(), (cz2.c() - Mc).expand_dims(-1)}, -2);
     return {cz1.c(), G, rows, b};
 }
 

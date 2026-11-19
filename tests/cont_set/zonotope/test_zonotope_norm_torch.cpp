@@ -2,9 +2,9 @@
 //
 // norm is piecewise: the gradient follows the entry that attains the largest magnitude.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -23,7 +23,7 @@ int main() {
     for (const double type : {1.0, 2.0}) {
         test::gradcheck(
             "norm", [type](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).norm(type)}; },
-            test::random_zonotope(3, 4));
+            test::random_zonotope_rows(3, 4));
     }
     return test::finish("zonotope norm (torch)");
 }

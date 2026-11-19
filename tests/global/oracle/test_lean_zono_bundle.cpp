@@ -21,7 +21,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -43,8 +43,7 @@ Tensor aux_rows(const Tensor &T, int64_t from, int64_t to) { return T.slice(0, f
 /// The bundle with every member shifted by `offset` (n, 1): the same shape, far from the original.
 ZonoBundle aux_shifted(const ZonoBundle &bundle, const Tensor &offset) {
     std::vector<Zonotope> members;
-    for (const Zonotope &Z : bundle.zonotopes())
-        members.emplace_back(Z.center() + offset, Z.generators());
+    for (const Zonotope &Z : bundle.zonotopes()) members.push_back(Z + offset);
     return ZonoBundle(std::move(members));
 }
 
@@ -55,8 +54,9 @@ void aux_check_con_zonotope(const ConZonotope &mine, const lean::ConZonotope &th
     const ConZonotope their = theirs.nominal();
     const auto [A, b_ineq] = theirs.inequalities();
     const int64_t pe = their.A().shape()[0], n = mine.dim();
-    oracle::check("conZonotope.c", mine.c(), their.c());
-    oracle::check("conZonotope.G", mine.generators(), their.generators());
+    oracle::check("conZonotope.c", mine.c().expand_dims(-1), their.c().expand_dims(-1));
+    oracle::check("conZonotope.G", mine.generators().matrix_transpose(),
+                  their.generators().matrix_transpose());
     oracle::check("conZonotope.A", aux_rows(mine.A(), pe, pe + n), aux_rows(A, 0, n));
     oracle::check("conZonotope.b", aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, 0, n));
     oracle::check("conZonotope.-A", -aux_rows(mine.A(), pe, pe + n), aux_rows(A, n, 2 * n));

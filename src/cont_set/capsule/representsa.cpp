@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@capsule/representsa_.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -35,8 +35,8 @@ bool Capsule::representsa(const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     CORA_CHECK(priv_is_set_type(type), Error::wrong_value,
                [&] { return "representsa: '" + type + "' is not a type of set that CORA knows"; });
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "representsa");
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported, [] {
+    const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "representsa");
+    CORA_CHECK(cc().ndim() == 2, Error::not_supported, [] {
         return std::string("representsa: it supports a single capsule, not a batch");
     });
     CORA_CHECK(!priv_type_in(type, {"conPolyZono", "levelSet", "polyZonotope", "parallelotope"}),
@@ -48,13 +48,13 @@ bool Capsule::representsa(const std::string &type, Tol tol_arg) const {
     // the empty capsule is what representsa_emptyObject says
     if (is_empty()) return !priv_type_in(type, {"origin", "point", "fullspace"});
     const auto zero = [&](const Tensor &x) { return priv_all(within_tol(x, x.zeros_like(), tol)); };
-    const bool segment_is_point = zero(g_), no_radius = zero(r_);
+    const bool segment_is_point = zero(gc()), no_radius = zero(r_);
     const bool is_point = segment_is_point && no_radius;
-    if (type == "origin") return is_point && zero(c_);
+    if (type == "origin") return is_point && zero(cc());
     if (type == "point") return is_point;
     if (type == "interval") {
         // a box has all but one of the generator's entries at zero
-        const Tensor flat = within_tol(g_, g_.zeros_like(), tol);
+        const Tensor flat = within_tol(gc(), gc().zeros_like(), tol);
         return n == 1 || (no_radius && flat.sum().item() >= static_cast<double>(n - 1));
     }
     if (type == "ellipsoid") return n == 1 || segment_is_point || no_radius;

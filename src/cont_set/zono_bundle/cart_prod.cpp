@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@zonoBundle/cartProd_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -48,8 +48,8 @@ ZonoBundle aux_map(const ZonoBundle &bundle, F f) {
 
 ZonoBundle ZonoBundle::cart_prod(const ZonoBundle &S) const {
     detail::Entry entry;
-    const detail::Refusal r =
-        priv_operand_refusal(*this, S.dim(), S.zonotopes().front().center(), "cart_prod", false);
+    const detail::Refusal r = priv_operand_refusal(
+        *this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1), "cart_prod", false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     std::vector<Zonotope> pairs;
     for (const Zonotope &A : Z_)
@@ -59,7 +59,8 @@ ZonoBundle ZonoBundle::cart_prod(const ZonoBundle &S) const {
 
 ZonoBundle ZonoBundle::cart_prod(const Zonotope &Z) const {
     detail::Entry entry;
-    const detail::Refusal r = priv_operand_refusal(*this, Z.dim(), Z.center(), "cart_prod", false);
+    const detail::Refusal r =
+        priv_operand_refusal(*this, Z.dim(), Z.center().expand_dims(-1), "cart_prod", false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // the zonotope goes behind every member
     return aux_map(*this, [&](const Zonotope &A) { return A.cart_prod(Z); });

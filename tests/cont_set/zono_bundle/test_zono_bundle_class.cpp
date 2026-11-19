@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonoBundle/zonoBundle.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/set.h"
@@ -23,14 +23,15 @@ namespace {
 /// Two planar zonotopes: a box and a segment.
 std::vector<Zonotope> two_members() {
     return {Zonotope(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-            Zonotope(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}))};
+            Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}}))};
 }
 
 /// The bundle stores its members in order and is a set of the class with CORA's precedence.
 void members_and_class(const std::string &b) {
     const ZonoBundle bundle(two_members());
     check(bundle.parallel_sets() == 2 && bundle.dim() == 2, b + ": two members of dimension 2");
-    check(test::close(bundle.zonotopes()[1].generators(), {1.0, 1.0}, 0), b + ": members in order");
+    check(test::close((bundle.zonotopes()[1]).generators().matrix_transpose(), {1.0, 1.0}, 0),
+          b + ": members in order");
     const Set S(bundle);
     check(S.is<ZonoBundle>() && S.class_name() == "ZonoBundle", b + ": a Set holds it");
     check(precedence(ClassId::zono_bundle) == 100, b + ": CORA's precedence");
@@ -40,8 +41,7 @@ void members_and_class(const std::string &b) {
 /// A list that is empty, mixes dimensions or batch shapes is refused; a valid one passes with the
 /// checks off.
 void checks_and_their_switch() {
-    const Zonotope Z1(column({0.0, 0.0}), Tensor({{1.0}, {1.0}})),
-        Z3(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z1(column({0.0, 0.0}), Tensor({{1.0, 1.0}})), Z3(column({0.0}), Tensor({{1.0}}));
     check(test::raises([] { ZonoBundle(std::vector<Zonotope>{}); },
                        Error::wrong_input_in_constructor),
           "ZonoBundle: an empty list");

@@ -17,9 +17,9 @@
 // exponents, identifiers) is compared in its order; the oracle orders equal exponent columns as
 // CORA does (the hash of removeRedundantExponents).
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/poly_zonotope.h"
@@ -79,7 +79,10 @@ Raw aux_raw(oracle::Random &rnd, const Dims &s, bool repeats) {
     return {rnd.vector(s.n), rnd.matrix(s.n, s.h), rnd.matrix(s.n, s.q), E, id};
 }
 
-PolyZonotope aux_set(const Raw &r) { return {r.c, r.G, r.GI, r.E, r.id}; }
+/// The set of the raw columns, as rows.
+PolyZonotope aux_set(const Raw &r) {
+    return {r.c, r.G.matrix_transpose(), r.GI.matrix_transpose(), r.E, r.id};
+}
 
 /// A set from the oracle's constructor: what the other ops take as their operand.
 lean::PolyZonotope aux_lean(const Raw &r) {
@@ -120,7 +123,7 @@ int main() {
             const PolyZonotope P = aux_set(r), Q = aux_set(q);
             oracle::check("plus pZ", P.plus(Q), aux_lean(r).plus(aux_lean(q)));
             // a zonotope, a box and a point join the independent part
-            const Zonotope Z(rnd.vector(s.n), rnd.matrix(s.n, 3));
+            const Zonotope Z(rnd.vector(s.n), rnd.matrix(s.n, 3).matrix_transpose());
             oracle::check("plus Z", P.plus(Z), aux_lean(r).plus(Z));
             // the point after the box, as the oracle's op takes them
             const Interval I = rnd.box(s.n);

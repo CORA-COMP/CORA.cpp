@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/center.m
 // PROPERTY: contSet/@zonoBundle/center.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -23,8 +23,9 @@ namespace {
 
 /// A single member has the zonotope's own center.
 void single_member(const std::string &b) {
-    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
-    check(close(ZonoBundle({Z}).center(), Z.center(), 0), b + ": the center of the member");
+    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
+    check(close(ZonoBundle({Z}).center(), Z.center().expand_dims(-1), 0),
+          b + ": the center of the member");
 }
 
 /// Stated property: the center lies in the bundle (CORA's is a Chebyshev center of the factors).

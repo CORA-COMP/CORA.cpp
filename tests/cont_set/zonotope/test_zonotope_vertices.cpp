@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonotope/vertices_.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Daniel Heß
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -48,9 +48,9 @@ void vertices_attain_the_support(const std::string &b) {
 
 /// Without generators the zonotope is a point; parallel generators add no corners.
 void vertices_of_degenerate_zonotopes(const std::string &b) {
-    const Zonotope point(test::column({1, 2}), Tensor::zeros({2, 1}));
+    const Zonotope point(test::column({1, 2}), Tensor::zeros({1, 2}));
     check(point.vertices()[0].size() == 1, b + ": a point has one vertex");
-    const Zonotope segment(test::column({0, 0}), Tensor({{1, 2}, {0, 0}}));
+    const Zonotope segment(test::column({0, 0}), Tensor({{1, 0}, {2, 0}}));
     check(segment.vertices()[0].size() == 2, b + ": parallel generators make a segment");
 }
 
@@ -63,7 +63,7 @@ void vertices_need_two_dimensions(const std::string &b) {
 /// A set of three dimensions is refused; with the checks off the polygon is the same.
 void checks_and_their_switch() {
     const Zonotope S3 =
-        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     check(test::raises([&] { S3.vertices(); }, Error::not_supported), "vertices: three dimensions");
     const Zonotope S = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     const std::size_t on = S.vertices()[0].size();

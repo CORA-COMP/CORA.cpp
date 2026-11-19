@@ -9,9 +9,9 @@
 // See also: priv_verify_ra_support_function, priv_verify_ra_zonotope
 //
 // CORA.cpp only: the part of canonicalForm that verify uses, without building the system
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_verify.h"
@@ -30,9 +30,10 @@ CanonicalInput priv_canonical_input(const LinearSys &sys, const Zonotope &U) {
                       sys.C() ? sys.C()->shape()[0] : n};
     if (!sys.B()) return in;
     const Tensor &B = *sys.B();
-    in.u_trans = B.matmul(U.center());
-    if (U.generators().shape()[1] == 0) return in;
-    const Tensor GU = B.matmul(U.generators());
+    // the constant input B c and the generators B G as columns, CORA's matrices
+    in.u_trans = B.matmul(U.center().expand_dims(-1));
+    if (U.nr_generators() == 0) return in;
+    const Tensor GU = B.matmul(U.generators().matrix_transpose());
     // zero generators add no uncertainty; dropping them keeps the path without an input set
     if (GU.abs().sum().item() != 0) in.GU = GU;
     return in;

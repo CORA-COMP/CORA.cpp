@@ -166,7 +166,7 @@ class Operations(unittest.TestCase):
         np.testing.assert_allclose(cora.Ellipsoid(square).Q, 2 * np.diag([1.0, 4.0]))
         np.testing.assert_allclose(cora.Ellipsoid(square, "inner:norm").Q, np.diag([1.0, 4.0]))
         with self.assertRaises(cora.errors.NotSupported):
-            cora.Ellipsoid(cora.Zonotope(np.zeros(2), rng.standard_normal((2, 3))))
+            cora.Ellipsoid(cora.Zonotope(np.zeros(2), rng.standard_normal((3, 2))))
         # the outline, the surface points and a random ellipsoid
         outline = ellipsoid([[4.0, 0.0], [0.0, 1.0]]).vertices()[0]
         self.assertEqual(outline.shape, (256, 2))

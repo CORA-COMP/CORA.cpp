@@ -13,9 +13,9 @@
 // See also: interval, cut, approximate_bounds
 //
 // CORA.cpp only: CORALean's float definition replaces CORA's linear programs
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -140,12 +140,18 @@ Interval ConZonotope::Cut::interval_tight(int passes) const {
 
 Interval ConZonotope::interval_tight(int passes) const {
     detail::Entry entry;
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported,
                [] { return std::string("interval_tight: a single set, not a batch"); });
     CORA_CHECK(passes >= 0, Error::wrong_value, [&] {
         return "interval_tight: passes must be nonnegative, got " + std::to_string(passes);
     });
-    return Cut{c_, G_, A(), b(), zeros_block(c_, 0, G_.shape()[1]), zeros_block(c_, 0, 1)}
+    // the set as a cut without rows of its own, in CORA's columns
+    return Cut{c_.expand_dims(-1),
+               G_.matrix_transpose(),
+               A(),
+               b(),
+               zeros_block(c_.expand_dims(-1), 0, G_.size(-2)),
+               zeros_block(c_.expand_dims(-1), 0, 1)}
         .interval_tight(passes);
 }
 

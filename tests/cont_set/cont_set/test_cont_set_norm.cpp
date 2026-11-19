@@ -6,7 +6,7 @@
 // CORA authors: Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -36,7 +36,7 @@ namespace {
 /// type and each of the two.
 void norms_of_a_box_and_a_zonotope(const std::string &b) {
     const Interval I(column({-3.0, 2.0}), column({1.0, 4.0}));
-    const Zonotope Z(column({1.0, -1.0}), Tensor::from_data({1.0, 0.0, 1.0, 2.0}, {2, 2}));
+    const Zonotope Z(column({1.0, -1.0}), Tensor::from_data({1.0, 1.0, 0.0, 2.0}, {2, 2}));
     const ContSet &S = I, &T = Z;
     check(test::close(S.norm(), {5.0}), b + ": a box, the 2-norm by default");
     check(test::close(S.norm(N::one), {7.0}) && test::close(S.norm(N::inf), {4.0}) &&
@@ -72,7 +72,7 @@ void the_bound_holds_for_random_points(const std::string &b) {
 
 /// A wrong mode, an unsupported one, a class without norm_, the checks off.
 void errors_and_their_switch() {
-    const Zonotope Z(column({1.0, -1.0}), Tensor::from_data({1.0, 0.0, 1.0, 2.0}, {2, 2}));
+    const Zonotope Z(column({1.0, -1.0}), Tensor::from_data({1.0, 1.0, 0.0, 2.0}, {2, 2}));
     const ContSet &T = Z;
     check(test::raises([&] { T.norm(N::two, "bogus"); }, Error::wrong_value), "a wrong mode");
     check(test::raises([&] { T.norm(N::two, "exact"); }, Error::not_supported), "exact");

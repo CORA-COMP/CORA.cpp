@@ -13,9 +13,9 @@
 // See also: compact
 //
 // CORA.cpp only: the merge of CORALean's PolyZonotope.compactGens, which keeps every column.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -52,12 +52,12 @@ PolyZonotope PolyZonotope::compact_gens() const {
         for (int64_t i = 0; i < n; ++i) {
             double sum = 0;
             for (std::size_t m = members[t].size(); m-- > 0;)
-                sum = g[std::size_t(i * h + members[t][m])] + sum;
-            merged[std::size_t(i) * k + t] = sum;
+                sum = g[std::size_t(members[t][m] * n + i)] + sum;
+            merged[t * std::size_t(n) + std::size_t(i)] = sum;
         }
     }
     return {
-        c_, Tensor::like(G_, merged, {n, int64_t(k)}), GI_, std::move(E), id_, detail::Verbatim{}};
+        c_, Tensor::like(G_, merged, {int64_t(k), n}), GI_, std::move(E), id_, detail::Verbatim{}};
 }
 
 } // namespace cora

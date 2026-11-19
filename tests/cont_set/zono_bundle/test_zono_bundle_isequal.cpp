@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonoBundle/isequal.m
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -48,7 +48,7 @@ void tolerance(const std::string &b) {
 
 /// A negative tol and a batch are refused; the same call with the checks off.
 void checks_and_their_switch() {
-    const Zonotope A(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope A(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({A});
     check(test::raises([&] { bundle.isequal(bundle, -1.0); }, Error::wrong_value),
           "isequal: tol < 0");

@@ -15,7 +15,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -30,7 +30,7 @@ namespace cora {
 
 bool Capsule::is_intersecting(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
+    const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "is_intersecting");
     const detail::Refusal refusal = priv_points_refusal(*this, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     // the points of the numeric case are CORA's call of contains_
@@ -39,12 +39,12 @@ bool Capsule::is_intersecting(const Tensor &p, Tol tol_arg) const {
 
 bool Capsule::is_intersecting(const Capsule &S, Tol tol_arg) const {
     detail::Entry entry;
-    const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
+    const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "is_intersecting");
     CORA_CHECK(S.dim() == dim(), Error::dimension_mismatch, [&] {
         return "is_intersecting: the capsules differ in dimension, " + std::to_string(dim()) +
                " and " + std::to_string(S.dim());
     });
-    const Tensor distance = priv_segment_distance(c_, g_, S.c_, S.g_);
+    const Tensor distance = priv_segment_distance(cc(), gc(), S.cc(), S.gc());
     const Tensor meet = priv_at_most(distance, r_.add(S.r_), tol);
     const Tensor present = (1.0 - priv_empty_mask(r_)).multiply(1.0 - priv_empty_mask(S.r_));
     return priv_all(present.multiply(meet));

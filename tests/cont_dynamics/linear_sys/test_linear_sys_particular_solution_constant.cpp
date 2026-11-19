@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/particularSolution_constant.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -25,13 +25,13 @@ namespace {
 void an_invertible_a_integrates_in_closed_form(const std::string &b) {
     const ConstantSolution P =
         LinearSys(diagonal()).particular_solution_constant(point({1.0, 1.0}), kStep, kTerms);
-    check(test::close(P.time_point.center(), {1 - std::exp(-kStep), (1 - std::exp(-2 * kStep)) / 2},
-                      1e-14),
+    check(test::close(P.time_point.center().expand_dims(-1),
+                      {1 - std::exp(-kStep), (1 - std::exp(-2 * kStep)) / 2}, 1e-14),
           b + ": the end of the step");
-    check(P.time_point.generators().shape().back() == 0, b + ": exact, no remainder");
+    check(P.time_point.nr_generators() == 0, b + ": exact, no remainder");
     // the enclosure holds the origin, the end of the step and the curvature of the input
     check(P.time_interval.contains(test::column({0.0, 0.0})), b + ": the origin");
-    check(P.time_interval.contains(P.time_point.center()), b + ": the end");
+    check(P.time_interval.contains(P.time_point.center().expand_dims(-1)), b + ": the end");
 }
 
 /// The double integrator is singular: x' = x2 + 0, with x2' = u, the series ends after A^1.
@@ -39,14 +39,14 @@ void a_singular_a_sums_the_series(const std::string &b) {
     const ConstantSolution P =
         LinearSys(integrator()).particular_solution_constant(point({0.0, 1.0}), kStep, kTerms);
     // (dt I + A dt^2/2) (0, 1)
-    check(test::close(P.time_point.center(), {kStep * kStep / 2, kStep}, 1e-15),
+    check(test::close(P.time_point.center().expand_dims(-1), {kStep * kStep / 2, kStep}, 1e-15),
           b + ": the series");
     // the curvature G u is a box below zero in the first state, where the velocity curves the path
     check(support(P.input_curvature, {-1, 0}) > 1e-4 &&
               std::abs(support(P.input_curvature, {0, 1})) < 1e-15,
           b + ": the curvature");
     check(P.time_interval.contains(test::column({0.0, 0.0})) &&
-              P.time_interval.contains(P.time_point.center()),
+              P.time_interval.contains(P.time_point.center().expand_dims(-1)),
           b + ": the enclosure");
 }
 
@@ -57,7 +57,7 @@ void the_origin_and_a_set(const std::string &b) {
     check(zero.time_point.representsa("origin") && zero.input_curvature.representsa("origin") &&
               zero.time_interval.representsa("origin"),
           b + ": the origin stays");
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{1.0}, {0.0}}));
+    const Zonotope U(test::column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
     const ConstantSolution P = sys.particular_solution_constant(U, kStep, kTerms);
     check(test::close(support(P.time_point, {1, 0}), 1 - std::exp(-kStep), 1e-14),
           b + ": a set is mapped by the integral");
@@ -81,12 +81,12 @@ void checks_and_their_switch(const std::string &b) {
           b + ": a batch of systems");
     // the checks off give the same end of the step
     const Tensor on =
-        sys.particular_solution_constant(point({1.0, 1.0}), kStep, kTerms).time_point.center();
+        (sys.particular_solution_constant(point({1.0, 1.0}), kStep, kTerms).time_point).center();
     ChecksScope off(false);
     check(
-        test::close(
-            sys.particular_solution_constant(point({1.0, 1.0}), kStep, kTerms).time_point.center(),
-            on, 0),
+        test::close((sys.particular_solution_constant(point({1.0, 1.0}), kStep, kTerms).time_point)
+                        .center(),
+                    on, 0),
         b + ": the same with the checks off");
 }
 

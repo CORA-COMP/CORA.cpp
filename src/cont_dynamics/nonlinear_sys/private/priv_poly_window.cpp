@@ -19,9 +19,9 @@
 //
 // CORA: contDynamics/@linearSys/initReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -59,12 +59,12 @@ std::optional<int> aux_halvings(const Mat &A, std::size_t n, double dt) {
     return std::nullopt;
 }
 
-/// The zonotope of the host data: center c (n) and the generators G (n, h) row-major.
+/// The zonotope of the host data: center c (n) and the generator rows G (h, n) row-major.
 Zonotope aux_zonotope(const Tensor &like, const Vec &c, const Vec &G, std::size_t n,
                       std::size_t h) {
     const auto N = static_cast<int64_t>(n), H = static_cast<int64_t>(h);
-    return {Tensor::like(like, c, {N, 1}),
-            h == 0 ? like.zeros_like({N, 0}) : Tensor::like(like, G, {N, H})};
+    return {Tensor::like(like, c, {N}),
+            h == 0 ? like.zeros_like({0, N}) : Tensor::like(like, G, {H, N})};
 }
 
 } // namespace
@@ -137,10 +137,11 @@ std::optional<PolySeries> PolySeries::make(const Tensor &A, double dt, int taylo
 // The map by an interval matrix -------------------------------------------------------------------
 
 Zonotope priv_interval_map(const Interval &M, const Zonotope &Z) {
-    const Tensor &like = Z.center();
+    const Tensor like = Z.center().expand_dims(-1); // the backend; columns (n, 1)
     const auto m = static_cast<std::size_t>(M.inf().size(-2)),
                n = static_cast<std::size_t>(M.inf().size(-1));
-    const auto h = static_cast<std::size_t>(Z.generators().size(-1));
+    // entry k of generator l is G[l n + k] (the generator rows)
+    const auto h = static_cast<std::size_t>(Z.nr_generators());
     const Vec lo = M.inf().data(), hi = M.sup().data(), c = Z.center().data(),
               G = Z.generators().data();
     // mid(M) and the residual radius of the box M - mid(M)
@@ -153,7 +154,7 @@ Zonotope priv_interval_map(const Interval &M, const Zonotope &Z) {
     Vec reach(n);
     for (std::size_t j = 0; j < n; ++j) {
         double sum = 0;
-        for (std::size_t l = h; l-- > 0;) sum = std::abs(G[j * h + l]) + sum;
+        for (std::size_t l = h; l-- > 0;) sum = std::abs(G[l * n + j]) + sum;
         reach[j] = std::abs(c[j]) + sum;
     }
     const auto dot = [&](std::size_t i, auto column) {
@@ -166,10 +167,10 @@ Zonotope priv_interval_map(const Interval &M, const Zonotope &Z) {
     for (std::size_t i = 0; i < m; ++i) {
         c_out[i] = dot(i, [&](std::size_t k) { return c[k]; });
         for (std::size_t l = 0; l < h; ++l)
-            G_out[i * (h + m) + l] = dot(i, [&](std::size_t k) { return G[k * h + l]; });
+            G_out[l * m + i] = dot(i, [&](std::size_t k) { return G[l * n + k]; });
         double box = 0;
         for (std::size_t k = n; k-- > 0;) box = priv_float_mul(R[i * n + k], reach[k]) + box;
-        G_out[i * (h + m) + h + i] = box;
+        G_out[(h + i) * m + i] = box;
     }
     return aux_zonotope(like, c_out, G_out, m, h + m);
 }
@@ -189,10 +190,10 @@ std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series,
     const int64_t n = X0.dim();
     const Tensor zero = X0.center().zeros_like();
     // the segment [0, u] of the center, V without it (a point has n zero generators)
-    const Tensor &u = V.center();
-    const Zonotope point_zero(zero, zero.zeros_like({n, n})), point_u(u, zero.zeros_like({n, n}));
+    const Zonotope point_zero(zero, zero.zeros_like({n, n})),
+        point_u(V.center(), zero.zeros_like({n, n}));
     const Zonotope seg = priv_lin_comb(point_zero, point_u);
-    const Zonotope V0 = Zonotope(zero, V.generators());
+    const Zonotope V0(zero, V.generators());
     const Zonotope PuR = series.input_solution(seg).reduce_adaptive(zeta_z);
     const Zonotope PU = series.input_solution(V0).reduce_adaptive(zeta_z);
     // [F] X0, the hull of X0 and [e^{A dt}] X0, the hull of {0} and ([e^{A dt}] - I) X0
@@ -204,7 +205,7 @@ std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series,
     const Tensor eye = X0.center().eye_like(n);
     const Interval e_adt_minus_i(series.e_adt().inf() + eye * -1.0,
                                  series.e_adt().sup() + eye * -1.0);
-    const PolyZonotope origin(zero, zero.zeros_like({n, 0}), zero.zeros_like({n, n}), {}, {},
+    const PolyZonotope origin(zero, zero.zeros_like({0, n}), zero.zeros_like({n, n}), {}, {},
                               detail::Verbatim{});
     const PolyZonotope dhom = priv_reduce_adaptive_poly(
         priv_poly_plus(priv_poly_lin_comb(origin, priv_poly_interval_map(e_adt_minus_i, X0)), FX),
@@ -218,15 +219,14 @@ PolyZonotope priv_poly_point(const PolySeries &series, const Zonotope &V, const 
     const Tensor zero = X0.center().zeros_like();
     // the input: V with the time-varying (independent) part of Vs, its center ũ held
     const Zonotope Vt = V.plus(Zonotope(zero, Vs.independent_generators()));
-    const Tensor &u = Vt.center();
-    const Zonotope point_u(u, zero.zeros_like({n, n}));
+    const Zonotope point_u(Vt.center(), zero.zeros_like({n, n}));
     const Zonotope Pu = priv_interval_map(series.integral(), point_u);
     const Zonotope PU =
         series.input_solution(Zonotope(zero, Vt.generators())).reduce_adaptive(zeta_z);
     // [e^{A dt}] X0 reduced, the integral of the dependent part of Vs, the dependency on X0 kept
     const PolyZonotope e_adt_red =
         priv_reduce_adaptive_poly(priv_poly_interval_map(series.e_adt(), X0), zeta_z);
-    const PolyZonotope dep(Vs.center(), Vs.generators(), zero.zeros_like({n, 0}), Vs.exponents(),
+    const PolyZonotope dep(Vs.center(), Vs.generators(), zero.zeros_like({0, n}), Vs.exponents(),
                            Vs.ids(), detail::Verbatim{});
     const PolyZonotope Ps = priv_poly_interval_map(series.integral(), dep);
     return priv_poly_plus(priv_poly_plus(priv_poly_exact_plus(e_adt_red, Ps).compact_gens(), Pu),

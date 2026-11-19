@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/initReach.m
 // CORA authors: Mark Wetzlinger, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -66,11 +66,11 @@ void checks_and_their_switch(const std::string &b) {
           b + ": no time_step");
     // the checks off give the same first step
     const Tensor on =
-        sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval.center();
+        (sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval).center();
     ChecksScope off(false);
     check(test::close(
-              sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval.center(), on,
-              0),
+              (sys.init_reach(initial_set(), U, std::nullopt, kStandard).time_interval).center(),
+              on, 0),
           b + ": the same with the checks off");
 }
 

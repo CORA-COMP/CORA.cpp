@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -36,11 +36,13 @@ void enlarge_scales_about_the_center(const std::string &b) {
     check(test::close(RJ.as<Interval>().inf(), {-2.0, 0.5}) &&
               test::close(RJ.as<Interval>().sup(), {2.0, 1.5}),
           b + ": a factor per coordinate");
+    // a zonotope: the generators scale, one per row
     const Set RZ = B.enlarge(2.0), RW = B.enlarge(column({2.0, 3.0}));
-    check(RZ.is<Zonotope>() && test::close(RZ.as<Zonotope>().center(), {1.0, 0.0}) &&
-              test::close(RZ.as<Zonotope>().generators(), {1.0, 0.0, 0.0, 1.0}),
+    check(RZ.is<Zonotope>() &&
+              test::close(RZ.as<Zonotope>().center().expand_dims(-1), {1.0, 0.0}) &&
+              test::close(RZ.as<Zonotope>().generators().matrix_transpose(), {1.0, 0.0, 0.0, 1.0}),
           b + ": a zonotope doubles about its center");
-    check(test::close(RW.as<Zonotope>().generators(), {1.0, 0.0, 0.0, 1.5}),
+    check(test::close(RW.as<Zonotope>().generators().matrix_transpose(), {1.0, 0.0, 0.0, 1.5}),
           b + ": a factor per coordinate of a zonotope");
     check(test::close(test::support(B.enlarge(0.0), {1.0, 0.0}), 1.0),
           b + ": factor 0 leaves the center");

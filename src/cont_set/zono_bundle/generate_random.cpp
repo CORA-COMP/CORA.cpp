@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@zonoBundle/generateRandom.m
 // CORA authors: Mark Wetzlinger, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_random_dimension.h"
@@ -55,10 +55,9 @@ CORA_FROM_NUMBERS ZonoBundle ZonoBundle::generate_random(Rng &rng, std::optional
         rng.uniform(d.data(), d.size(), 0.0, 1.0);
         rng.uniform(s.data(), 1, 0.0, 1.0);
         const Tensor direction = Tensor::like(center, d, {n, 1});
-        const Tensor v =
-            Z.center() +
-            Z.generators().matmul(Z.generators().matrix_transpose().matmul(direction).sign());
-        members.emplace_back(Z.center() + (v - center) * s[0], Z.generators());
+        const Tensor v = Z.center().expand_dims(-1) + Z.generators().matrix_transpose().matmul(
+                                                          Z.generators().matmul(direction).sign());
+        members.push_back(Z + (v - center) * s[0]);
     }
     return ZonoBundle(std::move(members));
 }

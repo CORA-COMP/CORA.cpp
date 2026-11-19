@@ -15,7 +15,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -143,7 +143,7 @@ Tensor priv_vertex_candidates(const ConZonotope &cz) {
     const HostConZonotope H = priv_host_con_zonotope(cz);
     const int64_t m = H.m;
     const Echelon e = aux_echelon(H);
-    if (!e.consistent) return cz.c().zeros_like({H.n, 0});
+    if (!e.consistent) return cz.c().expand_dims(-1).zeros_like({H.n, 0});
     const int64_t r = e.rank;
     if (aux_count(m, r) > double(numerics::kVertexCandidates))
         CORA_FAIL(Error::not_supported,
@@ -193,13 +193,14 @@ Tensor priv_vertex_candidates(const ConZonotope &cz) {
         }
     }
     // without factors the set is its center
-    if (m == 0) return cz.c();
+    if (m == 0) return cz.c().expand_dims(-1);
     const int64_t count = int64_t(points.size()) / m;
     // one factor vector per row of `points`: transpose into columns (m, K)
     std::vector<double> X(points.size());
     for (int64_t k = 0; k < count; ++k)
         for (int64_t j = 0; j < m; ++j) X[j * count + k] = points[k * m + j];
-    return cz.c() + cz.generators().matmul(Tensor::like(cz.c(), X, {m, count}));
+    return cz.c().expand_dims(-1) + cz.generators().matrix_transpose().matmul(
+                                        Tensor::like(cz.c().expand_dims(-1), X, {m, count}));
 }
 
 } // namespace cora

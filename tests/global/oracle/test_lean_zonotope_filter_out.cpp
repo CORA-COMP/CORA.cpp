@@ -4,9 +4,9 @@
 // dropped, a far cell stays.
 //
 // ORACLE: contSet/@zonotope/filterOut.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -36,9 +36,11 @@ int main() {
     oracle::run("zonotope.filterOut", [](oracle::Random &rnd) {
         const Zonotope big = rnd.zonotope(3, 3);
         // a cell inside (small generators, the center moved a little) and a far one
-        const Tensor inside_center = big.center() + big.generators().slice(-1, 0, 1) * 0.25;
-        const Zonotope inside(inside_center, big.generators() * 0.3);
-        const Zonotope far(big.center() + 100.0, rnd.matrix(3, 3));
+        const Tensor inside_center = big.center().expand_dims(-1) +
+                                     big.generators().matrix_transpose().slice(-1, 0, 1) * 0.25;
+        const Zonotope inside = Zonotope(inside_center.squeeze(-1), big.generators() * 0.3);
+        const Zonotope far =
+            Zonotope((big.center().expand_dims(-1) + 100.0).squeeze(-1), rnd.matrix(3, 3));
         const std::vector<Zonotope> cells{inside, big, far};
         oracle::check(Zonotope::filter_out(cells), lean::Zonotope::filter_out(lifted(cells)));
         const std::vector<Zonotope> apart{big, far};

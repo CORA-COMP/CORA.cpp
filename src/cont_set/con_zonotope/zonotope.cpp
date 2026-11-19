@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@conZonotope/zonotope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -63,7 +63,7 @@ std::pair<std::vector<double>, std::vector<double>> aux_ranges(const Tensor &T, 
 
 /// The zonotope of the null space method: the factors p + T y with y in a box.
 Zonotope aux_null_space(const ConZonotope &cz) {
-    const Tensor &c = cz.c(), &G = cz.generators();
+    const Tensor &c = cz.c().expand_dims(-1), &G = cz.generators().matrix_transpose();
     const Tensor p = cz.A().pinv().matmul(cz.b()), T = null_space(cz.A());
     const int64_t k = T.shape()[1];
     const auto [lb, ub] = aux_ranges(T, p);
@@ -83,7 +83,8 @@ Zonotope aux_null_space(const ConZonotope &cz) {
     }
     const Tensor center = Tensor::like(c, mid, {k, 1}), radius = Tensor::like(c, rad, {1, k});
     const Tensor offset = p + T.matmul(center);
-    return {c + G.matmul(offset), G.matmul(T.multiply(radius))};
+    return Zonotope((c + G.matmul(offset)).squeeze(-1),
+                    (G.matmul(T.multiply(radius))).matrix_transpose());
 }
 
 } // namespace
@@ -96,15 +97,15 @@ Zonotope ConZonotope::zonotope(const std::string &method) const {
     CORA_CHECK(method == "nullSpace" || method == "reduce", Error::wrong_value, [&] {
         return "zonotope: the method must be 'nullSpace' or 'reduce', got '" + method + "'";
     });
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported,
                [] { return std::string("zonotope: it supports a single set, not a batch"); });
-    if (A().shape()[A().ndim() - 2] == 0) return {c_, G_};
+    if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_, G_);
     CORA_CHECK(!priv_is_empty(priv_host_con_zonotope(*this)), Error::empty_set, [] {
         return std::string("zonotope: the set is empty and CORA.cpp has no empty zonotope");
     });
     if (method == "nullSpace") return aux_null_space(*this);
-    const ConZonotope reduced = reduce(int(G_.shape().back() / dim()) + 1);
-    return {reduced.c(), reduced.generators()};
+    const ConZonotope reduced = reduce(int(G_.size(-2) / dim()) + 1);
+    return Zonotope(reduced.c(), reduced.generators());
 }
 
 } // namespace cora

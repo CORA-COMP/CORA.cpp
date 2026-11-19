@@ -1,8 +1,8 @@
 // test_cont_set_vertices_3d - ContSet::vertices_3d: three-dimensional sets only
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -35,7 +35,7 @@ void only_three_dimensions() {
 /// four-dimensional set onto three dimensions is what the plot uses.
 void through_a_projection() {
     const Zonotope Z(test::column({0, 0, 0, 0}),
-                     Tensor({{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}}));
+                     Tensor({{1, 0, 0, 1}, {0, 1, 0, 1}, {0, 0, 1, 1}}));
     const Set P = Z.project({0, 1, 2});
     check(P->vertices_3d()[0].size() == 8, "a projected cube has eight corners");
 }

@@ -41,14 +41,14 @@ F64 = dict(dtype=torch.float64)
 
 
 def brute_support(c, G, d):
-    """max over the corners of the generator cube of d'(c + G b)."""
-    m = G.shape[-1]
-    return max(float(d @ (c + G @ torch.tensor(b, **F64))) for b in itertools.product([-1, 1], repeat=m))
+    """max over the corners of the generator cube of d'(c + b G), one generator per row of G."""
+    m = G.shape[-2]
+    return max(float(d @ (c + torch.tensor(b, **F64) @ G)) for b in itertools.product([-1, 1], repeat=m))
 
 
 def random_zonotope(n=3, m=4, seed=0):
     g = torch.Generator().manual_seed(seed)
-    return torch.randn(n, generator=g, **F64), torch.randn(n, m, generator=g, **F64)
+    return torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
 
 
 # ============================================  MAIN  ============================================ #
@@ -72,11 +72,11 @@ class Construction(unittest.TestCase):
         self.assertIsInstance(Z.support_function(np.ones(3)), float)
 
     def test_a_batch_lives_in_the_object(self):
-        c, G = torch.randn(5, 3, **F64), torch.randn(5, 3, 4, **F64)
+        c, G = torch.randn(5, 3, **F64), torch.randn(5, 4, 3, **F64)
         Z = cora.Zonotope(c, G)
         self.assertEqual(tuple(Z.center.shape), (5, 3))
         # a batch of zonotopes
-        self.assertEqual(tuple(Z.generators.shape), (5, 3, 4))
+        self.assertEqual(tuple(Z.generators.shape), (5, 4, 3))
         self.assertEqual(Z.dim, 3)
         self.assertEqual(tuple(Z.center.shape), (5, 3))
 
@@ -97,7 +97,7 @@ class SupportFunc(unittest.TestCase):
                 self.assertAlmostEqual(float(Z.support_function(d)), brute_support(c, G, d), places=10)
 
     def test_a_batch_gives_one_value_per_set(self):
-        c, G = torch.randn(4, 3, **F64), torch.randn(4, 3, 2, **F64)
+        c, G = torch.randn(4, 3, **F64), torch.randn(4, 2, 3, **F64)
         d = torch.randn(3, **F64)
         rho = cora.Zonotope(c, G).support_function(d)
         # support functions per member
@@ -112,7 +112,7 @@ class Operations(unittest.TestCase):
         M = torch.randn(3, 3, **F64)
         MZ = cora.Zonotope(c, G).linear_map(M)
         torch.testing.assert_close(MZ.center, M @ c)
-        torch.testing.assert_close(MZ.generators, M @ G)
+        torch.testing.assert_close(MZ.generators, G @ M.T)
 
     def test_mtimes_by_an_interval_matrix_encloses_its_members(self):
         c, G = random_zonotope()
@@ -120,7 +120,7 @@ class Operations(unittest.TestCase):
         radius = 0.3 * torch.rand(3, 3, **F64)
         Z = cora.Zonotope(c, G)
         wide = Z.linear_map(cora.Interval.matrix(center - radius, center + radius))
-        self.assertEqual(wide.generators.shape[-1], G.shape[-1] + 3)  # one generator per dimension
+        self.assertEqual(wide.generators.shape[-2], G.shape[-2] + 3)  # one generator per dimension
         for _ in range(20):
             M = center + radius * (2 * torch.rand(3, 3, **F64) - 1)
             d = torch.randn(3, **F64)
@@ -130,7 +130,7 @@ class Operations(unittest.TestCase):
     def test_plus_is_the_minkowski_sum(self):
         (c1, G1), (c2, G2) = random_zonotope(3, 3, 1), random_zonotope(3, 2, 2)
         S = cora.Zonotope(c1, G1).plus(cora.Zonotope(c2, G2))
-        self.assertEqual(S.generators.shape[-1], 5)
+        self.assertEqual(S.generators.shape[-2], 5)
         d = torch.randn(3, **F64)
         parts = cora.Zonotope(c1, G1).support_function(d) + cora.Zonotope(c2, G2).support_function(d)
         self.assertAlmostEqual(float(S.support_function(d)), float(parts))
@@ -142,7 +142,7 @@ class Operations(unittest.TestCase):
         mapped = Z.linear_map(M)
         Z2 = cora.Zonotope(mapped.center + torch.tensor([1.0, -1.0, 0.5], **F64), mapped.generators)
         hull = Z.linear_combination(Z2)
-        self.assertEqual(hull.generators.shape[-1], 2 * G.shape[-1] + 1)
+        self.assertEqual(hull.generators.shape[-2], 2 * G.shape[-2] + 1)
         # the hull bounds the support functions
         for _ in range(20):
             d = torch.randn(3, **F64)
@@ -152,8 +152,8 @@ class Operations(unittest.TestCase):
     def test_interval_is_the_box_around_it(self):
         c, G = random_zonotope()
         I = cora.Zonotope(c, G).interval()
-        torch.testing.assert_close(I.inf, c - G.abs().sum(-1))
-        torch.testing.assert_close(I.sup, c + G.abs().sum(-1))
+        torch.testing.assert_close(I.inf, c - G.abs().sum(-2))
+        torch.testing.assert_close(I.sup, c + G.abs().sum(-2))
 
 
 class RandomSets(unittest.TestCase):
@@ -174,7 +174,7 @@ class RandomSets(unittest.TestCase):
         # extreme points are corners
         P = cora.Zonotope(c, G).rand_point(30, cora.Rng(0), type="extreme")
         signs = itertools.product([-1.0, 1.0], repeat=3)
-        corners = torch.stack([c + G @ torch.tensor(b, **F64) for b in signs])
+        corners = torch.stack([c + torch.tensor(b, **F64) @ G for b in signs])
         nearest = (P.T[:, None, :] - corners[None]).norm(dim=-1).min(dim=1).values
         self.assertLess(float(nearest.max()), 1e-10)
 
@@ -192,7 +192,7 @@ class RandomSets(unittest.TestCase):
         self.assertIn("extreme", str(caught.exception))
 
     def test_a_batch_draws_in_each_set(self):
-        c, G = torch.randn(3, 2, **F64), torch.randn(3, 2, 2, **F64)
+        c, G = torch.randn(3, 2, **F64), torch.randn(3, 2, 2, **F64)  # (batch, m, n)
         Z = cora.Zonotope(c, G)
         P = Z.rand_point(200, cora.Rng(0))
         # the best of many points
@@ -205,18 +205,18 @@ class RandomSets(unittest.TestCase):
         with cora.backend("eigen"):
             Z = cora.Zonotope.generate_random(cora.Rng(0), 3, nr_generators=4)
             self.assertIsInstance(Z.center, np.ndarray)
-            self.assertEqual(Z.generators.shape, (3, 4))
+            self.assertEqual(Z.generators.shape, (4, 3))
         Z = cora.Zonotope.generate_random(cora.Rng(0), 3, nr_generators=4)
         self.assertIsInstance(Z.center, torch.Tensor)
 
     def test_generate_random_takes_the_options_of_cora(self):
         rng = cora.Rng(0)
         Z = cora.Zonotope.generate_random(rng, center=[1.0, -2.0, 3.0])
-        self.assertEqual(Z.generators.shape, (3, 6))
+        self.assertEqual(Z.generators.shape, (6, 3))
         self.assertTrue(np.allclose(np.asarray(Z.center), [1.0, -2.0, 3.0]))
         for distribution in ("uniform", "exp", "gamma"):
             W = cora.Zonotope.generate_random(rng, 2, nr_generators=5, distribution=distribution)
-            self.assertEqual(W.generators.shape, (2, 5))
+            self.assertEqual(W.generators.shape, (5, 2))
         with self.assertRaises(cora.errors.WrongValue):
             # reduce and compact default to the generic ones
             cora.Zonotope.generate_random(rng, 2, distribution="normal")
@@ -233,13 +233,13 @@ class Stack(unittest.TestCase):
 
     def test_stack_batches_zonotopes_of_different_size(self):
         a = cora.Zonotope(cora.Tensor([1.0, 0.0]), cora.eye(2))
-        b = cora.Zonotope(cora.Tensor([0.0, 2.0]), cora.Tensor([[1.0, 0.5, 0.0], [0.0, 0.5, 1.0]]))
+        b = cora.Zonotope(cora.Tensor([0.0, 2.0]), cora.Tensor([[1.0, 0.0], [0.5, 0.5], [0.0, 1.0]]))
         S = cora.Zonotope.stack([a, b])
         self.assertEqual(tuple(S.center.shape), (2, 2))
-        self.assertEqual(tuple(S.generators.shape), (2, 2, 3))
+        self.assertEqual(tuple(S.generators.shape), (2, 3, 2))
         torch.testing.assert_close(S.center[1], b.center)
-        torch.testing.assert_close(S.generators[0, :, :2], a.generators)
-        self.assertEqual(float(S.generators[0, :, 2].abs().sum()), 0.0)  # padding
+        torch.testing.assert_close(S.generators[0, :2, :], a.generators)
+        self.assertEqual(float(S.generators[0, 2, :].abs().sum()), 0.0)  # padding
         d = cora.Tensor([1.0, -1.0])
         torch.testing.assert_close(S.support_function(d), torch.stack([a.support_function(d),
                                                                        b.support_function(d)]))

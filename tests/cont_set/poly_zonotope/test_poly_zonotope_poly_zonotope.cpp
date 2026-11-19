@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@polyZonotope/polyZonotope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -23,17 +23,17 @@ namespace {
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
     return {column({1.0, 0.0}),
-            Tensor::from_data({1, 0, 1, 2}, {2, 2}),
-            Tensor::from_data({0, 1}, {2, 1}),
+            Tensor::from_data({1, 1, 0, 2}, {2, 2}),
+            Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
             {1, 2}};
 }
 
 /// Equal exponents add, zero generators and zero independent generators go.
 void merge_known(const std::string &b) {
-    const PolyZonotope P(column({0.0, 0.0}), Tensor::from_data({1, 2, 0, 3, 5, 0}, {2, 3}),
+    const PolyZonotope P(column({0.0, 0.0}), Tensor::from_data({1, 3, 2, 5, 0, 0}, {3, 2}),
                          Tensor::from_data({0, 0, 0, 0}, {2, 2}), {{1}, {1}, {2}}, {1});
-    check(P.num_dependent() == 1 && P.independent_generators().shape()[1] == 0,
+    check(P.num_dependent() == 1 && P.independent_generators().shape()[0] == 0,
           b + ": the first two generators merge, the zero one and the zero independent ones go");
     check(close(P.generators(), {3.0, 8.0}, 0),
           b + ": the merged generator is the sum (1, 3) + (2, 5)");
@@ -50,7 +50,7 @@ int main() {
     test::for_each_backend([](const std::string &b) { merge_known(b); });
     check(test::raises(
               [] {
-                  PolyZonotope(column({0.0}), Tensor::zeros({2, 1}), Tensor::zeros({1, 0}), {{1}},
+                  PolyZonotope(column({0.0}), Tensor::zeros({1, 2}), Tensor::zeros({0, 1}), {{1}},
                                {1});
               },
               Error::wrong_input_in_constructor),
@@ -58,7 +58,7 @@ int main() {
     // an exponent per identifier, and nonnegative exponents
     check(test::raises(
               [] {
-                  PolyZonotope(column({0.0}), Tensor::zeros({1, 1}), Tensor::zeros({1, 0}),
+                  PolyZonotope(column({0.0}), Tensor::zeros({1, 1}), Tensor::zeros({0, 1}),
                                {{1, 1}}, {1});
               },
               Error::wrong_input_in_constructor),
@@ -66,14 +66,14 @@ int main() {
     // negative exponents are refused
     check(test::raises(
               [] {
-                  PolyZonotope(column({0.0}), Tensor::zeros({1, 1}), Tensor::zeros({1, 0}), {{-1}},
+                  PolyZonotope(column({0.0}), Tensor::zeros({1, 1}), Tensor::zeros({0, 1}), {{-1}},
                                {1});
               },
               Error::wrong_input_in_constructor),
           "constructor: negative exponents");
     ChecksScope off(false);
     check(known().dim() == 2 &&
-              PolyZonotope(column({0.0}), Tensor::zeros({1, 0}), Tensor::zeros({1, 0}), {}, {})
+              PolyZonotope(column({0.0}), Tensor::zeros({0, 1}), Tensor::zeros({0, 1}), {}, {})
                       .dim() == 1,
           "constructor: valid with the checks off");
     return test::finish("poly_zonotope poly_zonotope");

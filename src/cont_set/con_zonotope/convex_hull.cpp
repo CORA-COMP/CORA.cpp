@@ -13,14 +13,16 @@
 //
 // CORA: contSet/@conZonotope/convHull_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "global/blocks.h"
 #include "global/format.h"
+
+#include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,11 +34,18 @@ namespace {
 
 // Hulls of two sets -------------------------------------------------------------------------------
 
+/// The center and the generators of a set as CORA's columns, (n, 1) and (n, m): the hulls stack
+/// the factors of both sets along the columns.
+std::pair<Tensor, Tensor> aux_columns(const ConZonotope &cz) {
+    return {cz.c().expand_dims(-1), cz.generators().matrix_transpose()};
+}
+
 /// The hull by Raghuraman and Koeln: the weights of the two sets are one factor, and slack factors
 /// turn the bounds of the scaled factors into equalities.
 ConZonotope aux_raghuraman(const ConZonotope &cz1, const ConZonotope &cz2) {
-    const Tensor &c1 = cz1.c(), &c2 = cz2.c(), &G1 = cz1.generators(), &G2 = cz2.generators();
-    const int64_t n = cz1.dim(), m1 = G1.shape().back(), m2 = G2.shape().back();
+    const auto [c1, G1] = aux_columns(cz1);
+    const auto [c2, G2] = aux_columns(cz2);
+    const int64_t n = cz1.dim(), m1 = cz1.nr_generators(), m2 = cz2.nr_generators();
     const int64_t p1 = cz1.A().shape()[cz1.A().ndim() - 2],
                   p2 = cz2.A().shape()[cz2.A().ndim() - 2];
     const int64_t s = 2 * (m1 + m2);
@@ -54,14 +63,15 @@ ConZonotope aux_raghuraman(const ConZonotope &cz1, const ConZonotope &cz2) {
     const Tensor row2 = Tensor::concat(
         {zeros_block(G1, p2, m1), cz2.A(), cz2.b() * 0.5, zeros_block(G1, p2, s)}, -1);
     const Tensor row3 = Tensor::concat({A31, A32, A30, identity_block(G1, s)}, -1);
-    return {c, G, Tensor::concat({row1, row2, row3}, -2),
+    return {c, G.matrix_transpose(), Tensor::concat({row1, row2, row3}, -2),
             Tensor::concat({cz1.b() * 0.5, cz2.b() * 0.5, full_block(G1, s, 1, -0.5)}, -2)};
 }
 
 /// The hull by Kochdumper: three copies of the weight and the factors of each set.
 ConZonotope aux_kochdumper(const ConZonotope &cz1, const ConZonotope &cz2) {
-    const Tensor &c1 = cz1.c(), &c2 = cz2.c(), &G1 = cz1.generators(), &G2 = cz2.generators();
-    const int64_t n = cz1.dim(), m1 = G1.shape().back(), m2 = G2.shape().back();
+    const auto [c1, G1] = aux_columns(cz1);
+    const auto [c2, G2] = aux_columns(cz2);
+    const int64_t n = cz1.dim(), m1 = cz1.nr_generators(), m2 = cz2.nr_generators();
     // a set without constraints gets the row 0 = 0
     const bool none1 = cz1.A().shape()[cz1.A().ndim() - 2] == 0;
     const bool none2 = cz2.A().shape()[cz2.A().ndim() - 2] == 0;
@@ -102,21 +112,21 @@ ConZonotope aux_kochdumper(const ConZonotope &cz1, const ConZonotope &cz2) {
         Tensor::concat({b1 * 0.5, b2 * 0.5, full_block(G1, 2 * (m1 + m2), 1, 3.0)}, -2);
     // the rows that are zero are dropped
     const std::vector<int64_t> rows = priv_nonzero_rows(A, b);
-    return {(c1 + c2) * 0.5, G, A.take(rows, -2), b.take(rows, -2)};
+    return {(c1 + c2) * 0.5, G.matrix_transpose(), A.take(rows, -2), b.take(rows, -2)};
 }
 
 // Hull of many sets -------------------------------------------------------------------------------
 
 /// The hull of several sets: the weights of all sets add to one.
 ConZonotope aux_many(const std::vector<ConZonotope> &sets) {
-    const Tensor &like = sets.front().generators();
+    const Tensor &like = sets.front().generators().matrix_transpose();
     const int64_t n = sets.front().dim(), N = int64_t(sets.size());
-    Tensor c = sets.front().c().zeros_like(), A = zeros_block(like, 0, 0),
+    Tensor c = sets.front().c().expand_dims(-1).zeros_like(), A = zeros_block(like, 0, 0),
            b = zeros_block(like, 0, 1);
     std::vector<Tensor> Gs;
     Tensor weights = zeros_block(like, 1, 0);
     for (const ConZonotope &S : sets) {
-        const int64_t m = S.generators().shape().back(), p = S.A().shape()[S.A().ndim() - 2];
+        const int64_t m = S.nr_generators(), p = S.A().shape()[S.A().ndim() - 2];
         const Tensor o = full_block(like, m, 1, 1.0), I = identity_block(like, m),
                      O = zeros_block(like, m, m);
         const Tensor O_ = zeros_block(like, p, m);
@@ -128,11 +138,12 @@ ConZonotope aux_many(const std::vector<ConZonotope> &sets) {
         b = Tensor::concat({b, S.b() * 0.5, full_block(like, 2 * m, 1, 3.0)}, -2);
         weights =
             Tensor::concat({weights, full_block(like, 1, 1, 0.5), zeros_block(like, 1, 4 * m)}, -1);
-        Gs.push_back(
-            Tensor::concat({S.c() * 0.5, S.generators(), zeros_block(like, n, 3 * m)}, -1));
-        c = c + S.c() * 0.5;
+        Gs.push_back(Tensor::concat({S.c().expand_dims(-1) * 0.5, S.generators().matrix_transpose(),
+                                     zeros_block(like, n, 3 * m)},
+                                    -1));
+        c = c + S.c().expand_dims(-1) * 0.5;
     }
-    return {c, Tensor::concat(Gs, -1), Tensor::concat({A, weights}, -2),
+    return {c, Tensor::concat(Gs, -1).matrix_transpose(), Tensor::concat({A, weights}, -2),
             Tensor::concat({b, full_block(like, 1, 1, 1.0 - 0.5 * double(N))}, -2)};
 }
 
@@ -193,7 +204,7 @@ ConZonotope ConZonotope::convex_hull(const Tensor &p, const std::string &method)
     });
     const detail::Refusal refusal = aux_refusal(*this, dim(), method);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    return aux_hull(*this, ConZonotope(p, zeros_block(p, dim(), 0)), method);
+    return aux_hull(*this, ConZonotope(p, (zeros_block(p, dim(), 0)).matrix_transpose()), method);
 }
 
 ConZonotope ConZonotope::convex_hull(const std::vector<ConZonotope> &others) const {

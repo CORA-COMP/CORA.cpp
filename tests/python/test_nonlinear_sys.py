@@ -114,7 +114,7 @@ class ReachSet(unittest.TestCase):
     def test_the_zonotope_order_limits_the_generators(self):
         R = van_der_pol().reach(start(), time_step=0.01, t_final=0.5, zonotope_order=3)
         # CORA reduces in post: the sets of the first step keep their generators
-        self.assertLessEqual(max(np.asarray(Z.generators).shape[1] for Z in R.time_point[2:]), 6)
+        self.assertLessEqual(max(np.asarray(Z.generators).shape[0] for Z in R.time_point[2:]), 6)
 
     def test_inputs_and_the_steps(self):
         sys = cora.NonlinearSys(lambda x, u: [x[1], (1 - x[0] ** 2) * x[1] - x[0] + u[0]], 2, inputs=1)
@@ -145,7 +145,7 @@ class ReachSet(unittest.TestCase):
     def test_reduce_encloses_the_zonotope(self):
         Z = cora.Zonotope.generate_random(cora.Rng(1), 3, nr_generators=20)
         R = Z.reduce(2)
-        self.assertEqual(np.asarray(R.generators).shape, (3, 6))
+        self.assertEqual(np.asarray(R.generators).shape, (6, 3))
         for k in range(20):
             d = torch.randn(3, dtype=torch.float64, generator=torch.Generator().manual_seed(k))
             # the support functions of the reachable set
@@ -153,9 +153,9 @@ class ReachSet(unittest.TestCase):
 
     def test_reduce_adaptive_boxes_the_small_generators(self):
         Z = cora.Zonotope(cora.Tensor([1.0, 2.0]),
-                          cora.Tensor([[1.0, 0.5, 0.3], [1.0, -0.4, 0.01]]))
+                          cora.Tensor([[1.0, 1.0], [0.5, -0.4], [0.3, 0.01]]))
         # the third generator is boxed: two kept and two box generators
-        self.assertEqual(np.asarray(Z.reduce_adaptive(0.05).generators).shape, (2, 4))
+        self.assertEqual(np.asarray(Z.reduce_adaptive(0.05).generators).shape, (4, 2))
         # everything boxed: the box of Z
         self.assertTrue(np.allclose(np.asarray(Z.reduce_adaptive(1.0).generators), [[1.8, 0.0], [0.0, 1.41]]))
         with self.assertRaises(cora.errors.WrongValue):
@@ -163,7 +163,7 @@ class ReachSet(unittest.TestCase):
 
     def test_reduce_pca_boxes_the_generators(self):
         Z = cora.Zonotope(cora.Tensor([0.0, 0.0]),
-                          cora.Tensor([[3.0, 1.0, 0.0], [0.0, 0.0, 2.0]]))
+                          cora.Tensor([[3.0, 0.0], [1.0, 0.0], [0.0, 2.0]]))
         # three generators in the plane become two, the box of them
         R = Z.reduce_pca()
         self.assertEqual(np.asarray(R.generators).shape, (2, 2))

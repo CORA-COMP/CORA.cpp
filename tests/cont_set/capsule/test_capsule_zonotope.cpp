@@ -3,9 +3,9 @@
 // CORA: contSet/@capsule/zonotope.m
 // PROPERTY: contSet/@capsule/zonotope.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -26,12 +26,15 @@ namespace {
 void zonotope_known(const std::string &b) {
     const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
     const Zonotope Z = C.zonotope();
-    check(close(Z.center(), {1, 2}, 0) && Z.generators().shape() == Shape({2, 3}),
+    check(close(Z.center().expand_dims(-1), {1, 2}, 0) &&
+              Z.generators().matrix_transpose().shape() == Shape({2, 3}),
           b + ": c and 1 + n generators");
-    check(close(Z.generators(), {3, 0.5, 0, 4, 0, 0.5}, 0), b + ": g, r I");
+    check(close(Z.generators().matrix_transpose(), {3, 0.5, 0, 4, 0, 0.5}, 0), b + ": g, r I");
     check(C.plus(column({0.0, 0.0})).zonotope().dim() == 2, b + ": after plus");
-    check(Capsule(column({1.0, 2.0}), column({3.0, 4.0}), 0.0).zonotope().generators().shape() ==
-              Shape({2, 1}),
+    check((Capsule(column({1.0, 2.0}), column({3.0, 4.0}), 0.0).zonotope())
+                  .generators()
+                  .matrix_transpose()
+                  .shape() == Shape({2, 1}),
           b + ": r = 0 adds nothing");
 }
 
@@ -50,7 +53,7 @@ void checks_and_their_switch() {
     check(test::raises([] { Capsule::empty(2).zonotope(); }, Error::empty_set), "zonotope: empty");
     const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
     ChecksScope off(false);
-    check(C.zonotope().generators().shape() == Shape({2, 3}),
+    check(C.zonotope().generators().matrix_transpose().shape() == Shape({2, 3}),
           "zonotope: works with the checks off");
 }
 

@@ -16,9 +16,9 @@
 // CORA: global/functions/helper/dynamics/contDynamics/linearSys/arnoldi.m
 // CORA: contDynamics/@linearSys/private/priv_subspace_Krylov_individual_Jawecki.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_data.h"
@@ -284,7 +284,7 @@ int main() {
                     T[size_t(i * k + j)] = s.state.H[size_t(j)][size_t(i)];
             e1[0] = 1.0;
             const LinearSys small(Tensor::from_data(T, {k, k}));
-            const Zonotope X0(Tensor::from_data(e1, {k, 1}), Tensor::zeros({k, 0}));
+            const Zonotope X0(Tensor::from_data(e1, {k, 1}), Tensor::zeros({0, k}));
             const ReachSet R = small.reach(
                 {.initial_set = X0, .t_final = tf},
                 alg::Standard{.time_step = dt, .taylor_terms = 16, .zonotope_order = 4});
@@ -392,7 +392,7 @@ int main() {
         for (const char *name : {"RND02", "RND04"}) {
             const bench::Instance inst = bench::load_instance(name);
             // A' as the verify forms it
-            const Tensor like = inst.params->initial_set->center();
+            const Tensor like = inst.params->initial_set->center().expand_dims(-1);
             const LinearSys dual = inst.sys->A_sparse()
                                        ? LinearSys(inst.sys->A_sparse()->transpose(),
                                                    like.zeros_like({inst.sys->dim(), 1}))

@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@zonotope/project.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,7 +25,8 @@ namespace cora {
 
 Set Zonotope::project_impl(const std::vector<int64_t> &dims) const {
     const Tensor P = select_dims(c_, dims, dim());
-    return Zonotope(P.matmul(c_), P.matmul(G_));
+    auto [c, G] = Tensor::zonotope_linear_map(P, c_, G_);
+    return Zonotope(std::move(c), std::move(G));
 }
 
 } // namespace cora

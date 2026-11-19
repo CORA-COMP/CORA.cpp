@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@conZonotope/enclose.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -36,7 +36,7 @@ namespace {
 /// and the factors that only the longer set has must not appear in its constraints (CORA drops
 /// them, which would not enclose).
 std::string aux_problem(const ConZonotope &cz, const ConZonotope &cz2) {
-    const int64_t g1 = cz.generators().shape().back(), g2 = cz2.generators().shape().back();
+    const int64_t g1 = cz.nr_generators(), g2 = cz2.nr_generators();
     const int64_t g = std::min(g1, g2), p = cz.A().shape()[cz.A().ndim() - 2];
     const int64_t p2 = cz2.A().shape()[cz2.A().ndim() - 2];
     const std::string image =
@@ -71,9 +71,9 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &cz2) {
 ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
     const Zonotope Z =
         Zonotope(cz.c(), cz.generators()).enclose(Zonotope(cz2.c(), cz2.generators()));
-    const bool second_shorter = cz2.generators().shape().back() <= cz.generators().shape().back();
+    const bool second_shorter = cz2.nr_generators() <= cz.nr_generators();
     const Tensor &A = second_shorter ? cz2.A() : cz.A();
-    const int64_t more = Z.generators().shape().back() - A.shape().back();
+    const int64_t more = Z.nr_generators() - A.shape().back();
     const Tensor padded = Tensor::concat({A, zeros_block(A, A.shape()[A.ndim() - 2], more)}, -1);
     return {Z.center(), Z.generators(), padded, cz.b()};
 }

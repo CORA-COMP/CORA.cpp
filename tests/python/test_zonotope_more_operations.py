@@ -40,7 +40,7 @@ def zonotope(c, G):
 
 
 def random_zonotope(rng, n=3, m=4):
-    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (n, m)))
+    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (m, n)))
 
 
 # ============================================  MAIN  ============================================ #
@@ -48,16 +48,16 @@ def random_zonotope(rng, n=3, m=4):
 
 class ExactPlus(unittest.TestCase):
     def test_by_hand(self):
-        Z = zonotope([0, 1], [[1, 2], [0, 1]])
-        Z2 = zonotope([1, 1], [[1], [1]])
+        Z = zonotope([0, 1], [[1, 0], [2, 1]])
+        Z2 = zonotope([1, 1], [[1, 1]])
         S = Z.exact_plus(Z2)
         np.testing.assert_allclose(S.center, [1, 2])
-        np.testing.assert_allclose(S.generators, [[2, 2], [1, 1]])
-        np.testing.assert_allclose(Z.exact_plus(Z2, 0).generators, [[1, 2, 1], [0, 1, 1]])
+        np.testing.assert_allclose(S.generators, [[2, 1], [2, 1]])
+        np.testing.assert_allclose(Z.exact_plus(Z2, 0).generators, [[1, 0], [2, 1], [1, 1]])
         np.testing.assert_allclose(Z.exact_plus(Z2, k=5).generators, S.generators)
 
     def test_errors(self):
-        Z = zonotope([0, 0], [[1], [0]])
+        Z = zonotope([0, 0], [[1, 0]])
         with self.assertRaises(cora.errors.DimensionMismatch):
             # exact sums with invalid arguments
             Z.exact_plus(zonotope([0], [[1]]))
@@ -69,7 +69,7 @@ class Measures(unittest.TestCase):
     def test_generator_length(self):
         rng = np.random.default_rng(4)
         Z = random_zonotope(rng, 4, 6)
-        np.testing.assert_allclose(Z.generator_length(), np.linalg.norm(Z.generators, axis=0))
+        np.testing.assert_allclose(Z.generator_length(), np.linalg.norm(Z.generators, axis=1))
         self.assertEqual(Z.generator_length().shape, (6,))
 
     def test_is_bounded(self):
@@ -77,7 +77,7 @@ class Measures(unittest.TestCase):
 
     def test_is_full_dim(self):
         self.assertTrue(zonotope([0, 0], [[1, 0], [0, 1]]).is_full_dim())
-        flat = zonotope([0, 0], [[1, 2], [1, 2]])
+        flat = zonotope([0, 0], [[1, 1], [2, 2]])
         self.assertFalse(flat.is_full_dim())
         thin = zonotope([0, 0], [[1, 0], [0, 1e-7]])
         self.assertFalse(thin.is_full_dim(tol=1e-6))  # CORA's tolerance
@@ -114,7 +114,7 @@ class Measures(unittest.TestCase):
         value, x = zonotope([0, 0], [[1, 0], [0, 1]]).minnorm()
         self.assertAlmostEqual(value, 1)
         np.testing.assert_allclose(x, [0, -1], atol=1e-14)
-        value, x = zonotope([3, 4], [[1], [1]]).minnorm()
+        value, x = zonotope([3, 4], [[1, 1]]).minnorm()
         self.assertEqual(value, 0)
         # minnorm is the least facet distance
         np.testing.assert_allclose(x, [3, 4])
@@ -130,9 +130,9 @@ class Equality(unittest.TestCase):
         Z = zonotope([1, 2], [[1, 0], [0, 3]])
         # equality
         self.assertTrue(Z.isequal(Z))
-        self.assertTrue(Z.isequal(zonotope([1, 2], [[0, -1], [-3, 0]])))
+        self.assertTrue(Z.isequal(zonotope([1, 2], [[0, -3], [-1, 0]])))
         self.assertFalse(Z.isequal(zonotope([1, 2.5], [[1, 0], [0, 3]])))
-        self.assertTrue(zonotope([0], [[1, 1]]).isequal(zonotope([0], [[2]])))
+        self.assertTrue(zonotope([0], [[1], [1]]).isequal(zonotope([0], [[2]])))
         self.assertTrue(Z.isequal(zonotope([1 + 1e-9, 2], Z.generators), tol=1e-6))
         self.assertFalse(Z.isequal(zonotope([1 + 1e-9, 2], Z.generators)))
         self.assertFalse(Z.isequal(zonotope([1], [[1]])))
@@ -141,7 +141,7 @@ class Equality(unittest.TestCase):
         box = zonotope([1, 1.25], [[1, 0], [0, 0.25]])
         self.assertTrue(box.isequal(cora.Interval(np.array([0, 1.0]), np.array([2, 1.5]))))
         self.assertFalse(box.isequal(cora.Interval(np.array([0, 1.0]), np.array([2, 2.0]))))
-        point = zonotope([1, 2], np.zeros((2, 0)))
+        point = zonotope([1, 2], np.zeros((0, 2)))
         self.assertTrue(point.isequal(np.array([1.0, 2.0])))
         self.assertFalse(point.isequal(np.array([1.0, 2.5])))
 
@@ -175,7 +175,7 @@ class Intersecting(unittest.TestCase):
         self.assertTrue(cora.is_intersecting(Z, square(1.5)))
 
     def test_errors(self):
-        Z = zonotope([0, 0], [[1], [0]])
+        Z = zonotope([0, 0], [[1, 0]])
         with self.assertRaises(cora.errors.DimensionMismatch):
             Z.is_intersecting(zonotope([0], [[1]]))
         with self.assertRaises(cora.errors.WrongValue):
@@ -187,13 +187,13 @@ class Intersecting(unittest.TestCase):
 # lift by hand
 class Lift(unittest.TestCase):
     def test_by_hand(self):
-        Z = zonotope([1, 2, 3], [[1, 0], [0, 2], [0, 0]])
+        Z = zonotope([1, 2, 3], [[1, 0, 0], [0, 2, 0]])
         L = Z.lift(3, [1, 2, 0])
         np.testing.assert_allclose(L.center, [3, 1, 2])
-        np.testing.assert_allclose(L.generators, [[0, 0], [1, 0], [0, 2]])
+        np.testing.assert_allclose(L.generators, [[0, 1, 0], [0, 0, 2]])
 
     def test_errors(self):
-        Z = zonotope([1, 2], [[1], [0]])
+        Z = zonotope([1, 2], [[1, 0]])
         with self.assertRaises(cora.errors.WrongValue):
             Z.lift(1, [0, 0])
         with self.assertRaises(cora.errors.WrongValue):
@@ -212,10 +212,10 @@ class IntersectStrip(unittest.TestCase):
         Z, C, phi, y = self.Z, self.C, self.phi, self.y
         R = Z.intersect_strip(C, phi, y, np.array([[1.0], [0.0]]))
         np.testing.assert_allclose(R.center, [0.25, 0])
-        np.testing.assert_allclose(R.generators, [[0, 0, 0.5], [0, 1, 0]])
+        np.testing.assert_allclose(R.generators, [[0, 0], [0, 1], [0.5, 0]])
         N = Z.intersect_strip(C, phi, y)
         np.testing.assert_allclose(N.center, [0.2, 0])
-        np.testing.assert_allclose(N.generators, [[0.2, 0, 0.4], [0, 1, 0]])
+        np.testing.assert_allclose(N.generators, [[0.2, 0], [0, 1], [0.4, 0]])
         F = Z.intersect_strip(C, phi, y, "alamo-FRad")
         np.testing.assert_allclose(F.generators, N.generators)
         with warnings.catch_warnings():
@@ -226,7 +226,7 @@ class IntersectStrip(unittest.TestCase):
         # the strip intersection with an observer
         W = Z.intersect_strip(C, phi, y, observer)
         np.testing.assert_allclose(W.center, [0.125, 0])
-        np.testing.assert_allclose(W.generators, [[0.5, 0, 0.25], [0, 1, 0]])
+        np.testing.assert_allclose(W.generators, [[0.5, 0], [0, 1], [0.25, 0]])
 
     def test_errors(self):
         Z, C, phi, y = self.Z, self.C, self.phi, self.y
@@ -274,7 +274,7 @@ class MinkDiff(unittest.TestCase):
         D = square(2, (1, 1)).mink_diff(square(1, (0, 0.5)))
         np.testing.assert_allclose(D.center, [1, 0.5])
         np.testing.assert_allclose(D.generators, np.eye(2))
-        segment = zonotope([0, 0], [[0.5], [0.5]])
+        segment = zonotope([0, 0], [[0.5, 0.5]])
         for method in ("approx", "inner", "outer", "outer:coarse", "exact"):
             D = square(1).mink_diff(segment, method)
             np.testing.assert_allclose(D.generators, 0.5 * np.eye(2), atol=1e-9)
@@ -284,7 +284,7 @@ class MinkDiff(unittest.TestCase):
         cube, small = zonotope(np.zeros(3), 2 * np.eye(3)), zonotope(np.zeros(3), 0.5 * np.eye(3))
         for method in ("approx", "inner", "outer", "outer:coarse", "exact"):
             np.testing.assert_allclose(cube.mink_diff(small, method).generators, 1.5 * np.eye(3), atol=1e-9)
-        segment = zonotope(np.zeros(3), [[0.5], [0], [0]])
+        segment = zonotope(np.zeros(3), [[0.5, 0, 0]])
         np.testing.assert_allclose(cube.mink_diff(segment).generators, np.diag([1.5, 2, 2]), atol=1e-9)
         # a subtrahend that is flat
         with self.assertRaises(cora.errors.WrongValue):
@@ -307,7 +307,7 @@ class MinkDiff(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             cube.mink_diff(small, "other")
         with self.assertRaises(cora.errors.EmptySet):
-            zonotope([0, 0], np.eye(2)).mink_diff(zonotope([0, 0], [[3], [0]]))
+            zonotope([0, 0], np.eye(2)).mink_diff(zonotope([0, 0], [[3, 0]]))
 
 
 if __name__ == "__main__":

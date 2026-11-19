@@ -1,10 +1,11 @@
 // capsule - the class of capsules, as CORA's capsule
 //
 // A capsule is the set of points within the radius r of the segment c - g to c + g: C = {x |
-// min_{t in [-1, 1]} |x - (c + t g)|_2 <= r}. The center c and the generator g are columns
-// (..., n, 1), the radius r is (..., 1, 1) and nonnegative; r = 0 is a segment, g = 0 a ball.
-// Immutable: every operation returns a new set. A negative radius (-1) marks the empty set, as
-// in CORALean; empty(n) is such a set.
+// min_{t in [-1, 1]} |x - (c + t g)|_2 <= r}. Stored batch first as Zonotope (#163): the center c
+// and the generator g are (..., n), the radius r is (..., 1, 1) and nonnegative; r = 0 is a
+// segment, g = 0 a ball. Points and directions are columns (..., n, N), as the other sets take
+// them. Immutable: every operation returns a new set. A negative radius (-1) marks the empty set,
+// as in CORALean; empty(n) is such a set.
 //
 // Syntax:     Capsule C(c, g, r);   Capsule C(c);   Capsule C(I);   Capsule C(Z);
 //             Capsule::empty(n);   Capsule::origin(n);
@@ -22,7 +23,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -48,13 +49,13 @@ class Capsule : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::capsule;
 
-    /// The capsule of the center c (..., n, 1), the generator g (..., n, 1) and the radius r
-    /// (..., 1, 1) >= 0; the generator defaults to 0 and the radius to 0, so a center alone is a
-    /// point. A number r is the radius of every member of the batch.
+    /// The capsule of the center c (..., n), the generator g (..., n; default 0) and the radius r
+    /// (..., 1, 1) >= 0 (default 0; a number is the radius of every member). Columns (..., n, 1)
+    /// are the vectors; a batch of one-dimensional capsules gives r as a tensor.
     explicit Capsule(const Tensor &c);
-    Capsule(const Tensor &c, Tensor g);
-    Capsule(const Tensor &c, Tensor g, Tensor r);
-    Capsule(const Tensor &c, Tensor g, double r);
+    Capsule(const Tensor &c, const Tensor &g);
+    Capsule(const Tensor &c, const Tensor &g, Tensor r);
+    Capsule(const Tensor &c, const Tensor &g, double r);
 
     /// The capsule that holds a box (CORA's interval.capsule): the segment runs along a widest
     /// edge through the center and the ball covers the half-widths of the other edges.
@@ -64,7 +65,8 @@ class Capsule : public ContSet {
     /// basis of the left singular vectors of [-G, G], as a capsule, rotated back. Not a batch.
     explicit Capsule(const Zonotope &Z);
 
-    /// The stored center c, generator g and radius r (-1 for the empty set).
+    /// The stored center c (..., n), generator g (..., n) and radius r (..., 1, 1), -1 for the
+    /// empty set.
     const Tensor &c() const noexcept { return c_; }
     const Tensor &generator() const noexcept { return g_; }
     const Tensor &r() const noexcept { return r_; }
@@ -176,7 +178,7 @@ class Capsule : public ContSet {
     Capsule lift(int64_t N, const std::vector<int64_t> &dims) const;
 
   protected:
-    int64_t dim_impl() const override { return c_.shape()[c_.shape().size() - 2]; }
+    int64_t dim_impl() const override { return c_.shape().back(); }
     Tensor center_impl() const override;
     Set reduce_impl(int order) const override;
     Set translate_impl(const Tensor &v) const override;
@@ -198,7 +200,12 @@ class Capsule : public ContSet {
     /// The parts as they are, without the checks of the constructor (the empty capsule has the
     /// radius -1).
     struct Unchecked {};
-    Capsule(Unchecked, Tensor c, Tensor g, Tensor r);
+    /// The capsule of CORA's columns c and g (..., n, 1), stored as the vectors.
+    Capsule(Unchecked, const Tensor &c, const Tensor &g, Tensor r);
+
+    /// The center and the generator as CORA's columns (..., n, 1), on which the algorithms run.
+    Tensor cc() const { return c_.expand_dims(-1); }
+    Tensor gc() const { return g_.expand_dims(-1); }
     Tensor rand_point_impl(int64_t N, Rng &rng, const std::string &type) const;
 
     Tensor c_, g_, r_;

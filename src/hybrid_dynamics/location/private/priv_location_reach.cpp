@@ -25,7 +25,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
@@ -112,8 +112,8 @@ class BundleSteps {
         param_alg_ = {dt, alg.taylor_terms, alg.zonotope_order, alg.intermediate_terms, true};
         const int64_t m = sys.B() ? sys.input_dim() : 1;
         const Tensor &c = sys.c();
-        Zonotope Uc = U ? *U : Zonotope(c.zeros_like({m, 1}), c.zeros_like({m, 0}));
-        const Tensor u_trans = Uc.center();
+        Zonotope Uc = U ? *U : Zonotope(c.zeros_like({m}), c.zeros_like({0, m}));
+        const Tensor u_trans = Uc.center().expand_dims(-1);
         Uc = Uc - u_trans;
         mappings_.emplace(priv_mappings(sys, Uc, u_trans, *param_alg_));
     }
@@ -254,9 +254,9 @@ aux_flow(const Location &loc, int64_t index, const Set &R0, double t0, double t_
 Set aux_reset(const LinearReset &reset, const Set &S, const std::optional<Zonotope> &U, bool lean) {
     if (!lean || !S.is<Zonotope>() || reset.B()) return reset.evaluate(S, U);
     const Zonotope image = S.as<Zonotope>().linear_map(reset.A());
-    const Tensor w = reset.c() ? *reset.c() : image.center().zeros_like();
+    const Tensor w = reset.c() ? *reset.c() : image.center().expand_dims(-1).zeros_like();
     const int64_t n = w.shape()[0];
-    return image.plus(Zonotope(w, w.zeros_like({n, n})));
+    return image.plus(Zonotope(w.squeeze(-1), w.zeros_like({n, n})));
 }
 
 /// Whether a set may meet the invariant: the generic test of the pair for a polytope, the box
@@ -288,9 +288,9 @@ Zonotope priv_state_input(const Location &loc, const std::optional<Zonotope> &U)
     if (std::holds_alternative<NonlinearSys>(loc.flow())) {
         const int64_t m = loc.input_dim();
         if (U) return *U;
-        return {loc.c().zeros_like({m, 1}), loc.c().zeros_like({m, 0})};
+        return Zonotope(loc.c().zeros_like({m}), loc.c().zeros_like({0, m}));
     }
-    if (!U || !loc.B()) return {loc.c(), loc.c().zeros_like({n, 0})};
+    if (!U || !loc.B()) return Zonotope(loc.c().squeeze(-1), loc.c().zeros_like({0, n}));
     const Tensor &B = *loc.B();
     // B U, then the constant input c, as CORALean's inputSetFloat
     return U->linear_map(B) + loc.c();

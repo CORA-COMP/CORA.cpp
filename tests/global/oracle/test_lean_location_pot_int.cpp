@@ -6,9 +6,9 @@
 // separates a set on either side of the hyperplane (CORALean tests both halves of the row).
 //
 // ORACLE: hybridDynamics/@location/potInt.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/location.h"
@@ -37,7 +37,7 @@ Polytope aux_guard(test::oracle::Random &rnd, const std::vector<Zonotope> &sets,
     }
     if (!equality) return {A, Tensor::from_data(b, {p, 1})};
     const Tensor Ae = rnd.matrix(1, n);
-    const Tensor be = Ae.matmul(sets.front().center()) + rnd.uniform(-2.0, 2.0);
+    const Tensor be = Ae.matmul(sets.front().center().expand_dims(-1)) + rnd.uniform(-2.0, 2.0);
     return {A, Tensor::from_data(b, {p, 1}), Ae, be};
 }
 

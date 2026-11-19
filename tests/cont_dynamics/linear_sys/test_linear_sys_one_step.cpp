@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/oneStep.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -24,7 +24,7 @@ namespace {
 /// The end of the step is e^{A dt} X plus the constant input plus the time-varying input solution.
 void the_end_is_the_sum_of_its_parts(const std::string &b) {
     const Tensor A = diagonal(), u = test::column({1.0, -1.0});
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5}, {0.25}}));
+    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5, 0.25}}));
     // the parts of the step are those of the single solutions
     const LinearSys sys(A);
     const OneStep s = sys.one_step(initial_set(), U, u, kStep, kTerms);
@@ -49,7 +49,7 @@ void the_end_is_the_sum_of_its_parts(const std::string &b) {
 /// Every trajectory under an input of U and the constant input stays in the sets of the step.
 void trajectories_stay_inside(const std::string &b) {
     const Tensor A = diagonal();
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5}, {0.25}}));
+    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5, 0.25}}));
     const Tensor u = test::column({0.5, 0.0});
     const OneStep s = LinearSys(A).one_step(initial_set(), U, u, kStep, kTerms);
     // the end of a trajectory under a held input w = u + factor * generator
@@ -80,12 +80,12 @@ void checks_and_their_switch(const std::string &b) {
                        Error::wrong_value),
           b + ": no terms");
     const Tensor on =
-        sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval.center();
+        (sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval).center();
     ChecksScope off(false);
-    check(
-        test::close(sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval.center(),
-                    on, 0),
-        b + ": the same with the checks off");
+    check(test::close(
+              (sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval).center(), on,
+              0),
+          b + ": the same with the checks off");
 }
 
 } // namespace

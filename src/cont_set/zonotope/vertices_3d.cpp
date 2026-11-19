@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@zonotope/vertices_.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Daniel Heß
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -105,8 +105,8 @@ std::vector<Point3> aux_corners(const Point3 &c, const std::vector<Point3> &g) {
 // ===========================================  MAIN  =========================================== //
 
 std::vector<std::vector<Point3>> Zonotope::vertices_3d_impl() const {
-    const std::vector<double> cs = c_.data(), Gs = G_.data();
-    const int64_t m = G_.shape().back();
+    const std::vector<double> cs = c_.data(), Gs = G_.matrix_transpose().data();
+    const int64_t m = nr_generators();
     const std::size_t batch = cs.size() / 3;
     std::vector<std::vector<Point3>> out;
     for (std::size_t b = 0; b < batch; ++b) {

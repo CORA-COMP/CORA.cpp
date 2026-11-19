@@ -8,9 +8,9 @@
 // CORA: nn/@neuralNetwork/getRefinableLayers.m
 // PROPERTY: nn/@neuralNetwork/refine.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -46,7 +46,7 @@ void refine_raises_the_orders_of_the_heuristic(const std::string &b) {
     check(by_draw[pick][0] == 2 && by_draw[1 - pick][0] == 1, b + ": a drawn heuristic");
     check(nn.refinable_layers() == std::vector<int64_t>({0, 1}), b + ": the refinable layers");
     const PolyZonotope X(Tensor({{0.0}, {0.0}}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                         Tensor::zeros({2, 0}), {{1, 0}, {0, 1}}, {1, 2});
+                         Tensor::zeros({0, 2}), {{1, 0}, {0, 1}}, {1, 2});
     const auto errors = nn.approx_errors(X);
     check(errors.size() == 3 && errors[0].size() == 2 && errors[1].size() == 2 && errors[2].empty(),
           b + ": an error per neuron of a refinable layer");

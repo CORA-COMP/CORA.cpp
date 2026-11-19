@@ -6,9 +6,9 @@
 // Sets:     two inputs (c, G) per member; parts are the center and generators of every member
 // See also: cont_set/zonotope/zonotope_gradients.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -24,8 +24,8 @@ namespace test {
 inline Inputs parts(const cora::ZonoBundle &bundle) {
     Inputs out;
     for (const cora::Zonotope &Z : bundle.zonotopes()) {
-        out.push_back(Z.center());
-        out.push_back(Z.generators());
+        out.push_back(Z.center().expand_dims(-1));
+        out.push_back(Z.generators().matrix_transpose());
     }
     return out;
 }
@@ -34,7 +34,8 @@ inline Inputs parts(const cora::ZonoBundle &bundle) {
 inline cora::ZonoBundle bundle(const Inputs &x, std::size_t first, std::size_t k) {
     std::vector<cora::Zonotope> members;
     for (std::size_t i = 0; i < k; ++i)
-        members.emplace_back(x[first + 2 * i], x[first + 2 * i + 1]);
+        members.push_back(
+            cora::Zonotope(x[first + 2 * i].squeeze(-1), x[first + 2 * i + 1].matrix_transpose()));
     return cora::ZonoBundle(std::move(members));
 }
 

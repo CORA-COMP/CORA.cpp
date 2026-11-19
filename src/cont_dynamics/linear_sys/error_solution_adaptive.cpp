@@ -16,9 +16,9 @@
 //
 // CORA: contDynamics/@linearSys/errorSolution_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
@@ -32,7 +32,7 @@ namespace cora {
 namespace {
 
 /// The sum of the lengths of the generators per coordinate (n, 1).
-Tensor aux_radius(const Zonotope &Z) { return Z.generators().abs_sum(); }
+Tensor aux_radius(const Zonotope &Z) { return Z.generators().abs().sum(-2).expand_dims(-1); }
 
 /// The value of r (n, 1) at the coordinate where `at` (1, 1) points.
 double aux_entry(const Tensor &r, const Tensor &at) { return r.take_along_axis(at, -2).item(); }

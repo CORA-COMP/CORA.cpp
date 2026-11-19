@@ -9,7 +9,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -25,8 +25,8 @@ namespace cora {
 std::string Capsule::display_impl() const {
     std::string text = "capsule\n";
     text += "- dimension: " + std::to_string(dim()) + "\n";
-    text += "- center:\n" + format_matrix(c_, "    ");
-    text += "- generator:\n" + format_matrix(g_, "    ");
+    text += "- center:\n" + format_matrix(cc(), "    ");
+    text += "- generator:\n" + format_matrix(gc(), "    ");
     return text + "- radius:\n" + format_matrix(r_, "    ");
 }
 

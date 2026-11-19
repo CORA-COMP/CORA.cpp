@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@zonotope/box.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -23,8 +23,12 @@ namespace cora {
 
 Zonotope Zonotope::box() const {
     detail::Entry entry;
-    return {c_, G_.abs_sum().diag()};
+    CORA_CHECK(elem_rank_ == 1, Error::not_supported,
+               [] { return std::string("box: not for a matrix zonotope"); });
+    // the radius, summed over the generators, as one axis generator per dimension
+    return {c_, G_.abs_sum_rows().diag()};
 }
+
 
 } // namespace cora
 

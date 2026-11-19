@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/zonotope.m
 // PROPERTY: contSet/@conZonotope/zonotope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -24,14 +24,14 @@ namespace {
 /// Without constraints the zonotope itself; the hexagon is inside its zonotope by both methods.
 void zonotope_known(const std::string &b) {
     const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
-    check(close(plain.zonotope().center(), {1, 2}, 0) &&
-              close(plain.zonotope().generators(), {1, 0, 0, 2}, 0),
+    check(close(plain.zonotope().center().expand_dims(-1), {1, 2}, 0) &&
+              close(plain.zonotope().generators().matrix_transpose(), {1, 0, 0, 2}, 0),
           b + ": without constraints");
     // a point: the constraints fix both factors
     const ConZonotope point(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                             Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({0.5, 0.25}));
-    check(close(point.zonotope().center(), {1.5, 1.25}, 1e-9) &&
-              point.zonotope().generators().shape().back() <= 2,
+    check(close(point.zonotope().center().expand_dims(-1), {1.5, 1.25}, 1e-9) &&
+              point.zonotope().nr_generators() <= 2,
           b + ": a point");
 }
 

@@ -23,9 +23,9 @@
 // is also checked on narrow boxes around 0 (the slope is about 1/4) and on boxes whose end lies
 // at the stationary point, a few ulps inside and outside.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   16-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -142,7 +142,7 @@ void aux_check_network(const NeuralNetwork &nn, const Zonotope &Z, const std::st
     const lean::Zonotope Y = lean::evaluate_network(layers, lean::Zonotope(Z),
                                                     error.empty() ? "singh" : "regression", error);
     oracle::check(nn.evaluate(Z, aux_options(error)),
-                  aux_without_bias_generators(Y, layers, Z.generators().shape()[1]));
+                  aux_without_bias_generators(Y, layers, Z.nr_generators()));
 }
 
 /// CORA.cpp's and the oracle's polynomial zonotope (c, G, GI) of the network, the errors as
@@ -162,7 +162,10 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
         E[std::size_t(j)][std::size_t(j)] = 1;
         ids.push_back(j + 1);
     }
-    const PolyZonotope out = nn.evaluate(PolyZonotope(c, G, GI, E, ids), options);
+    // the set of the columns, as rows; the results are compared in CORA's columns again
+    const PolyZonotope X(c, G.matrix_transpose(), GI.matrix_transpose(), E, ids);
+    const auto columns = [](const Tensor &rows) { return rows.matrix_transpose(); };
+    const PolyZonotope out = nn.evaluate(X, options);
     // the oracle keeps zero generators, CORA.cpp's polynomial zonotope drops them: so do we
     const auto nonzero = [](const Tensor &M) {
         std::vector<int64_t> keep;
@@ -176,22 +179,23 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
                 }
         return M.take(keep, -1);
     };
-    oracle::check(label + " c", out.center(), Y.c);
-    oracle::check(label + " G", out.generators(), nonzero(Y.G));
-    oracle::check(label + " GI", out.independent_generators(), nonzero(Y.GI));
+    oracle::check(label + " c", out.center().expand_dims(-1), Y.c);
+    oracle::check(label + " G", columns(out.generators()), nonzero(Y.G));
+    oracle::check(label + " GI", columns(out.independent_generators()), nonzero(Y.GI));
     // the pairs of evaluate_with_input, the closed loop's call: below the input rows, the same set
-    const PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(c, G, GI, E, ids), options);
+    const PolyZonotope XY = nn.evaluate_with_input(X, options);
     const int64_t n = c.shape()[0], m = Y.c.shape()[0];
-    oracle::check(label + " pairs c", XY.center().slice(0, n, n + m), Y.c);
-    oracle::check(label + " pairs G", nonzero(XY.generators().slice(0, n, n + m)), nonzero(Y.G));
-    oracle::check(label + " pairs GI", nonzero(XY.independent_generators().slice(0, n, n + m)),
-                  nonzero(Y.GI));
+    oracle::check(label + " pairs c", XY.center().slice(0, n, n + m).expand_dims(-1), Y.c);
+    oracle::check(label + " pairs G", nonzero(columns(XY.generators().slice(-1, n, n + m))),
+                  nonzero(Y.G));
+    oracle::check(label + " pairs GI",
+                  nonzero(columns(XY.independent_generators().slice(-1, n, n + m))), nonzero(Y.GI));
 }
 
 /// CORA.cpp's and the oracle's output set of one layer of the activation on Z.
 void aux_check_layer(const std::string &name, Activation activation, const Zonotope &Z,
                      const std::string &error) {
-    const int64_t n = Z.center().shape()[0];
+    const int64_t n = Z.center().expand_dims(-1).shape()[0];
     const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
     const lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
                                 : name == "sigmoid" ? lean::NnLayer::sigmoid()
@@ -235,7 +239,7 @@ int main() {
     oracle::run("nnLayer.evaluateZonotope", [&](oracle::Random &rnd) {
         for (const auto &[name, activation] : kinds) {
             for (const auto &[n, m] : std::vector<std::pair<int, int>>{{2, 3}, {5, 4}, {12, 12}}) {
-                const Zonotope Z(rnd.vector(n) * 2.0, rnd.matrix(n, m));
+                const Zonotope Z(rnd.vector(n) * 2.0, rnd.matrix(n, m).matrix_transpose());
                 const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
                 lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
                                       : name == "sigmoid" ? lean::NnLayer::sigmoid()
@@ -258,11 +262,13 @@ int main() {
         for (const auto &[name, activation] : kinds) {
             const NeuralNetwork nn = aux_random_network(
                 rnd, {3, 6, 5, 2}, {activation, activation, Activation::identity});
-            aux_check_network(nn, Zonotope(rnd.vector(3), rnd.matrix(3, 4) * 0.3));
+            aux_check_network(nn,
+                              Zonotope(rnd.vector(3), rnd.matrix(3, 4).matrix_transpose() * 0.3));
         }
         const NeuralNetwork mixed = aux_random_network(
             rnd, {4, 7, 7, 3}, {Activation::relu, Activation::tanh, Activation::sigmoid});
-        aux_check_network(mixed, Zonotope(rnd.vector(4), rnd.matrix(4, 9) * 0.2));
+        aux_check_network(mixed,
+                          Zonotope(rnd.vector(4), rnd.matrix(4, 9).matrix_transpose() * 0.2));
     });
 
     // the networks of the AINNCS instances on their initial sets
@@ -292,7 +298,7 @@ int main() {
             const Tensor widths =
                 Tensor::from_data({0.0, 1e-9, 1e-3, 0.05, 0.3, 3.0, 30.0, 0.7}, {n, 1});
             const Tensor G = widths.diag().matmul(rnd.matrix(n, m));
-            const Zonotope Z(rnd.vector(n) * 2.0, G);
+            const Zonotope Z = Zonotope((rnd.vector(n) * 2.0).squeeze(-1), G.matrix_transpose());
             for (const std::string &error : errors) aux_check_layer(name, activation, Z, error);
         }
     });
@@ -330,17 +336,17 @@ int main() {
         for (const auto &[name, activation] : kinds) {
             const NeuralNetwork nn = aux_random_network(
                 rnd, {3, 6, 5, 2}, {activation, activation, Activation::identity});
-            const Zonotope Z(rnd.vector(3), rnd.matrix(3, 4) * 0.3);
+            const Zonotope Z(rnd.vector(3), rnd.matrix(3, 4).matrix_transpose() * 0.3);
             const Tensor G = rnd.matrix(3, 3) * 0.2, GI = rnd.matrix(3, 2) * 0.1;
-            aux_check_gi(name + " singh", nn, Z.center(), G, GI, "");
+            aux_check_gi(name + " singh", nn, Z.center().expand_dims(-1), G, GI, "");
             for (const std::string &error : errors) {
                 aux_check_network(nn, Z, error);
-                aux_check_gi(name + " " + error, nn, Z.center(), G, GI, error);
+                aux_check_gi(name + " " + error, nn, Z.center().expand_dims(-1), G, GI, error);
             }
         }
         const NeuralNetwork mixed = aux_random_network(
             rnd, {4, 7, 7, 3}, {Activation::relu, Activation::tanh, Activation::sigmoid});
-        const Zonotope Z(rnd.vector(4), rnd.matrix(4, 9) * 0.2);
+        const Zonotope Z(rnd.vector(4), rnd.matrix(4, 9).matrix_transpose() * 0.2);
         const Tensor c = rnd.vector(4), G = rnd.matrix(4, 3) * 0.2, GI = rnd.matrix(4, 2) * 0.1;
         for (const std::string &error : errors) {
             aux_check_network(mixed, Z, error);
@@ -366,14 +372,17 @@ int main() {
         const Zonotope docking = box_zonotope({70, 70, -0.14, -0.14}, {106, 106, 0.14, 0.14});
         for (const std::string &error : errors) {
             aux_check_network(aux_prefix(bench::load_network("quad"), 2), quad, error);
-            aux_check_gi("quad " + error, aux_prefix(bench::load_network("quad"), 2), quad.center(),
-                         quad.generators(), Tensor::zeros({12, 1}), error);
+            aux_check_gi("quad " + error, aux_prefix(bench::load_network("quad"), 2),
+                         quad.center().expand_dims(-1), quad.generators().matrix_transpose(),
+                         Tensor::zeros({12, 1}), error);
             aux_check_network(bench::load_network("nav_point"), nav, error);
-            aux_check_gi("nav " + error, bench::load_network("nav_set"), nav.center(),
-                         nav.generators(), Tensor::zeros({4, 1}), error);
+            aux_check_gi("nav " + error, bench::load_network("nav_set"),
+                         nav.center().expand_dims(-1), nav.generators().matrix_transpose(),
+                         Tensor::zeros({4, 1}), error);
             aux_check_network(bench::load_network("cartpole"), cart, error);
-            aux_check_gi("cartpole " + error, bench::load_network("cartpole"), cart.center(),
-                         cart.generators(), Tensor::zeros({4, 1}), error);
+            aux_check_gi("cartpole " + error, bench::load_network("cartpole"),
+                         cart.center().expand_dims(-1), cart.generators().matrix_transpose(),
+                         Tensor::zeros({4, 1}), error);
             aux_check_network(aux_narrow(bench::load_network("docking"), 3, 32), docking, error);
         }
     });

@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/trajectoryError.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -34,7 +34,7 @@ void at_the_expansion_point_only_the_series_remains(const std::string &b) {
     const Tensor n = test::column({1.0, -0.5}), zero = test::column({0.0, 0.0});
     const TrajectoryError e = LinearSys(matrix()).trajectory_error({zero, zero}, zero, start_set(),
                                                                    kTime, kTime, kTime, kOrder, n);
-    const Zonotope point(start_set().center(), Tensor::zeros({2, 0}));
+    const Zonotope point = Zonotope(start_set().center(), Tensor::zeros({0, 2}));
     const TrajectoryError p = LinearSys(matrix()).trajectory_error({zero, zero}, zero, point, kTime,
                                                                    kTime, kTime, kOrder, n);
     check(support(p.error, {1, 1}) < 1e-8 && support(p.error, {-1, 1}) < 1e-8,
@@ -43,10 +43,12 @@ void at_the_expansion_point_only_the_series_remains(const std::string &b) {
     const Tensor c_center = (e.c_tilde.inf() + e.c_tilde.sup()) * 0.5;
     check(test::close(c_center, beyond.matrix_transpose().matmul(n), 1e-9), b + ": c_tilde");
     const double d_center = ((e.d_tilde.inf() + e.d_tilde.sup()) * 0.5).item();
-    check(test::close(d_center,
-                      n.matrix_transpose().matmul(beyond).matmul(start_set().center()).item(),
-                      1e-9),
-          b + ": d_tilde");
+    check(
+        test::close(
+            d_center,
+            n.matrix_transpose().matmul(beyond).matmul(start_set().center().expand_dims(-1)).item(),
+            1e-9),
+        b + ": d_tilde");
     // one value of the flow stands for both
     const TrajectoryError same = LinearSys(matrix()).trajectory_error(
         {zero}, zero, start_set(), kTime, kTime, kTime, kOrder, n);
@@ -82,9 +84,9 @@ void checks_and_their_switch(const std::string &b) {
           b + ": three flow values");
     check(test::raises([&] { call({zero}, 3, test::column({0.0})); }, Error::dimension_mismatch),
           b + ": u of one row");
-    const Tensor on = call({zero}, 3, zero).error.center();
+    const Tensor on = (call({zero}, 3, zero).error).center();
     ChecksScope off(false);
-    check(test::close(call({zero}, 3, zero).error.center(), on, 0),
+    check(test::close((call({zero}, 3, zero).error).center(), on, 0),
           b + ": the same with the checks off");
 }
 

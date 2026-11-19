@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "tensor_lists.h"
@@ -24,7 +24,7 @@ namespace {
 
 /// n = 1, the tensor 1 + 0.5 a, g = (1, 2): the results for M = 1 and for M = 0.5 are joined.
 void one_dimension_by_hand(const std::string &b) {
-    const Zonotope Z(column({0.0}), Tensor({{1.0, 2.0}}));
+    const Zonotope Z(column({0.0}), Tensor({{1.0}, {2.0}}));
     const Tensor one = Tensor::from_data({1.0}, {1, 1, 1, 1});
     const Zonotope S = Z.tensor_multiplication_zono(one, {one * 0.5}, test::triples(2));
     check(close(S.generators(), std::vector<double>{1, 6, 12, 8, 0.5, 3, 6, 4}, 1e-14),
@@ -42,7 +42,7 @@ void every_member_of_the_tensor_zonotope_is_enclosed(const std::string &b) {
                  M2 = test::random_tensor(rng, n);
     const Zonotope::TensorLists list = test::triples(m);
     const Zonotope R = Z.tensor_multiplication_zono(Mc, {M1, M2}, list);
-    check(R.generators().shape().back() == 3 * int64_t(list.comb.size()), b + ": three parts");
+    check(R.nr_generators() == 3 * int64_t(list.comb.size()), b + ": three parts");
     for (const auto &[a1, a2] : {std::pair{0.7, -0.4}, {1.0, 1.0}, {-1.0, 0.2}}) {
         const Zonotope member = Z.tensor_multiplication(Mc + M1 * a1 + M2 * a2, list);
         for (int t = 0; t < 10; ++t) {
@@ -55,7 +55,7 @@ void every_member_of_the_tensor_zonotope_is_enclosed(const std::string &b) {
 
 /// A generator of the wrong shape is refused; with the checks off the call gives the same result.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0}), Tensor({{1.0, 2.0}}));
+    const Zonotope Z(column({0.0}), Tensor({{1.0}, {2.0}}));
     const Tensor M = Tensor::from_data({2.0}, {1, 1, 1, 1});
     const Zonotope::TensorLists list = test::triples(2);
     check(test::raises(

@@ -38,7 +38,7 @@ ALGORITHMS = ["standard", "wrapping_free"]
 def system(n=3, m=4, seed=0):
     g = torch.Generator().manual_seed(seed)
     A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
-    return A, torch.randn(n, generator=g, **F64), torch.randn(n, m, generator=g, **F64)
+    return A, torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
 
 
 # ============================================  MAIN  ============================================ #
@@ -50,7 +50,7 @@ class ReachSet(unittest.TestCase):
         self.assertEqual((len(R.time_interval), len(R.time_point)), (10, 11))
         self.assertIsInstance(R.time_interval[0], cora.Zonotope)
         self.assertEqual(tuple(R.time_interval[0].center.shape), (3,))
-        self.assertEqual(R.time_interval[0].generators.shape[-1],
+        self.assertEqual(R.time_interval[0].generators.shape[-2],
                          3 * 4 + 3 + 1)  # 2m+1 from linear_combination, m+n from F
 
     def test_numpy_runs_on_eigen_and_agrees_with_torch(self):
@@ -67,7 +67,7 @@ class ReachSet(unittest.TestCase):
     def test_a_batch_of_sets_equals_a_loop(self):
         # The batch is in the object: the call is the one of a single set.
         A, _, _ = system()
-        c, G = torch.randn(5, 3, **F64), torch.randn(5, 3, 4, **F64)
+        c, G = torch.randn(5, 3, **F64), torch.randn(5, 4, 3, **F64)
         sys = cora.LinearSys(A)
         for lin_alg in ALGORITHMS:
             both = sys.reach(cora.Zonotope(c, G), time_step=0.1, t_final=1.0, alg=lin_alg)
@@ -80,7 +80,7 @@ class ReachSet(unittest.TestCase):
 
     def test_a_batch_of_systems_and_of_sets_together(self):
         As = torch.stack([system(seed=s)[0] for s in range(3)])
-        c, G = torch.randn(3, 3, **F64), torch.randn(3, 3, 2, **F64)
+        c, G = torch.randn(3, 3, **F64), torch.randn(3, 2, 3, **F64)
         both = cora.LinearSys(As).reach(cora.Zonotope(c, G), time_step=0.1, t_final=0.5)
         systems = cora.LinearSys(As).reach(cora.Zonotope(c[0], G[0]), time_step=0.1, t_final=0.5)
         for b in range(3):

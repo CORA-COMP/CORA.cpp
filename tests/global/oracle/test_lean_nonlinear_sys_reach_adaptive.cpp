@@ -14,7 +14,7 @@
 // ORACLE: contDynamics/@nonlinearSys/linReach_adaptive.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   16-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
@@ -109,7 +109,7 @@ void aux_closed_form() {
 
 /// The state of CORA.cpp before a step, for the oracle.
 lean::AdaptiveStepState aux_lean_state(const AdaptiveState &st) {
-    const Tensor &like = st.R.center();
+    const Tensor &like = st.R.center().expand_dims(-1);
     lean::AdaptiveStepState out;
     out.i = st.i;
     out.t = st.t.text();

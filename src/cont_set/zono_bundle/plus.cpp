@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@zonoBundle/plus.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -49,7 +49,7 @@ detail::Refusal aux_refusal(const ZonoBundle &bundle, int64_t n, const Tensor &l
 
 ZonoBundle ZonoBundle::plus(const Zonotope &Z) const {
     detail::Entry entry;
-    const detail::Refusal refusal = aux_refusal(*this, Z.dim(), Z.center());
+    const detail::Refusal refusal = aux_refusal(*this, Z.dim(), Z.center().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_plus_each(Z_, Z);
 }
@@ -65,7 +65,8 @@ ZonoBundle ZonoBundle::plus(const Interval &I) const {
 
 ZonoBundle ZonoBundle::plus(const ZonoBundle &S) const {
     detail::Entry entry;
-    const detail::Refusal refusal = aux_refusal(*this, S.dim(), S.zonotopes().front().center());
+    const detail::Refusal refusal =
+        aux_refusal(*this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     std::vector<Zonotope> sums;
     sums.reserve(Z_.size() * S.zonotopes().size());
@@ -84,7 +85,7 @@ ZonoBundle ZonoBundle::plus(const Tensor &v) const {
                });
     std::vector<Zonotope> moved;
     moved.reserve(Z_.size());
-    for (const Zonotope &Z : Z_) moved.emplace_back(Z.center() + v, Z.generators());
+    for (const Zonotope &Z : Z_) moved.push_back(Z + v);
     return ZonoBundle(std::move(moved));
 }
 

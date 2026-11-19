@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -28,15 +28,15 @@ namespace cora {
 
 namespace {
 
-/// The rows dims of the matrix (..., n, k) turned by R (2, 2), the other rows as they are.
+/// The entries dims of the rows (..., k, n) turned by R (2, 2), the other entries as they are.
 Tensor aux_rotate_rows(const Tensor &M, const Tensor &R, const std::vector<int64_t> &dims) {
-    const int64_t n = M.shape()[M.ndim() - 2];
-    const Tensor turned = R.matmul(M.take(dims, -2));
+    const int64_t n = M.size(-1);
+    const Tensor turned = M.take(dims, -1).matmul(R.matrix_transpose());
     std::vector<int64_t> source(n);
     for (int64_t i = 0; i < n; ++i) source[i] = i;
     source[dims[0]] = n;
     source[dims[1]] = n + 1;
-    return Tensor::concat({M, turned}, -2).take(source, -2);
+    return Tensor::concat({M, turned}, -1).take(source, -1);
 }
 
 } // namespace
@@ -57,7 +57,7 @@ Zonotope Zonotope::rotate(const std::vector<int64_t> &dims, double angle) const 
                [] { return std::string("rotate: the angle must not be NaN"); });
     const double cosine = std::cos(angle), sine = std::sin(angle);
     const Tensor R = Tensor::like(c_, {cosine, -sine, sine, cosine}, {2, 2});
-    return {aux_rotate_rows(c_, R, dims), aux_rotate_rows(G_, R, dims)};
+    return {aux_rotate_rows(c_.expand_dims(-2), R, dims).squeeze(-2), aux_rotate_rows(G_, R, dims)};
 }
 
 } // namespace cora

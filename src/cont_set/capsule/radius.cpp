@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@capsule/radius.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -27,7 +27,7 @@ namespace cora {
 
 Tensor Capsule::radius() const {
     detail::Entry entry;
-    return priv_norm(g_).add(r_);
+    return priv_norm(gc()).add(r_);
 }
 
 } // namespace cora

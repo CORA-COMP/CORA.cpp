@@ -11,9 +11,9 @@
 // PROPERTY: contDynamics/@linearSys/initReach.m
 // PROPERTY: contDynamics/@linearSys/post.m
 // PROPERTY: contDynamics/@linearSys/errorSolution_adaptive.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -54,7 +54,7 @@ Case random_case(cora::Rng &rng) {
     // a centered input set in the state space, and a constant input u
     const Zonotope U(X.center().zeros_like(),
                      Zonotope::generate_random(rng, 3, std::nullopt, 2).generators() * 0.2);
-    const Tensor u = Zonotope::generate_random(rng, 3, std::nullopt, 1).center();
+    const Tensor u = Zonotope::generate_random(rng, 3, std::nullopt, 1).center().expand_dims(-1);
     return {LinearSys(sys.A(), eye),
             X,
             U,
@@ -78,7 +78,7 @@ void the_solutions_enclose_the_flow(const std::string &b) {
         const AffineSolution affine = c.sys.affine_solution(c.X, c.u, kStep, kTerms);
         const Zonotope PU = c.sys.particular_solution_time_varying(c.U, kStep, kTerms);
         const ConstantSolution Pu = c.sys.particular_solution_constant(
-            Zonotope(c.u, c.u.zeros_like({3, 0})), kStep, kTerms);
+            Zonotope(c.u, c.u.zeros_like({0, 3})), kStep, kTerms);
         // the first step of both algorithms, and the step after the first
         const ReachStep first = c.sys.init_reach(
             c.X, c.U, c.u, alg::Standard{.time_step = kStep, .taylor_terms = kTerms});

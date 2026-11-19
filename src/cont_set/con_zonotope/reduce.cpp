@@ -18,7 +18,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -40,12 +40,15 @@ ConZonotope ConZonotope::reduce(int order, const std::string &method) const {
                [&] { return "reduce: the method '" + method + "' is not ported; use 'girard'"; });
     const ConZonotope cz = priv_compact(*this);
     const int64_t n = cz.dim(), p = cz.A().shape()[cz.A().ndim() - 2];
-    if (cz.generators().shape().back() <= order * n + p) return cz;
+    if (cz.nr_generators() <= order * n + p) return cz;
 
     // the zonotope [G; A] with the center [c; -b] is reduced; its rows are read back
-    const Tensor lifted = Tensor::concat({cz.generators(), cz.A()}, -2);
-    const Tensor reduced = priv_girard_generators(lifted, (order - 1) * n);
-    return {cz.c(), reduced.slice(-2, 0, n), reduced.slice(-2, n, n + p), cz.b()};
+    const Tensor lifted = Tensor::concat({cz.generators().matrix_transpose(), cz.A()}, -2);
+    // the Girard reduction takes one generator per row
+    const Tensor reduced =
+        priv_girard_generators(lifted.matrix_transpose(), (order - 1) * n).matrix_transpose();
+    return {cz.c().expand_dims(-1), reduced.slice(-2, 0, n).matrix_transpose(),
+            reduced.slice(-2, n, n + p), cz.b()};
 }
 
 Set ConZonotope::reduce_impl(int order) const { return reduce(order); }

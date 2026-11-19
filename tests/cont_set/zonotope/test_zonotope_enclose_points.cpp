@@ -3,9 +3,9 @@
 // CORA: contSet/@zonotope/enclosePoints.m
 // PROPERTY: contSet/@zonotope/enclosePoints.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -72,8 +72,7 @@ void enclose_points_contain_the_cloud(const std::string &b) {
     const Tensor points = cloud(rng, 3, 40);
     check(contains_all(Zonotope::enclose_points(points), points), b + ": the default is maiga");
     const Zonotope maiga = Zonotope::enclose_points(cloud(rng, 2, 30), "maiga");
-    check(maiga.generators().shape().back() >= 2,
-          b + ": maiga: at least the n generators of the box");
+    check(maiga.nr_generators() >= 2, b + ": maiga: at least the n generators of the box");
 }
 
 /// A method that does not exist, an empty cloud and a frame of the wrong size are refused; with

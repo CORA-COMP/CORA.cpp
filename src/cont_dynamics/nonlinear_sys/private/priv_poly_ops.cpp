@@ -19,9 +19,9 @@
 // CORA: contSet/@polyZonotope/private/priv_reduceAdaptive.m
 // CORA: contDynamics/@nonlinearSys/reach_adaptive.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -40,10 +40,10 @@ namespace cora {
 
 namespace {
 
-/// The data of a polynomial zonotope on the host: G is (n, h) and GI (n, q), row-major.
+/// The data of a polynomial zonotope on the host: one generator per row, G (h, n) and GI (q, n).
 struct Host {
     Host(const PolyZonotope &Z)
-        : n(Z.dim()), h(Z.num_dependent()), q(Z.independent_generators().shape()[1]),
+        : n(Z.dim()), h(Z.num_dependent()), q(Z.independent_generators().shape()[0]),
           c(Z.center().data()), G(Z.generators().data()), GI(Z.independent_generators().data()),
           E(Z.exponents()) {}
 
@@ -51,13 +51,14 @@ struct Host {
     Vec c, G, GI;
     const Exponents &E; // the exponents of the set, which outlives the view
 
-    double g(int64_t i, int64_t l) const { return G[std::size_t(i * h + l)]; }
-    double gi(int64_t i, int64_t l) const { return GI[std::size_t(i * q + l)]; }
+    /// Entry i of the dependent and of the independent generator l.
+    double g(int64_t i, int64_t l) const { return G[std::size_t(l * n + i)]; }
+    double gi(int64_t i, int64_t l) const { return GI[std::size_t(l * n + i)]; }
 };
 
-/// The tensor (rows, cols) of the values, like `like`; a tensor without columns is empty.
-Tensor aux_tensor(const Tensor &like, const Vec &data, int64_t rows, int64_t cols) {
-    return cols == 0 ? like.zeros_like({rows, 0}) : Tensor::like(like, data, {rows, cols});
+/// The generator rows (h, n) of the values, like `like`; no rows is an empty (0, n).
+Tensor aux_tensor(const Tensor &like, const Vec &data, int64_t h, int64_t n) {
+    return h == 0 ? like.zeros_like({0, n}) : Tensor::like(like, data, {h, n});
 }
 
 /// Whether all exponents of the dependent generator are even (a constant one included).
@@ -99,10 +100,10 @@ PolyZonotope aux_reduce_by(const PolyZonotope &Z, const Host &a,
     Vec G(std::size_t(n * hk)), GI(std::size_t(n * (qk + n)), 0.0);
     for (int64_t i = 0; i < n; ++i) {
         for (int64_t l = 0; l < hk; ++l)
-            G[std::size_t(i * hk + l)] = a.g(i, int64_t(keep[std::size_t(l)]));
+            G[std::size_t(l * n + i)] = a.g(i, int64_t(keep[std::size_t(l)]));
         for (int64_t l = 0; l < qk; ++l)
-            GI[std::size_t(i * (qk + n) + l)] = a.gi(i, int64_t(keep_i[std::size_t(l)]));
-        GI[std::size_t(i * (qk + n) + qk + i)] = drop[std::size_t(i)];
+            GI[std::size_t(l * n + i)] = a.gi(i, int64_t(keep_i[std::size_t(l)]));
+        GI[std::size_t((qk + i) * n + i)] = drop[std::size_t(i)];
     }
     // factors no kept generator carries go with their identifiers (no value changes)
     std::vector<int64_t> id;
@@ -121,7 +122,7 @@ PolyZonotope aux_reduce_by(const PolyZonotope &Z, const Host &a,
         E.push_back(std::move(c));
     }
     return {
-        Z.center(),    aux_tensor(like, G, n, hk), aux_tensor(like, GI, n, qk + n), std::move(E),
+        Z.center(),    aux_tensor(like, G, hk, n), aux_tensor(like, GI, qk + n, n), std::move(E),
         std::move(id), detail::Verbatim{}};
 }
 
@@ -145,12 +146,12 @@ int64_t aux_fresh_id(const PolyZonotope &Z, int64_t above) {
     return std::max(id.empty() ? int64_t(0) : *std::max_element(id.begin(), id.end()), above) + 1;
 }
 
-/// Z with the columns of `cols` (n, k) as dependent generators on factors of their own, followed by
+/// Z with the rows of `rows` (k, n) as dependent generators on factors of their own, followed by
 /// `zeros` zero columns on factors of their own (CORALean's absorbRounding: the error box of the
 /// set made generators, which is empty at nearest). The new factors have the exponent 1 each.
-PolyZonotope aux_make_dependent(const PolyZonotope &Z, const Tensor &cols, int64_t zeros,
+PolyZonotope aux_make_dependent(const PolyZonotope &Z, const Tensor &rows, int64_t zeros,
                                 int64_t above = 0) {
-    const int64_t k = cols.shape()[1] + zeros, p = Z.num_factors();
+    const int64_t k = rows.shape()[0] + zeros, p = Z.num_factors();
     std::vector<int64_t> id = Z.ids();
     const int64_t fresh = aux_fresh_id(Z, above);
     for (int64_t j = 0; j < k; ++j) id.push_back(fresh + j);
@@ -166,9 +167,9 @@ PolyZonotope aux_make_dependent(const PolyZonotope &Z, const Tensor &cols, int64
         c[std::size_t(p + j)] = 1;
         E.push_back(std::move(c));
     }
-    const Tensor none = Z.center().zeros_like({Z.dim(), 0});
-    const Tensor padding = zeros > 0 ? Z.center().zeros_like({Z.dim(), zeros}) : none;
-    return {Z.center(),    Tensor::concat({Z.generators(), cols, padding}, -1),
+    const Tensor none = Z.center().zeros_like({0, Z.dim()});
+    const Tensor padding = zeros > 0 ? Z.center().zeros_like({zeros, Z.dim()}) : none;
+    return {Z.center(),    Tensor::concat({Z.generators(), rows, padding}, -2),
             none,          std::move(E),
             std::move(id), detail::Verbatim{}};
 }
@@ -333,8 +334,8 @@ PolyZonotope priv_poly_plus(const PolyZonotope &Z1, const PolyZonotope &Z2) {
     Exponents E = std::move(a.E1);
     E.insert(E.end(), a.E2.begin(), a.E2.end());
     return {Z1.center() + Z2.center(),
-            Tensor::concat({Z1.generators(), Z2.generators()}, -1),
-            Tensor::concat({Z1.independent_generators(), Z2.independent_generators()}, -1),
+            Tensor::concat({Z1.generators(), Z2.generators()}, -2),
+            Tensor::concat({Z1.independent_generators(), Z2.independent_generators()}, -2),
             std::move(E),
             std::move(a.id),
             detail::Verbatim{}};
@@ -343,7 +344,7 @@ PolyZonotope priv_poly_plus(const PolyZonotope &Z1, const PolyZonotope &Z2) {
 PolyZonotope priv_poly_plus(const PolyZonotope &Z, const Zonotope &Z2) {
     return {Z.center() + Z2.center(),
             Z.generators(),
-            Tensor::concat({Z.independent_generators(), Z2.generators()}, -1),
+            Tensor::concat({Z.independent_generators(), Z2.generators()}, -2),
             Z.exponents(),
             Z.ids(),
             detail::Verbatim{}};
@@ -373,8 +374,8 @@ PolyZonotope priv_poly_exact_plus(const PolyZonotope &Z1, const PolyZonotope &Z2
     const Exponents E2 = over(Z2);
     E.insert(E.end(), E2.begin(), E2.end());
     return {Z1.center() + Z2.center(),
-            Tensor::concat({Z1.generators(), Z2.generators()}, -1),
-            Tensor::concat({Z1.independent_generators(), Z2.independent_generators()}, -1),
+            Tensor::concat({Z1.generators(), Z2.generators()}, -2),
+            Tensor::concat({Z1.independent_generators(), Z2.independent_generators()}, -2),
             std::move(E),
             std::move(id),
             detail::Verbatim{}};
@@ -386,7 +387,7 @@ PolyZonotope priv_poly_lin_comb(const PolyZonotope &Z1, const PolyZonotope &Z2) 
     const Host a(Z1), b(Z2);
     const int64_t n = a.n, h1 = a.h, h2 = b.h;
     const Tensor &like = Z1.center();
-    // the columns [G1/2, G2/2 | G1/2, -G2/2, (c1 - c2)/2] and the independent block of the pairs
+    // the rows [G1/2; G2/2; G1/2; -G2/2; (c1 - c2)/2] and the independent block of the pairs
     const int64_t h = 2 * (h1 + h2) + 1;
     Vec G(std::size_t(n * h));
     Vec c(static_cast<std::size_t>(n));
@@ -394,7 +395,7 @@ PolyZonotope priv_poly_lin_comb(const PolyZonotope &Z1, const PolyZonotope &Z2) 
     for (int64_t i = 0; i < n; ++i) {
         c[std::size_t(i)] = (a.c[std::size_t(i)] + b.c[std::size_t(i)]) * 0.5;
         int64_t col = 0;
-        const auto put = [&](double v) { G[std::size_t(i * h + col++)] = v; };
+        const auto put = [&](double v) { G[std::size_t((col++) * n + i)] = v; };
         for (int64_t l = 0; l < h1; ++l) put(a.g(i, l) * 0.5);
         for (int64_t l = 0; l < h2; ++l) put(b.g(i, l) * 0.5);
         for (int64_t l = 0; l < h1; ++l) put(a.g(i, l) * 0.5);
@@ -405,7 +406,7 @@ PolyZonotope priv_poly_lin_comb(const PolyZonotope &Z1, const PolyZonotope &Z2) 
     Vec GI(std::size_t(n * q));
     for (int64_t i = 0; i < n; ++i) {
         int64_t col = 0;
-        const auto put = [&](double v) { GI[std::size_t(i * q + col++)] = v; };
+        const auto put = [&](double v) { GI[std::size_t((col++) * n + i)] = v; };
         for (int64_t l = 0; l < a.q; ++l)
             put(l < b.q ? (a.gi(i, l) + b.gi(i, l)) * 0.5 : a.gi(i, l));
         for (int64_t l = 0; l < b.q; ++l)
@@ -430,9 +431,9 @@ PolyZonotope priv_poly_lin_comb(const PolyZonotope &Z1, const PolyZonotope &Z2) 
     E.push_back(std::move(last));
     std::vector<int64_t> id = ap.id;
     id.push_back((id.empty() ? 0 : *std::max_element(id.begin(), id.end())) + 1);
-    return {Tensor::like(like, c, {n, 1}),
-            aux_tensor(like, G, n, h),
-            aux_tensor(like, GI, n, q),
+    return {Tensor::like(like, c, {n}),
+            aux_tensor(like, G, h, n),
+            aux_tensor(like, GI, q, n),
             std::move(E),
             std::move(id),
             detail::Verbatim{}};
@@ -462,9 +463,9 @@ PolyZonotope priv_poly_interval_map(const Interval &M, const PolyZonotope &Z) {
     for (int64_t i = 0; i < m; ++i) {
         c[std::size_t(i)] = dot(i, [&](int64_t k) { return a.c[std::size_t(k)]; });
         for (int64_t l = 0; l < a.h; ++l)
-            G[std::size_t(i * a.h + l)] = dot(i, [&](int64_t k) { return a.g(k, l); });
+            G[std::size_t(l * m + i)] = dot(i, [&](int64_t k) { return a.g(k, l); });
         for (int64_t l = 0; l < a.q; ++l)
-            GI[std::size_t(i * (a.q + m) + l)] = dot(i, [&](int64_t k) { return a.gi(k, l); });
+            GI[std::size_t(l * m + i)] = dot(i, [&](int64_t k) { return a.gi(k, l); });
     }
     // the free box of Z: c -+ the row sum of the magnitudes of [G GI], one sum added upward
     Vec blo(static_cast<std::size_t>(n)), bhi(static_cast<std::size_t>(n));
@@ -489,11 +490,11 @@ PolyZonotope priv_poly_interval_map(const Interval &M, const PolyZonotope &Z) {
         }
         const double center = (s_lo + s_hi) * 0.5;
         c[std::size_t(i)] = c[std::size_t(i)] + center;
-        GI[std::size_t(i * (a.q + m) + a.q + i)] = std::max(s_hi - center, center - s_lo);
+        GI[std::size_t((a.q + i) * m + i)] = std::max(s_hi - center, center - s_lo);
     }
-    return {Tensor::like(like, c, {m, 1}),
-            aux_tensor(like, G, m, a.h),
-            aux_tensor(like, GI, m, a.q + m),
+    return {Tensor::like(like, c, {m}),
+            aux_tensor(like, G, a.h, m),
+            aux_tensor(like, GI, a.q + m, m),
             Z.exponents(),
             Z.ids(),
             detail::Verbatim{}};
@@ -536,7 +537,7 @@ bool priv_volume_ratio_exceeds(const PolyZonotope &Z, double ratio) {
         for (int64_t j = 0; j < a.q; ++j) v[std::size_t(j)] = std::abs(a.gi(i, j));
         rad_ind[std::size_t(i)] = priv_sum_up(v);
     }
-    const PolyZonotope dep(Z.center(), Z.generators(), Z.center().zeros_like({a.n, 0}),
+    const PolyZonotope dep(Z.center(), Z.generators(), Z.center().zeros_like({0, a.n}),
                            Z.exponents(), Z.ids());
     const Vec rad_dep = priv_poly_radius(dep);
     // the dimensions where both parts have width

@@ -21,7 +21,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
@@ -44,7 +44,7 @@ namespace {
 /// CORA's linParamSys test ignores c unless B = 0, as c is not in v_trans there).
 bool aux_origin_contained(const Zonotope &V, const Tensor &v_trans) {
     const Zonotope full = V + v_trans;
-    const Tensor origin = full.center().zeros_like();
+    const Tensor origin = full.center().expand_dims(-1).zeros_like();
     if (full.representsa("interval", machine_eps())) return full.interval().contains(origin);
     return full.contains(origin);
 }
@@ -71,7 +71,7 @@ Interval aux_input_tie(const LinParamSys &sys, const LinParamSeries &series, dou
         sum = sum + times_box(lower, priv_power(series, i - 1)) * (1 / priv_factorial(i));
     }
     // the remainder of M. L. Liou (1966), with one power less for the constant input
-    const double norm_A = sys.A().norm(Tensor::Norm::inf).item();
+    const double norm_A = sys.A().interval().norm(Tensor::Norm::inf).item();
     const double epsilon = norm_A * r / (taylor_terms + 2);
     const int64_t n = sys.dim();
     if (epsilon >= 1) {
@@ -98,8 +98,8 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     const int64_t n = sys.dim();
     const Tensor &c = sys.c();
     // the centered inputs V = B U and the constant input B u_trans + c (cora-differences.md)
-    const Zonotope V =
-        sys.B() ? U.linear_map(*sys.B()) : Zonotope(c.zeros_like(), c.zeros_like({n, 0}));
+    const Zonotope V = sys.B() ? U.linear_map(*sys.B())
+                               : Zonotope(c.zeros_like().squeeze(-1), c.zeros_like({0, n}));
     const Tensor v_trans = (sys.B() ? sys.B()->matmul(u_trans) : c.zeros_like()) + c;
     Zonotope input_set = V * r;
     const Tensor start = c.eye_like(n) * r;
@@ -107,10 +107,9 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     // the series: the matrix-zonotope powers, then the interval powers
     const auto z = static_cast<int>(series.zono_powers.size());
     for (int i = 1; i <= z; ++i) {
-        const MatZonotope term =
-            series.zono_powers[std::size_t(i - 1)] * (r / priv_factorial(i + 1));
+        const Zonotope term = series.zono_powers[std::size_t(i - 1)] * (r / priv_factorial(i + 1));
         input_set = input_set + term * V;
-        integral = integral + term.interval_matrix();
+        integral = integral + term.interval();
     }
     for (int i = z + 1; i <= z + static_cast<int>(series.int_powers.size()); ++i) {
         const Interval term =
@@ -124,11 +123,11 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     input_set = input_set + (series.remainder * r) * V_abs;
     integral = integral + series.remainder * r;
     // the constant input, and the sets without zero generators
-    const Zonotope point(v_trans, v_trans.zeros_like({n, 0}));
+    const Zonotope point = Zonotope(v_trans.squeeze(-1), v_trans.zeros_like({0, n}));
     const double eps = machine_eps();
     const Zonotope trans = (integral * Interval(v_trans, v_trans).zonotope()).compact("zeros", eps);
     input_set = input_set.compact("zeros", eps);
-    Zonotope correction(c.zeros_like(), c.zeros_like({n, 0}));
+    Zonotope correction = Zonotope(c.zeros_like().squeeze(-1), c.zeros_like({0, n}));
     if (!aux_origin_contained(V, v_trans))
         correction = aux_input_tie(sys, series, r, taylor_terms) * point;
     return {(input_set + trans).reduce(zonotope_order), trans, correction};

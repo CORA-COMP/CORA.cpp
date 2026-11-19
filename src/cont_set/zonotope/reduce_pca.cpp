@@ -13,9 +13,9 @@
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reducePCA.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -30,19 +30,20 @@ namespace cora {
 
 Zonotope Zonotope::reduce_pca() const {
     detail::Entry entry;
-    CORA_CHECK(c_.ndim() == 2 && G_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1 && G_.ndim() == 2, Error::not_supported,
                [] { return std::string("reduce_pca: not for a batch of zonotopes"); });
     // the nonzero generators; with at most n of them nothing is reduced
-    const std::vector<double> size = G_.abs().sum(0).data();
+    const std::vector<double> size = G_.abs().sum(-1).data();
     std::vector<int64_t> keep;
     for (std::size_t j = 0; j < size.size(); ++j)
         if (size[j] > 0) keep.push_back(int64_t(j));
     if (int64_t(keep.size()) <= dim()) return *this;
-    const Tensor G = G_.take(keep, -1);
+    const Tensor G = G_.take(keep, -2); // the rows of the kept generators
     // the axes: the covariance of the points [G, -G] has them; its scale does not matter
-    const Tensor U = G.matmul(G.matrix_transpose()).svd()[0];
-    const Tensor box = U.matrix_transpose().matmul(G).abs_sum();
-    return {c_, U.matmul(box.diag())};
+    const Tensor U = G.matrix_transpose().matmul(G).svd()[0];
+    const Tensor box = G.matmul(U).abs().sum(-2).expand_dims(-1);
+    // the generators U diag(box) as rows diag(box) U'
+    return {c_, box.diag().matmul(U.matrix_transpose())};
 }
 
 } // namespace cora

@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@capsule/polytope.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -66,30 +66,31 @@ Polytope Capsule::polytope(const std::string &method) const {
         method == "exact" || method == "outer" || method == "inner", Error::wrong_value, [&] {
             return "polytope: the method must be 'exact', 'outer' or 'inner', got '" + method + "'";
         });
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(cc().ndim() == 2, Error::not_supported,
                [] { return std::string("polytope: it supports a single capsule, not a batch"); });
     const int64_t n = dim();
     if (is_empty()) return Polytope::empty(n);
-    const double eps = machine_eps(c_.dtype());
+    const double eps = machine_eps(cc().dtype());
     const auto zero = [&](const Tensor &x) { return priv_all(within_tol(x, x.zeros_like(), eps)); };
     if (n == 1) {
         // an interval: |x - c| <= |g| + r
-        const Tensor reach = g_.abs().add(r_);
-        return {Tensor::like(c_, {1.0, -1.0}, {2, 1}), Tensor::concat({c_ + reach, reach - c_}, 0)};
+        const Tensor reach = gc().abs().add(r_);
+        return {Tensor::like(cc(), {1.0, -1.0}, {2, 1}),
+                Tensor::concat({cc() + reach, reach - cc()}, 0)};
     }
-    if (zero(g_) && zero(r_)) return Polytope(c_);
+    if (zero(gc()) && zero(r_)) return Polytope(cc());
     // the orthonormal basis B, its first column along g
-    const Tensor B = aux_basis(g_, c_.eye_like(n));
+    const Tensor B = aux_basis(gc(), cc().eye_like(n));
     // the negated rows as 0 - B', so that a zero stays +0 as CORALean prints it
     const Tensor Bt = B.matrix_transpose(), A = Tensor::concat({Bt, Bt.zeros_like() - Bt}, 0);
     if (zero(r_)) {
         // the segment: |b1'x| <= |g|, and b'x = 0 for the other columns, shifted by c
         const Tensor A1 = Bt.slice(0, 0, 1), Ae = Bt.slice(0, 1, n);
-        const Tensor length = priv_norm(g_).reshape({1, 1});
+        const Tensor length = priv_norm(gc()).reshape({1, 1});
         return {Tensor::concat({A1, A1.negative()}, 0),
                 Tensor::concat({length, length}, 0) +
-                    Tensor::concat({A1, A1.negative()}, 0).matmul(c_),
-                Ae, Ae.matmul(c_)};
+                    Tensor::concat({A1, A1.negative()}, 0).matmul(cc()),
+                Ae, Ae.matmul(cc())};
     }
     CORA_CHECK(method != "exact", Error::no_exact_alg,
                [] { return std::string("polytope: a capsule is no polytope, use 'outer'"); });
@@ -97,7 +98,7 @@ Polytope Capsule::polytope(const std::string &method) const {
                [] { return std::string("polytope: the method 'inner' is not supported"); });
     // the support values a'c + |a'g| + r |a| of the rows, in this order as CORALean's boundDotUp
     const Tensor length = priv_norm(A.matrix_transpose()).reshape({2 * n, 1});
-    return {A, A.matmul(c_) + A.matmul(g_).abs() + r_.multiply(length)};
+    return {A, A.matmul(cc()) + A.matmul(gc()).abs() + r_.multiply(length)};
 }
 
 } // namespace cora

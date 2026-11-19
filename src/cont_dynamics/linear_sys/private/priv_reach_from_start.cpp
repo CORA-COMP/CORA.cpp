@@ -26,9 +26,9 @@
 // CORA: contDynamics/@linearSys/private/priv_reach_fromStart.m
 // CORA: contDynamics/@linearSys/private/priv_reach_decomp.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -58,13 +58,13 @@ ReachSet priv_reach_from_start(const LinearSys &sys, const Zonotope &X0,
                                int taylor_terms, int zonotope_order, const Blocks &blocks,
                                int steps) {
     // the constant input comes from the center of the input set, as in canonical_form
-    const Zonotope origin{X0.center().zeros_like(), X0.center().zeros_like({sys.dim(), 0})};
+    const Zonotope origin(X0.center().zeros_like(), X0.center().zeros_like({0, sys.dim()}));
     const bool has_input = input_set.has_value();
     Zonotope U = origin, u = origin;
     if (has_input) {
         const CanonicalForm cf = sys.canonical_form(*input_set);
         U = cf.U;
-        u = Zonotope(cf.u, cf.u.zeros_like({sys.dim(), 0}));
+        u = Zonotope(cf.u.squeeze(-1), cf.u.zeros_like({0, sys.dim()}));
     }
     TaylorLinSys taylor(sys.A());
     const Zonotope X = X0.linear_map(sys.A().eye_like()); // the identity broadcasts a batch of sets

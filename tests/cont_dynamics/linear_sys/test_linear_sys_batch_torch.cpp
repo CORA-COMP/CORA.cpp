@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -32,7 +32,7 @@ double max_diff(const torch::Tensor &a, const torch::Tensor &b) {
 
 /// A set from a centre `(..., n)` and generators `(..., n, m)`.
 Zonotope make_set(const torch::Tensor &c, const torch::Tensor &G) {
-    return {from_torch(c.unsqueeze(-1)), from_torch(G)};
+    return {from_torch(c), from_torch(G.transpose(-1, -2))}; // generators as rows
 }
 
 ReachSet run(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G,
@@ -86,8 +86,7 @@ void shapes(const torch::TensorOptions &opts, const std::string &where) {
     const torch::Tensor A = torch::randn({n, n}, opts) * 0.5;
     const ReachSet grid =
         run(A, torch::randn({2, 3, n}, opts), torch::randn({2, 3, n, m}, opts), "standard");
-    check(to_torch(grid.time_interval[0].center()).sizes().vec() ==
-              std::vector<int64_t>({2, 3, n, 1}),
+    check(to_torch(grid.time_interval[0].center()).sizes().vec() == std::vector<int64_t>({2, 3, n}),
           where + ": two batch dimensions");
     const ReachSet one =
         run(A, torch::randn({1, n}, opts), torch::randn({1, n, m}, opts), "standard");

@@ -28,8 +28,8 @@ import numpy as np
 A = np.array([[-0.3, 1, 0], [-1, -0.2, 0.4], [0, -0.5, -0.1]])
 B = np.array([[1, 0], [0.5, -1], [0, 0.3]])
 C = np.array([[1, 0, -1], [0, 1, 0.5]])
-X0 = cora.Zonotope(np.array([1, -0.5, 0.2]), np.array([[0.2, 0.1, 0], [0, 0.1, 0.3], [0.1, 0, 0.1]]))
-U = cora.Zonotope(np.array([0.4, -0.2]), np.array([[0.1, 0.05, 0], [0, 0.1, 0.02]]))
+X0 = cora.Zonotope(np.array([1, -0.5, 0.2]), np.array([[0.2, 0, 0.1], [0.1, 0.1, 0], [0, 0.3, 0.1]]))
+U = cora.Zonotope(np.array([0.4, -0.2]), np.array([[0.1, 0], [0.05, 0.1], [0, 0.02]]))
 DIRS_X = np.array([[1, 0, 0], [0, 1, 0], [1, 1, 1], [1, -2, 0.5]])
 DIRS_Y = np.array([[1, 0], [0, 1], [1, -1]])
 G_INF = np.array([[-2.5459749078231472e-05, -0.0050016028597035271, -0.00020530569255280311],
@@ -107,7 +107,7 @@ REFERENCE = {
 
 def supports(sets, dirs):
     """The support function of every zonotope along every row of dirs: (sets, directions)."""
-    return np.array([[d @ Z.center + np.abs(Z.generators.T @ d).sum() for d in dirs] for Z in sets])
+    return np.array([[d @ Z.center + np.abs(Z.generators @ d).sum() for d in dirs] for Z in sets])
 
 
 # ============================================  MAIN  ============================================ #

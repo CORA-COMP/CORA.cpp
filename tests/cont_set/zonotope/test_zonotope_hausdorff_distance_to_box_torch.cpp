@@ -1,8 +1,8 @@
 // test_zonotope_hausdorff_distance_to_box_torch - zonotope hausdorff_distance_to_box: gradients
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -19,7 +19,7 @@ namespace {
 /// Every method is piecewise (abs, max, argmax): the gradient of the branch taken, away from the
 /// kinks.
 void hausdorff_distance_gradient() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(2, 4);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 4);
     for (const std::string method : {"exact", "naive", "wgreedy", "wopt"})
         test::gradcheck(
             "hausdorff_distance_to_box " + method,

@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@zonotope/encloseMany.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -42,7 +42,7 @@ std::pair<Zonotope, Tensor> Zonotope::enclose_many(const std::vector<Zonotope> &
                ", 1), got the shape " + shape_text(direction.shape());
     });
     for (const Zonotope &Z : Zs)
-        CORA_CHECK(Z.dim() == n && Z.center().ndim() == 2, Error::dimension_mismatch, [&] {
+        CORA_CHECK(Z.dim() == n && Z.center().ndim() == 1, Error::dimension_mismatch, [&] {
             return "enclose_many: the zonotopes must be single sets of one dimension, " +
                    std::to_string(n);
         });

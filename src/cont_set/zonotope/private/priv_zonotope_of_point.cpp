@@ -6,9 +6,9 @@
 // See also: Zonotope::convex_hull
 //
 // CORA.cpp only: the conversion is CORA's zonotope(p) of the constructor, which takes a point
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -21,9 +21,11 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Zonotope priv_zonotope_of_point(const Tensor &p) {
+    // the point is a column (..., n, 1)
     Shape shape = p.shape();
-    shape.back() = 0;
-    return {p, p.zeros_like(shape)};
+    shape[shape.size() - 2] = 0;
+    shape.back() = p.size(-2);
+    return {p.squeeze(-1), p.zeros_like(shape)};
 }
 
 } // namespace cora

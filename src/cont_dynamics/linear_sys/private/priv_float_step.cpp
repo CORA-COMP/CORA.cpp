@@ -4,9 +4,9 @@
 //
 // CORA.cpp only: CORA's oneStep puts the input curvature in the window; the step follows
 // CORALean's LinearSys.reachFloatInput and NonlinearSys.oneStepFloat.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_float_step.h"
@@ -23,6 +23,9 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+/// A point as a vector (n): a column (n, 1) loses its last axis.
+Tensor aux_vector(const Tensor &p) { return p.ndim() >= 2 && p.size(-1) == 1 ? p.squeeze(-1) : p; }
 
 // The series -------------------------------------------------------------------------------------
 
@@ -128,12 +131,12 @@ FloatStep FloatStepper::step(const Tensor &xs, const Zonotope &V, const Zonotope
     const Series &series = m_->series;
     const int64_t n = m_->n;
     // CORALean's canonical system maps V by B = I and adds c = 0 (-0 becomes 0)
-    const Tensor zero = xs.zeros_like();
+    const Tensor x = aux_vector(xs), zero = x.zeros_like();
     const Zonotope Vi = V.linear_map(m_->eye);
     const Zonotope Vc(Vi.center() + zero, Vi.generators());
     // the input is V's center and V without it; a point has n zero generators (Interval.zonotope)
     const Zonotope u(Vc.center(), zero.zeros_like({n, n})), U(zero, Vc.generators());
-    const Zonotope X(R.center() - xs, R.generators());
+    const Zonotope X(R.center() - x, R.generators());
     const Zonotope Pu = series.input_solution(u);
     const Zonotope PuR =
         series.input_solution(priv_lin_comb(Zonotope(zero, zero.zeros_like({n, n})), u));
@@ -142,7 +145,7 @@ FloatStep FloatStepper::step(const Tensor &xs, const Zonotope &V, const Zonotope
     const Zonotope e_adt_x = X.linear_map(m_->e_adt);
     const Zonotope Htp = e_adt_x.plus(Pu).reduce(zonotope_order);
     const Zonotope Hti = priv_lin_comb(X, e_adt_x).plus(X.linear_map(m_->F)).plus(PuR);
-    const auto back = [&](const Zonotope &Z) { return Zonotope(Z.center() + xs, Z.generators()); };
+    const auto back = [&](const Zonotope &Z) { return Zonotope(Z.center() + x, Z.generators()); };
     return FloatStep{back(Hti.plus(PU)), back(Htp.plus(PU))};
 }
 

@@ -12,7 +12,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -31,8 +31,9 @@ std::pair<Zonotope, Zonotope> Zonotope::split_longest_gen() const {
         return std::string("split_longest_gen: a generator per zonotope: it supports a single "
                            "zonotope, not a batch");
     });
-    if (G_.shape().back() == 0) return {*this, *this};
-    const Tensor length = G_.detach().square().sum(-2); // the choice carries no gradient
+    if (nr_generators() == 0) return {*this, *this};
+    const Tensor length = G_.detach().square().sum(-1); // the choice carries no gradient
+
     const auto [lower, upper] = priv_split_generator(*this, int64_t(length.argmax(0).item()));
     return {upper, lower};
 }

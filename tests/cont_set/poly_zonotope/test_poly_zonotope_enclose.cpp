@@ -3,9 +3,9 @@
 // CORA: contSet/@polyZonotope/enclose.m
 // PROPERTY: contSet/@polyZonotope/enclose.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -24,8 +24,8 @@ namespace {
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
     return {column({1.0, 0.0}),
-            Tensor::from_data({1, 0, 1, 2}, {2, 2}),
-            Tensor::from_data({0, 1}, {2, 1}),
+            Tensor::from_data({1, 1, 0, 2}, {2, 2}),
+            Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
             {1, 2}};
 }
@@ -60,7 +60,7 @@ int main() {
         enclose_property(b);
     });
     check(test::raises(
-              [] { known().enclose(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({1, 0})))); },
+              [] { known().enclose(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({0, 1})))); },
               Error::dimension_mismatch),
           "enclose: dimension");
     ChecksScope off(false);

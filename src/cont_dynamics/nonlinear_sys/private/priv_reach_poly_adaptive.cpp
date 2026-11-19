@@ -19,7 +19,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   16-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -37,9 +37,10 @@ namespace {
 /// Whether the third derivatives of f are all identically zero (CORA's thirdOrderTensorempty).
 bool aux_third_order_empty(const NonlinearSys &sys, const PolyZonotope &X0,
                            const std::optional<Zonotope> &U) {
-    const Tensor &x = X0.center();
-    const std::optional<Range> u =
-        sys.input_dim() > 0 ? std::optional<Range>(Range(U->center())) : std::nullopt;
+    const Tensor x = X0.center().expand_dims(-1);
+    const std::optional<Range> u = sys.input_dim() > 0
+                                       ? std::optional<Range>(Range(U->center().expand_dims(-1)))
+                                       : std::nullopt;
     const auto T = sys.third_order_enclosure(Range(x), u);
     return std::none_of(T.begin(), T.end(), [](const auto &e) { return e.has_value(); });
 }
@@ -54,7 +55,7 @@ PolyReachSet priv_reach_poly_adaptive(const NonlinearSys &sys, const PolyReachPr
     const PolyZonotope &X0 = *problem.initial_set;
     const int64_t n = sys.dim(), m = sys.input_dim();
     std::optional<Zonotope> U = problem.input_set;
-    if (m > 0 && !U) U = Zonotope(X0.center().zeros_like({m, 1}), X0.center().zeros_like({m, 0}));
+    if (m > 0 && !U) U = Zonotope(X0.center().zeros_like({m}), X0.center().zeros_like({0, m}));
     const bool third_order_empty = aux_third_order_empty(sys, X0, U);
 
     // the state before the first step (linReachPolyAdaptiveInit)

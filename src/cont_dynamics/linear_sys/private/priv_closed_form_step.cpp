@@ -13,9 +13,9 @@
 // CORA evaluates oneStep with expm and A^-1; this is its closed form in CORALean's float
 // definition (LinearSys.oneStepClosedFormFloat).
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -200,7 +200,7 @@ EntrywiseCorrections aux_corrections(const Tensor &A, double r, int order, const
 /// The input solution of V: the orders 0 to eta, one box each, then the remainder, added in turn.
 Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &remainder,
                             const Zonotope &V) {
-    // the boxes added in turn: the centers one after the other, the generators side by side
+    // the boxes added in turn: the centers one after the other, the generator rows stacked
     Zonotope first = V.linear_map(terms[0]);
     Tensor center = first.center();
     std::vector<Tensor> generators{first.generators()};
@@ -212,7 +212,7 @@ Zonotope aux_input_solution(const std::vector<Interval> &terms, const Interval &
     };
     for (std::size_t i = 1; i < terms.size(); ++i) add(terms[i]);
     add(remainder);
-    return {std::move(center), Tensor::concat(generators, -1)};
+    return {center, Tensor::concat(generators, -2)};
 }
 
 /// The corrections as host numbers, for the cache: a tensor would keep the backend of its A.
@@ -379,7 +379,7 @@ ClosedFormStep ClosedFormStepper::step(const Zonotope &X, const Zonotope &U,
                                        const Tensor &u) const {
     const Matrices &m = *m_;
     // the constant input is a point set
-    const Zonotope point(u, u.zeros_like({u.size(0), 0}));
+    const Zonotope point(u, u.zeros_like({0, u.size(0)}));
     const Zonotope Pu = aux_input_solution(m.terms, m.remainder, point);
     const Zonotope PU = aux_input_solution(m.terms, m.remainder, U);
     // Htp = [e^{A dt}] X + Pu, Hti = hull(X, Htp) + [F] X

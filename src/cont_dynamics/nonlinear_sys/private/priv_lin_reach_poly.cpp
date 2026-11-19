@@ -21,9 +21,9 @@
 //
 // CORA: contDynamics/@contDynamics/linReach.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -53,7 +53,7 @@ class PolyStepper {
     PolyStepper(const Tensor &A, const Tensor &xs, const PolyZonotope &R,
                 const alg::Linearization &alg)
         : stepper_(A, alg.time_step, std::max(2, alg.taylor_terms)), xs_(xs),
-          X_(priv_poly_plus(R, Zonotope(xs * -1.0, xs.zeros_like({xs.size(0), 0})))) {
+          X_(priv_poly_plus(R, Zonotope((xs * -1.0).squeeze(-1), xs.zeros_like({0, xs.size(0)})))) {
         if (!stepper_.admissible())
             CORA_FAIL(Error::not_converged,
                       "cora: no admissible Taylor order for the linearized system (the time_step "
@@ -63,9 +63,9 @@ class PolyStepper {
     /// The sets over the step and at its end for the input set V.
     std::pair<PolyZonotope, PolyZonotope> operator()(const Zonotope &V) const {
         // the constant input is the center of V, the time-varying one V without it
-        const Tensor &u = V.center();
-        const Zonotope Vc(u.zeros_like(), V.generators());
-        const Zonotope point(u, u.zeros_like({u.size(0), 0}));
+        const Tensor &u = V.center().expand_dims(-1);
+        const Zonotope Vc = Zonotope(u.zeros_like().squeeze(-1), V.generators());
+        const Zonotope point = Zonotope(u.squeeze(-1), u.zeros_like({0, u.size(0)}));
         const Zonotope PU = stepper_.input_solution(Vc);
         const Zonotope Pu = stepper_.input_solution(point);
         const Zonotope C_input = point.linear_map(stepper_.G());
@@ -81,7 +81,7 @@ class PolyStepper {
 
   private:
     PolyZonotope back(const PolyZonotope &Z) const {
-        return priv_poly_plus(Z, Zonotope(xs_, xs_.zeros_like({xs_.size(0), 0})));
+        return priv_poly_plus(Z, Zonotope(xs_.squeeze(-1), xs_.zeros_like({0, xs_.size(0)})));
     }
     ClosedFormStepper stepper_;
     Tensor xs_;
@@ -95,7 +95,7 @@ class PolyStepper {
 PolyNonlinearStep aux_lean_step(const NonlinearSys &sys, const PolyZonotope &R, const Tensor &error,
                                 const std::optional<Zonotope> &U, const alg::Linearization &alg) {
     auto out = priv_lin_loop<PolyZonotope>(
-        sys, R.center(), error, U, alg,
+        sys, R.center().expand_dims(-1), error, U, alg,
         [&](const AdaptiveLinearization &L) { return PolyStepper(L.J.A, L.xs_t, R, alg); },
         [](const PolyZonotope &Z) { return Z.zonotope(); });
     return {std::move(out.time_interval), std::move(out.time_point), std::move(out.error)};
@@ -108,20 +108,20 @@ PolyNonlinearStep aux_lean_step(const NonlinearSys &sys, const PolyZonotope &R, 
 
 PolyStepPieces::PolyStepPieces(const NonlinearSys &sys, const PolyZonotope &R,
                                const std::optional<Zonotope> &U, double dt, int eta)
-    : lin(sys.linearize_impl(R.center(), U, dt)), R_delta(R.plus(lin.x_star * -1.0)),
-      taylor(lin.sys.A()), blocks(priv_one_block(sys.dim())),
+    : lin(sys.linearize_impl(R.center().expand_dims(-1), U, dt)),
+      R_delta(R.plus(lin.x_star * -1.0)), taylor(lin.sys.A()), blocks(priv_one_block(sys.dim())),
       PU(priv_particular_time_varying(lin.sys, taylor, blocks, lin.U, dt, eta)[0]),
-      Pu(priv_particular_constant(lin.sys, taylor, blocks,
-                                  Zonotope(lin.u_const, lin.u_const.zeros_like({sys.dim(), 0})), dt,
-                                  eta)),
+      Pu(priv_particular_constant(
+          lin.sys, taylor, blocks,
+          Zonotope(lin.u_const.squeeze(-1), lin.u_const.zeros_like({0, sys.dim()})), dt, eta)),
       R_tp(R_delta.linear_map(taylor.e_adt(dt)).plus(Pu.time_point[0]).plus(PU)),
       R_ti(R_delta.enclose(R_delta.linear_map(taylor.e_adt(dt)).plus(Pu.time_point[0]))
                .plus(R_delta.linear_map(lin.sys.correction_matrix_state(dt, eta)))
                .plus(PU + Pu.input_curvature[0])) {
     // the centered input set (CORA's params.U); none for a system without inputs
     if (const int64_t m = sys.input_dim(); m > 0)
-        U0 = U ? *U - U->center()
-               : Zonotope(R.center().zeros_like({m, 1}), R.center().zeros_like({m, 0}));
+        U0 = U ? *U - U->center().expand_dims(-1)
+               : Zonotope(R.center().zeros_like({m}), R.center().zeros_like({0, m}));
 }
 
 PolyNonlinearStep priv_lin_reach_poly(const NonlinearSys &sys, const PolyZonotope &R,

@@ -25,6 +25,7 @@
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
 #include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
+#include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
 
 #include <cmath>
 
@@ -49,24 +50,25 @@ Interval aux_times_box(double lower, const Interval &M) {
 
 LinParamSeries priv_mapping_matrix(const LinParamSys &sys, double r, int taylor_terms,
                                    int intermediate_terms) {
-    const MatZonotope &A = sys.A();
+    const Zonotope &A = sys.A();
     // one generator and constant parameters: the series of C + b G in b (Althoff, ACC 2012)
-    if (A.num_generators() == 1 && sys.type() == ParamType::constant) {
-        MatZonotope::ExpmOneParamResult e = A.expm_one_param(r, taylor_terms);
+    if (A.nr_generators() == 1 && sys.type() == ParamType::constant) {
+        mat_exp::ExpmOneParamResult e = mat_exp::expm_one_param(A, r, taylor_terms);
         return {std::move(e.enclosure), e.remainder, std::move(e.powers), {}, e.remainder};
     }
     // otherwise the mixed series of A r, with dependent terms for constant parameters only
-    const MatZonotope Ar = A * r;
-    MatZonotope::ExpmMixedResult e = sys.type() == ParamType::constant
-                                         ? Ar.expm_mixed(r, intermediate_terms, taylor_terms)
-                                         : Ar.expm_ind_mixed(intermediate_terms, taylor_terms);
+    const Zonotope Ar = A * r;
+    mat_exp::ZonotopeExpmMixedResult e =
+        sys.type() == ParamType::constant
+            ? mat_exp::expm_mixed(Ar, r, intermediate_terms, taylor_terms)
+            : mat_exp::expm_independent_mixed(Ar, intermediate_terms, taylor_terms);
     return {std::move(e.enclosure), e.enclosure_rest, std::move(e.powers), std::move(e.powers2),
             e.remainder};
 }
 
 Interval priv_power(const LinParamSeries &series, int i) {
     const auto z = static_cast<int>(series.zono_powers.size());
-    if (i <= z) return series.zono_powers[std::size_t(i - 1)].interval_matrix();
+    if (i <= z) return series.zono_powers[std::size_t(i - 1)].interval();
     return series.int_powers[std::size_t(i - z - 1)];
 }
 

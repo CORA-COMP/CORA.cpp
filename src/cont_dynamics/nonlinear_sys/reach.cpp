@@ -28,7 +28,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   10-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -98,8 +98,8 @@ void NonlinearSys::validate_inputs(const char *op, const std::optional<Zonotope>
         return std::string(op) + ": the system has no inputs; leave the input set empty";
     });
     // and it is one zonotope of the m inputs
-    CORA_CHECK(!U || (U->center().shape() == std::vector<int64_t>({m_, 1}) &&
-                      U->generators().shape().size() == 2),
+    CORA_CHECK(!U || (U->center().expand_dims(-1).shape() == std::vector<int64_t>({m_, 1}) &&
+                      U->generators().matrix_transpose().shape().size() == 2),
                Error::dimension_mismatch, [&] {
                    return std::string(op) + ": the input set must be one zonotope of the " +
                           std::to_string(m_) + " inputs";
@@ -109,8 +109,8 @@ void NonlinearSys::validate_inputs(const char *op, const std::optional<Zonotope>
 void NonlinearSys::validate_sets(const char *op, const Zonotope &R,
                                  const std::optional<Zonotope> &U) const {
     detail::Validation entry;
-    CORA_CHECK(R.center().shape() == std::vector<int64_t>({n_, 1}) &&
-                   R.generators().shape().size() == 2,
+    CORA_CHECK(R.center().expand_dims(-1).shape() == std::vector<int64_t>({n_, 1}) &&
+                   R.generators().matrix_transpose().shape().size() == 2,
                Error::not_supported, [&] {
                    return std::string(op) + ": the set of a nonlinear system is one zonotope of " +
                           "the dimension " + std::to_string(n_) + "; batches are not supported";
@@ -129,7 +129,7 @@ NonlinearStep NonlinearSys::init_reach(const Zonotope &R0, const std::optional<Z
     }
     // CORA starts from the error 0
     const alg::Linearization &options = aux_fixed(alg, "init_reach");
-    return priv_lin_reach(*this, R0, R0.center().zeros_like(), U, options);
+    return priv_lin_reach(*this, R0, R0.center().expand_dims(-1).zeros_like(), U, options);
 }
 
 // CORA's post reduces the sets that initReach returns, and keeps the error.
@@ -212,7 +212,7 @@ PolyNonlinearStep NonlinearSys::init_reach(const PolyZonotope &R0, const std::op
     detail::Entry entry;
     if (entry.check()) validate_poly_step("init_reach", R0, std::nullopt, U, alg);
     // CORA starts from the error 0
-    return aux_poly_step(*this, R0, R0.center().zeros_like(), U, alg);
+    return aux_poly_step(*this, R0, R0.center().expand_dims(-1).zeros_like(), U, alg);
 }
 
 // The first step of "lin" from a polynomial zonotope, also with the error 0.
@@ -220,7 +220,7 @@ PolyNonlinearStep NonlinearSys::init_reach(const PolyZonotope &R0, const std::op
                                            const alg::Linearization &alg) const {
     detail::Entry entry;
     if (entry.check()) validate_poly_step("init_reach", R0, std::nullopt, U, alg);
-    return aux_poly_step(*this, R0, R0.center().zeros_like(), U, alg);
+    return aux_poly_step(*this, R0, R0.center().expand_dims(-1).zeros_like(), U, alg);
 }
 
 // CORA's post reduces the sets that initReach returns, and keeps the error.

@@ -15,7 +15,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -32,7 +32,9 @@ Zonotope Zonotope::lift(int64_t N, const std::vector<int64_t> &dims) const {
     const detail::LiftPlan plan = detail::lift_plan(dim(), N, dims);
     // lift_impl comes here after the generic checks, which do not see the permutation: always fail
     if (plan.refusal) CORA_FAIL(plan.refusal->first, plan.refusal->second);
-    return {c_.take(plan.source, -2), G_.take(plan.source, -2)};
+    CORA_CHECK(elem_rank_ == 1, Error::not_supported,
+               [] { return std::string("lift: not for a matrix zonotope"); });
+    return {c_.take(plan.source, -1), G_.take(plan.source, -1)};
 }
 
 Set Zonotope::lift_impl(int64_t N, const std::vector<int64_t> &proj) const { return lift(N, proj); }

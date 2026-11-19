@@ -2,9 +2,9 @@
 //
 // exact_plus is differentiable: sums and copies of the inputs.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -20,8 +20,8 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(37);
-    const std::vector<torch::Tensor> Z = test::random_zonotope(3, 4),
-                                     Z2 = test::random_zonotope(3, 2);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(3, 4),
+                                     Z2 = test::random_zonotope_rows(3, 2);
     test::gradcheck("exact_plus",
                     [](const Inputs &x) {
                         return test::parts(Zonotope(x[0], x[1]).exact_plus(Zonotope(x[2], x[3])));

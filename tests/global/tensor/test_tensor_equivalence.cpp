@@ -8,7 +8,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   06-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
@@ -343,20 +343,22 @@ std::map<std::string, Case> aux_cases() {
     // fused primitives
     c["zonotope_linear_map"] = {5, [](O &o) {
                                     const auto [Mc, MG] = Tensor::zonotope_linear_map(
-                                        o.matrix(4, 5), o.matrix(5, 1), o.batch(2, 5, 9));
+                                        o.matrix(4, 5), o.matrix(5, 1).squeeze(-1),
+                                        o.batch(2, 9, 5));
                                     return V{Mc, MG};
                                 }};
-    c["zonotope_interval_map"] = {6, [](O &o) {
-                                      const Tensor lo = o.batch(2, 4, 4),
-                                                   w = o.batch(2, 4, 4).abs();
-                                      const auto [Tc, TG] = Tensor::zonotope_interval_map(
-                                          lo, lo + w, o.batch(2, 4, 1), o.batch(2, 4, 6));
-                                      return V{Tc, TG};
-                                  }};
+    // the zonotope primitives: centers (..., n), generator rows (..., m, n)
+    c["zonotope_interval_map"] = {
+        6, [](O &o) {
+            const Tensor lo = o.batch(2, 4, 4), w = o.batch(2, 4, 4).abs();
+            const auto [Tc, TG] = Tensor::zonotope_interval_map(
+                lo, lo + w, o.batch(2, 4, 1).squeeze(-1), o.batch(2, 6, 4));
+            return V{Tc, TG};
+        }};
     c["zonotope_linear_combination"] = {1, [](O &o) {
                                             const auto [c, G] = Tensor::zonotope_linear_combination(
-                                                o.batch(2, 4, 1), o.batch(2, 4, 5),
-                                                o.batch(2, 4, 1), o.batch(2, 4, 5));
+                                                o.batch(2, 4, 1).squeeze(-1), o.batch(2, 5, 4),
+                                                o.batch(2, 4, 1).squeeze(-1), o.batch(2, 5, 4));
                                             return V{c, G};
                                         }};
     c["interval_matmul"] = {6, [](O &o) {
@@ -373,10 +375,11 @@ std::map<std::string, Case> aux_cases() {
                                 return V{a, b};
                             }};
     c["girard_split"] = {1, [](O &o) {
-                             const auto [kept, rest] = o.batch(2, 4, 11).girard_split(5);
+                             const auto [kept, rest] = o.batch(2, 11, 4).girard_split(5);
                              return V{kept, rest};
                          }};
     c["abs_sum"] = {9, [](O &o) { return V{o.batch(2, 4, 9).abs_sum()}; }};
+    c["abs_sum_rows"] = {9, [](O &o) { return V{o.batch(2, 9, 4).abs_sum_rows()}; }};
     return c;
 }
 

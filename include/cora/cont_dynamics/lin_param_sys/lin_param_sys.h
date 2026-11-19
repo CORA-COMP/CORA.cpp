@@ -9,7 +9,7 @@
 //             ReachSet R = sys.reach({.initial_set = X0, .t_final = 2}, alg::LinParamStandard{});
 // Operations: reach, init_reach, post (one file each); the mappings of a step are in private/;
 //             the constructor checks its input (lin_param_sys.cpp)
-// See also:   cora/cont_dynamics/linear_sys/linear_sys.h, mat_zonotope.h
+// See also:   cora/cont_dynamics/linear_sys/linear_sys.h, zonotope.h (Zonotope::matrix)
 //
 // CORA: contDynamics/@linParamSys/linParamSys.m
 // CORA authors: Matthias Althoff
@@ -24,7 +24,6 @@
 #include "cora/cont_dynamics/cont_dynamics.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/zonotope/zonotope.h"
-#include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 
 #include <optional>
 
@@ -39,7 +38,7 @@ enum class ParamType { constant, varying };
 /// What one step size makes of the system and its input (CORA keeps these in the system object:
 /// mappingMatrixSet.zono and .int, F, Rinput, Rtrans and inputCorr).
 struct LinParamMappings {
-    MatZonotope mapping;       ///< the series to its matrix-zonotope order, with the rest's center
+    Zonotope mapping;          ///< the series to its matrix-zonotope order, with the rest's center
     Interval mapping_rest;     ///< the rest of the series around its center
     Interval correction;       ///< F: the curvature between two time points
     Zonotope input;            ///< Rinput: the input solution of one step
@@ -58,17 +57,17 @@ struct LinParamStep {
 class LinParamSys {
   public:
     /// x' = A x + B u + c for the matrices A (n, n) of the set; B (n, m) and c (n, 1) optional.
-    explicit LinParamSys(MatZonotope A, std::optional<Tensor> B = std::nullopt,
+    explicit LinParamSys(Zonotope A, std::optional<Tensor> B = std::nullopt,
                          std::optional<Tensor> c = std::nullopt,
                          ParamType type = ParamType::constant);
 
-    const MatZonotope &A() const noexcept { return A_; }
+    const Zonotope &A() const noexcept { return A_; }
     const std::optional<Tensor> &B() const noexcept { return B_; }
     const Tensor &c() const noexcept { return c_; }
     ParamType type() const noexcept { return type_; }
 
     /// The number of states n, and of inputs (the columns of B, 0 without B).
-    int64_t dim() const { return A_.rows(); }
+    int64_t dim() const { return A_.center().size(-2); }
     int64_t input_dim() const { return B_ ? B_->shape()[1] : 0; }
 
     /// The reachable sets from problem.initial_set over the steps of t_final / time_step, for
@@ -85,7 +84,7 @@ class LinParamSys {
     LinParamStep post(const LinParamStep &R, const alg::LinParamReach &alg) const;
 
   private:
-    MatZonotope A_;
+    Zonotope A_;
     std::optional<Tensor> B_;
     Tensor c_;
     ParamType type_;

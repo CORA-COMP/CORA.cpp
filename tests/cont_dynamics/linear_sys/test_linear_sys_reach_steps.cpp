@@ -6,7 +6,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -92,13 +92,13 @@ void checks_and_their_switch() {
           "reach: time_step 0");
     const ReachProblem problem{.initial_set = X0, .t_final = 1};
     const Tensor on =
-        sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back().center();
+        (sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back()).center();
     ChecksScope off(false);
     // the checks off give the same result
-    check(
-        test::close(sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back().center(),
-                    on, 0),
-        "reach: the same with the checks off");
+    check(test::close(
+              (sys.reach(problem, alg::Standard{.time_step = 0.1}).time_point.back()).center(), on,
+              0),
+          "reach: the same with the checks off");
 }
 
 } // namespace

@@ -15,7 +15,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -33,7 +33,8 @@ ConZonotope ConZonotope::lift(int64_t N, const std::vector<int64_t> &dims) const
     // lift_impl comes here after the generic checks, which do not see the permutation: always fail
     if (plan.refusal) CORA_FAIL(plan.refusal->first, plan.refusal->second);
     // only the rows of the center and the generators move; the factors and constraints stay
-    return {c_.take(plan.source, -2), G_.take(plan.source, -2), F_};
+    return {c_.expand_dims(-1).take(plan.source, -2),
+            (G_.matrix_transpose().take(plan.source, -2)).matrix_transpose(), F_};
 }
 
 Set ConZonotope::lift_impl(int64_t N, const std::vector<int64_t> &proj) const {

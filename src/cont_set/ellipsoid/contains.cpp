@@ -20,9 +20,9 @@
 //
 // CORA: contSet/@ellipsoid/contains_.m
 // CORA authors: Victor Gassmann, Niklas Kochdumper, Adrian Kulmburg, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -143,11 +143,11 @@ bool Ellipsoid::contains(const Zonotope &S, const std::string &method, Tol tol_a
     const detail::Refusal refusal = aux_refusal(*this, S.dim(), method, true);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // a zonotope that is a point is decided as a point
-    const Tensor &c = S.center();
+    const Tensor &c = S.center().expand_dims(-1);
     const bool s_point = S.representsa("point");
     if (const auto done = aux_degenerate(*this, false, s_point ? &c : nullptr, tol)) return *done;
     if (s_point) return aux_contains_points(*this, c, tol);
-    return aux_contains_zonotope(*this, c, S.generators(), tol);
+    return aux_contains_zonotope(*this, c, S.generators().matrix_transpose(), tol);
 }
 
 bool Ellipsoid::contains(const Interval &S, const std::string &method, Tol tol_arg) const {

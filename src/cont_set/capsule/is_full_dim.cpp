@@ -12,7 +12,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -30,7 +30,7 @@ bool Capsule::is_full_dim_impl(Tol) const {
     const Tensor ball = r_.greater(zero);
     if (dim() != 1) return priv_all(ball);
     // on the line a segment of positive length is an interval
-    const Tensor segment = r_.greater_equal(zero).multiply(g_.abs().greater(zero));
+    const Tensor segment = r_.greater_equal(zero).multiply(gc().abs().greater(zero));
     return priv_all(ball.maximum(segment));
 }
 

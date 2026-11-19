@@ -4,7 +4,7 @@
 // Inputs:   corners - stacked matrices as rows (..., K, rows * cols), column by column
 //           rows, cols - the shape of a matrix
 // Outputs:  V - per batch member the distinct rows in ascending order as matrices (K', rows, cols)
-// See also: Interval::vertex_matrices, MatZonotope::vertices
+// See also: Interval::vertex_matrices, Zonotope::vertex_matrices
 //
 // CORA.cpp only: CORA's vertices of the matrix sets share MATLAB's unique and vec2mat
 // Authors:       Claude Sonnet 5.5

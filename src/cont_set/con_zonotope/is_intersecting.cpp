@@ -16,7 +16,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -47,7 +47,9 @@ bool aux_meets(const ConZonotope &cz, const ConZonotope &S, const std::string &t
 
 /// Why two sets are refused: the type and batch, then the dimension.
 detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &S, const std::string &type) {
-    if (const Refusal r = priv_intersecting_refusal(type, cz.c(), S.c())) return r;
+    if (const Refusal r =
+            priv_intersecting_refusal(type, cz.c().expand_dims(-1), S.c().expand_dims(-1)))
+        return r;
     return priv_pair_refusal("is_intersecting", cz, S, true);
 }
 
@@ -93,9 +95,9 @@ bool ConZonotope::is_intersecting(const Interval &I, const std::string &type, To
 bool ConZonotope::is_intersecting(const Tensor &p, const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
-    const Refusal refusal = priv_intersecting_points_refusal(type, c_, p);
+    // points are in the set or not: both types decide by containment, after the checks on p
+    const Refusal refusal = priv_intersecting_points_refusal(type, center(), p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
-    // points are in the set or not: both types decide by containment
     return contains(p, "exact", tol);
 }
 

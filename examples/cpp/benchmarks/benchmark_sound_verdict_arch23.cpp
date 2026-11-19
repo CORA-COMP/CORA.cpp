@@ -14,9 +14,9 @@
 // See also: benchmark_data.h, include/cora/global/oracle/linear_sys.h, specification.h
 //
 // CORA.cpp only: the oracle's sound verdicts have no CORA counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_data.h"
@@ -87,9 +87,9 @@ int aux_linear() {
     // the oracle's step is fixed: the horizon is a multiple of it, in exact binary arithmetic
     const double t_final = inst.params->t_final, time_step = t_final / 512; // a power of two: exact
     const auto start = std::chrono::steady_clock::now();
-    const lean::ReachSet R = sys.reach(
-        lean::Zonotope(X0.center(), X0.generators()), lean::Zonotope(U.center(), U.generators()),
-        t_final, alg::Standard{.time_step = time_step, .taylor_terms = 8, .zonotope_order = 20});
+    const lean::ReachSet R =
+        sys.reach(lean::Zonotope(X0), lean::Zonotope(U), t_final,
+                  alg::Standard{.time_step = time_step, .taylor_terms = 8, .zonotope_order = 20});
     bool proved = true;
     for (const lean::Zonotope &Z : R.time_interval)
         for (const StateSpec &s : specs)

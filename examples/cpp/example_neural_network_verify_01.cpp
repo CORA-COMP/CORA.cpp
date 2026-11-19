@@ -9,9 +9,9 @@
 // Outputs:  the output set, whether the samples are inside, the verdict, and the figure as SVG
 // See also: the Python example of the same name (which trains the network), example_zonotope_01
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
@@ -45,7 +45,7 @@ int main() {
 
     // Input Set -------------------------------------------------------------------------------
 
-    const Zonotope X(Tensor({0.4, -0.2}), Tensor({{0.3, 0.1}, {0.0, 0.25}}));
+    const Zonotope X(Tensor({0.4, -0.2}), Tensor({{0.3, 0.0}, {0.1, 0.25}}));
 
     // Propagation -----------------------------------------------------------------------------
 

@@ -19,7 +19,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -43,6 +43,14 @@ bool aux_finite(const Tensor &t) {
     return t.detach().isfinite().sum().item() == double(t.numel());
 }
 
+/// A center given as a column (..., n, 1) next to the rows G (..., m, n) is the vector (..., n).
+Tensor aux_center_vector(Tensor c, const Tensor &G) {
+    if (c.defined() && G.defined() && c.ndim() >= 2 && c.ndim() == G.ndim() && c.size(-1) == 1 &&
+        c.size(-2) == G.size(-1))
+        return c.squeeze(-1);
+    return c;
+}
+
 /// Why the data are no constrained zonotope, if they are none.
 detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, const Tensor &b) {
     const auto fail = [](const std::string &text) {
@@ -51,13 +59,13 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, c
     };
     if (!c.defined() || !G.defined() || !A.defined() || !b.defined())
         return fail("the center, the generators and the constraints must be tensors");
-    if (c.ndim() < 2 || c.shape().back() != 1)
-        return fail("the center must be a column (..., n, 1), got the shape " +
-                    shape_text(c.shape()));
-    if (G.ndim() < 2 || G.shape()[G.ndim() - 2] != c.shape()[c.ndim() - 2])
-        return fail("the dimensions of the center and the generator matrix do not match: " +
+    if (c.ndim() < 1)
+        return fail("the center must be a vector (..., n), got the shape " + shape_text(c.shape()));
+    // one generator per row: G (..., m, n)
+    if (G.ndim() < 2 || G.shape().back() != c.shape().back())
+        return fail("the dimensions of the center and the generator rows do not match: " +
                     shape_text(c.shape()) + " and " + shape_text(G.shape()));
-    if (A.ndim() < 2 || A.shape().back() != G.shape().back())
+    if (A.ndim() < 2 || A.shape().back() != G.shape()[G.ndim() - 2])
         return fail("the dimensions of the generator matrix and the constraint matrix do not "
                     "match: " +
                     shape_text(G.shape()) + " and " + shape_text(A.shape()));
@@ -69,11 +77,11 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, c
         return fail("the dimensions of the constraint matrix and the constraint offset do not "
                     "match: " +
                     shape_text(A.shape()) + " and " + shape_text(b.shape()));
-    const auto batch = [](const Tensor &t) {
+    const auto batch = [](const Tensor &t, int64_t rank) {
         // all four parts carry one batch shape
-        return std::vector<int64_t>(t.shape().begin(), t.shape().end() - 2);
+        return std::vector<int64_t>(t.shape().begin(), t.shape().end() - rank);
     };
-    if (batch(c) != batch(G) || batch(c) != batch(A) || batch(c) != batch(b))
+    if (batch(c, 1) != batch(G, 2) || batch(G, 2) != batch(A, 2) || batch(G, 2) != batch(b, 2))
         return fail("the center, generators and constraints must have one batch shape");
     if (!aux_finite(c) || !aux_finite(G) || !aux_finite(A) || !aux_finite(b))
         return fail("the entries must be finite");
@@ -107,12 +115,13 @@ Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, Tenso
 }
 
 ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
-    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)),
+    : ContSet(kClassId), c_(aux_center_vector(std::move(c), G)), G_(std::move(G)),
       F_(factor_polytope_of(c_, G_, std::move(A), std::move(b))) {}
 
 // the factor polytope as it is, checked against the center and the generators
 ConZonotope::ConZonotope(Tensor c, Tensor G, Polytope F)
-    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), F_(std::move(F)) {
+    : ContSet(kClassId), c_(aux_center_vector(std::move(c), G)), G_(std::move(G)),
+      F_(std::move(F)) {
     detail::Entry entry;
     const detail::Refusal refusal = aux_polytope_refusal(c_, G_, F_);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
@@ -120,14 +129,14 @@ ConZonotope::ConZonotope(Tensor c, Tensor G, Polytope F)
 
 // the factors in the unit box
 Polytope::LinearPrograms ConZonotope::factor_programs() const {
-    const auto m = std::size_t(G_.shape().back());
+    const auto m = std::size_t(G_.shape()[G_.ndim() - 2]);
     return F_.linear_programs(std::vector<double>(m, -1.0), std::vector<double>(m, 1.0));
 }
 
 // From other sets --------------------------------------------------------------------------------
 
 ConZonotope::ConZonotope(const Tensor &c, const Tensor &G)
-    : ConZonotope(c, G, zeros_block(G, 0, G.shape().back()), zeros_block(c, 0, 1)) {}
+    : ConZonotope(c, G, zeros_block(G, 0, G.shape()[G.ndim() - 2]), zeros_block(G, 0, 1)) {}
 
 ConZonotope::ConZonotope(const Zonotope &Z) : ConZonotope(Z.center(), Z.generators()) {}
 
@@ -144,8 +153,8 @@ ConZonotope ConZonotope::from_matrix(const Tensor &Z, const std::optional<Tensor
     });
     const Tensor c = Z.slice(-1, 0, 1), G = Z.slice(-1, 1, Z.shape().back());
     // the stored parts keep the batch shape of the center
-    if (A) return {c, G, *A, *b};
-    return {c, G};
+    if (A) return {c, G.matrix_transpose(), *A, *b};
+    return {c, G.matrix_transpose()};
 }
 
 } // namespace cora

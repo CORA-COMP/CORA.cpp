@@ -5,7 +5,7 @@
 // CORA authors: Victor Gassmann
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -37,7 +37,7 @@ void minnorm_known(const std::string &b) {
           b + ": the diamond |x| + |y| <= 2");
     check(close(x3.matrix_transpose().matmul(x3), std::vector<double>{2}, 1e-12),
           b + ": the nearest point is at distance sqrt(2)");
-    const auto [v4, x4] = Zonotope(column({3.0, 4.0}), Tensor({{1.0}, {1.0}})).minnorm();
+    const auto [v4, x4] = Zonotope(column({3.0, 4.0}), Tensor({{1.0, 1.0}})).minnorm();
     check(close(v4, std::vector<double>{0}, 0) && close(x4, std::vector<double>{3, 4}, 0),
           b + ": a flat zonotope: distance 0 at the center");
 }

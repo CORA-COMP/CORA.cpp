@@ -3,9 +3,9 @@
 // See also: lean/request.h
 //
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/poly_zonotope.h"
@@ -46,6 +46,12 @@ cora::Exponents aux_exponents_of(const Json &j) {
     return Exp;
 }
 
+/// CORA's columns of the stored rows: the center (n, 1) of c (n), the generators (n, h) of G (h,
+/// n).
+cora::Tensor aux_columns(const cora::Tensor &t) {
+    return t.ndim() == 1 ? t.expand_dims(-1) : t.matrix_transpose();
+}
+
 /// The polynomial zonotope of the reply member `key`.
 PolyZonotope aux_set(const char *op, std::initializer_list<Operand> operands) {
     return ask(op, operands).get<PolyZonotope>("P");
@@ -59,8 +65,8 @@ PolyZonotope aux_set(const char *op, std::initializer_list<Operand> operands) {
 // Construction -------------------------------------------------------------------------------
 
 PolyZonotope::PolyZonotope(const cora::PolyZonotope &P)
-    : c_(Tensor::from(P.center())), G_(Tensor::from(P.generators())),
-      GI_(Tensor::from(P.independent_generators())), E_(Interval::origin(P.center().shape()[0])),
+    : c_(Tensor::from(aux_columns(P.center()))), G_(Tensor::from(aux_columns(P.generators()))),
+      GI_(Tensor::from(aux_columns(P.independent_generators()))), E_(Interval::origin(P.dim())),
       Exp_(P.exponents()), id_(P.ids()) {}
 
 PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Interval E, cora::Exponents Exp,
@@ -145,7 +151,13 @@ cora::PolyZonotope PolyZonotope::gather() const {
     if (!zero(inf) || !zero(sup))
         CORA_FAIL(Error::wrong_value,
                   "lean: a polynomial zonotope with an error box does not cross");
-    return {c_.gather(), G_.gather(), GI_.gather(), Exp_, id_, detail::Verbatim{}};
+    // the rows of CORA's columns
+    return {c_.gather().squeeze(-1),
+            G_.gather().matrix_transpose(),
+            GI_.gather().matrix_transpose(),
+            Exp_,
+            id_,
+            detail::Verbatim{}};
 }
 
 // the wire form is {c, G, GI, Exp, E, id}

@@ -2,7 +2,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "tensor_lists.h"
@@ -19,7 +19,7 @@ namespace {
 
 /// The sum of the results for the center and a generator of the tensor zonotope: differentiable.
 void tensor_multiplication_zono_gradient() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(2, 2);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 2);
     const torch::Tensor M = torch::randn({2, 2, 2, 2}, torch::kDouble);
     const torch::Tensor M1 = torch::randn({2, 2, 2, 2}, torch::kDouble);
     test::gradcheck("tensor_multiplication_zono",

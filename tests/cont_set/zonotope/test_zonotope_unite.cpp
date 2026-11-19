@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -44,11 +44,11 @@ void unions_by_hand(const std::string &b) {
         check(U.contains(A, "exact", 1e-9) && U.contains(B, "exact", 1e-9),
               std::string(b) + ": " + method + ": it contains both");
     }
-    const Zonotope p(column({0.0, 0.0}), Tensor::zeros({2, 0})),
-        q(column({2.0, 0.0}), Tensor::zeros({2, 0}));
+    const Zonotope p(column({0.0, 0.0}), Tensor::zeros({0, 2})),
+        q(column({2.0, 0.0}), Tensor::zeros({0, 2}));
     const Zonotope S = p.unite(q);
     check(close(S.center(), std::vector<double>{1, 0}, 1e-9) &&
-              S.generators().shape() == std::vector<int64_t>({2, 1}) &&
+              S.generators().shape() == std::vector<int64_t>({1, 2}) &&
               close(S.generators().abs(), std::vector<double>{1, 0}, 1e-9),
           b + ": two points give the segment between them");
     const Zonotope same = A.unite(A);
@@ -93,8 +93,8 @@ void union_contains_the_sets(const std::string &b) {
         }
     }
     // flat sets: a segment and a point in the plane
-    const Zonotope seg(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    const Zonotope pt(column({3.0, 0.0}), Tensor::zeros({2, 0}));
+    const Zonotope seg(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope pt(column({3.0, 0.0}), Tensor::zeros({0, 2}));
     const Zonotope U = seg.unite(pt);
     check(U.contains(seg, "exact", 1e-8) && U.contains(pt, "exact", 1e-8), b + ": flat sets");
 }

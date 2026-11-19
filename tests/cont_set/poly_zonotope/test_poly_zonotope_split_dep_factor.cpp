@@ -7,9 +7,9 @@
 // CORA: contSet/@polyZonotope/splitDepFactor.m
 // PROPERTY: contSet/@polyZonotope/splitDepFactor.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -31,12 +31,12 @@ namespace {
 std::vector<double> aux_point(const PolyZonotope &P, const std::vector<double> &alpha) {
     const int64_t n = P.dim(), h = P.num_dependent();
     std::vector<double> p = P.center().data();
-    const std::vector<double> G = P.generators().data();
+    const std::vector<double> G = P.generators().data(); // one generator per row
     for (int64_t j = 0; j < h; ++j) {
         double mono = 1;
         for (std::size_t r = 0; r < alpha.size(); ++r)
             mono *= std::pow(alpha[r], P.exponents()[std::size_t(j)][r]);
-        for (int64_t i = 0; i < n; ++i) p[std::size_t(i)] += G[std::size_t(i * h + j)] * mono;
+        for (int64_t i = 0; i < n; ++i) p[std::size_t(i)] += G[std::size_t(j * n + i)] * mono;
     }
     return p;
 }
@@ -45,7 +45,7 @@ std::vector<double> aux_point(const PolyZonotope &P, const std::vector<double> &
 /// merged b^2 first (CORA's order of the hash).
 PolyZonotope aux_known() {
     return {
-        column({1.0}), Tensor::from_data({2, 3}, {1, 2}), Tensor::zeros({1, 0}), {{1}, {2}}, {1}};
+        column({1.0}), Tensor::from_data({2, 3}, {2, 1}), Tensor::zeros({0, 1}), {{1}, {2}}, {1}};
 }
 
 /// Stated property: the halves are the set on [0, 1] and [-1, 0] of the factor.
@@ -77,11 +77,11 @@ void split_property(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         const auto [P1, P2] = aux_known().split_dep_factor(1);
-        check(close(P1.center(), column({2.75})) &&
-                  close(P1.generators(), Tensor::from_data({0.75, 2.5}, {1, 2})),
+        check(close(P1.center(), Tensor::from_data({2.75}, {1})) &&
+                  close(P1.generators(), Tensor::from_data({0.75, 2.5}, {2, 1})),
               b + ": the first half by hand");
-        check(close(P2.center(), column({0.75})) &&
-                  close(P2.generators(), Tensor::from_data({0.75, -0.5}, {1, 2})),
+        check(close(P2.center(), Tensor::from_data({0.75}, {1})) &&
+                  close(P2.generators(), Tensor::from_data({0.75, -0.5}, {2, 1})),
               b + ": the second half by hand");
         split_property(b);
     });

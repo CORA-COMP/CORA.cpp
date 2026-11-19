@@ -18,7 +18,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   16-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive_step.h"
@@ -69,9 +69,9 @@ Tensor aux_B(const Tune &c, const Tensor &like, const Vec &xs, const Vec &us) {
 /// above zeta_k times the second-order one in every dimension that has one
 /// (aux_initStepTensorOrder).
 int aux_init_tensor_order(const Tune &c, const Zonotope &R) {
-    if (R.generators().shape().back() == 0) return 2;
-    const Vec xs = R.center().data(), us = c.m > 0 ? c.U->center().data() : Vec{};
-    const Tensor &like = R.center();
+    if (R.nr_generators() == 0) return 2;
+    const Vec xs = R.center().data(), us = c.m > 0 ? c.U->center().expand_dims(-1).data() : Vec{};
+    const Tensor &like = R.center().expand_dims(-1);
     const Jacobians J =
         c.sys.jacobian(priv_column(like, xs),
                        c.m > 0 ? std::optional<Tensor>(priv_column(like, us)) : std::nullopt);
@@ -95,9 +95,9 @@ AdaptiveState aux_next_tensor_order(const Tune &c, const AdaptiveState &st, cons
     const double abstrerr = priv_norm_up(P.abstrerr);
     if (std::abs((total * abstrerr) / st.kappa_abstrerr - 1) <= 1 - c.alg.zeta_k) return st;
     // the other order's error at the same Rmax, through the linear step
-    const Tensor &like = st.R.center();
+    const Tensor &like = st.R.center().expand_dims(-1);
     const int other_order = st.tensor_order == 2 ? 3 : 2;
-    const Vec us = c.m > 0 ? c.U->center().data() : Vec{};
+    const Vec us = c.m > 0 ? c.U->center().expand_dims(-1).data() : Vec{};
     const Tensor B = aux_B(c, like, P.xs, us);
     const Zonotope V =
         priv_abstr_err_adaptive(c.sys, other_order, P.A, B, P.xs, P.Rmax, c.U, c.alg.zeta_z);
@@ -140,8 +140,8 @@ AdaptiveState Tune::update_orders(const AdaptiveState &st, bool veryfirststep,
     // the orders of the error terms from the pattern of A and the Hessian at the point
     AdaptiveState out = st;
     OrdersState o{st.zero_width, st.orders, st.minorder};
-    priv_update_orders(sys, U, st.R.center(), priv_row_sums(st.R), veryfirststep, P.A, P.xs,
-                       P.gzero, 0, o);
+    priv_update_orders(sys, U, st.R.center().expand_dims(-1), priv_row_sums(st.R), veryfirststep,
+                       P.A, P.xs, P.gzero, 0, o);
     out.zero_width = o.zero_width;
     out.orders = o.orders;
     out.minorder = o.minorder;

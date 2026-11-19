@@ -6,9 +6,9 @@
 // that a wrong input is refused with the right identifier; a `cora::ChecksScope off(false)`
 // block runs a valid call without the checks.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -93,7 +93,14 @@ inline cora::Tensor column(const std::vector<double> &v) {
     return cora::Tensor::from_data(v, {int64_t(v.size()), 1});
 }
 
+/// The vector (n) of the given numbers, on the current backend: a point as a set stores it, as the
+/// center of a zonotope (#163).
+inline cora::Tensor vec(const std::vector<double> &v) {
+    return cora::Tensor::from_data(v, {int64_t(v.size())});
+}
+
 /// A random direction in n dimensions: standard normal entries.
+
 inline std::vector<double> random_direction(cora::Rng &rng, int n) {
     std::vector<double> d(n);
     rng.normal(d.data(), d.size(), 1.0);

@@ -28,7 +28,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -48,7 +48,7 @@ namespace {
 
 /// The center and the generators of the zonotope as host vectors; none for a zero vector.
 std::vector<std::optional<std::vector<double>>> aux_vectors(const Zonotope &Z) {
-    const int64_t n = Z.center().shape()[0], m = Z.generators().shape().back();
+    const int64_t n = Z.dim(), m = Z.nr_generators();
     const std::vector<double> c = Z.center().data(), G = Z.generators().data();
     std::vector<std::optional<std::vector<double>>> out;
     // the center (j = -1), then the generators
@@ -56,7 +56,7 @@ std::vector<std::optional<std::vector<double>>> aux_vectors(const Zonotope &Z) {
         std::vector<double> v(static_cast<size_t>(n));
         double sum = 0.0;
         for (int64_t r = 0; r < n; ++r) {
-            v[size_t(r)] = j < 0 ? c[size_t(r)] : G[size_t(r * m + j)];
+            v[size_t(r)] = j < 0 ? c[size_t(r)] : G[size_t(j * n + r)];
             sum += v[size_t(r)] * v[size_t(r)];
         }
         if (sum == 0)
@@ -105,8 +105,10 @@ Tensor aux_row_norms(const Tensor &C) {
 /// box is left out where the radius is zero.
 Zonotope aux_with_error(const Tensor &points, const Tensor &radius) {
     const Tensor c = points.slice(-1, 0, 1), G = points.slice(-1, 1, points.shape().back());
-    if (!(radius.max().item() > 0)) return {c, G};
-    return {c, Tensor::concat({G, radius.diag()}, -1)};
+    // the columns as generator rows; the box is diagonal, its own transpose
+    const Tensor rows = G.matrix_transpose();
+    if (!(radius.max().item() > 0)) return {c.squeeze(-1), rows};
+    return {c.squeeze(-1), Tensor::concat({rows, radius.diag()}, -2)};
 }
 
 // The homogeneous solution ------------------------------------------------------------------------
@@ -154,7 +156,7 @@ class Homogeneous {
             if (s.left == 0) aux_restart(s);
             // the curvature acts on the state at the start of the step
             const int64_t k = s.y.shape()[0];
-            const Zonotope point(s.y, s.y.zeros_like({k, 0}));
+            const Zonotope point(s.y.squeeze(-1), s.y.zeros_like({0, k}));
             const Interval small = point.linear_map(*s.F).interval();
             Interval lifted = small.linear_map(s.proj);
             if (j > 0) { // a generator: alpha in [-1, 1] times the interval
@@ -220,17 +222,17 @@ ReachSet priv_reach_krylov(const LinearSys &sys, const Zonotope &R0,
                            double t_final,
                            const std::function<void(const Zonotope &)> &on_time_interval) {
     const int64_t n = sys.dim();
-    const Tensor &like = R0.center();
+    const Tensor &like = R0.center(); // the backend and the dtype
     const Tensor C = sys.C() ? *sys.C() : like.eye_like(n);
     const int64_t p = C.shape()[0];
     const HostMatVec A = priv_state_matvec(sys);
     // the input set split into its center u_trans and the rest, both through B
-    Zonotope V(like.zeros_like({n, 1}), like.zeros_like({n, 0}));
+    Zonotope V(like.zeros_like({n}), like.zeros_like({0, n}));
     std::vector<double> u_trans(size_t(n), 0.0);
     if (input_set) {
         const Tensor &B = *sys.B();
         V = Zonotope(input_set->center().zeros_like(), input_set->generators()).linear_map(B);
-        u_trans = B.matmul(input_set->center()).data();
+        u_trans = B.matmul(input_set->center().expand_dims(-1)).data();
     }
 
     // the subspaces of the constant input and the input solution, and the length of the rows of C
@@ -254,7 +256,9 @@ ReachSet priv_reach_krylov(const LinearSys &sys, const Zonotope &R0,
         const auto [points, curvature, error] = homogeneous.next(p, like);
         const Tensor error_r0 = rows * error;
         const Interval error_box(error_r0.negative(), error_r0);
-        const Zonotope Htp(points.slice(-1, 0, 1), points.slice(-1, 1, points.shape().back()));
+        // the columns [c G] of the points: the center, then the generators as rows
+        const Zonotope Htp(points.slice(-1, 0, 1).squeeze(-1),
+                           points.slice(-1, 1, points.shape().back()).matrix_transpose());
         const Zonotope RV_proj =
             U0 ? aux_with_error(aux_at_time(input_spaces, t, p, like), error_rv) : RV.linear_map(C);
         const Zonotope R_trans = aux_with_error(aux_at_time({u_space}, t, p, like), error_trans);

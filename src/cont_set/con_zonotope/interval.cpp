@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@conZonotope/interval.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -37,7 +37,8 @@ Interval ConZonotope::interval_impl() const {
         inf[i] = range->first;
         sup[i] = range->second;
     }
-    return {Tensor::like(c_, inf, {H.n, 1}), Tensor::like(c_, sup, {H.n, 1})};
+    return {Tensor::like(c_.expand_dims(-1), inf, {H.n, 1}),
+            Tensor::like(c_.expand_dims(-1), sup, {H.n, 1})};
 }
 
 } // namespace cora

@@ -15,9 +15,9 @@
 //
 // CORA.cpp only: reach's input solution for the system's B; the particular solutions are
 //   particular_solution_time_varying and particular_solution_constant
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -35,19 +35,19 @@ InputSolution LinearSys::input_solution(const Zonotope &U, double time_step,
     detail::Entry entry;
     CORA_CHECK(B_.has_value(), Error::wrong_value,
                [] { return std::string("input_solution: needs B; use LinearSys(A, B)"); });
-    CORA_CHECK(U.center().shape() == std::vector<int64_t>({B_->shape().back(), 1}),
-               Error::dimension_mismatch, [&] {
-                   return "input_solution: U must be one zonotope of the dimension " +
-                          std::to_string(B_->shape().back()) +
-                          " of the columns of B, got the center " + shape_text(U.center().shape());
-               });
+    CORA_CHECK(U.center().shape() == Shape{B_->shape().back()}, Error::dimension_mismatch, [&] {
+        return "input_solution: U must be one zonotope of the dimension " +
+               std::to_string(B_->shape().back()) + " of the columns of B, got the center " +
+               shape_text(U.center().shape());
+    });
     CORA_CHECK(time_step > 0 && taylor_terms >= 1, Error::wrong_value, [&] {
         return "input_solution: needs time_step > 0 and taylor_terms >= 1, got " +
                std::to_string(time_step) + " and " + std::to_string(taylor_terms);
     });
     const Tensor &A = this->A();
-    const Tensor BG = B_->matmul(U.generators()); // generators of B U0
-    const Tensor u = B_->matmul(U.center());      // the constant input B c
+    // the generators of B U0 as columns, and the constant input B c
+    const Tensor BG = B_->matmul(U.generators().matrix_transpose());
+    const Tensor u = B_->matmul(U.center().expand_dims(-1));
 
     // M_j = A^j dt^(j+1)/(j+1)!; the time-varying part keeps each M_j B U0 as generators.
     Tensor Apower = A.eye_like();
@@ -60,8 +60,10 @@ InputSolution LinearSys::input_solution(const Zonotope &U, double time_step,
     }
 
     const Interval Edt = time_step * expm_remainder(time_step, taylor_terms);
-    const Zonotope U0{u.zeros_like(), Tensor::concat(generators, -1)};
-    const Zonotope PU = U0.plus(Zonotope{u.zeros_like(), BG}.linear_map(Edt));
+    // the columns M_j B G as generator rows
+    const Tensor origin = u.squeeze(-1).zeros_like();
+    const Zonotope U0(origin, Tensor::concat(generators, -1).matrix_transpose());
+    const Zonotope PU = U0.plus(Zonotope(origin, BG.matrix_transpose()).linear_map(Edt));
 
     // The constant part is the last column of e^{M dt} for M = [A Bc; 0 0], the input as a state.
     const int64_t n = A.shape().back();
@@ -72,7 +74,8 @@ InputSolution LinearSys::input_solution(const Zonotope &U, double time_step,
 
     // G u for the interval matrix G: the center maps u, the radius maps |u|.
     const Interval G = correction_matrix_input(time_step, taylor_terms);
-    const Zonotope Cinput{G.center().matmul(u), G.rad().matmul(u.abs()).diag()};
+    // one generator per dimension: the diagonal is its own transpose
+    const Zonotope Cinput(G.center().matmul(u).squeeze(-1), G.rad().matmul(u.abs()).diag());
     return {PU, Pu, Cinput};
 }
 

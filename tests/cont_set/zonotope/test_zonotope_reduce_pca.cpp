@@ -8,9 +8,9 @@
 // CORA: contSet/@zonotope/private/priv_reducePCA.m
 // PROPERTY: contSet/@zonotope/private/priv_reducePCA.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -53,12 +53,12 @@ void reduce_property(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         // two generators in the plane stay as they are
-        const Zonotope two(Tensor({1.0, 2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
+        const Zonotope two(Tensor({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
         check(close(two.reduce_pca().generators(), two.generators()), b + ": n generators stay");
         // axis-aligned generators: the box, in the axes (the signs of the axes are free)
-        const Zonotope diag(Tensor({0.0, 0.0}), Tensor({{3.0, 1.0, 0.0}, {0.0, 0.0, 2.0}}));
+        const Zonotope diag(Tensor({0.0, 0.0}), Tensor({{3.0, 0.0}, {1.0, 0.0}, {0.0, 2.0}}));
         const Zonotope R = diag.reduce_pca();
-        check(close(R.generators().abs().sum(-1, true), Tensor({{4.0}, {2.0}}), 1e-12),
+        check(close(R.generators().abs().sum(-2, true), Tensor({{4.0, 2.0}}), 1e-12),
               b + ": the box of the axis-aligned generators");
         reduce_property(b);
     });

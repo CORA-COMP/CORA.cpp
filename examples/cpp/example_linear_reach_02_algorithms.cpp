@@ -8,9 +8,9 @@
 // Outputs:  the extent of every enclosure along x1, for both algorithms
 // See also: example_linear_reach_01_5dim
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -30,7 +30,7 @@ int main() {
     // Parameters ------------------------------------------------------------------------------
 
     const double t_final = 2.4;
-    const Zonotope R0(Tensor({1.0, 0.5}), Tensor({{0.15, 0.05}, {-0.05, 0.1}}));
+    const Zonotope R0(Tensor({1.0, 0.5}), Tensor({{0.15, -0.05}, {0.05, 0.1}}));
 
     // Reachability Settings -------------------------------------------------------------------
 

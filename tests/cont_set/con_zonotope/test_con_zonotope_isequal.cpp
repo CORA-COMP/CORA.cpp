@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@conZonotope/isequal.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -33,7 +33,7 @@ void isequal_known(const std::string &b) {
     check(!seg.isequal(other), b + ": another offset");
     // the unit square, with and without a pinned extra factor
     const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const ConZonotope pinned(column({0.0, 0.0}), Tensor({{1.0, 0.0, 5.0}, {0.0, 1.0, 5.0}}),
+    const ConZonotope pinned(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {5.0, 5.0}}),
                              Tensor({{0.0, 0.0, 1.0}}), column({0.0}));
     check(square.isequal(pinned) && pinned.isequal(square), b + ": another representation");
     check(!square.isequal(ConZonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}))),
@@ -42,7 +42,7 @@ void isequal_known(const std::string &b) {
     const ConZonotope none = ConZonotope::empty(2);
     check(none.isequal(ConZonotope::empty(2)) && !none.isequal(square) && !square.isequal(none),
           b + ": empty sets");
-    const ConZonotope p(column({1.0, 2.0}), Tensor({{0.0}, {0.0}}));
+    const ConZonotope p(column({1.0, 2.0}), Tensor({{0.0, 0.0}}));
     check(p.isequal(ConZonotope(column({1.0, 2.0}), Tensor({{0.0, 0.0}, {0.0, 0.0}}))) &&
               !p.isequal(square),
           b + ": points");

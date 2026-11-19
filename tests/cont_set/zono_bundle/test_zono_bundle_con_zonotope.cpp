@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/conZonotope.m
 // PROPERTY: contSet/@zonoBundle/conZonotope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -27,7 +27,8 @@ void two_squares(const std::string &b) {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
     const ZonoBundle bundle({Zonotope(column({1.0, 1.0}), I2), Zonotope(column({2.0, 2.0}), I2)});
     const ConZonotope cz = bundle.con_zonotope();
-    check(cz.generators().shape() == Shape{2, 4}, b + ": the generators of both members");
+    check(cz.generators().matrix_transpose().shape() == Shape{2, 4},
+          b + ": the generators of both members");
     check(cz.A().shape() == Shape{2, 4}, b + ": one equality per dimension");
     const Interval box = cz.interval();
     check(close(box.inf(), {1.0, 1.0}) && close(box.sup(), {2.0, 2.0}), b + ": the box [1, 2]^2");
@@ -37,10 +38,11 @@ void two_squares(const std::string &b) {
 
 /// One member is the zonotope itself, without constraints.
 void single_member(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     const ConZonotope cz = ZonoBundle({Z}).con_zonotope();
-    check(cz.A().shape() == Shape{0, 2} && close(cz.c(), Z.center(), 0) &&
-              close(cz.generators(), Z.generators(), 0),
+    check(cz.A().shape() == Shape{0, 2} &&
+              close(cz.c().expand_dims(-1), Z.center().expand_dims(-1), 0) &&
+              close(cz.generators().matrix_transpose(), Z.generators().matrix_transpose(), 0),
           b + ": a single member has no constraints");
 }
 
@@ -54,7 +56,8 @@ void same_points(const std::string &b) {
     check(cz.contains(inside), b + ": every point of the bundle is in the constrained zonotope");
     // a point of the first member only: the others cut it off
     const Tensor far =
-        bundle.zonotopes()[0].center() + bundle.zonotopes()[0].generators().slice(-1, 0, 1) * 1.0;
+        (bundle.zonotopes()[0]).center().expand_dims(-1) +
+        (bundle.zonotopes()[0]).generators().matrix_transpose().slice(-1, 0, 1) * 1.0;
     check(cz.contains(far) == test::in_every_member(bundle, far), b + ": a boundary point agrees");
     check(!cz.contains(common + common.ones_like() * 100.0), b + ": a far point is outside");
 }

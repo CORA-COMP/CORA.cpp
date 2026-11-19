@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@zonotope/minnorm.m
 // CORA authors: Victor Gassmann
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -31,22 +31,22 @@ namespace cora {
 
 std::pair<Tensor, Tensor> Zonotope::minnorm() const {
     detail::Entry entry;
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("minnorm: facets of one zonotope at a time; it supports a single "
                            "zonotope, not a batch");
     });
-    // CORA's polytope(Z - c): without zero generators; a flat zonotope has a facet through c
+    // CORA's polytope(Z - c), on CORA's columns: no zero generators; a flat one has a facet at c
     const Zonotope compacted = compact();
-    const Tensor &G = compacted.generators();
+    const Tensor G = compacted.generators().matrix_transpose(), c = c_.expand_dims(-1);
     if (G.shape().back() == 0 || G.matrix_rank(resolve_tol({}, G.dtype())) < dim())
-        return {c_.zeros_like({1, 1}), c_};
+        return {c.zeros_like({1, 1}), c};
     const Tensor C = priv_zonotope_facet_normals(compacted);
     // the offset of each facet of Z - c: sum |C G|, and the nearest one (the first on a tie)
     const Tensor offsets = C.matmul(G).abs_sum();
     const Tensor nearest = offsets.argmin(0);
     const Tensor b = offsets.take(nearest, 0);
     const Tensor value = b.square().sqrt();
-    return {value, C.take(nearest, 0).matrix_transpose().multiply(b) + c_};
+    return {value, C.take(nearest, 0).matrix_transpose().multiply(b) + c};
 }
 
 } // namespace cora

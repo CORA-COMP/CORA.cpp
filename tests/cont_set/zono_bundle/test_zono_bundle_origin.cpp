@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@zonoBundle/origin.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -22,8 +22,8 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         const ZonoBundle O = ZonoBundle::origin(3);
         check(O.dim() == 3 && O.parallel_sets() == 1, b + ": one member of three dimensions");
-        check(close(O.zonotopes()[0].center(), {0, 0, 0}, 0) &&
-                  O.zonotopes()[0].generators().shape() == Shape{3, 0},
+        check(close((O.zonotopes()[0]).center().expand_dims(-1), {0, 0, 0}, 0) &&
+                  (O.zonotopes()[0]).generators().matrix_transpose().shape() == Shape{3, 0},
               b + ": the center is 0 and there are no generators");
         check(O.representsa("origin"), b + ": it represents the origin");
     });

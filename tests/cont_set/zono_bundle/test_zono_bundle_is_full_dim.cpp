@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/isFullDim.m
 // PROPERTY: contSet/@zonoBundle/isFullDim.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -31,7 +31,7 @@ void known_bundles(const std::string &b) {
     check(ZonoBundle({square(0.0, 0.0), square(0.25, 0.25)}).is_full_dim(), b + ": overlapping");
     check(!ZonoBundle({square(0.0, 0.0), square(1.0, 0.0)}).is_full_dim(), b + ": touching");
     check(!ZonoBundle({square(0.0, 0.0), square(3.0, 0.0)}).is_full_dim(), b + ": disjoint");
-    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(!ZonoBundle({square(0.0, 0.0), flat}).is_full_dim(), b + ": a flat member");
     check(ZonoBundle({square(0.0, 0.0)}).is_full_dim(), b + ": one full-dimensional member");
     check(Set(ZonoBundle({square(0.0, 0.0), square(0.25, 0.0)}))->is_full_dim(),

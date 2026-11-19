@@ -25,9 +25,9 @@ namespace cora {
 /// zonotope part, the interval part, the powers (A r)^i of each (orders 1.., then the orders
 /// after them) and the remainder.
 struct LinParamSeries {
-    MatZonotope zono;
+    Zonotope zono;
     Interval rest;
-    std::vector<MatZonotope> zono_powers;
+    std::vector<Zonotope> zono_powers;
     std::vector<Interval> int_powers;
     Interval remainder;
 };

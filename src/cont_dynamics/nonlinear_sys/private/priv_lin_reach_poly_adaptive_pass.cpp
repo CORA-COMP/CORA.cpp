@@ -20,9 +20,9 @@
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -42,7 +42,7 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
                                   const PolyZonotope &R, const Vec &error_adm) {
     // a step of positive width, linearized at the center of the start set
     if (!(dt > 0)) return std::nullopt;
-    const Tensor &like = R.center();
+    const Tensor like = R.center().expand_dims(-1);
     const int64_t n = sys.dim();
     const AdaptiveLinearization L = priv_linearize_adaptive(sys, U, like, dt);
     const Vec &xs = L.xs;
@@ -83,13 +83,14 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     const std::optional<PolySeries> errser = PolySeries::make(J.A, dt, alg.taylor_terms, false);
     const Zonotope Rdyn = errser->input_solution(Vdyn);
     const PolyZonotope Rstat = priv_poly_interval_map(errser->integral(), S.Vstat);
-    const Tensor GI = Tensor::concat({Rdyn.generators(), Rstat.independent_generators()}, -1);
-    const int64_t q = GI.shape()[1];
+    // one generator per row, (q, n)
+    const Tensor GI = Tensor::concat({Rdyn.generators(), Rstat.independent_generators()}, -2);
+    const int64_t q = GI.shape()[0];
     const Vec gi = GI.data();
     Vec abstrerr(static_cast<std::size_t>(n));
     for (int64_t i = 0; i < n; ++i) {
         Vec row(static_cast<std::size_t>(q));
-        for (int64_t j = 0; j < q; ++j) row[std::size_t(j)] = std::abs(gi[std::size_t(i * q + j)]);
+        for (int64_t j = 0; j < q; ++j) row[std::size_t(j)] = std::abs(gi[std::size_t(j * n + i)]);
         abstrerr[std::size_t(i)] = priv_sum_up(row);
     }
     const Vec error_radius = priv_row_sums(Vdyn);

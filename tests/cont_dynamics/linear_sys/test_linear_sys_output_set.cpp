@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/outputSet.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -32,9 +32,9 @@ struct Setup {
           B(Tensor::from_data(matlab_reference::standard_inputs().B, {3, 2})),
           C(Tensor::from_data(matlab_reference::standard_inputs().C, {2, 3})),
           X0(Tensor::from_data(matlab_reference::standard_inputs().c0, {3, 1}),
-             Tensor::from_data(matlab_reference::standard_inputs().G0, {3, 3})),
+             Tensor::from_data(matlab_reference::standard_inputs().G0, {3, 3}).matrix_transpose()),
           U(Tensor::from_data(matlab_reference::standard_inputs().c_u, {2, 1}),
-            Tensor::from_data(matlab_reference::standard_inputs().GU, {2, 3})) {}
+            Tensor::from_data(matlab_reference::standard_inputs().GU, {2, 3}).matrix_transpose()) {}
 };
 
 /// The output set is C Z: its center is C c, its generators C G, and its support along d is the
@@ -51,7 +51,8 @@ void maps_every_set_by_c(const std::string &b) {
     const std::vector<double> d{0.7, -1.1};
     const Tensor Ctd = in.C.matrix_transpose().matmul(test::column(d));
     for (std::size_t k = 0; k < R.time_interval.size(); ++k) {
-        check(close(Y.time_interval[k].center(), in.C.matmul(R.time_interval[k].center())),
+        check(close(Y.time_interval[k].center().expand_dims(-1),
+                    in.C.matmul(R.time_interval[k].center().expand_dims(-1))),
               b + ": the center of a step");
         check(close(Y.time_interval[k].support_function(test::column(d)),
                     R.time_interval[k].support_function(Ctd)),
@@ -59,7 +60,8 @@ void maps_every_set_by_c(const std::string &b) {
     }
     // the output set maps every time point
     for (std::size_t k = 0; k < R.time_point.size(); ++k)
-        check(close(Y.time_point[k].generators(), in.C.matmul(R.time_point[k].generators())),
+        check(close(Y.time_point[k].generators().matrix_transpose(),
+                    in.C.matmul(R.time_point[k].generators().matrix_transpose())),
               b + ": a time point");
     check(Y.time_interval[0].dim() == 2, b + ": the output has p dimensions");
 }
@@ -85,12 +87,12 @@ void checks_and_their_switch() {
                   alg::Standard{.time_step = 0.1});
     ReachSet wrong = R;
     wrong.time_point[0] =
-        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+        Zonotope(Tensor({1.0, 0.0, 0.0}), Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     check(test::raises([&] { sys.output_set(wrong); }, Error::dimension_mismatch),
           "output_set: a set of three dimensions");
-    const Tensor on = sys.output_set(R).time_point.back().center();
+    const Tensor on = (sys.output_set(R).time_point.back()).center();
     ChecksScope off(false);
-    check(test::close(sys.output_set(R).time_point.back().center(), on, 0),
+    check(test::close((sys.output_set(R).time_point.back()).center(), on, 0),
           "output_set: the same with the checks off");
 }
 

@@ -15,7 +15,7 @@
 // ORACLE: contDynamics/@nonlinearSys/linReach_adaptive.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   16-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
@@ -58,12 +58,12 @@ struct Case {
 
 std::vector<Case> cases() {
     return {{"van der Pol", van_der_pol(),
-             Zonotope(Tensor({1.4, 2.3}), Tensor({{0.05, 0.01, 0.002}, {0.0, 0.05, 0.003}})),
+             Zonotope(Tensor({1.4, 2.3}), Tensor({{0.05, 0.0}, {0.01, 0.05}, {0.002, 0.003}})),
              Zonotope(Tensor({0.0}), Tensor({{0.1}})), 0.02},
             {"Robertson", robertson(),
              Zonotope(Tensor({1.0, 0.0, 0.0}),
                       Tensor({{1e-3, 0.0, 0.0}, {0.0, 1e-4, 0.0}, {0.0, 0.0, 1e-4}})),
-             Zonotope(Tensor({0.0}), Tensor::zeros({1, 0})), 0.001}};
+             Zonotope(Tensor({0.0}), Tensor::zeros({0, 1})), 0.001}};
 }
 
 } // namespace
@@ -93,13 +93,13 @@ int main() {
                                           std::to_string(kappa);
                     const std::optional<AdaptivePass> mine =
                         priv_lin_reach_adaptive_pass(c.sys, kappa, U, alg, c.dt, c.R, adm);
-                    const auto theirs =
-                        oracle.lin_reach_adaptive_pass(lean_input, lean::Zonotope(c.R), c.dt, kappa,
-                                                       priv_column(c.R.center(), adm), alg);
+                    const auto theirs = oracle.lin_reach_adaptive_pass(
+                        lean_input, lean::Zonotope(c.R), c.dt, kappa,
+                        priv_column(c.R.center().expand_dims(-1), adm), alg);
                     test::check(mine.has_value() && theirs.has_value(), b + ": both converge");
                     if (!mine || !theirs) continue;
                     // the values and the sets of the pass
-                    const Tensor &like = c.R.center();
+                    const Tensor &like = c.R.center().expand_dims(-1);
                     test::oracle::check(b + " xs", priv_column(like, mine->xs), theirs->xs);
                     test::oracle::check(b + " A", mine->A, theirs->A);
                     test::oracle::check(b + " Rmax", mine->Rmax, theirs->Rmax);
@@ -113,7 +113,8 @@ int main() {
                     test::check(gzero == theirs->g_zero, b + ": the zero generators");
 
                     // the error over Rmax from the point of the pass, against the oracle's
-                    const Jacobians J = c.sys.jacobian(priv_column(like, mine->xs), c.U.center());
+                    const Jacobians J =
+                        c.sys.jacobian(priv_column(like, mine->xs), c.U.center().expand_dims(-1));
                     const Zonotope V = priv_abstr_err_adaptive(c.sys, kappa, J.A, J.B, mine->xs,
                                                                mine->Rmax, U, alg.zeta_z);
                     const auto err =
@@ -134,7 +135,7 @@ int main() {
                 const std::vector<double> adm(std::size_t(n), 0.0);
                 const auto pass = priv_lin_reach_adaptive_pass(c.sys, 2, c.U, alg, c.dt, c.R, adm);
                 if (!pass) continue;
-                const Tensor xs = priv_column(c.R.center(), pass->xs);
+                const Tensor xs = priv_column(c.R.center().expand_dims(-1), pass->xs);
                 // every pattern of zero-width dimensions
                 for (int64_t mask = 0; mask < (int64_t(1) << n); ++mask) {
                     std::vector<bool> zero_width(static_cast<std::size_t>(n));
@@ -142,7 +143,8 @@ int main() {
                         zero_width[std::size_t(i)] = ((mask >> i) & 1) != 0;
                     const std::vector<char> flags(zero_width.begin(), zero_width.end());
                     // the orders from the Hessian enclosure at the point of the pass
-                    const auto H = c.sys.hessian_enclosure(Range(xs), Range(c.U.center()));
+                    const auto H =
+                        c.sys.hessian_enclosure(Range(xs), Range(c.U.center().expand_dims(-1)));
                     const std::vector<int> mine = priv_adaptive_orders(
                         pass->A, flags, pass->gzero, H, n, c.sys.input_dim(), 100);
                     // the oracle's orders for the same pattern

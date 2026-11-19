@@ -59,10 +59,9 @@ class ZonotopeConversions(unittest.TestCase):
 
     def test_dim_and_generators(self):
         # the dimension and the generators as given
-        Z = zonotope([1.0, 2.0, 3.0], [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]])
+        Z = zonotope([1.0, 2.0, 3.0], [[1.0, 0.0, 2.0], [0.0, 1.0, 2.0]])
         self.assertEqual(Z.dim, 3)
-        np.testing.assert_array_equal(Z.generators, [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]])
-        self.assertEqual(cora.MatZonotope(np.zeros((2, 2))).num_generators, 0)
+        np.testing.assert_array_equal(Z.generators, [[1.0, 0.0, 2.0], [0.0, 1.0, 2.0]])
 
     def test_polytope_and_vertices(self):
         # the rectangle [0, 2] x [-1, 5]: four facets and four corners, counter-clockwise
@@ -82,9 +81,9 @@ class ZonotopeConversions(unittest.TestCase):
         P = Z.simplex()
         self.assertEqual(P.A.shape, (4, 3))
         self.assertTrue(P.contains(Z.rand_point(20, rng, "extreme")))
-        M = zonotope([1.0, 2.0], [[1.0, 0.0, 3.0], [0.0, 2.0, 4.0]]).mat_zonotope()
-        self.assertEqual((M.rows, M.cols, M.num_generators), (2, 1, 3))
-        np.testing.assert_array_equal(M.zonotope().generators, [[1.0, 0.0, 3.0], [0.0, 2.0, 4.0]])
+        M = zonotope([1.0, 2.0], [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]]).mat_zonotope()
+        self.assertEqual((M.elem_rank, M.center.shape, M.generators.shape), (2, (2, 1), (3, 2, 1)))
+        np.testing.assert_array_equal(M.stacked().generators, [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]])
 
 
 class MatrixSets(unittest.TestCase):
@@ -95,37 +94,36 @@ class MatrixSets(unittest.TestCase):
         # one generator per entry, the same box
         A = cora.Interval.from_center_delta(np.array([[1.0, 2.0], [3.0, 4.0]]),
                                             np.array([[0.5, 0.0], [0.0, 1.0]]))
-        M = cora.MatZonotope.from_interval(A)
-        self.assertEqual(M.num_generators, 4)
+        M = cora.Zonotope.from_interval_matrix(A)
+        self.assertEqual(M.generators.shape[0], 4)
         np.testing.assert_array_equal(M.center, [[1.0, 2.0], [3.0, 4.0]])
-        np.testing.assert_array_equal(M.interval_matrix().inf, A.inf)
+        np.testing.assert_array_equal(M.interval().inf, A.inf)
 
     def test_mat_zonotope_vertices_volume_and_reduce(self):
         # the corner matrices in order, the volume 8 and the shape kept by reduce
-        M = cora.MatZonotope(np.array([[1.0, 0.0], [0.0, 1.0]]),
-                             np.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 2.0]]]))
-        V = M.vertices()[0]
+        M = cora.Zonotope.matrix(np.array([[1.0, 0.0], [0.0, 1.0]]),
+                                 np.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 2.0]]]))
+        V = M.vertex_matrices()[0]
         self.assertEqual(V.shape, (4, 2, 2))
         np.testing.assert_array_equal(V[0], [[0.0, 0.0], [0.0, -1.0]])
         np.testing.assert_array_equal(V[3], [[2.0, 0.0], [0.0, 3.0]])
-        flat = cora.MatZonotope(np.zeros((1, 2)), np.array([[[1.0, 0.0]], [[0.0, 2.0]]]))
+        flat = cora.Zonotope.matrix(np.zeros((1, 2)), np.array([[[1.0, 0.0]], [[0.0, 2.0]]]))
         self.assertAlmostEqual(float(flat.volume()), 8.0)
         rng = np.random.default_rng(98)
-        big = cora.MatZonotope(rng.standard_normal((2, 2)), rng.uniform(-1, 1, (9, 2, 2)))
+        big = cora.Zonotope.matrix(rng.standard_normal((2, 2)), rng.uniform(-1, 1, (9, 2, 2)))
         reduced = big.reduce(1)
-        self.assertEqual((reduced.rows, reduced.cols), (2, 2))
-        self.assertLessEqual(reduced.num_generators, 4)
-        with self.assertRaises(cora.errors.NotSupported):
-            big.reduce(1, "pca")
+        self.assertEqual(reduced.center.shape, (2, 2))
+        self.assertLessEqual(reduced.generators.shape[0], 4)
 
     def test_expm_ind_mixed(self):
         # the lists of powers of both parts
         rng = np.random.default_rng(99)
-        A = cora.MatZonotope(0.5 * rng.standard_normal((3, 3)), rng.uniform(-0.3, 0.3, (2, 3, 3)))
-        R = A.expm_ind_mixed(2, 8)
+        A = cora.Zonotope.matrix(0.5 * rng.standard_normal((3, 3)),
+                                 rng.uniform(-0.3, 0.3, (2, 3, 3)))
+        R = cora.mat_exp.expm_independent_mixed(A, 2, 8)
         self.assertEqual((len(R.powers), len(R.powers2)), (2, 6))
         with self.assertRaises(cora.errors.WrongValue):
-            A.expm_ind_mixed(0, 8)
+            cora.mat_exp.expm_independent_mixed(A, 0, 8)
 
 
 if __name__ == "__main__":

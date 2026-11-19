@@ -7,7 +7,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -38,7 +38,7 @@ void box_by_hand(const std::string &b) {
     check(close(J.inf(), {-1, 2}) && close(J.sup(), {2, 4}), b + ": with the input set");
     check(close(reset.evaluate(box, U)->interval().sup(), {2, -1}), b + ": no B, no input");
     // a bundle maps zonotope by zonotope; points column by column
-    const ZonoBundle bundle({box, Zonotope(column({0.5, 3.0}), Tensor({{1.0}, {1.0}}))});
+    const ZonoBundle bundle({box, Zonotope(column({0.5, 3.0}), Tensor({{1.0, 1.0}}))});
     const Set image = reset.evaluate(bundle);
     check(image.is<ZonoBundle>() && image.as<ZonoBundle>().parallel_sets() == 2,
           b + ": a bundle stays a bundle");

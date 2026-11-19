@@ -15,9 +15,9 @@
 // period as exact ratios of the doubles. The oracle's joint set drops the zero generators of the
 // state set as CORA.cpp's evaluate_with_input does.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/neur_net_contr_sys/neur_net_contr_sys.h"
@@ -87,7 +87,7 @@ NonlinearSys pendulum(bool external) {
 }
 
 Zonotope pendulum_X0() {
-    return Zonotope(Tensor({1.0, 0.5}), Tensor({{0.125, 0.0625, 0.0}, {0.0, 0.0625, 0.125}}));
+    return Zonotope(Tensor({1.0, 0.5}), Tensor({{0.125, 0.0}, {0.0625, 0.0625}, {0.0, 0.125}}));
 }
 
 /// The state sets at the ends of the control periods, CORA.cpp's and the oracle's.

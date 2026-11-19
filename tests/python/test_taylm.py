@@ -41,7 +41,7 @@ class Models(unittest.TestCase):
         x = models()
         self.assertEqual(x[0].num_vars, 2)
         self.assertEqual(x[0].bounds(), (1.0, 3.0))
-        z = cora.Taylm.from_zonotope(cora.Zonotope(np.array([1.0, 0.0]), np.array([[1.0, 0.0], [1.0, 2.0]])))
+        z = cora.Taylm.from_zonotope(cora.Zonotope(np.array([1.0, 0.0]), np.array([[1.0, 1.0], [0.0, 2.0]])))
         self.assertEqual(z[1].bounds(), (-3.0, 3.0))
         self.assertEqual(cora.Taylm.constant(2.5, 3).bounds(), (2.5, 2.5))
         self.assertEqual(cora.Taylm.from_range(-1.0, 3.0, 1).bounds(), (-1.0, 3.0))

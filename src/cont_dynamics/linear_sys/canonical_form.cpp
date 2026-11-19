@@ -11,9 +11,9 @@
 //
 // CORA: contDynamics/@linearSys/canonicalForm.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -42,11 +42,11 @@ CanonicalForm LinearSys::canonical_form(const Zonotope &U,
                           std::to_string(U.dim()) + " rows, got " + shape_text(u_vec->shape());
                });
     const Tensor &B = *B_;
-    const Tensor &center = U.center();
-    // the center of U moves to the constant input, the rest stays as the input set
+    // the center of U (a column of the input) moves to the constant input, the rest stays
+    const Tensor center = U.center().expand_dims(-1);
     const Tensor u_input = u_vec ? *u_vec : center.zeros_like();
     const Tensor u = B.matmul(u_input) + B.matmul(center);
-    const Zonotope U_centered{center.zeros_like(), U.generators()};
+    const Zonotope U_centered(U.center().zeros_like(), U.generators());
     return {LinearSys(A(), A().eye_like(), C_), U_centered.linear_map(B), u};
 }
 

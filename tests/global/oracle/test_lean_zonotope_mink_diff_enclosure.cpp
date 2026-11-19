@@ -9,7 +9,7 @@
 // CORA.cpp's. The two do not compute the same set (rho), so there is no ORACLE tag.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -33,12 +33,14 @@ int main() {
         for (const int n : {2, 3}) {
             for (int trial = 0; trial < 3; ++trial) {
                 const Zonotope Z = rnd.zonotope(n, n);
-                const Tensor G2 = Z.generators() * rnd.uniform(0.2, 0.6);
-                const Zonotope Z2(rnd.vector(n) * 0.1, G2);
+                const Tensor G2 = Z.generators().matrix_transpose() * rnd.uniform(0.2, 0.6);
+                const Zonotope Z2 =
+                    Zonotope((rnd.vector(n) * 0.1).squeeze(-1), G2.matrix_transpose());
                 const std::optional<lean::Zonotope> theirs =
                     lean::Zonotope(Z).mink_diff_aligned(lean::Zonotope(Z2), 0.99);
                 if (!theirs) continue;
                 ++certified;
+                // the oracle certified a difference: it must lie in CORA.cpp's
                 const Zonotope mine = Z.mink_diff(Z2, "exact");
                 test::check(mine.contains(theirs->gather().first, "exact", 1e-9),
                             "zonotope.minkDiff: the oracle's difference lies in CORA.cpp's");

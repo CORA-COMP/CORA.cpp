@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/rescale.m
 // PROPERTY: contSet/@conZonotope/rescale.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -28,7 +28,8 @@ void rescale_known(const std::string &b) {
                         column({1.5}));
     for (const char *method : {"exact", "iter"}) {
         const ConZonotope r = a.rescale(method);
-        check(close(r.c(), {0.75, 0.75}, 1e-9) && close(r.generators(), {0.25, 0, 0, 0.25}, 1e-9),
+        check(close(r.c().expand_dims(-1), {0.75, 0.75}, 1e-9) &&
+                  close(r.generators().matrix_transpose(), {0.25, 0, 0, 0.25}, 1e-9),
               b + ": the center and generators (" + method + ")");
         check(close(r.A(), {0.25, 0.25}, 1e-9) && close(r.b(), {0}, 1e-9),
               b + ": the constraint (" + method + ")");

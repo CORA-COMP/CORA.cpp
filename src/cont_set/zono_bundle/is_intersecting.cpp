@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@zonoBundle/isIntersecting_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -36,8 +36,8 @@ detail::Refusal aux_refusal(const ZonoBundle &bundle, const Tensor &other,
         return std::pair{Error::wrong_value,
                          "is_intersecting: the type must be 'exact' or 'approx', got '" + type +
                              "'"};
-    if (const detail::Refusal batch =
-            priv_batch_refusal(bundle.zonotopes().front().center(), "is_intersecting"))
+    if (const detail::Refusal batch = priv_batch_refusal(
+            (bundle.zonotopes().front()).center().expand_dims(-1), "is_intersecting"))
         return batch;
     return priv_batch_refusal(other, "is_intersecting");
 }
@@ -50,9 +50,9 @@ detail::Refusal aux_refusal(const ZonoBundle &bundle, const Tensor &other,
 bool ZonoBundle::is_intersecting(const ZonoBundle &S, const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "is_intersecting");
-    detail::Refusal r =
-        priv_operand_refusal(*this, S.dim(), S.zonotopes().front().center(), "is_intersecting");
-    if (!r) r = aux_refusal(*this, S.zonotopes().front().center(), type);
+    detail::Refusal r = priv_operand_refusal(
+        *this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1), "is_intersecting");
+    if (!r) r = aux_refusal(*this, (S.zonotopes().front()).center().expand_dims(-1), type);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     if (type == "approx") return interval().is_intersecting(S.interval(), tol);
     return !priv_bundle_is_empty(intersect(S));
@@ -61,8 +61,9 @@ bool ZonoBundle::is_intersecting(const ZonoBundle &S, const std::string &type, T
 bool ZonoBundle::is_intersecting(const Zonotope &Z, const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "is_intersecting");
-    detail::Refusal r = priv_operand_refusal(*this, Z.dim(), Z.center(), "is_intersecting");
-    if (!r) r = aux_refusal(*this, Z.center(), type);
+    detail::Refusal r =
+        priv_operand_refusal(*this, Z.dim(), Z.center().expand_dims(-1), "is_intersecting");
+    if (!r) r = aux_refusal(*this, Z.center().expand_dims(-1), type);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // the boxes, or the emptiness of the bundle of both
     if (type == "approx") return interval().is_intersecting(Z.interval(), tol);
@@ -82,7 +83,7 @@ bool ZonoBundle::is_intersecting(const Interval &I, const std::string &type, Tol
 
 bool ZonoBundle::is_intersecting(const Tensor &p, const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
-    const detail::Refusal r = aux_refusal(*this, Z_.front().center(), type);
+    const detail::Refusal r = aux_refusal(*this, Z_.front().center().expand_dims(-1), type);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // CORA tests the points with contains_, whatever the type
     return contains(p, "exact", tol_arg);

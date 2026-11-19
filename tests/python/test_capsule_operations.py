@@ -133,7 +133,7 @@ class Operations(unittest.TestCase):
         rng = np.random.default_rng(7)
         # the zonotope holds the capsule, and a ball is the ellipsoid r^2 I
         Z = self.C.zonotope()
-        self.assertEqual(Z.generators.shape, (2, 3))
+        self.assertEqual(Z.generators.shape, (3, 2))
         self.assertTrue(Z.contains(sample(self.C, rng, 10)))
         ball = capsule([1.0, 2.0], [0.0, 0.0], 3.0)
         np.testing.assert_array_equal(ball.ellipsoid().Q, [[9, 0], [0, 9]])
@@ -150,7 +150,7 @@ class Operations(unittest.TestCase):
         np.testing.assert_array_equal(from_box.c, [2, 1, 0.5])
         np.testing.assert_array_equal(from_box.generator, [2, 0, 0])
         self.assertAlmostEqual(from_box.r, np.sqrt(1.0 + 0.25))
-        zonotope = cora.Zonotope(np.array([1.0, 2.0, 3.0]), rng.standard_normal((3, 4)))
+        zonotope = cora.Zonotope(np.array([1.0, 2.0, 3.0]), rng.standard_normal((4, 3)))
         self.assertTrue(cora.Capsule(zonotope).contains(zonotope))
 
     def test_vertices_and_random(self):

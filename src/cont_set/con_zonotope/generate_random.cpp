@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@conZonotope/generateRandom.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -67,8 +67,9 @@ CORA_FROM_NUMBERS ConZonotope ConZonotope::generate_random(Rng &rng,
     std::vector<double> x0(static_cast<std::size_t>(m)), A(static_cast<std::size_t>(p * m));
     rng.uniform(x0.data(), x0.size(), -1.0, 1.0);
     rng.uniform(A.data(), A.size(), -5.0, 5.0);
-    const Tensor Ae = Tensor::like(Z.center(), A, {p, m});
-    return {Z.center(), Z.generators(), Ae, Ae.matmul(Tensor::like(Z.center(), x0, {m, 1}))};
+    const Tensor Ae = Tensor::like(Z.center().expand_dims(-1), A, {p, m});
+    return {Z.center(), Z.generators(), Ae,
+            Ae.matmul(Tensor::like(Z.center().expand_dims(-1), x0, {m, 1}))};
 }
 
 } // namespace cora

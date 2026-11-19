@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -30,7 +30,7 @@ void the_class_and_the_dimension(const std::string &b) {
     check(I.is<Interval>() && I.get().dim() == 3, b + ": a box of dimension 3");
     const Set Z = ContSet::generate_random(rng, 4, {"zonotope"});
     check(Z.is<Zonotope>() && Z.get().dim() == 4 &&
-              Z.as<Zonotope>().generators().shape().back() == 8,
+              Z.as<Zonotope>().generators().matrix_transpose().shape().back() == 8,
           b + ": a zonotope with 2 n generators");
     int boxes = 0, zonotopes = 0, high = 0;
     for (int k = 0; k < 60; ++k) {

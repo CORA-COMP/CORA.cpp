@@ -14,9 +14,9 @@
 //
 // CORA: contDynamics/@contDynamics/linReach.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
@@ -31,10 +31,10 @@ namespace cora {
 AffineStep priv_affine_step(const LinearSys &sys, const Zonotope &R_delta, const Zonotope &U,
                             const Tensor &u_const, double time_step, int taylor_terms) {
     // the powers of A are shared by every solution of the step
-    const int64_t n = R_delta.center().shape()[0];
+    const int64_t n = R_delta.center().expand_dims(-1).shape()[0];
     TaylorLinSys taylor(sys.A());
     Blocks blocks = priv_one_block(n);
-    const Zonotope u(u_const, u_const.zeros_like({n, 0}));
+    const Zonotope u = Zonotope(u_const.squeeze(-1), u_const.zeros_like({0, n}));
     BlockStep step = priv_one_step(sys, taylor, blocks, R_delta, U, u, time_step, taylor_terms);
     return {std::move(taylor), std::move(blocks), std::move(step.time_interval[0]),
             std::move(step.time_point[0])};
@@ -43,7 +43,8 @@ AffineStep priv_affine_step(const LinearSys &sys, const Zonotope &R_delta, const
 std::optional<Zonotope> priv_centered_inputs(const Tensor &like, int64_t m,
                                              const std::optional<Zonotope> &U) {
     if (m == 0) return std::nullopt;
-    return U ? *U - U->center() : Zonotope(like.zeros_like({m, 1}), like.zeros_like({m, 0}));
+    return U ? *U - U->center().expand_dims(-1)
+             : Zonotope(like.zeros_like({m}), like.zeros_like({0, m}));
 }
 
 void priv_check_exploded(const Tensor &error) {

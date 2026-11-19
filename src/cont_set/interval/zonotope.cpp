@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -46,13 +46,16 @@ Zonotope Interval::zonotope() const {
         // one interval (n, 1): the generators of its axes directly, no dense n x n diagonal
         const int64_t n = r.shape()[0], k = static_cast<int64_t>(axes.size());
         const std::vector<double> radius = r.data();
+        // generator j is the row (k, n) with the radius of the axis axes[j]
         std::vector<double> G(static_cast<size_t>(n * k), 0.0);
-        for (int64_t j = 0; j < k; ++j)
-            G[static_cast<size_t>(axes[static_cast<size_t>(j)] * k + j)] =
-                radius[static_cast<size_t>(axes[static_cast<size_t>(j)])];
-        return {c, k == 0 ? r.zeros_like({n, 0}) : Tensor::like(r, G, {n, k})};
+        for (int64_t j = 0; j < k; ++j) {
+            const int64_t axis = axes[static_cast<size_t>(j)];
+            G[static_cast<size_t>(j * n + axis)] = radius[static_cast<size_t>(axis)];
+        }
+        return Zonotope(c.squeeze(-1), k == 0 ? r.zeros_like({0, n}) : Tensor::like(r, G, {k, n}));
     }
-    return {c, priv_select_generators(r.diag(), axes)};
+    // the rows of the diagonal at the axes with a radius (the diagonal is symmetric)
+    return Zonotope(c.squeeze(-1), priv_select_generators(r.diag(), axes));
 }
 
 } // namespace cora

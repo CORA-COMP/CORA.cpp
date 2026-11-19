@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/affineSolution.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -26,14 +26,14 @@ namespace {
 void the_end_of_the_step_adds_the_input(const std::string &b) {
     const Tensor A = diagonal(), u = test::column({1.0, -1.0});
     const AffineSolution S = LinearSys(A).affine_solution(initial_set(), u, kStep, kTerms);
-    const Tensor center = flow(A, kStep, initial_set().center()) +
+    const Tensor center = flow(A, kStep, initial_set().center().expand_dims(-1)) +
                           (A.inv().matmul((A * kStep).expm() - Tensor::eye(2))).matmul(u);
-    check(test::close(S.time_point.center(), center, 1e-14), b + ": the center");
-    check(test::close(S.time_point.generators(),
+    check(test::close(S.time_point.center().expand_dims(-1), center, 1e-14), b + ": the center");
+    check(test::close(S.time_point.generators().matrix_transpose(),
                       {std::exp(-kStep), 0.0, 0.0, 0.5 * std::exp(-2 * kStep)}, 1e-15),
           b + ": the generators of e^{A dt} X");
-    check(test::close(S.constant.center(), {1 - std::exp(-kStep), -(1 - std::exp(-2 * kStep)) / 2},
-                      1e-14),
+    check(test::close(S.constant.center().expand_dims(-1),
+                      {1 - std::exp(-kStep), -(1 - std::exp(-2 * kStep)) / 2}, 1e-14),
           b + ": the part of the input");
 }
 
@@ -51,8 +51,9 @@ void the_step_is_enclosed(const std::string &b) {
             check(S.time_interval.contains(xt), b + ": a trajectory");
         }
     }
-    check(S.time_interval.contains(S.time_point.center()), b + ": the end");
-    check(test::close(G.matmul(u), S.constant.center(), 1e-14), b + ": the same constant part");
+    check(S.time_interval.contains(S.time_point.center().expand_dims(-1)), b + ": the end");
+    check(test::close(G.matmul(u), S.constant.center().expand_dims(-1), 1e-14),
+          b + ": the same constant part");
 }
 
 /// A u of the wrong shape, a set of the wrong dimension and a batch of systems are refused.
@@ -69,10 +70,10 @@ void checks_and_their_switch(const std::string &b) {
     check(
         test::raises([&] { sys.affine_solution(initial_set(), u, kStep, 0); }, Error::wrong_value),
         b + ": no terms");
-    const Tensor on = sys.affine_solution(initial_set(), u, kStep, kTerms).time_point.center();
+    const Tensor on = (sys.affine_solution(initial_set(), u, kStep, kTerms).time_point).center();
     ChecksScope off(false);
-    check(test::close(sys.affine_solution(initial_set(), u, kStep, kTerms).time_point.center(), on,
-                      0),
+    check(test::close((sys.affine_solution(initial_set(), u, kStep, kTerms).time_point).center(),
+                      on, 0),
           b + ": the same with the checks off");
 }
 

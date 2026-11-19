@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/polytope.m
 // PROPERTY: contSet/@conZonotope/polytope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -52,8 +52,9 @@ int main() {
     const Tensor batched = Tensor::from_data({0.0, 0.0, 1.0, 1.0}, {2, 2, 1});
     check(test::raises(
               [&] {
-                  ConZonotope(batched, Tensor::from_data({1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0},
-                                                         {2, 2, 2}))
+                  ConZonotope(batched,
+                              Tensor::from_data({1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0}, {2, 2, 2})
+                                  .matrix_transpose())
                       .polytope();
               },
               Error::not_supported),

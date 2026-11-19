@@ -143,7 +143,7 @@ std::vector<Zonotope> aux_inputs(const Model &m, double u1) {
         const auto n = int64_t(f.c.size());
         const Tensor u = column({u1, 0});
         const Tensor point = Tensor::from_data(f.B, {n, 2}).matmul(u) + column(f.c);
-        U.emplace_back(point, Tensor::zeros({n, 0}));
+        U.emplace_back(point, Tensor::zeros({0, n}));
     }
     return U;
 }
@@ -202,9 +202,10 @@ int main(int argc, char **argv) {
         std::vector<Zonotope> R0;
         if (name == "DTN06")
             for (double s : {0.75, 0.25, -0.25, -0.75})
-                R0.emplace_back(m.center + delta * s, delta * 0.25);
+                R0.emplace_back(m.center + delta * s,
+                                delta.matrix_transpose() * 0.25); // one generator row
         else
-            R0.emplace_back(m.center, delta);
+            R0.emplace_back(m.center, delta.matrix_transpose());
         const auto start = std::chrono::steady_clock::now();
         const bool verified = aux_run(m, R0, a);
         const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;

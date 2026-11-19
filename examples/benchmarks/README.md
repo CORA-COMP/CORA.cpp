@@ -237,6 +237,9 @@ bounds with it in directed order (`ConZonotope::Cut::interval_cert`, CORALean's
 `intervalCertWith`): as tight as CORA's ranges, outer whatever the solver answers. BRKNC01
 (`conZonotope`, order 5) loses its verdict with the passes: 2.7 s and verdict 0 for any number of
 passes from 1 to 1000. The driver of BRKNC01 and BRKNP01 therefore sets `box = cert`.
+BRKNC01 holds by a narrow margin: the largest x2 is about 2e-4 below x0 = 0.05, and a change in the
+last bits of one eigen sum moves it by about 7e-4 over the 1000 periods (#163). The eigen kernels
+sum in CORALean's order, so no order is chosen because it happens to verify.
 
 **RND01-06** are the random benchmarks of the ARCH26 report: x' = A x + B u, y = C x with m = 5 inputs, intervals as
 initial and input set, and unsafe sets at the border of the reachable set (the report's property (1), so the

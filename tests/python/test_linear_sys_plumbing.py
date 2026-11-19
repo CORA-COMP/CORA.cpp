@@ -35,8 +35,8 @@ def expm(M):
 
 # a damped oscillator coupled to a decaying state, a set and an input set
 A = np.array([[-0.1, 1.0, 0.0], [-1.0, -0.1, 0.0], [0.0, 0.0, -0.5]])
-X0 = cora.Zonotope(np.array([1.0, 0.5, -1.0]), np.array([[0.2, 0.0, 0.1], [0.0, 0.1, 0.0], [0.0, 0.0, 0.3]]))
-U = cora.Zonotope(np.array([1.0, 2.0, 0.5]), np.array([[0.1, 0.0], [0.0, 0.2], [0.1, 0.1]]))
+X0 = cora.Zonotope(np.array([1.0, 0.5, -1.0]), np.array([[0.2, 0.0, 0.0], [0.0, 0.1, 0.0], [0.1, 0.0, 0.3]]))
+U = cora.Zonotope(np.array([1.0, 2.0, 0.5]), np.array([[0.1, 0.0, 0.1], [0.0, 0.2, 0.1]]))
 
 
 # ============================================  MAIN  ============================================ #

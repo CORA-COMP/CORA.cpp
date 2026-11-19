@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/homogeneousSolution.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -26,8 +26,8 @@ void the_end_of_the_step_is_e_adt_x(const std::string &b) {
     const HomogeneousSolution H =
         LinearSys(diagonal()).homogeneous_solution(initial_set(), kStep, kTerms);
     const double a = std::exp(-kStep), c = std::exp(-2 * kStep);
-    check(test::close(H.time_point.center(), {a, 2 * c}, 1e-15), b + ": center");
-    check(test::close(H.time_point.generators(), {a, 0.0, 0.0, 0.5 * c}, 1e-15),
+    check(test::close(H.time_point.center().expand_dims(-1), {a, 2 * c}, 1e-15), b + ": center");
+    check(test::close(H.time_point.generators().matrix_transpose(), {a, 0.0, 0.0, 0.5 * c}, 1e-15),
           b + ": generators");
 }
 
@@ -64,11 +64,11 @@ void checks_and_their_switch(const std::string &b) {
                        Error::wrong_value),
           b + ": no terms");
     const Tensor on =
-        sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval.generators();
+        (sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval).generators();
     ChecksScope off(false);
     check(test::close(
-              sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval.generators(), on,
-              0),
+              (sys.homogeneous_solution(initial_set(), kStep, kTerms).time_interval).generators(),
+              on, 0),
           b + ": the same with the checks off");
 }
 

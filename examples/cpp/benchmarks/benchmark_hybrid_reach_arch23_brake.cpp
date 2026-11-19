@@ -13,7 +13,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -57,7 +57,7 @@ bool aux_brkdc01() {
     const LinearSys sys(aux_A(0), column({0, 0, 0, 0}));
     const Tensor resetA = matrix(4, 4, {1, 0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0, -T_sample, 0, 1});
     const Tensor resetc = column({0, 0, x0, T_sample * x0});
-    ReachProblem problem{Zonotope(column({0, 0, 0, 0}), Tensor::zeros({4, 0})), std::nullopt,
+    ReachProblem problem{Zonotope(column({0, 0, 0, 0}), Tensor::zeros({0, 4})), std::nullopt,
                          T_sample};
     const alg::Standard a{T_sample / 5, 5, 20};
     std::vector<Set> sets;
@@ -121,13 +121,13 @@ bool aux_brknp01() {
     const Cycle c = aux_cycle();
     std::vector<double> spread(25, 0.0);
     spread[0] = 3;
-    const LinParamSys flow(MatZonotope(aux_A(1), matrix(5, 5, spread).expand_dims(0)),
+    const LinParamSys flow(Zonotope::matrix(aux_A(1), matrix(5, 5, spread).expand_dims(0)),
                            column({0, 0, 0, 0, 1}));
     const Location loc("loc1", c.invariant, {Transition(c.guard, c.reset, 0)}, flow);
     const HybridAutomaton HA("brake_BRKNP01", {loc});
     HybridReachProblem problem;
     problem.initial_set = Zonotope(column({0, 0, 0, 0, 0}), Tensor::eye(5) * 1e-8);
-    problem.input_set = {Zonotope(column({1}), Tensor::zeros({1, 0}))};
+    problem.input_set = {Zonotope(column({1}), Tensor::zeros({0, 1}))};
     problem.t_final = 0.1;
     alg::HybridStandard a = aux_options(10);
     a.intermediate_terms = 3;

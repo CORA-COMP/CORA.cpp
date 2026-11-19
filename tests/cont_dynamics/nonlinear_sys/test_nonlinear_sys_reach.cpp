@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
@@ -126,7 +126,7 @@ void the_zonotope_order_limits_the_generators(const std::string &b) {
     // CORA reduces in post, so the sets of the first step keep all their generators
     int64_t most = 0;
     for (std::size_t k = 2; k < R.time_point.size(); ++k)
-        most = std::max(most, R.time_point[k].generators().shape()[1]);
+        most = std::max(most, R.time_point[k].nr_generators());
     check(most <= 3 * 2, b + ": at most order * n = 6 generators, found " + std::to_string(most));
 }
 
@@ -212,12 +212,12 @@ void checks_and_their_switch() {
               Error::not_supported),
           "reach: an input set");
     const ReachProblem problem{.initial_set = X0, .t_final = 0.5};
+    // the center of the last set, with the checks on and off
     const Tensor on =
-        sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back().center();
+        (sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back()).center();
     ChecksScope off(false);
-    // the same with the checks off
     check(test::close(
-              sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back().center(),
+              (sys.reach(problem, alg::Linearization{.time_step = 0.1}).time_point.back()).center(),
               on, 0),
           "reach: the same with the checks off");
 }

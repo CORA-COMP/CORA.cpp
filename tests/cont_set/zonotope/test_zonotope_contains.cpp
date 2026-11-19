@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Adrian Kulmburg, Ivan Brkan
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -43,10 +43,10 @@ void points_in_a_diamond(const std::string &b) {
 
 /// The special cases of CORA's contains_: a point, a box, and a flat zonotope.
 void special_zonotopes(const std::string &b) {
-    const Zonotope point(column({1.0, 2.0}), Tensor({{0.0}, {0.0}}));
+    const Zonotope point(column({1.0, 2.0}), Tensor({{0.0, 0.0}}));
     check(point.contains(column({1.0, 2.0})) && !point.contains(column({1.0, 2.5})),
           b + ": a point");
-    check(point.contains(Zonotope(column({1.0, 2.0}), Tensor({{0.0}, {0.0}}))),
+    check(point.contains(Zonotope(column({1.0, 2.0}), Tensor({{0.0, 0.0}}))),
           b + ": a point holds itself");
     check(!point.contains(diamond()), b + ": a point holds no set");
     const Zonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
@@ -55,7 +55,7 @@ void special_zonotopes(const std::string &b) {
           b + ": a box holds a box");
     check(!box.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.5}))),
           b + ": a box, not a larger one");
-    const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(segment.contains(column({0.5, 0.5})), b + ": a segment holds its points");
     check(!segment.contains(column({0.5, 0.6})), b + ": and no other");
 }
@@ -110,8 +110,8 @@ void polymax_agrees_with_venum(const std::string &b) {
               b + ": polymax and venum agree, trial " + std::to_string(trial));
         check(Z.contains(T) == Z.contains(T, "exact:polymax"), b + ": exact is polymax");
     }
-    const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
-    const Zonotope half(column({0.0, 0.0}), Tensor({{0.5}, {0.5}}));
+    const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope half(column({0.0, 0.0}), Tensor({{0.5, 0.5}}));
     check(segment.contains(half, "exact:polymax"), b + ": a flat zonotope holds half of itself");
     check(!segment.contains(half + column({0.0, 0.1}), "exact:polymax"), b + ": not off its line");
 }

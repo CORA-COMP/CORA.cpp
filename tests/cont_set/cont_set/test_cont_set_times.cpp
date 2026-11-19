@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -30,21 +30,21 @@ namespace {
 
 /// A column scales per coordinate, a number scales all; for a zonotope and a box.
 void times_scales(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({0.5, 0.0, 0.2, 0.5}, {2, 2}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({0.5, 0.2, 0.0, 0.5}, {2, 2}));
     const Interval I(column({-1.0, 0.0}), column({2.0, 3.0}));
     const Tensor f = column({2.0, -1.0});
     const Set A = static_cast<const ContSet &>(Z).times(f),
               B = static_cast<const ContSet &>(I).times(f);
-    check(A.is<Zonotope>() && test::close(A.as<Zonotope>().center(), {2.0, -2.0}) &&
-              test::close(A.as<Zonotope>().generators(), {1.0, 0.0, -0.2, -0.5}),
+    check(A.is<Zonotope>() && test::close(A.as<Zonotope>().center().expand_dims(-1), {2.0, -2.0}) &&
+              test::close(A.as<Zonotope>().generators().matrix_transpose(), {1.0, 0.0, -0.2, -0.5}),
           b + ": a zonotope by a column");
     check(B.is<Interval>() && test::close(B.as<Interval>().inf(), {-2.0, -3.0}) &&
               test::close(B.as<Interval>().sup(), {4.0, 0.0}),
           b + ": a box by a column");
     const Set C = static_cast<const ContSet &>(Z).times(3.0),
               D = static_cast<const ContSet &>(I).times(-2.0);
-    check(test::close(C.as<Zonotope>().center(), {3.0, 6.0}) &&
-              test::close(C.as<Zonotope>().generators(), {1.5, 0.0, 0.6, 1.5}),
+    check(test::close(C.as<Zonotope>().center().expand_dims(-1), {3.0, 6.0}) &&
+              test::close(C.as<Zonotope>().generators().matrix_transpose(), {1.5, 0.0, 0.6, 1.5}),
           b + ": a zonotope by a number");
     check(test::close(D.as<Interval>().inf(), {-4.0, -6.0}) &&
               test::close(D.as<Interval>().sup(), {2.0, 0.0}),

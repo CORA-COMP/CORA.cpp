@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@zonotope/isFullDim.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -46,7 +46,7 @@ bool Zonotope::is_full_dim(Tol tol_arg) const {
     const double tol = resolve_tol(entry, tol_arg, G_.dtype(), "is_full_dim");
     const Refusal refusal = aux_refusal(G_);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_full_dim: " + refusal->second; });
-    return G_.shape().back() > 0 && G_.matrix_rank(tol) == dim();
+    return nr_generators() > 0 && G_.matrix_rank(tol) == dim();
 }
 
 std::pair<bool, Tensor> Zonotope::is_full_dim_subspace(Tol tol_arg) const {
@@ -55,10 +55,11 @@ std::pair<bool, Tensor> Zonotope::is_full_dim_subspace(Tol tol_arg) const {
     const Refusal refusal = aux_refusal(G_);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_full_dim: " + refusal->second; });
     const int64_t n = dim();
-    if (G_.shape().back() == 0) return {n == 0, G_.zeros_like({n, 0})};
+    if (nr_generators() == 0) return {n == 0, G_.zeros_like({n, 0})};
     const int64_t rank = G_.matrix_rank(tol);
     if (rank == n) return {true, G_.eye_like(n)};
-    return {false, G_.svd()[0].slice(-1, 0, rank)};
+    // the basis (n, r): the left singular vectors of CORA's columns
+    return {false, G_.matrix_transpose().svd()[0].slice(-1, 0, rank)};
 }
 
 bool Zonotope::is_full_dim_impl(Tol tol) const { return is_full_dim(tol); }

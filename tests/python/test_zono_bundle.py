@@ -102,7 +102,7 @@ class ZonoBundle(unittest.TestCase):
 
     def test_intersect_and_cart_prod(self):
         zB = squares()
-        Z = zonotope([0.0, 1.0], [[1.0], [1.0]])
+        Z = zonotope([0.0, 1.0], [[1.0, 1.0]])
         self.assertEqual(zB.intersect(Z).parallel_sets, 3)
         self.assertEqual(zB.intersect(cora.Interval(np.zeros(2), np.ones(2))).parallel_sets, 3)
         self.assertEqual(zB.intersect(zB).parallel_sets, 4)
@@ -119,12 +119,12 @@ class ZonoBundle(unittest.TestCase):
     def test_enclose(self):
         # enclose with a zonotope
         zB = squares()
-        R = zB.enclose(zonotope([4.0, 0.0], [[1.0], [0.5]]))
+        R = zB.enclose(zonotope([4.0, 0.0], [[1.0, 0.5]]))
         self.assertEqual(R.parallel_sets, 2)
         S = zB.enclose(cora.ZonoBundle([zonotope([4.0, 0.0], np.eye(2))] * 2))
         self.assertEqual(S.parallel_sets, 2)
         M = np.array([[0.0, -1.0], [1.0, 0.0]])
-        self.assertEqual(zB.enclose(M, zonotope([0.5, 0.5], [[0.1], [0.0]])).parallel_sets, 2)
+        self.assertEqual(zB.enclose(M, zonotope([0.5, 0.5], [[0.1, 0.0]])).parallel_sets, 2)
         shift = cora.ZonoBundle([zonotope([0.5, 0.5], np.eye(2))] * 3)
         self.assertEqual(zB.enclose(M, shift).parallel_sets, 2)
         self.assertIsInstance(zB.enclose(zonotope([0.0, 0.0], np.eye(2))), cora.ZonoBundle)

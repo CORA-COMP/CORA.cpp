@@ -3,9 +3,9 @@
 // The parts that need no oracle run always; with CORACPP_ORACLE set, round_to and the zonotope
 // operations are checked against the oracle too.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/oracle.h"
@@ -92,8 +92,9 @@ int main() {
         const lean::Zonotope Zm =
             Z.linear_map(lean::Tensor::from(Tensor({{0.1, 0.0}, {0.0, 0.1}})));
         const auto [nominal, err] = Zm.gather();
-        test::check(test::close(nominal.center(), std::vector<double>{0.1, 0.0}, 1e-15),
-                    "nominal center");
+        test::check(
+            test::close(nominal.center().expand_dims(-1), std::vector<double>{0.1, 0.0}, 1e-15),
+            "nominal center");
         test::check(err.inf().data()[0] <= 0 && err.sup().data()[0] >= 0,
                     "the error box contains 0");
 

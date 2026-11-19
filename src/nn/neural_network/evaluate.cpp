@@ -31,9 +31,9 @@
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA: nn/@neuralNetwork/getRefinableLayers.m
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   13-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -377,21 +377,38 @@ Rows aux_rows(const Tensor &c, const Tensor &G, const Tensor &GI, const Exponent
     return r;
 }
 
+/// CORA's columns of a polynomial zonotope, which the layers map row by row (one row per neuron):
+/// the center (n, 1), the generators (n, h) and (n, q).
+struct CoraColumns {
+    explicit CoraColumns(const PolyZonotope &X)
+        : c(X.center().expand_dims(-1)), G(X.generators().matrix_transpose()),
+          GI(X.independent_generators().matrix_transpose()) {}
+    Tensor c, G, GI;
+};
+
+/// The polynomial zonotope of CORA's columns c (n, 1), G (n, h) and GI (n, q).
+PolyZonotope aux_of_columns(const Tensor &c, const Tensor &G, const Tensor &GI, Exponents E,
+                            std::vector<int64_t> ids) {
+    return {c.squeeze(-1), G.matrix_transpose(), GI.matrix_transpose(), std::move(E),
+            std::move(ids)};
+}
+
 /// The rows of a polynomial zonotope that track their exponents and factors, for the layers of
 /// order k.
 Rows aux_tracked_rows(const PolyZonotope &X) {
-    Rows r = aux_rows(X.center(), X.generators(), X.independent_generators(), X.exponents());
+    const CoraColumns x(X);
+    Rows r = aux_rows(x.c, x.G, x.GI, X.exponents());
     r.track = true;
     r.E = X.exponents();
     r.ids = X.ids();
     r.last_id = X.ids().empty() ? 0 : *std::max_element(X.ids().begin(), X.ids().end());
-    for (int64_t j = 0; j < X.independent_generators().shape()[1]; ++j) r.gi_src.push_back(j);
+    for (int64_t j = 0; j < x.GI.shape()[1]; ++j) r.gi_src.push_back(j);
     return r;
 }
 
 /// The set with its independent generators made dependent, each with a factor of its own.
 PolyZonotope aux_restructured(const PolyZonotope &X) {
-    const int64_t q = X.independent_generators().shape()[1];
+    const int64_t q = X.independent_generators().shape()[0];
     if (q == 0) return X;
     // the factors of the independent generators follow the old ones
     std::vector<int64_t> ids = X.ids();
@@ -404,8 +421,8 @@ PolyZonotope aux_restructured(const PolyZonotope &X) {
         column[X.ids().size() + std::size_t(j)] = 1;
         E.push_back(column);
     }
-    return {X.center(), Tensor::concat({X.generators(), X.independent_generators()}, 1),
-            X.independent_generators().slice(-1, 0, 0), E, ids};
+    return {X.center(), Tensor::concat({X.generators(), X.independent_generators()}, -2),
+            X.independent_generators().slice(-2, 0, 0), E, ids};
 }
 
 /// Whether any layer needs the rows tracked (an order above 1, a limit on the generators, or a
@@ -443,12 +460,13 @@ PolyZonotope aux_joint(const PolyZonotope &X, const Rows &r) {
     const Exponents Er = widen(r.E, r.ids);
     E.insert(E.end(), Er.begin(), Er.end());
     // the dependent generators side by side, each block zero in the rows of the other
+    const CoraColumns x(X);
     const int64_t n = X.dim(), m = r.c.shape()[0], hx = X.num_dependent(), hr = r.G.shape()[1];
-    const Tensor zero_x = X.center().zeros_like({n, hr}), zero_r = r.c.zeros_like({m, hx});
-    const Tensor G = Tensor::concat(
-        {Tensor::concat({X.generators(), zero_x}, 1), Tensor::concat({zero_r, r.G}, 1)}, 0);
+    const Tensor zero_x = x.c.zeros_like({n, hr}), zero_r = r.c.zeros_like({m, hx});
+    const Tensor G =
+        Tensor::concat({Tensor::concat({x.G, zero_x}, 1), Tensor::concat({zero_r, r.G}, 1)}, 0);
     // the independent generators: those of X with the image of each, then the ones of the layers
-    const int64_t q = X.independent_generators().shape()[1], qr = r.GI.shape()[1];
+    const int64_t q = x.GI.shape()[1], qr = r.GI.shape()[1];
     std::vector<int64_t> extra;
     std::vector<Tensor> images(std::size_t(q), r.c.zeros_like({m, 1}));
     for (int64_t j = 0; j < qr; ++j) {
@@ -457,12 +475,11 @@ PolyZonotope aux_joint(const PolyZonotope &X, const Rows &r) {
         else
             extra.push_back(j);
     }
-    Tensor GI =
-        Tensor::concat({X.independent_generators(), r.c.zeros_like({n, int64_t(extra.size())})}, 1);
+    Tensor GI = Tensor::concat({x.GI, r.c.zeros_like({n, int64_t(extra.size())})}, 1);
     Tensor below = q > 0 ? Tensor::concat(images, 1) : r.c.zeros_like({m, 0});
     if (!extra.empty()) below = Tensor::concat({below, r.GI.take(extra, -1)}, 1);
     GI = Tensor::concat({GI, below}, 0);
-    return {Tensor::concat({X.center(), r.c}, 0), G, GI, E, ids};
+    return aux_of_columns(Tensor::concat({x.c, r.c}, 0), G, GI, E, ids);
 }
 
 /// The options of a set evaluation: an order is at least 1.
@@ -490,14 +507,13 @@ PolyZonotope aux_evaluate(const std::vector<NeuralNetwork::Layer> &layers,
                                   options.add_approx_error_to_gi, false, options, errors);
         return aux_joint(Xs, r);
     }
-    const Rows r =
-        aux_layers(layers, activations,
-                   aux_rows(X.center(), X.generators(), X.independent_generators(), X.exponents()),
-                   options.add_approx_error_to_gi, false, options, errors);
+    const CoraColumns x(X);
+    const Rows r = aux_layers(layers, activations, aux_rows(x.c, x.G, x.GI, X.exponents()),
+                              options.add_approx_error_to_gi, false, options, errors);
     // the input rows keep their generators, and are zero in the generators the errors added
-    const int64_t n = X.dim(), h = X.num_dependent(), q = X.independent_generators().shape()[1];
-    const Tensor zeros_G = X.center().zeros_like({n, r.G.shape()[1] - h});
-    const Tensor zeros_GI = X.center().zeros_like({n, r.GI.shape()[1] - q});
+    const int64_t n = X.dim(), h = X.num_dependent(), q = x.GI.shape()[1];
+    const Tensor zeros_G = x.c.zeros_like({n, r.G.shape()[1] - h});
+    const Tensor zeros_GI = x.c.zeros_like({n, r.GI.shape()[1] - q});
     // the new factors follow the old ones, with identifiers beyond all of them
     std::vector<int64_t> ids = X.ids();
     const int64_t first = ids.empty() ? 1 : *std::max_element(ids.begin(), ids.end()) + 1;
@@ -509,10 +525,9 @@ PolyZonotope aux_evaluate(const std::vector<NeuralNetwork::Layer> &layers,
         column[X.ids().size() + std::size_t(j)] = 1;
         E.push_back(column);
     }
-    return {Tensor::concat({X.center(), r.c}, 0),
-            Tensor::concat({Tensor::concat({X.generators(), zeros_G}, 1), r.G}, 0),
-            Tensor::concat({Tensor::concat({X.independent_generators(), zeros_GI}, 1), r.GI}, 0), E,
-            ids};
+    return aux_of_columns(Tensor::concat({x.c, r.c}, 0),
+                          Tensor::concat({Tensor::concat({x.G, zeros_G}, 1), r.G}, 0),
+                          Tensor::concat({Tensor::concat({x.GI, zeros_GI}, 1), r.GI}, 0), E, ids);
 }
 
 } // namespace
@@ -573,21 +588,23 @@ Zonotope NeuralNetwork::evaluate(const Zonotope &X, const NnOptions &options) co
             return std::string("evaluate: a zonotope takes the poly_method singh or regression");
         });
     // the layers on the set, its generators independent; a zero generator stays for an exact neuron
-    const Tensor none = X.generators().slice(-1, 0, 0);
-    const Rows r = aux_layers(layers_, activations_, aux_rows(X.center(), none, X.generators(), {}),
-                              true, true, options);
-    return {r.c, r.GI};
+    const Tensor none = X.generators().matrix_transpose().slice(-1, 0, 0);
+    const Rows r = aux_layers(
+        layers_, activations_,
+        aux_rows(X.center().expand_dims(-1), none, X.generators().matrix_transpose(), {}), true,
+        true, options);
+    return Zonotope(r.c.squeeze(-1), r.GI.matrix_transpose());
 }
 
 Zonotope NeuralNetwork::evaluate_with_input(const Zonotope &X, const NnOptions &options) const {
     detail::Entry entry;
     // the generators of a zonotope are independent: the polynomial zonotope without dependent ones
-    const Tensor none = X.generators().slice(-1, 0, 0);
+    const Tensor none = X.generators().slice(-2, 0, 0);
     NnOptions opt = options;
     opt.add_approx_error_to_gi = true;
     const PolyZonotope joint =
         evaluate_with_input(PolyZonotope(X.center(), none, X.generators(), {}, {}), opt);
-    return {joint.center(), joint.independent_generators()};
+    return Zonotope(joint.center(), joint.independent_generators());
 }
 
 PolyZonotope NeuralNetwork::evaluate_with_input(const PolyZonotope &X,
@@ -629,8 +646,8 @@ PolyZonotope NeuralNetwork::evaluate(const PolyZonotope &X, const NnOptions &opt
     // the output rows of the pairs
     const PolyZonotope joint = evaluate_with_input(X, options);
     const int64_t n = input_dim(), m = output_dim();
-    return {joint.center().slice(0, n, n + m), joint.generators().slice(0, n, n + m),
-            joint.independent_generators().slice(0, n, n + m), joint.exponents(), joint.ids()};
+    return {joint.center().slice(0, n, n + m), joint.generators().slice(-1, n, n + m),
+            joint.independent_generators().slice(-1, n, n + m), joint.exponents(), joint.ids()};
 }
 
 } // namespace cora

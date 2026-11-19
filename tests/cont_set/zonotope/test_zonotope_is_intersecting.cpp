@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -44,7 +44,7 @@ void intersecting_known(const std::string &b) {
           b + ": their boxes meet, so 'approx' says true");
     check(diamond.is_intersecting(Interval(column({0.2, 0.2}), column({1.0, 1.0}))),
           b + ": a box that cuts the diamond");
-    check(!diamond.is_intersecting(Zonotope(column({0.9, 0.9}), Tensor({{0.1}, {0.1}}))),
+    check(!diamond.is_intersecting(Zonotope(column({0.9, 0.9}), Tensor({{0.1, 0.1}}))),
           b + ": a segment beyond the corner");
 
     check(diamond.is_intersecting(column({0.5, 0.5})), b + ": a point on the boundary");
@@ -84,8 +84,7 @@ void intersecting_property(const std::string &b) {
 
 /// The refusals, and the call with the checks off.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {0.0}})),
-        Z1(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(column({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Z.is_intersecting(Z1); }, Error::dimension_mismatch),
           "is_intersecting: dimensions");
     check(test::raises([&] { Z.is_intersecting(column({1.0})); }, Error::dimension_mismatch),

@@ -18,9 +18,9 @@
 //
 // CORA: contSet/@conZonotope/intersectStrip.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -36,12 +36,14 @@ namespace cora {
 
 namespace {
 
+// The set of the strips ---------------------------------------------------------------------------
+
 /// The set of the zonotope Z that the gain made (center, generators), with the constraints of cz
 /// and the rows C G x - phi x_new = y - C c for the new factors.
 ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tensor &C,
                             const Tensor &phi, const Tensor &y) {
     const int64_t k = C.shape()[0];
-    const Tensor CG = C.matmul(cz.generators());
+    const Tensor CG = C.matmul(cz.generators().matrix_transpose());
     Shape widths = CG.shape();
     widths.back() = k;
     const Tensor rows = Tensor::concat({CG, -phi.diag().broadcast_to(widths)}, -1);
@@ -49,8 +51,11 @@ ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tens
         {Tensor::concat({cz.A(), zeros_block(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
          rows},
         -2);
-    return {Z.center(), Z.generators(), A, Tensor::concat({cz.b(), y - C.matmul(cz.c())}, -2)};
+    return {Z.center(), Z.generators(), A,
+            Tensor::concat({cz.b(), y - C.matmul(cz.c().expand_dims(-1))}, -2)};
 }
+
+// Refusals ----------------------------------------------------------------------------------------
 
 /// Why the method is refused for the strips, if it is: an unknown one, one that needs an optimizer
 /// or an observer, one for a single strip, or 'bravo' for a batch.
@@ -68,7 +73,7 @@ detail::Refusal aux_method_refusal(const ConZonotope &cz, const Tensor &C,
                                      "observer: pass a StripObserver")};
     if (method == "alamo-FRad" && C.shape()[0] != 1)
         return std::pair{Error::special_error, "'" + method + "' is for a single strip"};
-    if (method == "bravo" && cz.c().ndim() != 2)
+    if (method == "bravo" && cz.c().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("'bravo' chooses among candidates per set; it supports a "
                                      "single set, not a batch")};

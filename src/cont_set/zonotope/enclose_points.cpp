@@ -15,9 +15,9 @@
 //
 // CORA: contSet/@zonotope/enclosePoints.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -68,7 +68,8 @@ Zonotope aux_cloud_to_zonotope(Tensor X, double ratio) {
     }
     const Interval box = aux_box_of_points(X);
     generators.push_back(box.rad().diag());
-    return {c + box.center(), Tensor::concat(generators, -1)};
+    return Zonotope((c + box.center()).squeeze(-1),
+                    Tensor::concat(generators, -1).matrix_transpose());
 }
 
 // Checks ------------------------------------------------------------------------------------------
@@ -102,8 +103,8 @@ Zonotope Zonotope::enclose_points(const Tensor &points, const Tensor &U) {
     const Tensor sample = points - mean;
     const Tensor oriented = U.matrix_transpose().matmul(sample);
     const Tensor top = oriented.max(-1, true), bottom = oriented.min(-1, true);
-    return {mean + U.matmul((top + bottom) / 2.0),
-            U.multiply(((top - bottom) * 0.5).matrix_transpose())};
+    return Zonotope((mean + U.matmul((top + bottom) / 2.0)).squeeze(-1),
+                    (U.multiply(((top - bottom) * 0.5).matrix_transpose())).matrix_transpose());
 }
 
 Zonotope Zonotope::enclose_points(const Tensor &points, const std::string &method) {
@@ -127,7 +128,7 @@ Zonotope Zonotope::enclose_points(const Tensor &points, const std::string &metho
     double least = std::numeric_limits<double>::infinity();
     for (int i = 1; i <= 100; ++i) {
         const Zonotope Z = aux_cloud_to_zonotope(points, i / 100.0);
-        const Tensor &G = Z.generators();
+        const Tensor &G = Z.generators().matrix_transpose();
         const double trace = G.matrix_transpose().matmul(G).trace().detach().item();
         if (trace < least) {
             least = trace;

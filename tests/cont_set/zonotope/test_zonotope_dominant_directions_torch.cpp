@@ -1,8 +1,8 @@
 // test_zonotope_dominant_directions_torch - zonotope dominant_directions: gradients through torch
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -18,7 +18,7 @@ namespace {
 
 /// The columns are generators, chosen on detached values: the gradient is one on the chosen ones.
 void dominant_directions_gradient() {
-    const std::vector<torch::Tensor> Z = test::random_zonotope(3, 8);
+    const std::vector<torch::Tensor> Z = test::random_zonotope_rows(3, 8);
     test::gradcheck(
         "dominant_directions",
         [](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).dominant_directions()}; }, Z);

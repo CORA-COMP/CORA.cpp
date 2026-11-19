@@ -8,9 +8,9 @@
 // The generators here are in general position, so that no two are parallel (CORA.cpp merges them,
 // CORALean keeps both) and none vanishes.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -34,7 +34,7 @@ Tensor aux_columns(const Zonotope &Z, const Polygon &corners) {
         data[k] = corners[k][0];
         data[corners.size() + k] = corners[k][1];
     }
-    return Tensor::like(Z.center(), data, {2, int64_t(corners.size())});
+    return Tensor::like(Z.center().expand_dims(-1), data, {2, int64_t(corners.size())});
 }
 
 /// The oracle's corners without the two repeated ones: columns 1 .. h of the second half.

@@ -1,4 +1,4 @@
-// test_lean_mat_zonotope_vertices - MatZonotope::vertices against the CORALean oracle
+// test_lean_mat_zonotope_vertices - Zonotope::vertex_matrices against the CORALean oracle
 //
 // The oracle lists the 2^h corner matrices with repeats; CORA.cpp's list has each once, in the
 // ascending order of the stacked matrices (MATLAB's unique). The oracle's list, sorted and without
@@ -11,8 +11,8 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
 #include "cora/global/oracle/mat_zonotope.h"
-#include "cora/matrix_set/mat_zonotope/mat_zonotope.h"
 #include "oracle_testing.h"
 #include <algorithm>
 #include <cmath>
@@ -57,11 +57,11 @@ int main() {
     oracle::run("matZonotope.vertices", [](oracle::Random &rnd) {
         for (const auto &[m, n, h] :
              {std::tuple{2, 2, 3}, std::tuple{1, 3, 2}, std::tuple{3, 2, 4}}) {
-            const MatZonotope A = rnd.mat_zonotope(m, n, h);
+            const Zonotope A = rnd.mat_zonotope(m, n, h);
             const lean::MatrixVertices reply = lean::MatZonotope(A).vertices();
             const std::vector<std::vector<double>> theirs = aux_sorted(reply, m, n);
             // both lists as one row of entries per corner matrix
-            const std::vector<double> mine = A.vertices()[0].data();
+            const std::vector<double> mine = A.vertex_matrices()[0].data();
             std::vector<double> stacked;
             for (const std::vector<double> &corner : theirs)
                 stacked.insert(stacked.end(), corner.begin(), corner.end());

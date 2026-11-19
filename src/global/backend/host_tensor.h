@@ -12,7 +12,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   06-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -122,6 +122,7 @@ struct HostTensor : Tensor::Impl {
                                         const Tensor::Impl &sup) const override;
     std::pair<Ptr, Ptr> girard_split(int64_t keep) const override;
     Ptr abs_sum() const override;
+    Ptr abs_sum_rows() const override;
 };
 
 /// The kernels of the eigen backend (eigen.cpp), for HostTensor of that backend.
@@ -130,6 +131,8 @@ template <class T>
 Tensor::Ptr matmul(const HostTensor<T> &a, const HostTensor<T> &b);
 template <class T>
 Tensor::Ptr sum_last(const HostTensor<T> &a, bool keepdims);
+template <class T>
+Tensor::Ptr sum_rows(const HostTensor<T> &a, bool keepdims);
 template <class T>
 Tensor::Ptr expm(const HostTensor<T> &a);
 template <class T>
@@ -152,6 +155,8 @@ template <class T>
 std::pair<Tensor::Ptr, Tensor::Ptr> girard_split(const HostTensor<T> &G, int64_t keep);
 template <class T>
 Tensor::Ptr abs_sum(const HostTensor<T> &a);
+template <class T>
+Tensor::Ptr abs_sum_rows(const HostTensor<T> &a);
 } // namespace eigen
 
 // Batches -----------------------------------------------------------------------------------------

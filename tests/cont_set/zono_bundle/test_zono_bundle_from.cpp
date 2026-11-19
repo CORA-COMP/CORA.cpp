@@ -3,9 +3,9 @@
 // CORA: contSet/@zonotope/zonoBundle.m
 // CORA: contSet/@interval/zonoBundle.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -22,16 +22,17 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
+        const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
         const ZonoBundle from_zonotope = ZonoBundle::from(Z);
         check(from_zonotope.parallel_sets() == 1 &&
-                  close(from_zonotope.zonotopes()[0].center(), Z.center(), 0) &&
-                  close(from_zonotope.zonotopes()[0].generators(), Z.generators(), 0),
+                  close((from_zonotope.zonotopes()[0]).center(), Z.center(), 0) &&
+                  close((from_zonotope.zonotopes()[0]).generators(), Z.generators(), 0),
               b + ": a zonotope is its own member");
         const ZonoBundle from_box =
             ZonoBundle::from(Interval(column({0.0, -1.0}), column({2.0, 1.0})));
-        check(from_box.parallel_sets() == 1 && close(from_box.zonotopes()[0].center(), {1, 0}, 0) &&
-                  close(from_box.zonotopes()[0].generators(), {1, 0, 0, 1}, 0),
+        check(from_box.parallel_sets() == 1 &&
+                  close((from_box.zonotopes()[0]).center().expand_dims(-1), {1, 0}, 0) &&
+                  close((from_box.zonotopes()[0]).generators().matrix_transpose(), {1, 0, 0, 1}, 0),
               b + ": a box is the zonotope of its center and radius");
         check(close(from_box.interval().sup(), {2, 1}, 0), b + ": the box is the same");
     });

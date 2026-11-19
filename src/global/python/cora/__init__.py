@@ -1,18 +1,19 @@
 """cora - CORA.cpp: set-based computing on Eigen (numpy), or on libtorch (torch) if installed.
 
-Sets are immutable values with properties (Z.center, Z.generators, Z.dim) and operators (+, @, *,
-&, |, in, -). Settings are scoped: `with cora.backend("torch"):`, `with cora.checks(False):`,
-`with cora.strict_gradients():`, `with cora.tolerance(1e-10):` (the `tol` of every call that is
-given none; default: `cora.default_tol(dtype)`). cora.tensor_ops() lists the Tensor operations
-with their tags. cora.set_num_threads(n) sets the width of the thread pools (default: the CPU
-quota, the affinity mask and the physical cores; env CORACPP_NUM_THREADS or OMP_NUM_THREADS).
-Errors are cora.errors classes (cora.errors.DimensionMismatch, ...), warnings cora.CORAWarning.
-A Python subclass of cora.ContSet, a pair registered with cora.register_binary and an algorithm
-registered with cora.register_algorithm work like the built-in ones. Tensor(data, dtype) and
+Sets are immutable values, stored batch first as PyTorch's tensors: Z.center (..., n), Z.generators
+(..., m, n) one per row, Z.dim; operators +, -, &, |, in, M @ Z and Z @ M (linear maps) and s * Z (a
+number only). Settings are scoped: `with cora.backend("torch"):`, `with cora.checks(False):`, `with
+cora.strict_gradients():`, `with cora.tolerance(1e-10):` (the `tol` of every call that is given
+none; default: `cora.default_tol(dtype)`). cora.tensor_ops() lists the Tensor operations with their
+tags. cora.set_num_threads(n) sets the width of the thread pools (default: the CPU quota, the
+affinity mask and the physical cores; env CORACPP_NUM_THREADS or OMP_NUM_THREADS). Errors are
+cora.errors classes (cora.errors.DimensionMismatch, ...), warnings cora.CORAWarning. A Python
+subclass of cora.ContSet, a pair registered with cora.register_binary and an algorithm registered
+with cora.register_algorithm work like the built-in ones. Tensor(data, dtype) and
 Tensor.zeros/ones/eye/randn build arrays on the current backend; Tensor.sin/cos/exp/... apply a
 function to every element (no math or numpy needed).
 
-Syntax:   X0 = cora.Zonotope(c, G)             c (..., n), G (..., n, m): one set or a batch
+Syntax:   X0 = cora.Zonotope(c, G)             c (..., n), G (..., m, n): one set or a batch
           sys = cora.LinearSys(A)              A (..., n, n): one system or a batch
           sys = cora.LinearSys(A, B, C)        x' = A x + B u, y = C x
           R = sys.reach(initial_set=X0, t_final=2.0, alg="standard", time_step=0.1)
@@ -22,7 +23,7 @@ Syntax:   X0 = cora.Zonotope(c, G)             c (..., n), G (..., n, m): one se
 
 Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       01-October-2026
-Last update:   09-November-2026
+Last update:   18-November-2026
 Reviewed:      ---
 """
 try:
@@ -50,9 +51,6 @@ from ._cora import (
     LinParamSys,
     Location,
     LocationReachSet,
-    MatZonotope,
-    MatZonotopeExpmMixedResult,
-    MatZonotopeExpmOneParamResult,
     NeuralNetwork,
     NeurNetContrSys,
     NonlinDASys,
@@ -119,7 +117,6 @@ __all__ = [
     "Falsification", "Figure", "Fullspace", "HybridAutomaton", "HybridReachSet", "Interval",
     "LevelSet", "LinParamSys", "LinearReset", "LinearSys", "Location",
     "LocationReachSet",
-    "MatZonotope", "MatZonotopeExpmMixedResult", "MatZonotopeExpmOneParamResult",
     "NeuralNetwork", "NeurNetContrSys", "NonlinDASys", "NonlinearSys", "PolyZonotope", "Polytope",
     "ReachProblem",
     "ReachSet", "Rng", "Specification", "Taylm", "Transition", "VerifyResult", "ZonoBundle",

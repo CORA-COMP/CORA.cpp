@@ -8,9 +8,9 @@
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reduceAdaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -28,7 +28,7 @@ namespace {
 
 // metrics 1, 0.4 and 0.01; the box is (1.8, 1.41), its norm 2.2864
 Zonotope aux_three() {
-    return Zonotope(Tensor({1.0, 2.0}), Tensor({{1.0, 0.5, 0.3}, {1.0, -0.4, 0.01}}));
+    return Zonotope(Tensor({1.0, 2.0}), Tensor({{1.0, 1.0}, {0.5, -0.4}, {0.3, 0.01}}));
 }
 
 void the_share_decides_how_many_are_boxed(const std::string &b) {
@@ -36,15 +36,15 @@ void the_share_decides_how_many_are_boxed(const std::string &b) {
     const Zonotope Z = aux_three();
     // nothing to box: the three stay and two zero box generators follow
     const Zonotope none = Z.reduce_adaptive(0.0);
-    check(none.generators().shape() == std::vector<int64_t>({2, 5}), b + ": no share, 5 columns");
-    check(test::close(none.generators().slice(-1, 0, 3), Z.generators()), b + ": the same three");
-    check(test::close(none.generators().slice(-1, 3, 5), Tensor::zeros({2, 2})),
+    check(none.generators().shape() == std::vector<int64_t>({5, 2}), b + ": no share, 5 columns");
+    check(test::close(none.generators().slice(-2, 0, 3), Z.generators()), b + ": the same three");
+    check(test::close(none.generators().slice(-2, 3, 5), Tensor::zeros({2, 2})),
           b + ": and no box");
     // the third (distance bound 0.02 <= 4.57 * 0.05): boxed, the first two stay in order
     const Zonotope one = Z.reduce_adaptive(0.05);
-    check(one.generators().shape() == std::vector<int64_t>({2, 4}),
+    check(one.generators().shape() == std::vector<int64_t>({4, 2}),
           b + ": a small share, 4 columns");
-    check(test::close(one.generators(), Tensor({{1.0, 0.5, 0.3, 0.0}, {1.0, -0.4, 0.0, 0.01}})),
+    check(test::close(one.generators(), Tensor({{1.0, 1.0}, {0.5, -0.4}, {0.3, 0.0}, {0.0, 0.01}})),
           b + ": the third is boxed");
     // everything: the box of Z
     const Zonotope all = Z.reduce_adaptive(1.0);
@@ -60,7 +60,7 @@ void the_result_encloses_the_zonotope(const std::string &b) {
     // every share from nothing to everything boxed
     for (const double share : {0.0, 0.02, 0.2, 1.0}) {
         const Zonotope R = Z.reduce_adaptive(share);
-        check(R.generators().shape().back() <= 12 + n, b + ": at most h + n generators");
+        check(R.nr_generators() <= 12 + n, b + ": at most h + n generators");
         // the box does not change, the support only grows
         check(test::close(R.interval().inf(), Z.interval().inf(), 1e-9) &&
                   test::close(R.interval().sup(), Z.interval().sup(), 1e-9),
@@ -75,7 +75,7 @@ void the_result_encloses_the_zonotope(const std::string &b) {
 }
 
 void a_zonotope_without_generators_gets_a_zero_box(const std::string &b) {
-    const Zonotope Z(Tensor({1.0, 2.0}), Tensor::zeros({2, 0}));
+    const Zonotope Z(Tensor({1.0, 2.0}), Tensor::zeros({0, 2}));
     const Zonotope R = Z.reduce_adaptive(0.1);
     check(R.generators().shape() == std::vector<int64_t>({2, 2}), b + ": n box generators");
     check(test::close(R.generators(), Tensor::zeros({2, 2})), b + ": all zero");

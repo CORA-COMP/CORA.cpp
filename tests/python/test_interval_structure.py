@@ -126,7 +126,7 @@ class Structure(unittest.TestCase):
         I = box([0.0, 1.0, -1.0], [2.0, 1.0, 3.0])
         Z = I.zonotope()
         np.testing.assert_array_equal(Z.center, [1.0, 1.0, 1.0])
-        np.testing.assert_array_equal(Z.generators, [[1.0, 0.0], [0.0, 0.0], [0.0, 2.0]])
+        np.testing.assert_array_equal(Z.generators, [[1.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
         H = Z.interval()
         np.testing.assert_allclose(H.inf, I.inf)
         # the zonotope of a box

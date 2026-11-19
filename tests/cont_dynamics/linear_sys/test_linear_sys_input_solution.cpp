@@ -3,9 +3,9 @@
 // reach
 //
 // CORA.cpp only: tests input_solution, reach's input solution for the system's B
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -44,9 +44,9 @@ void checks_and_their_switch() {
               Error::dimension_mismatch),
           "U of two dimensions");
     check(test::raises([&] { sys.input_solution(U, 0.0, 4); }, Error::wrong_value), "time_step 0");
-    const Tensor on = sys.input_solution(U, 0.1, 4).PU.generators();
+    const Tensor on = (sys.input_solution(U, 0.1, 4).PU).generators();
     ChecksScope off(false);
-    check(test::close(sys.input_solution(U, 0.1, 4).PU.generators(), on, 0),
+    check(test::close((sys.input_solution(U, 0.1, 4).PU).generators(), on, 0),
           "the same with the checks off");
 }
 

@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,7 +25,7 @@ int main() {
         cora::Rng rng(1);
         check(Zonotope::generate_random(rng, 3, std::nullopt, 5).is_bounded(),
               b + ": a random zonotope");
-        check(Zonotope(column({1.0, 2.0}), Tensor::zeros({2, 0})).is_bounded(), b + ": a point");
+        check(Zonotope(column({1.0, 2.0}), Tensor::zeros({0, 2})).is_bounded(), b + ": a point");
         check(Zonotope::stack({Zonotope::generate_random(rng, 2, std::nullopt, 3)}).is_bounded(),
               b + ": a batch");
     });

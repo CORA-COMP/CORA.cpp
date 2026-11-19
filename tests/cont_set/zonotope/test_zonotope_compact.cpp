@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger, Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,25 +25,25 @@ namespace {
 
 /// "zeros" drops the generators of norm <= tol: exactly zero ones, tiny ones by tol.
 void zeros_drops_small_generators(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0, 1e-20, 0.5}, {0.0, 0.0, 0.0, 0.5}}));
-    check(close(Z.compact().generators(), std::vector<double>{1, 0.5, 0, 0.5}, 0),
+    const Zonotope Z(column({1.0, 2.0}),
+                     Tensor({{1.0, 0.0}, {0.0, 0.0}, {1e-20, 0.0}, {0.5, 0.5}}));
+    check(close(Z.compact().generators(), std::vector<double>{1, 0, 0.5, 0.5}, 0),
           b + ": zeros drops the zero and the tiny generator (norm <= eps)");
-    check(Z.compact("zeros", 0.0).generators().shape().back() == 3,
-          b + ": tol 0 keeps the tiny one");
-    check(Z.compact("zeros", 0.6).generators().shape().back() == 2, b + ": tol 0.6 keeps two");
-    check(Z.compact("zeros", 0.8).generators().shape().back() == 1, b + ": tol 0.8 keeps one");
+    check(Z.compact("zeros", 0.0).nr_generators() == 3, b + ": tol 0 keeps the tiny one");
+    check(Z.compact("zeros", 0.6).nr_generators() == 2, b + ": tol 0.6 keeps two");
+    check(Z.compact("zeros", 0.8).nr_generators() == 1, b + ": tol 0.8 keeps one");
     check(close(Z.compact().center(), Z.center(), 0), b + ": the center stays");
-    const Zonotope none(column({1.0}), Tensor({{0.0, 0.0}}));
-    check(none.compact().generators().shape().back() == 0, b + ": all generators zero leaves none");
+    const Zonotope none(column({1.0}), Tensor({{0.0}, {0.0}}));
+    check(none.compact().nr_generators() == 0, b + ": all generators zero leaves none");
 }
 
 /// "all" merges parallel and antiparallel generators into the shortest (CORA's aux_deleteAligned).
 void all_merges_aligned_generators(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{-0.5, 1.0, 2.0, 0.0}, {0.0, 0.0, 0.0, 3.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{-0.5, 0.0}, {1.0, 0.0}, {2.0, 0.0}, {0.0, 3.0}}));
     const Zonotope C = Z.compact("all");
     check(close(C.generators(), std::vector<double>{-3.5, 0, 0, 3}, 1e-12),
           b + ": (-0.5,0), (1,0), (2,0) merge into (-3.5,0)");
-    const Zonotope one(column({0.0}), Tensor({{1.0, -2.0, 0.0}}));
+    const Zonotope one(column({0.0}), Tensor({{1.0}, {-2.0}, {0.0}}));
     check(close(one.compact("all").generators(), std::vector<double>{3}, 0),
           b + ": in one dimension the generators add up");
     const Zonotope diff(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
@@ -55,8 +55,8 @@ void all_merges_aligned_generators(const std::string &b) {
 
 /// A batch drops the generators that every member drops.
 void a_batch_keeps_what_some_member_keeps(const std::string &b) {
-    const Zonotope Z1(column({0.0, 0.0}), Tensor({{1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}));
-    const Zonotope Z2(column({0.0, 0.0}), Tensor({{0.0, 0.0, 0.0}, {0.0, 0.0, 2.0}}));
+    const Zonotope Z1(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}}));
+    const Zonotope Z2(column({0.0, 0.0}), Tensor({{0.0, 0.0}, {0.0, 0.0}, {0.0, 2.0}}));
     const Zonotope C = Zonotope::stack({Z1, Z2}).compact();
     check(C.generators().shape() == std::vector<int64_t>({2, 2, 2}),
           b + ": the middle generator is zero in both members, the others stay");
@@ -73,11 +73,10 @@ void compact_keeps_the_set(const std::string &b) {
     // repeated and opposite generators and a zero one
     const Zonotope R(
         Z.center(),
-        Tensor::concat({g, g.slice(-1, 0, 1) * -2.0, g * 0.0, g.slice(-1, 1, 2) * 3.0}, -1));
+        Tensor::concat({g, g.slice(-2, 0, 1) * -2.0, g * 0.0, g.slice(-2, 1, 2) * 3.0}, -2));
     for (const std::string method : {"zeros", "all"}) {
         const Zonotope C = R.compact(method, 1e-10);
-        check(C.generators().shape().back() < R.generators().shape().back(),
-              b + ": " + method + " removes generators");
+        check(C.nr_generators() < R.nr_generators(), b + ": " + method + " removes generators");
         for (int k = 0; k < 30; ++k) {
             const std::vector<double> d = test::random_direction(rng, n);
             check(test::close(test::support(C, d), test::support(R, d), 1e-9),

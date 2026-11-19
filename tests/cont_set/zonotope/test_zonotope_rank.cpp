@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -28,7 +28,7 @@ namespace {
 /// tolerance: a singular value of 1e-9 counts for tol 1e-12 and not for tol 1e-8.
 void rank_known(const std::string &b) {
     const Zonotope Z(column({1.0, 5.0, -1.0}),
-                     Tensor({{2.0, 0.0, 4.0}, {6.0, 0.0, 0.0}, {4.0, 0.0, 8.0}}));
+                     Tensor({{2.0, 6.0, 4.0}, {0.0, 0.0, 0.0}, {4.0, 0.0, 8.0}}));
     check(Z.rank() == 2, b + ": CORA's example has rank 2");
     check(Zonotope(column({0.0, 0.0, 0.0}), Tensor::eye(3)).rank() == 3, b + ": the identity");
     check(Zonotope::origin(2).rank() == 0, b + ": no generators");
@@ -44,7 +44,8 @@ void rank_of_products(const std::string &b) {
     for (const auto &[n, m, r] : {std::tuple{4, 6, 2}, {5, 5, 5}, {3, 7, 1}, {6, 3, 3}}) {
         const Zonotope A = Zonotope::generate_random(rng, n, std::nullopt, r),
                        B = Zonotope::generate_random(rng, r, std::nullopt, m);
-        const Zonotope Z(A.center(), A.generators().matmul(B.generators()));
+        // the rows of G_A G_B: (G_A G_B)' = G_B' G_A'
+        const Zonotope Z(A.center(), B.generators().matmul(A.generators()));
         check(Z.rank() == r, b + ": rank " + std::to_string(r));
         check(Z.rank() <= std::min(n, m), b + ": at most min(n, m)");
         check(Z.is_full_dim() == (Z.rank() == n), b + ": full dimension is rank n");

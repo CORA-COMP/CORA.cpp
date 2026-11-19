@@ -9,7 +9,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -30,8 +30,9 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor dir = rnd.vector(n);
             // from the center, and from a point of the zonotope off the center
-            const Tensor inside = Z.center() + Z.generators().slice(-1, 0, 1) * 0.5;
-            for (const Tensor &start : {Z.center(), inside}) {
+            const Tensor inside = Z.center().expand_dims(-1) +
+                                  Z.generators().matrix_transpose().slice(-1, 0, 1) * 0.5;
+            for (const Tensor &start : {Z.center().expand_dims(-1), inside}) {
                 const Tensor x = Z.boundary_point(dir, start);
                 const std::optional<lean::Interval> box = lean::Zonotope(Z).boundary_point(
                     lean::Tensor::from(dir), lean::Tensor::from(start));

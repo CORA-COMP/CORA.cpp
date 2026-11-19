@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -27,16 +27,16 @@ namespace {
 void isequal_known(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
     check(Z.isequal(Z), b + ": a zonotope equals itself");
-    check(Z.isequal(Zonotope(column({1.0, 2.0}), Tensor({{0.0, -1.0}, {-3.0, 0.0}}))),
+    check(Z.isequal(Zonotope(column({1.0, 2.0}), Tensor({{0.0, -3.0}, {-1.0, 0.0}}))),
           b + ": generators in another order and with another sign");
     check(!Z.isequal(Zonotope(column({1.0, 2.5}), Z.generators())), b + ": another center");
     check(!Z.isequal(Zonotope(Z.center(), Tensor({{1.0, 0.0}, {0.0, 2.0}}))),
           b + ": another generator");
-    check(Zonotope(column({0.0}), Tensor({{1.0, 1.0}}))
+    check(Zonotope(column({0.0}), Tensor({{1.0}, {1.0}}))
               .isequal(Zonotope(column({0.0}), Tensor({{2.0}}))),
           b + ": [1, 1] and [2] generate the same interval");
     check(Z.isequal(
-              Zonotope(Z.center(), Tensor::concat({Z.generators(), Tensor::zeros({2, 1})}, -1))),
+              Zonotope(Z.center(), Tensor::concat({Z.generators(), Tensor::zeros({1, 2})}, -2))),
           b + ": a zero generator does not matter");
     check(!Z.isequal(Zonotope(column({1.0}), Tensor({{1.0}}))), b + ": another dimension is false");
     check(Z.isequal(Zonotope(column({1.0 + 1e-9, 2.0}), Z.generators()), 1e-6), b + ": within tol");
@@ -49,7 +49,7 @@ void isequal_other_sets(const std::string &b) {
     const Zonotope box(column({1.0, 1.25}), Tensor({{1.0, 0.0}, {0.0, 0.25}}));
     check(box.isequal(I), b + ": a box");
     check(!box.isequal(Interval(column({0.0, 1.0}), column({2.0, 2.0}))), b + ": another box");
-    const Zonotope point(column({1.0, 2.0}), Tensor::zeros({2, 0}));
+    const Zonotope point(column({1.0, 2.0}), Tensor::zeros({0, 2}));
     check(point.isequal(column({1.0, 2.0})), b + ": a point");
     check(!point.isequal(column({1.0, 2.5})), b + ": another point");
     check(!box.isequal(column({1.0, 1.25})), b + ": a box is not a point");
@@ -62,10 +62,10 @@ void isequal_property(const std::string &b) {
     for (int k = 0; k < 10; ++k) {
         const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
         const Tensor flipped =
-            Z.generators().flip(-1).multiply(Tensor::like(Z.center(), {-1, 1, -1, 1, 1}, {1, 5}));
+            Z.generators().flip(-2).multiply(Tensor::like(Z.center(), {-1, 1, -1, 1, 1}, {5, 1}));
         const Zonotope W(Z.center(), flipped);
         check(Z.isequal(Z) && Z.isequal(W) && W.isequal(Z), b + ": a reordered, re-signed copy");
-        const Zonotope V(Z.center() + column({1e-3, 0.0, 0.0}), Z.generators());
+        const Zonotope V(Z.center() + test::vec({1e-3, 0.0, 0.0}), Z.generators());
         check(!Z.isequal(V) && !V.isequal(Z), b + ": a shifted center");
     }
 }

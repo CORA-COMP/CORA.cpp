@@ -1,8 +1,8 @@
 // test_zonotope_cart_prod_torch - zonotope cart_prod: gradients through torch
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "zonotope_gradients.h"
@@ -18,8 +18,8 @@ namespace {
 
 /// The product is built of concatenations: differentiable in both operands.
 void cart_prod_gradient() {
-    const std::vector<torch::Tensor> A = test::random_zonotope(2, 3),
-                                     B = test::random_zonotope(3, 2);
+    const std::vector<torch::Tensor> A = test::random_zonotope_rows(2, 3),
+                                     B = test::random_zonotope_rows(3, 2);
     test::gradcheck("cart_prod",
                     [](const Inputs &x) {
                         return test::parts(Zonotope(x[0], x[1]).cart_prod(Zonotope(x[2], x[3])));

@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@conZonotope/randPoint_.m
 // CORA authors: Niklas Kochdumper, Severin Prenitzer, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -56,7 +56,7 @@ Tensor aux_extreme(const ConZonotope &cz, int64_t N, Rng &rng) {
         for (const double v : d) norm += v * v;
         for (double &v : d) v /= std::sqrt(norm);
         const std::optional<PrivSupport> best = priv_support(H, d);
-        if (!best) return cz.c().zeros_like({H.n, 0});
+        if (!best) return cz.c().expand_dims(-1).zeros_like({H.n, 0});
         points.insert(points.end(), best->point.begin(), best->point.end());
     }
     // the points were listed one after the other: transpose to columns
@@ -64,7 +64,7 @@ Tensor aux_extreme(const ConZonotope &cz, int64_t N, Rng &rng) {
     for (int64_t j = 0; j < N; ++j)
         for (int64_t i = 0; i < H.n; ++i)
             columns[std::size_t(i * N + j)] = points[std::size_t(j * H.n + i)];
-    return Tensor::like(cz.c(), columns, {H.n, N});
+    return Tensor::like(cz.c().expand_dims(-1), columns, {H.n, N});
 }
 
 } // namespace

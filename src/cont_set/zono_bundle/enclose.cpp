@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@zonoBundle/enclose.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
@@ -57,8 +57,8 @@ detail::Refusal aux_count_refusal(const ZonoBundle &bundle, const ZonoBundle &S)
 
 ZonoBundle ZonoBundle::enclose(const ZonoBundle &S) const {
     detail::Entry entry;
-    detail::Refusal r =
-        priv_operand_refusal(*this, S.dim(), S.zonotopes().front().center(), "enclose");
+    detail::Refusal r = priv_operand_refusal(
+        *this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1), "enclose");
     if (!r) r = aux_count_refusal(*this, S);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // member i of the result encloses member i of both bundles
@@ -70,7 +70,8 @@ ZonoBundle ZonoBundle::enclose(const ZonoBundle &S) const {
 
 ZonoBundle ZonoBundle::enclose(const Zonotope &Z) const {
     detail::Entry entry;
-    const detail::Refusal r = priv_operand_refusal(*this, Z.dim(), Z.center(), "enclose");
+    const detail::Refusal r =
+        priv_operand_refusal(*this, Z.dim(), Z.center().expand_dims(-1), "enclose");
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // the zonotope is enclosed with every member
     std::vector<Zonotope> hulls;
@@ -83,7 +84,8 @@ ZonoBundle ZonoBundle::enclose(const Zonotope &Z) const {
 
 ZonoBundle ZonoBundle::enclose(const Tensor &M, const Zonotope &Zplus) const {
     detail::Entry entry;
-    detail::Refusal r = priv_operand_refusal(*this, Zplus.dim(), Zplus.center(), "enclose");
+    detail::Refusal r =
+        priv_operand_refusal(*this, Zplus.dim(), Zplus.center().expand_dims(-1), "enclose");
     if (!r) r = aux_matrix_refusal(*this, M);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // member i of the second set is M Z_i + Zplus
@@ -95,8 +97,8 @@ ZonoBundle ZonoBundle::enclose(const Tensor &M, const Zonotope &Zplus) const {
 
 ZonoBundle ZonoBundle::enclose(const Tensor &M, const ZonoBundle &S) const {
     detail::Entry entry;
-    detail::Refusal r =
-        priv_operand_refusal(*this, S.dim(), S.zonotopes().front().center(), "enclose");
+    detail::Refusal r = priv_operand_refusal(
+        *this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1), "enclose");
     if (!r) r = aux_matrix_refusal(*this, M);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // CORA's plus replaces the bundle by the zonotope of its box
@@ -116,14 +118,15 @@ Set ZonoBundle::enclose_impl(const ContSet &S2) const {
     detail::Refusal r;
     if (S2.class_id() == ClassId::zono_bundle) {
         const ZonoBundle &S = static_cast<const ZonoBundle &>(S2);
-        r = priv_operand_refusal(*this, S.dim(), S.zonotopes().front().center(), "enclose");
+        r = priv_operand_refusal(*this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1),
+                                 "enclose");
         if (!r) r = aux_count_refusal(*this, S);
         if (r) CORA_FAIL(r->first, r->second);
         return enclose(S);
     }
     if (S2.class_id() == ClassId::zonotope) {
         const Zonotope &Z = static_cast<const Zonotope &>(S2);
-        r = priv_operand_refusal(*this, Z.dim(), Z.center(), "enclose");
+        r = priv_operand_refusal(*this, Z.dim(), Z.center().expand_dims(-1), "enclose");
         if (r) CORA_FAIL(r->first, r->second);
         return enclose(Z);
     }

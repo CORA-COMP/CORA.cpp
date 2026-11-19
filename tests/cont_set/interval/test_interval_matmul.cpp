@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -65,9 +65,10 @@ void product_with_other_sets(const std::string &b) {
     const Interval A = test::example();
     const Zonotope Z(test::matrix({1, 1}, 2, 1), test::matrix({1, 0, 0, 1}, 2, 2));
     const Zonotope R = A * Z;
-    check(close(R.center(), std::vector<double>{1.5, 3.5}), b + ": the center T c");
-    check(close(R.generators(), test::matrix({1.5, 0, 3, 0, 1.5, 2, 0, 3}, 2, 4)),
-          b + ": the generators [T G, diag(R (|c| + sum|G|))]");
+    check(close(R.center().expand_dims(-1), std::vector<double>{1.5, 3.5}), b + ": the center T c");
+    check(
+        close(R.generators().matrix_transpose(), test::matrix({1.5, 0, 3, 0, 1.5, 2, 0, 3}, 2, 4)),
+        b + ": the generators [T G, diag(R (|c| + sum|G|))]");
     Rng rng(13);
     bool inside = true;
     for (int trial = 0; trial < 30; ++trial)

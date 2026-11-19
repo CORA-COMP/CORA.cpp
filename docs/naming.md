@@ -42,7 +42,9 @@ changed, and the reasons are listed below.
 | CORA (MATLAB) | C++ | Python |
 |---|---|---|
 | `contSet` | `ContSet`, type-erased `Set` | `cora.ContSet` (subclass it) |
-| `zonotope(c, G)` | `Zonotope(c, G)` | `cora.Zonotope(c, G)` |
+| `zonotope(c, G)` | `Zonotope(c, G.T)`: one generator per row | `cora.Zonotope(c, G.T)` |
+| `matZonotope(C, G)` | `Zonotope::matrix(C, G)`, G (h, rows, cols) | `cora.Zonotope.matrix(C, G)` |
+| `M * Z` | `M * Z`, `matmul(M, Z)` | `M @ Z` (`*` is for numbers) |
 | `interval(inf, sup)` | `Interval(inf, sup)` | `cora.Interval(inf, sup)` |
 | `fullspace(n)`, `fullspace.Inf(n)` | `Fullspace(n)`, `Fullspace::inf(n)` | `cora.Fullspace(n)`, `cora.Fullspace.inf(n)` |
 | `intervalMatrix` | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
@@ -68,7 +70,7 @@ changed, and the reasons are listed below.
 | `project(S, dims)` | `S.project(dims)` | `S.project(dims)` |
 | `vertices(S)` | `S.vertices()` | `S.vertices()` |
 | `display(S)` | `S.display()`, `std::cout << S` | `repr(S)`, `print(S)` |
-| `mtimes(M, Z)`, `M * Z` | `Z.linear_map(M)`, `M * Z` | `Z.linear_map(M)`, `M @ Z`, `M * Z` |
+| `mtimes(M, Z)`, `M * Z` | `Z.linear_map(M)`, `M * Z` | `Z.linear_map(M)`, `M @ Z` |
 | `plus(S1, S2)`, `S1 + S2` | `plus(S1, S2)`, `S1 + S2` | `cora.plus`, `S1 + S2` |
 | `and(S1, S2)`, `S1 & S2` | `intersect(S1, S2)`, `S1 & S2` | `cora.intersect`, `S1 & S2` |
 | `or(S1, S2)`, `S1 \| S2` | `unite(S1, S2)`, `S1 \| S2` | `cora.unite`, `S1 \| S2` |
@@ -266,7 +268,7 @@ changed, and the reasons are listed below.
   - `and` and `or` are keywords of C++ (alternative tokens), so they are `intersect` and
     `unite`. The operators `&` and `|` stay.
   - `mtimes` is MATLAB's name of an operator, so it is `linear_map` for a set under a matrix and
-    `matmul` for the product of matrices (an interval matrix, `MatZonotope`); `projectOnHyperplane` takes the
+    `matmul` for the product of matrices (an interval matrix, a matrix zonotope); `projectOnHyperplane` takes the
     constraint of the hyperplane (a normal and an offset), as CORA.cpp has no hyperplane class.
   - `not` is a keyword of C++ (an alternative token), so the complement of `emptySet` and
     `fullspace` is `complement`.

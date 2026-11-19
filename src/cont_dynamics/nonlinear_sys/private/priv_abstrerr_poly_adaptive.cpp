@@ -19,9 +19,9 @@
 // CORA: contDynamics/@nonlinearSys/private/priv_precompStatError_adaptive.m
 // CORA: contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -39,20 +39,20 @@ namespace cora {
 PolyStatic priv_precomp_stat_error_adaptive(const NonlinearSys &sys, const Vec &xs,
                                             const std::optional<Zonotope> &U, double red_factor,
                                             const PolyZonotope &Rdelta) {
-    const Tensor &like = Rdelta.center();
+    const Tensor like = Rdelta.center().expand_dims(-1);
     const int64_t n = sys.dim(), m = sys.input_dim();
     const double rf = std::sqrt(red_factor);
     // the reduced start set as a polynomial zonotope, and as a zonotope
     const PolyZonotope Rred = priv_reduce_adaptive_poly(Rdelta, rf);
     const Zonotope Rdz = Rdelta.zonotope().reduce_adaptive(rf);
     // the Hessians at the expansion point (xs, the center of U)
-    const Vec us = m > 0 ? U->center().data() : Vec{};
+    const Vec us = m > 0 ? U->center().expand_dims(-1).data() : Vec{};
     const Hessian Hp = priv_hessian(sys, like, Box{xs, xs},
                                     m > 0 ? std::optional<Box>(Box{us, us}) : std::nullopt);
     const std::vector<Tensor> Q = priv_half_hessians(like, Hp, n, n + m);
     // 1/2 quadMap(cartProd(Rred, U), H), reduced
-    const Zonotope Urec =
-        m > 0 ? *U - U->center() : Zonotope(like.zeros_like(), like.zeros_like({n, 0}));
+    const Zonotope Urec = m > 0 ? *U - U->center().expand_dims(-1)
+                                : Zonotope(like.zeros_like().squeeze(-1), like.zeros_like({0, n}));
     const PolyZonotope Z = m > 0 ? Rred.cart_prod(Urec) : Rred;
     const PolyZonotope second = priv_poly_quad_map(Z, Q);
     return {priv_reduce_adaptive_poly(second, rf), m > 0 ? Rdz.cart_prod(Urec) : Rdz};
@@ -61,17 +61,17 @@ PolyStatic priv_precomp_stat_error_adaptive(const NonlinearSys &sys, const Vec &
 Zonotope priv_abstr_err_poly_adaptive(const NonlinearSys &sys, const Vec &xs, const Zonotope &Rmax,
                                       const Zonotope &Zdelta, const PolyZonotope &Rdiff,
                                       const std::optional<Zonotope> &U, double red_factor) {
-    const Tensor &like = Rmax.center();
+    const Tensor &like = Rmax.center().expand_dims(-1);
     const int64_t n = sys.dim(), m = sys.input_dim();
     const double rf = std::sqrt(red_factor);
     // the boxes of Rmax and of U, each joined with the expansion point
-    const Vec us = m > 0 ? U->center().data() : Vec{};
+    const Vec us = m > 0 ? U->center().expand_dims(-1).data() : Vec{};
     const Box X = priv_hull(priv_zonotope_box(Rmax), xs);
     const std::optional<Box> Ub =
         m > 0 ? std::optional<Box>(priv_hull(priv_zonotope_box(*U), us)) : std::nullopt;
     // the differences, reduced, with the input
     const Zonotope Rred = Rdiff.zonotope().reduce_adaptive(rf);
-    const Zonotope Zdiff = m > 0 ? Rred.cart_prod(*U - U->center()) : Rred;
+    const Zonotope Zdiff = m > 0 ? Rred.cart_prod(*U - U->center().expand_dims(-1)) : Rred;
     // the three products with a difference
     const Hessian Hp = priv_hessian(sys, like, Box{xs, xs},
                                     m > 0 ? std::optional<Box>(Box{us, us}) : std::nullopt);
@@ -82,9 +82,11 @@ Zonotope priv_abstr_err_poly_adaptive(const NonlinearSys &sys, const Vec &xs, co
     const Zonotope rest =
         priv_box_zonotope(like, priv_hessian_remainder(H, Hp.lo, X, Ub, xs, us, n));
     // the generators of the products, then those of the remainder; the shift joins the center
-    const Zonotope sum(rest.center(), Tensor::concat({second.G, rest.generators()}, -1));
+    const Zonotope sum(rest.center(), Tensor::concat({second.G, rest.generators()}, -2));
     const Zonotope red = sum.reduce_adaptive(rf);
-    return Zonotope(red.center() + Tensor::like(like, second.shift, {n, 1}), red.generators());
+    return Zonotope(
+        (red.center().expand_dims(-1) + Tensor::like(like, second.shift, {n, 1})).squeeze(-1),
+        red.generators());
 }
 
 } // namespace cora

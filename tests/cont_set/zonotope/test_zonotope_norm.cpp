@@ -6,7 +6,7 @@
 // CORA authors: Victor Gassmann
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -68,7 +68,7 @@ void norm_bounds_the_points(const std::string &b) {
 /// The modes that need a solver and an unknown type or mode are refused; with the checks off the
 /// result is the same.
 void norm_refuses() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(test::raises([&] { Z.norm(2, "exact"); }, Error::not_supported), "norm: mode exact");
     check(test::raises([&] { Z.norm(2, "ub_convex"); }, Error::not_supported),
           "norm: mode ub_convex");

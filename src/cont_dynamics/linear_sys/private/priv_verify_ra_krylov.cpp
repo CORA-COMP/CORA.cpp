@@ -24,9 +24,9 @@
 // CORA.cpp only: the ARCH-COMP26 AFF scripts rand04-06 call reachSuppFuncsKrylov, which is not in
 // CORA v2026.1.0 (it is in the competition's copy); this follows the same scheme on the
 // Krylov machinery of reach, with a support function bound per step, not a port of that file
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_krylov.h"
@@ -100,8 +100,10 @@ class Stepper {
         // the curvature acts on the state at the start of the step
         const DirectionWindow &window = dir_.windows[window_ - 1];
         const int64_t k = y_.shape()[0];
-        const Interval curvature =
-            Zonotope(y_, y_.zeros_like({k, 0})).linear_map(*F_).interval().linear_map(window.W);
+        const Interval curvature = Zonotope(y_.squeeze(-1), y_.zeros_like({0, k}))
+                                       .linear_map(*F_)
+                                       .interval()
+                                       .linear_map(window.W);
         y_ = e_hdt_.matmul(y_);
         --left_;
         const std::vector<double> current = window.W.matmul(y_).data();
@@ -198,13 +200,15 @@ VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, con
     const auto start = std::chrono::steady_clock::now();
     VerifyResult res;
     const int64_t n = sys.dim();
-    const Tensor &like = R0.center();
+    const Tensor &like = R0.center(); // the backend and the dtype
 
     // the vectors whose dot products with z(t) the support function needs, and their norms
     const CanonicalInput input = priv_canonical_input(sys, U);
-    const int64_t m0 = R0.generators().shape().back();
-    const Tensor vectors =
-        Tensor::concat({R0.center(), R0.generators(), input.u_trans, input.GU}, -1);
+    // the vectors as columns [c G u GU]
+    const int64_t m0 = R0.nr_generators();
+    const Tensor vectors = Tensor::concat(
+        {R0.center().expand_dims(-1), R0.generators().matrix_transpose(), input.u_trans, input.GU},
+        -1);
     const VectorNorms norms = aux_norms(vectors, m0);
     const Tensor vectors_t = vectors.matrix_transpose();
     const LinearSys dual = sys.A_sparse()

@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -26,7 +26,7 @@ namespace {
 /// CORA's unit test: Z = zonotope([-4 -3 -2 -1; 1 2 3 4]) with the default directions (more
 /// generators than dimensions: dominant_directions) and with S; then the generators as directions.
 void cora_unit_test(const std::string &b) {
-    const Zonotope Z(column({-4.0, 1.0}), Tensor({{-3.0, -2.0, -1.0}, {2.0, 3.0, 4.0}}));
+    const Zonotope Z(column({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}, {-1.0, 4.0}}));
     check(close(Z.underapproximate(), std::vector<double>{-10, 2, -10, 2, 10, -8, 10, -8}, 1e-12),
           b + ": the default directions");
     const Tensor S({{1.0, 1.0}, {0.0, 1.0}});
@@ -74,7 +74,7 @@ void a_batch(const std::string &b) {
 /// Directions of the wrong dimension are refused; a batch cannot choose default directions; with
 /// the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
+    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}}));
     check(test::raises([&] { Z.underapproximate(Tensor({{1.0}, {2.0}, {3.0}})); },
                        Error::dimension_mismatch),
           "underapproximate: directions of dimension 3");

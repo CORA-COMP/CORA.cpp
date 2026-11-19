@@ -10,10 +10,11 @@
 // See also: is_full_dim, interval
 //
 // CORA: contSet/@zonotope/volume_.m
+// CORA: matrixSet/@matZonotope/volume.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   06-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -84,19 +85,21 @@ Tensor Zonotope::volume(const std::string &method, int order) const {
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "volume: the order must be a positive integer, got " + std::to_string(order);
     });
+    // a matrix zonotope as the zonotope of its stacked matrices (CORA's matZonotope.volume)
+    if (elem_rank_ == 2) return stacked().volume(method, order);
     CORA_CHECK(method != "reduce", Error::not_supported, [] {
         return std::string("volume: the method 'reduce' needs the order reduction 'pca', which "
                            "reduce does not have");
     });
-    const int64_t n = dim(), m = G_.shape().back();
-    Shape shape = c_.shape();
+    const int64_t n = dim(), m = nr_generators();
+    Shape shape = c_.expand_dims(-1).shape();
     shape[shape.size() - 2] = 1;
-    const Tensor zero = c_.zeros_like(shape);
+    const Tensor zero = c_.expand_dims(-1).zeros_like(shape);
     if (m < n) return zero;
-    const Tensor deficient = aux_rank_deficient(G_);
+    const Tensor deficient = aux_rank_deficient(G_.matrix_transpose());
     // the exact or the Gram volume, zero if the generators are deficient
-    const Tensor value =
-        method == "exact" ? aux_sum_of_determinants(G_) : aux_gram_volume(G_, deficient);
+    const Tensor value = method == "exact" ? aux_sum_of_determinants(G_.matrix_transpose())
+                                           : aux_gram_volume(G_.matrix_transpose(), deficient);
     // 2^n is a power of two: the scaling is exact
     return Tensor::where(deficient, zero, value * std::ldexp(1.0, int(n)));
 }

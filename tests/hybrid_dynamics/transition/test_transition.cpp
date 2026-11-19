@@ -44,7 +44,8 @@ void construction() {
                           column({0.0, -9.81}));
     check(with_c.input_dim() == 1 && close(with_c.c(), {0, -9.81}), "location: B and c");
     // a LinParamSys flow brings its own c
-    const MatZonotope set(Tensor({{0.0, 1.0}, {0.0, 0.0}}), Tensor::zeros({1, 2, 2}));
+    const Zonotope set =
+        Zonotope::matrix(Tensor({{0.0, 1.0}, {0.0, 0.0}}), Tensor::zeros({1, 2, 2}));
     const Location param("param", inv, {},
                          LinParamSys(set, Tensor::zeros({2, 1}), column({0.0, -1.0})));
     check(param.dim() == 2 && param.input_dim() == 1 && close(param.c(), {0, -1}) &&

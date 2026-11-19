@@ -16,7 +16,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/lin_param_sys/lin_param_sys.h"
@@ -40,10 +40,10 @@ namespace {
 constexpr double kDt = 0.05, kTFinal = 1.0, kTol = 1e-9;
 
 /// The oscillator [-1 2; -2 -1] with h generators of size 0.1 on the diagonal and the corner.
-MatZonotope aux_set(int h) {
+Zonotope aux_set(int h) {
     Tensor G = Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0);
     if (h == 2) G = Tensor::concat({G, Tensor({{0.0, 0.1}, {0.0, 0.0}}).expand_dims(0)}, 0);
-    return MatZonotope(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}), G);
+    return Zonotope::matrix(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}), G);
 }
 
 /// The exact state at t from x0 for the matrix A and the constant input B u + c (augmented
@@ -73,8 +73,10 @@ void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U
         const Tensor &G = sys.A().generators();
         Tensor A = sys.A().center();
         for (int64_t g = 0; g < G.size(0); ++g) A = A + G.slice(0, g, g + 1).squeeze(0) * b[g];
-        const Tensor x0 = R0.center() + R0.generators().matmul(column({b[2], b[3]}));
-        const double u = U.center().item() + U.generators().abs().sum().item() * b[4];
+        const Tensor x0 = R0.center().expand_dims(-1) +
+                          R0.generators().matrix_transpose().matmul(column({b[2], b[3]}));
+        const double u = U.center().expand_dims(-1).item() +
+                         U.generators().matrix_transpose().abs().sum().item() * b[4];
         const Tensor v = sys.B()->matmul(column({u})) + sys.c();
         const auto step = std::size_t(k % 20);
         const double t = (double(step) + 0.5 * (b[5] + 1)) * kDt;
@@ -89,7 +91,7 @@ void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U
 /// Wrong problems and options are refused; with the checks off reach is the same.
 void checks_and_their_switch() {
     const LinParamSys sys(aux_set(1), Tensor({{0.0}, {1.0}}));
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05}, {0.0}}));
+    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
     alg::LinParamStandard a;
     a.time_step = kDt;
     // the problem: an initial set, a horizon of a step, inputs of B
@@ -111,9 +113,9 @@ void checks_and_their_switch() {
     const Zonotope away(column({0.75}), Tensor({{0.25}}));
     check(test::raises([&] { sys.reach({R0, away, 5.0}, stiff); }, Error::reach_set_explosion),
           "reach: the curvature of a constant input needs norm(A) r < taylor_terms + 2");
-    const Tensor on = sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back().center();
+    const Tensor on = (sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()).center();
     ChecksScope off(false);
-    check(close(sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back().center(), on, 0),
+    check(close((sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()).center(), on, 0),
           "reach: the same with the checks off");
 }
 

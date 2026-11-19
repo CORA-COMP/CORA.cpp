@@ -34,7 +34,7 @@
 // ORACLE: contSet/@contSet/times.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   11-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -61,12 +61,15 @@ namespace {
 /// CORA.cpp's, bit for bit, and the others are zero.
 void aux_check_projected(const Zonotope &mine, const lean::Zonotope &theirs) {
     const Zonotope other = theirs.gather().first;
-    const int64_t m = mine.generators().shape().back(), total = other.generators().shape().back();
+    const int64_t m = mine.nr_generators(), total = other.nr_generators();
     test::check(total >= m, "projectOnHyperplane: the generators of the set stay");
     if (total < m) return;
-    oracle::check(mine.center(), other.center());
-    oracle::check(mine.generators(), other.generators().slice(-1, 0, m));
-    test::check(total == m || other.generators().slice(-1, m, total).abs().max().item() == 0,
+    oracle::check(mine.center().expand_dims(-1), other.center().expand_dims(-1));
+    oracle::check(mine.generators().matrix_transpose(),
+                  other.generators().matrix_transpose().slice(-1, 0, m));
+    test::check(total == m ||
+                    other.generators().matrix_transpose().slice(-1, m, total).abs().max().item() ==
+                        0,
                 "projectOnHyperplane: the other generators are zero at nearest");
 }
 

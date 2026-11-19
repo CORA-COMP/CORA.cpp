@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -35,7 +35,7 @@ void known_rays(const std::string &b) {
     check(close(Z.boundary_point(column({1.0, 1.0}), column({1.0, 0.0})),
                 std::vector<double>{1.5, 0.5}, 1e-9),
           b + ": from (1, 0) along (1, 1)");
-    const Zonotope Z1(column({3.0}), Tensor({{1.0, -2.0}}));
+    const Zonotope Z1(column({3.0}), Tensor({{1.0}, {-2.0}}));
     check(close(Z1.boundary_point(column({-1.0})), std::vector<double>{0}, 0), b + ": 1-D, left");
     check(close(Z1.boundary_point(column({2.0})), std::vector<double>{6}, 0), b + ": 1-D, right");
 }
@@ -48,7 +48,7 @@ void the_point_is_on_the_boundary(const std::string &b) {
         const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
         const std::vector<double> dir = test::random_direction(rng, 3);
         const Tensor d = column(dir);
-        const Tensor &c = Z.center();
+        const Tensor c = Z.center().expand_dims(-1);               // the center as a point (n, 1)
         const Tensor start = c + (Z.rand_point(1, rng) - c) * 0.5; // an interior point
         for (const Tensor &s : {c, start}) {
             const Tensor x = Z.boundary_point(d, s);

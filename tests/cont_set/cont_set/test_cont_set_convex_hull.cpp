@@ -7,7 +7,7 @@
 // CORA authors: Mark Wetzlinger, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -30,7 +30,7 @@ namespace {
 void an_unknown_pair_is_noops() {
     const Zonotope Z = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}})),
                    Z3 = Zonotope(Tensor({1.0, 0.0, 0.0}),
-                                 Tensor({{0.5, 0.0}, {0.0, 0.5}, {0.0, 0.0}}));
+                                 Tensor({{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}}));
     const test::UnregisteredSet U;
     check(test::raises([&] { convex_hull(Z, Z3); }, Error::dimension_mismatch),
           "dimensions 2 and 3");

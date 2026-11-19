@@ -3,9 +3,9 @@
 // CORA: contSet/@capsule/supportFunc_.m
 // PROPERTY: contSet/@capsule/supportFunc_.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -50,7 +50,8 @@ void support_property(const std::string &b) {
         for (const double x : d) norm += x * x;
         const double along = d[0] * C.generator().data()[0] + d[1] * C.generator().data()[1] +
                              d[2] * C.generator().data()[2];
-        const Tensor tip = C.c() + C.generator() * (along >= 0 ? 1.0 : -1.0) +
+        const Tensor tip = C.c().expand_dims(-1) +
+                           C.generator().expand_dims(-1) * (along >= 0 ? 1.0 : -1.0) +
                            column(d) * (C.r().item() / std::sqrt(norm));
         check(close(column(d).matrix_transpose().matmul(tip).item(), value, 1e-12),
               b + ": the tip attains it");

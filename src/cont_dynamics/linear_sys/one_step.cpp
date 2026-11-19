@@ -16,9 +16,9 @@
 //
 // CORA: contDynamics/@linearSys/oneStep.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
@@ -47,7 +47,7 @@ OneStep LinearSys::one_step(const Zonotope &X, const Zonotope &U, const Tensor &
     });
     // the powers of A are shared by the solutions; the constant input is a point set
     TaylorLinSys taylor(A());
-    const Zonotope point(u, u.zeros_like({dim(), 0}));
+    const Zonotope point(u.squeeze(-1), u.zeros_like({0, dim()}));
     BlockStep s =
         priv_one_step(*this, taylor, priv_one_block(dim()), X, U, point, time_step, taylor_terms);
     return {s.time_point[0],

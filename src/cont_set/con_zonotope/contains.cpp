@@ -18,7 +18,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Matthias Althoff, Adrian Kulmburg, Ivan Brkan
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -58,7 +58,7 @@ detail::Refusal aux_points_refusal(const ConZonotope &cz, const Tensor &p,
         return std::pair{Error::dimension_mismatch,
                          "the points must be a matrix (" + std::to_string(cz.dim()) +
                              ", N) of columns, got the shape " + shape_text(p.shape())};
-    if (cz.c().ndim() != 2)
+    if (cz.c().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("a linear program per set: it supports a single set, "
                                      "not a batch")};
@@ -72,12 +72,12 @@ detail::Refusal aux_zonotope_refusal(const ConZonotope &cz, const Zonotope &Z,
         return std::pair{Error::dimension_mismatch, "the sets differ in dimension, " +
                                                         std::to_string(cz.dim()) + " and " +
                                                         std::to_string(Z.dim())};
-    if (cz.c().ndim() != 2 || Z.center().ndim() != 2)
+    if (cz.c().ndim() != 1 || Z.center().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("a linear program per set: it supports a single set, "
                                      "not a batch")};
     if (const detail::Refusal refusal = aux_method_refusal(method)) return refusal;
-    if (Z.compact().generators().shape().back() > Zonotope::kMaxCornerGenerators)
+    if (Z.compact().nr_generators() > Zonotope::kMaxCornerGenerators)
         return std::pair{Error::not_supported,
                          std::string("a set of more than 12 generators has too many corners to "
                                      "test one by one")};
@@ -101,11 +101,12 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
         const Tensor point = compacted.center();
         return within_tol(P, point.broadcast_to(P.shape()), tol).min().item() == 1.0;
     }
-    const Tensor extended_center =
-        Tensor::concat({compacted.c(), zeros_block(compacted.c(), p, 1)}, -2);
-    const Tensor extended_generators = Tensor::concat({compacted.generators(), compacted.A()}, -2);
+    const Tensor extended_center = Tensor::concat(
+        {compacted.c().expand_dims(-1), zeros_block(compacted.c().expand_dims(-1), p, 1)}, -2);
+    const Tensor extended_generators =
+        Tensor::concat({compacted.generators().matrix_transpose(), compacted.A()}, -2);
     const Tensor offsets = compacted.b().broadcast_to({p, N});
-    return Zonotope(extended_center, extended_generators)
+    return Zonotope(extended_center.squeeze(-1), extended_generators.matrix_transpose())
         .contains(Tensor::concat({P, offsets}, -2), "exact", tol);
 }
 

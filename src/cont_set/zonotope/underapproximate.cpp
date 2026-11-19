@@ -12,7 +12,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -27,15 +27,20 @@ namespace cora {
 
 Tensor Zonotope::underapproximate() const {
     detail::Entry entry;
-    const int64_t n = dim(), m = G_.shape().back();
-    if (m <= n) return underapproximate(G_);
+    const int64_t n = dim(), m = nr_generators();
+    if (m <= n) return underapproximate(G_.matrix_transpose());
     // more generators than dimensions: the nested dominant_directions does not check
-    CORA_CHECK(G_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(G_.matrix_transpose().ndim() == 2, Error::not_supported, [] {
         return std::string("underapproximate: the default directions are chosen per zonotope; it "
                            "supports a single zonotope, not a batch");
     });
-    const int64_t nonzero =
-        int64_t(G_.detach().not_equal(G_.zeros_like()).any(-2).count_nonzero(-1).item());
+    // the nonzero generators must span the space
+    const int64_t nonzero = int64_t(G_.matrix_transpose()
+                                        .detach()
+                                        .not_equal(G_.matrix_transpose().zeros_like())
+                                        .any(-2)
+                                        .count_nonzero(-1)
+                                        .item());
     CORA_CHECK(nonzero >= n, Error::degenerate_set, [&] {
         return "underapproximate: " + std::to_string(nonzero) +
                " nonzero generators span fewer "
@@ -52,9 +57,10 @@ Tensor Zonotope::underapproximate(const Tensor &S) const {
                ", k), got the shape " + shape_text(S.shape());
     });
     // sign(s_i' g_j) for every direction and generator, (..., k, m)
-    const Tensor signs = S.matrix_transpose().matmul(G_).sign();
-    const Tensor offset = G_.matmul(signs.matrix_transpose()); // (..., n, k)
-    const Tensor both = Tensor::stack({c_ + offset, c_ - offset}, int(offset.ndim()));
+    const Tensor signs = S.matrix_transpose().matmul(G_.matrix_transpose()).sign();
+    const Tensor offset = G_.matrix_transpose().matmul(signs.matrix_transpose()); // (..., n, k)
+    const Tensor both = Tensor::stack({c_.expand_dims(-1) + offset, c_.expand_dims(-1) - offset},
+                                      int(offset.ndim()));
     Shape shape = offset.shape();
     shape.back() *= 2;
     return both.reshape(shape); // columns 2i, 2i + 1: the vertex and its mirror image

@@ -7,7 +7,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -37,13 +37,13 @@ void strip_known(const std::string &b) {
     const Strip s;
     const Zonotope A = s.Z.intersect_strip(s.C, s.phi, s.y, Tensor::from_data({1.0, 0.0}, {2, 1}));
     check(close(A.center(), std::vector<double>{0.25, 0}, 1e-14), b + ": gain (1, 0): center");
-    check(close(A.generators(), std::vector<double>{0, 0, 0.5, 0, 1, 0}, 1e-14),
+    check(close(A.generators(), std::vector<double>{0, 0, 0, 1, 0.5, 0}, 1e-14),
           b + ": gain (1, 0): generators");
 
     const Zonotope N = s.Z.intersect_strip(s.C, s.phi, s.y);
     check(close(N.center(), std::vector<double>{0.2, 0}, 1e-14),
           b + ": normGen: center 0.8 * 0.25");
-    check(close(N.generators(), std::vector<double>{0.2, 0, 0.4, 0, 1, 0}, 1e-14),
+    check(close(N.generators(), std::vector<double>{0.2, 0, 0, 1, 0.4, 0}, 1e-14),
           b + ": normGen: generators");
     const Zonotope F = s.Z.intersect_strip(s.C, s.phi, s.y, "alamo-FRad");
     check(close(F.generators(), N.generators(), 1e-14) && close(F.center(), N.center(), 1e-14),
@@ -56,7 +56,7 @@ void strip_known(const std::string &b) {
     const Zonotope W = s.Z.intersect_strip(s.C, s.phi, s.y, obs);
     // the center and generators of wang-FRad
     check(close(W.center(), std::vector<double>{0.125, 0}, 1e-14), b + ": wang-FRad: center");
-    check(close(W.generators(), std::vector<double>{0.5, 0, 0.25, 0, 1, 0}, 1e-14),
+    check(close(W.generators(), std::vector<double>{0.5, 0, 0, 1, 0.25, 0}, 1e-14),
           b + ": wang-FRad: generators");
 }
 
@@ -65,7 +65,8 @@ void strip_encloses_the_intersection(const std::string &b) {
     cora::Rng rng(33);
     const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
     const Tensor C = Tensor({{1.0, 0.5, 0.0}, {0.0, -1.0, 2.0}});
-    const Tensor phi = column({0.8, 1.5}), y = C.matmul(Z.center()) + column({0.3, -0.2});
+    const Tensor phi = column({0.8, 1.5}),
+                 y = C.matmul(Z.center().expand_dims(-1)) + column({0.3, -0.2});
     const Tensor points = Z.rand_point(3000, rng);
     // the points of Z inside all strips of (C, phi, y)
     const auto inside = [&](const Tensor &C_, const Tensor &phi_, const Tensor &y_) {

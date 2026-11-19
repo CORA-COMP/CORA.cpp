@@ -7,9 +7,9 @@
 // the oracle and is not compared.
 //
 // CORA.cpp only: tests interval_cert, CORALean's float checker of dual solutions
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -45,8 +45,12 @@ int main() {
         // a constrained zonotope at the multipliers of CORA.cpp's programs, which are sent
         const ConZonotope cz = rnd.con_zonotope(3, 5, 2);
         const std::optional<ConZonotope::Certificate> w =
-            ConZonotope::Cut{cz.c(), cz.generators(),       cz.A(),
-                             cz.b(), Tensor::zeros({0, 5}), Tensor::zeros({0, 1})}
+            ConZonotope::Cut{cz.c().expand_dims(-1),
+                             cz.generators().matrix_transpose(),
+                             cz.A(),
+                             cz.b(),
+                             Tensor::zeros({0, 5}),
+                             Tensor::zeros({0, 1})}
                 .certificate();
         test::check(w.has_value(), "intervalCert: the programs have a solution");
         if (!w) return;
@@ -72,7 +76,7 @@ int main() {
     test::oracle::run("conZonotope.intervalCert", [](test::oracle::Random &rnd) {
         const ConZonotope cz = rnd.con_zonotope(2, 4, 1);
         const Polytope guard(Tensor::from_data({1.0, 0.5, -0.3, 1.0}, {2, 2}),
-                             cz.c() + Tensor::from_data({0.2, 0.1}, {2, 1}));
+                             cz.c().expand_dims(-1) + Tensor::from_data({0.2, 0.1}, {2, 1}));
         const ConZonotope::Cut cut = cz.cut(guard);
         const std::optional<ConZonotope::Certificate> w = cut.certificate();
         test::check(w.has_value(), "intervalCert: the cut has a solution");

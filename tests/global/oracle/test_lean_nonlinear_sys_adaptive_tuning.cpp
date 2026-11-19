@@ -7,9 +7,9 @@
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA: contSet/@zonotope/reduce.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
@@ -98,7 +98,8 @@ int main() {
             std::vector<double> g = rnd.matrix(3, 9).data();
             for (std::size_t i = 0; i < g.size(); ++i)
                 g[i] *= i % 9 < 3 ? 1.0 : (i % 9 < 6 ? 0.01 : 0.001);
-            const Tensor G = Tensor::from_data(g, {3, 9});
+            const Tensor G =
+                Tensor::from_data(g, {3, 9}).matrix_transpose(); // CORA's columns, as rows
             const Zonotope Z(rnd.vector(3), G);
             const double share = k % 2 == 0 ? 0.05 : 0.5;
             test::check(test::oracle::agree("reduce", Z.reduce_adaptive(share),

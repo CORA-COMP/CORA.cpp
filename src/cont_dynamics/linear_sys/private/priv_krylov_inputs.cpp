@@ -25,7 +25,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
@@ -85,10 +85,10 @@ KrylovConstantInput priv_krylov_constant_input(const HostMatVec &A, const std::v
 Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, const alg::Krylov &alg,
                                     double t_final) {
     double bound = 0; // the sum of the bounds of the errors of the subspaces
-    const int64_t n = A.n, m = V.generators().shape().back();
+    const int64_t n = A.n, m = V.nr_generators();
     const double dt = alg.time_step;
-    const Tensor &like = V.center();
-    const std::vector<double> G = V.generators().data();
+    const Tensor &like = V.center();                     // the backend and the dtype
+    const std::vector<double> G = V.generators().data(); // one generator per row
     std::vector<Tensor> terms;
     Tensor error = like.zeros_like({n, 1});
     int64_t order = 1;
@@ -97,7 +97,7 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         std::vector<double> u(static_cast<size_t>(n));
         bool zero = true;
         for (int64_t r = 0; r < n; ++r) {
-            u[size_t(r)] = G[size_t(r * m + g)];
+            u[size_t(r)] = G[size_t(g * n + r)];
             zero = zero && within_tol(u[size_t(r)], 0.0);
         }
         if (zero) continue;
@@ -129,8 +129,10 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         const Tensor red = like.full_like({n, 1}, bound);
         box = box + Interval(red.negative(), red);
     }
-    const Tensor generators = terms.empty() ? like.zeros_like({n, 0}) : Tensor::concat(terms, -1);
-    return Zonotope(like.zeros_like({n, 1}), generators) + box.zonotope();
+    // the terms are columns; as generator rows
+    const Tensor generators =
+        terms.empty() ? like.zeros_like({0, n}) : Tensor::concat(terms, -1).matrix_transpose();
+    return Zonotope(like.zeros_like({n}), generators) + box.zonotope();
 }
 
 } // namespace cora

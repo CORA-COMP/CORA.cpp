@@ -16,7 +16,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       16-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -54,9 +54,10 @@ PolyZonotope aux_set(oracle::Random &rnd, const Dims &s) {
     }
     std::vector<int64_t> id(std::size_t(s.p));
     for (int64_t i = 0; i < s.p; ++i) id[std::size_t(i)] = i + 1;
-    // small generators, so that the powers stay in range
-    return {rnd.vector(s.n),         rnd.matrix(s.n, s.h) * 0.5, rnd.matrix(s.n, s.q) * 0.25, E, id,
-            cora::detail::Verbatim{}};
+    // small generators, so that the powers stay in range; the draws of CORA's columns, as rows
+    const Tensor c = rnd.vector(s.n), G = rnd.matrix(s.n, s.h) * 0.5,
+                 GI = rnd.matrix(s.n, s.q) * 0.25;
+    return {c, G.matrix_transpose(), GI.matrix_transpose(), E, id, cora::detail::Verbatim{}};
 }
 
 /// Row i of an (n, m) tensor.
@@ -84,41 +85,41 @@ Tensor aux_lowest_first(const std::vector<std::vector<double>> &highest_first, i
     return aux_tensor(rows, k + 1);
 }
 
-/// Whether column j of an (n, m) tensor is zero.
-bool aux_zero_column(const std::vector<double> &data, int64_t n, int64_t m, int64_t j) {
+/// Whether row j of an (m, n) tensor is zero.
+bool aux_zero_row(const std::vector<double> &data, int64_t n, int64_t j) {
     for (int64_t i = 0; i < n; ++i)
-        if (data[std::size_t(i * m + j)] != 0.0) return false;
+        if (data[std::size_t(j * n + i)] != 0.0) return false;
     return true;
 }
 
-/// The columns of an (n, m) tensor that are kept.
-Tensor aux_columns(const Tensor &T, const std::vector<int64_t> &kept) {
-    const int64_t n = T.shape()[0], m = T.shape()[1];
+/// The rows of an (m, n) tensor that are kept.
+Tensor aux_rows_kept(const Tensor &T, const std::vector<int64_t> &kept) {
+    const int64_t n = T.shape()[1];
     const std::vector<double> data = T.data();
     std::vector<double> out;
-    for (int64_t i = 0; i < n; ++i)
-        for (const int64_t j : kept) out.push_back(data[std::size_t(i * m + j)]);
-    return Tensor::from_data(out, {n, int64_t(kept.size())});
+    for (const int64_t j : kept)
+        out.insert(out.end(), data.begin() + j * n, data.begin() + (j + 1) * n);
+    return Tensor::from_data(out, {int64_t(kept.size()), n});
 }
 
 /// The oracle's set without its zero generators, dependent (with their exponents) and independent.
 PolyZonotope aux_nonzero(const PolyZonotope &P) {
-    const int64_t n = P.dim(), h = P.generators().shape()[1];
-    const int64_t q = P.independent_generators().shape()[1];
+    const int64_t n = P.dim(), h = P.generators().shape()[0];
+    const int64_t q = P.independent_generators().shape()[0];
     const std::vector<double> g = P.generators().data(), gi = P.independent_generators().data();
     // the dependent columns that are not zero, then the independent ones
     std::vector<int64_t> keep_g, keep_gi;
     Exponents E;
     for (int64_t j = 0; j < h; ++j)
-        if (!aux_zero_column(g, n, h, j)) {
+        if (!aux_zero_row(g, n, j)) {
             keep_g.push_back(j);
             E.push_back(P.exponents()[std::size_t(j)]);
         }
     for (int64_t j = 0; j < q; ++j)
-        if (!aux_zero_column(gi, n, q, j)) keep_gi.push_back(j);
+        if (!aux_zero_row(gi, n, j)) keep_gi.push_back(j);
     return {P.center(),
-            aux_columns(P.generators(), keep_g),
-            aux_columns(P.independent_generators(), keep_gi),
+            aux_rows_kept(P.generators(), keep_g),
+            aux_rows_kept(P.independent_generators(), keep_gi),
             E,
             P.ids(),
             cora::detail::Verbatim{}};
@@ -128,22 +129,24 @@ PolyZonotope aux_nonzero(const PolyZonotope &P) {
 PolyZonotope aux_powers(const PolyZonotope &P, const std::vector<std::vector<double>> &coeffs) {
     const int64_t n = P.dim();
     const int k = int(coeffs[0].size()) - 1;
-    const int64_t h = P.generators().shape()[1], q = P.independent_generators().shape()[1];
+    const int64_t h = P.num_dependent(), q = P.independent_generators().shape()[0];
     const int64_t dep = priv_power_dep_size(h, k), ind = priv_power_ind_size(h, q, k);
+    // CORA's columns: row i holds coordinate i of every generator
+    const Tensor Gc = P.generators().matrix_transpose(),
+                 GIc = P.independent_generators().matrix_transpose();
     // each row through its polynomial
     std::vector<double> c;
     std::vector<std::vector<double>> G, GI;
     for (int64_t i = 0; i < n; ++i) {
-        const PrivNeuron y =
-            priv_eval_poly(P.center().data()[std::size_t(i)], aux_row(P.generators(), i),
-                           aux_row(P.independent_generators(), i), coeffs[std::size_t(i)]);
+        const PrivNeuron y = priv_eval_poly(P.center().data()[std::size_t(i)], aux_row(Gc, i),
+                                            aux_row(GIc, i), coeffs[std::size_t(i)]);
         c.push_back(y.c);
         G.push_back(y.G);
         GI.push_back(y.GI);
     }
-    return {Tensor::from_data(c, {n, 1}),
-            aux_tensor(G, dep),
-            aux_tensor(GI, ind),
+    return {Tensor::from_data(c, {n}),
+            aux_tensor(G, dep).matrix_transpose(),
+            aux_tensor(GI, ind).matrix_transpose(),
             priv_power_exponents(P.exponents(), k),
             P.ids(),
             cora::detail::Verbatim{}};
@@ -160,9 +163,10 @@ std::vector<std::vector<double>> aux_coeffs(oracle::Random &rnd, int64_t n, int 
 /// The tracked rows of a set, as evaluate.cpp's layers of order k take them.
 PrivRows aux_rows(const PolyZonotope &X) {
     PrivRows r;
-    r.c = X.center();
-    r.G = X.generators();
-    r.GI = X.independent_generators();
+    // CORA's columns, one row per neuron
+    r.c = X.center().expand_dims(-1);
+    r.G = X.generators().matrix_transpose();
+    r.GI = X.independent_generators().matrix_transpose();
     r.even = priv_even_mask(r.c, X.exponents());
     r.track = true;
     r.E = X.exponents();
@@ -190,7 +194,8 @@ void aux_check_layer(const PolyZonotope &X, Activation activation, const std::ve
     }
     std::vector<double> d;
     priv_layer_poly(r, activation, orders, true, options, &d);
-    const PolyZonotope mine(r.c, r.G, r.GI, r.E, r.ids, cora::detail::Verbatim{});
+    const PolyZonotope mine(r.c, r.G.matrix_transpose(), r.GI.matrix_transpose(), r.E, r.ids,
+                            cora::detail::Verbatim{});
     // the oracle's layer on the same fits and errors
     const lean::NnLayer layer = lean::NnLayer::poly(aux_lowest_first(coeffs, degree),
                                                     Tensor::from_data(d, {int64_t(d.size()), 1}));

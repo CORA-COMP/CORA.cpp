@@ -10,9 +10,9 @@
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // PROPERTY: nn/@neuralNetwork/evaluate.m
 // CORA authors: Tobias Ladner, Lukas Koller, Sebastian Sigl
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -70,8 +70,8 @@ void an_affine_network_maps_the_set_exactly(const std::string &b) {
 void stable_neurons_are_exact(const std::string &b) {
     const Tensor I = Tensor::eye(2), zero = Tensor({0.0, 0.0});
     const NeuralNetwork nn({{I, zero}, {I, zero}});
-    const Zonotope positive(Tensor({5.0, 6.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
-    const Zonotope negative(Tensor({-5.0, -6.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
+    const Zonotope positive(Tensor({5.0, 6.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
+    const Zonotope negative(Tensor({-5.0, -6.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     cora::Rng rng(2);
     for (int k = 0; k < 10; ++k) {
         const std::vector<double> d = test::random_direction(rng, 2);
@@ -151,8 +151,9 @@ void s_shaped_enclosures_hold_the_outputs(const std::string &b) {
     check(violations == 0, b + ": " + std::to_string(violations) + " outputs left the enclosure");
     // a set of one point is mapped to the output of the point
     const Tensor p({{0.3}, {-0.2}, {0.1}});
-    const Zonotope point = nn.evaluate(Zonotope(p, p.zeros_like({3, 1})));
-    check(test::close(point.center(), nn.evaluate(p)), b + ": a point set gives the point");
+    const Zonotope point = nn.evaluate(Zonotope(p, p.zeros_like({1, 3})));
+    check(test::close(point.center().expand_dims(-1), nn.evaluate(p)),
+          b + ": a point set gives the point");
 }
 
 /// evaluate_with_input: the first rows are the input set, the pairs (x, N(x)) of the points lie in
@@ -196,7 +197,7 @@ void the_joint_set_holds_the_pairs(const std::string &b) {
     const PolyZonotope as_factors = nn.evaluate_with_input(P, {.add_approx_error_to_gi = false});
     // the errors as new factors leave no independent generators
     check(as_factors.num_factors() > P.num_factors() &&
-              as_factors.independent_generators().shape()[1] == 0,
+              as_factors.independent_generators().shape()[0] == 0,
           b + ": the errors become new factors");
     // both enclose the pairs: the zonotope enclosure of each holds them
     for (const PolyZonotope *Q : {&in_gi, &as_factors}) {

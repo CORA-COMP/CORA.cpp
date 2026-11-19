@@ -14,13 +14,14 @@
 // See also: intersect, interval_tight
 //
 // CORA.cpp only: CORALean's float definition replaces CORA's slack factors
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/cont_set/polytope/polytope.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/blocks.h"
 #include "global/format.h"
 
@@ -65,11 +66,11 @@ ConZonotope::Cut ConZonotope::cut(const Polytope &P) const {
         return "cut: the sets differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(P.dim());
     });
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported,
                [] { return std::string("cut: a single set, not a batch"); });
-    const int64_t n = dim(), h = G_.shape()[1];
+    const int64_t n = dim(), h = G_.size(-2);
     const auto [a, r] = aux_rows(P.constraints());
-    const Vec c = c_.data(), G = G_.data();
+    const Vec c = c_.expand_dims(-1).data(), G = G_.matrix_transpose().data();
     // each row onto the factors: a'G, and b - a'c widened by the carrying error and the error box
     Vec C, d;
     for (std::size_t i = 0; i < r.size(); ++i) {
@@ -80,12 +81,14 @@ ConZonotope::Cut ConZonotope::cut(const Polytope &P) const {
     }
     // the set with its rows (none: the empty blocks)
     const int64_t q = int64_t(r.size());
-    return {c_,
-            G_,
+    return {c_.expand_dims(-1),
+            G_.matrix_transpose(),
             A(),
             b(),
-            q == 0 ? zeros_block(c_, 0, h) : Tensor::like(c_, C, {q, h}),
-            q == 0 ? zeros_block(c_, 0, 1) : Tensor::like(c_, d, {q, 1})};
+            q == 0 ? zeros_block(c_.expand_dims(-1), 0, h)
+                   : Tensor::like(c_.expand_dims(-1), C, {q, h}),
+            q == 0 ? zeros_block(c_.expand_dims(-1), 0, 1)
+                   : Tensor::like(c_.expand_dims(-1), d, {q, 1})};
 }
 
 ConZonotope::Cut ConZonotope::Cut::linear_map(const Tensor &M) const {
@@ -94,8 +97,9 @@ ConZonotope::Cut ConZonotope::Cut::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(c.shape()[0]) +
                " columns, got the shape " + shape_text(M.shape());
     });
-    auto [c2, G2] = Tensor::zonotope_linear_map(M, c, G);
-    return {std::move(c2), std::move(G2), A, b, C, d};
+    // the cut keeps CORA's columns: c (n, 1) and G (n, h)
+    const auto [c2, G2] = Tensor::zonotope_linear_map(M, c.squeeze(-1), G.matrix_transpose());
+    return {c2.expand_dims(-1), G2.matrix_transpose(), A, b, C, d};
 }
 
 } // namespace cora

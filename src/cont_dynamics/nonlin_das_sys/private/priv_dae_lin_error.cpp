@@ -22,9 +22,9 @@
 // CORA: contDynamics/@nonlinDASys/private/priv_linError_mixed_noInt.m
 // CORA: contDynamics/@nonlinDASys/private/priv_linError_mixed_noInt_comp.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlin_das_sys/private/priv.h"
@@ -51,7 +51,9 @@ struct Remainder {
 };
 
 /// The box [-radius, radius] as a zonotope (CORA's zonotope(interval(-r, r))).
-Zonotope aux_box(const Tensor &radius) { return Zonotope(radius.zeros_like(), radius.diag()); }
+Zonotope aux_box(const Tensor &radius) {
+    return Zonotope(radius.zeros_like().squeeze(-1), radius.diag());
+}
 
 /// The bound max(|inf|, |sup|) of the box of a set, joined with the origin by the caller.
 Tensor aux_abs_max(const Interval &I) { return I.inf().abs().maximum(I.sup().abs()); }
@@ -97,17 +99,19 @@ Remainder aux_remainder(const NonlinDASys &sys, const Tensor &p_x, const Tensor 
         Range(dx.inf() + p_x, dx.sup() + p_x), Range(dy.inf() + p_y, dy.sup() + p_y),
         du ? Range(du->inf() + p_u, du->sup() + p_u) : Range(p_u));
     // the set of (x, y, u) of CORA: the center of the added y is one more generator of y
-    std::vector<Tensor> y_gens{Ry_cor.generators()};
+    std::vector<Tensor> y_gens{Ry_cor.generators().matrix_transpose()};
     const std::vector<double> add_c = Ry_add.center().data();
     if (std::any_of(add_c.begin(), add_c.end(), [](double v) { return v != 0.0; }))
-        y_gens.push_back(Ry_add.center());
-    y_gens.push_back(Ry_add.generators());
+        y_gens.push_back(Ry_add.center().expand_dims(-1));
+    y_gens.push_back(Ry_add.generators().matrix_transpose());
     const Tensor y_part = Tensor::concat(y_gens, -1);
     const Tensor no_x =
-        Rx.center().zeros_like({n, y_part.shape()[1] - Ry_cor.generators().shape()[1]});
-    const Tensor c = Tensor::concat({Rx.center(), Ry_cor.center()}, -2);
-    const Tensor G = Tensor::concat({Tensor::concat({Rx.generators(), no_x}, -1), y_part}, -2);
-    Zonotope Z(c, G);
+        Rx.center().expand_dims(-1).zeros_like({n, y_part.shape()[1] - Ry_cor.nr_generators()});
+    const Tensor c =
+        Tensor::concat({Rx.center().expand_dims(-1), Ry_cor.center().expand_dims(-1)}, -2);
+    const Tensor G = Tensor::concat(
+        {Tensor::concat({Rx.generators().matrix_transpose(), no_x}, -1), y_part}, -2);
+    Zonotope Z = Zonotope(c.squeeze(-1), G.matrix_transpose());
     if (m > 0) Z = Z.cart_prod(*Uz);
     const Zonotope R_xyu = Z.reduce(error_order);
     // the largest |dz| per coordinate over the boxes
@@ -124,9 +128,9 @@ Remainder aux_remainder(const NonlinDASys &sys, const Tensor &p_x, const Tensor 
     std::vector<Tensor> Q = Hf_mid;
     Q.insert(Q.end(), Hg_mid.begin(), Hg_mid.end());
     const Zonotope E = R_xyu.quad_map(Q) * 0.5;
-    const Tensor &Ec = E.center(), &EG = E.generators();
-    return {Zonotope(Ec.slice(-2, 0, n), EG.slice(-2, 0, n)),
-            Zonotope(Ec.slice(-2, n, n + p), EG.slice(-2, n, n + p)),
+    const Tensor &Ec = E.center().expand_dims(-1), &EG = E.generators().matrix_transpose();
+    return {Zonotope(Ec.slice(-2, 0, n).squeeze(-1), EG.slice(-2, 0, n).matrix_transpose()),
+            Zonotope(Ec.slice(-2, n, n + p).squeeze(-1), EG.slice(-2, n, n + p).matrix_transpose()),
             Tensor::like(p_x, x_rad, {n, 1}), Tensor::like(p_x, y_rad, {p, 1})};
 }
 
@@ -136,8 +140,12 @@ Zonotope aux_error(const Zonotope &mid, const Tensor &rad) { return mid + aux_bo
 /// The set at the generators of `a` and `b` of one layout, combined as a - M b (the midpoints of
 /// the error of f and the error of g stay correlated), plus the radii: a_rad - M b_rad.
 Zonotope aux_combine(const Remainder &r, const Tensor &CF_inv) {
-    const Zonotope mid(r.x_mid.center() - CF_inv.matmul(r.y_mid.center()),
-                       r.x_mid.generators() - CF_inv.matmul(r.y_mid.generators()));
+    const Zonotope mid = Zonotope(
+        (r.x_mid.center().expand_dims(-1) - CF_inv.matmul(r.y_mid.center().expand_dims(-1)))
+            .squeeze(-1),
+        (r.x_mid.generators().matrix_transpose() -
+         CF_inv.matmul(r.y_mid.generators().matrix_transpose()))
+            .matrix_transpose());
     return mid + aux_box(r.x_rad) + aux_box(r.y_rad).linear_map(-CF_inv);
 }
 
@@ -166,8 +174,8 @@ Parts aux_composed(const DaeLinearized &lin, const Zonotope &R, const Zonotope &
                    const DaeDecomposition &decomposition, const alg::DaeLinearization &alg) {
     const int64_t n = lin.x_star.shape()[0], p = lin.y_star.shape()[0];
     const Zonotope R_y = R_y_cor + R_y_add;
-    Zonotope total_x(lin.x_star.zeros_like(), lin.x_star.zeros_like({n, 0}));
-    Zonotope total_y(lin.y_star.zeros_like(), lin.y_star.zeros_like({p, 0}));
+    Zonotope total_x = Zonotope(lin.x_star.zeros_like().squeeze(-1), lin.x_star.zeros_like({0, n}));
+    Zonotope total_y = Zonotope(lin.y_star.zeros_like().squeeze(-1), lin.y_star.zeros_like({0, p}));
     for (const DaeSubsystem &s : decomposition.subsystems) {
         // the subsystem's point and the inputs it reads: its neighbours' y and the voltages
         const Tensor p_x = s.X.matmul(lin.x_star), p_y = s.Y.matmul(lin.y_star);

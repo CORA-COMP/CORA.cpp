@@ -6,7 +6,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -27,11 +27,11 @@ namespace {
 /// Hand-computed: state i goes to position dims[i]; the point (1, 2, 3) with dims = [2 3 1] in
 /// CORA's numbering becomes (3, 1, 2), where CORA's project gives (2, 3, 1).
 void lift_known(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0, 3.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {0.0, 0.0}}));
+    const Zonotope Z(column({1.0, 2.0, 3.0}), Tensor({{1.0, 0.0, 0.0}, {0.0, 2.0, 0.0}}));
     const Zonotope L = Z.lift(3, {1, 2, 0});
     check(close(L.center(), std::vector<double>{3, 1, 2}, 0),
           b + ": the center, state 0 at position 1");
-    check(close(L.generators(), std::vector<double>{0, 0, 1, 0, 0, 2}, 0), b + ": the generators");
+    check(close(L.generators(), std::vector<double>{0, 1, 0, 0, 0, 2}, 0), b + ": the generators");
     check(close(Z.lift(3, {0, 1, 2}).generators(), Z.generators(), 0), b + ": the identity");
     check(close(Z.lift(3, {1, 0, 2}).center(), std::vector<double>{2, 1, 3}, 0), b + ": a swap");
 }
@@ -57,7 +57,7 @@ void lift_is_a_permutation(const std::string &b) {
 
 /// Wrong dimensions, positions and a smaller space are refused with CORA's identifiers.
 void lift_refuses(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0}, {0.0}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}}));
     check(test::raises([&] { Z.lift(1, {0, 0}); }, Error::wrong_value),
           b + ": N below the dimension");
     check(test::raises([&] { Z.lift(3, {0}); }, Error::wrong_value), b + ": one position short");

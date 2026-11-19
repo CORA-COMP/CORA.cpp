@@ -10,9 +10,9 @@
 // PROPERTY: contDynamics/@nonlinearSys/reach_adaptive.m
 // PROPERTY: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
@@ -139,8 +139,8 @@ void a_weak_nonlinearity_and_a_linear_system(const std::string &b) {
 /// concentrations over [0, 1] is tiny (the sum is conserved).
 void robertson_sums_stay_conserved(const std::string &b) {
     const NonlinearSys sys = robertson();
-    const Zonotope X0(Tensor({1.0, 0.0, 0.0}), Tensor::zeros({3, 0}));
-    const Zonotope U(Tensor({0.0}), Tensor::zeros({1, 0}));
+    const Zonotope X0(Tensor({1.0, 0.0, 0.0}), Tensor::zeros({0, 3}));
+    const Zonotope U(Tensor({0.0}), Tensor::zeros({0, 1}));
     const ReachSet R = sys.reach({.initial_set = X0, .input_set = U, .t_final = 1.0},
                                  alg::LinearizationAdaptive{.zeta_z = 0.001});
     check_times(R, 1.0, b);

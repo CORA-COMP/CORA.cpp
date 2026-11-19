@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@zonotope/display.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,9 +25,11 @@ namespace cora {
 std::string Zonotope::display_impl() const {
     std::string text = "zonotope\n";
     text += "- dimension: " + std::to_string(dim()) + "\n";
-    text += "- center:\n" + format_matrix(c_, "    ");
-    const std::vector<int64_t> shape = G_.shape();
-    text += "- generators (" + std::to_string(shape.back()) + "):\n" + format_matrix(G_, "    ");
+    // a vector zonotope shows CORA's columns, a matrix zonotope its matrices
+    const bool vector = elem_rank_ == 1;
+    text += "- center:\n" + format_matrix(vector ? c_.expand_dims(-1) : c_, "    ");
+    text += "- generators (" + std::to_string(nr_generators()) + "):\n" +
+            format_matrix(vector ? G_.matrix_transpose() : G_, "    ");
     return text;
 }
 

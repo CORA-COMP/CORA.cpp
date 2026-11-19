@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/con_zonotope.h"
@@ -59,8 +59,9 @@ ConZonotope::Cert aux_cert(const Reply &reply) {
 
 // the wire form of an exact set is {c, G, A, b}
 ConZonotope::ConZonotope(const cora::ConZonotope &cz)
-    : dtype_(Tensor(cz.c()).dtype()), json_(Json::object()) {
-    json_.set("c", Tensor(cz.c()).to_json()).set("G", Tensor(cz.generators()).to_json());
+    : dtype_(Tensor(cz.c().expand_dims(-1)).dtype()), json_(Json::object()) {
+    json_.set("c", Tensor(cz.c().expand_dims(-1)).to_json())
+        .set("G", Tensor(cz.generators().matrix_transpose()).to_json());
     json_.set("A", Tensor(cz.A()).to_json()).set("b", Tensor(cz.b()).to_json());
 }
 
@@ -88,9 +89,11 @@ cora::ConZonotope ConZonotope::nominal() const {
     const Tensor c = Tensor::from_json(dtype_, json_.at("c"));
     const Tensor G = Tensor::from_json(dtype_, json_.at("G"));
     if (!P)
-        return {c.gather(), G.gather(), Tensor::from_json(dtype_, json_.at("A")).gather(),
+        return {c.gather(), G.gather().matrix_transpose(),
+                Tensor::from_json(dtype_, json_.at("A")).gather(),
                 Tensor::from_json(dtype_, json_.at("b")).gather()};
-    return {c.gather(), G.gather(), Tensor::from_json(dtype_, P->at("Ae")).gather(),
+    return {c.gather(), G.gather().matrix_transpose(),
+            Tensor::from_json(dtype_, P->at("Ae")).gather(),
             Tensor::from_json(dtype_, P->at("be")).gather()};
 }
 

@@ -3,9 +3,9 @@
 // conversions between host (Eigen) matrices and tensors on the current backend, and the reach
 // algorithms by name.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -37,8 +37,10 @@ inline alg::LinearReach algorithm(const std::string &a, double time_step, int ta
     return alg::WrappingFree{.time_step = time_step, .taylor_terms = taylor_terms};
 }
 
+/// The zonotope of MATLAB's exported center and generator columns: the one place they become rows.
 inline Zonotope set_of(const System &s) {
-    return {Tensor::from_data(s.c, {s.n, 1}), Tensor::from_data(s.G, {s.n, s.m})};
+    return {Tensor::from_data(s.c, {s.n, 1}),
+            Tensor::from_data(s.G, {s.n, s.m}).matrix_transpose()};
 }
 
 inline Tensor system_matrix(const System &s) { return Tensor::from_data(s.A, {s.n, s.n}); }

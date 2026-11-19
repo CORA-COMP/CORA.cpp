@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@capsule/supportFunc_.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -30,7 +30,7 @@ namespace cora {
 Tensor Capsule::support_function_impl(const Tensor &d) const {
     const Tensor dt = d.matrix_transpose();
     // the points of the axis and of the ball add, in the order of CORA
-    const Tensor val = dt.matmul(c_).add(dt.matmul(g_).abs()).add(r_.multiply(priv_norm(d)));
+    const Tensor val = dt.matmul(cc()).add(dt.matmul(gc()).abs()).add(r_.multiply(priv_norm(d)));
     return Tensor::where(priv_empty_mask(r_),
                          val.full_like(val.shape(), -std::numeric_limits<double>::infinity()), val);
 }

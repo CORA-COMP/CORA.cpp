@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/zonoBundle.m
 // PROPERTY: contSet/@conZonotope/zonoBundle.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -26,13 +26,15 @@ namespace {
 void zono_bundle_known(const std::string &b) {
     const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     check(plain.zono_bundle().parallel_sets() == 1 &&
-              close(plain.zono_bundle().zonotopes()[0].generators(), {1, 0, 0, 2}, 0),
+              close((plain.zono_bundle().zonotopes()[0]).generators().matrix_transpose(),
+                    {1, 0, 0, 2}, 0),
           b + ": without constraints");
     const ConZonotope point(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                             Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({0.5, 0.25}));
-    check(point.zono_bundle().parallel_sets() == 1 &&
-              close(point.zono_bundle().zonotopes()[0].center(), {1.5, 1.25}, 1e-9),
-          b + ": the constraints fix the factors");
+    check(
+        point.zono_bundle().parallel_sets() == 1 &&
+            close((point.zono_bundle().zonotopes()[0]).center().expand_dims(-1), {1.5, 1.25}, 1e-9),
+        b + ": the constraints fix the factors");
     check(ConZonotope::empty(2).zono_bundle().representsa("emptySet"), b + ": the empty set");
 }
 
@@ -66,7 +68,7 @@ int main() {
     const Tensor c = Tensor::from_data({0.0, 0.0, 1.0, 1.0}, {2, 2, 1});
     check(test::raises(
               [&] {
-                  ConZonotope(c, Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 1, 1}),
+                  ConZonotope(c, Tensor::zeros({2, 1, 2}), Tensor::zeros({2, 1, 1}),
                               Tensor::zeros({2, 1, 1}))
                       .zono_bundle();
               },

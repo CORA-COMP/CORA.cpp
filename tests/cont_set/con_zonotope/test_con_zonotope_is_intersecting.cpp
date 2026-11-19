@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@conZonotope/isIntersecting_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -34,7 +34,7 @@ void is_intersecting_known(const std::string &b) {
     // a zonotope and a constrained zonotope, then a point and the empty set
     const Zonotope Z(column({1.0, 1.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     check(seg.is_intersecting(Z) &&
-              !seg.is_intersecting(Zonotope(column({3.0, 3.0}), Z.generators())),
+              !seg.is_intersecting(Zonotope(column({3.0, 3.0}).squeeze(-1), Z.generators())),
           b + ": a zonotope");
     check(seg.is_intersecting(seg) && !seg.is_intersecting(seg.plus(column({2.0, 0.0}))),
           b + ": a constrained zonotope");

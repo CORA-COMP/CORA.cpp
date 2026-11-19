@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/contains_.m
 // PROPERTY: contSet/@ellipsoid/contains_.m
 // CORA authors: Victor Gassmann, Niklas Kochdumper, Adrian Kulmburg, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -44,7 +44,7 @@ void contains_known(const std::string &b) {
     const double inf = std::numeric_limits<double>::infinity();
     check(!E.contains(Interval(column({0.0, 0.0}), column({inf, 1.0}))), b + ": an unbounded box");
     check(E.contains(Interval::empty(2)), b + ": the empty box");
-    check(E.contains(Zonotope(column({1.0, 2.0}), Tensor::zeros({2, 0}))),
+    check(E.contains(Zonotope(column({1.0, 2.0}), Tensor::zeros({0, 2}))),
           b + ": a zonotope that is a point");
     // ellipsoids that are points, empty, or contained trivially
     const Ellipsoid point(Tensor::zeros({2, 2}), column({1.0, 2.0}));
@@ -73,17 +73,21 @@ void contains_property(const std::string &b) {
         const Ellipsoid E = test::random_ellipsoid(rng, 3, k % 4 == 3 ? 2 : -1);
         const double scale = 0.15 + 0.1 * k;
         const Zonotope Z(E.q() + test::normal_matrix(rng, 3, 1, 0.1),
-                         test::normal_matrix(rng, 3, 4, scale * 0.3));
+                         test::normal_matrix(rng, 3, 4, scale * 0.3).matrix_transpose());
         bool all = true;
         for (int mask = 0; mask < 16; ++mask) {
-            Tensor v = Z.center();
+            Tensor v = Z.center().expand_dims(-1);
             for (int j = 0; j < 4; ++j)
-                v = v + Z.generators().slice(1, j, j + 1) * ((mask >> j) & 1 ? 1.0 : -1.0);
+                v = v + Z.generators().matrix_transpose().slice(1, j, j + 1) *
+                            ((mask >> j) & 1 ? 1.0 : -1.0);
             all = all && E.contains(v);
         }
         check(E.contains(Z) == all, b + ": the search agrees with the vertices");
-        const Interval I(Z.center() - Z.generators().abs().sum(1, true) * 0.5,
-                         Z.center() + Z.generators().abs().sum(1, true) * 0.5);
+        // the box of half the generators: its corners decide as well
+        const Interval I(Z.center().expand_dims(-1) -
+                             Z.generators().matrix_transpose().abs().sum(1, true) * 0.5,
+                         Z.center().expand_dims(-1) +
+                             Z.generators().matrix_transpose().abs().sum(1, true) * 0.5);
         bool corners = true;
         for (int mask = 0; mask < 8; ++mask) {
             std::vector<double> sel;

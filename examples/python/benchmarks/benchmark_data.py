@@ -64,10 +64,11 @@ def load_instance(name, folder=DATA):
 # Running -----------------------------------------------------------------------------------
 
 def zonotope(cora, c, G):
-    """cora.Zonotope from a center (n, 1) and generators (n, m); none become one zero generator."""
+    """cora.Zonotope from MATLAB's center (n, 1) and generator columns (n, m); none become one zero
+    generator."""
     if G.shape[1] == 0:
         G = np.zeros((c.shape[0], 1))
-    return cora.Zonotope(c[:, 0], G)
+    return cora.Zonotope(c[:, 0], G.T)
 
 
 def specifications(cora, inst):

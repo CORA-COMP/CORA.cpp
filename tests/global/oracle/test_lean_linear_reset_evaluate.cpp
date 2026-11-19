@@ -6,7 +6,7 @@
 // ORACLE: hybridDynamics/@linearReset/evaluate.m
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/location.h"
@@ -36,9 +36,11 @@ int main() {
             const Zonotope Y = plain.evaluate(X).as<Zonotope>();
             const lean::Zonotope jump = lean::Transition::jump(A, c, X);
             const Tensor jg = jump.generators().gather();
-            const int64_t kept = Y.generators().shape()[1];
-            test::oracle::check("transition.jump.c", Y.center(), jump.center().gather());
-            test::oracle::check("transition.jump.G", Y.generators(), jg.slice(-1, 0, kept));
+            const int64_t kept = Y.nr_generators();
+            test::oracle::check("transition.jump.c", Y.center().expand_dims(-1),
+                                jump.center().gather());
+            test::oracle::check("transition.jump.G", Y.generators().matrix_transpose(),
+                                jg.slice(-1, 0, kept));
             test::check(jg.slice(-1, kept, jg.shape()[1]).abs().sum().item() == 0,
                         "transition.jump: the other generators are zero");
             test::oracle::check(

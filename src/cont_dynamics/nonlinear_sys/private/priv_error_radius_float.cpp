@@ -20,7 +20,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       16-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_float_scalars.h"
@@ -38,13 +38,14 @@ namespace cora {
 
 Vec priv_error_radius_float(const Tensor &A, double dt, int eta, const Zonotope &V) {
     const auto n = static_cast<std::size_t>(A.size(-1));
-    const auto h = static_cast<std::size_t>(V.generators().size(-1));
+    // entry k of generator l is G[l n + k] (the generator rows)
+    const auto h = static_cast<std::size_t>(V.nr_generators());
     const Vec a = A.data(), c = V.center().data(), G = V.generators().data();
     // what a coordinate of V reaches: |c_j| + the row sum of |G| (priv_interval_map)
     Vec reach(n);
     for (std::size_t j = 0; j < n; ++j) {
         double sum = 0;
-        for (std::size_t l = h; l-- > 0;) sum = std::abs(G[j * h + l]) + sum;
+        for (std::size_t l = h; l-- > 0;) sum = std::abs(G[l * n + j]) + sum;
         reach[j] = std::abs(c[j]) + sum;
     }
     // the generators of [lo, hi] V by rows: those of mid V, then the residual's box
@@ -59,7 +60,7 @@ Vec priv_error_radius_float(const Tensor &A, double dt, int eta, const Zonotope 
             for (std::size_t l = 0; l < h; ++l) {
                 double dot = 0;
                 for (std::size_t k = n; k-- > 0;)
-                    dot = priv_float_mul(C[i * n + k], G[k * h + l]) + dot;
+                    dot = priv_float_mul(C[i * n + k], G[l * n + k]) + dot;
                 rows[i].push_back(std::abs(dot));
             }
             double box = 0;

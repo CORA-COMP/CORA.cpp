@@ -1,26 +1,30 @@
-// mat_exp - the matrix exponential of an interval matrix, as CORA's intervalMatrix expm family
+// mat_exp - the exponential of an interval matrix or a matrix zonotope, as CORA's expm family
 //
-// An interval matrix is an Interval of matrix bounds (..., n, n). Its exponential, remainders,
-// dependent terms and powers are the linear-system code they serve, as CORALean's LinearSys.MatExp,
-// not methods of the set: free functions of namespace cora::mat_exp.
+// An interval matrix is an Interval of matrix bounds (..., n, n), a matrix zonotope a Zonotope of
+// matrix elements (Zonotope::matrix). Their exponentials, remainders, dependent terms and powers
+// are the linear-system code they serve, as CORALean's LinearSys.MatExp: free functions of
+// namespace cora::mat_exp.
 //
 // Syntax:     mat_exp::ExpmResult E = mat_exp::expm(A, max_order);
 //             auto [square, H] = mat_exp::dependent_terms(A, r);
 // Operations: dependent_terms, exponential_remainder, powers, expm, expm_independent, expm_mixed,
 //             expm_independent_mixed, expm_taylor_horner_scaling, expm_different_algorithms,
 //             expm_norm_infinity, expm_absolute_bound (one file each in
-//             src/cont_dynamics/linear_sys/mat_exp/)
-// See also:   cora/cont_set/interval/interval.h, cora/matrix_set/mat_zonotope/mat_zonotope.h
+//             src/cont_dynamics/linear_sys/mat_exp/); of a matrix zonotope: dependent_terms,
+//             matrix_power, powers, expm, expm_independent, expm_mixed, expm_independent_mixed,
+//             expm_one_param (src/cont_dynamics/linear_sys/mat_exp/zonotope/)
+// See also:   cora/cont_set/interval/interval.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA.cpp only: the declarations of the matrix exponential functions; each file tags its CORA file
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/interval/interval.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 
 #include <optional>
 #include <utility>
@@ -29,6 +33,8 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::mat_exp {
+
+// Interval matrices -------------------------------------------------------------------------------
 
 /// The result of expm: the enclosure of the series, the powers of A that were multiplied
 /// (powers[k] is of order first_order + k) and the remainder box.
@@ -104,6 +110,65 @@ std::optional<Interval> expm_different_algorithms(const Interval &A, int64_t max
 /// (expmNormInf), and its matrix bound (expmAbsoluteBound) for square A.
 Tensor expm_norm_infinity(const Interval &A, double t);
 Tensor expm_absolute_bound(const Interval &A, double t);
+
+// Matrix zonotopes -------------------------------------------------------------------------------
+
+/// The result of expm_mixed of a matrix zonotope: the terms to the intermediate order, the rest
+/// of the series, the powers of orders 1 to the intermediate order, those of the second part and
+/// the remainder box.
+struct ZonotopeExpmMixedResult {
+    Zonotope enclosure;
+    Interval enclosure_rest;
+    std::vector<Zonotope> powers;
+    std::vector<Interval> powers2;
+    Interval remainder;
+};
+
+/// The result of expm_one_param: the matrix zonotope of the Taylor terms, the remainder box, the
+/// powers (powers[k] of order k + 1, a generator per power of the parameter) and, with an input,
+/// the zonotope of the input terms.
+struct ExpmOneParamResult {
+    Zonotope enclosure;
+    Interval remainder;
+    std::vector<Zonotope> powers;
+    std::optional<Zonotope> constant_input;
+};
+
+/// The terms of the Taylor series of exp(M r) that depend on one another, of a square matrix
+/// zonotope A: (r^2 M^2, I + M r + M^2 r^2 / 2), each an enclosure over the set.
+std::pair<Zonotope, Zonotope> dependent_terms(const Zonotope &A, double r);
+
+/// The power A^k of a square matrix zonotope: the identity for k = 0, A for k = 1, else ((A A) A)
+/// ... with k factors, every product Zonotope::matmul.
+Zonotope matrix_power(const Zonotope &A, int64_t exponent);
+
+/// The powers A^i for i = initial_order (the first entry) to max_order, each the previous one
+/// times A from the right; the first is A (initial_order 1) or initial_power. A is square.
+std::vector<Zonotope> powers(const Zonotope &A, int64_t max_order);
+std::vector<Zonotope> powers(const Zonotope &A, int64_t max_order, int64_t initial_order,
+                             const Zonotope &initial_power);
+
+/// An enclosure of exp(M) over the set: expm_independent (CORA's expm calls expmInd).
+Zonotope expm(const Zonotope &A, int64_t max_order = 10);
+
+/// The series to max_order with every power evaluated on its own, plus the remainder box of the
+/// interval matrix of the set.
+Zonotope expm_independent(const Zonotope &A, int64_t max_order);
+
+/// The series in two parts with independent powers: I + sum A^i / i! to intermediate_order >= 1
+/// as a matrix zonotope, the rest up to max_order as interval matrices (CORA's expmIndMixed).
+ZonotopeExpmMixedResult expm_independent_mixed(const Zonotope &A, int64_t intermediate_order,
+                                               int64_t max_order);
+
+/// The series in two parts: the terms to intermediate_order >= 2 as a matrix zonotope (with the
+/// dependent terms of the step r > 0) and the rest up to max_order as interval matrices.
+ZonotopeExpmMixedResult expm_mixed(const Zonotope &A, double r, int64_t intermediate_order,
+                                   int64_t max_order);
+
+/// The Taylor series of exp(M r) to max_order for the matrices C + b G_1 of a set with one
+/// generator (CORALean's K(r), Althoff and Dolan, ACC 2012), with the remainder box beside it.
+ExpmOneParamResult expm_one_param(const Zonotope &A, double r, int64_t max_order,
+                                  const std::optional<Zonotope> &u_trans = std::nullopt);
 
 } // namespace cora::mat_exp
 

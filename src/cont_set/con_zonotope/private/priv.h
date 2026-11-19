@@ -66,8 +66,8 @@ ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
 ConZonotope priv_minkowski_sum(const ConZonotope &cz1, const ConZonotope &cz2);
 
 /// The points x of cz1 whose image (Mc + MG x) is a point of cz2, as CORA's conIntersect: the
-/// factors of both stack and one equality per dimension makes them agree; Mc (n2, 1) and MG
-/// (n2, m1) are the center and generators of the image of cz1.
+/// factors of both stack and one equality per dimension makes them agree; Mc (..., n2) and MG
+/// (..., m1, n2), one generator per row, are the center and generators of the image of cz1.
 ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const Tensor &Mc,
                            const Tensor &MG);
 

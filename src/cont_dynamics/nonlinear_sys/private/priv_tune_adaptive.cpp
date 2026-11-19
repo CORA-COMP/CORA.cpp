@@ -15,9 +15,9 @@
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_adaptive.h"
@@ -110,7 +110,7 @@ void priv_update_orders(const NonlinearSys &sys, const std::optional<Zonotope> &
     if (!(veryfirststep || changed)) return;
     // the Hessian at the linearization point gives the orders of the error terms
     const int64_t n = sys.dim(), m = sys.input_dim();
-    const Vec us = m > 0 ? U->center().data() : Vec{};
+    const Vec us = m > 0 ? U->center().expand_dims(-1).data() : Vec{};
     const auto H = sys.hessian_enclosure(Range(priv_column(like, xs)),
                                          m > 0 ? std::optional<Range>(Range(priv_column(like, us)))
                                                : std::nullopt);

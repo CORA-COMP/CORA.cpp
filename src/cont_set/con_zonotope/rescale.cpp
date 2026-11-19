@@ -18,7 +18,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -150,7 +150,7 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
     CORA_CHECK(method == "exact" || method == "iter", Error::wrong_value, [&] {
         return "rescale: the method must be 'exact' or 'iter', got '" + method + "'";
     });
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported, [] {
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported, [] {
         return std::string("rescale: a linear program per factor; it supports a single set, not a "
                            "batch");
     });
@@ -161,7 +161,7 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
                [] { return std::string("rescale: no constraints left!"); });
 
     // the ranges of the factors, of a set whose generators and constraints may be permuted
-    Tensor G = G_, A = this->A(), b = this->b();
+    Tensor G = G_.matrix_transpose(), A = this->A(), b = this->b();
     std::vector<double> lo, hi;
     if (method == "exact") {
         std::tie(lo, hi) = priv_factor_ranges(H);
@@ -173,7 +173,7 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
             for (int64_t j = 0; j < m; ++j) a[i * m + j] = e.M[i * w + j];
             rhs[i] = e.M[i * w + m];
         }
-        G = G_.take(e.order, -1);
+        G = G_.matrix_transpose().take(e.order, -1);
         A = Tensor::like(this->A(), a, {p, m});
         b = Tensor::like(this->b(), rhs, {p, 1});
         if (!aux_iterate(e.M, p, m, lo, hi))
@@ -186,8 +186,10 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
         radius[j] = (hi[j] - lo[j]) / 2;
     }
     // the new factors are (x - middle) / radius: shift the center and offset, scale the columns
-    const Tensor m_col = aux_vector(c_, middle, true), r_row = aux_vector(c_, radius, false);
-    return {c_ + G.matmul(m_col), G.multiply(r_row), A.multiply(r_row), b - A.matmul(m_col)};
+    const Tensor m_col = aux_vector(c_.expand_dims(-1), middle, true),
+                 r_row = aux_vector(c_.expand_dims(-1), radius, false);
+    return {c_.expand_dims(-1) + G.matmul(m_col), G.multiply(r_row).matrix_transpose(),
+            A.multiply(r_row), b - A.matmul(m_col)};
 }
 
 } // namespace cora

@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@zonoBundle/zonotope.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -26,13 +26,14 @@ namespace cora {
 
 Zonotope ZonoBundle::zonotope() const {
     detail::Entry entry;
-    const detail::Refusal refusal = priv_batch_refusal(Z_.front().center(), "zonotope");
+    const detail::Refusal refusal =
+        priv_batch_refusal(Z_.front().center().expand_dims(-1), "zonotope");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the index of the least volume is a host decision; the member itself is returned unchanged
     std::size_t best = 0;
     double least = 0.0;
     for (std::size_t i = 0; i < Z_.size(); ++i) {
-        const double volume = Z_[i].generators().abs_sum().prod(-2, true).item();
+        const double volume = Z_[i].generators().matrix_transpose().abs_sum().prod(-2, true).item();
         if (i == 0 || volume < least) {
             best = i;
             least = volume;

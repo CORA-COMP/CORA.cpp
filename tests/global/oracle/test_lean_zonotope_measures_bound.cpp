@@ -14,9 +14,9 @@
 // computes c + L (y - C c); is_intersecting is certified one way only (disjointness).
 //
 // CORA authors: Matthias Althoff, Victor Gassmann, Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -107,7 +107,8 @@ int main() {
     oracle::run("zonotope.isIntersecting", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}}) {
             const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
-            const Zonotope far(Z2.center() * 40.0, Z2.generators());
+            const Zonotope far =
+                Zonotope((Z2.center().expand_dims(-1) * 40.0).squeeze(-1), Z2.generators());
             for (const Zonotope &S : {Z2, far}) {
                 const lean::Certified r = lean::Zonotope(Z).is_intersecting(lean::Zonotope(S));
                 // a proof of disjointness is never contradicted

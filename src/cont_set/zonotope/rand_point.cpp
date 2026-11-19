@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@zonotope/randPoint_.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg, Severin Prenitzer
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_rand_point.h"
@@ -60,8 +60,11 @@ Tensor Zonotope::rand_point_impl(int64_t N, Rng &rng) const {
 }
 
 Tensor Zonotope::rand_point_impl(int64_t N, Rng &rng, const std::string &type) const {
-    if (type == "standard") return c_ + G_.matmul(aux_factors(c_, G_, N, rng, false));
-    if (type == "extreme") return c_ + G_.matmul(aux_factors(c_, G_, N, rng, true));
+    // the points are columns (..., n, N), as every set returns them
+    const Tensor c = c_.expand_dims(-1), G = G_.matrix_transpose();
+    if (type == "standard") return c + G.matmul(aux_factors(c, G, N, rng, false));
+    if (type == "extreme") return c + G.matmul(aux_factors(c, G, N, rng, true));
+
     CORA_FAIL(Error::wrong_value,
               "rand_point: unknown type '" + type + "'; use \"standard\" or \"extreme\"");
 }

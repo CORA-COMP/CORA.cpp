@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/zonotope.m
 // PROPERTY: contSet/@ellipsoid/zonotope.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -31,20 +31,23 @@ namespace {
 void zonotope_known(const std::string &b) {
     const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
     const Zonotope Z = E.zonotope();
-    check(close(Z.center(), {1, 2}, 0) && close(Z.generators(), {2, 0, 0, 1}, 1e-13),
+    check(close(Z.center().expand_dims(-1), {1, 2}, 0) &&
+              close(Z.generators().matrix_transpose(), {2, 0, 0, 1}, 1e-13),
           b + ": sqrt(Q)");
-    check(close(E.zonotope("inner:box").generators(),
+    check(close(E.zonotope("inner:box").generators().matrix_transpose(),
                 {2 / std::sqrt(2.0), 0, 0, 1 / std::sqrt(2.0)}, 1e-13),
           b + ": inner");
+    // a full ellipsoid: the symmetric root; a flat one and a point
     const Ellipsoid R(Tensor({{2.0, 1.0}, {1.0, 2.0}}));
-    const Tensor G = R.zonotope().generators();
+    const Tensor G = R.zonotope().generators().matrix_transpose();
     check(close(G.matmul(G.matrix_transpose()), R.Q(), 1e-12) &&
               close(G, G.matrix_transpose(), 1e-12),
           b + ": G is the symmetric root");
     const Ellipsoid flat(Tensor({{1.0, 1.0}, {1.0, 1.0}}), column({0.0, 0.0}), 1e-6);
-    check(flat.zonotope().generators().shape() == Shape({2, 1}),
+    check(flat.zonotope().generators().matrix_transpose().shape() == Shape({2, 1}),
           b + ": rank 1 gives one generator");
-    check(Ellipsoid(Tensor::zeros({2, 2})).zonotope().generators().shape() == Shape({2, 0}),
+    check((Ellipsoid(Tensor::zeros({2, 2})).zonotope()).generators().matrix_transpose().shape() ==
+              Shape({2, 0}),
           b + ": a point has no generator");
 }
 

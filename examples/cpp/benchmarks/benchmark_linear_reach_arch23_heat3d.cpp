@@ -20,7 +20,7 @@
 //
 // Authors:       Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       09-November-2026
-// Last update:   11-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "benchmark_data.h"
@@ -40,9 +40,10 @@ using namespace cora;
 /// The script's maximum of one set Z of [c G]' x: the first row of [c, G] summed plus the
 /// absolute values of the other rows (its zonotope of [sum(row 1); rows 2..p]).
 double aux_temperature(const Zonotope &Z) {
-    const Tensor R = Tensor::concat({Z.center(), Z.generators()}, -1);
-    const int64_t p = R.shape()[0];
-    return R.slice(0, 0, 1).sum().item() + R.slice(0, 1, p).abs().sum().item();
+    // the rows [c; G] as CORA's columns [c, G]: one column per output
+    const Tensor R = Tensor::concat({Z.center().expand_dims(-2), Z.generators()}, -2);
+    const int64_t p = R.shape()[1];
+    return R.slice(1, 0, 1).sum().item() + R.slice(1, 1, p).abs().sum().item();
 }
 
 /// The instance of heat3d_data.py for samples^3 states built from the mesh: A (finite differences,
@@ -127,7 +128,7 @@ bool aux_heat03(const std::string &name) {
     const std::string label = mesh ? name : meta["label"].string;
     // the transposed system and its initial point C' (CORA's sysTrans and params.R0)
     const LinearSys sys(At, Tensor::zeros({n, 1}), Tensor::concat({c, G}, -1).matrix_transpose());
-    const ReachProblem problem{.initial_set = Zonotope(C.matrix_transpose(), Tensor::zeros({n, 0})),
+    const ReachProblem problem{.initial_set = Zonotope(C.matrix_transpose(), Tensor::zeros({0, n})),
                                .t_final = t_final};
     const alg::Krylov krylov{.time_step = mesh ? 0.001 : 0.005,
                              .taylor_terms = 10,

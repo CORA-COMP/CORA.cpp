@@ -10,9 +10,9 @@
 // CORA: nn/layers/nonlinear/nnTanhLayer.m
 // PROPERTY: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA authors: Tobias Ladner, Lukas Koller
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -47,7 +47,7 @@ Line aux_line(Activation a, double l, double u) {
     const double c = (l + u) / 2, r = (u - l) / 2;
     const Zonotope Y =
         nn.evaluate(Zonotope(Tensor({c}), Tensor({{r}})), {.poly_method = PolyMethod::regression});
-    const std::vector<double> g = Y.generators().data();
+    const std::vector<double> g = Y.generators().matrix_transpose().data();
     // the generators (1, 2): slope r, then the error (a neuron of one point has r = 0)
     const double slope = r > 0 ? g[0] / r : 0.0;
     return {slope, Y.center().data()[0] - slope * c, g.size() > 1 ? std::abs(g[1]) : 0.0};

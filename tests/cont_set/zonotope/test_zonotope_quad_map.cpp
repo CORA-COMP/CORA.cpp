@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -25,19 +25,19 @@ namespace {
 
 /// CORA's unit test: two matrices on a zonotope of two generators, and on two zonotopes.
 void quad_map_by_hand(const std::string &b) {
-    const Zonotope Z1(column({-4.0, 1.0}), Tensor({{-3.0, -2.0}, {2.0, 3.0}}));
+    const Zonotope Z1(column({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}}));
     const Zonotope Z2(column({1.0, -3.0}), Tensor({{4.0, 2.0}, {2.0, -1.0}}));
     const std::vector<Tensor> Q{Tensor({{1.0, -2.0}, {-3.0, 4.0}}),
                                 Tensor({{0.5, 0.0}, {2.0, -1.0}})};
     const Zonotope R = Z1.quad_map(Q);
     check(close(R.center(), std::vector<double>{102.5, -16.25}, 1e-13), b + ": the center");
     check(close(R.generators(),
-                std::vector<double>{27.5, 35, 95, 110, 125, -5.75, -9.5, -14, -26, -32}, 1e-13),
+                std::vector<double>{27.5, -5.75, 35, -9.5, 95, -14, 110, -26, 125, -32}, 1e-13),
           b + ": the generators (squares, then the mixed terms)");
     const Zonotope M = Z1.quad_map(Z2, Q);
     check(close(M.center(), std::vector<double>{-43, 3}, 1e-13), b + ": mixed: the center");
     check(close(M.generators(),
-                std::vector<double>{-51, -59, -4, -8, -12, -26, -32, -38, 8.5, 14, -2, 6, 14, 1, 7,
+                std::vector<double>{-51, 8.5, -59, 14, -4, -2, -8, 6, -12, 14, -26, 1, -32, 7, -38,
                                     13},
                 1e-13),
           b + ": mixed: the generators");
@@ -51,17 +51,17 @@ void special_cases(const std::string &b) {
     check(close(R.center(), std::vector<double>{1}, 0) &&
               close(R.generators(), std::vector<double>{1}, 0),
           b + ": 2 x^2 on [-1, 1] is enclosed by [0, 2]");
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0}, {0.5}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}}));
     const Zonotope S = Z.quad_map({Tensor({{1.0, 0.0}, {0.0, 0.0}}), Tensor::zeros({2, 2})});
-    check(S.dim() == 2 && S.generators().shape() == std::vector<int64_t>({2, 1}),
+    check(S.dim() == 2 && S.generators().shape() == std::vector<int64_t>({1, 2}),
           b + ": one nonzero matrix: a box generator");
     check(close(S.generators(), std::vector<double>{2.5, 0}, 1e-14) &&
               close(S.center(), std::vector<double>{1.5, 0}, 1e-14),
           b + ": (1 + b)^2 is enclosed by [-1, 4]; the zero output stays 0");
-    const Zonotope P(column({3.0, 1.0}), Tensor::zeros({2, 0}));
+    const Zonotope P(column({3.0, 1.0}), Tensor::zeros({0, 2}));
     const Zonotope Pq =
         P.quad_map({Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{0.0, 1.0}, {0.0, 0.0}})});
-    check(close(Pq.center(), std::vector<double>{10, 3}, 0) && Pq.generators().shape().back() == 0,
+    check(close(Pq.center(), std::vector<double>{10, 3}, 0) && Pq.nr_generators() == 0,
           b + ": no generators: the image of the point");
     const Zonotope T(column({0.5, 1.0}), Tensor({{0.5, 0.0}, {0.0, 1.0}}));
     const std::vector<Tensor> Q{Tensor({{1.0, 2.0}, {0.0, 1.0}}), Tensor({{0.0, 1.0}, {1.0, 0.0}})};
@@ -103,7 +103,7 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
 
 /// Wrong matrices and dimensions are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0}, {0.5}}));
+    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}}));
     const Tensor Q = Tensor({{1.0, 0.0}, {0.0, 1.0}});
     check(test::raises([&] { Z.quad_map({}); }, Error::dimension_mismatch), "quad_map: no matrix");
     check(test::raises([&] { Z.quad_map({Tensor({{1.0}})}); }, Error::dimension_mismatch),

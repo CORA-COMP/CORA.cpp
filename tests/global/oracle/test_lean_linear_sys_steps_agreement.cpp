@@ -102,7 +102,7 @@ int main() {
     // for a point the closed form and the series agree; a set differs, CORALean keeps terms apart
     aux_run("linearSys.particularSolution_constant", [](test::oracle::Random &rnd) {
         const Operands o = draw(rnd);
-        const Zonotope point(o.u, o.u.zeros_like({3, 0}));
+        const Zonotope point(o.u, o.u.zeros_like({0, 3}));
         const ConstantSolution mine =
             LinearSys(o.A).particular_solution_constant(point, kStep, kTerms);
         check_hull(mine.time_point,
@@ -126,7 +126,7 @@ int main() {
     // the series of the input solution cut at a given order (CORA's tt_err)
     aux_run("linearSys.errorSolution_adaptive", [](test::oracle::Random &rnd) {
         const Operands o = draw(rnd);
-        const Zonotope point(o.u, o.u.zeros_like({3, 0}));
+        const Zonotope point(o.u, o.u.zeros_like({0, 3}));
         const LinearSys sys(o.A);
         const lean::LinearSys theirs(o.A);
         check_hull(sys.error_solution_adaptive(o.U, std::nullopt, kStep, 0.1, kTerms),

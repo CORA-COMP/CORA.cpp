@@ -14,9 +14,9 @@
 // CORA: contSet/@conZonotope/and_.m
 // CORA: contSet/@polytope/and_.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper, Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   09-November-2026
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -64,8 +64,9 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
     ConZonotope out = cz;
     if (H.Ae.shape()[0] > 0) {
         // Ae (c + G x) = be for the factors x
-        const Tensor A = Tensor::concat({cz.A(), H.Ae.matmul(cz.generators())}, -2);
-        const Tensor b = Tensor::concat({cz.b(), H.be - H.Ae.matmul(cz.c())}, -2);
+        const Tensor A =
+            Tensor::concat({cz.A(), H.Ae.matmul(cz.generators().matrix_transpose())}, -2);
+        const Tensor b = Tensor::concat({cz.b(), H.be - H.Ae.matmul(cz.c().expand_dims(-1))}, -2);
         out = ConZonotope(cz.c(), cz.generators(), A, b);
     }
     // a constrained hyperplane takes the bounds from the set so far, else from the set after Ae
@@ -80,16 +81,20 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
         if (lb > ub) return ConZonotope::empty(n); // beyond the halfspace (CORA would keep lb)
         if (hyperplane && range->second <= ub + numerics::kGuardContains) continue; // it holds
         // a'(c + G x) + s (lb - ub) / 2 = (ub + lb) / 2 with the new factor s in [-1, 1]
-        const Tensor a_row = Tensor::like(out.c(), a, {1, n});
+        const Tensor a_row = Tensor::like(out.c().expand_dims(-1), a, {1, n});
         const int64_t p = out.A().shape()[0];
-        const Tensor slack = out.c().full_like({1, 1}, 0.5 * (lb - ub));
-        const Tensor A =
-            Tensor::concat({Tensor::concat({out.A(), zeros_block(out.c(), p, 1)}, -1),
-                            Tensor::concat({a_row.matmul(out.generators()), slack}, -1)},
+        const Tensor slack = out.c().expand_dims(-1).full_like({1, 1}, 0.5 * (lb - ub));
+        const Tensor A = Tensor::concat(
+            {Tensor::concat({out.A(), zeros_block(out.c().expand_dims(-1), p, 1)}, -1),
+             Tensor::concat({a_row.matmul(out.generators().matrix_transpose()), slack}, -1)},
+            -2);
+        const Tensor b =
+            Tensor::concat({out.b(), out.c().expand_dims(-1).full_like({1, 1}, 0.5 * (ub + lb)) -
+                                         a_row.matmul(out.c().expand_dims(-1))},
                            -2);
-        const Tensor b = Tensor::concat(
-            {out.b(), out.c().full_like({1, 1}, 0.5 * (ub + lb)) - a_row.matmul(out.c())}, -2);
-        const Tensor G = Tensor::concat({out.generators(), zeros_block(out.c(), n, 1)}, -1);
+        // the new factor s scales no generator
+        const Tensor G =
+            Tensor::concat({out.generators(), zeros_block(out.generators(), 1, n)}, -2);
         out = ConZonotope(out.c(), G, A, b);
     }
     return out;
@@ -131,7 +136,7 @@ ConZonotope ConZonotope::intersect(const Polytope &P) const {
         return "intersect: the sets differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(P.dim());
     });
-    CORA_CHECK(c_.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c_.ndim() == 1, Error::not_supported,
                [] { return std::string("intersect: with a polytope, a single set, not a batch"); });
     return aux_intersection(*this, P);
 }

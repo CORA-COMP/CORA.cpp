@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@polyZonotope/enclose.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -77,8 +77,8 @@ PolyZonotope PolyZonotope::enclose(const PolyZonotope &S) const {
     const Tensor GI = aux_independent(*this, S);
     if (id_ == S.id_ && E_ == S.E_) {
         // the same factors: the points at t = 0 and 1, and the difference of the centers
-        const Tensor G =
-            Tensor::concat({G_ * 0.5 + S.G_ * 0.5, G_ * 0.5 - S.G_ * 0.5, (c_ - S.c_) * 0.5}, -1);
+        const Tensor G = Tensor::concat(
+            {G_ * 0.5 + S.G_ * 0.5, G_ * 0.5 - S.G_ * 0.5, ((c_ - S.c_) * 0.5).expand_dims(0)}, -2);
         const auto h = std::size_t(num_dependent());
         Exponents E = aux_with_row(E_, 0, h);
         for (const std::vector<int> &col : aux_with_row(E_, 1, h)) E.push_back(col);
@@ -97,8 +97,9 @@ PolyZonotope PolyZonotope::enclose(const PolyZonotope &S) const {
     Exponents E2 = priv_extend_exponents(S.E_, ids.position2, p);
     E1.insert(E1.begin(), std::vector<int>(p, 0));
     E2.insert(E2.begin(), std::vector<int>(p, 0));
-    const Tensor G1 = Tensor::concat({c_, G_}, -1), G2 = Tensor::concat({S.c_, S.G_}, -1);
-    const Tensor G = Tensor::concat({G1, G1, G2, G2 * -1.0}, -1) * 0.5;
+    const Tensor G1 = Tensor::concat({c_.expand_dims(0), G_}, -2),
+                 G2 = Tensor::concat({S.c_.expand_dims(0), S.G_}, -2);
+    const Tensor G = Tensor::concat({G1, G1, G2, G2 * -1.0}, -2) * 0.5;
     Exponents E = aux_with_row(E1, 0, E1.size());
     for (const std::vector<int> &col : aux_with_row(E1, 1, E1.size())) E.push_back(col);
     for (const std::vector<int> &col : aux_with_row(E2, 0, E2.size())) E.push_back(col);

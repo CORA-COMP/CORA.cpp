@@ -67,7 +67,7 @@ class RoundTrip(unittest.TestCase):
         return cora.Interval(*self.bounds(n))
 
     def test_zonotope(self):
-        Z = cora.Zonotope(self.rng.standard_normal(3), self.rng.standard_normal((3, 5)))
+        Z = cora.Zonotope(self.rng.standard_normal(3), self.rng.standard_normal((5, 3)))
         d = self.rng.standard_normal(3)
         same_bits(self, Z.support_function(d), cora.lean.Zonotope(Z).support_function(d))
 

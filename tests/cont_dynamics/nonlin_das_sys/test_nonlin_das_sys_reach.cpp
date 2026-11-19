@@ -13,9 +13,9 @@
 // PROPERTY: contDynamics/@nonlinDASys/linReach.m
 // PROPERTY: contDynamics/@nonlinDASys/post.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
@@ -137,7 +137,7 @@ void trajectories_stay_in_the_sets(const std::string &b) {
 void a_decomposition_encloses_the_coupling(const std::string &b) {
     const NonlinDASys sys = coupled_system();
     const Zonotope X0(Tensor({0.1, 0.3}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
-    const Zonotope U(Tensor({0.0}), Tensor::zeros({1, 0}));
+    const Zonotope U(Tensor({0.0}), Tensor::zeros({0, 1}));
     const alg::DaeLinearization a{.time_step = 0.01, .zonotope_order = 20};
     const Tensor y_guess = Tensor({0.0, 0.0});
     for (const bool composed : {false, true}) {
@@ -167,7 +167,8 @@ void the_steps_are_those_of_reach(const std::string &b) {
               test::close(second.time_point.center(), R.time_point[2].center(), 1e-12),
           b + ": the steps of reach");
     // with u = 1 in the second step the center moves up by about 1 * dt: x' = -x/2 + 1
-    check(second.time_point.center().item() > first.time_point.center().item(),
+    check(second.time_point.center().expand_dims(-1).item() >
+              first.time_point.center().expand_dims(-1).item(),
           b + ": the constant input of the second step");
 }
 
@@ -229,9 +230,9 @@ void wrong_arguments_are_described(const std::string &b) {
           b + ": a state owned by no subsystem");
     // the same problem with the checks on, then off
     const DaeReachProblem problem{.initial_set = X0, .y0_guess = y_guess, .t_final = 0.1};
-    const Tensor on = sys.reach(problem, a).time_point.back().center();
+    const Tensor on = (sys.reach(problem, a).time_point.back()).center();
     ChecksScope off(false);
-    check(test::close(sys.reach(problem, a).time_point.back().center(), on, 0),
+    check(test::close((sys.reach(problem, a).time_point.back()).center(), on, 0),
           b + ": the same with the checks off");
 }
 

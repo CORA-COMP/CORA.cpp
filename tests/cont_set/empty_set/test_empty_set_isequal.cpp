@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -27,7 +27,7 @@ void equal_means_empty_in_the_same_dimension(const std::string &b) {
     check(E.isequal(Interval::empty(2)), b + ": the empty interval");
     check(!E.isequal(Interval::empty(3)), b + ": the empty interval of another dimension");
     check(!E.isequal(Interval(test::column({0.0, 0.0}), test::column({1.0, 1.0}))), b + ": a box");
-    check(!E.isequal(Zonotope(test::column({0.0, 0.0}), Tensor::zeros({2, 0}))),
+    check(!E.isequal(Zonotope(test::column({0.0, 0.0}), Tensor::zeros({0, 2}))),
           b + ": a point zonotope");
     check(E.isequal(EmptySet(2), 1e-3), b + ": with a tol");
 }

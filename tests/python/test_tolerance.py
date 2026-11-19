@@ -66,10 +66,10 @@ class ToleranceTest(unittest.TestCase):
         K = box([0.0, 0.0], [1.0 + 1e-10, 1.0])
         self.assertFalse(I.isequal(K))
         self.assertTrue(I.isequal(K, tol=1e-9))
-        Z = cora.Zonotope(np.zeros(2), np.array([[1.0, 0.2, 1e-12], [0.5, 1.0, 0.0]]))
-        self.assertEqual(Z.compact().generators.shape[-1], 3)
+        Z = cora.Zonotope(np.zeros(2), np.array([[1.0, 0.5], [0.2, 1.0], [1e-12, 0.0]]))
+        self.assertEqual(Z.compact().generators.shape[-2], 3)
         with cora.tolerance(1e-10):
-            self.assertEqual(Z.compact().generators.shape[-1], 2)
+            self.assertEqual(Z.compact().generators.shape[-2], 2)
             with cora.tolerance(1e-8):
                 self.assertTrue(cora.contains(Z, Z))
         self.assertTrue(Z.contains(Z))

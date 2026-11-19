@@ -14,9 +14,9 @@
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA: contDynamics/@nonlinearSys/reach_adaptive.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -65,7 +65,7 @@ std::vector<Case> cases() {
              Zonotope(Tensor({0.0}), Tensor({{0.015625}})), 1.0 / 1024, false},
             {"quadratic", quadratic(),
              Zonotope(Tensor({1.0, 0.5}), Tensor({{0.05, 0.0}, {0.0, 0.05}})),
-             Zonotope(Tensor({0.0}), Tensor::zeros({1, 0})), 0.002, true}};
+             Zonotope(Tensor({0.0}), Tensor::zeros({0, 1})), 0.002, true}};
 }
 
 /// PolyZonotope.interval of CORALean: the center less and plus the row sums of the dependent and
@@ -74,12 +74,12 @@ Interval aux_free_box(const PolyZonotope &Z) {
     const std::vector<double> c = Z.center().data(), G = Z.generators().data(),
                               GI = Z.independent_generators().data();
     const std::size_t n = c.size(), h = std::size_t(Z.num_dependent()),
-                      q = std::size_t(Z.independent_generators().shape()[1]);
+                      q = std::size_t(Z.independent_generators().shape()[0]);
     std::vector<double> lo(n), hi(n);
     for (std::size_t i = 0; i < n; ++i) {
         double rg = 0, rgi = 0;
-        for (std::size_t l = h; l-- > 0;) rg = std::abs(G[i * h + l]) + rg;
-        for (std::size_t l = q; l-- > 0;) rgi = std::abs(GI[i * q + l]) + rgi;
+        for (std::size_t l = h; l-- > 0;) rg = std::abs(G[l * n + i]) + rg;
+        for (std::size_t l = q; l-- > 0;) rgi = std::abs(GI[l * n + i]) + rgi;
         lo[i] = (c[i] - rg) - rgi;
         hi[i] = (c[i] + rg) + rgi;
     }
@@ -139,10 +139,11 @@ int main() {
             const auto mine =
                 priv_lin_reach_poly_adaptive_pass(c.sys, U, alg, c.dt, PolyZonotope(c.R), adm);
             const auto theirs = oracle.lin_reach_poly_adaptive_pass(
-                U, c.R, c.dt, priv_column(c.R.center(), adm), alg, c.empty);
+                U, c.R, c.dt, priv_column(c.R.center().expand_dims(-1), adm), alg, c.empty);
             test::check(mine.has_value() && theirs.has_value(), b + ": both converge");
             if (!mine || !theirs) continue;
-            test::check(test::oracle::agree(b + " xs", priv_column(c.R.center(), mine->xs),
+            test::check(test::oracle::agree(b + " xs",
+                                            priv_column(c.R.center().expand_dims(-1), mine->xs),
                                             lean::Tensor(theirs->xs)),
                         b + ": xs agrees with the oracle's");
             test::check(test::oracle::agree(b + " A", mine->A, lean::Tensor(theirs->A)),

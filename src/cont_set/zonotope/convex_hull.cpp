@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@zonotope/convHull_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -34,10 +34,12 @@ Zonotope Zonotope::convex_hull(const Zonotope &Z2) const {
 
 Zonotope Zonotope::convex_hull(const Interval &I) const {
     detail::Entry entry;
-    CORA_CHECK(I.dim() == dim() && I.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
-        return "convex_hull: the interval must be a box of the dimension " + std::to_string(dim()) +
-               " of the zonotope, got bounds of the shape " + shape_text(I.inf().shape());
-    });
+    CORA_CHECK(elem_rank_ == 1 && I.dim() == dim() && I.inf().shape().back() == 1,
+               Error::dimension_mismatch, [&] {
+                   return "convex_hull: the interval must be a box of the dimension " +
+                          std::to_string(dim()) + " of the zonotope, got bounds of the shape " +
+                          shape_text(I.inf().shape());
+               });
     // a box is the zonotope of its axis generators
     return enclose(I.zonotope());
 }

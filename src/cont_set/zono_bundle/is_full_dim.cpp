@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@zonoBundle/isFullDim.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   18-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -27,7 +27,8 @@ namespace cora {
 bool ZonoBundle::is_full_dim(Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "is_full_dim");
-    const detail::Refusal batch = priv_batch_refusal(Z_.front().center(), "is_full_dim");
+    const detail::Refusal batch =
+        priv_batch_refusal(Z_.front().center().expand_dims(-1), "is_full_dim");
     CORA_CHECK(!batch, batch->first, [&] { return batch->second; });
     for (const Zonotope &Z : Z_)
         if (!Z.is_full_dim(tol)) return false;
@@ -36,7 +37,8 @@ bool ZonoBundle::is_full_dim(Tol tol_arg) const {
 
 bool ZonoBundle::is_full_dim_impl(Tol tol) const {
     // the entry of ContSet checked the tolerance only: a batch cannot be decided, checks on or off
-    const detail::Refusal batch = priv_batch_refusal(Z_.front().center(), "is_full_dim");
+    const detail::Refusal batch =
+        priv_batch_refusal(Z_.front().center().expand_dims(-1), "is_full_dim");
     if (batch) CORA_FAIL(batch->first, batch->second);
     return is_full_dim(tol);
 }
