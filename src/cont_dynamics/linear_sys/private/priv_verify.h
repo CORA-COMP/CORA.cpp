@@ -26,6 +26,7 @@
 namespace cora {
 
 struct VerifyZonotopeTrace; // the grids and witnesses of a run, priv_verify_zonotope_pass.h
+struct VerifyKrylovTrace;   // the directions and windows of a run, priv_verify_krylov.h
 
 /// The input in canonical form x' = A x + u, u in u_trans + GU [-1, 1]^k: u_trans = B center(U)
 /// and GU = B generators(U), without zero generators (GU (n, 0) if there are none); n states
@@ -63,7 +64,8 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
 /// the support function of the output set bounded per step, the step halved until it decides.
 VerifyResult priv_verify_ra_krylov(const LinearSys &sys, const Zonotope &R0, const Zonotope &U,
                                    double t_final, const std::vector<Specification> &specs,
-                                   const alg::ReachAvoidKrylov &alg);
+                                   const alg::ReachAvoidKrylov &alg,
+                                   VerifyKrylovTrace *trace = nullptr);
 
 /// The seconds since `start`: the computation time of verify (CORA's tComp).
 inline double priv_seconds_since(std::chrono::steady_clock::time_point start) {

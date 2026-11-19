@@ -125,6 +125,33 @@ struct VerifyZonotopeWitness {
     cora::Tensor b, beta;
 };
 
+/// A direction of verify_krylov_pass: w (n, 1), the plan of its windows (order, steps), the limit
+/// its bound must stay below (strictly, or at most), its group.
+struct VerifyKrylovDirection {
+    cora::Tensor w;
+    std::vector<std::pair<int64_t, int64_t>> plan;
+    double limit = 0;
+    bool strict = true;
+    int64_t group = 0;
+};
+
+/// What the oracle computed of a direction: its windows' order, nu and error (none if a window is
+/// not computed) and its bounds (none if no enclosure).
+struct VerifyKrylovDirectionResult {
+    struct Window {
+        int64_t order = 0;
+        double nu = 0, err = 0;
+    };
+    std::optional<std::vector<Window>> windows;
+    std::optional<std::vector<double>> bounds;
+};
+
+/// The verdict of verify_krylov_pass and every direction's windows and bounds.
+struct VerifyKrylovPass {
+    bool verified = false;
+    std::vector<VerifyKrylovDirectionResult> dirs;
+};
+
 // The system --------------------------------------------------------------------------------------
 
 class LinearSys {
@@ -223,6 +250,15 @@ class LinearSys {
                         const std::vector<std::vector<VerifyZonotopeGridStep>> &passes,
                         const std::vector<VerifyZonotopeWitness> &witnesses, double t_final,
                         const std::optional<VerifyWeight> &weight = std::nullopt) const;
+
+    /// CORALean's LinearSys.verifyKrylovPassFloat of x' = A x + u, u in <uc, GU> (state space) from
+    /// <x0, G0>: the directions' windows on steps of dt0, their bounds on `steps` steps of dt0 /
+    /// 2^h.
+    VerifyKrylovPass verify_krylov_pass(const cora::Tensor &x0, const cora::Tensor &G0,
+                                        const cora::Tensor &uc, const cora::Tensor &GU,
+                                        const std::vector<VerifyKrylovDirection> &dirs,
+                                        int64_t groups, double dt0, int64_t halvings, int64_t steps,
+                                        double eps, const std::optional<VerifyWeight> &cert) const;
 
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;

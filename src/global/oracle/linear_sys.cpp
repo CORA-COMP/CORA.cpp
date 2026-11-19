@@ -398,6 +398,54 @@ LinearSys::verify_zonotope_run(const cora::Tensor &x0, const cora::Tensor &G0,
     return r.get<bool>("verdict");
 }
 
+// The Krylov verification ------------------------------------------------------------------------
+
+VerifyKrylovPass LinearSys::verify_krylov_pass(const cora::Tensor &x0, const cora::Tensor &G0,
+                                               const cora::Tensor &uc, const cora::Tensor &GU,
+                                               const std::vector<VerifyKrylovDirection> &dirs,
+                                               int64_t groups, double dt0, int64_t halvings,
+                                               int64_t steps, double eps,
+                                               const std::optional<VerifyWeight> &cert) const {
+    // the system, the initial set, the input in the state space
+    std::vector<Operand> fields{
+        {"A", A_}, {"x0", Tensor(x0)}, {"G0", Tensor(G0)}, {"uc", Tensor(uc)}, {"GU", Tensor(GU)}};
+    // the directions, each {w, plan, limit, strict, group}
+    Json jd = Json::array();
+    for (const VerifyKrylovDirection &d : dirs) {
+        Json plan = Json::array();
+        for (const auto &[k, m] : d.plan) plan.push(Json::array().push(Json(k)).push(Json(m)));
+        jd.push(Json::object()
+                    .set("w", Tensor(d.w).to_json())
+                    .set("plan", plan)
+                    .set("limit", Wire(d.limit).json)
+                    .set("strict", Json(d.strict))
+                    .set("group", Json(d.group)));
+    }
+    fields.push_back({"dirs", Wire(jd, "")});
+    fields.push_back({"groups", groups});
+    fields.push_back({"timeStep", dt0});
+    fields.push_back({"halvings", halvings});
+    fields.push_back({"steps", steps});
+    fields.push_back({"eps", eps});
+    aux_weight_fields(fields, cert);
+    const Reply r = ask("linearSys.verifyKrylovPass", fields);
+    // the verdict, then per direction its windows and bounds (null: not computed)
+    VerifyKrylovPass out;
+    out.verified = r.get<bool>("verified");
+    for (const Reply &d : r.list("dirs")) {
+        VerifyKrylovDirectionResult res;
+        if (!d.member("windows").is_null()) {
+            std::vector<VerifyKrylovDirectionResult::Window> ws;
+            for (const Reply &w : d.list("windows"))
+                ws.push_back({w.get<int64_t>("order"), w.get<double>("nu"), w.get<double>("err")});
+            res.windows = std::move(ws);
+        }
+        if (!d.member("bounds").is_null()) res.bounds = d.get<std::vector<double>>("bounds");
+        out.dirs.push_back(std::move(res));
+    }
+    return out;
+}
+
 } // namespace cora::lean
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

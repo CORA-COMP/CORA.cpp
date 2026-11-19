@@ -45,28 +45,16 @@ using Vecs = std::vector<std::vector<double>>;
 
 // Sums, products and norms ------------------------------------------------------------------------
 
-/// CORALean's minimum (a NaN stays).
-double aux_min(double a, double b) { return a <= b ? a : (b < a ? b : a + b); }
-
-/// maximumOver: the largest of n values, nested to the right from the last; 0 for none.
-template <class F>
-double aux_max_over(int64_t n, const F &f) {
-    if (n == 0) return 0.0;
-    double acc = f(n - 1);
-    for (int64_t i = n - 2; i >= 0; --i) acc = lean_maximum(f(i), acc);
-    return acc;
-}
-
 /// step_verifyScaledVecFloat: max(0, max_i x_i / s_i).
 double aux_scaled_vec(const Vec &s, const Vec &x) {
     return lean_maximum(0.0,
-                        aux_max_over(int64_t(s.size()), [&](int64_t i) { return x[i] / s[i]; }));
+                        lean_max_over(int64_t(s.size()), [&](int64_t i) { return x[i] / s[i]; }));
 }
 
 /// step_verifyScaledNormFloat: max(0, max_j sum_k (|m_jk| s_k) / s_j), row-major (n, n).
 double aux_scaled_norm(const Vec &s, const Vec &M) {
     const auto n = int64_t(s.size());
-    return lean_maximum(0.0, aux_max_over(n, [&](int64_t j) {
+    return lean_maximum(0.0, lean_max_over(n, [&](int64_t j) {
                             return lean_sum(n, [&](int64_t k) {
                                 return (lean_absolute(M[std::size_t(j * n + k)]) * s[k]) / s[j];
                             });
@@ -187,9 +175,9 @@ void aux_weight(const LyapunovCertificate &c, const Vec &s, double dt, const Sta
     double count = 0.0;
     for (int64_t i = 0; i < n; ++i) count = 1.0 + count;
     const double kn =
-        (std::sqrt(c.upper) * std::sqrt(count)) * aux_max_over(n, [&](int64_t i) { return s[i]; });
+        (std::sqrt(c.upper) * std::sqrt(count)) * lean_max_over(n, [&](int64_t i) { return s[i]; });
     const double back =
-        std::sqrt(1.0 / c.lower) * aux_max_over(n, [&](int64_t i) { return 1.0 / s[i]; });
+        std::sqrt(1.0 / c.lower) * lean_max_over(n, [&](int64_t i) { return 1.0 / s[i]; });
     const double beta = g * st.beta + kn * st2.loc1;
     const double psi = g * st.psi + kn * st2.loc2;
     st2.h = RestartedBound::carry_min(st2.h, beta * back);
@@ -506,7 +494,7 @@ VerifyZonotopePass::Step &VerifyZonotopePass::step(double dt, bool full) {
                     if (u == 0) continue;
                     const double a = G->inf[std::size_t(l * n + j)] * u;
                     const double b = G->sup[std::size_t(l * n + j)] * u;
-                    lo = aux_min(a, b) + lo;
+                    lo = lean_minimum(a, b) + lo;
                     hi = lean_maximum(a, b) + hi;
                 }
                 S.gu_lo[l] = lo;
@@ -634,7 +622,7 @@ bool VerifyZonotopePass::witness(const VerifySpecSet &S, double t, const Vec &b,
     if (!I) return false;
     // x(t) within e r nu s of D x0 + w
     const Vec DX = aux_matmul(ball->D.data(), x0, n, n, 1);
-    const double nu = lean_maximum(0.0, aux_max_over(n, [&](int64_t i) {
+    const double nu = lean_maximum(0.0, lean_max_over(n, [&](int64_t i) {
                                        const double a = lean_absolute(x0[i]);
                                        return lean_maximum(a, a) / s_[i];
                                    }));
@@ -650,7 +638,7 @@ bool VerifyZonotopePass::witness(const VerifySpecSet &S, double t, const Vec &b,
         for (int64_t j = n - 1; j >= 0; --j) {
             const double cl = sys_.C[std::size_t(l * n + j)];
             const double x = cl * lo[j], y = cl * hi[j];
-            a = aux_min(aux_min(x, y), aux_min(x, y)) + a;
+            a = lean_minimum(lean_minimum(x, y), lean_minimum(x, y)) + a;
             c = lean_maximum(lean_maximum(x, y), lean_maximum(x, y)) + c;
         }
         ylo[l] = a;
