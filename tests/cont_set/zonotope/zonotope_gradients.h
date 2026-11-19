@@ -10,7 +10,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -57,9 +57,10 @@ inline void gradcheck(const std::string &name, const Function &f,
         const torch::Tensor flat = x[k].detach().flatten();
         for (int64_t j = 0; j < flat.numel() && ok; ++j) {
             std::vector<torch::Tensor> plus, minus;
+            // contiguous copies, so that a transposed input can be shifted entry by entry
             for (const torch::Tensor &t : x) {
-                plus.push_back(t.detach().clone());
-                minus.push_back(t.detach().clone());
+                plus.push_back(t.detach().clone(torch::MemoryFormat::Contiguous));
+                minus.push_back(t.detach().clone(torch::MemoryFormat::Contiguous));
             }
             plus[k].view(-1)[j] += h;
             minus[k].view(-1)[j] -= h;
