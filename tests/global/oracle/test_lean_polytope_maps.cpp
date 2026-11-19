@@ -22,9 +22,9 @@
 // ORACLE: contSet/@polytope/project.m
 // ORACLE: contSet/@polytope/supportFunc_.m
 // ORACLE: contSet/@polytope/isIntersecting_.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -184,7 +184,8 @@ int main() {
     oracle::run("polytope.isIntersecting", [](oracle::Random &rnd) {
         const Polytope P = aux_halfspaces(rnd, 3, 2);
         const Tensor c = rnd.vector(3) * 0.0;
-        const Interval near(c - 0.1, c + 0.1), far(c + 10.0, c + 11.0);
+        const Interval near(c.squeeze(-1) - 0.1, c.squeeze(-1) + 0.1),
+            far(c.squeeze(-1) + 10.0, c.squeeze(-1) + 11.0);
         // disjointness proven by the oracle holds for CORA.cpp
         oracle::check(P.is_intersecting(near), lean::Polytope(P).is_disjoint(near));
         oracle::check(P.is_intersecting(far), lean::Polytope(P).is_disjoint(far));

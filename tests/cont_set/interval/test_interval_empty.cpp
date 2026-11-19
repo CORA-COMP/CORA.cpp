@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,7 +24,8 @@ namespace {
 void empty_has_no_points(const std::string &b) {
     const Interval E = Interval::empty(3);
     check(E.is_empty() && E.dim() == 3, b + ": empty, in 3 dimensions");
-    check(E.inf().shape() == std::vector<int64_t>({3, 0}), b + ": bounds without columns");
+    check(E.inf().shape() == std::vector<int64_t>({3}) && E.empty_mask().all(),
+          b + ": bounds of the dimension, every member flagged");
     check(Interval::empty(0).is_empty() && Interval::empty(0).dim() == 0, b + ": the dimension 0");
     // random boxes of the same dimension: neutral for the hull, absorbing for the meet
     cora::Rng rng(36);

@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@interval/enclosePoints.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,11 +24,11 @@ namespace cora {
 
 Interval Interval::enclose_points(const Tensor &points) {
     detail::Entry entry;
-    CORA_CHECK(points.ndim() >= 2 && points.size(-1) >= 1, Error::wrong_value, [&] {
-        return "enclose_points: give at least one point, as columns (..., n, N), got the shape " +
+    CORA_CHECK(points.ndim() >= 2 && points.size(-2) >= 1, Error::wrong_value, [&] {
+        return "enclose_points: give at least one point, as rows (..., N, n), got the shape " +
                shape_text(points.shape());
     });
-    return {points.min(-1, true), points.max(-1, true)};
+    return {points.min(-2), points.max(-2)};
 }
 
 } // namespace cora

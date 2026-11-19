@@ -3,9 +3,9 @@
 // See also: lean/linear_sys.h
 //
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/nonlinear_sys.h"
@@ -63,7 +63,7 @@ cora::Interval aux_poly_box(const Reply &set) {
     const cora::Tensor GI = set.get<Tensor>("GI").gather();
     const auto [inf, sup] = set.get<lean::Interval>("E").gather();
     const cora::Tensor radius = G.abs().sum(-1, true) + GI.abs().sum(-1, true);
-    return cora::Interval((c - radius) + inf, (c + radius) + sup);
+    return cora::Interval(((c - radius) + inf).squeeze(-1), ((c + radius) + sup).squeeze(-1));
 }
 
 // the linear step of the oracle's linearStep option; CORA's own is left to the oracle's default

@@ -7,9 +7,9 @@
 //
 // CORA: contDynamics/@neurNetContrSys/verify.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -68,7 +68,7 @@ void a_hard_specification_is_unknown(const std::string &b) {
 /// The pieces of the split cover the box: sampled points lie in some piece, and the volumes add.
 void the_pieces_cover_the_initial_set(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
-    const Interval box(Tensor({{1.3}, {2.2}}), Tensor({{1.5}, {2.4}}));
+    const Interval box(test::vec({1.3, 2.2}), test::vec({1.5, 2.4}));
     for (const int levels : {0, 1, 3, 5}) {
         const std::vector<Interval> pieces = sys.split_pieces(box, levels);
         check(pieces.size() == (std::size_t{1} << levels), b + ": 2^levels pieces");
@@ -97,7 +97,7 @@ void the_pieces_cover_the_initial_set(const std::string &b) {
         check(outside == 0, b + ": the pieces cover the box");
     }
     // the dimension is the one with the largest radius times sensitivity
-    check(sys.split_dimension(Interval(Tensor({{0.0}, {0.0}}), Tensor({{1.0}, {1e-6}}))) == 0,
+    check(sys.split_dimension(Interval(test::vec({0.0, 0.0}), test::vec({1.0, 1e-6}))) == 0,
           b + ": the wide dimension is cut");
 }
 

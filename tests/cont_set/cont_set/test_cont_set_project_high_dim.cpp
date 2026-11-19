@@ -5,7 +5,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -17,6 +17,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +28,7 @@ namespace {
 /// The coordinates move to proj and the others are zero: by the box's own rule and by the
 /// selection matrix of the generic one.
 void the_embedding(const std::string &b) {
-    const Interval I(column({1.0, 3.0}), column({2.0, 4.0}));
+    const Interval I(vec({1.0, 3.0}), vec({2.0, 4.0}));
     const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
     const Set RI = static_cast<const ContSet &>(I).project_high_dim(4, {2, 0});
     check(test::close(RI.as<Interval>().inf(), {3.0, 0.0, 1.0, 0.0}) &&

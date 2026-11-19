@@ -7,9 +7,9 @@
 //           linear programs, whose bounds are met by points of the set
 //
 // CORA authors: Matthias Althoff, Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -31,7 +31,7 @@ void vertices(const std::string &b) {
     check(close(I.inf(), {0, 0}, 0) && close(I.sup(), {1, 1}, 0), b + ": the square");
     check(Polytope::empty(2).interval().is_empty(), b + ": the empty set");
     const Interval batch = Polytope(Tensor::ones({3, 2, 4})).interval();
-    check(batch.inf().shape() == Shape{3, 2, 1}, b + ": a batch of three");
+    check(batch.inf().shape() == Shape{3, 2}, b + ": a batch of three");
 }
 
 /// Halfspaces: the linear programs; unbounded sides are infinite; an infeasible set is empty.
@@ -71,8 +71,7 @@ void properties(const std::string &b) {
     for (const int n : {2, 3, 4}) {
         const Tensor points = test::sphere_points(rng, n, n + 4);
         const Interval box = Polytope(points).interval();
-        check(close(box.inf(), points.min(-1, true), 0) &&
-                  close(box.sup(), points.max(-1, true), 0),
+        check(close(box.inf(), points.min(-1), 0) && close(box.sup(), points.max(-1), 0),
               b + ": vertices: the extremes, " + std::to_string(n) + "D");
         const Polytope::Constraints C = Polytope(points).constraints();
         const Interval from_rows = Polytope(C.A, C.b).interval();
@@ -83,8 +82,8 @@ void properties(const std::string &b) {
         const Interval hull = Q.interval();
         const Tensor samples = test::sample_points(Q, rng, 30);
         // samples lie in the box
-        check((samples - hull.inf()).min().item() >= -1e-9 &&
-                  (hull.sup() - samples).min().item() >= -1e-9,
+        check((samples - hull.inf().expand_dims(-1)).min().item() >= -1e-9 &&
+                  (hull.sup().expand_dims(-1) - samples).min().item() >= -1e-9,
               b + ": samples lie in the box, " + std::to_string(n) + "D");
     }
 }

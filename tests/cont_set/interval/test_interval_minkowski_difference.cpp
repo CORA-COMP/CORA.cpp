@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/minkDiff.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,34 +24,33 @@ using test::column;
 namespace {
 
 void minkowski_difference_of_boxes_and_points(const std::string &b) {
-    const Interval I(column({0.0, 0.0}), column({10.0, 4.0}));
-    const Interval R = I.minkowski_difference(Interval(column({1.0, -1.0}), column({3.0, 1.0})));
+    const Interval I(vec({0.0, 0.0}), vec({10.0, 4.0}));
+    const Interval R = I.minkowski_difference(Interval(vec({1.0, -1.0}), vec({3.0, 1.0})));
     check(close(R.inf(), std::vector<double>{-1, 1}) && close(R.sup(), std::vector<double>{7, 3}),
           b + ": [inf - inf_S, sup - sup_S]");
     check(!R.is_empty(), b + ": nonempty");
-    const Interval P = I.minkowski_difference(column({1.0, 2.0}));
+    const Interval P = I.minkowski_difference(vec({1.0, 2.0}));
     check(close(P.inf(), std::vector<double>{-1, -2}) && close(P.sup(), std::vector<double>{9, 2}),
           b + ": a point shifts the box by -p");
-    const Interval F = I.minkowski_difference(Interval(column({-1.0, 0.0}), column({1.0, 0.0})));
+    const Interval F = I.minkowski_difference(Interval(vec({-1.0, 0.0}), vec({1.0, 0.0})));
     check(close(F.inf(), std::vector<double>{1, 0}) && close(F.sup(), std::vector<double>{9, 4}),
           b + ": a flat box shrinks one coordinate");
 }
 
 void minkowski_difference_can_be_empty(const std::string &b) {
-    const Interval I(column({0.0, 0.0}), column({1.0, 4.0}));
-    const Interval E = I.minkowski_difference(Interval(column({-1.0, 0.0}), column({1.0, 1.0})));
+    const Interval I(vec({0.0, 0.0}), vec({1.0, 4.0}));
+    const Interval E = I.minkowski_difference(Interval(vec({-1.0, 0.0}), vec({1.0, 1.0})));
     check(E.is_empty() && E.dim() == 2, b + ": a bound would cross: the empty interval");
     const Interval B = Interval::stack({I, I});
     // a batch
-    check(
-        B.minkowski_difference(Interval::stack({Interval(column({-1.0, 0.0}), column({1.0, 1.0})),
-                                                Interval(column({-1.0, 0.0}), column({1.0, 1.0}))}))
-            .is_empty(),
-        b + ": a batch of empty differences");
+    check(B.minkowski_difference(Interval::stack({Interval(vec({-1.0, 0.0}), vec({1.0, 1.0})),
+                                                  Interval(vec({-1.0, 0.0}), vec({1.0, 1.0}))}))
+              .is_empty(),
+          b + ": a batch of empty differences");
 }
 
 void minkowski_difference_of_another_set(const std::string &b) {
-    const Interval I(column({0.0, 0.0}), column({4.0, 4.0}));
+    const Interval I(vec({0.0, 0.0}), vec({4.0, 4.0}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
     const Interval R = I.minkowski_difference(Z);
     check(close(R.inf(), std::vector<double>{0.5, 0.5}) &&
@@ -65,12 +65,12 @@ void minkowski_difference_of_another_set(const std::string &b) {
 /// A wrong dimension, an unknown type, and "exact" for a set are refused; the checks off give the
 /// same.
 void checks_and_their_switch() {
-    const Interval I(column({0.0, 0.0}), column({4.0, 4.0}));
+    const Interval I(vec({0.0, 0.0}), vec({4.0, 4.0}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
-    check(test::raises([&] { I.minkowski_difference(Interval(column({0.0}), column({1.0}))); },
+    check(test::raises([&] { I.minkowski_difference(Interval(vec({0.0}), vec({1.0}))); },
                        Error::dimension_mismatch),
           "minkowski_difference: a box of dimension 1");
-    check(test::raises([&] { I.minkowski_difference(column({1.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { I.minkowski_difference(vec({1.0})); }, Error::dimension_mismatch),
           "minkowski_difference: a point of dimension 1");
     check(
         test::raises([&] { I.minkowski_difference(Z, std::string("exact")); }, Error::no_exact_alg),

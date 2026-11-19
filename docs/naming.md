@@ -23,6 +23,9 @@ changed, and the reasons are listed below.
   specification, ends its header with one of two lines:
   - `// CORA: <path>.m`, the CORA file it implements;
   - `// CORA.cpp only: <reason>`, if CORA has no such file.
+- **One meaning per name** (#163): `ball_radius()` is the radius of the ball around the center
+  that encloses the set (CORA's `radius`), on every set; `half_width()` is a box's half-width per
+  dimension (CORA's `rad`).
 - **Python** uses the C++ names. Sets have properties (`Z.center`, `Z.generators`, `Z.dim`), and
   options are keyword arguments with the same names as the fields of the C++ structs.
 - **Overrides:** a method of a `ContSet` subclass accepts every argument that `ContSet`'s method
@@ -49,21 +52,21 @@ changed, and the reasons are listed below.
 | `fullspace(n)`, `fullspace.Inf(n)` | `Fullspace(n)`, `Fullspace::inf(n)` | `cora.Fullspace(n)`, `cora.Fullspace.inf(n)` |
 | `intervalMatrix` | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
 | `interval(inf, sup)` of matrix bounds | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
-| `intervalMatrix(C, D)`, `intervalMatrix(C)` | `Interval::from_center_delta(C, D)`, `Interval(C, C)` | `cora.Interval.from_center_delta(C, D)`, `cora.Interval.matrix(C, C)` |
+| `intervalMatrix(C, D)`, `intervalMatrix(C)` | `Interval::from_center_delta(C, D)`, `Interval::matrix(C, C)` | `cora.Interval.from_center_delta(C, D)`, `cora.Interval.matrix(C, C)` |
 | `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs().sup()`, `A.center()`, `A.infimum()`, `A.contains(M, type, tol)` | `A.abs().sup`, `A.center`, `A.inf`, `A.contains(M, type, tol)` |
 | `mtimes(A, B)`, `A * B` | `A.matmul(B)`, `A * B`, `M * A`, `A * M`, `s * A`, `A * Z` | `A @ B`, `M @ A`, `A @ M`, `s * A`, `A @ Z` |
 | `mpower(A, k)`, `dim(A, rc)` | `A.matrix_power(k)`, `A.dim(rc)` | `A.matrix_power(k)` (`A ** k` is elementwise) |
 | `plus(A, B)`, `A + B` | `A.plus(B)`, `A + B`, `A + M`, `M + A`, `A + s`, `s + A` | `A + B`, `A + M`, `s + A`, `A.plus(B)` |
 | `powers(A, N, k, P)` | `mat_exp::powers(A, N)`, `mat_exp::powers(A, N, k, P)` | `cora.mat_exp.powers(A, N, k, P)` (a list, `[i]` of order `k + i`) |
 | `expm(A, ...)`, `expmInd`, `expmMixed`, `dependentTerms`, `exponentialRemainder` of an `intervalMatrix` | `mat_exp::expm(A, ...)`, `mat_exp::expm_independent`, `mat_exp::expm_mixed`, `mat_exp::dependent_terms`, `mat_exp::exponential_remainder` | `cora.mat_exp.expm(A, ...)` and the same names |
-| `rad(A)`, `supremum(A)` | `A.rad()`, `A.supremum()` | `A.rad`, `A.sup` |
+| `rad(A)`, `supremum(A)` | `A.half_width()`, `A.supremum()` | `A.half_width`, `A.sup` |
 | `representsa(A, type, tol)`, `volume(A)`, `vertices(A)` | `A.representsa(type, tol)`, `A.volume()`, `A.vertex_matrices()` | the same |
 | `infNorm(A)`, `norm(A, type)` | `A.infinity_norm()`, `A.norm(type)` | the same |
 | `exactSquare(A)`, `generateRandom` | `A.exact_square()`, `Interval::generate_random_matrix(rng, ...)` | the same |
 | `Z.c`, `center(Z)` | `Z.center()` | `Z.center` |
 | `Z.G`, `generators(Z)` | `Z.generators()` | `Z.generators` |
 | `dim(S)` | `S.dim()` | `S.dim` |
-| `I.inf`, `I.sup`, `rad(I)` | `I.inf()`, `I.sup()`, `I.rad()` | `I.inf`, `I.sup`, `I.rad` |
+| `I.inf`, `I.sup`, `rad(I)`, `radius(I)` | `I.inf()`, `I.sup()`, `I.half_width()`, `I.ball_radius()` | `I.inf`, `I.sup`, `I.half_width`, `I.ball_radius()` |
 | `supportFunc(S, d)` | `S.support_function(d)` | `S.support_function(d)` |
 | `randPoint(S, N, type)` | `S.rand_point(N, rng)`, `Z.rand_point(N, rng, type)` | `S.rand_point(N, rng, type)` |
 | `interval(S)` | `S.interval()` | `S.interval()` |
@@ -162,7 +165,7 @@ changed, and the reasons are listed below.
 | `contains(E, S, type, tol)`, `isIntersecting(E, S, type, tol)`, `isequal(E, S, tol)` | `E.contains(S, tol)`, `E.is_intersecting(S, tol)`, `E.isequal(S, tol)` | the same |
 | `mtimes(M, E)`, `lift(E, N, dims)` | `E.linear_map(M)`, `M * E`, `E.lift(N, dims)` | `E.linear_map(M)`, `M @ E`, `E.lift(N, dims)` |
 | `zonotope.origin(n)` | `Zonotope::origin(n)` | `cora.Zonotope.origin(n)` |
-| `radius(Z)`, `rank(Z, tol)` | `Z.radius()`, `Z.rank(tol)` | `Z.radius()`, `Z.rank(tol)` |
+| `radius(Z)`, `rank(Z, tol)` | `Z.ball_radius()`, `Z.rank(tol)` | `Z.ball_radius()`, `Z.rank(tol)` |
 | `representsa(Z, type, tol)` | `Z.representsa(type, tol)` | `Z.representsa(type, tol)` |
 | `projectHighDim(Z, N, proj)` | `Z.project_high_dim(N, dims)` | `Z.project_high_dim(N, dims)` |
 | `rotate(Z, dims, angle)` | `Z.rotate(dims, angle)` | `Z.rotate(dims, angle)` |
@@ -173,7 +176,7 @@ changed, and the reasons are listed below.
 | `reduceUnderApprox(Z, method, order)` | `Z.reduce_under_approx(method, order)` | `Z.reduce_under_approx(method, order)` |
 | `or(Z, S, alg, order)` | `Z.unite(S, method, order)` | `Z.unite(S, method, order)`, `Z \| S` |
 | `not(E)`, `not(fs)` | `E.complement()`, `F.complement()` | `E.complement()`, `F.complement()` |
-| `radius(E)`, `volume_(E)`, and the same of `fullspace` | `E.radius()`, `E.volume()` (a double) | `E.radius()`, `E.volume()` |
+| `radius(E)`, `volume_(E)`, and the same of `fullspace` | `E.ball_radius()`, `E.volume()` (a double) | `E.ball_radius()`, `E.volume()` |
 | `representsa_(E, type, tol)` | `E.representsa(type, tol)` (`Fullspace` the same) | `E.representsa(type, tol)` |
 | `projectHighDim_(E, N, proj)`, `generateRandom('Dimension', n)` | `E.project_high_dim(N, proj)`, `EmptySet::generate_random(rng, n)` | `E.project_high_dim(N, proj)`, `cora.EmptySet.generate_random(rng, n=None)` |
 | `intervalMatrix(I)` | `I.interval_matrix()` | `I.interval_matrix()` |

@@ -9,9 +9,9 @@
 // CORA.cpp only: MATLAB reads its matrices as they are; CORA's @interval/polytope.m is the
 //                polytope of a box
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -224,10 +224,11 @@ Polytope priv_polytope_of_interval(const Interval &I) {
     const int64_t n = I.dim();
     if (I.is_empty()) return Polytope::empty(n);
     // x <= sup and -x <= -inf; the rows with an infinite offset are dropped by the constructor
-    const Tensor eye = identity_block(I.inf(), n);
+    const Tensor eye = identity_block(I.inf().expand_dims(-1), n);
     // the negative identity as 0 - I, so that its zeros are +0 as in CORALean
-    const Tensor negative = zeros_block(I.inf(), n, n) - eye;
-    return {Tensor::concat({eye, negative}, -2), Tensor::concat({I.sup(), -I.inf()}, -2)};
+    const Tensor negative = zeros_block(I.inf().expand_dims(-1), n, n) - eye;
+    return {Tensor::concat({eye, negative}, -2),
+            Tensor::concat({I.sup().expand_dims(-1), -I.inf().expand_dims(-1)}, -2)};
 }
 
 } // namespace cora

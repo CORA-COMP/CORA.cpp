@@ -34,7 +34,7 @@
 // ORACLE: contSet/@contSet/times.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -130,7 +130,7 @@ int main() {
         if (oracle::nearest_is_strict()) {
             // a flat box: the first coordinate has no width
             const Tensor &lo = I.inf();
-            const Tensor hi = Tensor::concat({lo.slice(-2, 0, 1), I.sup().slice(-2, 1, 4)}, -2);
+            const Tensor hi = Tensor::concat({lo.slice(-1, 0, 1), I.sup().slice(-1, 1, 4)}, -1);
             const Interval flat(lo, hi);
             oracle::check(aux_set(flat).is_full_dim(0.0), lean::Interval(flat).is_full_dim(0.0));
         }
@@ -312,7 +312,7 @@ int main() {
     oracle::run("interval.contains", [](oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
-            const Tensor inside = I.center(), outside = rnd.vector(n) * 3.0;
+            const Tensor inside = I.center(), outside = rnd.vector(n).squeeze(-1) * 3.0;
             const Tensor &corner = I.inf();
             for (const Tensor &p : {inside, corner, outside})
                 oracle::check(I.contains(p, 0.0),

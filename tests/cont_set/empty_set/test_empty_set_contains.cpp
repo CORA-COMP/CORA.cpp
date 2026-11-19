@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -26,7 +26,7 @@ void only_the_empty_set_is_contained(const std::string &b) {
     const EmptySet E(2);
     check(E.contains(EmptySet(2)), b + ": the empty set");
     check(E.contains(Interval::empty(2)), b + ": the empty interval");
-    check(!E.contains(Interval(test::column({0.0, 0.0}), test::column({0.0, 0.0}))),
+    check(!E.contains(Interval(test::vec({0.0, 0.0}), test::vec({0.0, 0.0}))),
           b + ": a point is not contained");
     check(E.contains(Tensor::zeros({2, 0})), b + ": no points");
     check(!E.contains(test::column({0.0, 0.0})), b + ": a point");

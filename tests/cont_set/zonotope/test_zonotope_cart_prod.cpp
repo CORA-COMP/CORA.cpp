@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -42,7 +43,7 @@ void cart_prod_of_known_sets(const std::string &b) {
     check(close(point_first.generators(), std::vector<double>{0, 1, 3, 0, 2, 4}, 0),
           b + ": a point first: zero row on top");
 
-    const Interval I(column({0.0, -1.0}), column({2.0, 1.0}));
+    const Interval I(vec({0.0, -1.0}), vec({2.0, 1.0}));
     const Zonotope with_box = Z.cart_prod(I);
     check(close(with_box.center(), std::vector<double>{1, 2, 1, 0}, 0), b + ": a box: its center");
     check(with_box.generators().shape() == std::vector<int64_t>({4, 4}), b + ": a box: two axes");

@@ -14,7 +14,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -75,13 +75,14 @@ bool Zonotope::is_intersecting(const Zonotope &S, const std::string &type, Tol t
 bool Zonotope::is_intersecting(const Interval &I, const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     // a box is the zonotope of its axes
-    CORA_CHECK(I.dim() == dim() && I.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
+    CORA_CHECK(I.dim() == dim() && I.elem_rank() == 1, Error::dimension_mismatch, [&] {
         return "is_intersecting: the interval must be a box of the dimension " +
                std::to_string(dim()) + " of the zonotope, got bounds of the shape " +
                shape_text(I.inf().shape());
     });
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
-    const Refusal refusal = priv_intersecting_refusal(type, c_.expand_dims(-1), I.inf());
+    const Refusal refusal =
+        priv_intersecting_refusal(type, c_.expand_dims(-1), I.inf().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     if (I.is_empty()) return false;
     return type == "exact" ? aux_overlap_exact(*this, I.zonotope(), tol)

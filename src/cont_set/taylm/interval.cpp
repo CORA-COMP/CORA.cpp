@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@taylm/interval.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -36,7 +36,7 @@ std::array<double, 2> Taylm::bounds() const {
 CORA_FROM_NUMBERS Interval Taylm::interval() const {
     detail::Entry entry;
     const std::array<double, 2> b = bounds();
-    return {Tensor::from_data({b[0]}, {1, 1}), Tensor::from_data({b[1]}, {1, 1})};
+    return {Tensor::from_data({b[0]}, {1}), Tensor::from_data({b[1]}, {1})};
 }
 
 } // namespace cora

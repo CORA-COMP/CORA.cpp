@@ -11,7 +11,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_check_domain.h"
@@ -28,8 +28,8 @@ namespace cora {
 
 Interval Interval::sqrt() const {
     detail::Entry entry;
-    priv_check_domain("sqrt", inf_, sup_, 0, std::numeric_limits<double>::infinity());
-    return {inf_.sqrt(), sup_.sqrt()};
+    priv_check_domain("sqrt", *this, 0, std::numeric_limits<double>::infinity());
+    return with(inf_.sqrt(), sup_.sqrt());
 }
 
 } // namespace cora

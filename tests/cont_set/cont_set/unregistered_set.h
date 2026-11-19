@@ -5,9 +5,9 @@
 //           later; tests of "no implementation" and of run-time registration use it
 // See also: cora/cont_set/registry.h
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -32,7 +32,7 @@ class UnregisteredSet : public cora::ContSet {
         return d.zeros_like({1, 1});
     }
     cora::Interval interval_impl() const override {
-        return {cora::Tensor({0.0, 0.0}), cora::Tensor({0.0, 0.0})};
+        return {cora::Tensor::zeros({2}), cora::Tensor::zeros({2})};
     }
     cora::Tensor rand_point_impl(int64_t, cora::Rng &) const override {
         return cora::Tensor({0.0, 0.0});

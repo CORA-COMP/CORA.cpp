@@ -16,7 +16,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -99,7 +99,7 @@ Zonotope aux_unite(const Zonotope &Z, std::vector<Zonotope> Zs, const Interval *
     CORA_CHECK(Z.center().ndim() == 1, Error::not_supported,
                [] { return std::string("unite: it supports a single zonotope, not a batch"); });
     if (box) {
-        CORA_CHECK(box->is_bounded() && box->inf().shape().back() == 1, Error::wrong_value,
+        CORA_CHECK(box->is_bounded() && box->elem_rank() == 1, Error::wrong_value,
                    [] { return std::string("unite: the box must be bounded and a vector"); });
         Zs.push_back(box->zonotope());
     }

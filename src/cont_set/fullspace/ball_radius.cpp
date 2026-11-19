@@ -1,17 +1,17 @@
-// radius - the radius of the smallest ball around the whole space, as CORA's fullspace.radius
+// ball_radius - the radius of the smallest ball around the whole space, as CORA's fullspace.radius
 //
 // NaN in R^0, as CORA (CORALean has Inf there and claims nothing).
 //
-// Syntax:   double r = F.radius();
+// Syntax:   double r = F.ball_radius();
 // Inputs:   -
 // Outputs:  r - Inf, the supremum of the norms over R^n
-// See also: volume, EmptySet::radius
+// See also: volume, EmptySet::ball_radius
 //
 // CORA: contSet/@fullspace/radius.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -25,7 +25,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-double Fullspace::radius() const {
+double Fullspace::ball_radius() const {
     detail::Entry entry;
     return n_ == 0 ? std::numeric_limits<double>::quiet_NaN()
                    : std::numeric_limits<double>::infinity();

@@ -2,14 +2,14 @@
 //
 // Syntax:   Interval I = Interval::unbounded(n);
 // Inputs:   n - dimension, n >= 0
-// Outputs:  I - (-Inf, Inf)^n, as columns (n, 1)
+// Outputs:  I - (-Inf, Inf)^n, bounds (n)
 // See also: Interval::cart_prod
 //
 // CORA: contSet/@interval/Inf.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -27,8 +27,8 @@ CORA_FROM_NUMBERS Interval Interval::unbounded(int64_t n) {
         return "unbounded: the dimension must be nonnegative, got " + std::to_string(n);
     });
     const double kInf = std::numeric_limits<double>::infinity();
-    return {Tensor::from_data(std::vector<double>(n, -kInf), {n, 1}),
-            Tensor::from_data(std::vector<double>(n, kInf), {n, 1})};
+    return {Tensor::from_data(std::vector<double>(n, -kInf), {n}),
+            Tensor::from_data(std::vector<double>(n, kInf), {n})};
 }
 
 } // namespace cora

@@ -20,9 +20,9 @@
 //
 // CORA: contSet/@polytope/contains_.m
 // CORA authors: Niklas Kochdumper, Viktor Kotsev, Adrian Kulmburg, Mark Wetzlinger, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -180,7 +180,9 @@ bool Polytope::contains(const ContSet &S, const std::string &method, Tol tol_arg
     // in 1D a set is its two bounds
     if (dim() == 1) {
         const Interval hull = S.interval();
-        return contains(Tensor::concat({hull.inf(), hull.sup()}, -1), "exact", tol);
+        return contains(
+            Tensor::concat({hull.inf().expand_dims(-1), hull.sup().expand_dims(-1)}, -1), "exact",
+            tol);
     }
     // 'exact' goes by the form P has, 'exact:venum' by its vertices, 'exact:polymax' by its rows
     const Polytope *vertex_set = aux_vertex_polytope(S);

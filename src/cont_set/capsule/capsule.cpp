@@ -20,7 +20,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -122,17 +122,17 @@ Capsule::Capsule(const Interval &I) : ContSet(kClassId) {
     detail::Entry entry;
     CORA_CHECK(!I.is_empty(), Error::empty_set,
                [] { return std::string("Capsule: the box is empty"); });
-    CORA_CHECK(I.inf().shape().back() == 1, Error::not_supported, [] {
+    CORA_CHECK(I.elem_rank() == 1, Error::not_supported, [] {
         return std::string("Capsule: the box must be a vector, not an interval matrix");
     });
-    const Tensor rad = I.rad();
+    const Tensor rad = I.half_width().expand_dims(-1); // a column, as the capsule's algorithms
     const int64_t n = rad.shape()[rad.ndim() - 2];
     // the first widest edge: one-hot over the rows
     const Tensor widest = rad.argmax(static_cast<int>(rad.ndim()) - 2, true);
     const Tensor on_axis = rad.arange_like(n).reshape({n, 1}).equal(widest);
     const Tensor others =
         rad.multiply(on_axis.multiply(rad.ones_like()).negative().add(rad.ones_like()));
-    c_ = I.center().squeeze(-1);
+    c_ = I.center();
     g_ = rad.multiply(on_axis).squeeze(-1);
     r_ = priv_norm(others);
 }

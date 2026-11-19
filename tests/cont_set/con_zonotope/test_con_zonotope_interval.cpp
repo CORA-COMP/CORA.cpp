@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -34,7 +34,7 @@ void interval_known(const std::string &b) {
           b + ": the exact range of a segment");
     const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), column({3.0}));
     check(none.interval().is_empty(), b + ": no point: the empty box");
-    check(Set(segment)->interval().sup().shape() == Shape{2, 1}, b + ": through the set interface");
+    check(Set(segment)->interval().sup().shape() == Shape{2}, b + ": through the set interface");
     // zero generators and zero rows do not change the box
     const ConZonotope padded(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
                              Tensor({{1.0, 1.0, 0.0}, {0.0, 0.0, 0.0}}), column({1.0, 0.0}));
@@ -65,8 +65,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { batch.interval(); }, Error::not_supported),
           "interval: a batch with constraints");
     const ConZonotope plain(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose());
-    check(plain.interval().sup().shape() == Shape{2, 1, 1},
-          "interval: a batch without constraints");
+    check(plain.interval().sup().shape() == Shape{2, 1}, "interval: a batch without constraints");
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), column({1.0}));
     const Tensor on = segment.interval().sup();

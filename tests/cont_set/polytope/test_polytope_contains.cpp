@@ -9,7 +9,7 @@
 // CORA authors: Niklas Kochdumper, Viktor Kotsev, Adrian Kulmburg, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -19,6 +19,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -65,8 +66,7 @@ void points(const std::string &b) {
 void sets(const std::string &b) {
     const Polytope H = Polytope(Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
                                 column({1.0, 1.0, 0.0, 0.0}));
-    const Interval in(column({0.2, 0.2}), column({0.8, 0.8})),
-        out(column({0.5, 0.5}), column({1.5, 1.0}));
+    const Interval in(vec({0.2, 0.2}), vec({0.8, 0.8})), out(vec({0.5, 0.5}), vec({1.5, 1.0}));
     check(H.contains(in) && !H.contains(out), b + ": a box");
     check(H.contains(in, "approx") && !H.contains(out, "approx"), b + ": a box, approx");
     const Zonotope Z(column({0.5, 0.5}), Tensor({{0.3, 0.0}, {0.1, 0.3}}));
@@ -85,7 +85,7 @@ void sets(const std::string &b) {
     check(H.contains(Polytope::empty(2)) && !Polytope::empty(2).contains(H),
           b + ": empty is inside everything");
     check(Polytope::inf(2).contains(H) && !H.contains(Polytope::inf(2)), b + ": R^n");
-    check(Polytope(Tensor({{1.0, 4.0}})).contains(Interval(column({2.0}), column({3.0}))),
+    check(Polytope(Tensor({{1.0, 4.0}})).contains(Interval(vec({2.0}), vec({3.0}))),
           b + ": 1D: a box");
     check(H.contains(Interval::empty(2)), b + ": the empty box");
     check(H.contains(H) &&
@@ -121,7 +121,7 @@ void refusals() {
           "contains: an unknown method");
     check(test::raises([&] { H.contains(column({0.0})); }, Error::dimension_mismatch),
           "contains: the point has the dimension of the set");
-    check(test::raises([&] { H.contains(Interval(column({0.0}), column({1.0}))); },
+    check(test::raises([&] { H.contains(Interval(vec({0.0}), vec({1.0}))); },
                        Error::dimension_mismatch),
           "contains: the set has the dimension of the polytope");
     check(test::raises([&] { H.contains(H, "approx"); }, Error::not_supported),
@@ -146,7 +146,7 @@ void properties(const std::string &b) {
         const Polytope Q = test::random_polytope(rng, n, 2 * n);
         check(Q.contains(test::sample_points(Q, rng, 30)),
               b + ": samples, " + std::to_string(n) + "D");
-        check(!Q.contains(Q.interval().sup() + 0.5),
+        check(!Q.contains(Q.interval().sup().expand_dims(-1) + 0.5),
               b + ": beyond the box, " + std::to_string(n) + "D");
         const Tensor points = test::sphere_points(rng, n, n + 3);
         const Polytope V(points), H(V.constraints().A, V.constraints().b);
@@ -158,7 +158,7 @@ void properties(const std::string &b) {
             same = same && V.contains(p) == H.contains(p);
         }
         check(same, b + ": vertices and halfspaces agree, " + std::to_string(n) + "D");
-        const Interval inner(Q.center() - 0.05, Q.center() + 0.05);
+        const Interval inner(Q.center().squeeze(-1) - 0.05, Q.center().squeeze(-1) + 0.05);
         // a small box about the center
         check(Q.contains(inner), b + ": a small box about the center, " + std::to_string(n) + "D");
     }

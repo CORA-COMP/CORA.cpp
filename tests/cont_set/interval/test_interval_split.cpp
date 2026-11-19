@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -15,7 +15,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,7 +24,7 @@ using test::column;
 namespace {
 
 void split_cuts_at_the_center(const std::string &b) {
-    const Interval I(column({0.0, -2.0, 1.0}), column({2.0, 4.0, 5.0}));
+    const Interval I(vec({0.0, -2.0, 1.0}), vec({2.0, 4.0, 5.0}));
     const auto [I1, I2] = I.split(1);
     check(close(I1.inf(), I.inf(), 0) && close(I1.sup(), std::vector<double>{2, 1, 5}),
           b + ": the lower half");
@@ -34,8 +34,8 @@ void split_cuts_at_the_center(const std::string &b) {
               close(I.split(2).second.inf(), std::vector<double>{0, -2, 3}),
           b + ": the first and the last coordinate");
     const auto [S1, S2] = Interval::stack({I, I}).split(1);
-    check(S1.sup().shape() == std::vector<int64_t>({2, 3, 1}) &&
-              close(S2.inf().slice(0, 1, 2).reshape({3, 1}), I2.inf(), 0),
+    check(S1.sup().shape() == std::vector<int64_t>({2, 3}) &&
+              close(S2.inf().slice(0, 1, 2).reshape({3}), I2.inf(), 0),
           b + ": a batch is cut per member");
 }
 
@@ -51,7 +51,7 @@ void split_halves_cover_the_box(const std::string &b) {
         const Tensor x = I.rand_point(20, rng);
         bool covered = true;
         for (int k = 0; k < 20; ++k) {
-            const Tensor p = x.slice(-1, k, k + 1);
+            const Tensor p = x.slice(-1, k, k + 1).squeeze(-1);
             covered = covered && (I1.contains(p) || I2.contains(p));
         }
         check(covered, b + ": a sample is in one half");
@@ -60,11 +60,11 @@ void split_halves_cover_the_box(const std::string &b) {
 
 /// The coordinate must exist and the box be a column; with the checks off a valid call is the same.
 void checks_and_their_switch() {
-    const Interval I(column({0.0, 1.0}), column({2.0, 3.0}));
+    const Interval I(vec({0.0, 1.0}), vec({2.0, 3.0}));
     check(test::raises([&] { I.split(2); }, Error::wrong_value), "split: coordinate 2 of 2");
     check(test::raises([&] { I.split(-1); }, Error::wrong_value), "split: coordinate -1");
     const Tensor lo = Tensor::from_data({1, 2, 3, 4}, {2, 2});
-    check(test::raises([&] { Interval(lo, lo + 1.0).split(0); }, Error::wrong_value),
+    check(test::raises([&] { Interval::matrix(lo, lo + 1.0).split(0); }, Error::wrong_value),
           "split: a matrix");
     const Tensor on = I.split(1).first.sup();
     ChecksScope off(false);

@@ -74,7 +74,7 @@ class Interval(unittest.TestCase):
         I = cora.Interval(torch.tensor([-1.0, 0.0, 2.0], **F64), torch.tensor([3.0, 0.5, 2.0], **F64))
         torch.testing.assert_close(I.inf, torch.tensor([-1.0, 0.0, 2.0], **F64))
         torch.testing.assert_close(I.center, torch.tensor([1.0, 0.25, 2.0], **F64))
-        torch.testing.assert_close(I.rad, torch.tensor([2.0, 0.25, 0.0], **F64))
+        torch.testing.assert_close(I.half_width, torch.tensor([2.0, 0.25, 0.0], **F64))
         self.assertEqual(I.dim, 3)
 
     def test_numpy_boxes_stay_numpy(self):
@@ -127,9 +127,9 @@ class Interval(unittest.TestCase):
         I = cora.Interval.generate_random(rng, center=[1.0, -1.0, 0.5], max_radius=[2.0, 0.0, 4.0])
         self.assertEqual(I.dim, 3)
         self.assertTrue(np.allclose(np.asarray(I.center), [1.0, -1.0, 0.5]))
-        self.assertTrue(bool((np.asarray(I.rad) <= [1.0, 0.0, 2.0]).all()))
+        self.assertTrue(bool((np.asarray(I.half_width) <= [1.0, 0.0, 2.0]).all()))
         S = cora.Interval.generate_random(rng, 4, max_radius=6.0)
-        self.assertTrue(bool((np.asarray(S.rad) <= 3.0).all()))
+        self.assertTrue(bool((np.asarray(S.half_width) <= 3.0).all()))
         with self.assertRaises(cora.errors.WrongValue):
             cora.Interval.generate_random(rng, 2, center=[1.0, 2.0, 3.0])
 
@@ -171,8 +171,10 @@ class IntervalMethods(unittest.TestCase):
         I, J = box([1.0, -1.0], [2.0, 1.0]), box([1.5, -2.0], [2.5, 0.0])
         self.assertEqual((I & J).inf.tolist(), [1.5, -1.0])
         self.assertEqual(I.intersect(J).sup.tolist(), [2.0, 0.0])
+        # disjoint boxes: empty, the bounds keep the dimension
         empty = I.intersect(box([5.0, 5.0], [6.0, 6.0]))
-        self.assertEqual(tuple(empty.inf.shape), (2, 0))
+        self.assertEqual(tuple(empty.inf.shape), (2,))
+        self.assertTrue(empty.is_empty())
         with self.assertRaises(cora.errors.DimensionMismatch):
             I.intersect(box([0.0], [1.0]))
 
@@ -245,17 +247,20 @@ class IntervalMethods(unittest.TestCase):
                 f(box([0.0], [1.0]))
 
     def test_enclose_points(self):
-        P = torch.tensor([[1.0, -2.0, 3.0], [0.0, 5.0, -1.0]], **F64)
+        # three points of two dimensions, one per row
+        P = torch.tensor([[1.0, 0.0], [-2.0, 5.0], [3.0, -1.0]], **F64)
         I = cora.Interval.enclose_points(P)
         self.assertEqual(I.inf.tolist(), [-2.0, -1.0])
         self.assertEqual(I.sup.tolist(), [3.0, 5.0])
         with self.assertRaises(cora.errors.WrongValue):
-            cora.Interval.enclose_points(torch.zeros(2, 0, **F64))
+            cora.Interval.enclose_points(torch.zeros(0, 2, **F64))
 
     def test_empty_and_is_bounded(self):
         E = cora.Interval.empty(3)
         # empty and unbounded boxes
-        self.assertEqual(tuple(E.inf.shape), (3, 0))
+        self.assertEqual(tuple(E.inf.shape), (3,))
+        self.assertTrue(E.is_empty() and bool(E.empty_mask.all()))
+        # an empty box is bounded, an infinite bound is not
         self.assertTrue(E.is_bounded())
         self.assertTrue(box([0.0], [1.0]).is_bounded())
         self.assertFalse(cora.Interval.unbounded(2).is_bounded())

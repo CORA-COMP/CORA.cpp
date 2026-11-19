@@ -6,9 +6,9 @@
 // Property: a point is in the intersection iff it is in both sets
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,7 +38,7 @@ void intersections(const std::string &b) {
           b + ": the points");
     check(close(P.intersect(Polytope::inf(2)).A(), P.A(), 0), b + ": R^n on the right");
     check(close(Polytope::inf(2).intersect(P).A(), P.A(), 0), b + ": R^n on the left");
-    const Polytope S = P.intersect(Interval(column({1.0, 1.0}), column({5.0, 5.0})));
+    const Polytope S = P.intersect(Interval(vec({1.0, 1.0}), vec({5.0, 5.0})));
     check(S.contains(column({1.5, 1.5})) && !S.contains(column({0.5, 1.5})), b + ": a box");
     check(P.intersect(Interval::empty(2)).interval().is_empty() ||
               !P.intersect(Interval::empty(2)).contains(column({1.0, 1.0})),

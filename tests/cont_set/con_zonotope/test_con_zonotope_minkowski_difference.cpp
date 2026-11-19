@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,7 +25,7 @@ namespace {
 /// Hand-computed: [-2, 2]^2 minus [-1, 1]^2 is [-1, 1]^2 by every type; a point translates.
 void minkowski_difference_known(const std::string &b) {
     const ConZonotope big(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 2.0}}));
-    const Interval small(column({-1.0, -1.0}), column({1.0, 1.0}));
+    const Interval small(vec({-1.0, -1.0}), vec({1.0, 1.0}));
     const ConZonotope expected(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     for (const char *type : {"exact", "inner:vertices", "inner:Vinod"}) {
         const ConZonotope r = big.minkowski_difference(Set(small), type).as<ConZonotope>();
@@ -37,7 +38,7 @@ void minkowski_difference_known(const std::string &b) {
     check(close(big.minkowski_difference(column({1.0, 1.0})).c().expand_dims(-1), {-1, -1}, 0),
           b + ": a point");
     // a subtrahend that does not fit: the exact difference has no point, the Vinod scaling is empty
-    const Interval wide(column({-3.0, -3.0}), column({3.0, 3.0}));
+    const Interval wide(vec({-3.0, -3.0}), vec({3.0, 3.0}));
     check(big.minkowski_difference(Set(wide), "inner:Vinod")
               .as<ConZonotope>()
               .representsa("emptySet"),
@@ -78,7 +79,7 @@ int main() {
         minkowski_difference_property(b);
     });
     const ConZonotope a(column({0.0}), Tensor({{1.0}}));
-    const Interval I(column({0.0}), column({1.0}));
+    const Interval I(vec({0.0}), vec({1.0}));
     check(test::raises([&] { a.minkowski_difference(Set(I), "other"); }, Error::wrong_value),
           "minkowski_difference: type");
     check(test::raises([&] { a.minkowski_difference(Set(ConZonotope::origin(2))); },

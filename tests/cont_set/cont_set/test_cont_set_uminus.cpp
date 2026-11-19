@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -21,6 +21,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -31,7 +32,7 @@ namespace {
 /// -S has the center -c and the generators -G for a zonotope, the bounds [-sup, -inf] for a box.
 void uminus_negates(const std::string &b) {
     const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.2, 0.0, 0.5}, {2, 2}));
-    const Interval I(column({-1.0, 0.0}), column({2.0, 3.0}));
+    const Interval I(vec({-1.0, 0.0}), vec({2.0, 3.0}));
     const Set A = static_cast<const ContSet &>(Z).uminus(),
               B = static_cast<const ContSet &>(I).uminus();
     check(
@@ -48,7 +49,7 @@ void uminus_negates(const std::string &b) {
     }
     // the unbounded box has no NaN from a zero entry of the map
     const double inf = std::numeric_limits<double>::infinity();
-    const Interval U(column({-inf, 0.0}), column({1.0, inf}));
+    const Interval U(vec({-inf, 0.0}), vec({1.0, inf}));
     const Interval negated = static_cast<const ContSet &>(U).uminus().as<Interval>();
     check(negated.inf().data() == std::vector<double>({-1.0, -inf}) &&
               negated.sup().data() == std::vector<double>({inf, 0.0}),
@@ -66,7 +67,7 @@ void uminus_of_the_extremes() {
 /// A class without the linear map raises noops; the checks off change nothing.
 void errors_and_their_switch() {
     check(test::raises([] { test::UnregisteredSet().uminus(); }, Error::noops), "noops");
-    const Interval I(column({0.0, 0.0}), column({1.0, 1.0}));
+    const Interval I(vec({0.0, 0.0}), vec({1.0, 1.0}));
     ChecksScope off(false);
     check(static_cast<const ContSet &>(I).uminus().is<Interval>(), "the checks off");
 }

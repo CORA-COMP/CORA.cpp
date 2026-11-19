@@ -41,7 +41,7 @@ class NumpyOnly(unittest.TestCase):
         np.testing.assert_allclose((M @ Z).center, [2.0, -1.0])
         np.testing.assert_allclose((Z + np.array([1.0, 1.0])).center, [2.0, 3.0])
         I = cora.Interval(np.array([-1.0, 0.0]), np.array([1.0, 2.0]))
-        np.testing.assert_allclose(I.rad, [1.0, 1.0])
+        np.testing.assert_allclose(I.half_width, [1.0, 1.0])
         self.assertTrue(I.contains(np.array([0.0, 1.0])))
 
     def test_linear_reach_and_simulate(self):

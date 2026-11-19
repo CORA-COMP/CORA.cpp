@@ -6,7 +6,7 @@
 // CORA authors: Victor Gassmann, Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -16,6 +16,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -80,16 +81,15 @@ void refusals() {
 
 /// The ellipsoid of a box: n times its diagonal shape; radii below 5e-3 are widened to it.
 void from_interval(const std::string &b) {
-    const Interval box(column({0.0, 0.0}), column({2.0, 1.0}));
+    const Interval box(vec({0.0, 0.0}), vec({2.0, 1.0}));
     const Ellipsoid E(box);
     check(close(E.Q(), {2, 0, 0, 0.5}, 1e-14) && close(E.q(), {1, 0.5}, 0), b + ": n diag(rad^2)");
-    const Ellipsoid thin(Interval(column({0.0, 0.0}), column({2.0, 0.002})));
+    const Ellipsoid thin(Interval(vec({0.0, 0.0}), vec({2.0, 0.002})));
     check(close(thin.Q(), {2, 0, 0, 2 * 5e-3 * 5e-3}, 1e-14),
           b + ": a thin edge is widened to 5e-3");
     // the ellipsoid holds the box, by its corners
     check(E.contains(box), b + ": holds the box");
-    check(Ellipsoid(Interval(column({1.0}), column({3.0}))).Q().item() == 1.0,
-          b + ": one dimension");
+    check(Ellipsoid(Interval(vec({1.0}), vec({3.0}))).Q().item() == 1.0, b + ": one dimension");
 }
 
 /// The ellipsoid of n independent generators is n G G' (outer) or G G' (inner); a point has Q = 0.
@@ -106,7 +106,7 @@ void from_zonotope(const std::string &b) {
 
 /// Boxes with a flat edge, the inner mode, zonotopes with more generators and a batch are refused.
 void conversion_refusals() {
-    const Interval flat(column({0.0, 0.0}), column({1.0, 0.0}));
+    const Interval flat(vec({0.0, 0.0}), vec({1.0, 0.0}));
     check(test::raises([&] { Ellipsoid E(flat); }, Error::not_supported),
           "Ellipsoid(I): a flat edge");
     check(test::raises([&] { Ellipsoid E(flat, "inner"); }, Error::not_supported),
@@ -119,7 +119,7 @@ void conversion_refusals() {
     check(test::raises([&] { Ellipsoid E(many, "outer"); }, Error::wrong_value),
           "Ellipsoid(Z): mode");
     ChecksScope off(false);
-    check(Ellipsoid(Interval(column({0.0, 0.0}), column({1.0, 2.0}))).dim() == 2,
+    check(Ellipsoid(Interval(vec({0.0, 0.0}), vec({1.0, 2.0}))).dim() == 2,
           "Ellipsoid(I): works with the checks off");
 }
 

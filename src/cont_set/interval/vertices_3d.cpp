@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@interval/vertices_.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,8 +24,10 @@ namespace cora {
 
 std::vector<std::vector<Point3>> Interval::vertices_3d_impl() const {
     const std::vector<double> lo = inf_.data(), hi = sup_.data();
+    const std::vector<uint8_t> empty = empty_.flags(batch_shape());
     std::vector<std::vector<Point3>> out;
     for (std::size_t b = 0; b + 2 < lo.size(); b += 3) { // (x, y, z) of each batch member
+        if (empty[b / 3]) continue;
         std::vector<Point3> corners;
         corners.reserve(8);
         for (int k = 0; k < 8; ++k) // bit i of k picks the upper bound of coordinate i

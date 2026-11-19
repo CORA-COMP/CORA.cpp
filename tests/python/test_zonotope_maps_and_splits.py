@@ -62,8 +62,8 @@ class Origin(unittest.TestCase):
 class Measures(unittest.TestCase):
     def test_radius(self):
         Z = zonotope([0, 0], [[1, 2], [3, 1]])
-        self.assertAlmostEqual(Z.radius(), 5)  # the box radius (4, 3)
-        self.assertEqual(cora.Zonotope.origin(2).radius(), 0)
+        self.assertAlmostEqual(Z.ball_radius(), 5)  # the box radius (4, 3)
+        self.assertEqual(cora.Zonotope.origin(2).ball_radius(), 0)
 
     def test_rank(self):
         Z = zonotope([1, 5, -1], [[2, 6, 4], [0, 0, 0], [4, 0, 8]])

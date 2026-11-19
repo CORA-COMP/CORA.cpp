@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@interval/cos.m
 // CORA authors: Matthias Althoff, Dmitry Grebenyuk, Adrian Kulmburg
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -42,7 +42,7 @@ Tensor aux_max_cos(const Tensor &lb, const Tensor &ub) {
 
 Interval Interval::cos() const {
     detail::Entry entry;
-    return {aux_max_cos(inf_ - kPi, sup_ - kPi).negative(), aux_max_cos(inf_, sup_)};
+    return with(aux_max_cos(inf_ - kPi, sup_ - kPi).negative(), aux_max_cos(inf_, sup_));
 }
 
 } // namespace cora

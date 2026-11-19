@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@interval/isequal.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -43,17 +43,19 @@ bool Interval::isequal(const Interval &I2, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "isequal");
     // CORA answers false for a different dimension, it does not raise
-    if (inf_.shape() != I2.inf().shape()) return false;
-    return inf_.numel() == 0 || (aux_same(inf_, I2.inf(), tol) && aux_same(sup_, I2.sup(), tol));
+    if (inf_.shape() != I2.inf().shape() || elem_rank_ != I2.elem_rank_) return false;
+    if (!(empty_ == I2.empty_)) return false;
+    return is_empty() || inf_.numel() == 0 ||
+           (aux_same(inf_, I2.inf(), tol) && aux_same(sup_, I2.sup(), tol));
 }
 
 bool Interval::isequal(const Tensor &p, Tol tol) const {
     detail::Entry entry;
-    CORA_CHECK(p.ndim() >= 2, Error::dimension_mismatch, [&] {
-        return "isequal: the point must be a column or a matrix, got the shape " +
+    CORA_CHECK(p.ndim() >= elem_rank_, Error::dimension_mismatch, [&] {
+        return "isequal: the point must be a vector or a matrix, got the shape " +
                shape_text(p.shape());
     });
-    return isequal(Interval(p, p), tol);
+    return isequal(Interval(p, p, elem_rank_, {}), tol);
 }
 
 } // namespace cora

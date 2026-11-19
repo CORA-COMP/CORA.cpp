@@ -18,7 +18,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -125,7 +125,7 @@ inline bool nearest_is_strict() {
     static const bool strict = [] {
         const lean::DTypeScope dtype("nearest");
         const cora::Tensor one = cora::Tensor::from_data({1.0}, {1, 1}), two = one + one;
-        const lean::Interval box(cora::Interval(one, two));
+        const lean::Interval box(cora::Interval(one.squeeze(-1), two.squeeze(-1)));
         return !box.lt(box);
     }();
     if (!strict) skipped("the oracle's strict order at nearest has a margin (older oracle)");
@@ -210,10 +210,10 @@ class Random {
 
     /// A box of n dimensions: a center and a radius in [0, 1].
     cora::Interval box(int64_t n) {
-        const cora::Tensor c = vector(n);
+        const cora::Tensor c = vector(n).squeeze(-1);
         std::vector<double> r(n);
         for (double &x : r) x = uniform(0, 1);
-        const cora::Tensor rad = cora::Tensor::from_data(r, {n, 1});
+        const cora::Tensor rad = cora::Tensor::from_data(r, {n});
         return {c - rad, c + rad};
     }
 
@@ -223,7 +223,7 @@ class Random {
         std::vector<double> r(rows * cols);
         for (double &x : r) x = uniform(0, 1);
         const cora::Tensor rad = cora::Tensor::from_data(r, {rows, cols});
-        return {c - rad, c + rad};
+        return cora::Interval::matrix(c - rad, c + rad);
     }
 
   private:
@@ -248,7 +248,13 @@ inline std::string bits(double x) {
 inline std::vector<double> values(const cora::Tensor &T) { return T.data(); }
 inline std::vector<double> values(const lean::Tensor &T) { return T.gather().data(); }
 
-inline std::vector<int64_t> shape(const cora::Tensor &T) { return T.shape(); }
+/// The shape of a result in the oracle's CORA layout: a point (n) of a set is the column (n, 1),
+/// a scalar result () the 1 x 1 matrix (#163).
+inline std::vector<int64_t> shape(const cora::Tensor &T) {
+    if (T.ndim() == 0) return {1, 1};
+    if (T.ndim() == 1) return {T.shape()[0], 1};
+    return T.shape();
+}
 inline std::vector<int64_t> shape(const lean::Tensor &T) { return {T.rows(), T.cols()}; }
 
 inline std::string describe(const std::vector<int64_t> &s) {
@@ -293,6 +299,12 @@ inline bool agree(const std::string &what, double a, double b) {
 }
 
 inline bool agree(const std::string &what, const cora::Interval &a, const lean::Interval &b) {
+    // an empty box is CORA's bounds without columns (n, 0); CORA.cpp flags it in the mask
+    if (a.is_empty() && a.elem_rank() == 1) {
+        const cora::Tensor none = a.inf().zeros_like({a.dim(), 0});
+        const bool inf = agree(what + ".inf", none, b.inf());
+        return agree(what + ".sup", none, b.sup()) && inf;
+    }
     const bool inf = agree(what + ".inf", a.inf(), b.inf()); // both are reported
     return agree(what + ".sup", a.sup(), b.sup()) && inf;
 }

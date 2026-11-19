@@ -6,7 +6,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -18,7 +18,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -39,7 +39,7 @@ void reduce_keeps_the_class_and_encloses(const std::string &b) {
         const std::vector<double> d = test::random_direction(rng, 2);
         check(test::support(R, d) >= test::support(Z, d) - 1e-12, b + ": the reduction encloses");
     }
-    const Interval I(column({-1.0, 0.0}), column({1.0, 2.0}));
+    const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0}));
     const Set B = static_cast<const ContSet &>(I).reduce(3);
     check(B.is<Interval>() && test::close(B.as<Interval>().sup(), I.sup(), 0.0),
           b + ": a box is its own reduction");
@@ -47,7 +47,7 @@ void reduce_keeps_the_class_and_encloses(const std::string &b) {
 
 /// An order below 1 is refused; a class without reduce raises noops; the checks off skip the order.
 void errors_and_their_switch() {
-    const Interval I(column({0.0}), column({1.0}));
+    const Interval I(vec({0.0}), vec({1.0}));
     const ContSet &S = I;
     check(test::raises([&] { S.reduce(0); }, Error::wrong_value), "order 0");
     check(test::raises([] { test::UnregisteredSet().reduce(1); }, Error::noops), "noops");

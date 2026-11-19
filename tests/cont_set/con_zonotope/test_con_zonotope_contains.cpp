@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Matthias Althoff, Adrian Kulmburg, Ivan Brkan
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -14,6 +14,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,15 +38,14 @@ void contains_known(const std::string &b) {
           b + ": a zonotope on it");
     check(!segment.contains(Zonotope(column({0.5, 0.5}), Tensor({{0.25, 0.25}}))),
           b + ": a zonotope across it");
-    check(segment.contains(Interval(column({0.5, 0.5}), column({0.5, 0.5}))), b + ": a point box");
-    check(!segment.contains(Interval(column({0.0, 0.0}), column({1.0, 1.0}))),
+    check(segment.contains(Interval(vec({0.5, 0.5}), vec({0.5, 0.5}))), b + ": a point box");
+    check(!segment.contains(Interval(vec({0.0, 0.0}), vec({1.0, 1.0}))),
           b + ": a box is not in a segment");
     // the box [-1, 1]^2 as a constrained zonotope with a trivial constraint
     const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
                              Tensor({{0.0, 0.0, 1.0}}), column({0.0}));
-    check(square.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.0}))),
-          b + ": a box in a square");
-    check(!square.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.5}))),
+    check(square.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.0}))), b + ": a box in a square");
+    check(!square.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.5}))),
           b + ": a box sticking out");
     check(square.contains(Zonotope(column({0.0, 0.0}), Tensor({{0.5, 0.5}, {0.5, -0.5}}))),
           b + ": a zonotope in a square");
@@ -61,7 +61,7 @@ void contains_known(const std::string &b) {
     check(!none.contains(column({0.0, 0.0})) && none.contains(Tensor::zeros({2, 0})),
           b + ": empty");
     const Set via_set(segment);
-    check(contains(via_set, Set(Interval(column({0.5, 0.5}), column({0.5, 0.5})))),
+    check(contains(via_set, Set(Interval(vec({0.5, 0.5}), vec({0.5, 0.5})))),
           b + ": through the registry");
 }
 
@@ -73,10 +73,12 @@ void contains_property(const std::string &b) {
         const ConZonotope A = test::random_con_zonotope(rng, 3, 5, 2);
         check(A.contains(test::sample_points(A, rng, 40), "exact", 1e-7),
               b + ": the sampled points");
-        check(!A.contains(A.interval().sup() + Tensor::ones({3, 1})), b + ": beyond the box");
+        check(!A.contains(A.interval().sup().expand_dims(-1) + Tensor::ones({3, 1})),
+              b + ": beyond the box");
         // a small box around the center, and its corners, are in a full-dimensional set
         const Tensor c = A.center();
-        check(A.contains(Interval(c - 1e-6, c + 1e-6)), b + ": a tiny box around the center");
+        check(A.contains(Interval(c.squeeze(-1) - 1e-6, c.squeeze(-1) + 1e-6)),
+              b + ": a tiny box around the center");
     }
 }
 

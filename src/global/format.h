@@ -3,9 +3,9 @@
 // Syntax:   std::string s = format_matrix(t, "    ");
 // See also: src/cont_set/zonotope/display.cpp, src/cont_set/interval/display.cpp
 //
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   02-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -36,6 +36,9 @@ inline bool is_column(const Tensor &t, int64_t n) {
     const std::vector<int64_t> shape = t.shape();
     return shape.size() >= 2 && shape.back() == 1 && shape[shape.size() - 2] == n;
 }
+
+/// Whether t is a point (..., n) of n coordinates, the layout of a set's points (#163).
+inline bool is_vector(const Tensor &t, int64_t n) { return t.ndim() >= 1 && t.shape().back() == n; }
 
 /// One number with up to six significant digits.
 inline std::string format_number(double x) {

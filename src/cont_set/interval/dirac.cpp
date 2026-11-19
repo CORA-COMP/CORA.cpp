@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@interval/dirac.m
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -49,10 +49,11 @@ Interval Interval::dirac(int64_t n) const {
     const Tensor zero = s.zeros_like();
     const Tensor contains_zero = s.abs().less_equal(s.ones_like()), mid = s.equal(zero);
     const Tensor lower_end = s.equal(s.ones_like()), upper_end = s.equal(-s.ones_like());
-    if (n == 0) return {zero, aux_where(contains_zero, kInf)};
+    if (n == 0) return with(zero, aux_where(contains_zero, kInf));
     if (n == 1)
-        return {aux_where(mid.maximum(lower_end), -kInf), aux_where(mid.maximum(upper_end), kInf)};
-    return {aux_where(contains_zero, -kInf), aux_where(contains_zero, kInf)};
+        return with(aux_where(mid.maximum(lower_end), -kInf),
+                    aux_where(mid.maximum(upper_end), kInf));
+    return with(aux_where(contains_zero, -kInf), aux_where(contains_zero, kInf));
 }
 
 } // namespace cora

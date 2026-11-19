@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@polytope/reduceOverDomain.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -36,19 +36,19 @@ Polytope Polytope::reduce_over_domain(const Interval &dom, const std::string &ty
     CORA_CHECK(is_h_rep() && A_.ndim() == 2 && A_.shape()[0] > 0, Error::special_error, [] {
         return std::string("reduce_over_domain: it needs a single polytope with halfspaces");
     });
-    CORA_CHECK(dom.dim() == dim() && dom.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
+    CORA_CHECK(dom.dim() == dim() && dom.elem_rank() == 1, Error::dimension_mismatch, [&] {
         return "reduce_over_domain: the domain must be a box of dimension " +
                std::to_string(dim()) + ", got the shape " + shape_text(dom.inf().shape());
     });
     // the unit rows, the ranges of their entries and of their offsets
     const Polytope unit = normalize_constraints("A");
-    const Interval A(unit.A().min(0, true).matrix_transpose(),
-                     unit.A().max(0, true).matrix_transpose());
-    const Interval b(unit.b().min(0, true), unit.b().max(0, true));
+    const Interval A(unit.A().min(0), unit.A().max(0));
+    const Interval b(unit.b().min(0), unit.b().max(0));
     const Tensor reduced = A.center();
     // b - (A - reduced)' dom, a box of one number
     const Interval offset = b.minus((A.minus(reduced)).times(dom).sum(1));
-    return {reduced.matrix_transpose(), type == "outer" ? offset.sup() : offset.inf()};
+    return {reduced.expand_dims(0),
+            (type == "outer" ? offset.sup() : offset.inf()).expand_dims(-1)};
 }
 
 } // namespace cora

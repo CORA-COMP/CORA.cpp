@@ -5,7 +5,7 @@
 // CORA authors: Victor Gassmann, Niklas Kochdumper, Adrian Kulmburg, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -15,6 +15,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,12 +38,11 @@ void contains_known(const std::string &b) {
     const Zonotope inside(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}}));
     const Zonotope sticks_out(column({1.0, 2.0}), Tensor({{2.5, 0.0}, {0.0, 0.0}}));
     check(E.contains(inside) && !E.contains(sticks_out), b + ": zonotopes");
-    const Interval box(column({0.0, 1.5}), column({2.0, 2.5})),
-        wide(column({-4.0, 0.0}), column({6.0, 4.0}));
+    const Interval box(vec({0.0, 1.5}), vec({2.0, 2.5})), wide(vec({-4.0, 0.0}), vec({6.0, 4.0}));
     check(E.contains(box) && !E.contains(wide),
           b + ": boxes (the corners of [0, 2] x [1.5, 2.5] are in)");
     const double inf = std::numeric_limits<double>::infinity();
-    check(!E.contains(Interval(column({0.0, 0.0}), column({inf, 1.0}))), b + ": an unbounded box");
+    check(!E.contains(Interval(vec({0.0, 0.0}), vec({inf, 1.0}))), b + ": an unbounded box");
     check(E.contains(Interval::empty(2)), b + ": the empty box");
     check(E.contains(Zonotope(column({1.0, 2.0}), Tensor::zeros({0, 2}))),
           b + ": a zonotope that is a point");
@@ -84,18 +84,18 @@ void contains_property(const std::string &b) {
         }
         check(E.contains(Z) == all, b + ": the search agrees with the vertices");
         // the box of half the generators: its corners decide as well
-        const Interval I(Z.center().expand_dims(-1) -
-                             Z.generators().matrix_transpose().abs().sum(1, true) * 0.5,
-                         Z.center().expand_dims(-1) +
-                             Z.generators().matrix_transpose().abs().sum(1, true) * 0.5);
+        const Interval I(Z.center() - Z.generators().abs().sum(0) * 0.5,
+                         Z.center() + Z.generators().abs().sum(0) * 0.5);
         bool corners = true;
         for (int mask = 0; mask < 8; ++mask) {
             std::vector<double> sel;
             // the corners of the box are contained
             sel.reserve(3);
             for (int j = 0; j < 3; ++j) sel.push_back(((mask >> j) & 1) ? 1.0 : 0.0);
-            const Tensor w = Tensor::like(I.inf(), sel, {3, 1});
-            corners = corners && E.contains(I.inf() + (I.sup() - I.inf()).multiply(w));
+            const Tensor w = Tensor::like(I.inf(), sel, {3});
+            // the ellipsoid takes the corner as a column
+            const Tensor corner = I.inf() + (I.sup() - I.inf()).multiply(w);
+            corners = corners && E.contains(corner.expand_dims(-1));
         }
         check(E.contains(I) == corners, b + ": a box agrees with its corners");
     }

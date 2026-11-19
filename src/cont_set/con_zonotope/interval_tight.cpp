@@ -15,7 +15,7 @@
 // CORA.cpp only: CORALean's float definition replaces CORA's linear programs
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -122,7 +122,7 @@ Interval ConZonotope::Cut::interval_tight(int passes) const {
     // the box of G J, then the center and the error box (zero): [c, c] + [G J]
     Vec inf(std::size_t(n), 0.0), sup(std::size_t(n), 0.0);
     if (h > 0) {
-        const Interval GJ = Interval(Tensor::like(c, lo, {h, 1}), Tensor::like(c, hi, {h, 1}))
+        const Interval GJ = Interval(Tensor::like(c, lo, {h}), Tensor::like(c, hi, {h}))
                                 .zonotope()
                                 .linear_map(G)
                                 .interval();
@@ -135,7 +135,7 @@ Interval ConZonotope::Cut::interval_tight(int passes) const {
         inf[i] += center[i] + 0.0;
         sup[i] += center[i] + 0.0;
     }
-    return {Tensor::like(c, inf, {n, 1}), Tensor::like(c, sup, {n, 1})};
+    return {Tensor::like(c, inf, {n}), Tensor::like(c, sup, {n})};
 }
 
 Interval ConZonotope::interval_tight(int passes) const {

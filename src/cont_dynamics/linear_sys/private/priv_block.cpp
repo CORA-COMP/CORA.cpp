@@ -3,9 +3,9 @@
 // See also: priv_block.h
 //
 // CORA.cpp only: CORA spreads these over block_mtimes, block_operation, block_zeros and recompose.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_block.h"
@@ -26,7 +26,7 @@ Tensor aux_sub(const Tensor &M, const std::array<int64_t, 2> &rows,
 
 Interval aux_sub(const Interval &M, const std::array<int64_t, 2> &rows,
                  const std::array<int64_t, 2> &cols) {
-    return {aux_sub(M.inf(), rows, cols), aux_sub(M.sup(), rows, cols)};
+    return Interval::matrix(aux_sub(M.inf(), rows, cols), aux_sub(M.sup(), rows, cols));
 }
 
 /// The block i of M Xb: the sum over j of M(i, j) Xb_j.

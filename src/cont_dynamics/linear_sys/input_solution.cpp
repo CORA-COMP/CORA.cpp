@@ -17,7 +17,7 @@
 //   particular_solution_time_varying and particular_solution_constant
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -75,7 +75,7 @@ InputSolution LinearSys::input_solution(const Zonotope &U, double time_step,
     // G u for the interval matrix G: the center maps u, the radius maps |u|.
     const Interval G = correction_matrix_input(time_step, taylor_terms);
     // one generator per dimension: the diagonal is its own transpose
-    const Zonotope Cinput(G.center().matmul(u).squeeze(-1), G.rad().matmul(u.abs()).diag());
+    const Zonotope Cinput(G.center().matmul(u).squeeze(-1), G.half_width().matmul(u.abs()).diag());
     return {PU, Pu, Cinput};
 }
 

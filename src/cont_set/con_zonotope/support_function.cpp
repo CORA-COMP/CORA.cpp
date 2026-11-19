@@ -12,7 +12,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -47,8 +47,7 @@ Interval ConZonotope::support_function_range(const Tensor &d) const {
     // both ends from the programs over the factors; none if the set is empty
     const auto range = priv_range(priv_host_con_zonotope(*this), d.data());
     if (!range) return Interval::empty(1);
-    return {Tensor::like(c_.expand_dims(-1), {range->first}, {1, 1}),
-            Tensor::like(c_.expand_dims(-1), {range->second}, {1, 1})};
+    return {Tensor::like(c_, {range->first}, {1}), Tensor::like(c_, {range->second}, {1})};
 }
 
 } // namespace cora

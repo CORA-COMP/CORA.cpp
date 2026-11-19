@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@interval/supportFunc_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -22,7 +22,9 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Tensor Interval::support_function_impl(const Tensor &d) const {
-    return d.matrix_transpose().matmul(center()) + d.abs().matrix_transpose().matmul(rad());
+    // the direction is a column; the box is one too
+    const Tensor c = center().expand_dims(-1), r = half_width().expand_dims(-1);
+    return d.matrix_transpose().matmul(c) + d.abs().matrix_transpose().matmul(r);
 }
 
 } // namespace cora

@@ -19,7 +19,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   16-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -71,7 +71,7 @@ Interval LinearSys::correction_matrix_state(double time_step, int taylor_terms) 
         Fneg = Fneg + Ai.maximum(0.0) * weight;
     }
     const Tensor W = aux_remainder(Aabs, time_step, series);
-    return {Fneg - W, Fpos + W};
+    return Interval::matrix(Fneg - W, Fpos + W);
 }
 
 } // namespace cora

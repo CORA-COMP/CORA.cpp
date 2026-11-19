@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -17,6 +17,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -31,7 +32,7 @@ void contains_every_set(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     check(F.contains(Z) && F.contains(Fullspace(2)) && F.contains(Interval::unbounded(2)),
           b + ": a zonotope, the space and the unbounded box");
-    check(F.contains(Interval(column({kInf, 0.0}), column({kInf, 1.0}))), b + ": a box at Inf");
+    check(F.contains(Interval(vec({kInf, 0.0}), vec({kInf, 1.0}))), b + ": a box at Inf");
     check(F.contains(Interval::empty(2)), b + ": the empty interval");
     check(F.contains(Z, 1e-3) && F.contains(Z, 0.0), b + ": any tol");
     check(contains(F, Z) && contains(F, Fullspace(2)), b + ": through the registry");

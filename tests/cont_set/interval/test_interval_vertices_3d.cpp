@@ -1,8 +1,8 @@
 // test_interval_vertices_3d - interval vertices_3d: the eight corners of a box
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,7 +24,7 @@ bool has_corner(const std::vector<Point3> &corners, const Point3 &p) {
 }
 
 void the_corners_of_a_box(const std::string &b) {
-    const Interval I(test::column({0, -1, 2}), test::column({1, 3, 5}));
+    const Interval I(test::vec({0, -1, 2}), test::vec({1, 3, 5}));
     const std::vector<std::vector<Point3>> V = I.vertices_3d();
     check(V.size() == 1 && V[0].size() == 8, b + ": eight corners of one box");
     for (double x : {0.0, 1.0})
@@ -34,9 +34,9 @@ void the_corners_of_a_box(const std::string &b) {
 }
 
 void invalid_input_and_checks_off() {
-    const Interval I2 = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval I2 = Interval(test::vec({0, -1}), test::vec({1, 1}));
     check(test::raises([&] { I2.vertices_3d(); }, Error::not_supported), "a plane is refused");
-    const Interval I = Interval(test::column({0, 0, 0}), test::column({1, 1, 1}));
+    const Interval I = Interval(test::vec({0, 0, 0}), test::vec({1, 1, 1}));
     ChecksScope off(false);
     // the same with the checks off
     check(I.vertices_3d()[0].size() == 8, "the same with the checks off");

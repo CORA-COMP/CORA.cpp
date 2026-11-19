@@ -33,7 +33,7 @@
 // ORACLE: contSet/@capsule/zonotope.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -155,7 +155,7 @@ int main() {
     });
     oracle::run("capsule.radius", [](oracle::Random &rnd) {
         const Capsule C = rnd.capsule(3);
-        oracle::check(C.radius().item(), lean::Capsule(C).radius());
+        oracle::check(C.ball_radius().item(), lean::Capsule(C).radius());
     });
     // the halfspaces in the Gram-Schmidt basis of g, then the projection and the reduction
     oracle::run("capsule.polytope", [](oracle::Random &rnd) {

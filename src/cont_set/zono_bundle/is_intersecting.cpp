@@ -14,7 +14,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -73,8 +73,9 @@ bool ZonoBundle::is_intersecting(const Zonotope &Z, const std::string &type, Tol
 bool ZonoBundle::is_intersecting(const Interval &I, const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, Z_.front().center().dtype(), "is_intersecting");
-    detail::Refusal r = priv_operand_refusal(*this, I.dim(), I.inf(), "is_intersecting");
-    if (!r) r = aux_refusal(*this, I.inf(), type);
+    detail::Refusal r =
+        priv_operand_refusal(*this, I.dim(), I.inf().expand_dims(-1), "is_intersecting");
+    if (!r) r = aux_refusal(*this, I.inf().expand_dims(-1), type);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     if (type == "approx") return interval().is_intersecting(I, tol);
     // the empty box meets nothing; else as for a zonotope

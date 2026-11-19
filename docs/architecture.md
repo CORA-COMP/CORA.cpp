@@ -140,10 +140,13 @@ struct, as CORA separates `params` from `options`.
 dimensions first:
 - a vector zonotope has the center c (batch..., n) and the generators G (batch..., h, n), one
   generator per row; the same holds for `ConZonotope`, `PolyZonotope` (G, GI) and `Capsule`;
+- a box has the bounds (batch..., n), an interval matrix (`Interval::matrix`) the bounds
+  (batch..., r, c); in a matrix operation a box is the column (n, 1);
 - operations broadcast over the batch and the element dimensions as NumPy does, and the generator
   axis never broadcasts;
-- points and directions given to an operation stay columns (..., n, 1) and (n, N), as every set
-  takes them;
+- the scalar results of `Interval` (volume, norms, `ball_radius`) have the batch shape (...);
+- the generic entries of `ContSet` (`center()`, the direction of `support_function`, the points
+  of `rand_point`) still take and give columns;
 - CORA's n x h columns appear only where data crosses to CORA: the private MATLAB-data loader and
   the oracle client. An algorithm that is written on CORA's columns (the linear programs of
   `ConZonotope`, the adaptive linear reach) transposes once, explicitly. There is no public
@@ -152,11 +155,12 @@ dimensions first:
 **Matrix sets are sets of matrix-shaped points, as in CORALean.** CORALean has no
 interval-matrix type: an interval matrix is `Interval (Mat n m)`, a set whose points are matrices,
 and its exponential lives with the linear system (`LinearSys.MatExp`). CORA.cpp does the same
-(#157): the element shape (rows, cols) of a set says which space it lives in, a column (n, 1) for
-vectors. An interval matrix is an `Interval` of matrix bounds, and a matrix zonotope is a
-`Zonotope` of matrix elements, `Zonotope::matrix(C, G)` with C (..., rows, cols) and G
-(..., h, rows, cols).
-- `Interval` takes bounds (..., n, m). The methods where CORA's `intervalMatrix` and `interval`
+(#157): the element shape of a set says which space it lives in, (n) for vectors and (rows, cols)
+for matrices. An interval matrix is `Interval::matrix(inf, sup)` of matrix bounds, and a matrix
+zonotope is a `Zonotope` of matrix elements, `Zonotope::matrix(C, G)` with C (..., rows, cols) and
+G (..., h, rows, cols). The vector sets have the plain constructors, the matrix sets the named
+factories.
+- `Interval::matrix` takes bounds (..., r, c). The methods where CORA's `intervalMatrix` and `interval`
   differ only in what they accept answer both: `contains` takes a matrix, `representsa` and
   `volume` take the entries stacked column by column, `display` shows CORA's intervalMatrix text.
   The matrix products are `Interval::matmul` (and `*`), `exact_square`, `infinity_norm` and
@@ -203,6 +207,13 @@ vertices, CORA's colors, the union of overlapping sets, z-order) and puts it int
 - The ctest `install/consumer` installs the build and compiles `tests/install/consumer` against
   the install tree.
 - Files: `scripts/cmake/install.cmake`, `scripts/cmake/CORAConfig.cmake.in`.
+
+**Empty sets carry a mask.** (#163) A set says which members of its batch are empty by a mask of
+the batch shape (`ContSet::empty_mask()`, the class `EmptyMask`), never by its data: its shapes
+keep n. `Interval::empty(n)` has bounds (n) and every member flagged. The other classes adopt the
+mask the same way; until they do, they encode the empty set in their data (zero columns, a
+negative radius, an infeasible row). Files: `include/cora/cont_set/empty_mask.h`,
+`src/cont_set/cont_set/empty_mask.cpp`.
 
 **Tolerances.**
 - One policy for the whole repository. A `tol` argument is `std::optional<double>` (Python

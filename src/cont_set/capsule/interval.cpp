@@ -11,7 +11,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -35,7 +35,7 @@ Interval Capsule::interval_impl() const {
     }
     // CORA reads the range of each coordinate from the support function: c_i +- (|g_i| + r)
     const Tensor reach = gc().abs().add(r_);
-    return {cc().subtract(reach), cc().add(reach)};
+    return {cc().subtract(reach).squeeze(-1), cc().add(reach).squeeze(-1)};
 }
 
 } // namespace cora

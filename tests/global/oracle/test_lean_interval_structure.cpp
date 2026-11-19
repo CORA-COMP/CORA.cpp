@@ -16,7 +16,7 @@
 // ORACLE: contSet/@interval/zonotope.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -40,7 +40,7 @@ Interval aux_matrix(test::oracle::Random &rnd, int64_t rows, int64_t cols) {
     std::vector<double> r(rows * cols);
     for (double &x : r) x = rnd.uniform(0, 1);
     const Tensor rad = Tensor::from_data(r, {rows, cols});
-    return {c - rad, c + rad};
+    return Interval::matrix(c - rad, c + rad);
 }
 
 } // namespace

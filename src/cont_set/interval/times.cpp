@@ -12,13 +12,15 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_broadcastable.h"
 #include "cont_set/interval/private/priv_times.h"
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"
+
+#include <algorithm>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -34,7 +36,7 @@ Interval Interval::times(const Interval &I2) const {
                shape_text(I2.inf().shape()) + " do not broadcast";
     });
     const auto [lo, hi] = priv_times(inf_, sup_, I2.inf(), I2.sup());
-    return {lo, hi};
+    return {lo, hi, std::max(elem_rank_, I2.elem_rank_), empty_.either(I2.empty_)};
 }
 
 Interval Interval::times(const Tensor &factor) const {
@@ -44,10 +46,15 @@ Interval Interval::times(const Tensor &factor) const {
                shape_text(factor.shape()) + " do not broadcast";
     });
     const auto [lo, hi] = priv_times(inf_, sup_, factor, factor);
-    return {lo, hi};
+    return with(lo, hi);
 }
 
-Set Interval::times_impl(const Tensor &factor) const { return times(factor); }
+Set Interval::times_impl(const Tensor &factor) const {
+    // ContSet's factor is a column (..., n, 1); a box takes it as (..., n)
+    if (elem_rank_ == 1 && factor.ndim() >= 2 && factor.size(-1) == 1)
+        return times(factor.squeeze(-1));
+    return times(factor);
+}
 
 } // namespace cora
 

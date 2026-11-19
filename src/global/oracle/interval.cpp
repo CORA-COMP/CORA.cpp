@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/interval.h"
@@ -56,7 +56,11 @@ Interval::Interval(Tensor inf, Tensor sup) : inf_(std::move(inf)), sup_(std::mov
         CORA_FAIL(Error::wrong_value, "lean: the bounds of an interval must share one dtype");
 }
 
-Interval::Interval(const cora::Interval &I) : Interval(from(I.inf(), I.sup())) {}
+// CORA's empty box has bounds without columns (n, 0); CORA.cpp's flags its members in the mask
+Interval::Interval(const cora::Interval &I)
+    : Interval(I.is_empty() && I.elem_rank() == 1
+                   ? from(I.inf().zeros_like({I.dim(), 0}), I.inf().zeros_like({I.dim(), 0}))
+                   : from(I.inf(), I.sup())) {}
 
 Interval Interval::from(const cora::Tensor &inf, const cora::Tensor &sup) {
     return {Tensor::from(inf), Tensor::from(sup)};
@@ -64,6 +68,17 @@ Interval Interval::from(const cora::Tensor &inf, const cora::Tensor &sup) {
 
 std::pair<cora::Tensor, cora::Tensor> Interval::gather() const {
     return {inf_.gather(), sup_.gather()};
+}
+
+cora::Interval Interval::gather_box() const {
+    const auto [inf, sup] = gather();
+    if (inf.size(-1) == 0) return cora::Interval::empty(inf.size(-2)); // CORA's empty (n, 0)
+    return {inf.squeeze(-1), sup.squeeze(-1)};
+}
+
+cora::Interval Interval::gather_matrix() const {
+    const auto [inf, sup] = gather();
+    return cora::Interval::matrix(inf, sup);
 }
 
 Json Interval::to_json() const {

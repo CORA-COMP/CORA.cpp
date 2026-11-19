@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/or.m
 // PROPERTY: contSet/@zonoBundle/or.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -13,6 +13,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +28,7 @@ void unite_property(const std::string &b) {
     const ZonoBundle zono_bundle = test::random_zono_bundle(rng, 2, 2, 3, &common);
     const Tensor x = test::bundle_points(zono_bundle, rng, 10, common);
     const Zonotope Z = Zonotope::generate_random(rng, 2);
-    const Interval I(column({5.0, 5.0}), column({6.0, 7.0}));
+    const Interval I(vec({5.0, 5.0}), vec({6.0, 7.0}));
     Tensor other;
     const ZonoBundle second = test::random_zono_bundle(rng, 2, 2, 3, &other);
     const Tensor y = test::bundle_points(second, rng, 10, other);

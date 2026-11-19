@@ -15,7 +15,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -56,7 +56,7 @@ ZonoBundle ZonoBundle::plus(const Zonotope &Z) const {
 
 ZonoBundle ZonoBundle::plus(const Interval &I) const {
     detail::Entry entry;
-    const detail::Refusal refusal = aux_refusal(*this, I.dim(), I.inf());
+    const detail::Refusal refusal = aux_refusal(*this, I.dim(), I.inf().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the empty box has no points to add
     if (I.is_empty()) return empty(dim());

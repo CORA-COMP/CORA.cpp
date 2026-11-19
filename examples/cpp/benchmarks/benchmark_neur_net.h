@@ -9,9 +9,9 @@
 //           const PolyZonotope X0 = cora::bench::box_poly({-1, 0}, {1, 0});
 // See also: benchmark_data.h, benchmark_neur_net_contr_reach_unicycle.cpp
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -96,7 +96,7 @@ inline Zonotope box_zonotope(const std::vector<double> &lo, const std::vector<do
 /// The polynomial zonotope of the box (CORA's polyZonotope(interval(lo, hi))).
 inline PolyZonotope box_poly(const std::vector<double> &lo, const std::vector<double> &hi) {
     const auto n = int64_t(lo.size());
-    return PolyZonotope(Interval(Tensor::from_data(lo, {n, 1}), Tensor::from_data(hi, {n, 1})));
+    return PolyZonotope(Interval(Tensor::from_data(lo, {n}), Tensor::from_data(hi, {n})));
 }
 
 /// The options of the scripts: alg lin with the step, orders and the method of the network's

@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/randPoint_.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -53,7 +53,7 @@ void rand_point_samples_the_box(const std::string &b) {
 
 /// A negative number of points is refused; with the checks off the draw is the same.
 void checks_and_their_switch() {
-    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval S = Interval(test::vec({0, -1}), test::vec({1, 1}));
     cora::Rng rng(3), again(3);
     check(test::raises([&] { S.rand_point(-1, rng); }, Error::wrong_value), "rand_point: N = -1");
     const Tensor on = S.rand_point(4, rng);

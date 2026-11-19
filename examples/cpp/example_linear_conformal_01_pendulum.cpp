@@ -13,9 +13,9 @@
 // Outputs:  the conformal radius, the coverage on test trajectories, and the figure as an SVG file
 // See also: example_linear_learn_02_conformal of the Python examples (which learns the model)
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -115,7 +115,7 @@ int main() {
     plot(R, {0, 1}, {.label = "reachable set of the linear model"});
     for (std::size_t k = 0; k < R.time_point.size(); ++k) {
         const Interval box = R.time_point[k].interval();
-        const Tensor margin = Tensor({radius, radius});
+        const Tensor margin = Tensor::from_data({radius, radius}, {2});
         plot(Interval(box.inf() - margin, box.sup() + margin), {0, 1},
              {.label = k == 0 ? "enlarged by the conformal radius" : "",
               .color = "CORA:red",

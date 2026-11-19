@@ -8,7 +8,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/hybrid_dynamics/location/location.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +28,7 @@ namespace {
 
 /// The guard, the reset and the target; the parts of a location.
 void construction() {
-    const Interval box(column({0.0, -1.0}), column({1.0, 1.0}));
+    const Interval box(vec({0.0, -1.0}), vec({1.0, 1.0}));
     const Transition t(box, LinearReset(Tensor::eye(2)), 1);
     check(t.target() == 1 && std::get<Polytope>(t.guard()).dim() == 2,
           "transition: target and guard");

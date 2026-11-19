@@ -19,9 +19,9 @@
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_wrappingfree.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -58,7 +58,7 @@ ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const 
     Zonotope Htp = X.linear_map(e_adt) + in.Pu;
     Zonotope Hti = X.linear_combination(Htp).plus(X.linear_map(F));
     Zonotope PUnext = in.PU;
-    Tensor PUrad = in.PU.interval().rad(); // the time-varying solution as a box around zero
+    Tensor PUrad = in.PU.interval().half_width(); // the time-varying solution as a box around zero
     R.time_point.push_back(X);
     R.time_interval.push_back(Hti.plus(in.PU).plus(in.Cinput));
     R.time_point.push_back(Htp.plus(in.PU));
@@ -67,8 +67,8 @@ ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const 
         Hti = Hti.linear_map(e_adt) + in.Pu;
         Htp = Htp.linear_map(e_adt) + in.Pu;
         PUnext = PUnext.linear_map(e_adt);
-        PUrad = PUrad + PUnext.interval().rad();
-        const Zonotope PU = priv_box(PUrad);
+        PUrad = PUrad + PUnext.interval().half_width();
+        const Zonotope PU = priv_box(PUrad.expand_dims(-1));
         R.time_interval.push_back(Hti.plus(PU).plus(in.Cinput));
         R.time_point.push_back(Htp.plus(PU));
     }

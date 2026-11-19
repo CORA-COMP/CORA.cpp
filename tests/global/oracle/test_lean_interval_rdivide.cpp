@@ -6,7 +6,7 @@
 // ORACLE: contSet/@interval/rdivide.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -29,7 +29,7 @@ Interval aux_away_from_zero(test::oracle::Random &rnd, int n) {
         lo[i] = i % 2 ? -a - w : a;
         hi[i] = i % 2 ? -a : a + w;
     }
-    return {test::column(lo), test::column(hi)};
+    return {test::vec(lo), test::vec(hi)};
 }
 
 } // namespace

@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -16,6 +16,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,7 +27,7 @@ namespace {
 /// A box grows by its own formula, a zonotope by the generic one: the center stays and the
 /// generators scale by the factor of their coordinate.
 void enlarge_scales_about_the_center(const std::string &b) {
-    const Interval I(column({-1.0, 0.0}), column({1.0, 2.0}));
+    const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0}));
     const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     const ContSet &A = I, &B = Z;
     const Set RI = A.enlarge(2.0), RJ = A.enlarge(column({2.0, 0.5}));

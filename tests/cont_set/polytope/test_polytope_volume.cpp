@@ -6,9 +6,9 @@
 // Property: the volume of M [0, 1]^n is |det M|
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -33,7 +34,7 @@ void volumes(const std::string &b) {
     const Polytope simplex(
         Tensor({{0.0, 1.0, 0.0, 0.0}, {0.0, 0.0, 1.0, 0.0}, {0.0, 0.0, 0.0, 1.0}}));
     check(close(simplex.volume(), 1.0 / 6.0), b + ": the 3D simplex");
-    const Polytope box(Interval(column({0.0, 1.0, 2.0}), column({2.0, 4.0, 3.0})));
+    const Polytope box(Interval(vec({0.0, 1.0, 2.0}), vec({2.0, 4.0, 3.0})));
     check(close(box.volume(), 6.0), b + ": a 3D box");
     constexpr double inf = std::numeric_limits<double>::infinity();
     check(Polytope::inf(2).volume() == inf &&

@@ -27,11 +27,12 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
 
+#include "cora/cont_set/empty_mask.h"
 #include "cora/global/settings.h"
 #include "cora/global/tensor/tensor.h"
 #include "cora/global/tensor/tolerance.h"
@@ -111,6 +112,10 @@ class ContSet {
 
     /// The dimension n.
     int64_t dim() const { return dim_impl(); }
+
+    /// Which members of the batch are the empty set (#163): Interval, Ellipsoid and Polytope keep
+    /// this mask; the other classes have none yet and encode the empty set in their data.
+    const EmptyMask &empty_mask() const noexcept { return empty_; }
 
     /// The center, a column (..., n, 1).
     Tensor center() const;
@@ -217,6 +222,7 @@ class ContSet {
 
   protected:
     explicit ContSet(ClassId id) noexcept : id_(id) {}
+    ContSet(ClassId id, EmptyMask empty) noexcept : empty_(std::move(empty)), id_(id) {}
     ContSet(const ContSet &) = default;
     ContSet(ContSet &&) noexcept = default;
     ContSet &operator=(const ContSet &) = default;
@@ -267,6 +273,9 @@ class ContSet {
     virtual Tensor norm_impl(Tensor::Norm type, const std::string &mode) const;
     /// CORA's enclose of two sets; noops for a class that cannot take the class of S2.
     virtual Set enclose_impl(const ContSet &S2) const;
+
+    /// The empty members (see empty_mask), set by the class's constructor.
+    EmptyMask empty_;
 
   private:
     ClassId id_;

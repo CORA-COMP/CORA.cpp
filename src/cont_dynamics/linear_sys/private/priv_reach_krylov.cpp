@@ -28,7 +28,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -145,7 +145,7 @@ class Homogeneous {
     /// trajectory is scaled by [-1, 1].
     std::tuple<Tensor, Interval, double> next(int64_t p, const Tensor &like) {
         std::vector<Tensor> columns;
-        Interval curvature(like.zeros_like({p, 1}), like.zeros_like({p, 1}));
+        Interval curvature(like.zeros_like({p}), like.zeros_like({p}));
         double error = 0;
         for (size_t j = 0; j < vectors_.size(); ++j) {
             if (!vectors_[j]) { // a zero vector stays zero
@@ -254,7 +254,7 @@ ReachSet priv_reach_krylov(const LinearSys &sys, const Zonotope &R0,
         const double t = k * alg.time_step;
         // the homogeneous solution, the input solution of this step and the constant input
         const auto [points, curvature, error] = homogeneous.next(p, like);
-        const Tensor error_r0 = rows * error;
+        const Tensor error_r0 = (rows * error).squeeze(-1); // the row norms are a column
         const Interval error_box(error_r0.negative(), error_r0);
         // the columns [c G] of the points: the center, then the generators as rows
         const Zonotope Htp(points.slice(-1, 0, 1).squeeze(-1),

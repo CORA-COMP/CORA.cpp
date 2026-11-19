@@ -3,9 +3,9 @@
 // CORA: contSet/@taylm/power.m
 // CORA: contSet/@taylm/mpower.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -14,7 +14,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const std::vector<Taylm> x = Taylm::from_interval(Interval(column({-1.0}), column({2.0})));
+        const std::vector<Taylm> x = Taylm::from_interval(Interval(vec({-1.0}), vec({2.0})));
         check(close(x[0].power(0).bounds()[0], 1.0) && close(x[0].power(0).bounds()[1], 1.0),
               b + ": x^0 = 1");
         // x^2 over [-1, 2] contains [0, 4]; x^3 contains [-1, 8]

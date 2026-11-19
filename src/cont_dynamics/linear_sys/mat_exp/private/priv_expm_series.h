@@ -17,7 +17,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -58,7 +58,7 @@ inline Interval priv_sum(const Interval &a, const Interval &b) { return a + b; }
 /// The identity matrix [I, I] of the shape of the square A.
 inline Interval priv_identity(const Interval &A) {
     const Tensor I = A.inf().eye_like(A.inf().size(-1)) + A.inf().zeros_like();
-    return {I, I};
+    return Interval::matrix(I, I);
 }
 
 } // namespace cora

@@ -10,7 +10,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -50,14 +50,13 @@ Zonotope Zonotope::plus(const Zonotope &Z2) const {
 
 Zonotope Zonotope::plus(const Interval &I) const {
     detail::Entry entry;
-    CORA_CHECK(elem_rank_ == 1 && I.dim() == dim() && I.inf().shape().back() == 1,
-               Error::dimension_mismatch, [&] {
-                   return "plus: the interval must be a box of the dimension " +
-                          std::to_string(dim()) + " of the zonotope, got bounds of the shape " +
-                          shape_text(I.inf().shape());
-               });
+    CORA_CHECK(
+        elem_rank_ == 1 && I.dim() == dim() && I.elem_rank() == 1, Error::dimension_mismatch, [&] {
+            return "plus: the interval must be a box of the dimension " + std::to_string(dim()) +
+                   " of the zonotope, got bounds of the shape " + shape_text(I.inf().shape());
+        });
     // the box as a zonotope: its center, and its radius as one generator per axis
-    return {c_ + I.center().squeeze(-1), Tensor::concat({G_, I.rad().diag()}, -2)};
+    return {c_ + I.center(), Tensor::concat({G_, I.half_width().expand_dims(-1).diag()}, -2)};
 }
 
 Set Zonotope::translate_impl(const Tensor &v) const { return *this + v; }

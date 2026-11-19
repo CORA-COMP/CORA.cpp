@@ -3,9 +3,9 @@
 // See also: lean/oracle.h
 //
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/tensor.h"
@@ -17,6 +17,9 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+
+#include <tuple>
+#include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -109,11 +112,15 @@ double aux_decode(const std::string &s) {
     return negative ? -x : x;
 }
 
-int64_t aux_columns(const cora::Tensor &x) {
+/// The rows and the columns of x in CORA's layout: a point (n) of a set is the column (n, 1), a
+/// number () the 1 x 1 matrix (#163).
+std::pair<int64_t, int64_t> aux_matrix_shape(const cora::Tensor &x) {
     const std::vector<int64_t> shape = x.shape();
+    if (shape.empty()) return {1, 1};
+    if (shape.size() == 1) return {shape[0], 1};
     if (shape.size() != 2)
         CORA_FAIL(Error::wrong_value, "lean: a lean tensor is a single matrix, not a batch");
-    return shape[1];
+    return {shape[0], shape[1]};
 }
 
 } // namespace
@@ -126,8 +133,7 @@ int64_t aux_columns(const cora::Tensor &x) {
 Tensor Tensor::from(const cora::Tensor &x) {
     Tensor T;
     T.dtype_ = lean::dtype();
-    T.rows_ = x.shape()[0];
-    T.cols_ = aux_columns(x);
+    std::tie(T.rows_, T.cols_) = aux_matrix_shape(x);
     for (const double v : x.data()) T.data_.push_back(encode(v));
     if (T.dtype_ == "binary64") return T;
     Json request = Json::object();

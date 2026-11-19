@@ -15,7 +15,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -47,7 +47,7 @@ Zonotope aux_slab(const Tensor &like, const std::vector<double> &a, double lower
     for (std::size_t i = 0; i < a.size(); ++i)
         for (std::size_t j = 0; j < a.size(); ++j) columns[i * a.size() + j] = basis[j][i];
     const Tensor B = Tensor::like(like, columns, {p, p});
-    return Interval(Tensor::like(like, lo, {p, 1}), Tensor::like(like, hi, {p, 1}))
+    return Interval(Tensor::like(like, lo, {p}), Tensor::like(like, hi, {p}))
         .zonotope()
         .linear_map(B);
 }

@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -60,7 +61,7 @@ void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(column({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Z.convex_hull(Z1); }, Error::dimension_mismatch),
           "convex_hull: dim 1");
-    check(test::raises([&] { Z.convex_hull(Interval(column({0.0}), column({1.0}))); },
+    check(test::raises([&] { Z.convex_hull(Interval(vec({0.0}), vec({1.0}))); },
                        Error::dimension_mismatch),
           "convex_hull: a box of dimension 1");
     check(test::raises([&] { Z.convex_hull(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),

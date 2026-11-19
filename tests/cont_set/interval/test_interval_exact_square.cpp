@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -32,7 +32,7 @@ void square_of_the_example(const std::string &b) {
           b + ": a point matrix is its square");
     // a diagonal entry that straddles 0 squares to [0, ...], one that touches 0 does as well
     const Interval D = test::interval_matrix(
-        Interval(test::matrix({-2, 0}, 2, 1).diag(), test::matrix({1, 3}, 2, 1).diag()));
+        Interval::matrix(test::matrix({-2, 0}, 2, 1).diag(), test::matrix({1, 3}, 2, 1).diag()));
     check(close(D.exact_square().inf(), std::vector<double>{0, 0, 0, 0}), b + ": 0 inside");
     check(close(D.exact_square().sup(), std::vector<double>{4, 0, 0, 9}), b + ": its end");
 }

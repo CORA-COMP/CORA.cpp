@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,8 +29,7 @@ int main() {
                   close((from_zonotope.zonotopes()[0]).center(), Z.center(), 0) &&
                   close((from_zonotope.zonotopes()[0]).generators(), Z.generators(), 0),
               b + ": a zonotope is its own member");
-        const ZonoBundle from_box =
-            ZonoBundle::from(Interval(column({0.0, -1.0}), column({2.0, 1.0})));
+        const ZonoBundle from_box = ZonoBundle::from(Interval(vec({0.0, -1.0}), vec({2.0, 1.0})));
         check(from_box.parallel_sets() == 1 &&
                   close((from_box.zonotopes()[0]).center().expand_dims(-1), {1, 0}, 0) &&
                   close((from_box.zonotopes()[0]).generators().matrix_transpose(), {1, 0, 0, 1}, 0),
@@ -40,7 +40,7 @@ int main() {
     check(test::raises([] { ZonoBundle::from(Interval::empty(2)); }, Error::not_supported),
           "from: the empty box has no zonotope");
     ChecksScope off(false);
-    check(ZonoBundle::from(Interval(column({0.0}), column({1.0}))).dim() == 1,
+    check(ZonoBundle::from(Interval(vec({0.0}), vec({1.0}))).dim() == 1,
           "from: the same with the checks off");
     return test::finish("zono_bundle from");
 }

@@ -3,9 +3,9 @@
 // CORA: matrixSet/@matZonotope/expmInd.m
 // PROPERTY: matrixSet/@matZonotope/expmInd.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/matrix_zonotope_testing.h"
@@ -26,10 +26,10 @@ void points(const std::string &b) {
     const Zonotope nilpotent = test::point_set(test::matrix({0, 1, 0, 0}, 2, 2)),
                    zero = test::point_set(test::matrix({0, 0, 0, 0}, 2, 2));
     const Interval E = mat_exp::expm_independent(nilpotent, 5).interval();
-    check(close(E.center(), {1, 1, 0, 1}, 1e-12) && E.interval().rad().max().item() < 1e-12,
+    check(close(E.center(), {1, 1, 0, 1}, 1e-12) && E.interval().half_width().max().item() < 1e-12,
           b + ": exp of a nilpotent matrix");
     const Interval I = mat_exp::expm_independent(zero, 3).interval();
-    check(close(I.center(), {1, 0, 0, 1}, 1e-12) && I.interval().rad().max().item() < 1e-12,
+    check(close(I.center(), {1, 0, 0, 1}, 1e-12) && I.interval().half_width().max().item() < 1e-12,
           b + ": exp(0) = I");
     const Zonotope low = mat_exp::expm_independent(zero, 0);
     check(close(low.center(), {1, 0, 0, 1}), b + ": the order 0 is the identity");

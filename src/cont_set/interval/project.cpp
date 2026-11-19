@@ -7,15 +7,14 @@
 //
 // CORA: contSet/@interval/project.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/error.h"
 
-#include "global/select.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,8 +24,9 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Set Interval::project_impl(const std::vector<int64_t> &dims) const {
-    const Tensor P = select_dims(inf_, dims, dim());
-    return Interval(P.matmul(inf_), P.matmul(sup_));
+    // the coordinates of a box, the rows of an interval matrix
+    const int axis = -elem_rank_;
+    return with(inf_.take(dims, axis), sup_.take(dims, axis));
 }
 
 } // namespace cora

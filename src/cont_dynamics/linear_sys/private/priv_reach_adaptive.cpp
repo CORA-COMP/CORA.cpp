@@ -23,7 +23,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_reach_adaptive.h"
@@ -337,7 +337,7 @@ void aux_set(std::vector<std::vector<T>> &list, int k, int it, T val) {
 /// The curvature error of the state, 2 errOp(F startset), with the box that encloses F startset
 /// as a center and the sums of its generators, see [1, Prop. 1].
 double aux_eps_f(const Interval &F, const Zonotope &startset, Tensor &box_c, Tensor &box_g) {
-    const Tensor Fc = F.center(), Frad = F.rad();
+    const Tensor Fc = F.center(), Frad = F.half_width();
     const Tensor &c = startset.center(), &G = startset.generators();
     box_c = Fc.matmul(c.expand_dims(-1));
     // The generators of F startset: F_c G and one axis-aligned generator per dimension.
@@ -350,7 +350,7 @@ double aux_eps_f(const Interval &F, const Zonotope &startset, Tensor &box_c, Ten
 /// The curvature error of the input, 2 errOp(G u), see [1, Prop. 1].
 double aux_eps_g(const Interval &G, const Tensor &u, Tensor &Gc, Tensor &Gbox) {
     Gc = G.center().matmul(u);
-    Gbox = G.rad().matmul(u.abs());
+    Gbox = G.half_width().matmul(u.abs());
     return 2 * aux_vecnorm((Gbox + Gc.abs()).data());
 }
 

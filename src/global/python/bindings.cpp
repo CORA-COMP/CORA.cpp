@@ -19,7 +19,7 @@
 // CORA.cpp only: the Python package has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "global/python/convert.h"
@@ -590,7 +590,7 @@ void bind_cont_set(py::module_ &m) {
         .def("__contains__", [](const py::object &S1, const py::object &S2) {
             if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
             if (py::isinstance<Interval>(S1))
-                return py::cast<const Interval &>(S1).contains(vector_of(S2, "the point"));
+                return py::cast<const Interval &>(S1).contains(point_of(S2, "the point"));
             if (py::isinstance<Zonotope>(S1))
                 return py::cast<const Zonotope &>(S1).contains(tensor_of(S2, "the points"));
             // contains dispatches on the class of the first set
@@ -618,10 +618,10 @@ std::vector<Tensor> matrix_list_of(const py::list &Q) {
     return out;
 }
 
-/// A Python number or array as the operand of a box: a number is a 1 x 1 array, else a column.
+/// A Python number or array as the operand of a box: a number is one entry, else as it is.
 Tensor operand(const Interval &I, const py::object &o, const char *what) {
-    if (is_number(o)) return I.inf().full_like({1, 1}, py::cast<double>(o));
-    return vector_of(o, what);
+    if (is_number(o)) return I.inf().full_like({1}, py::cast<double>(o));
+    return point_of(o, what);
 }
 
 /// The norm of a Python value: 1, 2, inf or "fro".
@@ -640,7 +640,7 @@ Tensor::Norm norm_of(const py::object &type) {
 /// A set, or points as the interval [p, p], as the operand of a whole space.
 Set operand_set(const py::object &o) {
     if (py::isinstance<ContSet>(o)) return set_of(o);
-    const Tensor p = tensor_of(o, "the point");
+    const Tensor p = point_of(o, "the point");
     return Set(Interval(p, p));
 }
 
@@ -703,7 +703,8 @@ void bind_fullspace(py::module_ &m) {
         .def_static("generate_random", &Fullspace::generate_random, py::arg("rng"),
                     py::arg("dimension") = py::none(),
                     "The whole space of the dimension, or of a random one in 1..10")
-        .def("radius", &Fullspace::radius, "The radius of the smallest ball around it: Inf")
+        .def("ball_radius", &Fullspace::ball_radius,
+             "The radius of the smallest ball around it: Inf")
         .def("volume", &Fullspace::volume, "The volume: Inf")
         .def("complement", &Fullspace::complement, "The complement: the empty set")
         .def("representsa", &Fullspace::representsa, py::arg("type"), py::arg("tol") = py::none(),
@@ -725,7 +726,7 @@ std::vector<Interval> intervals_of(const py::list &items) {
         if (py::isinstance<Interval>(item)) {
             Is.push_back(py::cast<Interval>(item));
         } else {
-            const Tensor p = vector_of(item, "the number");
+            const Tensor p = point_of(item, "the number");
             Is.emplace_back(p, p);
         }
     }
@@ -737,15 +738,15 @@ void bind_interval(py::module_ &m) {
                                   "A box, or a matrix of intervals: inf <= x <= sup.")
         .def(py::init([](const Array &inf, const Array &sup) {
                  // a box from its bounds
-                 return Interval(vector_of(inf, "inf"), vector_of(sup, "sup"));
+                 return Interval(point_of(inf, "inf"), point_of(sup, "sup"));
              }),
              py::arg("inf"), py::arg("sup"), "The box of the vectors inf <= sup (..., n)")
         .def_static(
             "matrix",
             [](const Array &inf, const Array &sup) {
-                return Interval(tensor_of(inf, "inf"), tensor_of(sup, "sup"));
+                return Interval::matrix(tensor_of(inf, "inf"), tensor_of(sup, "sup"));
             },
-            py::arg("inf"), py::arg("sup"), "An interval matrix: bounds (..., n, k)")
+            py::arg("inf"), py::arg("sup"), "An interval matrix: bounds (..., r, c)")
         .def_static("stack", &Interval::stack, py::arg("intervals"),
                     "A batch of intervals as one; the batch is the leading dimension")
         .def_static(
@@ -753,20 +754,37 @@ void bind_interval(py::module_ &m) {
             [](cora::Rng &rng, const std::optional<int64_t> &dimension, const py::object &center,
                const py::object &max_radius) {
                 // a random box
-                return Interval::generate_random(rng, dimension, optional_vector(center, "center"),
-                                                 optional_vector(max_radius, "max_radius"));
+                std::optional<Tensor> c, r;
+                if (!center.is_none()) c = point_of(center, "center");
+                if (!max_radius.is_none()) r = point_of(max_radius, "max_radius");
+                return Interval::generate_random(rng, dimension, c, r);
             },
             py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
             py::arg("max_radius") = py::none(),
             "A random box: the dimension (default that of center or max_radius, else random in "
             "1..10), a center and the maximum radii (a vector or one number)")
+        // the bounds, the half-widths and the empty members, of the storage layout
         .def_property_readonly(
-            "inf", [](const Interval &I) { return bounds(I.inf()); }, "The lower bounds (..., n)")
+            "inf", [](const Interval &I) { return values(I.inf()); },
+            "The lower bounds (..., n), (..., r, c) for an interval matrix")
         .def_property_readonly(
-            "sup", [](const Interval &I) { return bounds(I.sup()); }, "The upper bounds (..., n)")
+            "sup", [](const Interval &I) { return values(I.sup()); },
+            "The upper bounds (..., n), (..., r, c) for an interval matrix")
         .def_property_readonly(
-            "rad", [](const Interval &I) { return bounds(I.rad()); },
-            "The radii (sup - inf) / 2, (..., n)")
+            "half_width", [](const Interval &I) { return values(I.half_width()); },
+            "The half-widths (sup - inf) / 2 of the shape of the bounds (CORA's rad)")
+        // the empty members as numpy booleans
+        .def_property_readonly(
+            "empty_mask",
+            [](const Interval &I) {
+                const std::vector<uint8_t> f = I.empty_mask().flags(I.batch_shape());
+                py::array_t<bool> a(
+                    std::vector<py::ssize_t>(I.batch_shape().begin(), I.batch_shape().end()));
+                std::copy(f.begin(), f.end(), a.mutable_data());
+                return a;
+            },
+            "Which members of the batch are empty, a bool array of the batch shape")
+        .def("is_empty", &Interval::is_empty, "Whether the interval is empty (every member)")
         .def(
             "linear_map",
             [](const Interval &I, const py::object &M) {
@@ -780,12 +798,12 @@ void bind_interval(py::module_ &m) {
         .def("abs", &Interval::abs, "The image under the elementwise absolute value")
         .def("__abs__", &Interval::abs)
         .def("intersect", &Interval::intersect, py::arg("I2"),
-             "The intersection; bounds without columns if empty")
+             "The intersection; empty (empty_mask) if the boxes are disjoint")
         .def(
             "cart_prod",
             [](const Interval &I, const py::object &other) {
                 if (py::isinstance<Interval>(other)) return I.cart_prod(py::cast<Interval>(other));
-                return I.cart_prod(vector_of(other, "the point"));
+                return I.cart_prod(point_of(other, "the point"));
             },
             py::arg("other"), "The Cartesian product with an interval or a point")
         .def_static("cat", &Interval::cat, py::arg("dim"), py::arg("intervals"),
@@ -795,8 +813,8 @@ void bind_interval(py::module_ &m) {
             [](const Interval &I, const py::object &dir, const py::object &start) {
                 std::optional<Tensor> from;
                 // the start point defaults to the center
-                if (!start.is_none()) from = vector_of(start, "the start point");
-                return bounds(I.boundary_point(vector_of(dir, "dir"), from));
+                if (!start.is_none()) from = point_of(start, "the start point");
+                return values(I.boundary_point(point_of(dir, "dir"), from));
             },
             py::arg("dir"), py::arg("start") = py::none(),
             "The point where the ray from start (default: the center) along dir leaves the box")
@@ -817,9 +835,9 @@ void bind_interval(py::module_ &m) {
         .def_static(
             "enclose_points",
             [](const py::object &points) {
-                return Interval::enclose_points(tensor_of(points, "the points"));
+                return Interval::enclose_points(point_of(points, "the points"));
             },
-            py::arg("points"), "The smallest box around the points, the columns of (n, N)")
+            py::arg("points"), "The smallest box around the points, the rows of (..., N, n)")
         .def_static("empty", &Interval::empty, py::arg("n"), "The empty interval of n dimensions")
         .def_static(
             "horzcat", [](const py::list &items) { return Interval::horzcat(intervals_of(items)); },
@@ -831,7 +849,7 @@ void bind_interval(py::module_ &m) {
             "enlarge",
             [](const Interval &I, const py::object &factor) {
                 if (is_number(factor)) return I.enlarge(py::cast<double>(factor));
-                return I.enlarge(vector_of(factor, "the factor"));
+                return I.enlarge(point_of(factor, "the factor"));
             },
             py::arg("factor"), "The box scaled about its center by a number or per dimension")
         // transposes
@@ -839,7 +857,7 @@ void bind_interval(py::module_ &m) {
         .def("transpose", &Interval::transpose, "The transpose of an interval matrix")
         .def_property_readonly("T", &Interval::transpose, "The transposed box")
         .def(
-            "supremum", [](const Interval &I) { return bounds(I.supremum()); }, "The upper bound")
+            "supremum", [](const Interval &I) { return values(I.supremum()); }, "The upper bound")
         .def(
             "split", [](const Interval &I, int64_t n) { return I.split(n); }, py::arg("n"),
             "The two halves of the box cut at the center of coordinate n (0-based)")
@@ -850,7 +868,7 @@ void bind_interval(py::module_ &m) {
         .def("triu", &Interval::triu, py::arg("K") = 0,
              "The upper triangular part from the K-th diagonal on")
         .def(
-            "volume", [](const Interval &I) { return scalar(I.volume()); },
+            "volume", [](const Interval &I) { return values(I.volume()); },
             "The product of the widths of the box")
         .def("zonotope", &Interval::zonotope,
              "The zonotope with the center and the radius as generators")
@@ -871,7 +889,7 @@ void bind_interval(py::module_ &m) {
         .def("dirac", &Interval::dirac, py::arg("n") = 0,
              "The n-th derivative of the Dirac delta on the box")
         .def(
-            "infimum", [](const Interval &I) { return bounds(I.infimum()); }, "The lower bound")
+            "infimum", [](const Interval &I) { return values(I.infimum()); }, "The lower bound")
         .def("interval_matrix", &Interval::interval_matrix,
              "The interval matrix [c - r, c + r] of the center and the radius")
         .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
@@ -883,7 +901,7 @@ void bind_interval(py::module_ &m) {
             [](const Interval &I, const py::object &other, Tol tol) {
                 if (py::isinstance<Interval>(other))
                     return I.is_intersecting(py::cast<Interval>(other), tol);
-                return I.is_intersecting(vector_of(other, "the point"), tol);
+                return I.is_intersecting(point_of(other, "the point"), tol);
             },
             py::arg("other"), py::arg("tol") = py::none(),
             "Whether the box meets another box or contains a point, up to tol")
@@ -892,7 +910,7 @@ void bind_interval(py::module_ &m) {
             [](const Interval &I, const py::object &other, Tol tol) {
                 if (py::isinstance<Interval>(other))
                     return I.isequal(py::cast<Interval>(other), tol);
-                return I.isequal(tensor_of(other, "the point"), tol);
+                return I.isequal(point_of(other, "the point"), tol);
             },
             py::arg("other"), py::arg("tol") = py::none(),
             "Whether the bounds agree up to tol; infinite bounds must be the same")
@@ -905,7 +923,7 @@ void bind_interval(py::module_ &m) {
                 if (py::isinstance<Interval>(other)) return I.minus(py::cast<Interval>(other));
                 return I.minus(operand(I, other, "the subtrahend"));
             },
-            py::arg("other"), "The difference with a box, a number or a column")
+            py::arg("other"), "The difference with a box, a number or a point")
         .def("divide", &Interval::divide, py::arg("d"),
              "The box divided by a number (CORA's mrdivide); d = 0 gives the whole line")
         .def(
@@ -923,7 +941,7 @@ void bind_interval(py::module_ &m) {
         .def(
             "max",
             [](const Interval &I, const py::object &other) -> py::object {
-                if (other.is_none()) return bounds(I.max());
+                if (other.is_none()) return values(I.max());
                 if (py::isinstance<ContSet>(other))
                     return py::cast(I.max(py::cast<const ContSet &>(other)));
                 return py::cast(I.max(operand(I, other, "the operand")));
@@ -933,7 +951,7 @@ void bind_interval(py::module_ &m) {
         .def(
             "min",
             [](const Interval &I, const py::object &other) -> py::object {
-                if (other.is_none()) return bounds(I.min());
+                if (other.is_none()) return values(I.min());
                 if (py::isinstance<ContSet>(other))
                     return py::cast(I.min(py::cast<const ContSet &>(other)));
                 // minima of two boxes
@@ -948,7 +966,7 @@ void bind_interval(py::module_ &m) {
                     return I.minkowski_difference(py::cast<Interval>(S));
                 if (py::isinstance<ContSet>(S))
                     return I.minkowski_difference(py::cast<const ContSet &>(S), type);
-                return I.minkowski_difference(vector_of(S, "the point"));
+                return I.minkowski_difference(point_of(S, "the point"));
             },
             py::arg("S"), py::arg("type") = py::none(),
             "The box of x with x + S in the box; empty if there is none")
@@ -957,7 +975,7 @@ void bind_interval(py::module_ &m) {
             [](const Interval &I, const py::object &other) {
                 if (py::isinstance<Interval>(other)) return I.unite(py::cast<Interval>(other));
                 // union with a box or a point
-                return I.unite(vector_of(other, "the point"));
+                return I.unite(point_of(other, "the point"));
             },
             py::arg("other"), "The smallest box around the box and a box or a point")
         .def_static("origin", &Interval::origin, py::arg("n"), "The box {0} of n dimensions")
@@ -984,8 +1002,8 @@ void bind_interval(py::module_ &m) {
             py::arg("digits") = 0, py::arg("type") = "decimals",
             "The bounds rounded to digits decimals, halves away from zero")
         .def(
-            "radius", [](const Interval &I) { return scalar(I.radius()); },
-            "The 2-norm of the radius over all entries")
+            "ball_radius", [](const Interval &I) { return values(I.ball_radius()); },
+            "The radius of the ball around the center that encloses the box (CORA's radius)")
         .def(
             "power",
             [](const Interval &I, const py::object &e) {
@@ -1032,19 +1050,15 @@ void bind_interval(py::module_ &m) {
         .def(
             "contains",
             [](const Interval &I, const py::object &p, const std::string &type, Tol tol) {
-                const bool matrix = I.inf().size(-1) > 1;
-                return I.contains(matrix ? tensor_of(p, "the matrix") : vector_of(p, "the point"),
-                                  type, tol);
+                return I.contains(point_of(p, "the point"), type, tol);
             },
             py::arg("p"), py::arg("type"), py::arg("tol") = py::none(),
             "Whether p is in the box enlarged by tol; type is 'exact' or 'approx'")
         .def(
             "contains",
             [](const Interval &I, const py::object &p, Tol tol) {
-                // a point of a box, or a matrix of an interval matrix
-                const bool matrix = I.inf().size(-1) > 1;
-                return I.contains(matrix ? tensor_of(p, "the matrix") : vector_of(p, "the point"),
-                                  tol);
+                // a point (..., n) of a box, or a matrix (..., r, c) of an interval matrix
+                return I.contains(point_of(p, "the point"), tol);
             },
             py::arg("p"), py::arg("tol") = py::none(),
             "Whether p (a point, or a matrix of an interval matrix) is in the box enlarged by tol")
@@ -1084,7 +1098,7 @@ void bind_interval(py::module_ &m) {
             py::arg("B"), "[A] [B] or [A] M: the product of interval matrices (CORA's mtimes)")
         .def("exact_square", &Interval::exact_square, "The entrywise range of M @ M")
         .def(
-            "infinity_norm", [](const Interval &A) { return scalar(A.infinity_norm()); },
+            "infinity_norm", [](const Interval &A) { return values(A.infinity_norm()); },
             "The largest absolute row sum of abs(A)")
         // the vertices, as a list of matrices per batch member
         .def(
@@ -1330,7 +1344,7 @@ void bind_empty_set(py::module_ &m) {
         .def_static("generate_random", &EmptySet::generate_random, py::arg("rng"),
                     py::arg("dimension") = py::none(),
                     "The empty set of the dimension, or of a random one in 1..10")
-        .def("radius", &EmptySet::radius, "The radius of the smallest ball around it: 0")
+        .def("ball_radius", &EmptySet::ball_radius, "The radius of the smallest ball around it: 0")
         .def("volume", &EmptySet::volume, "The volume: 0")
         .def("complement", &EmptySet::complement, "The complement: the whole space")
         // set predicates of the empty set
@@ -1711,7 +1725,7 @@ void bind_zonotope(py::module_ &m) {
             "exact, outer, outer:coarse")
         .def_static("origin", &Zonotope::origin, py::arg("n"), "The zonotope {0} of n dimensions")
         .def(
-            "radius", [](const Zonotope &Z) { return scalar(Z.radius()); },
+            "ball_radius", [](const Zonotope &Z) { return scalar(Z.ball_radius()); },
             "A bound on the distance from the center: the norm of the radius of the box")
         .def("rank", &Zonotope::rank, py::arg("tol") = py::none(),
              "The rank of the generators; singular values up to tol count as zero")
@@ -2786,7 +2800,7 @@ void bind_capsule(py::module_ &m) {
         // small queries: NaN, radius, volume and the type
         .def("isnan", &Capsule::isnan, "Whether the capsule holds NaN: always False")
         .def(
-            "radius", [](const Capsule &C) { return scalar(C.radius()); },
+            "ball_radius", [](const Capsule &C) { return scalar(C.ball_radius()); },
             "The radius of a ball around the center that holds the capsule: |g| + r")
         // the volume and the type
         .def(
@@ -5081,9 +5095,8 @@ void bind_lean(py::module_ &top) {
         .def(
             "gather",
             [](const LI &I) {
-                // the bounds as an interval
-                auto [inf, sup] = I.gather();
-                return Interval(inf, sup);
+                // CORA's columns (n, 1) are a box (n), other bounds an interval matrix
+                return I.gather().first.size(-1) <= 1 ? I.gather_box() : I.gather_matrix();
             },
             "A cora.Interval; an error if a bound is not a double")
         .def_property_readonly("inf", &LI::inf, "The lower bounds, exact lean values")

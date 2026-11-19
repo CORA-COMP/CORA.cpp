@@ -17,7 +17,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -65,8 +65,10 @@ Capsule Capsule::plus(const Interval &I) const {
                std::to_string(dim());
     });
     // the box widens the radius by that of the ball around it, the 2-norm of its radius
-    const Tensor r = r_.add(I.rad().vector_norm(Tensor::Norm::two, -2, true));
-    return {Unchecked{}, cc().add(I.center()), gc(), Tensor::where(priv_empty_mask(r_), r_, r)};
+    const Tensor r =
+        r_.add(I.half_width().vector_norm(Tensor::Norm::two, -1).expand_dims(-1).expand_dims(-1));
+    return {Unchecked{}, cc().add(I.center().expand_dims(-1)), gc(),
+            Tensor::where(priv_empty_mask(r_), r_, r)};
 }
 
 Capsule Capsule::plus(const Zonotope &Z) const { return plus(Z.interval()); }

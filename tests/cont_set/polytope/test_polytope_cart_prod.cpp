@@ -6,9 +6,9 @@
 // Property: (x, y) is in the product iff x is in the first and y in the second set
 //
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -43,7 +44,7 @@ void products(const std::string &b) {
     check(H1.cart_prod(V2).contains(column({0.5, 0.2, 0.2})), b + ": mixed forms");
     check(Polytope(Tensor::zeros({2, 0})).cart_prod(V2).V().shape() == Shape{4, 0},
           b + ": an empty vertex set");
-    const Polytope boxed = H1.cart_prod(Interval(column({0.0, 0.0}), column({1.0, 2.0})));
+    const Polytope boxed = H1.cart_prod(Interval(vec({0.0, 0.0}), vec({1.0, 2.0})));
     // the product with a box
     check(boxed.dim() == 3 && boxed.contains(column({0.5, 0.5, 1.5})) &&
               !boxed.contains(column({0.5, 1.5, 1.5})),

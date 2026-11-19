@@ -21,7 +21,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -84,7 +84,7 @@ std::optional<PolySeries> PolySeries::make(const Tensor &A, double dt, int taylo
     if (!halvings) return std::nullopt;
     const Shape shape{A.size(-1), A.size(-1)};
     const auto box = [&](const std::pair<Mat, Mat> &b) {
-        return Interval(Tensor::like(A, b.first, shape), Tensor::like(A, b.second, shape));
+        return Interval::matrix(Tensor::like(A, b.first, shape), Tensor::like(A, b.second, shape));
     };
     Interval e_adt = box(priv_exp_squaring(a, n, dt, *halvings));
     // the powers of [A, A] by left multiplication
@@ -203,8 +203,8 @@ std::pair<PolyZonotope, PolyZonotope> priv_poly_window(const PolySeries &series,
         priv_reduce_adaptive_poly(priv_poly_plus(priv_poly_lin_comb(X0, e_adt_x), FX), zeta_z);
     // the (n, n) identity (eye_like of the column vector alone would not be)
     const Tensor eye = X0.center().eye_like(n);
-    const Interval e_adt_minus_i(series.e_adt().inf() + eye * -1.0,
-                                 series.e_adt().sup() + eye * -1.0);
+    const Interval e_adt_minus_i =
+        Interval::matrix(series.e_adt().inf() + eye * -1.0, series.e_adt().sup() + eye * -1.0);
     const PolyZonotope origin(zero, zero.zeros_like({0, n}), zero.zeros_like({n, n}), {}, {},
                               detail::Verbatim{});
     const PolyZonotope dhom = priv_reduce_adaptive_poly(

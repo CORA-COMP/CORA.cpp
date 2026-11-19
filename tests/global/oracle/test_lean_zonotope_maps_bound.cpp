@@ -16,7 +16,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -68,7 +68,7 @@ int main() {
     oracle::run("zonotope.radius", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
             const Zonotope Z = rnd.zonotope(n, m);
-            const double mine = Z.radius().item(), bound = lean::Zonotope(Z).radius();
+            const double mine = Z.ball_radius().item(), bound = lean::Zonotope(Z).radius();
             test::check(mine <= bound * (1 + kSlack), "radius: " + std::to_string(mine) +
                                                           " exceeds the bound " +
                                                           std::to_string(bound));

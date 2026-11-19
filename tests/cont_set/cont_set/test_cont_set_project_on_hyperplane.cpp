@@ -7,7 +7,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -21,6 +21,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -43,7 +44,7 @@ void the_projection_of_a_square(const std::string &b) {
                   test::close(test::support(R, {-1.0, 0.0}), 0.0, 1e-12),
               b + ": the segment between (0, 2) and (2, 0), scale " + std::to_string(scale));
     }
-    const Interval I(column({-1.0, -1.0}), column({1.0, 1.0}));
+    const Interval I(vec({-1.0, -1.0}), vec({1.0, 1.0}));
     const Set H = static_cast<const ContSet &>(I).project_on_hyperplane(
         column({1.0, 1.0}), Tensor::from_data({2.0}, {1, 1}));
     check(H.is<Interval>() && test::close(H.as<Interval>().inf(), {0.0, 0.0}, 1e-12) &&
@@ -85,7 +86,7 @@ void samples_land_on_the_hyperplane(const std::string &b) {
 
 /// A zero normal, a normal or an offset of the wrong shape are refused; the checks off skip them.
 void errors_and_their_switch() {
-    const Interval I(column({0.0, 0.0}), column({1.0, 1.0}));
+    const Interval I(vec({0.0, 0.0}), vec({1.0, 1.0}));
     const ContSet &S = I;
     const Tensor one = Tensor::from_data({1.0}, {1, 1});
     check(

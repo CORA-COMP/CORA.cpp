@@ -15,7 +15,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -33,6 +33,7 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 /// The solution file: the start time and state, then per segment its end time, u_ref and K (2, 5).
 struct Controls {
@@ -161,7 +162,7 @@ std::vector<Polygon> aux_occupancy(const Body &body, const Zonotope &S, const Zo
         rhi.push_back(rem.hi.item() / 6);
     }
     const Zonotope res = (D.linear_map(matrix(2, 5, A)) + column(f) + D.quad_map(Q) * 0.5)
-                             .plus(Interval(column(rlo), column(rhi)));
+                             .plus(Interval(vec(rlo), vec(rhi)));
     return res.vertices();
 }
 
@@ -226,9 +227,9 @@ bool aux_run(const std::string &name) {
     }
     // the occupancy sets, then the verdict on the inputs
     const Body body;
-    const Zonotope vehicle = Interval(column({-4.508 / 2 + 2.578 / 2, -1.610 / 2}),
-                                      column({4.508 / 2 + 2.578 / 2, 1.610 / 2}))
-                                 .zonotope();
+    const Zonotope vehicle =
+        Interval(vec({-4.508 / 2 + 2.578 / 2, -1.610 / 2}), vec({4.508 / 2 + 2.578 / 2, 1.610 / 2}))
+            .zonotope();
     std::size_t polygons = 0;
     for (const std::vector<Zonotope> &segment : R)
         for (const Zonotope &S : segment) polygons += aux_occupancy(body, S, vehicle).size();
@@ -247,7 +248,7 @@ bool aux_run(const std::string &name) {
             std::cerr << "    center " << Z->center().data().size() << ":";
             for (double x : Z->center().data()) std::cerr << " " << x;
             std::cerr << "\n    radius:";
-            for (double x : I.rad().data()) std::cerr << " " << x;
+            for (double x : I.half_width().data()) std::cerr << " " << x;
             std::cerr << "\n    generators: " << Z->nr_generators() << '\n';
         }
     return verified;

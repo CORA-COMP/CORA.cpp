@@ -15,9 +15,9 @@
 // Outputs:  one line 'benchmark,instance,result,time'; the areas and witnesses on stderr
 // See also: benchmark_hybrid_reach_arch23_vanderpol.cpp, benchmark_hybrid.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   11-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -35,6 +35,7 @@ namespace {
 
 using namespace cora;
 using cora::bench::column;
+using cora::bench::vec;
 
 constexpr double kRadius = 0.161;
 constexpr double kFinal = 3.64;
@@ -127,7 +128,7 @@ Remainder aux_reach_rem(const std::vector<Set> &branch, double t_final, double t
     // x1 beyond 1 (flow 'inf': x1 >= 1) or before (flow 'sup': x1 <= 1)
     std::vector<double> lo = box->inf().data(), hi = box->sup().data();
     (before ? hi : lo)[0] = 1.0;
-    const Interval cut(column(lo), column(hi));
+    const Interval cut(vec(lo), vec(hi));
     // the box contracted to the ring, then the intersection with it
     const std::optional<Interval> tight = guard.tighten_domain(cut);
     if (!tight) return {{}, 0, false};
@@ -200,7 +201,7 @@ bool aux_run_script(const std::string &name) {
     // R1: the initial box through 'outside' and the crossings of the ring
     HybridReachProblem problem;
     problem.initial_set =
-        Interval(column({1.3 - kHalfWidth, 1, 0}), column({1.3 + kHalfWidth, 1, 0})).zonotope();
+        Interval(vec({1.3 - kHalfWidth, 1, 0}), vec({1.3 + kHalfWidth, 1, 0})).zonotope();
     problem.t_final = kFinal;
     const HybridReachSet R1 = HA.reach(problem, a);
     if (R1.branches.size() < 3)
@@ -304,7 +305,7 @@ std::vector<Alive> aux_alive(const HybridReachSet &R) {
 
 /// The initial box x1 in [lo, hi], x2 = 1, x3 = 0.
 Zonotope aux_start(double lo, double hi) {
-    return Interval(column({lo, 1, 0}), column({hi, 1, 0})).zonotope();
+    return Interval(vec({lo, 1, 0}), vec({hi, 1, 0})).zonotope();
 }
 
 /// The box at x3 = T of the flow alone (no jumps) from the piece, with the options of the

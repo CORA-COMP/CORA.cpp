@@ -7,7 +7,7 @@
 // Syntax:     EmptySet E(n);   EmptySet E = EmptySet::empty(n);   EmptySet F = M * E;
 // Operators:  M * E (linear_map), s * E, as in CORA
 // Operations: intersect, plus, convex_hull, contains, is_intersecting, isequal, is_bounded,
-//             is_full_dim, linear_map, lift, project_high_dim, complement, radius, volume,
+//             is_full_dim, linear_map, lift, project_high_dim, complement, ball_radius, volume,
 //             representsa, generate_random, empty, center, support_function, interval, rand_point,
 //             project, vertices, vertices_3d, display (one file each); the constructor checks its
 //             input (empty_set.cpp)
@@ -17,7 +17,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -58,7 +58,7 @@ class EmptySet : public detail::DimensionSet {
 
     /// The radius of the smallest ball around the set: 0, the supremum over no point (CORA's
     /// radius).
-    double radius() const;
+    double ball_radius() const;
 
     /// The volume: 0 (CORA's volume_).
     double volume() const;

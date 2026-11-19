@@ -12,7 +12,7 @@
 // CORA authors: Sebastian Mair, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -26,7 +26,7 @@ namespace cora {
 
 Interval Interval::sign() const {
     detail::Entry entry;
-    return {inf_.sign(), sup_.sign()};
+    return with(inf_.sign(), sup_.sign());
 }
 
 } // namespace cora

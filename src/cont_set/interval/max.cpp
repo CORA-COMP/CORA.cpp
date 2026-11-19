@@ -9,11 +9,12 @@
 //
 // CORA: contSet/@interval/max.m
 // CORA authors: Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
+#include "cont_set/interval/private/priv_broadcastable.h"
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"
 
@@ -31,16 +32,17 @@ Interval Interval::max(const ContSet &Y) const {
                std::to_string(Y.dim());
     });
     const Interval box = Y.interval();
-    return {inf_.maximum(box.inf()), sup_.maximum(box.sup())};
+    return with(inf_.maximum(box.inf()), sup_.maximum(box.sup()));
 }
 
 Interval Interval::max(const Tensor &Y) const {
     detail::Entry entry;
-    CORA_CHECK(Y.numel() == 1 || is_column(Y, dim()), Error::dimension_mismatch, [&] {
-        return "max: the array must be a number or a column of the dimension " +
-               std::to_string(dim()) + " of the interval, got the shape " + shape_text(Y.shape());
+    CORA_CHECK(Y.numel() == 1 || priv_fits_elements(Y, *this), Error::dimension_mismatch, [&] {
+        return "max: the array must be a number or a point of the shape " +
+               shape_text(elem_shape()) + " of the interval, got the shape " +
+               shape_text(Y.shape());
     });
-    return {inf_.maximum(Y), sup_.maximum(Y)};
+    return with(inf_.maximum(Y), sup_.maximum(Y));
 }
 
 Tensor Interval::max() const {

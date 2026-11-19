@@ -13,7 +13,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -32,6 +32,7 @@ using namespace cora;
 using cora::bench::column;
 using cora::bench::hyperplane;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 /// The gravity of the target's orbit in the equations of vx and vy: mu (x + r) / D^(3/2) and
 /// mu y / D^(3/2) with D = (x + r)^2 - y^2, as the model files write them.
@@ -95,7 +96,7 @@ Specification aux_safe(const Tensor &C, const std::vector<double> &d) {
 /// by its box, then reduced to order 3.
 Specification aux_station() {
     return Specification::custom([](const ContSet &S) {
-        const Interval station(column({-1, -1}), column({1, 1}));
+        const Interval station(vec({-1, -1}), vec({1, 1}));
         const Set proj = S.project({0, 1});
         if (!is_intersecting(station, proj->interval())) return true;
         return !is_intersecting(station, *proj->reduce(3));

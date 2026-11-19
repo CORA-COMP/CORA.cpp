@@ -2,9 +2,9 @@
 //
 // CORA.cpp only: CORA applies the function handle of the dynamics to the taylm objects directly
 // PROPERTY: contSet/@taylm/times.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -15,7 +15,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -33,7 +33,7 @@ void flow_property(const std::string &name) {
         std::vector<double> lo(2), w(2), u(2);
         rng.uniform(lo.data(), 2, -2.0, 2.0);
         rng.uniform(w.data(), 2, 0.1, 1.5);
-        const Interval I(column(lo), column({lo[0] + w[0], lo[1] + w[1]}));
+        const Interval I(vec(lo), vec({lo[0] + w[0], lo[1] + w[1]}));
         const auto [bl, bu] = Taylm::evaluate(f, Taylm::from_interval(I)).bounds();
         for (int s = 0; s < 40; ++s) {
             rng.uniform(u.data(), 2, 0.0, 1.0);
@@ -53,7 +53,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         const Expr x = Expr::var(0), y = Expr::var(1);
         const std::vector<Taylm> v =
-            Taylm::from_interval(Interval(column({1.0, 2.0}), column({3.0, 2.0})));
+            Taylm::from_interval(Interval(vec({1.0, 2.0}), vec({3.0, 2.0})));
         // (x - 1)^2 + y^2 on [1, 3] x {2}: x - 1 in [0, 2], so [4, 8]
         const Taylm g = Taylm::evaluate(pow(x - 1.0, 2) + pow(y, 2), v);
         check(g.bounds()[0] <= 4.0 + 1e-12 && g.bounds()[1] >= 8.0 - 1e-12, b + ": a polynomial");

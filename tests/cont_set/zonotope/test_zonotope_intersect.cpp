@@ -6,7 +6,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Amr Alanwar
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -39,7 +40,7 @@ void boxes_intersect_exactly(const std::string &b) {
     check(close(touching.center(), std::vector<double>{1, 0}, 0) &&
               touching.generators().shape() == std::vector<int64_t>({0, 2}),
           b + ": boxes that touch meet in a point");
-    const Interval I(column({0.0, -2.0}), column({0.5, 2.0}));
+    const Interval I(vec({0.0, -2.0}), vec({0.5, 2.0}));
     check(close(Z.intersect(I).center(), std::vector<double>{0.25, 0}, 0), b + ": with a box");
     check(intersect(Z, I).is<Zonotope>(), b + ": through the registry");
 }

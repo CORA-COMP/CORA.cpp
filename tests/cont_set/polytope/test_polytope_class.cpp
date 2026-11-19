@@ -4,9 +4,9 @@
 // CORA: contSet/@interval/polytope.m
 // PROPERTY: contSet/@polytope/polytope.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -66,12 +67,12 @@ void constructor_forms(const std::string &b) {
 
 /// A box as a polytope.
 void from_interval(const std::string &b) {
-    const Interval I(column({0.0, -1.0}), column({2.0, 3.0}));
+    const Interval I(vec({0.0, -1.0}), vec({2.0, 3.0}));
     const Polytope P(I);
     check(close(P.A(), {1, 0, 0, 1, -1, 0, 0, -1}, 0) && close(P.b(), {2, 3, 0, 1}, 0),
           b + ": the rows x <= sup, -x <= -inf");
     const double inf = std::numeric_limits<double>::infinity();
-    const Polytope half(Interval(column({0.0, -inf}), column({inf, 3.0})));
+    const Polytope half(Interval(vec({0.0, -inf}), vec({inf, 3.0})));
     check(close(half.A(), {0, 1, -1, 0}, 0) && close(half.b(), {3, 0}, 0),
           b + ": unbounded sides give no row");
     check(Polytope(Interval::unbounded(2)).A().shape() == Shape{0, 2}, b + ": a box of R^2 is R^2");

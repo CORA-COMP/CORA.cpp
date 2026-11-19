@@ -13,7 +13,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -41,10 +41,10 @@ detail::Refusal aux_refusal(const ConZonotope &cz) {
 /// center and radius are moved by half the radius, in the order CORA computes them.
 std::pair<ConZonotope, ConZonotope> aux_split_dim(const ConZonotope &cz, const Interval &I,
                                                   int64_t d) {
-    const Tensor c = I.center(), r = I.rad();
+    const Tensor c = I.center(), r = I.half_width();
     std::vector<double> unit(std::size_t(cz.dim()), 0.0);
     unit[d] = 1.0;
-    const Tensor shift = Tensor::like(c, unit, {cz.dim(), 1}).multiply(r * 0.5);
+    const Tensor shift = Tensor::like(c, unit, {cz.dim()}).multiply(r * 0.5);
     const Tensor radius = r - shift;
     const Tensor lower = c - shift, upper = c + shift;
     return {cz.intersect(Interval(lower - radius, lower + radius)),

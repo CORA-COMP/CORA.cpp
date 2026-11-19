@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -45,7 +45,7 @@ void the_corners_are_those_of_the_box(const std::string &b) {
         for (const Polygon &polygon : Z.vertices())
             for (const Point &p : polygon)
                 check(Fullspace(2).contains(
-                          Interval(test::column({p[0], p[1]}), test::column({p[0], p[1]}))),
+                          Interval(test::vec({p[0], p[1]}), test::vec({p[0], p[1]}))),
                       b + ": a vertex of a zonotope is in the whole space");
     }
 }

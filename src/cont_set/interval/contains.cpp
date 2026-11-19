@@ -1,7 +1,7 @@
 // contains - point containment in a box, as CORA's interval.contains
 //
 // Syntax:   res = I.contains(p);   res = I.contains(p, tol);   res = I.contains(p, type, tol);
-// Inputs:   p - point (..., n, 1), or a matrix (..., n, m) of an interval matrix
+// Inputs:   p - point (..., n), or a matrix (..., r, c) of an interval matrix
 //           type - 'exact' or 'approx' (CORA's; a box answers both exactly)
 //           tol - how far p may lie outside, per coordinate; default: the repository tolerance
 // Outputs:  res - true if inf - tol <= p <= sup + tol; for a batch, if all points are
@@ -12,9 +12,10 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
+#include "cont_set/interval/private/priv_broadcastable.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
@@ -46,15 +47,12 @@ bool aux_all_inside(const std::vector<double> &lo, const std::vector<double> &x,
 bool Interval::contains(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "contains");
-    // a point of a box of columns, or a matrix of an interval matrix
-    const int64_t cols = inf_.size(-1);
-    CORA_CHECK(cols == 1 ? is_column(p, dim())
-                         : p.ndim() >= 2 && p.size(-2) == dim() && p.size(-1) == cols,
-               Error::dimension_mismatch, [&] {
-                   return "contains: the point must have the shape " + std::to_string(dim()) +
-                          " x " + std::to_string(cols) + " of the bounds, got " +
-                          shape_text(p.shape());
-               });
+    // a point of a box, or a matrix of an interval matrix
+    CORA_CHECK(priv_fits_elements(p, *this), Error::dimension_mismatch, [&] {
+        return "contains: the point must have the shape " + shape_text(elem_shape()) +
+               " of the elements, got " + shape_text(p.shape());
+    });
+    if (is_empty()) return false;
     // the bounds and the points broadcast to one shape (a batch of boxes, or of points)
     const Tensor zero = p.zeros_like() + inf_.zeros_like();
     return aux_all_inside((inf_ + zero).data(), (p + zero).data(), (sup_ + zero).data(), tol);

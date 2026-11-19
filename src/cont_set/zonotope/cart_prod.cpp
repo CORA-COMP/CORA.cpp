@@ -12,7 +12,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -70,12 +70,10 @@ Zonotope Zonotope::cart_prod(const Zonotope &Z2) const {
 Zonotope Zonotope::cart_prod(const Interval &I) const {
     detail::Entry entry;
     // a box of column bounds, as its zonotope
-    CORA_CHECK(elem_rank_ == 1 && I.inf().shape().back() == 1 &&
-                   aux_batch(c_, 1) == aux_batch(I.inf(), 2),
+    CORA_CHECK(elem_rank_ == 1 && I.elem_rank() == 1 && aux_batch(c_, 1) == aux_batch(I.inf(), 1),
                Error::dimension_mismatch, [&] {
-                   return "cart_prod: the interval must be a box with column bounds and the batch "
-                          "shape of "
-                          "the zonotope, got the shape " +
+                   return "cart_prod: the interval must be a box of the batch shape of the "
+                          "zonotope, got the shape " +
                           shape_text(I.inf().shape());
                });
     return aux_blocks(*this, I.zonotope());

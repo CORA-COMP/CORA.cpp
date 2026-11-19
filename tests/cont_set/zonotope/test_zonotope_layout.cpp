@@ -3,7 +3,7 @@
 // CORA.cpp only: CORA stores the generators as columns; CORA.cpp stores them batch first (#163).
 // Authors:       Claude Opus 5.5
 // Written:       18-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -29,7 +29,7 @@ void rows_and_center(const std::string &b) {
     const Zonotope C(Tensor({1.0, 0.0}), Z.generators());
     check(close(C.center(), Z.center(), 0), b + ": a column center is the vector");
     // the box: the radius sums the rows
-    check(close(Z.interval().sup(), Tensor({3.0, 2.0}), 0), b + ": the box sums |G| over h");
+    check(close(Z.interval().sup(), test::vec({3.0, 2.0}), 0), b + ": the box sums |G| over h");
 }
 
 /// A matrix zonotope: C (r, c), G (h, r, c); M @ X, X @ M, plus, reduce and the box.

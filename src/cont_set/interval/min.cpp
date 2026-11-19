@@ -9,11 +9,12 @@
 //
 // CORA: contSet/@interval/min.m
 // CORA authors: Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
+#include "cont_set/interval/private/priv_broadcastable.h"
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"
 
@@ -31,16 +32,17 @@ Interval Interval::min(const ContSet &Y) const {
                std::to_string(Y.dim());
     });
     const Interval box = Y.interval();
-    return {inf_.minimum(box.inf()), sup_.minimum(box.sup())};
+    return with(inf_.minimum(box.inf()), sup_.minimum(box.sup()));
 }
 
 Interval Interval::min(const Tensor &Y) const {
     detail::Entry entry;
-    CORA_CHECK(Y.numel() == 1 || is_column(Y, dim()), Error::dimension_mismatch, [&] {
-        return "min: the array must be a number or a column of the dimension " +
-               std::to_string(dim()) + " of the interval, got the shape " + shape_text(Y.shape());
+    CORA_CHECK(Y.numel() == 1 || priv_fits_elements(Y, *this), Error::dimension_mismatch, [&] {
+        return "min: the array must be a number or a point of the shape " +
+               shape_text(elem_shape()) + " of the interval, got the shape " +
+               shape_text(Y.shape());
     });
-    return {inf_.minimum(Y), sup_.minimum(Y)};
+    return with(inf_.minimum(Y), sup_.minimum(Y));
 }
 
 Tensor Interval::min() const {

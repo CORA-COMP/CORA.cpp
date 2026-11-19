@@ -18,7 +18,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
@@ -90,11 +90,12 @@ Zonotope LinearSys::error_solution_adaptive(const Zonotope &Vdyn,
         }
         // the remainder of the series of e^{|A| dt} past the last term
         const Tensor W = ((Aabs * time_step).expm() - M).abs();
-        const Interval E{W * -1.0, W};
+        const Interval E = Interval::matrix(W * -1.0, W);
         const Zonotope F = Vdyn.linear_map(E) * time_step;
         const Zonotope dynamic = AVsum.plus(F);
         if (!Vstat) return dynamic;
-        const Interval integral{Asum + E.inf() * time_step, Asum + E.sup() * time_step};
+        const Interval integral =
+            Interval::matrix(Asum + E.inf() * time_step, Asum + E.sup() * time_step);
         return dynamic.plus(Vstat->linear_map(integral));
     }
 }

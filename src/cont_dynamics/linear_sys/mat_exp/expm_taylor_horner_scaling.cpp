@@ -20,9 +20,9 @@
 // CORA: matrixSet/@intervalMatrix/private/priv_scalingSquaringHornerTaylorSeries.m
 // CORA: matrixSet/@intervalMatrix/private/priv_intervalMatrixRemainder.m
 // CORA authors: Ivan Brkan
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/mat_exp/private/priv_expm_series.h"
@@ -50,14 +50,16 @@ Interval aux_remainder(const Interval &A, const Tensor &a, int64_t N) {
     for (int64_t i = 1; i <= N + 1; ++i) factor = factor.multiply(a / double(i));
     factor = factor.divide((a / double(N + 2)).scalar_op(Tensor::Binary::subtract, 1.0, true));
     const Tensor zero = A.inf().zeros_like();
-    return Interval::from_center_delta(zero, zero.ones_like().multiply(factor));
+    // the norm bound is one number per batch member, (...); the matrix is (..., n, n)
+    return Interval::from_center_delta(
+        zero, zero.ones_like().multiply(factor.expand_dims(-1).expand_dims(-1)));
 }
 
 /// The Taylor series: sum of the terms [A]^i / i!, i <= N, each from the previous by one product.
 Interval aux_taylor(const Interval &A, const Tensor &a, int64_t N) {
     const Tensor eye = A.inf().eye_like(A.inf().size(-2));
     const Tensor zeros = eye.zeros_like();
-    Interval taylor(zeros, zeros), pow(eye, eye);
+    Interval taylor = Interval::matrix(zeros, zeros), pow = Interval::matrix(eye, eye);
     for (int64_t i = 1; i <= N; ++i) {
         taylor = taylor.plus(pow);
         // the first product has the matrix of numbers I on the left, as CORA's

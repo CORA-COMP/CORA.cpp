@@ -7,7 +7,7 @@
 // ORACLE: contSet/@interval/radius.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -29,14 +29,14 @@ int main() {
     test::oracle::run("interval.rad", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
-            test::oracle::check(I.rad(), lean::Interval(I).rad());
+            test::oracle::check(I.half_width(), lean::Interval(I).rad());
         }
     });
     test::oracle::run("interval.radius", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n);
             const double root = std::sqrt(lean::Interval(I).radius());
-            test::oracle::check("interval.radius", I.radius(), root);
+            test::oracle::check("interval.radius", I.ball_radius(), root);
         }
     });
     // the exit status is nonzero if any check failed

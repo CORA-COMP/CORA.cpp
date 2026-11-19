@@ -11,7 +11,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -25,10 +25,10 @@ namespace cora {
 
 namespace {
 
-/// The column x with entry n replaced by that of c.
+/// The points x (..., n) with coordinate n replaced by that of c.
 Tensor aux_replace(const Tensor &x, const Tensor &c, int64_t n) {
-    const Tensor head = x.slice(-2, 0, n), tail = x.slice(-2, n + 1, x.size(-2));
-    return Tensor::concat({head, c.slice(-2, n, n + 1), tail}, -2);
+    const Tensor head = x.slice(-1, 0, n), tail = x.slice(-1, n + 1, x.size(-1));
+    return Tensor::concat({head, c.slice(-1, n, n + 1), tail}, -1);
 }
 
 } // namespace
@@ -38,7 +38,7 @@ Tensor aux_replace(const Tensor &x, const Tensor &c, int64_t n) {
 
 std::pair<Interval, Interval> Interval::split(int64_t n) const {
     detail::Entry entry;
-    CORA_CHECK(inf_.size(-1) == 1, Error::wrong_value, [&] {
+    CORA_CHECK(elem_rank_ == 1, Error::wrong_value, [&] {
         return "split: the interval must not be an n-d array with n > 1, got the shape " +
                shape_text(inf_.shape());
     });
@@ -47,7 +47,7 @@ std::pair<Interval, Interval> Interval::split(int64_t n) const {
                std::to_string(n);
     });
     const Tensor m = center();
-    return {Interval(inf_, aux_replace(sup_, m, n)), Interval(aux_replace(inf_, m, n), sup_)};
+    return {with(inf_, aux_replace(sup_, m, n)), with(aux_replace(inf_, m, n), sup_)};
 }
 
 } // namespace cora

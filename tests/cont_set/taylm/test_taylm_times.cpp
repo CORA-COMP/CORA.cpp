@@ -4,9 +4,9 @@
 // CORA: contSet/@taylm/mtimes.m
 // PROPERTY: contSet/@taylm/times.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -15,7 +15,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -31,7 +31,7 @@ void product_property(const std::string &name) {
         std::vector<double> lo(2), w(2), u(2);
         rng.uniform(lo.data(), 2, -2.0, 2.0);
         rng.uniform(w.data(), 2, 0.1, 2.0);
-        const Interval I(column(lo), column({lo[0] + w[0], lo[1] + w[1]}));
+        const Interval I(vec(lo), vec({lo[0] + w[0], lo[1] + w[1]}));
         const std::vector<Taylm> x = Taylm::from_interval(I, 2);
         // (x0 x1 + x0)(x0 - x1): degree 3 > max_order 2
         const Taylm t = x[0].times(x[1]).plus(x[0]).times(x[0].minus(x[1]));
@@ -52,7 +52,7 @@ void product_property(const std::string &name) {
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const std::vector<Taylm> x = Taylm::from_interval(Interval(column({-1.0}), column({2.0})));
+        const std::vector<Taylm> x = Taylm::from_interval(Interval(vec({-1.0}), vec({2.0})));
         // x^2 on [-1, 2]: a polynomial with the monomial a^2 in [0, 1]: 0.25 + 1.5 a + 2.25 a^2
         const Taylm sq = x[0].times(x[0]);
         check(close(sq.bounds()[1], 0.25 + 1.5 + 2.25) && sq.bounds()[0] <= 0.0 + 1e-12,
@@ -61,8 +61,7 @@ int main() {
         check(close(x[0].times(2.0).bounds()[1], 4.0) && close(x[0].times(-2.0).bounds()[0], -4.0),
               b + ": a number");
         // above max_order the terms go to the remainder: x^3 with max_order 2 still bounds [-1, 8]
-        const std::vector<Taylm> y =
-            Taylm::from_interval(Interval(column({-1.0}), column({2.0})), 2);
+        const std::vector<Taylm> y = Taylm::from_interval(Interval(vec({-1.0}), vec({2.0})), 2);
         const Taylm cube = y[0].times(y[0]).times(y[0]);
         check(cube.bounds()[0] <= -1.0 && cube.bounds()[1] >= 8.0, b + ": truncation encloses");
         product_property(b);

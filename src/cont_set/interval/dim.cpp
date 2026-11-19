@@ -9,7 +9,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -28,6 +28,8 @@ int64_t Interval::dim(int rc) const {
     CORA_CHECK(rc == 1 || rc == 2, Error::wrong_value, [&] {
         return "dim: rc must be 1 (rows) or 2 (columns), got " + std::to_string(rc);
     });
+    // a box is a column
+    if (elem_rank_ == 1) return rc == 1 ? inf_.size(-1) : 1;
     return inf_.size(rc == 1 ? -2 : -1);
 }
 

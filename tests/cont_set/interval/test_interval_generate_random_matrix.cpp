@@ -3,9 +3,9 @@
 // CORA: matrixSet/@intervalMatrix/generateRandom.m
 // PROPERTY: matrixSet/@intervalMatrix/generateRandom.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -29,7 +29,8 @@ void random_sets_have_the_stated_ranges(const std::string &b) {
         const Interval A = Interval::generate_random_matrix(rng);
         sizes = sizes && A.inf().size(-2) >= 1 && A.inf().size(-2) <= 10 && A.inf().size(-1) >= 1 &&
                 A.inf().size(-1) <= 10;
-        radii = radii && A.rad().min().item() >= 0 && A.rad().max().item() <= 10 + 1e-9;
+        radii =
+            radii && A.half_width().min().item() >= 0 && A.half_width().max().item() <= 10 + 1e-9;
     }
     check(sizes, b + ": sizes in 1..10");
     check(radii, b + ": radii in [0, 10]");
@@ -48,11 +49,11 @@ void options_are_used(const std::string &b) {
     const Tensor half = test::matrix({0.5}, 1, 1);
     const Interval C = Interval::generate_random_matrix(rng, std::nullopt, center, half);
     check(C.inf().shape() == Shape{2, 3} && close(C.center(), center, 1e-12) &&
-              close(C.rad(), std::vector<double>(6, 0.5), 1e-12),
+              close(C.half_width(), std::vector<double>(6, 0.5), 1e-12),
           b + ": a center and one radius");
     const Tensor radius = test::matrix({0, 1, 2, 3}, 2, 2);
     const Interval R = Interval::generate_random_matrix(rng, std::nullopt, std::nullopt, radius);
-    check(R.inf().shape() == Shape{2, 2} && close(R.rad(), radius, 1e-12),
+    check(R.inf().shape() == Shape{2, 2} && close(R.half_width(), radius, 1e-12),
           b + ": radii give the shape");
 }
 

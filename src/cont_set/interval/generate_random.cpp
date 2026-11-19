@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@interval/generateRandom.m
 // CORA authors: Mark Wetzlinger, Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -57,28 +57,28 @@ CORA_FROM_NUMBERS Interval Interval::generate_random(Rng &rng, std::optional<int
     if (dimension)
         n = *dimension;
     else if (center)
-        n = center->size(-2);
+        n = center->size(-1);
     else if (max_radius && max_radius->numel() > 1)
-        n = max_radius->size(-2);
+        n = max_radius->size(-1);
     else
         n = priv_random_dimension(rng);
     // what is drawn lives where the given center or radii do, else on the current backend
     const Tensor *given = center ? &*center : max_radius ? &*max_radius : nullptr;
-    const auto column = [&](double low, double high) {
+    const auto draw = [&](double low, double high) {
         const std::vector<double> values = aux_uniform(rng, n, low, high);
-        return given ? Tensor::like(*given, values, {n, 1}) : Tensor::from_data(values, {n, 1});
+        return given ? Tensor::like(*given, values, {n}) : Tensor::from_data(values, {n});
     };
-    const Tensor c = center ? *center : column(-2.0, 2.0);
-    Tensor r = max_radius ? *max_radius : column(0.0, 10.0);
-    if (r.numel() == 1) r = r.reshape({1, 1}).tile({n, 1});
-    const Shape vector{n, 1};
+    const Tensor c = center ? *center : draw(-2.0, 2.0);
+    Tensor r = max_radius ? *max_radius : draw(0.0, 10.0);
+    if (r.numel() == 1) r = r.reshape({1}).tile({n});
+    const Shape vector{n};
     CORA_CHECK(c.shape() == vector && r.shape() == vector, Error::wrong_value, [&] {
         return "generate_random: the center and max_radius must be vectors of the "
                "dimension " +
                std::to_string(n);
     });
     // the radius, symmetric to keep the center
-    const Tensor radius = (r * 0.5).multiply(column(0.0, 1.0));
+    const Tensor radius = (r * 0.5).multiply(draw(0.0, 1.0));
     return {c - radius, c + radius};
 }
 

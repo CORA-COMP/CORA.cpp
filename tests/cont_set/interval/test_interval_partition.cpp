@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -17,7 +17,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +27,7 @@ namespace {
 
 /// 2 x 3 pieces of [0, 4] x [0, 6] in the order of nested loops, the first coordinate slowest.
 void partition_cuts_the_grid(const std::string &b) {
-    const Interval I(column({0.0, 0.0}), column({4.0, 6.0}));
+    const Interval I(vec({0.0, 0.0}), vec({4.0, 6.0}));
     const std::vector<Interval> P = I.partition(2);
     check(P.size() == 4, b + ": splits^n pieces");
     const std::vector<std::vector<double>> inf{{0, 0}, {0, 3}, {2, 0}, {2, 3}};
@@ -39,7 +39,7 @@ void partition_cuts_the_grid(const std::string &b) {
     check(I.partition(1).size() == 1 && close(I.partition(1)[0].sup(), I.sup()),
           b + ": one split is the box");
     const std::vector<Interval> B = Interval::stack({I, I}).partition(3);
-    check(B.size() == 9 && B[4].inf().shape() == std::vector<int64_t>({2, 2, 1}),
+    check(B.size() == 9 && B[4].inf().shape() == std::vector<int64_t>({2, 2}),
           b + ": a batch has a batch shape");
 }
 
@@ -53,7 +53,8 @@ void partition_covers_the_box(const std::string &b) {
         bool covered = true, inside = true;
         for (int k = 0; k < 40; ++k) {
             bool hit = false;
-            for (const Interval &piece : P) hit = hit || piece.contains(x.slice(-1, k, k + 1));
+            for (const Interval &piece : P)
+                hit = hit || piece.contains(x.slice(-1, k, k + 1).squeeze(-1));
             covered = covered && hit;
         }
         for (const Interval &piece : P)
@@ -65,7 +66,7 @@ void partition_covers_the_box(const std::string &b) {
 
 /// Neighbouring pieces touch or overlap, in whatever rounding the cuts have.
 void partition_has_no_gaps(const std::string &b) {
-    const Interval I(column({0.1}), column({0.7}));
+    const Interval I(vec({0.1}), vec({0.7}));
     const std::vector<Interval> P = I.partition(7);
     bool joined = true;
     for (std::size_t k = 0; k + 1 < P.size(); ++k)
@@ -77,14 +78,14 @@ void partition_has_no_gaps(const std::string &b) {
 /// Splits below 1, a matrix and an empty box are refused, and so are too many pieces; with the
 /// checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval I(column({0.0, 1.0}), column({1.0, 2.0}));
+    const Interval I(vec({0.0, 1.0}), vec({1.0, 2.0}));
     check(test::raises([&] { I.partition(0); }, Error::wrong_value), "partition: 0 splits");
     check(test::raises([&] { Interval::empty(2).partition(2); }, Error::not_supported),
           "partition: an empty box");
     check(test::raises(
               [&] {
-                  Interval(Tensor::from_data({0, 0, 0, 0}, {2, 2}),
-                           Tensor::from_data({1, 1, 1, 1}, {2, 2}))
+                  Interval::matrix(Tensor::from_data({0, 0, 0, 0}, {2, 2}),
+                                   Tensor::from_data({1, 1, 1, 1}, {2, 2}))
                       .partition(2);
               },
               Error::not_supported),

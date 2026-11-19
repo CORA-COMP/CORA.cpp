@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -24,7 +24,7 @@ namespace {
 
 void the_intersection_is_empty(const std::string &b) {
     const EmptySet E(2);
-    const Interval I(test::column({0.0, 0.0}), test::column({1.0, 1.0}));
+    const Interval I(test::vec({0.0, 0.0}), test::vec({1.0, 1.0}));
     check(E.intersect(I).dim() == 2, b + ": with a box");
     check(E.intersect(E).dim() == 2, b + ": with itself");
     check(E.intersect(Interval::empty(2)).dim() == 2, b + ": with the empty interval");
@@ -41,7 +41,7 @@ void the_intersection_is_empty(const std::string &b) {
 /// A set of another dimension is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const EmptySet E(2);
-    const Interval I3(test::column({0.0, 0.0, 0.0}), test::column({1.0, 1.0, 1.0}));
+    const Interval I3(test::vec({0.0, 0.0, 0.0}), test::vec({1.0, 1.0, 1.0}));
     check(test::raises([&] { E.intersect(I3); }, Error::dimension_mismatch),
           "intersect: a box of 3 dimensions");
     ChecksScope off(false);

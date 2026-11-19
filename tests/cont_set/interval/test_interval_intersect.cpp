@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -18,7 +18,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,8 +27,7 @@ using test::column;
 namespace {
 
 void intersect_of_overlapping_boxes(const std::string &b) {
-    const Interval I1(column({1.0, -1.0}), column({2.0, 1.0})),
-        I2(column({1.5, -2.0}), column({2.5, 0.0}));
+    const Interval I1(vec({1.0, -1.0}), vec({2.0, 1.0})), I2(vec({1.5, -2.0}), vec({2.5, 0.0}));
     const Interval R = I1.intersect(I2);
     check(close(R.inf(), std::vector<double>{1.5, -1.0}) &&
               close(R.sup(), std::vector<double>{2.0, 0.0}),
@@ -37,30 +36,29 @@ void intersect_of_overlapping_boxes(const std::string &b) {
     check(close(S.as<Interval>().inf(), R.inf()), b + ": the registry gives the same box");
 }
 
-/// Disjoint boxes give the empty interval, whose bounds have no columns; a gap of at most eps does
-/// not, and its bounds are put in order as CORA does.
+/// Disjoint boxes give the empty interval (its mask flags it, its bounds keep n); a gap of at most
+/// eps does not, and its bounds are put in order as CORA does.
 void intersect_of_disjoint_boxes(const std::string &b) {
-    const Interval I1(column({0.0, 0.0}), column({1.0, 1.0})),
-        I2(column({0.5, 2.0}), column({2.0, 3.0}));
+    const Interval I1(vec({0.0, 0.0}), vec({1.0, 1.0})), I2(vec({0.5, 2.0}), vec({2.0, 3.0}));
     const Interval R = I1.intersect(I2);
-    check(R.is_empty() && R.dim() == 2 && R.inf().shape() == std::vector<int64_t>({2, 0}),
+    check(R.is_empty() && R.dim() == 2 && R.inf().shape() == std::vector<int64_t>({2}),
           b + ": disjoint boxes are empty");
     check(I1.intersect(R).is_empty() && R.intersect(I1).is_empty(), b + ": empty stays empty");
     const double gap = std::numeric_limits<double>::epsilon() / 2;
-    const Interval touching(column({1.0 + gap}), column({2.0}));
-    const Interval T = Interval(column({0.0}), column({1.0})).intersect(touching);
+    const Interval touching(vec({1.0 + gap}), vec({2.0}));
+    const Interval T = Interval(vec({0.0}), vec({1.0})).intersect(touching);
     check(!T.is_empty() && T.inf().data()[0] <= T.sup().data()[0], b + ": a gap below eps");
 }
 
 /// A batch in which every member meets is intersected member by member.
 void intersect_of_a_batch(const std::string &b) {
-    const Interval A1(column({0.0}), column({2.0})), A2(column({-1.0}), column({1.0}));
-    const Interval B1(column({1.0}), column({3.0})), B2(column({0.5}), column({4.0}));
+    const Interval A1(vec({0.0}), vec({2.0})), A2(vec({-1.0}), vec({1.0}));
+    const Interval B1(vec({1.0}), vec({3.0})), B2(vec({0.5}), vec({4.0}));
     const Interval R = Interval::stack({A1, A2}).intersect(Interval::stack({B1, B2}));
     check(close(R.inf(), Interval::stack({A1.intersect(B1), A2.intersect(B2)}).inf()) &&
               close(R.sup(), Interval::stack({A1.intersect(B1), A2.intersect(B2)}).sup()),
           b + ": the members are intersected one by one");
-    const Interval far(column({10.0}), column({11.0}));
+    const Interval far(vec({10.0}), vec({11.0}));
     check(test::raises([&] { Interval::stack({A1, A2}).intersect(Interval::stack({B1, far})); },
                        Error::not_supported),
           b + ": a batch of meeting and disjoint members");
@@ -75,7 +73,7 @@ void intersect_is_the_set_intersection(const std::string &b) {
         const Interval R = I1.intersect(I2);
         const Tensor x = I1.rand_point(10, rng);
         for (int k = 0; k < 10; ++k) {
-            const Tensor p = x.slice(-1, k, k + 1);
+            const Tensor p = x.slice(-1, k, k + 1).squeeze(-1);
             const bool in_both = I2.contains(p, 0.0),
                        in_result = !R.is_empty() && R.contains(p, 0.0);
             check(in_both == in_result, b + ": a point of I1 is in R exactly when it is in I2");
@@ -85,7 +83,7 @@ void intersect_is_the_set_intersection(const std::string &b) {
 
 /// Boxes of different dimension are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval S(column({0, -1}), column({1, 1})), S3(column({0, -1, 0}), column({1, 1, 2}));
+    const Interval S(vec({0, -1}), vec({1, 1})), S3(vec({0, -1, 0}), vec({1, 1, 2}));
     check(test::raises([&] { S.intersect(S3); }, Error::dimension_mismatch),
           "intersect: dimensions 2 and 3");
     const Tensor on = S.intersect(S).sup();

@@ -6,9 +6,9 @@
 // Property: over the domain the outer halfspace contains the set and the inner one lies inside it
 //
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -16,7 +16,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +27,7 @@ namespace {
 /// The unit square over its own box: the rows have the box [-1, 1]^2 and the offsets [0, 1], so the
 /// offset is [0, 1] - ([-1, 1] [0, 1] + [-1, 1] [0, 1]) = [-2, 3].
 void reductions(const std::string &b) {
-    const Interval dom(column({0.0, 0.0}), column({1.0, 1.0}));
+    const Interval dom(vec({0.0, 0.0}), vec({1.0, 1.0}));
     const Polytope outer = test::square_h().reduce_over_domain(dom);
     check(outer.A().shape() == Shape{1, 2} && close(outer.A(), {0.0, 0.0}, 0) &&
               close(outer.b(), {3.0}, 0),
@@ -66,16 +66,16 @@ int main() {
         reductions(b);
         properties(b);
     });
-    const Interval dom(column({0.0, 0.0}), column({1.0, 1.0}));
+    const Interval dom(vec({0.0, 0.0}), vec({1.0, 1.0}));
     check(test::raises([&] { test::square_h().reduce_over_domain(dom, "middle"); },
                        Error::wrong_value),
           "reduce_over_domain: the type");
     check(test::raises([&] { test::square_v().reduce_over_domain(dom); }, Error::special_error),
           "reduce_over_domain: a vertex polytope");
-    check(test::raises(
-              [] { test::square_h().reduce_over_domain(Interval(column({0.0}), column({1.0}))); },
-              Error::dimension_mismatch),
-          "reduce_over_domain: the dimension of the domain");
+    check(
+        test::raises([] { test::square_h().reduce_over_domain(Interval(vec({0.0}), vec({1.0}))); },
+                     Error::dimension_mismatch),
+        "reduce_over_domain: the dimension of the domain");
     ChecksScope off(false);
     check(test::square_h().reduce_over_domain(dom).dim() == 2,
           "reduce_over_domain: the same with the checks off");

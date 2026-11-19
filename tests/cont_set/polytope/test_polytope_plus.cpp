@@ -7,9 +7,9 @@
 // Property: the sum of sampled points of both sets lies in the sum, and the support functions add
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -44,7 +45,7 @@ void sums(const std::string &b) {
     check(V.V().shape() == Shape{2, 8} && close(V.V().slice(-1, 0, 1), {10.0, 0.0}),
           b + ": V + V: all pairs, the second set varying slowest");
     // a box and a mixed pair
-    check(sq.plus(Interval(column({1.0, 1.0}), column({2.0, 2.0}))).contains(column({3.0, 3.0})),
+    check(sq.plus(Interval(vec({1.0, 1.0}), vec({2.0, 2.0}))).contains(column({3.0, 3.0})),
           b + ": + box");
     check(test::square_v().plus(sq).contains(column({2.0, 2.0})), b + ": V + H");
 }

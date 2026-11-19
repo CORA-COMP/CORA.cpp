@@ -14,7 +14,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_matmul.h"
@@ -30,23 +30,22 @@ namespace cora {
 
 Interval Interval::matmul(const Interval &B) const {
     detail::Entry entry;
-    CORA_CHECK(inf_.ndim() >= 2 && B.inf_.ndim() >= 2 && inf_.size(-1) == B.inf_.size(-2),
-               Error::dimension_mismatch, [&] {
-                   return "matmul: the inner dimensions differ, " + shape_text(inf_.shape()) +
-                          " times " + shape_text(B.inf_.shape());
-               });
+    CORA_CHECK(dim(2) == B.dim(1), Error::dimension_mismatch, [&] {
+        return "matmul: the inner dimensions differ, " + shape_text(inf_.shape()) + " times " +
+               shape_text(B.inf_.shape());
+    });
     return priv_matmul(*this, B);
 }
 
 // a matrix of numbers on the right; on the left it is linear_map
 Interval Interval::matmul(const Tensor &M) const {
     detail::Entry entry;
-    CORA_CHECK(M.ndim() >= 2 && M.size(-2) == inf_.size(-1), Error::dimension_mismatch, [&] {
-        return "matmul: the matrix needs " + std::to_string(inf_.size(-1)) +
-               " rows, got the shape " + shape_text(M.shape());
+    CORA_CHECK(M.ndim() >= 2 && M.size(-2) == dim(2), Error::dimension_mismatch, [&] {
+        return "matmul: the matrix needs " + std::to_string(dim(2)) + " rows, got the shape " +
+               shape_text(M.shape());
     });
-    auto [lo, hi] = Tensor::interval_matmul(inf_, sup_, M);
-    return {std::move(lo), std::move(hi)};
+    auto [lo, hi] = Tensor::interval_matmul(inf_matrix(), sup_matrix(), M);
+    return from_matrix(std::move(lo), std::move(hi));
 }
 
 } // namespace cora

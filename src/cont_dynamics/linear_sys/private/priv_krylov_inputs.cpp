@@ -25,7 +25,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
@@ -47,7 +47,7 @@ namespace {
 
 /// The first column of an interval matrix.
 Interval aux_first_column(const Interval &M) {
-    return {M.inf().slice(-1, 0, 1), M.sup().slice(-1, 0, 1)};
+    return {M.inf().slice(-1, 0, 1).squeeze(-1), M.sup().slice(-1, 0, 1).squeeze(-1)};
 }
 
 /// e_{n+1}, the equivalent initial state of the integrator system.
@@ -116,17 +116,18 @@ Zonotope priv_krylov_input_solution(const HostMatVec &A, const Zonotope &V, cons
         }
         // the remainder of the series, its supremum over the state rows
         const Interval E = LinearSys(S.H).expm_remainder(dt, alg.taylor_terms);
-        error = error + aux_first_column(E).linear_map(S.V).supremum().slice(0, 0, n);
+        error =
+            error + aux_first_column(E).linear_map(S.V).supremum().slice(0, 0, n).expand_dims(-1);
     }
     // entries below eps are 0, as CORA rounds them
     std::vector<double> radius = error.data();
     for (double &r : radius)
         if (std::abs(r) < machine_eps()) r = 0.0;
-    const Tensor r = Tensor::like(like, radius, {n, 1});
+    const Tensor r = Tensor::like(like, radius, {n});
     Interval box(r.negative(), r);
     if (bound > 0) {
         // the subspace errors of the generators, a ball of 2-norm `bound` in the box of its radius
-        const Tensor red = like.full_like({n, 1}, bound);
+        const Tensor red = like.full_like({n}, bound);
         box = box + Interval(red.negative(), red);
     }
     // the terms are columns; as generator rows

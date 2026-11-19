@@ -5,7 +5,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +26,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         // the box [1, 3] x [-2, 2]: x_0 = 2 + a_0, x_1 = 2 a_1
         const std::vector<Taylm> x =
-            Taylm::from_interval(Interval(column({1.0, -2.0}), column({3.0, 2.0})));
+            Taylm::from_interval(Interval(vec({1.0, -2.0}), vec({3.0, 2.0})));
         check(x.size() == 2 && x[0].num_vars() == 2,
               b + ": one model and one variable per coordinate");
         check(close(x[0].bounds()[0], 1.0) && close(x[0].bounds()[1], 3.0) &&
@@ -45,7 +46,7 @@ int main() {
         check(close(x[0].interval().inf(), {1.0}) && close(x[0].interval().sup(), {3.0}),
               b + ": interval()");
     });
-    check(test::raises([] { Taylm::from_interval(Interval(column({0.0}), column({1e308 * 10}))); },
+    check(test::raises([] { Taylm::from_interval(Interval(vec({0.0}), vec({1e308 * 10}))); },
                        Error::wrong_value),
           "from_interval: unbounded");
     check(test::raises([] { Taylm::constant(1.0, 1, 0); }, Error::wrong_value), "constant: order");

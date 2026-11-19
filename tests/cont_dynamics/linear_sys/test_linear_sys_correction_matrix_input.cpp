@@ -5,9 +5,9 @@
 //
 // CORA: contDynamics/@linearSys/taylorMatrices.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -71,7 +71,7 @@ void shrinks_with_the_time_step(const std::string &b) {
     const LinearSys sys(Tensor::from_data(s.A, {3, 3}));
     double previous = 1e9;
     for (const double dt : {0.4, 0.2, 0.1, 0.05, 0.025}) {
-        const double size = max_abs(sys.correction_matrix_input(dt, 8).rad());
+        const double size = max_abs(sys.correction_matrix_input(dt, 8).half_width());
         check(size < previous, b + ": G did not shrink at dt = " + std::to_string(dt));
         // size becomes the bound that the next, smaller time step must stay below
         previous = size;
@@ -81,8 +81,8 @@ void shrinks_with_the_time_step(const std::string &b) {
 void is_tighter_with_more_terms(const std::string &b) {
     const matlab_reference::InputSystem &s = matlab_reference::standard_inputs();
     const LinearSys sys(Tensor::from_data(s.A, {3, 3}));
-    check(max_abs(sys.correction_matrix_input(0.2, 10).rad()) <=
-              max_abs(sys.correction_matrix_input(0.2, 3).rad()),
+    check(max_abs(sys.correction_matrix_input(0.2, 10).half_width()) <=
+              max_abs(sys.correction_matrix_input(0.2, 3).half_width()),
           b + ": more Taylor terms widened G");
 }
 

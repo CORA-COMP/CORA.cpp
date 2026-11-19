@@ -17,9 +17,9 @@
 //
 // CORA: contSet/@levelSet/contains_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/level_set/level_set.h"
@@ -84,11 +84,10 @@ bool LevelSet::contains(const Tensor &points, Tol tol_arg) const {
 
 bool LevelSet::contains(const Interval &I, Tol tol_arg) const {
     detail::Entry entry;
-    // the empty box has no columns, so only a box with points has a dimension to check
     const double tol = resolve_tol(entry, tol_arg, I.inf().dtype(), "contains");
-    CORA_CHECK(I.is_empty() || (I.inf().ndim() == 2 && I.inf().shape()[0] == dim()),
+    CORA_CHECK(I.elem_rank() == 1 && I.inf().ndim() == 1 && I.dim() == dim(),
                Error::dimension_mismatch, [&] {
-                   return "contains: the box must be a column of " + std::to_string(dim()) +
+                   return "contains: the box must be a single box of " + std::to_string(dim()) +
                           " states";
                });
     if (I.is_empty()) return true;

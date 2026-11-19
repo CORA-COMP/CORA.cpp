@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Adrian Kulmburg, Ivan Brkan
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -18,6 +18,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -51,9 +52,8 @@ void special_zonotopes(const std::string &b) {
     check(!point.contains(diamond()), b + ": a point holds no set");
     const Zonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(box.contains(column({1.0, -1.0})) && !box.contains(column({1.1, 0.0})), b + ": a box");
-    check(box.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.0}))),
-          b + ": a box holds a box");
-    check(!box.contains(Interval(column({-0.5, -0.5}), column({0.5, 1.5}))),
+    check(box.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.0}))), b + ": a box holds a box");
+    check(!box.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.5}))),
           b + ": a box, not a larger one");
     const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(segment.contains(column({0.5, 0.5})), b + ": a segment holds its points");
@@ -70,12 +70,12 @@ void sets_in_the_diamond(const std::string &b) {
         check(!Z.contains(large, method), b + ": 1.2 times is not in, " + method);
     }
     check(Z.contains(Z), b + ": a zonotope holds itself");
-    check(Z.contains(Interval(column({-0.5, -0.5}), column({0.5, 0.5}))), b + ": a box inside");
-    check(!Z.contains(Interval(column({-1.5, -1.5}), column({1.5, 1.5}))), b + ": a box too large");
+    check(Z.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 0.5}))), b + ": a box inside");
+    check(!Z.contains(Interval(vec({-1.5, -1.5}), vec({1.5, 1.5}))), b + ": a box too large");
     check(Z.contains(small + column({0.5, 0.0})) && !Z.contains(small + column({1.5, 0.0})),
           b + ": shifted");
     check(contains(Z, small) && !contains(Z, large), b + ": through the registry");
-    check(contains(Z, Interval(column({-0.5, -0.5}), column({0.5, 0.5}))),
+    check(contains(Z, Interval(vec({-0.5, -0.5}), vec({0.5, 0.5}))),
           b + ": a box through the registry");
 }
 

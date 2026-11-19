@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/origin.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -21,11 +21,11 @@ namespace {
 
 void origin_is_the_point_zero(const std::string &b) {
     const Interval I = Interval::origin(3);
-    check(I.dim() == 3 && I.inf().shape() == std::vector<int64_t>({3, 1}), b + ": a column of 3");
+    check(I.dim() == 3 && I.inf().shape() == std::vector<int64_t>({3}), b + ": a column of 3");
     check(I.inf().data() == std::vector<double>(3, 0.0) &&
               I.sup().data() == std::vector<double>(3, 0.0),
           b + ": [0, 0] in every coordinate");
-    check(I.contains(test::column({0.0, 0.0, 0.0})) && !I.contains(test::column({0.0, 0.1, 0.0})),
+    check(I.contains(test::vec({0.0, 0.0, 0.0})) && !I.contains(test::vec({0.0, 0.1, 0.0})),
           b + ": it contains only the origin");
 }
 

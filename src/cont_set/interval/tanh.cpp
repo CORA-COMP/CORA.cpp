@@ -9,7 +9,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -23,7 +23,7 @@ namespace cora {
 
 Interval Interval::tanh() const {
     detail::Entry entry;
-    return {inf_.tanh(), sup_.tanh()};
+    return with(inf_.tanh(), sup_.tanh());
 }
 
 } // namespace cora

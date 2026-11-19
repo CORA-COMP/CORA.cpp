@@ -30,7 +30,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger, Niklas Kochdumper, Stefan Liu
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -44,6 +44,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -82,7 +83,7 @@ HybridAutomaton aux_ball(BallFlow kind = BallFlow::linear) {
 /// The ball dropped from heights in [1, 1.2] at rest, up to 1.5 s.
 HybridReachProblem aux_drop() {
     HybridReachProblem p;
-    p.initial_set = Interval(column({1.0, 0.0}), column({1.2, 0.0})).zonotope();
+    p.initial_set = Interval(vec({1.0, 0.0}), vec({1.2, 0.0})).zonotope();
     p.t_final = 1.5;
     return p;
 }
@@ -120,7 +121,8 @@ bool aux_covered(const HybridReachSet &R, double t, const Tensor &p) {
             if (t < range[0] || t > range[1]) continue;
             const Interval box = b.time_interval[k]->interval();
             // the box first, then the set
-            if ((box.inf() - p).max().item() <= 1e-9 && (p - box.sup()).max().item() <= 1e-9 &&
+            if ((box.inf() - p.squeeze(-1)).max().item() <= 1e-9 &&
+                (p.squeeze(-1) - box.sup()).max().item() <= 1e-9 &&
                 contains(*b.time_interval[k], Zonotope(p, p.zeros_like({0, 2})), 1e-9))
                 return true;
         }

@@ -9,7 +9,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -42,7 +43,7 @@ void methods(const std::string &b) {
     const Polytope tri(Tensor({{-1.0, 0.0}, {0.0, -1.0}, {1.0, 1.0}}), column({0.0, 0.0, 2.0}));
     for (const char *method : {"exact:supportFunc", "exact:vertices"})
         check(same_set(tri.con_zonotope(method), tri, rng), b + ": " + method + ": the triangle");
-    const Interval wide(column({-1.0, -1.0}), column({3.0, 3.0}));
+    const Interval wide(vec({-1.0, -1.0}), vec({3.0, 3.0}));
     check(same_set(tri.con_zonotope("exact:supportFunc", wide), tri, rng), b + ": a wider box");
     const Polytope sq(Tensor({{0.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0}}));
     for (const char *method : {"exact:supportFunc", "exact:vertices"})

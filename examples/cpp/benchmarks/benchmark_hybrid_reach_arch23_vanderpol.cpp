@@ -14,9 +14,9 @@
 // Outputs:  one line 'benchmark,instance,result,time', as the MATLAB script
 // See also: benchmark_hybrid.h, benchmark_hybrid_reach_arch23_spacecraft.cpp
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -36,6 +36,7 @@ using namespace cora;
 using cora::bench::column;
 using cora::bench::hyperplane;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 /// The dynamics of the model: x1' = x2, x2' = (1 - x1^2) x2 + x5 (x3 - x1) - x1, and the same
 /// for (x3, x4) with the coupling reversed, x5' = 0; the input u is not used.
@@ -66,7 +67,7 @@ HybridAutomaton aux_automaton() {
 std::vector<Interval> aux_initial_sets() {
     const auto box = [](double lo1, double hi1, double lo2, double hi2, double x5_lo,
                         double x5_hi) {
-        return Interval(column({lo1, lo2, lo1, lo2, x5_lo}), column({hi1, hi2, hi1, hi2, x5_hi}));
+        return Interval(vec({lo1, lo2, lo1, lo2, x5_lo}), vec({hi1, hi2, hi1, hi2, x5_hi}));
     };
     const std::vector<std::array<double, 2>> x5 = {
         {1, 1.4}, {1.4, 1.8}, {1.8, 2.1}, {2.1, 2.3}, {2.3, 2.45}, {2.45, 2.66}, {2.66, 3}};

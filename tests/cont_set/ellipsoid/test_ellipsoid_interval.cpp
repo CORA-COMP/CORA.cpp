@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/interval.m
 // PROPERTY: contSet/@ellipsoid/interval.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -31,7 +31,7 @@ void interval_known(const std::string &b) {
     check(Ellipsoid::empty(2).interval().is_empty(), b + ": the empty ellipsoid");
     const Ellipsoid batch(Tensor::stack({Tensor({{4.0}}), Tensor({{9.0}})}, 0),
                           Tensor::stack({column({0.0}), column({1.0})}, 0));
-    check(close(batch.interval().sup(), Tensor::stack({column({2.0}), column({4.0})}, 0), 0),
+    check(close(batch.interval().sup(), Tensor::stack({test::vec({2.0}), test::vec({4.0})}, 0), 0),
           b + ": a batch");
 }
 
@@ -53,9 +53,10 @@ void interval_property(const std::string &b) {
         for (int i = 0; i < 3; ++i) {
             // the touching point q + Q e_i / r_i
             const Tensor touch = E.q() + E.Q().slice(1, i, i + 1) / r.data()[i];
-            check(test::finite_near(E.ellipsoid_norm(touch - E.q()), 1.0) &&
-                      close(touch.slice(0, i, i + 1), I.sup().slice(0, i, i + 1), 1e-12),
-                  b + ": the box touches the ellipsoid in coordinate i");
+            check(
+                test::finite_near(E.ellipsoid_norm(touch - E.q()), 1.0) &&
+                    close(touch.slice(0, i, i + 1).squeeze(-1), I.sup().slice(0, i, i + 1), 1e-12),
+                b + ": the box touches the ellipsoid in coordinate i");
         }
     }
 }

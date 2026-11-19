@@ -6,9 +6,9 @@
 // Property: the corners are the extreme points, counter-clockwise in the plane
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -43,7 +44,7 @@ void planes(const std::string &b) {
 
 /// A cube has eight corners in space.
 void solids(const std::string &b) {
-    const Polytope cube(Interval(column({0.0, 0.0, 0.0}), column({1.0, 1.0, 1.0})));
+    const Polytope cube(Interval(vec({0.0, 0.0, 0.0}), vec({1.0, 1.0, 1.0})));
     const std::vector<std::vector<Point3>> corners = cube.vertices_3d();
     check(corners.size() == 1 && corners[0].size() == 8, b + ": the cube: eight corners");
 }

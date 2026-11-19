@@ -8,9 +8,9 @@
 // See also: cora/global/plot/figure.h, contSet/zonotope/vertices, contSet/zonotope/project
 //
 // CORA.cpp only: CORA plots through MATLAB figures; this draws into a Figure.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
@@ -103,10 +103,12 @@ std::vector<Polygon> aux_polygons(const ContSet &S, const std::vector<int64_t> &
     if (dims.size() == 2) return S.project(dims)->vertices();
     const Interval box = S.project(dims)->interval();
     const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
+    const std::vector<uint8_t> empty = box.empty_mask().flags(box.batch_shape());
     std::vector<Polygon> bars;
     bars.reserve(lo.size());
     for (std::size_t b = 0; b < lo.size(); ++b)
-        bars.push_back(lo[b] == hi[b] ? Polygon{{lo[b], 0}} : Polygon{{lo[b], 0}, {hi[b], 0}});
+        if (!empty[b])
+            bars.push_back(lo[b] == hi[b] ? Polygon{{lo[b], 0}} : Polygon{{lo[b], 0}, {hi[b], 0}});
     return bars;
 }
 

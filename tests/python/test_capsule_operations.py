@@ -63,7 +63,7 @@ class Operations(unittest.TestCase):
         self.C = capsule([1.0, 2.0], [3.0, 4.0], 0.5)
 
     def test_radius_volume_and_small_queries(self):
-        self.assertAlmostEqual(self.C.radius(), 5.5)
+        self.assertAlmostEqual(self.C.ball_radius(), 5.5)
         self.assertAlmostEqual(self.C.volume(), np.pi * 0.25 + 4 * 0.5 * 5)
         self.assertAlmostEqual(capsule([1.0], [3.0], 0.5).volume(), 7.0)
         self.assertEqual(cora.Capsule.empty(2).volume(), 0.0)

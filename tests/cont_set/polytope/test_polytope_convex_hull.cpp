@@ -6,9 +6,9 @@
 // Property: the hull holds both sets and its vertices are vertices of one of them
 //
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -31,7 +32,7 @@ void hulls(const std::string &b) {
     const Polytope H = S1.convex_hull(S2);
     check(H.is_v_rep() && H.V().shape() == Shape{2, 4}, b + ": two squares: 4 extreme vertices");
     check(H.contains(column({1.5, 0.5})) && !H.contains(column({1.5, 1.5})), b + ": the points");
-    const Polytope box = S1.convex_hull(Interval(column({2.0, 0.0}), column({3.0, 1.0})));
+    const Polytope box = S1.convex_hull(Interval(vec({2.0, 0.0}), vec({3.0, 1.0})));
     check(box.V().shape() == Shape{2, 4} && box.contains(column({2.5, 0.5})), b + ": a box");
     const Polytope pt = S1.convex_hull(column({2.0, 0.5}));
     check(pt.V().shape() == Shape{2, 5} && pt.contains(column({1.5, 0.5})), b + ": a point");
@@ -68,8 +69,8 @@ void refusals() {
           "convex_hull: the point has the dimension");
     check(test::raises(
               [&] {
-                  S.convex_hull(Interval(column({0.0, 0.0}),
-                                         column({1.0, std::numeric_limits<double>::infinity()})));
+                  S.convex_hull(Interval(vec({0.0, 0.0}),
+                                         vec({1.0, std::numeric_limits<double>::infinity()})));
               },
               Error::not_supported),
           "convex_hull: an unbounded box");

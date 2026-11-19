@@ -7,7 +7,7 @@
 // CORA.cpp only: tests cut, CORALean's float replacement of the slack factors of polytope/and_
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -79,8 +79,9 @@ void refusals() {
           "cut: the matrix needs the columns of the dimension");
     const Tensor on = K.interval_tight(2).sup();
     ChecksScope off(false);
-    check(close(A.cut(Polytope(Tensor({{1.0}}), column({0.0}))).interval_tight(2).sup(), on, 0),
-          "cut: the same with the checks off");
+    check(
+        close(A.cut(Polytope(Tensor({{1.0}}), test::column({0.0}))).interval_tight(2).sup(), on, 0),
+        "cut: the same with the checks off");
 }
 
 } // namespace

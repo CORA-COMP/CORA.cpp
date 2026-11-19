@@ -8,9 +8,9 @@
 // CORA: contSet/@interval/abs.m
 // CORA: matrixSet/@intervalMatrix/abs.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,7 +24,7 @@ namespace cora {
 
 Interval Interval::abs() const {
     detail::Entry entry;
-    return {inf_.maximum(-sup_).maximum(0.0), (-inf_).maximum(sup_)};
+    return with(inf_.maximum(-sup_).maximum(0.0), (-inf_).maximum(sup_));
 }
 
 } // namespace cora

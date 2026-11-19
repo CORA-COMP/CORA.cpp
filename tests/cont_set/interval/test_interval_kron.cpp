@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/kron.m
 // CORA authors: Victor Gassmann
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -22,8 +22,10 @@ namespace {
 
 void kron_is_the_hull_of_the_corner_products(const std::string &b) {
     // I = [[1, 2], [-1, 1]] (a row), J = ([0, 1], [2, 3]) (a column)
-    const Interval I(Tensor::from_data({1, -1}, {1, 2}), Tensor::from_data({2, 1}, {1, 2}));
-    const Interval J(Tensor::from_data({0, 2}, {2, 1}), Tensor::from_data({1, 3}, {2, 1}));
+    const Interval I =
+        Interval::matrix(Tensor::from_data({1, -1}, {1, 2}), Tensor::from_data({2, 1}, {1, 2}));
+    const Interval J =
+        Interval::matrix(Tensor::from_data({0, 2}, {2, 1}), Tensor::from_data({1, 3}, {2, 1}));
     const Interval P = I.kron(J);
     check(P.inf().shape() == std::vector<int64_t>({2, 2}), b + ": the shape (m p, n q)");
     check(close(P.inf(), std::vector<double>{0, -1, 2, -3}) &&
@@ -46,7 +48,8 @@ void kron_is_the_hull_of_the_corner_products(const std::string &b) {
 
 /// A numeric factor that is not a matrix is refused; the checks off give the same.
 void checks_and_their_switch() {
-    const Interval I(Tensor::from_data({1, -1}, {1, 2}), Tensor::from_data({2, 1}, {1, 2}));
+    const Interval I =
+        Interval::matrix(Tensor::from_data({1, -1}, {1, 2}), Tensor::from_data({2, 1}, {1, 2}));
     check(test::raises([&] { I.kron(Tensor::from_data({1.0, 2.0}, {2})); },
                        Error::dimension_mismatch),
           "kron: a flat right factor");

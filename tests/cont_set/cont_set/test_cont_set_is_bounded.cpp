@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -17,6 +17,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,8 +29,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 /// Boxes and zonotopes through the base class, and a batch.
 void bounded_or_not(const std::string &b) {
-    const Interval box(column({-1.0, 0.0}), column({1.0, 2.0})),
-        ray(column({-1.0, 0.0}), column({kInf, 2.0}));
+    const Interval box(vec({-1.0, 0.0}), vec({1.0, 2.0})), ray(vec({-1.0, 0.0}), vec({kInf, 2.0}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const ContSet &A = box, &C = ray, &D = Z;
     check(A.is_bounded() && !C.is_bounded() && D.is_bounded(), b + ": bounded or not");
@@ -40,7 +40,7 @@ void bounded_or_not(const std::string &b) {
 /// A class without the query raises noops, and the checks off change nothing.
 void noops_and_the_switch() {
     check(test::raises([] { test::UnregisteredSet().is_bounded(); }, Error::noops), "noops");
-    const Interval I(column({0.0}), column({1.0}));
+    const Interval I(vec({0.0}), vec({1.0}));
     ChecksScope off(false);
     check(static_cast<const ContSet &>(I).is_bounded(), "the checks off");
 }

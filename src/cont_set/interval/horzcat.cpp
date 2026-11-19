@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@interval/horzcat.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_join.h"
@@ -30,7 +30,7 @@ Interval Interval::horzcat(const std::vector<Interval> &Is) {
     CORA_CHECK(!Is.empty(), Error::wrong_value,
                [] { return std::string("horzcat: give at least one interval to join"); });
     for (const Interval &I : Is)
-        CORA_CHECK(priv_joinable(Is[0].inf(), I.inf(), 2), Error::dimension_mismatch, [&] {
+        CORA_CHECK(priv_joinable(Is[0], I, 2), Error::dimension_mismatch, [&] {
             return "horzcat: the bounds must agree in the rows, got the shapes " +
                    shape_text(Is[0].inf().shape()) + " and " + shape_text(I.inf().shape());
         });

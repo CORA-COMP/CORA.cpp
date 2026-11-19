@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -49,7 +49,7 @@ void expm_encloses_the_exponentials(const std::string &b) {
     const mat_exp::ExpmResult zero =
         mat_exp::expm(test::interval_matrix(test::matrix({0, 0, 0, 0}, 2, 2)), 5);
     check(close(zero.enclosure.center(), std::vector<double>{1, 0, 0, 1}, 1e-14) &&
-              close(zero.enclosure.rad(), std::vector<double>{0, 0, 0, 0}, 1e-14),
+              close(zero.enclosure.half_width(), std::vector<double>{0, 0, 0, 0}, 1e-14),
           b + ": exp(0) = I");
 }
 
@@ -64,8 +64,8 @@ void expm_lists_its_powers(const std::string &b) {
     check(close(R.remainder.sup(), mat_exp::exponential_remainder(A, 6).sup(), 1e-14),
           b + ": the remainder of the order");
     const mat_exp::ExpmResult tighter = mat_exp::expm(A, 12);
-    const double width = R.enclosure.rad().max().item();
-    check(tighter.enclosure.rad().max().item() <= width + 1e-12,
+    const double width = R.enclosure.half_width().max().item();
+    check(tighter.enclosure.half_width().max().item() <= width + 1e-12,
           b + ": a higher order does not widen the result");
     const mat_exp::ExpmResult point = mat_exp::expm(test::interval_matrix(A.center()), 12);
     check(close(point.enclosure.center(), A.center().expm(), 1e-9),

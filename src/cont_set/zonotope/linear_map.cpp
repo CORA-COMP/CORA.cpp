@@ -10,7 +10,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -62,12 +62,11 @@ Zonotope Zonotope::linear_map(const Interval &I) const {
     CORA_CHECK(elem_rank_ == 1, Error::not_supported,
                [] { return std::string("linear_map: an interval matrix maps a vector zonotope"); });
 
-    CORA_CHECK(I.inf().shape().size() >= 2 && I.inf().shape().back() == dim(),
-               Error::dimension_mismatch, [&] {
-                   return "linear_map: the interval matrix needs " + std::to_string(dim()) +
-                          " columns (the dimension of Z), got the shape " +
-                          shape_text(I.inf().shape());
-               });
+    CORA_CHECK(
+        I.elem_rank() == 2 && I.inf().shape().back() == dim(), Error::dimension_mismatch, [&] {
+            return "linear_map: the interval matrix needs " + std::to_string(dim()) +
+                   " columns (the dimension of Z), got the shape " + shape_text(I.inf().shape());
+        });
     // The center matrix maps Z; the radius adds one axis-aligned generator per dimension.
     auto [c, G] = Tensor::zonotope_interval_map(I.inf(), I.sup(), c_, G_);
     return {std::move(c), std::move(G)};

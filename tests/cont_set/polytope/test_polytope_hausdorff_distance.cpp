@@ -7,9 +7,9 @@
 //           of one set to the other set
 //
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -36,8 +37,8 @@ void distances(const std::string &b) {
     check(close(S1.hausdorff_distance(big), std::sqrt(2.0), 1e-8), b + ": nested squares");
     check(close(S1.hausdorff_distance(Tensor({{3.0, 0.0}, {0.0, 0.0}})), 2.0, 1e-8),
           b + ": the farthest point");
-    check(close(S1.hausdorff_distance(Interval(column({0.0, 0.0}), column({2.0, 2.0}))),
-                std::sqrt(2.0), 1e-8),
+    check(close(S1.hausdorff_distance(Interval(vec({0.0, 0.0}), vec({2.0, 2.0}))), std::sqrt(2.0),
+                1e-8),
           b + ": a box");
     const Polytope H(Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
                      column({1.0, 1.0, 0.0, 0.0}));

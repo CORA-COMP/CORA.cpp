@@ -1,9 +1,9 @@
 // test_lean_interval_kron - Interval::kron against the CORALean oracle (its `kron`)
 //
 // ORACLE: contSet/@interval/kron.m
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -22,7 +22,8 @@ int main() {
     test::oracle::run("interval.kron", [](test::oracle::Random &rnd) {
         for (const auto &[m, n, p, q] : {std::tuple{2, 3, 3, 2}, {1, 4, 2, 2}, {4, 4, 3, 1}}) {
             const Tensor A = rnd.matrix(m, n), B = rnd.matrix(p, q);
-            const Interval I(A - 0.25, A + 0.5), J(B - 0.5, B + 0.25);
+            const Interval I = Interval::matrix(A - 0.25, A + 0.5),
+                           J = Interval::matrix(B - 0.5, B + 0.25);
             test::oracle::check(I.kron(J), lean::Interval(I).kron(lean::Interval(J)));
         }
     });

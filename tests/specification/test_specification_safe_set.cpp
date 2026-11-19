@@ -2,9 +2,9 @@
 //
 // CORA: specification/@specification/specification.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -52,7 +52,7 @@ void safe_polytope(const std::string &b) {
     check(low_top.set().is<Polytope>(), b + ": the set is kept");
     // the same polytope decides an interval, a constrained zonotope and a bundle
     const Specification spec = Specification::safe_set(Polytope(A, Tensor({{3.0}, {2.0}})));
-    check(spec.check(Interval(Tensor({1.0, 0.0}), Tensor({3.0, 2.0}))), b + ": a box");
+    check(spec.check(Interval(test::vec({1.0, 0.0}), test::vec({3.0, 2.0}))), b + ": a box");
     check(spec.check(ConZonotope(Z)), b + ": a constrained zonotope");
     check(!spec.check(ConZonotope(Zonotope(Tensor({2.5, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})))),
           b + ": a shifted one is left");

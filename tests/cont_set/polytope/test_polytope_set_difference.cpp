@@ -6,9 +6,9 @@
 // Property: a point is in P and not in S exactly if some piece holds it (the boundary aside)
 //
 // CORA authors: Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -16,6 +16,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +26,7 @@ namespace {
 
 /// A square minus a smaller square: pieces that cover the frame.
 void frames(const std::string &b) {
-    const Polytope inner = Polytope(Interval(column({0.25, 0.25}), column({0.75, 0.75})));
+    const Polytope inner = Polytope(Interval(vec({0.25, 0.25}), vec({0.75, 0.75})));
     const std::vector<Polytope> pieces = test::square_h().set_difference(inner);
     check(pieces.size() == 4, b + ": four pieces around a square hole");
     auto in_pieces = [&](const Tensor &p) {
@@ -40,7 +41,7 @@ void frames(const std::string &b) {
     const Polytope away = test::square_h().plus(column({5.0, 5.0}));
     check(test::square_h().set_difference(away).size() == 1, b + ": a disjoint S leaves P");
     check(test::square_h()
-              .set_difference(Polytope(Interval(column({-1.0, -1.0}), column({2.0, 2.0}))))
+              .set_difference(Polytope(Interval(vec({-1.0, -1.0}), vec({2.0, 2.0}))))
               .empty(),
           b + ": S around P leaves nothing");
     check(Polytope::empty(2).set_difference(inner)[0].representsa("emptySet") &&

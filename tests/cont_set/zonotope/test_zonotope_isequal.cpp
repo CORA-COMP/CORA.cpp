@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -16,6 +16,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -45,10 +46,10 @@ void isequal_known(const std::string &b) {
 
 /// A box and a point are compared as zonotopes.
 void isequal_other_sets(const std::string &b) {
-    const Interval I(column({0.0, 1.0}), column({2.0, 1.5}));
+    const Interval I(vec({0.0, 1.0}), vec({2.0, 1.5}));
     const Zonotope box(column({1.0, 1.25}), Tensor({{1.0, 0.0}, {0.0, 0.25}}));
     check(box.isequal(I), b + ": a box");
-    check(!box.isequal(Interval(column({0.0, 1.0}), column({2.0, 2.0}))), b + ": another box");
+    check(!box.isequal(Interval(vec({0.0, 1.0}), vec({2.0, 2.0}))), b + ": another box");
     const Zonotope point(column({1.0, 2.0}), Tensor::zeros({0, 2}));
     check(point.isequal(column({1.0, 2.0})), b + ": a point");
     check(!point.isequal(column({1.0, 2.5})), b + ": another point");

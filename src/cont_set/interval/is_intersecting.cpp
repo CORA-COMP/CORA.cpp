@@ -7,16 +7,16 @@
 // Syntax:   bool b = I.is_intersecting(I2);   bool b = I.is_intersecting(I2, tol);
 //           bool b = I.is_intersecting(p, tol);
 // Inputs:   I2 - interval of the dimension of I
-//           p - a point, a column (..., n, 1)
+//           p - a point (..., n)
 //           tol - how far apart the bounds may be (as within_tol); default: the repository one
 // Outputs:  b - true if in every coordinate the bounds overlap up to tol
 // See also: contains, intersect
 //
 // CORA: contSet/@interval/isIntersecting_.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -59,8 +59,8 @@ bool Interval::is_intersecting(const Interval &I2, Tol tol_arg) const {
 bool Interval::is_intersecting(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "is_intersecting");
-    CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
-        return "is_intersecting: the point must be a column of the dimension " +
+    CORA_CHECK(elem_rank_ == 1 && is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "is_intersecting: the point must be a vector of the dimension " +
                std::to_string(dim()) + " of the interval, got the shape " + shape_text(p.shape());
     });
     return !is_empty() && contains(p, tol);

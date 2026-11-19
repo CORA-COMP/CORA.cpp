@@ -5,7 +5,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -13,7 +13,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,7 +22,7 @@ using test::column;
 namespace {
 
 void project_high_dim_places_the_coordinates(const std::string &b) {
-    const Interval I(column({1.0, 3.0}), column({2.0, 4.0}));
+    const Interval I(vec({1.0, 3.0}), vec({2.0, 4.0}));
     const Interval R = I.project_high_dim(4, {2, 0});
     check(R.inf().data() == std::vector<double>({3, 0, 1, 0}) &&
               R.sup().data() == std::vector<double>({4, 0, 2, 0}),
@@ -31,7 +31,7 @@ void project_high_dim_places_the_coordinates(const std::string &b) {
     check(I.project_high_dim(3, {1, 1}).inf().data() == std::vector<double>({0, 3, 0}),
           b + ": a repeated coordinate keeps the last, as CORA");
     const Interval S = Interval::stack({I, I}).project_high_dim(3, {1, 2});
-    check(S.inf().shape() == std::vector<int64_t>({2, 3, 1}) &&
+    check(S.inf().shape() == std::vector<int64_t>({2, 3}) &&
               S.sup().data() == std::vector<double>({0, 2, 4, 0, 2, 4}),
           b + ": a batch");
     const Interval E = Interval::empty(2).project_high_dim(5, {0, 3});
@@ -41,7 +41,7 @@ void project_high_dim_places_the_coordinates(const std::string &b) {
 /// A space that is too small, a wrong number or a range of coordinates are refused; with the
 /// checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval I(column({1.0, 3.0}), column({2.0, 4.0}));
+    const Interval I(vec({1.0, 3.0}), vec({2.0, 4.0}));
     check(test::raises([&] { I.project_high_dim(1, {0, 0}); }, Error::wrong_value),
           "project_high_dim: N below the dimension");
     check(test::raises([&] { I.project_high_dim(3, {0}); }, Error::wrong_value),

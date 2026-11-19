@@ -8,7 +8,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -24,15 +24,17 @@ namespace test {
 /// CORA's intervalMatrix(I) of an Interval I (the set itself), (C) a point matrix and (C, D) the
 /// matrices C +- |D|.
 inline cora::Interval interval_matrix(const cora::Interval &I) { return I; }
-inline cora::Interval interval_matrix(const cora::Tensor &C) { return {C, C}; }
+inline cora::Interval interval_matrix(const cora::Tensor &C) {
+    return cora::Interval::matrix(C, C);
+}
 inline cora::Interval interval_matrix(const cora::Tensor &C, const cora::Tensor &D) {
     return cora::Interval::from_center_delta(C, D);
 }
 
 /// A = [[[1, 2], [-1, 1]], [[0, 3], [2, 2]]]: inf [[1, -1], [0, 2]], sup [[2, 1], [3, 2]].
 inline cora::Interval example() {
-    return {cora::Tensor::from_data({1, -1, 0, 2}, {2, 2}),
-            cora::Tensor::from_data({2, 1, 3, 2}, {2, 2})};
+    return cora::Interval::matrix(cora::Tensor::from_data({1, -1, 0, 2}, {2, 2}),
+                                  cora::Tensor::from_data({2, 1, 3, 2}, {2, 2}));
 }
 
 /// The matrix of rows x cols numbers, row by row.

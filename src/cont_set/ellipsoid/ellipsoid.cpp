@@ -23,7 +23,7 @@
 // CORA authors: Victor Gassmann, Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
@@ -118,7 +118,7 @@ Ellipsoid::Ellipsoid(const Interval &I, const std::string &mode) : Ellipsoid(Ell
     CORA_CHECK(!I.is_empty(), Error::empty_set,
                [] { return std::string("Ellipsoid: the box is empty"); });
     // radii below the minimum are widened to it, unless they are 0
-    const Tensor rad = I.rad();
+    const Tensor rad = I.half_width().expand_dims(-1); // a column, as the center q
     const Tensor positive = rad.greater(rad.zeros_like());
     const Tensor widened = Tensor::where(
         rad.less(rad.full_like(rad.shape(), numerics::kBoxRadiusMin)),
@@ -129,7 +129,7 @@ Ellipsoid::Ellipsoid(const Interval &I, const std::string &mode) : Ellipsoid(Ell
             "Ellipsoid: a box with a flat edge needs the minimum volume enclosing ellipsoid");
     });
     const double n = static_cast<double>(I.dim());
-    *this = Ellipsoid(widened.square().diag() * n, I.center());
+    *this = Ellipsoid(widened.square().diag() * n, I.center().expand_dims(-1));
 }
 
 Ellipsoid::Ellipsoid(const Zonotope &Z, const std::string &mode) : Ellipsoid(Ellipsoid::empty(0)) {

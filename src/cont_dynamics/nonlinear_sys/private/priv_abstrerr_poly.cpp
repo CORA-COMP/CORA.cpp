@@ -20,7 +20,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
@@ -38,7 +38,7 @@ PolyAbstractionError priv_abstrerr_poly(const NonlinearSys &sys, const PolyZonot
                                         const PolyStaticError &stat,
                                         const alg::Polynomialization &alg) {
     // the state box joined with x* = 0 (CORALean's Hessian-region repair), the input box
-    const Tensor origin = Rall.center().expand_dims(-1).zeros_like();
+    const Tensor origin = Rall.center().zeros_like();
     const Interval IHx = Rall.interval().enclose(Interval(origin, origin));
     std::optional<Interval> IHu;
     if (U0) IHu = U0->interval();
@@ -54,7 +54,8 @@ PolyAbstractionError priv_abstrerr_poly(const NonlinearSys &sys, const PolyZonot
     // the largest absolute value of the dynamic and the static error together
     const Interval dyn = V.interval(), fixed = stat.error.interval();
     const Tensor lo = dyn.inf() + fixed.inf(), hi = dyn.sup() + fixed.sup();
-    return {lo.abs().maximum(hi.abs()), V};
+    // the error is a column (n, 1), as the linearization's
+    return {lo.abs().maximum(hi.abs()).expand_dims(-1), V};
 }
 
 } // namespace cora

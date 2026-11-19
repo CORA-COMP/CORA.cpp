@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -29,7 +29,8 @@ void a_matrix_maps_the_zonotope(const std::string &b) {
     check(close(Z.center(), box().linear_map(M).center()) &&
               close(Z.generators(), box().linear_map(M).generators()),
           b + ": M * Z is linear_map");
-    const Interval I(Tensor({{-1.0, -1.0}, {-1.0, -1.0}}), Tensor({{1.0, 1.0}, {1.0, 1.0}}));
+    const Interval I =
+        Interval::matrix(Tensor({{-1.0, -1.0}, {-1.0, -1.0}}), Tensor({{1.0, 1.0}, {1.0, 1.0}}));
     check((I * box()).nr_generators() == 4,
           b + ": an interval matrix widens by one generator each");
 }

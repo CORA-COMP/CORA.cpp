@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -23,7 +23,7 @@ namespace {
 /// A = [[[1, 2], [0, 1]], [0, 1]]: the powers by the hull of the corner products.
 void powers_of_a_triangular_matrix(const std::string &b) {
     const Interval A = test::interval_matrix(
-        Interval(test::matrix({1, 0, 0, 1}, 2, 2), test::matrix({2, 1, 0, 1}, 2, 2)));
+        Interval::matrix(test::matrix({1, 0, 0, 1}, 2, 2), test::matrix({2, 1, 0, 1}, 2, 2)));
     const Interval P0 = A.matrix_power(0);
     check(close(P0.inf(), std::vector<double>{1, 0, 0, 1}) && close(P0.sup(), P0.inf()),
           b + ": A^0 = I");
@@ -31,7 +31,7 @@ void powers_of_a_triangular_matrix(const std::string &b) {
     check(close(A.matrix_power(2).sup(), std::vector<double>{4, 3, 0, 1}), b + ": A^2");
     check(close(A.matrix_power(3).sup(), std::vector<double>{8, 7, 0, 1}), b + ": A^3");
     // the product of intervals, not the power of an interval: [-1, 1]^2 is [-1, 1] here
-    const Interval S(test::matrix({-1}, 1, 1), test::matrix({1}, 1, 1));
+    const Interval S = Interval::matrix(test::matrix({-1}, 1, 1), test::matrix({1}, 1, 1));
     check(close(S.matrix_power(2).inf(), std::vector<double>{-1}), b + ": a 1 x 1 matrix");
 }
 

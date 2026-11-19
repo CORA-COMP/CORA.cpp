@@ -12,7 +12,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -39,7 +39,7 @@ Interval Interval::from_center_delta(const Tensor &center, const Tensor &delta) 
                });
     // the delta is a radius up to its sign
     const Tensor R = delta.abs();
-    return {center - R, center + R};
+    return matrix(center - R, center + R);
 }
 
 } // namespace cora

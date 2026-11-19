@@ -20,7 +20,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -49,7 +49,7 @@ bool aux_empty_is_not(const std::string &type) {
 bool aux_all(const Tensor &mask) { return mask.numel() == 0 || mask.min().item() != 0; }
 
 /// The number of entries of the mask that hold in each member of a batch.
-Tensor aux_count(const Tensor &mask) { return mask.sum(-1).sum(-1); }
+Tensor aux_count(const Tensor &mask) { return mask.sum(-1); }
 
 /// Whether the count of each member satisfies the comparison with the number s.
 bool aux_count_is(const Tensor &mask, Tensor::Binary op, double s) {
@@ -70,10 +70,10 @@ bool Interval::representsa(const std::string &type, Tol tol_arg) const {
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "representsa");
     if (is_empty()) return !aux_empty_is_not(type);
     // an interval matrix is the box of its entries
-    if (inf_.size(-1) > 1 && inf_.size(-2) > 1) return priv_vec(*this).representsa(type, tol);
+    if (elem_rank_ == 2) return priv_vec(*this).representsa(type, tol);
     const double kInf = std::numeric_limits<double>::infinity();
     const Tensor zero = inf_.zeros_like();
-    const Tensor flat = within_tol(rad(), zero, tol); // the coordinates of width zero
+    const Tensor flat = within_tol(half_width(), zero, tol); // the coordinates of width zero
     const Tensor sloped = flat.scalar_op(Tensor::Binary::equal, 0);
     const bool is_point = aux_all(flat), one_dim = dim() == 1;
     if (type == "origin")
@@ -84,7 +84,7 @@ bool Interval::representsa(const std::string &type, Tol tol_arg) const {
     if (type == "conHyperplane")
         return one_dim || is_point || aux_count_is(flat, Tensor::Binary::greater_equal, 1);
     if (type == "halfspace") {
-        const Tensor infinite = inf_.isinf().sum(-1).sum(-1) + sup_.isinf().sum(-1).sum(-1);
+        const Tensor infinite = inf_.isinf().sum(-1) + sup_.isinf().sum(-1);
         return aux_all(infinite.scalar_op(Tensor::Binary::equal, 2.0 * double(dim()) - 1));
     }
     if (type == "hyperplane") return aux_count_is(flat, Tensor::Binary::equal, 1);

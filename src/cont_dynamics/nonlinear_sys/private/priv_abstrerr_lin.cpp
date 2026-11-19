@@ -19,7 +19,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv.h"
@@ -35,6 +35,9 @@ namespace cora {
 namespace {
 
 // The boxes ---------------------------------------------------------------------------------------
+
+/// A box's bound (n) as the column (n, 1) the ranges and the remainder are written on.
+Tensor aux_col(const Tensor &bound) { return bound.expand_dims(-1); }
 
 /// The entries of a column (n, 1) as n tensors of shape (1, 1).
 std::vector<Tensor> aux_entries(const Tensor &column) {
@@ -56,7 +59,8 @@ std::vector<Range> aux_dz(const Interval &IHx, const std::optional<Interval> &IH
     std::vector<Range> dz;
     for (const Interval *I : {&IHx, IHu ? &*IHu : nullptr}) {
         if (!I) continue;
-        const std::vector<Tensor> lo = aux_entries(I->inf()), hi = aux_entries(I->sup());
+        const std::vector<Tensor> lo = aux_entries(I->inf().expand_dims(-1)),
+                                  hi = aux_entries(I->sup().expand_dims(-1));
         for (std::size_t j = 0; j < lo.size(); ++j) dz.emplace_back(lo[j], hi[j]);
     }
     return dz;
@@ -123,7 +127,7 @@ std::optional<Interval> aux_third_order(const std::vector<std::optional<Range>> 
         hi.push_back(sum.hi);
     }
     if (!any) return std::nullopt;
-    return Interval(aux_column(lo), aux_column(hi));
+    return Interval(aux_column(lo).squeeze(-1), aux_column(hi).squeeze(-1));
 }
 
 } // namespace
@@ -143,9 +147,9 @@ std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Inte
     const Interval IHx = priv_with_origin(IHx0);
     std::optional<Interval> IHu;
     if (IHu0) IHu = priv_with_origin(*IHu0);
-    const Range x_box(IHx.inf() + lin.x_star, IHx.sup() + lin.x_star);
+    const Range x_box(aux_col(IHx.inf()) + lin.x_star, aux_col(IHx.sup()) + lin.x_star);
     std::optional<Range> u_box;
-    if (IHu) u_box = Range(IHu->inf() + lin.u_star, IHu->sup() + lin.u_star);
+    if (IHu) u_box = Range(aux_col(IHu->inf()) + lin.u_star, aux_col(IHu->sup()) + lin.u_star);
     return aux_third_order(sys.third_order_enclosure(x_box, u_box), aux_dz(IHx, IHu), sys.dim());
 }
 
@@ -155,18 +159,18 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
     const int64_t n = sys.dim();
     // the boxes of x - x* and u - u*, and of x and u
     const Interval IHx = priv_with_origin(R.interval());
-    const Range x_box(IHx.inf() + lin.x_star, IHx.sup() + lin.x_star);
+    const Range x_box(aux_col(IHx.inf()) + lin.x_star, aux_col(IHx.sup()) + lin.x_star);
     std::optional<Interval> IHu;
     std::optional<Range> u_box;
     if (U0) {
         IHu = priv_with_origin(U0->interval());
-        u_box = Range(IHu->inf() + lin.u_star, IHu->sup() + lin.u_star);
+        u_box = Range(aux_col(IHu->inf()) + lin.u_star, aux_col(IHu->sup()) + lin.u_star);
     }
     if (alg.tensor_order == 2) {
         // the Hessian over the box, and the largest |z - z*| per coordinate
-        std::vector<Tensor> dz = aux_entries(aux_abs_max(IHx.inf(), IHx.sup()));
+        std::vector<Tensor> dz = aux_entries(aux_col(aux_abs_max(IHx.inf(), IHx.sup())));
         if (IHu)
-            for (Tensor &e : aux_entries(aux_abs_max(IHu->inf(), IHu->sup())))
+            for (Tensor &e : aux_entries(aux_col(aux_abs_max(IHu->inf(), IHu->sup()))))
                 dz.push_back(std::move(e));
         const Tensor l = aux_second_order(sys.hessian_enclosure(x_box, u_box), dz, n);
         aux_check_finite(l);
@@ -181,7 +185,7 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
         aux_third_order(sys.third_order_enclosure(x_box, u_box), aux_dz(IHx, IHu), n);
     const Zonotope V = (third ? second + third->zonotope() : second).reduce(alg.intermediate_order);
     const Interval box = V.interval();
-    return {aux_abs_max(box.inf(), box.sup()), V};
+    return {aux_col(aux_abs_max(box.inf(), box.sup())), V};
 }
 
 } // namespace cora

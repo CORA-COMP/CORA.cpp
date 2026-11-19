@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@interval/isFullDim.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -28,7 +28,7 @@ bool Interval::is_full_dim(Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "is_full_dim");
     if (is_empty()) return false;
-    const Tensor r = rad();
+    const Tensor r = half_width();
     return within_tol(r, r.zeros_like(), tol).max().item() == 0;
 }
 

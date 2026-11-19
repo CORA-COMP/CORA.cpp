@@ -15,9 +15,9 @@
 //
 // CORA: contSet/@ellipsoid/cartProd_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -84,7 +84,7 @@ Ellipsoid aux_with_point(const Ellipsoid &E, const Ellipsoid &point, bool point_
 /// The ellipsoid of a box (CORA's interval-to-ellipsoid conversion, outer): the radii below the
 /// minimum are widened to it, then Q = k diag(r^2) with k the number of nonzero radii.
 Ellipsoid aux_of_box(const Interval &box) {
-    const Tensor rad = box.rad();
+    const Tensor rad = box.half_width();
     const Tensor small = rad.less(rad.full_like(rad.shape(), numerics::kBoxRadiusMin));
     // a radius of zero stays zero (the factor would be infinite)
     const Tensor positive = rad.greater(rad.zeros_like());
@@ -92,15 +92,15 @@ Ellipsoid aux_of_box(const Interval &box) {
         small.multiply(positive),
         numerics::kBoxRadiusMin / Tensor::where(positive, rad, rad.ones_like()), rad.ones_like());
     const Interval widened = box.enlarge(factor);
-    const Tensor r = widened.rad();
+    const Tensor r = widened.half_width().expand_dims(-1);
     const Tensor k = r.greater(r.zeros_like()).sum(-2, true);
-    return {r.square().diag().multiply(k), widened.center()};
+    return {r.square().diag().multiply(k), widened.center().expand_dims(-1)};
 }
 
 /// The box of an ellipsoid and the box of another side by side.
 Interval aux_boxes(const Ellipsoid &E1, const Ellipsoid &E2) {
     const Interval I1 = E1.interval(), I2 = E2.interval();
-    return {Tensor::concat({I1.inf(), I2.inf()}, -2), Tensor::concat({I1.sup(), I2.sup()}, -2)};
+    return {Tensor::concat({I1.inf(), I2.inf()}, -1), Tensor::concat({I1.sup(), I2.sup()}, -1)};
 }
 
 } // namespace

@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -39,7 +39,7 @@ void the_three_constructors(const std::string &b) {
 void rebuilt_from_center_and_radius(const std::string &b) {
     Rng rng(5);
     const Interval A = test::random_matrix(rng, 3, 1.0);
-    const Interval B = test::interval_matrix(A.center(), A.rad());
+    const Interval B = test::interval_matrix(A.center(), A.half_width());
     check(close(B.infimum(), A.infimum(), 1e-12) && close(B.sup(), A.sup(), 1e-12),
           b + ": the center and the radius rebuild the set");
     check(B.contains(A.center(), 0.0), b + ": it contains its center");

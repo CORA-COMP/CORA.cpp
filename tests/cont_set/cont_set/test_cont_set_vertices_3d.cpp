@@ -2,7 +2,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -21,10 +21,10 @@ namespace {
 
 /// A set of two dimensions is refused; a box has eight vertices.
 void only_three_dimensions() {
-    const Interval I2 = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval I2 = Interval(test::vec({0, -1}), test::vec({1, 1}));
     const ContSet &S2 = I2;
     check(test::raises([&] { S2.vertices_3d(); }, Error::not_supported), "two dimensions");
-    const Interval I = Interval(test::column({0, -1, 0}), test::column({1, 1, 2}));
+    const Interval I = Interval(test::vec({0, -1, 0}), test::vec({1, 1, 2}));
     const ContSet &S = I;
     check(S.vertices_3d()[0].size() == 8, "a box has eight vertices");
     ChecksScope off(false);

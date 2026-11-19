@@ -6,9 +6,9 @@
 //
 // CORA: contSet/@contSet/contSet.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       16-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -125,7 +125,7 @@ class ProbeSet : public test::UnregisteredSet {
     static void aux(const char *hook) { aux_record(hook); }
     static Set other(const char *hook) {
         aux_record(hook);
-        return Set(Interval(Tensor({0.0, 0.0}), Tensor({0.0, 0.0})));
+        return Set(Interval(test::vec({0.0, 0.0}), test::vec({0.0, 0.0})));
     }
 };
 
@@ -186,7 +186,7 @@ void every_pair_hands_over_to_checking_class() {
         register_binary(op, "Zonotope", "UnregisteredSet",
                         SetFunction([op](const ContSet &, const ContSet &) {
                             aux_record(binary_op_name(op));
-                            return Set(Interval(Tensor({0.0, 0.0}), Tensor({0.0, 0.0})));
+                            return Set(Interval(test::vec({0.0, 0.0}), test::vec({0.0, 0.0})));
                         }));
     }
     for (const BinaryOp op : {BinaryOp::contains, BinaryOp::is_intersecting, BinaryOp::isequal}) {

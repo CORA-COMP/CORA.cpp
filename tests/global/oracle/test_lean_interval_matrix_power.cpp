@@ -3,9 +3,9 @@
 // `mpower`)
 //
 // ORACLE: contSet/@interval/mpower.m
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,7 +24,7 @@ int main() {
     test::oracle::run("interval.mpower", [](test::oracle::Random &rnd) {
         for (const int n : {2, 3, 5}) {
             const Tensor A = rnd.matrix(n, n);
-            const Interval I(A - 0.1, A + 0.2);
+            const Interval I = Interval::matrix(A - 0.1, A + 0.2);
             for (const int k : {0, 1, 2, 3, 5})
                 test::oracle::check(I.matrix_power(k), lean::Interval(I).mpower(k));
         }

@@ -6,9 +6,9 @@
 // Property: a polytope equals its vertex form and its rescaled rows, and no shifted copy
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -18,6 +18,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -58,8 +59,8 @@ void others(const std::string &b) {
               !Polytope(column({1.0, 2.0})).isequal(column({1.0, 3.0})) &&
               !test::square_h().isequal(column({0.5, 0.5})),
           b + ": a point");
-    check(test::square_h().isequal(Interval(column({0.0, 0.0}), column({1.0, 1.0}))) &&
-              !test::square_h().isequal(Interval(column({0.0, 0.0}), column({1.0, 2.0}))),
+    check(test::square_h().isequal(Interval(vec({0.0, 0.0}), vec({1.0, 1.0}))) &&
+              !test::square_h().isequal(Interval(vec({0.0, 0.0}), vec({1.0, 2.0}))),
           b + ": a box");
     check(test::square_h().isequal(Zonotope(column({0.5, 0.5}), Tensor::eye(2) * 0.5)),
           b + ": a zonotope");

@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -16,7 +16,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,19 +25,19 @@ using test::column;
 namespace {
 
 void zonotope_has_the_radius_as_generators(const std::string &b) {
-    const Interval I(column({0.0, 1.0, -1.0}), column({2.0, 1.0, 3.0}));
+    const Interval I(vec({0.0, 1.0, -1.0}), vec({2.0, 1.0, 3.0}));
     const Zonotope Z = I.zonotope();
     check(close(Z.center().expand_dims(-1), std::vector<double>{1, 1, 1}), b + ": the center");
     check(Z.generators().matrix_transpose().shape() == std::vector<int64_t>({3, 2}) &&
               close(Z.generators().matrix_transpose(), std::vector<double>{1, 0, 0, 0, 0, 2}),
           b + ": diag(r) without the zero-radius column");
-    const Interval P(column({1.0, 2.0}), column({1.0, 2.0}));
+    const Interval P(vec({1.0, 2.0}), vec({1.0, 2.0}));
     check(P.zonotope().generators().matrix_transpose().shape() == std::vector<int64_t>({2, 0}),
           b + ": a point has no generators");
     const Zonotope S = Interval::stack({I, I}).zonotope();
     check(S.generators().matrix_transpose().shape() == std::vector<int64_t>({2, 3, 2}),
           b + ": a batch drops the columns of zero radius in every member");
-    const Interval J(column({0.0, 1.0, -1.0}), column({2.0, 1.0, -1.0}));
+    const Interval J(vec({0.0, 1.0, -1.0}), vec({2.0, 1.0, -1.0}));
     check((Interval::stack({I, J}).zonotope()).generators().matrix_transpose().shape() ==
               std::vector<int64_t>({2, 3, 2}),
           b + ": a batch keeps a column that has a radius in some member");
@@ -62,11 +62,11 @@ void zonotope_is_the_box(const std::string &b) {
 /// A matrix and the empty interval are refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
     const Tensor lo = Tensor::from_data({1, 2, 3, 4}, {2, 2});
-    check(test::raises([&] { Interval(lo, lo + 1.0).zonotope(); }, Error::wrong_value),
+    check(test::raises([&] { Interval::matrix(lo, lo + 1.0).zonotope(); }, Error::wrong_value),
           "zonotope: a matrix");
     check(test::raises([] { Interval::empty(2).zonotope(); }, Error::not_supported),
           "zonotope: the empty interval");
-    const Interval I(column({0.0, 1.0}), column({2.0, 3.0}));
+    const Interval I(vec({0.0, 1.0}), vec({2.0, 3.0}));
     const Tensor on = I.zonotope().generators();
     ChecksScope off(false);
     check(close(I.zonotope().generators(), on, 0), "zonotope: the same with the checks off");

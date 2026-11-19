@@ -8,9 +8,9 @@
 //
 // CORA: contSet/@interval/cat.m
 // CORA authors: Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_join.h"
@@ -36,7 +36,7 @@ Interval Interval::cat(int dim, const std::vector<Interval> &Is) {
     CORA_CHECK(!Is.empty(), Error::wrong_value,
                [] { return std::string("cat: give at least one interval to join"); });
     for (const Interval &I : Is)
-        CORA_CHECK(priv_joinable(Is[0].inf(), I.inf(), dim), Error::dimension_mismatch, [&] {
+        CORA_CHECK(priv_joinable(Is[0], I, dim), Error::dimension_mismatch, [&] {
             return "cat: the bounds must agree in all dimensions but " + std::to_string(dim) +
                    ", got the shapes " + shape_text(Is[0].inf().shape()) + " and " +
                    shape_text(I.inf().shape());

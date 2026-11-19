@@ -21,7 +21,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_taylor_lin_sys.h"
@@ -135,7 +135,7 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
     const Tensor center = c_center.matrix_transpose().matmul(n);
     Tensor radius = E.sup().matrix_transpose().matmul(n.abs());
     for (const Tensor &G : c_generators) radius = radius + G.matrix_transpose().matmul(n).abs();
-    const Interval c_tilde{center - radius, center + radius};
+    const Interval c_tilde{(center - radius).squeeze(-1), (center + radius).squeeze(-1)};
     const Interval d_tilde = (u_tilde.linear_map(n.matrix_transpose()) * -1.0).interval();
     return {E_err, c_tilde, d_tilde};
 }

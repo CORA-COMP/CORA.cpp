@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -26,13 +26,13 @@ namespace {
 void generate_random_follows_cora(const std::string &b) {
     cora::Rng rng(3);
     const Interval I = Interval::generate_random(rng, 6);
-    check(I.inf().shape() == std::vector<int64_t>({6, 1}), b + ": shape");
+    check(I.inf().shape() == std::vector<int64_t>({6}), b + ": shape");
     bool ordered = true;
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
     for (int i = 0; i < 6; ++i) ordered &= lo[i] <= hi[i];
     check(ordered, b + ": inf <= sup");
     // Centre in [-2, 2], radius at most 5.
-    const std::vector<double> c = I.center().data(), r = I.rad().data();
+    const std::vector<double> c = I.center().data(), r = I.half_width().data();
     bool in_range = true;
     for (int i = 0; i < 6; ++i) in_range &= std::abs(c[i]) <= 2.0 && r[i] >= 0.0 && r[i] <= 5.0;
     check(in_range, b + ": centre and radius ranges");
@@ -41,24 +41,23 @@ void generate_random_follows_cora(const std::string &b) {
 /// The options: the center and the radii given, the dimension taken from them.
 void generate_random_options(const std::string &b) {
     cora::Rng rng(5);
-    const Tensor center = test::column({1.0, -1.0, 0.5});
-    const Interval I =
-        Interval::generate_random(rng, std::nullopt, center, test::column({2, 0, 4}));
+    const Tensor center = test::vec({1.0, -1.0, 0.5});
+    const Interval I = Interval::generate_random(rng, std::nullopt, center, test::vec({2, 0, 4}));
     check(I.dim() == 3, b + ": the dimension of the center");
-    const std::vector<double> c = I.center().data(), r = I.rad().data();
+    const std::vector<double> c = I.center().data(), r = I.half_width().data();
     check(close(I.center(), {1.0, -1.0, 0.5}, 1e-12), b + ": the given center");
     check(r[0] <= 1.0 && r[1] == 0.0 && r[2] <= 2.0, b + ": radius at most max_radius / 2");
     const Interval S =
-        Interval::generate_random(rng, 4, std::nullopt, Tensor::from_data({6.0}, {1, 1}));
+        Interval::generate_random(rng, 4, std::nullopt, Tensor::from_data({6.0}, {1}));
     bool small = true;
-    for (const double x : S.rad().data()) small &= x >= 0.0 && x <= 3.0;
+    for (const double x : S.half_width().data()) small &= x >= 0.0 && x <= 3.0;
     check(S.dim() == 4 && small, b + ": one number for all radii");
     check(test::raises([&] { Interval::generate_random(rng, 2, center); }, Error::wrong_value),
           b + ": the center does not match the dimension");
     check(test::raises(
               [&] {
                   // a negative radius
-                  Interval::generate_random(rng, std::nullopt, std::nullopt, test::column({-1.0}));
+                  Interval::generate_random(rng, std::nullopt, std::nullopt, test::vec({-1.0}));
               },
               Error::wrong_value),
           b + ": a negative radius");

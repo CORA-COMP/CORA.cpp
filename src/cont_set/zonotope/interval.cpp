@@ -10,7 +10,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -23,13 +23,13 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 Interval Zonotope::interval_impl() const {
-    // the box of a vector zonotope has column bounds (..., n, 1): its radius is one fused sum
+    // the box of a vector zonotope: its radius is one fused sum (a column, as a vector)
     if (elem_rank_ == 1) {
-        const Tensor c = c_.expand_dims(-1), r = G_.abs_sum_rows();
-        return {c - r, c + r};
+        const Tensor r = G_.abs_sum_rows().squeeze(-1);
+        return {c_ - r, c_ + r};
     }
     const Tensor r = G_.abs().sum(-3); // the radius: the sum of |G| over h
-    return {c_ - r, c_ + r};
+    return Interval::matrix(c_ - r, c_ + r);
 }
 
 } // namespace cora

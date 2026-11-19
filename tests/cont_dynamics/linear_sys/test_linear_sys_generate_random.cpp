@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/generateRandom.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -42,8 +42,8 @@ void the_dimensions_follow_the_arguments(const std::string &b) {
 /// the same seed gives the same system.
 void the_eigenvalues_are_in_the_box(const std::string &b) {
     cora::Rng rng(4), same(4);
-    const Interval real(test::column({-3.0}), test::column({-1.0})),
-        imaginary(test::column({-2.0}), test::column({2.0}));
+    const Interval real(test::vec({-3.0}), test::vec({-1.0})),
+        imaginary(test::vec({-2.0}), test::vec({2.0}));
     for (int i = 0; i < 10; ++i) {
         const LinearSys sys = LinearSys::generate_random(rng, 6, 1, 1, real, imaginary);
         const double trace = sys.A().trace().item();
@@ -62,8 +62,7 @@ void checks_and_their_switch(const std::string &b) {
     check(test::raises(
               [&] {
                   LinearSys::generate_random(
-                      rng, 3, 1, 1,
-                      Interval(test::column({-2.0, -1.0}), test::column({-1.0, 0.0})));
+                      rng, 3, 1, 1, Interval(test::vec({-2.0, -1.0}), test::vec({-1.0, 0.0})));
               },
               Error::wrong_value),
           b + ": a box of two dimensions");

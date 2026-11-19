@@ -6,7 +6,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -16,7 +16,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +27,7 @@ namespace {
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
 Interval box(const std::vector<double> &lo, const std::vector<double> &hi) {
-    return {column(lo), column(hi)};
+    return {vec(lo), vec(hi)};
 }
 
 void points_and_the_origin(const std::string &b) {
@@ -92,8 +92,8 @@ void the_empty_interval(const std::string &b) {
 /// with the checks off the result is the same.
 void checks_and_their_switch() {
     const Interval I = box({0, 0}, {1, 2});
-    const Interval M(Tensor::from_data({0, 0, 0, 0}, {2, 2}),
-                     Tensor::from_data({1, 1, 1, 1}, {2, 2}));
+    const Interval M = Interval::matrix(Tensor::from_data({0, 0, 0, 0}, {2, 2}),
+                                        Tensor::from_data({1, 1, 1, 1}, {2, 2}));
     check(test::raises([&] { I.representsa("circle"); }, Error::wrong_value),
           "representsa: a type");
     check(test::raises([&] { I.representsa("polygon"); }, Error::not_supported),

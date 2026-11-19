@@ -8,11 +8,12 @@
 //
 // CORA: contSet/@interval/or.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
+#include "cont_set/interval/private/priv_broadcastable.h"
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"
 
@@ -35,11 +36,11 @@ Interval Interval::unite(const Interval &I2) const {
 
 Interval Interval::unite(const Tensor &p) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
-        return "unite: the point must be a column of the dimension " + std::to_string(dim()) +
-               " of the interval, got the shape " + shape_text(p.shape());
+    CORA_CHECK(priv_fits_elements(p, *this), Error::dimension_mismatch, [&] {
+        return "unite: the point must have the shape " + shape_text(elem_shape()) +
+               " of the elements of the interval, got the shape " + shape_text(p.shape());
     });
-    return convex_hull(Interval(p, p));
+    return convex_hull(Interval(p, p, elem_rank_, {}));
 }
 
 } // namespace cora

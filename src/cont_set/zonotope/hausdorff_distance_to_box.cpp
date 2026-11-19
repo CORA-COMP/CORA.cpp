@@ -13,7 +13,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -117,8 +117,14 @@ Tensor Zonotope::hausdorff_distance_to_box(const std::optional<std::string> &cho
         return std::string("hausdorff_distance_to_box: method 'ell' (a row reduced echelon form "
                            "for the parallelepipeds) is not supported");
     });
+    // each method on the generators as columns; naive is the ball radius of the box (..., 1, 1)
     if (method == "exact") return aux_exact(G_.matrix_transpose());
-    if (method == "naive") return interval().rad().vector_norm(Tensor::Norm::two, -2, true);
+    if (method == "naive")
+        return interval()
+            .half_width()
+            .vector_norm(Tensor::Norm::two, -1)
+            .expand_dims(-1)
+            .expand_dims(-1);
     if (method == "wgreedy") return aux_wgreedy(G_.matrix_transpose());
     if (method == "wopt") return aux_wopt(G_.matrix_transpose());
     CORA_FAIL(Error::report_to_dev, "hausdorff_distance_to_box: a method without a branch");

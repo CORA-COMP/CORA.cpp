@@ -22,8 +22,8 @@ int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(31);
     std::vector<torch::Tensor> x = test::random_halfspaces(3, 2);
-    x.push_back(-torch::rand({2, 1}, torch::kDouble) - 1.0);
-    x.push_back(torch::rand({2, 1}, torch::kDouble) + 1.0);
+    x.push_back(-torch::rand({2}, torch::kDouble) - 1.0);
+    x.push_back(torch::rand({2}, torch::kDouble) + 1.0);
     test::gradcheck(
         "con_zonotope",
         [](const Inputs &x) {

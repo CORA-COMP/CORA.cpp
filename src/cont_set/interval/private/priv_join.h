@@ -7,9 +7,9 @@
 //           priv_join - the interval of the joined bounds (the shapes are not checked)
 // See also: cat, cart_prod
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -22,7 +22,9 @@
 
 namespace cora {
 
-bool priv_joinable(const Tensor &A, const Tensor &B, int dim);
+Tensor priv_matrix_bounds(const Interval &I, bool upper);
+
+bool priv_joinable(const Interval &I, const Interval &I2, int dim);
 
 Interval priv_join(const std::vector<Interval> &Is, int dim);
 

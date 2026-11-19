@@ -6,9 +6,9 @@
 // Property: P <= S exactly if every vertex of P is in S
 //
 // CORA authors: Viktor Kotsev
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -18,6 +18,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,11 +28,11 @@ namespace {
 
 /// Containment in polytopes, boxes, zonotopes and the special sets.
 void containments(const std::string &b) {
-    const Polytope big(Interval(column({-1.0, -1.0}), column({2.0, 2.0})));
+    const Polytope big(Interval(vec({-1.0, -1.0}), vec({2.0, 2.0})));
     check(test::square_h().less_equal(big) && !big.less_equal(test::square_h()),
           b + ": a polytope");
-    check(test::square_v().less_equal(Interval(column({-1.0, -1.0}), column({2.0, 2.0}))) &&
-              !test::square_v().less_equal(Interval(column({0.5, 0.0}), column({2.0, 2.0}))),
+    check(test::square_v().less_equal(Interval(vec({-1.0, -1.0}), vec({2.0, 2.0}))) &&
+              !test::square_v().less_equal(Interval(vec({0.5, 0.0}), vec({2.0, 2.0}))),
           b + ": a box");
     check(test::square_h().less_equal(Zonotope(column({0.5, 0.5}), Tensor::eye(2))) &&
               !test::square_h().less_equal(Zonotope(column({0.5, 0.5}), Tensor::eye(2) * 0.2)),
@@ -43,7 +44,7 @@ void containments(const std::string &b) {
               Polytope::empty(2).less_equal(EmptySet(2)),
           b + ": R^n and the empty set");
     check(!Polytope(Tensor({{1.0, 0.0}}), column({1.0}))
-               .less_equal(Interval(column({-9.0, -9.0}), column({9.0, 9.0}))),
+               .less_equal(Interval(vec({-9.0, -9.0}), vec({9.0, 9.0}))),
           b + ": an unbounded set");
 }
 

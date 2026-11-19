@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/norm_.m
 // CORA authors: Victor Gassmann
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -16,7 +16,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,27 +26,27 @@ namespace {
 
 void norm_of_the_largest_member(const std::string &b) {
     // max(|inf|, |sup|) = (3, 4); the center is (-1, -1) and the radius (2, 3)
-    const Interval I(column({-3.0, -4.0}), column({1.0, 2.0}));
+    const Interval I(vec({-3.0, -4.0}), vec({1.0, 2.0}));
     check(close(I.norm(), std::vector<double>{5.0}), b + ": the 2-norm of max(|inf|, |sup|)");
     check(close(I.norm(Tensor::Norm::one), std::vector<double>{7.0}),
           b + ": the 1-norm of |c| + r");
     check(close(I.norm(Tensor::Norm::inf), std::vector<double>{4.0}), b + ": the inf-norm");
     check(close(I.norm(Tensor::Norm::fro), std::vector<double>{5.0}), b + ": the Frobenius norm");
-    const Interval M(Tensor::from_data({-3, 0, 0, -4}, {2, 2}),
-                     Tensor::from_data({1, 0, 0, 2}, {2, 2}));
+    const Interval M = Interval::matrix(Tensor::from_data({-3, 0, 0, -4}, {2, 2}),
+                                        Tensor::from_data({1, 0, 0, 2}, {2, 2}));
     check(test::raises([&] { M.norm(); }, Error::wrong_value),
           b + ": a matrix has no 2-norm (CORA's intervalMatrix)");
     check(Interval::empty(2).norm().data()[0] == -std::numeric_limits<double>::infinity(),
           b + ": the empty interval has norm -Inf");
     const Tensor N = Interval::stack({I, I}).norm();
-    check(N.shape() == std::vector<int64_t>({2, 1, 1}) &&
+    check(N.shape() == std::vector<int64_t>({2}) &&
               close(N.reshape({2}), std::vector<double>{5, 5}),
           b + ": a batch");
 }
 
 /// norm has no input to refuse; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval I(column({-3.0, -4.0}), column({1.0, 2.0}));
+    const Interval I(vec({-3.0, -4.0}), vec({1.0, 2.0}));
     ChecksScope off(false);
     check(close(I.norm(), std::vector<double>{5.0}), "norm: the same with the checks off");
 }

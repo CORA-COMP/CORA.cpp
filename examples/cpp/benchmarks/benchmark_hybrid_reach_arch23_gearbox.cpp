@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -27,6 +27,7 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 /// The automaton of models/Cora/gearbox.m.
 HybridAutomaton aux_gearbox() {
@@ -82,11 +83,10 @@ cora::bench::HybridInstance aux_instance(const std::string &name) {
     HybridReachProblem problem;
     if (name == "GRBX01")
         problem.initial_set =
-            Interval(column({0, 0, -0.0168, 0.0029, 0}), column({0, 0, -0.0166, 0.0031, 0}))
-                .zonotope();
+            Interval(vec({0, 0, -0.0168, 0.0029, 0}), vec({0, 0, -0.0166, 0.0031, 0})).zonotope();
     else if (name == "GRBX02")
         problem.initial_set =
-            Interval(column({0, 0, -0.01675, 0.00285, 0}), column({0, 0, -0.01665, 0.00315, 0}))
+            Interval(vec({0, 0, -0.01675, 0.00285, 0}), vec({0, 0, -0.01665, 0.00315, 0}))
                 .zonotope();
     else
         CORA_FAIL(Error::wrong_value, "gearbox: unknown instance " + name);

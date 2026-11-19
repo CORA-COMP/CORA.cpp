@@ -19,7 +19,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Adrian Kulmburg, Ivan Brkan
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -60,7 +60,7 @@ Zonotope aux_prepared(const Zonotope &Z, double tol) {
     const Zonotope compacted = Z.compact();
     const int64_t m = compacted.nr_generators();
     if (m > 0 && compacted.generators().matrix_rank(tol) == Z.dim()) return compacted;
-    const Tensor c = compacted.center().expand_dims(-1);
+    const Tensor &c = compacted.center();
     const Tensor r = c.full_like(c.shape(), tol);
     return compacted.plus(Interval(r.negative(), r));
 }
@@ -79,7 +79,7 @@ bool aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
     if (priv_is_box(compacted, tol)) { // a box: every point by its bounds
         const Interval box = compacted.interval();
         for (int64_t k = 0; k < N; ++k)
-            if (!box.contains(p.slice(-1, k, k + 1), tol)) return false;
+            if (!box.contains(p.slice(-1, k, k + 1).squeeze(-1), tol)) return false;
         return true;
     }
     return aux_contains_points(priv_host_zonotope(aux_prepared(Z, tol)), p.data(), N, tol);
@@ -207,11 +207,11 @@ bool Zonotope::contains(const Zonotope &S, const std::string &method, Tol tol_ar
 bool Zonotope::contains(const Interval &I, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
-    CORA_CHECK(I.dim() == dim() && I.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
+    CORA_CHECK(I.dim() == dim() && I.elem_rank() == 1, Error::dimension_mismatch, [&] {
         return "contains: the interval must be a box of the dimension " + std::to_string(dim()) +
                " of the zonotope, got bounds of the shape " + shape_text(I.inf().shape());
     });
-    const auto refusal = aux_refusal(c_.ndim() != 1 || I.inf().ndim() != 2, method, false);
+    const auto refusal = aux_refusal(c_.ndim() != 1 || I.inf().ndim() != 1, method, false);
 
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a box is the zonotope of its axes

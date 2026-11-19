@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@polytope/le.m
 // CORA authors: Viktor Kotsev
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -37,7 +37,7 @@ bool aux_contains_vertices(const ContSet &S, const Polytope &P, double tol) {
     case ClassId::polytope:
         return static_cast<const Polytope &>(S).contains(points, "exact", tol);
     case ClassId::interval:
-        return static_cast<const Interval &>(S).contains(points, tol);
+        return static_cast<const Interval &>(S).contains(points.matrix_transpose(), tol);
     case ClassId::zonotope:
         return static_cast<const Zonotope &>(S).contains(points, "exact", tol);
     case ClassId::con_zonotope:

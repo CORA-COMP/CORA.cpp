@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@interval/and_.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_empty.h"
@@ -35,17 +35,17 @@ Interval Interval::intersect(const Interval &I2) const {
         return "intersect: the intervals differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(I2.dim());
     });
-    if (is_empty() || I2.is_empty()) return priv_empty(is_empty() ? inf_ : I2.inf());
+    if (is_empty() || I2.is_empty()) return priv_empty(is_empty() ? *this : I2);
     const Tensor lb = inf_.maximum(I2.inf()), ub = sup_.minimum(I2.sup());
     const double kEps = machine_eps(inf_.dtype());
     // 1 where a member's boxes meet, 0 where they are apart by more than eps
-    const Tensor meet =
-        (lb - ub).less_equal(lb.full_like(lb.shape(), kEps)).all(-2, true).all(-1, true);
-    if (meet.max().item() == 0) return priv_empty(lb);
+    const Tensor close = (lb - ub).less_equal(lb.full_like(lb.shape(), kEps));
+    const Tensor meet = elem_rank_ == 1 ? close.all(-1) : close.all(-1).all(-1);
+    if (meet.max().item() == 0) return priv_empty(*this);
     CORA_CHECK(meet.min().item() != 0, Error::not_supported, [] {
         return std::string("intersect: the members of a batch must all meet or all be disjoint");
     });
-    return {lb.minimum(ub), lb.maximum(ub)};
+    return {lb.minimum(ub), lb.maximum(ub), elem_rank_, empty_.either(I2.empty_)};
 }
 
 } // namespace cora

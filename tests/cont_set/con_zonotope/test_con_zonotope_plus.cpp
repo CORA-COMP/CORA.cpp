@@ -5,7 +5,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -40,7 +41,7 @@ void plus_known(const std::string &b) {
               a.plus(Z).A().shape()[1] == 3,
           b + ": a zonotope joins as a set without constraints");
     // a box is a set without constraints whose generators are its radius
-    const Interval I(column({0.0, 0.0}), column({2.0, 4.0}));
+    const Interval I(vec({0.0, 0.0}), vec({2.0, 4.0}));
     check(close(a.plus(I).c().expand_dims(-1), {2, 4}, 0), b + ": a box adds its center");
     check(close((a + column({1.0, 1.0})).c().expand_dims(-1), {2, 3}, 0) &&
               close((column({1.0, 1.0}) + a).c().expand_dims(-1), {2, 3}, 0) &&

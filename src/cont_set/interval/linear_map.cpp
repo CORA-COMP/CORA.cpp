@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@interval/mtimes.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -30,8 +30,9 @@ Interval Interval::linear_map(const Tensor &M) const {
         return "linear_map: the matrix needs " + std::to_string(dim()) +
                " columns (the dimension of I), got the shape " + shape_text(M.shape());
     });
-    auto [lo, hi] = Tensor::matmul_interval(M, inf_, sup_);
-    return {std::move(lo), std::move(hi)};
+    // a box is the column (n, 1) of the product
+    auto [lo, hi] = Tensor::matmul_interval(M, inf_matrix(), sup_matrix());
+    return from_matrix(std::move(lo), std::move(hi));
 }
 
 Set Interval::linear_map_impl(const Tensor &M) const { return linear_map(M); }

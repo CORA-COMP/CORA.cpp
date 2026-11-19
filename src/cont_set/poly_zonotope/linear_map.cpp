@@ -14,7 +14,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -40,14 +40,15 @@ PolyZonotope PolyZonotope::linear_map(const Tensor &M) const {
 
 PolyZonotope PolyZonotope::linear_map(const Interval &M) const {
     detail::Entry entry;
-    CORA_CHECK(M.inf().ndim() == 2 && M.inf().shape()[1] == dim(), Error::dimension_mismatch, [&] {
-        return "linear_map: the interval matrix needs " + std::to_string(dim()) + " columns, got " +
-               shape_text(M.inf().shape());
-    });
+    CORA_CHECK(M.elem_rank() == 2 && M.inf().ndim() == 2 && M.inf().shape()[1] == dim(),
+               Error::dimension_mismatch, [&] {
+                   return "linear_map: the interval matrix needs " + std::to_string(dim()) +
+                          " columns, got " + shape_text(M.inf().shape());
+               });
     // the center and radius of the matrix; the largest |x| of the set, |center| + rad of its box
-    const Tensor Mc = (M.sup() + M.inf()) * 0.5, R = M.rad();
+    const Tensor Mc = (M.sup() + M.inf()) * 0.5, R = M.half_width();
     const Interval box = interval();
-    const Tensor S = box.center().abs() + box.rad();
+    const Tensor S = (box.center().abs() + box.half_width()).expand_dims(-1);
     const Tensor GI = Tensor::concat({GI_.matmul(Mc.matrix_transpose()), R.matmul(S).diag()}, -2);
     const auto [c, G] = Tensor::zonotope_linear_map(Mc, c_, G_);
     return {c, G, GI, E_, id_, detail::Normalized{}};

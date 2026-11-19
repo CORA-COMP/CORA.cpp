@@ -12,9 +12,9 @@
 // CORA: contSet/@interval/norm_.m
 // CORA: matrixSet/@intervalMatrix/norm.m
 // CORA authors: Victor Gassmann
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -30,17 +30,28 @@ namespace cora {
 
 Tensor Interval::norm(Tensor::Norm type) const {
     detail::Entry entry;
-    CORA_CHECK(type != Tensor::Norm::two || inf_.size(-1) <= 1, Error::wrong_value, [] {
+    const bool column = elem_rank_ == 1 || inf_.size(-1) == 1;
+    CORA_CHECK(type != Tensor::Norm::two || column, Error::wrong_value, [] {
         return std::string("norm: the 2-norm of an interval matrix is not supported, "
                            "use 1, Inf or 'fro'");
     });
-    if (is_empty()) return inf_.full_like({1, 1}, -std::numeric_limits<double>::infinity());
-    if (type != Tensor::Norm::two) return (center().abs() + rad()).matrix_norm(type);
+    if (is_empty()) return inf_.full_like(batch_shape(), -std::numeric_limits<double>::infinity());
+    if (type != Tensor::Norm::two) {
+        // the matrix norm of the bounds as matrices (a box is a column)
+        const Tensor largest = center().abs() + half_width();
+        const Tensor M = elem_rank_ == 1 ? largest.expand_dims(-1) : largest;
+        return M.matrix_norm(type).squeeze(-1).squeeze(-1);
+    }
     // a column is a vector: its 2-norm
-    return inf_.abs().maximum(sup_.abs()).vector_norm(Tensor::Norm::two, -2, true);
+    const Tensor largest = inf_.abs().maximum(sup_.abs());
+    if (elem_rank_ == 1) return largest.vector_norm(Tensor::Norm::two, -1);
+    return largest.vector_norm(Tensor::Norm::two, -2).squeeze(-1);
 }
 
-Tensor Interval::norm_impl(Tensor::Norm type, const std::string &) const { return norm(type); }
+Tensor Interval::norm_impl(Tensor::Norm type, const std::string &) const {
+    // ContSet's norm is (..., 1, 1)
+    return norm(type).expand_dims(-1).expand_dims(-1);
+}
 
 } // namespace cora
 

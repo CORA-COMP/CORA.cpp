@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@polytope/zonoBundle.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -31,7 +31,7 @@ namespace {
 /// The zonotope B box(B' V) for the vertices V (n, p) and the basis B (n, n).
 Zonotope aux_strip(const Tensor &V, const Tensor &B) {
     const Tensor coordinates = B.matrix_transpose().matmul(V);
-    const Interval box(coordinates.min(-1, true), coordinates.max(-1, true));
+    const Interval box(coordinates.min(-1), coordinates.max(-1));
     return box.zonotope().linear_map(B);
 }
 

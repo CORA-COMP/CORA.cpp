@@ -11,7 +11,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zono_bundle/private/priv.h"
@@ -68,7 +68,8 @@ ZonoBundle ZonoBundle::cart_prod(const Zonotope &Z) const {
 
 ZonoBundle ZonoBundle::cart_prod(const Interval &I) const {
     detail::Entry entry;
-    const detail::Refusal r = priv_operand_refusal(*this, I.dim(), I.inf(), "cart_prod", false);
+    const detail::Refusal r =
+        priv_operand_refusal(*this, I.dim(), I.inf().expand_dims(-1), "cart_prod", false);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     CORA_CHECK(!I.is_empty(), Error::not_supported,
                [] { return std::string("cart_prod: the empty box has no zonotope"); });

@@ -6,9 +6,9 @@
 // Property: sets that share a sampled point meet; sets separated by a hyperplane do not
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -17,6 +17,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,8 +38,8 @@ void sets(const std::string &b) {
               !test::square_v().is_intersecting(test::as_vertices(far)),
           b + ": V and V");
     // a box, a zonotope and a constrained zonotope, each meeting and missing
-    check(sq.is_intersecting(Interval(column({0.5, 0.5}), column({2.0, 2.0}))) &&
-              !sq.is_intersecting(Interval(column({2.0, 2.0}), column({3.0, 3.0}))),
+    check(sq.is_intersecting(Interval(vec({0.5, 0.5}), vec({2.0, 2.0}))) &&
+              !sq.is_intersecting(Interval(vec({2.0, 2.0}), vec({3.0, 3.0}))),
           b + ": a box");
     check(sq.is_intersecting(Zonotope(column({1.0, 1.0}), Tensor::eye(2) * 0.6)) &&
               !sq.is_intersecting(Zonotope(column({3.0, 3.0}), Tensor::eye(2) * 0.6)),

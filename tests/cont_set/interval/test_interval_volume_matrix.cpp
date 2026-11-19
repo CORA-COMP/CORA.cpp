@@ -3,9 +3,9 @@
 // CORA: matrixSet/@intervalMatrix/volume.m
 // PROPERTY: matrixSet/@intervalMatrix/volume.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -23,7 +23,7 @@ namespace {
 /// The widths of [0, 1], [0, 2], [0, 3], [0, 4] multiply to 24; a width 0 gives 0.
 void volume_of_boxes(const std::string &b) {
     const Interval box = test::interval_matrix(
-        Interval(test::matrix({0, 0, 0, 0}, 2, 2), test::matrix({1, 2, 3, 4}, 2, 2)));
+        Interval::matrix(test::matrix({0, 0, 0, 0}, 2, 2), test::matrix({1, 2, 3, 4}, 2, 2)));
     check(close(box.volume(), std::vector<double>{24}), b + ": 1 * 2 * 3 * 4");
     check(close(test::example().volume(), std::vector<double>{0}), b + ": a degenerate entry");
     check(close(test::interval_matrix(test::matrix({1, 2}, 1, 2)).volume(), std::vector<double>{0}),
@@ -38,17 +38,17 @@ void volume_scales_and_batches(const std::string &b) {
     Rng rng(16);
     const Interval A = test::random_matrix(rng, 3, 1.0);
     const Tensor C = A.center();
-    const Interval half = test::interval_matrix(C, A.rad() * 0.5);
+    const Interval half = test::interval_matrix(C, A.half_width() * 0.5);
     check(close(half.volume() * 512.0, A.volume(), 1e-9), b + ": 2^9 for halved widths");
     const Interval box = test::interval_matrix(
-        Interval(test::matrix({0, 0, 0, 0}, 2, 2), test::matrix({1, 2, 3, 4}, 2, 2)));
+        Interval::matrix(test::matrix({0, 0, 0, 0}, 2, 2), test::matrix({1, 2, 3, 4}, 2, 2)));
     const Tensor v = (Interval::stack({box, test::example()})).volume();
     check(close(v.reshape({2}), std::vector<double>{24, 0}), b + ": batch");
 }
 
 /// volume has no input to refuse; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval box = Interval(test::matrix({0, 0}, 1, 2), test::matrix({1, 2}, 1, 2));
+    const Interval box = Interval::matrix(test::matrix({0, 0}, 1, 2), test::matrix({1, 2}, 1, 2));
     const Tensor on = box.volume();
     ChecksScope off(false);
     check(close(box.volume(), on, 0), "volume: the same with the checks off");

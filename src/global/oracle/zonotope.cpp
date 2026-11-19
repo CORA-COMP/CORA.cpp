@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/zonotope.h"
@@ -359,8 +359,7 @@ Interval Zonotope::interval() const {
 }
 
 std::pair<cora::Zonotope, cora::Interval> Zonotope::gather() const {
-    const auto [inf, sup] = E_.gather();
-    return {aux_from_columns(c_.gather(), G_.gather()), cora::Interval(inf, sup)};
+    return {aux_from_columns(c_.gather(), G_.gather()), E_.gather_box()};
 }
 
 // Crossing -----------------------------------------------------------------------------------

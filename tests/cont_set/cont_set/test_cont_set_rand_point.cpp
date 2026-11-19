@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@contSet/randPoint.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,7 +24,7 @@ namespace {
 
 /// A negative count is refused; the checks off draw the same points.
 void the_count_is_checked() {
-    const Interval I = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval I = Interval(test::vec({0, -1}), test::vec({1, 1}));
     const ContSet &S = I;
     cora::Rng rng(1), again(1);
     check(test::raises([&] { S.rand_point(-2, rng); }, Error::wrong_value), "N = -2");

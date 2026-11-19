@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/mat_zonotope.h"
@@ -135,8 +135,7 @@ std::pair<cora::Zonotope, cora::Interval> MatZonotope::gather() const {
     for (const Tensor &G : G_) parts.push_back(G.gather());
     const cora::Tensor G =
         parts.empty() ? c.zeros_like({0, c.size(-2), c.size(-1)}) : cora::Tensor::stack(parts, 0);
-    const auto [inf, sup] = E_.gather();
-    return {cora::Zonotope::matrix(c, G), cora::Interval(inf, sup)};
+    return {cora::Zonotope::matrix(c, G), E_.gather_matrix()};
 }
 
 MatrixVertices MatZonotope::vertices() const {

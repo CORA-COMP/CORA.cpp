@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -32,7 +32,7 @@ Zonotope Interval::zonotope() const {
     detail::Entry entry;
     CORA_CHECK(!is_empty(), Error::not_supported,
                [] { return std::string("zonotope: the empty interval has no zonotope here"); });
-    CORA_CHECK(inf_.size(-1) == 1, Error::wrong_value, [&] {
+    CORA_CHECK(elem_rank_ == 1, Error::wrong_value, [&] {
         return "zonotope: the interval must not be an n-d array with n > 1, got the shape " +
                shape_text(inf_.shape());
     });
@@ -40,10 +40,10 @@ Zonotope Interval::zonotope() const {
     const Tensor r = (sup_ - c).maximum(c - inf_);
     // the axes with a radius (in some member of a batch), by their index
     Tensor any_radius = r.detach().not_equal(r.zeros_like(r.shape()));
-    while (any_radius.ndim() > 2) any_radius = any_radius.any(0);
+    while (any_radius.ndim() > 1) any_radius = any_radius.any(0);
     const std::vector<int64_t> axes = any_radius.nonzero();
-    if (r.ndim() == 2 && !r.requires_grad()) {
-        // one interval (n, 1): the generators of its axes directly, no dense n x n diagonal
+    if (r.ndim() == 1 && !r.requires_grad()) {
+        // one interval (n): the generators of its axes directly, no dense n x n diagonal
         const int64_t n = r.shape()[0], k = static_cast<int64_t>(axes.size());
         const std::vector<double> radius = r.data();
         // generator j is the row (k, n) with the radius of the axis axes[j]
@@ -52,10 +52,10 @@ Zonotope Interval::zonotope() const {
             const int64_t axis = axes[static_cast<size_t>(j)];
             G[static_cast<size_t>(j * n + axis)] = radius[static_cast<size_t>(axis)];
         }
-        return Zonotope(c.squeeze(-1), k == 0 ? r.zeros_like({0, n}) : Tensor::like(r, G, {k, n}));
+        return Zonotope(c, k == 0 ? r.zeros_like({0, n}) : Tensor::like(r, G, {k, n}));
     }
     // the rows of the diagonal at the axes with a radius (the diagonal is symmetric)
-    return Zonotope(c.squeeze(-1), priv_select_generators(r.diag(), axes));
+    return Zonotope(c, priv_select_generators(r.expand_dims(-1).diag(), axes));
 }
 
 } // namespace cora

@@ -14,7 +14,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -41,7 +41,7 @@ Set Fullspace::linear_map(const Tensor &M) const {
                [] { return std::string("linear_map: the linear map of R^0 is not supported"); });
     if (scalar) {
         if (!within_tol(M.item(), 0.0, machine_eps(M.dtype()))) return *this;
-        const Tensor origin = M.zeros_like({n_, 1});
+        const Tensor origin = M.zeros_like({n_});
         return Interval(origin, origin);
     }
     // rows that are entirely zero stay at 0, all others are unbounded
@@ -49,9 +49,9 @@ Set Fullspace::linear_map(const Tensor &M) const {
     const Tensor zero_row = M.abs().max(-1, true).equal(M.zeros_like({m, 1}));
     if (zero_row.max().item() == 0) return m == n_ ? Set(*this) : Set(Fullspace(m));
     const double kInf = std::numeric_limits<double>::infinity();
-    const Tensor zero = M.zeros_like({m, 1});
-    return Interval(Tensor::where(zero_row, zero, zero.full_like({m, 1}, -kInf)),
-                    Tensor::where(zero_row, zero, zero.full_like({m, 1}, kInf)));
+    const Tensor zero = M.zeros_like({m}), zero_rows = zero_row.squeeze(-1);
+    return Interval(Tensor::where(zero_rows, zero, zero.full_like({m}, -kInf)),
+                    Tensor::where(zero_rows, zero, zero.full_like({m}, kInf)));
 }
 
 Set Fullspace::linear_map(const Interval &) const {

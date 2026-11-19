@@ -20,7 +20,7 @@
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -326,7 +326,7 @@ bool Polytope::is_intersecting(const Interval &I, const std::string &type, Tol t
     detail::Entry entry;
     const double tol =
         resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "is_intersecting");
-    CORA_CHECK(I.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
+    CORA_CHECK(I.elem_rank() == 1, Error::dimension_mismatch, [&] {
         return "is_intersecting: the interval must be a box with column bounds, got the shape " +
                shape_text(I.inf().shape());
     });

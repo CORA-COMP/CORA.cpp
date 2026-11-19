@@ -14,7 +14,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -54,7 +54,7 @@ std::vector<Interval> Interval::partition(int64_t splits) const {
     CORA_CHECK(splits >= 1, Error::wrong_value, [&] {
         return "partition: the number of splits must be positive, got " + std::to_string(splits);
     });
-    CORA_CHECK(!is_empty() && inf_.size(-1) == 1, Error::not_supported, [] {
+    CORA_CHECK(!is_empty() && elem_rank_ == 1, Error::not_supported, [] {
         return std::string("partition: only a nonempty box (not a matrix) can be partitioned");
     });
     const int64_t n = dim();
@@ -83,8 +83,8 @@ std::vector<Interval> Interval::partition(int64_t splits) const {
             from[i] = smaller[cut[i]];
             to[i] = larger[cut[i] + 1];
         }
-        pieces.emplace_back(inf_ + width.multiply(Tensor::like(inf_, from, {n, 1})),
-                            inf_ + width.multiply(Tensor::like(inf_, to, {n, 1})));
+        pieces.push_back(with(inf_ + width.multiply(Tensor::like(inf_, from, {n})),
+                              inf_ + width.multiply(Tensor::like(inf_, to, {n}))));
     }
     return pieces;
 }

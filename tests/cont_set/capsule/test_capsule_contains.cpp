@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -13,6 +13,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -71,11 +72,11 @@ void contains_sets(const std::string &b) {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}}));
     check(C.contains(Z) && !C.contains(Zonotope(column({0.0, 0.0}), Tensor({{3.5, 0.0}}))),
           b + ": a zonotope");
-    check(C.contains(Interval(column({-1.0, -0.5}), column({1.0, 0.5}))) &&
-              !C.contains(Interval(column({-1.0, -1.5}), column({1.0, 0.5}))),
+    check(C.contains(Interval(vec({-1.0, -0.5}), vec({1.0, 0.5}))) &&
+              !C.contains(Interval(vec({-1.0, -1.5}), vec({1.0, 0.5}))),
           b + ": a box");
     check(C.contains(Interval::empty(2)), b + ": the empty box");
-    check(contains(C, Z) && contains(C, Interval(column({0.0, 0.0}), column({0.1, 0.1}))),
+    check(contains(C, Z) && contains(C, Interval(vec({0.0, 0.0}), vec({0.1, 0.1}))),
           b + ": the free function");
 }
 
@@ -124,7 +125,7 @@ void checks_and_their_switch() {
         test::raises([&] { C.contains(Zonotope(column({0.0, 0.0}), Tensor::eye(2).tile({7, 1}))); },
                      Error::not_supported),
         "contains: a zonotope of more than 12 generators");
-    check(test::raises([&] { C.contains(Interval(column({0.0}), column({1.0}))); },
+    check(test::raises([&] { C.contains(Interval(vec({0.0}), vec({1.0}))); },
                        Error::dimension_mismatch),
           "contains: a box of another dimension");
     ChecksScope off(false);

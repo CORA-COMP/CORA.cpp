@@ -6,9 +6,9 @@
 // Property: the result contains both sets and has the vertices of their hull
 //
 // CORA authors: Viktor Kotsev
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -16,6 +16,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,7 +33,7 @@ void hulls(const std::string &b) {
           b + ": two squares");
     check(test::square_v().unite(column({3.0, 0.0})).contains(column({2.0, 0.0})), b + ": a point");
     check(test::square_v()
-              .unite(Interval(column({2.0, 0.0}), column({3.0, 1.0})))
+              .unite(Interval(vec({2.0, 0.0}), vec({3.0, 1.0})))
               .contains(column({2.5, 0.5})),
           b + ": a box");
     // the same as convex_hull

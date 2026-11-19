@@ -11,7 +11,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -25,7 +25,7 @@ namespace cora {
 
 Tensor Interval::infinity_norm() const {
     detail::Entry entry;
-    return abs().sup().matrix_norm(Tensor::Norm::inf);
+    return abs().sup_matrix().matrix_norm(Tensor::Norm::inf).squeeze(-1).squeeze(-1);
 }
 
 } // namespace cora

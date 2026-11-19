@@ -6,7 +6,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -18,6 +18,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,10 +29,10 @@ namespace {
 void plus_is_the_whole_space(const std::string &b) {
     const Fullspace F(2);
     const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
-    const Interval I(column({0.0, 1.0}), column({2.0, 3.0}));
+    const Interval I(vec({0.0, 1.0}), vec({2.0, 3.0}));
     check(F.plus(Z)->dim() == 2 && F.plus(I)->dim() == 2 && F.plus(Fullspace(2))->dim() == 2,
           b + ": with a zonotope, a box and the space");
-    check(F.plus(Interval(column({1.0, 1.0}), column({1.0, 1.0})))->dim() == 2,
+    check(F.plus(Interval(vec({1.0, 1.0}), vec({1.0, 1.0})))->dim() == 2,
           b + ": a point is [p, p]");
     check(plus(Z, F).is<Fullspace>() && (Set(I) + Set(F)).is<Fullspace>(),
           b + ": through the registry and the operator");

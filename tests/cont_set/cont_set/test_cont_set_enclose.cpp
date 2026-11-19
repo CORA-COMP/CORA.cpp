@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -18,6 +18,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,8 +29,8 @@ namespace {
 /// The hull of two boxes; two zonotopes give one whose support function is at least that of
 /// both, and the form enclose(M, Zplus) is the enclosure of the image M Z + Zplus.
 void enclose_by_class(const std::string &b) {
-    const Interval A(column({0.0, 0.0}), column({1.0, 1.0}));
-    const Interval B(column({2.0, -1.0}), column({3.0, 0.0}));
+    const Interval A(vec({0.0, 0.0}), vec({1.0, 1.0}));
+    const Interval B(vec({2.0, -1.0}), vec({3.0, 0.0}));
     const Set H = static_cast<const ContSet &>(A).enclose(B);
     check(H.is<Interval>() && test::close(H.as<Interval>().inf(), {0.0, -1.0}) &&
               test::close(H.as<Interval>().sup(), {3.0, 1.0}),
@@ -56,7 +57,7 @@ void enclose_by_class(const std::string &b) {
 
 /// A dimension mismatch, a pair of classes without it, the checks off.
 void errors_and_their_switch() {
-    const Interval A(column({0.0, 0.0}), column({1.0, 1.0}));
+    const Interval A(vec({0.0, 0.0}), vec({1.0, 1.0}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const Zonotope Z3(column({0.0, 0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0}, {1, 3}));
     check(test::raises([&] { static_cast<const ContSet &>(A).enclose(Z3); },

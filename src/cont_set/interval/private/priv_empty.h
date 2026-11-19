@@ -5,9 +5,9 @@
 // Outputs:  E - the interval of bounds (..., n, 0): no columns, as CORA's empty interval
 // See also: intersect, minkowski_difference
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -18,7 +18,7 @@
 
 namespace cora {
 
-Interval priv_empty(const Tensor &like);
+Interval priv_empty(const Interval &like);
 
 } // namespace cora
 

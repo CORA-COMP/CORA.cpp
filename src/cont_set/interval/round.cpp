@@ -13,7 +13,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -37,9 +37,9 @@ Interval Interval::round(int64_t digits, const std::string &type) const {
     });
     if (type == "significant")
         CORA_FAIL(Error::not_supported, "round: the type 'significant' is not supported");
-    if (digits == 0) return {inf_.round(), sup_.round()};
+    if (digits == 0) return with(inf_.round(), sup_.round());
     const double scale = std::pow(10.0, static_cast<double>(digits));
-    return {(inf_ * scale).round() / scale, (sup_ * scale).round() / scale};
+    return with((inf_ * scale).round() / scale, (sup_ * scale).round() / scale);
 }
 
 } // namespace cora

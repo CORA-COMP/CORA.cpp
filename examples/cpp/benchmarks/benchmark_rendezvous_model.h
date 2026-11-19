@@ -12,7 +12,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   12-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -75,7 +75,7 @@ inline Variant variant(const std::string &name) {
 /// The guard t in [lower, upper] (CORA's interval with the other states within dist = 1e5).
 inline Interval window(const std::array<double, 2> &w) {
     const double dist = 1e5;
-    return {column({-dist, -dist, -dist, -dist, w[0]}), column({dist, dist, dist, dist, w[1]})};
+    return {vec({-dist, -dist, -dist, -dist, w[0]}), vec({dist, dist, dist, dist, w[1]})};
 }
 
 /// The aborts of a mode into the passive one (location 2), all with the identity reset.

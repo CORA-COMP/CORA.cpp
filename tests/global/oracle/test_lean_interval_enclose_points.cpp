@@ -1,9 +1,9 @@
 // test_lean_interval_enclose_points - Interval::enclose_points against the CORALean oracle
 //
 // ORACLE: contSet/@interval/enclosePoints.m
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -22,7 +22,7 @@ int main() {
     test::oracle::run("interval.enclosePoints", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5}) {
             const Tensor points = rnd.matrix(n, 7);
-            test::oracle::check(Interval::enclose_points(points),
+            test::oracle::check(Interval::enclose_points(points.matrix_transpose()),
                                 lean::Interval::enclose_points(lean::Tensor::from(points)));
         }
     });

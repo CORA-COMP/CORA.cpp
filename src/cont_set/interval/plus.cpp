@@ -8,13 +8,15 @@
 // CORA: contSet/@interval/plus.m
 // CORA: matrixSet/@intervalMatrix/plus.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
 #include "global/format.h"
+
+#include <algorithm>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,10 +31,15 @@ Interval Interval::plus(const Interval &I2) const {
         return "plus: the intervals differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(I2.dim());
     });
-    return {inf_ + I2.inf(), sup_ + I2.sup()};
+    return {inf_ + I2.inf(), sup_ + I2.sup(), std::max(elem_rank_, I2.elem_rank_),
+            empty_.either(I2.empty_)};
 }
 
-Set Interval::translate_impl(const Tensor &v) const { return Interval(inf_ + v, sup_ + v); }
+// the generic translation takes a column (..., n, 1); a box adds it as a vector
+Set Interval::translate_impl(const Tensor &v) const {
+    const Tensor t = elem_rank_ == 1 && is_column(v, dim()) ? v.squeeze(-1) : v;
+    return with(inf_ + t, sup_ + t);
+}
 
 } // namespace cora
 
