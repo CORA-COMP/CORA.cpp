@@ -1,9 +1,9 @@
 """test_zonotope_conversions - the zonotope filter, simplex, polytope, vertices and matrix zonotope.
 
 CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       06-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 # CORA: contSet/@zonotope/dim.m
@@ -71,7 +71,7 @@ class ZonotopeConversions(unittest.TestCase):
         np.testing.assert_allclose(sorted(Q.b.ravel()), [0.0, 1.0, 2.0, 5.0])
         corners = Z.vertices()[0]
         self.assertEqual(corners.shape, (4, 2))
-        self.assertTrue(Q.contains(corners.T))
+        self.assertTrue(Q.contains(corners))
         np.testing.assert_allclose(sorted(map(tuple, corners)), [(0, -1), (0, 5), (2, -1), (2, 5)])
 
     def test_simplex_and_mat_zonotope(self):
@@ -80,7 +80,7 @@ class ZonotopeConversions(unittest.TestCase):
         Z = cora.Zonotope.generate_random(rng, 3)
         P = Z.simplex()
         self.assertEqual(P.A.shape, (4, 3))
-        self.assertTrue(P.contains(Z.rand_point(20, rng, "extreme")))
+        self.assertTrue(P.contains(Z.rand_point(20, rng, "extreme").T))
         M = zonotope([1.0, 2.0], [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]]).mat_zonotope()
         self.assertEqual((M.elem_rank, M.center.shape, M.generators.shape), (2, (2, 1), (3, 2, 1)))
         np.testing.assert_array_equal(M.stacked().generators, [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]])

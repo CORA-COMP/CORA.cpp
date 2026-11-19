@@ -112,7 +112,8 @@ Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, Tenso
     const detail::Refusal refusal = aux_refusal(c, G, A, b);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the polytope's offsets are vectors (..., p)
-    return Polytope::equalities(std::move(A), b.squeeze(-1));
+    const Tensor offsets = std::move(b);
+    return Polytope::equalities(std::move(A), offsets.squeeze(-1));
 }
 
 ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)

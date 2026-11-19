@@ -16,7 +16,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 

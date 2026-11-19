@@ -20,7 +20,6 @@
 #include <cmath>
 
 using namespace cora;
-using test::vec;
 using namespace fixture;
 using test::check;
 
