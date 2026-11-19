@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Victor Gassmann
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -43,8 +43,7 @@ void norm_bounds_the_members(const std::string &b) {
         check(below, b + ": the members' norms are below the norm");
     }
     const Interval batch = Interval::stack({A, A});
-    check(close(batch.norm(Tensor::Norm::fro).slice(0, 1, 2).reshape({1, 1}),
-                A.norm(Tensor::Norm::fro)),
+    check(close(batch.norm(Tensor::Norm::fro).slice(0, 1, 2).squeeze(0), A.norm(Tensor::Norm::fro)),
           b + ": a batch");
 }
 

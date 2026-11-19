@@ -4,15 +4,15 @@
 // minkowski_difference. The offsets become b - A v and be - Ae v, the vertices V - v.
 //
 // Syntax:   Pres = P.minus(v);   Pres = P - v;
-// Inputs:   v - a column (..., n, 1)
+// Inputs:   v - a vector (..., n)
 // Outputs:  Pres - {x - v | x in P}
 // See also: Polytope::plus, Polytope::minkowski_difference
 //
 // CORA: contSet/@polytope/minus.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -29,9 +29,9 @@ namespace cora {
 Polytope Polytope::minus(const Tensor &v) const {
     detail::Entry entry;
     // the checks of plus are off inside this entry
-    CORA_CHECK(is_column(v, dim()), Error::dimension_mismatch, [&] {
-        return "minus: the point must be a column of " + std::to_string(dim()) +
-               " entries, got the shape " + shape_text(v.shape());
+    CORA_CHECK(v.defined() && is_vector(v, dim()), Error::dimension_mismatch, [&] {
+        return "minus: the point must be a vector (..., " + std::to_string(dim()) +
+               "), got the shape " + (v.defined() ? shape_text(v.shape()) : std::string("()"));
     });
     return plus(-v);
 }

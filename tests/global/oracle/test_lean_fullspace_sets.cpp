@@ -20,7 +20,7 @@
 // ORACLE: contSet/@fullspace/volume_.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -112,7 +112,7 @@ int main() {
     // R^0 is left out: CORA answers NaN there, CORALean Inf
     test::oracle::run("fullspace.radius", [](test::oracle::Random &) {
         for (const int n : {1, 2, 5})
-            test::oracle::check(Fullspace(n).radius(), lean::Fullspace(n).radius());
+            test::oracle::check(Fullspace(n).ball_radius(), lean::Fullspace(n).radius());
     });
     test::oracle::run("fullspace.volume", [](test::oracle::Random &) {
         for (const int n : {1, 2, 5})

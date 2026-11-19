@@ -13,9 +13,9 @@
 // CORA: contSet/@polytope/supportFunc_.m
 // CORA: contSet/@polytope/private/priv_supportFunc.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -40,10 +40,11 @@ Tensor aux_fullspace(const Tensor &d) {
                          value.zeros_like());
 }
 
-/// The largest dot product of the direction with the columns of V.
+/// The largest dot product of the direction (a column) with the vertices, the rows of V.
 Tensor aux_vertices(const Tensor &V, const Tensor &d) {
-    if (V.shape().back() == 0) return full_block(d, 1, 1, -kInf);
-    return d.matrix_transpose().matmul(V).max(-1, true);
+    if (V.size(-2) == 0) return full_block(d, 1, 1, -kInf);
+    // d' V' on CORA's columns, the order of CORALean's product
+    return d.matrix_transpose().matmul(V.matrix_transpose()).max(-1, true);
 }
 
 /// The value of the linear program along a single direction.
@@ -52,7 +53,7 @@ Tensor aux_program(const Polytope &P, const Tensor &d) {
         CORA_FAIL(Error::not_supported, "support_function: a linear program per direction: it "
                                         "supports a single direction for halfspaces");
     const HostH H = priv_host_h(P.constraints());
-    return priv_column_tensor(P.A(), {priv_support(H, d.data(), true).value});
+    return priv_vector_tensor(P.A(), {priv_support(H, d.data(), true).value});
 }
 
 } // namespace

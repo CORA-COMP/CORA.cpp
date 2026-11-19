@@ -15,9 +15,9 @@
 //
 // CORA: contSet/@interval/minkDiff.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_empty.h"
@@ -32,14 +32,19 @@ namespace cora {
 
 namespace {
 
-/// The box [lower, upper], or the empty interval if a bound crosses (all members alike).
-Interval aux_box_or_empty(const Tensor &lower, const Tensor &upper) {
-    const Tensor crossed = lower.greater(upper).any(-2, true).any(-1, true);
-    if (crossed.max().item() == 0) return {lower, upper};
-    if (crossed.min().item() == 0)
+/// The interval [lower, upper] of the shape of I, or the empty one if a bound crosses (all
+/// members alike).
+Interval aux_box_or_empty(const Interval &I, const Tensor &lower, const Tensor &upper) {
+    const Tensor crossed = lower.greater(upper);
+    if (crossed.max().item() == 0)
+        return I.elem_rank() == 1 ? Interval(lower, upper) : Interval::matrix(lower, upper);
+    // every member crossed in some entry, or none
+    Tensor per_member = crossed;
+    for (int64_t a = 0; a < I.elem_rank(); ++a) per_member = per_member.any(-1);
+    if (per_member.min().item() == 0)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: the members of a batch must all be empty or none");
-    return priv_empty(lower);
+    return priv_empty(I);
 }
 
 } // namespace
@@ -53,13 +58,13 @@ Interval Interval::minkowski_difference(const Interval &S) const {
         return "minkowski_difference: the intervals differ in dimension, " + std::to_string(dim()) +
                " and " + std::to_string(S.dim());
     });
-    return aux_box_or_empty(inf_ - S.inf(), sup_ - S.sup());
+    return aux_box_or_empty(*this, inf_ - S.inf(), sup_ - S.sup());
 }
 
 Interval Interval::minkowski_difference(const Tensor &p) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
-        return "minkowski_difference: the point must be a column of the dimension " +
+    CORA_CHECK(elem_rank_ == 1 && is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "minkowski_difference: the point must be a vector of the dimension " +
                std::to_string(dim()) + " of the interval, got the shape " + shape_text(p.shape());
     });
     return minus(p);
@@ -85,10 +90,11 @@ Interval Interval::minkowski_difference(const ContSet &S,
     std::vector<Tensor> up, down;
     for (int64_t i = 0; i < dim(); ++i) {
         const Tensor e = axes.slice(-1, i, i + 1);
-        up.push_back(S.support_function(e));
-        down.push_back(S.support_function(-e));
+        // a direction is a column, its support (..., 1, 1) one coordinate
+        up.push_back(S.support_function(e).squeeze(-1));
+        down.push_back(S.support_function(-e).squeeze(-1));
     }
-    return aux_box_or_empty(inf_ + Tensor::concat(down, -2), sup_ - Tensor::concat(up, -2));
+    return aux_box_or_empty(*this, inf_ + Tensor::concat(down, -1), sup_ - Tensor::concat(up, -1));
 }
 
 Set Interval::minkowski_difference_impl(const ContSet &S2,

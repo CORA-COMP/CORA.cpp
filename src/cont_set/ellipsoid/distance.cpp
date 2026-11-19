@@ -5,15 +5,15 @@
 // polytopes need a solver and are not ported.
 //
 // Syntax:   d = E.distance(p);
-// Inputs:   p - points (n, N)
-// Outputs:  d - (1, N), one value per point
+// Inputs:   p - points (..., n), one per row
+// Outputs:  d - (...), one value per point
 // See also: is_intersecting, ellipsoid_norm
 //
 // CORA: contSet/@ellipsoid/distance.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -29,11 +29,10 @@ namespace cora {
 
 Tensor Ellipsoid::distance(const Tensor &p) const {
     detail::Entry entry;
-    CORA_CHECK(p.defined() && p.ndim() == 2 && p.shape()[0] == dim(), Error::dimension_mismatch,
-               [&] {
-                   return "distance: the points must be a matrix with " + std::to_string(dim()) +
-                          " rows, got the shape " + shape_text(p.shape());
-               });
+    CORA_CHECK(p.defined() && is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "distance: the points must be (..., " + std::to_string(dim()) +
+               "), one per row, got the shape " + (p.defined() ? shape_text(p.shape()) : "()");
+    });
     CORA_CHECK(!priv_is_empty(*this), Error::empty_set,
                [] { return std::string("distance: the ellipsoid is empty"); });
     CORA_CHECK(Q_.ndim() == 2, Error::not_supported,
@@ -46,8 +45,11 @@ Tensor Ellipsoid::distance(const Tensor &p) const {
     const Tensor weight =
         Tensor::where(kept, s.ones_like().divide(Tensor::where(kept, s, s.ones_like())),
                       s.full_like(s.shape(), 1.0 / tol_));
-    const Tensor w = usv[0].matrix_transpose().matmul(p - q_);
-    return w.square().multiply(weight).sum(0, true) - 1.0;
+    // the points as CORA's columns (n, N), the measures back in the shape of the points
+    const Shape batch(std::vector<int64_t>(p.shape().begin(), p.shape().end() - 1));
+    const Tensor P = p.reshape({p.numel() / dim(), dim()}).matrix_transpose();
+    const Tensor w = usv[0].matrix_transpose().matmul(P - q_.expand_dims(-1));
+    return (w.square().multiply(weight).sum(0, true) - 1.0).reshape(batch);
 }
 
 } // namespace cora

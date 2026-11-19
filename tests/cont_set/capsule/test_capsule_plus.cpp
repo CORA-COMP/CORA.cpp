@@ -3,9 +3,9 @@
 // CORA: contSet/@capsule/plus.m
 // PROPERTY: contSet/@capsule/plus.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -33,7 +34,7 @@ void plus_known(const std::string &b) {
     }
     // a vector shifts, a box shifts and widens by the radius of the box, a zonotope by its box
     check(close(A.plus(column({1.0, 2.0})).c(), {1, 2}, 0), b + ": a vector");
-    const Interval I(column({0.0, 0.0}), column({2.0, 4.0}));
+    const Interval I(vec({0.0, 0.0}), vec({2.0, 4.0}));
     const Capsule with_box = A.plus(I);
     check(close(with_box.c(), {1, 2}, 0) && close(with_box.r(), {1.0 + std::sqrt(5.0)}, 1e-14),
           b + ": a box");

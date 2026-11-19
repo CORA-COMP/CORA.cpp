@@ -8,16 +8,16 @@
 //
 // Syntax:   Ellipsoid R = E.cart_prod(S);   Ellipsoid R = E.cart_prod(p);
 //           Ellipsoid R = Ellipsoid::cart_prod(p, E);
-// Inputs:   S - an ellipsoid, or a point p (n2, 1); as the first operand, the point p (n1, 1)
+// Inputs:   S - an ellipsoid, or a point p (..., n2); as the first operand, the point p (..., n1)
 //           mode - "outer" (default); "inner" and "exact" are Error::not_supported, as in CORA
 // Outputs:  R - of dimension n1 + n2, in the order of the operands
 // See also: Interval::cart_prod, Zonotope::cart_prod
 //
 // CORA: contSet/@ellipsoid/cartProd_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -60,9 +60,9 @@ detail::Refusal aux_operand_refusal(const Ellipsoid &E1, const Ellipsoid &E2) {
 
 /// Why the point is refused, if it is.
 detail::Refusal aux_point_refusal(const Tensor &p) {
-    if (p.defined() && p.ndim() >= 2 && p.shape().back() == 1) return std::nullopt;
+    if (p.defined() && p.ndim() >= 1) return std::nullopt;
     return std::pair{Error::dimension_mismatch,
-                     "cart_prod: the point must be a column (n, 1), got the shape " +
+                     "cart_prod: the point must be a vector (..., n), got the shape " +
                          (p.defined() ? shape_text(p.shape()) : std::string("()"))};
 }
 
@@ -71,20 +71,20 @@ detail::Refusal aux_point_refusal(const Tensor &p) {
 
 /// The point p as an ellipsoid with Q = 0.
 Ellipsoid aux_point(const Tensor &p) {
-    const int64_t n = p.shape()[p.ndim() - 2];
-    return {zeros_block(p, n, n), p};
+    const int64_t n = p.size(-1);
+    return {p, zeros_block(p.expand_dims(-1), n, n)};
 }
 
 /// The product of two ellipsoids by one point: centers stack, Q on the block diagonal.
 Ellipsoid aux_with_point(const Ellipsoid &E, const Ellipsoid &point, bool point_first) {
     const Ellipsoid &a = point_first ? point : E, &b = point_first ? E : point;
-    return {Tensor::block_diag({a.Q(), b.Q()}), Tensor::concat({a.q(), b.q()}, -2)};
+    return {Tensor::concat({a.q(), b.q()}, -1), Tensor::block_diag({a.Q(), b.Q()})};
 }
 
 /// The ellipsoid of a box (CORA's interval-to-ellipsoid conversion, outer): the radii below the
 /// minimum are widened to it, then Q = k diag(r^2) with k the number of nonzero radii.
 Ellipsoid aux_of_box(const Interval &box) {
-    const Tensor rad = box.rad();
+    const Tensor rad = box.half_width();
     const Tensor small = rad.less(rad.full_like(rad.shape(), numerics::kBoxRadiusMin));
     // a radius of zero stays zero (the factor would be infinite)
     const Tensor positive = rad.greater(rad.zeros_like());
@@ -92,15 +92,15 @@ Ellipsoid aux_of_box(const Interval &box) {
         small.multiply(positive),
         numerics::kBoxRadiusMin / Tensor::where(positive, rad, rad.ones_like()), rad.ones_like());
     const Interval widened = box.enlarge(factor);
-    const Tensor r = widened.rad();
+    const Tensor r = widened.half_width().expand_dims(-1);
     const Tensor k = r.greater(r.zeros_like()).sum(-2, true);
-    return {r.square().diag().multiply(k), widened.center()};
+    return {widened.center(), r.square().diag().multiply(k)};
 }
 
 /// The box of an ellipsoid and the box of another side by side.
 Interval aux_boxes(const Ellipsoid &E1, const Ellipsoid &E2) {
     const Interval I1 = E1.interval(), I2 = E2.interval();
-    return {Tensor::concat({I1.inf(), I2.inf()}, -2), Tensor::concat({I1.sup(), I2.sup()}, -2)};
+    return {Tensor::concat({I1.inf(), I2.inf()}, -1), Tensor::concat({I1.sup(), I2.sup()}, -1)};
 }
 
 } // namespace

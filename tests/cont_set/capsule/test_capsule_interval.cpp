@@ -3,9 +3,9 @@
 // CORA: contSet/@capsule/interval.m
 // PROPERTY: contSet/@capsule/interval.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -44,10 +44,11 @@ void interval_property(const std::string &b) {
     for (int k = 0; k < 8; ++k) {
         const Capsule C = test::random_capsule(rng, 3);
         const Interval I = C.interval();
-        check(I.contains(C.center()), b + ": the center is in the box");
+        check(I.contains(C.center().squeeze(-1)), b + ": the center is in the box");
         const Tensor points = test::sample_points(C, rng, 20);
         for (int j = 0; j < 20; ++j)
-            check(I.contains(points.slice(-1, j, j + 1)), b + ": a sampled point is in the box");
+            check(I.contains(points.slice(-1, j, j + 1).squeeze(-1)),
+                  b + ": a sampled point is in the box");
         // the point of the capsule furthest in direction i touches the box
         const std::vector<double> c = C.c().data(), g = C.generator().data();
         const double r = C.r().data()[0];

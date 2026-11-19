@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   09-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -40,10 +40,15 @@ inline Tensor column(const std::vector<double> &entries) {
     return Tensor::from_data(entries, {int64_t(entries.size()), 1});
 }
 
+/// A point (n), as a set stores it: the bounds of a box (#163).
+inline Tensor vec(const std::vector<double> &entries) {
+    return Tensor::from_data(entries, {int64_t(entries.size())});
+}
+
 /// CORA's polytope([], [], a, b): the hyperplane a'x = b.
 inline Polytope hyperplane(const std::vector<double> &a, double b) {
     const auto n = int64_t(a.size());
-    return Polytope(Tensor::zeros({0, n}), Tensor::zeros({0, 1}), matrix(1, n, a), column({b}));
+    return Polytope(Tensor::zeros({0, n}), Tensor::zeros({0}), matrix(1, n, a), vec({b}));
 }
 
 /// An instance: the automaton and its problem, the specifications, a check of the sets after
@@ -92,7 +97,7 @@ inline bool run_hybrid(const HybridInstance &inst) {
         std::cerr << "    last set: center";
         for (double x : I.center().data()) std::cerr << " " << x;
         std::cerr << ", radius";
-        for (double x : I.rad().data()) std::cerr << " " << x;
+        for (double x : I.half_width().data()) std::cerr << " " << x;
         std::cerr << '\n';
     }
     return verified == inst.expected;

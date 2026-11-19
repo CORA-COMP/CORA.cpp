@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_square_terms.h"
@@ -30,9 +30,14 @@ namespace cora {
 
 Interval Interval::exact_square() const {
     detail::Entry entry;
-    CORA_CHECK(inf_.ndim() >= 2 && inf_.size(-2) == inf_.size(-1), Error::dimension_mismatch, [&] {
+    CORA_CHECK(dim(1) == dim(2), Error::dimension_mismatch, [&] {
         return "exact_square: the matrix must be square, got the shape " + shape_text(inf_.shape());
     });
+    // a box of one coordinate is the 1 x 1 matrix
+    if (elem_rank_ == 1) {
+        const Interval square = matrix(inf_matrix(), sup_matrix()).exact_square();
+        return from_matrix(square.inf_, square.sup_);
+    }
     const Tensor &lo = inf_, &hi = sup_;
     const auto [pair_lo, pair_hi] = priv_diagonal_pair_sums(*this);
     const auto [sum_lo, sum_hi] = priv_dependent_sums(*this);
@@ -46,7 +51,7 @@ Interval Interval::exact_square() const {
     const Tensor identity = lo.eye_like(lo.size(-1));
     const Tensor head_lo = Tensor::where(identity, diagonal_lo, off_lo);
     const Tensor head_hi = Tensor::where(identity, aa.maximum(bb), off_hi);
-    return {head_lo + sum_lo, head_hi + sum_hi};
+    return with(head_lo + sum_lo, head_hi + sum_hi);
 }
 
 } // namespace cora

@@ -6,7 +6,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -25,7 +25,8 @@ void enclose_points_takes_the_number_of_rows(const std::string &b) {
     const Tensor points = Tensor::from_data({1, 2, 3, 4, 5, 6}, {3, 2});
     const Fullspace F = Fullspace::enclose_points(points);
     check(F.dim() == 3, b + ": three rows");
-    check(F.contains(Interval(points, points)), b + ": the points are in it");
+    check(F.contains(Interval(points.matrix_transpose(), points.matrix_transpose())),
+          b + ": the points are in it");
     check(Fullspace::enclose_points(Tensor::zeros({2, 3, 4})).dim() == 3,
           b + ": a batch of points");
 }

@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/display.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -22,7 +22,7 @@ using test::check;
 namespace {
 
 void a_box_lists_its_bounds_per_dimension(const std::string &b) {
-    const Interval I(Tensor({-1.0, 0.5}), Tensor({1.0, 2.0}));
+    const Interval I(test::vec({-1.0, 0.5}), test::vec({1.0, 2.0}));
     const std::string text = I.display();
     check(text.find("interval") == 0 && text.find("- dimension: 2") != std::string::npos,
           b + ": class and dimension");
@@ -34,7 +34,8 @@ void a_box_lists_its_bounds_per_dimension(const std::string &b) {
 }
 
 void an_interval_matrix_shows_both_bounds(const std::string &b) {
-    const Interval M(Tensor({{0.0, 1.0}, {2.0, 3.0}}), Tensor({{1.0, 2.0}, {3.0, 4.0}}));
+    const Interval M =
+        Interval::matrix(Tensor({{0.0, 1.0}, {2.0, 3.0}}), Tensor({{1.0, 2.0}, {3.0, 4.0}}));
     const std::string text = M.display();
     check(text.find("- infimum:") != std::string::npos &&
               text.find("- supremum:") != std::string::npos,
@@ -43,7 +44,7 @@ void an_interval_matrix_shows_both_bounds(const std::string &b) {
 
 /// display takes no input to check; with the checks off the text is the same.
 void checks_and_their_switch() {
-    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval S = Interval(test::vec({0, -1}), test::vec({1, 1}));
     const std::string on = S.display();
     ChecksScope off(false);
     check(S.display() == on, "display: the same with the checks off");

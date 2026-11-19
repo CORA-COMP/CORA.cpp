@@ -15,9 +15,9 @@
 // CORA: contSet/@polytope/isFullDim.m
 // CORA: contSet/@polytope/private/priv_isFullDim_V.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -151,8 +151,9 @@ Rows aux_halfspace_span(const Polytope &P) {
 // The vertex form ---------------------------------------------------------------------------------
 
 /// The basis of the span of the centered vertices (CORA's priv_isFullDim_V): the left singular
-/// vectors of the nonzero singular values.
-std::pair<bool, Tensor> aux_vertex_span(const Tensor &V, double tol) {
+/// vectors of the nonzero singular values; the vertices as CORA's columns (n, p).
+std::pair<bool, Tensor> aux_vertex_span(const Tensor &vertices, double tol) {
+    const Tensor V = vertices.matrix_transpose();
     const int64_t n = V.shape()[0];
     // a line has an interior if its two ends differ (an end at infinity does)
     if (n == 1) {
@@ -189,7 +190,7 @@ std::pair<bool, Tensor> Polytope::is_full_dim_subspace(Tol tol_arg) const {
     const Rows span = aux_halfspace_span(*this);
     if (int64_t(span.size()) == n) return {true, identity_block(A_, n)};
     // the vectors of the span are the columns of the basis
-    return {false, priv_points_tensor(A_, n, span)};
+    return {false, priv_points_tensor(A_, n, span).matrix_transpose()};
 }
 
 bool Polytope::is_full_dim(Tol tol_arg) const {

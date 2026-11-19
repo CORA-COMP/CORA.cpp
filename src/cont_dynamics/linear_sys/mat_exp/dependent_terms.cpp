@@ -15,7 +15,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_square_terms.h"
@@ -77,8 +77,8 @@ std::pair<Interval, Interval> mat_exp::dependent_terms(const Interval &A, double
     const auto [once_lo, once_hi] = priv_times(half_r_squared, half_r_squared, sum_lo, sum_hi);
     const Tensor w_lo = Tensor::where(identity, range_lo, off_lo) + once_lo;
     const Tensor w_hi = Tensor::where(identity, range_hi, off_hi) + once_hi;
-    return {Interval(sq_lo, sq_hi).interval_matrix(),
-            Interval(identity + w_lo, identity + w_hi).interval_matrix()};
+    return {Interval::matrix(sq_lo, sq_hi).interval_matrix(),
+            Interval::matrix(identity + w_lo, identity + w_hi).interval_matrix()};
 }
 
 } // namespace cora

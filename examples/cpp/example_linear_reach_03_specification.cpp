@@ -7,9 +7,9 @@
 // Outputs:  whether each specification holds, and the step that first violates it
 // See also: example_linear_reach_01_5dim
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -45,15 +45,15 @@ int main() {
 
     // Stay in x1 <= 1.2.
     const Specification spec_safe =
-        Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({{1.2}})));
+        Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor::from_data({1.2}, {1})));
 
     // Never touch x1 <= -0.75, a wall on the left.
     const Specification spec_unsafe =
-        Specification::unsafe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({{-0.75}})));
+        Specification::unsafe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor::from_data({-0.75}, {1})));
 
     // Stay in -1 <= x1 <= 1.2: a polytope of two rows.
     const Specification spec_band = Specification::safe_set(
-        Polytope(Tensor({{1.0, 0.0}, {-1.0, 0.0}}), Tensor({{1.2}, {1.0}})));
+        Polytope(Tensor({{1.0, 0.0}, {-1.0, 0.0}}), Tensor::from_data({1.2, 1.0}, {2})));
 
     // Reachability Analysis -------------------------------------------------------------------
 

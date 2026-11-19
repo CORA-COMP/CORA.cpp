@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -27,6 +27,7 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 /// The automaton of models/Cora/gearbox.m.
 HybridAutomaton aux_gearbox() {
@@ -43,8 +44,8 @@ HybridAutomaton aux_gearbox() {
     const double denominator = m_s * cosT * cosT + m_g2 * sinT * sinT;
     // transition 1: the upper tooth flank
     const Polytope guard1(matrix(3, 5, {0, 0, 1, 0, 0, 0, 0, -1, 0, 0, -sinT, -cosT, 0, 0, 0}),
-                          column({delta_p, b / tanT, 0}), matrix(1, 5, {0, 0, -tanT, -1, 0}),
-                          column({-2 * n * b}));
+                          vec({delta_p, b / tanT, 0}), matrix(1, 5, {0, 0, -tanT, -1, 0}),
+                          vec({-2 * n * b}));
     // the impact maps of the velocities; the flanks differ in the signs of r12, r21 and r52
     const double r11 = (m_s * cosT * cosT - m_g2 * theta * sinT * sinT) / denominator;
     const double r12 = (-1 * (theta + 1) * m_g2 * sinT * cosT) / denominator;
@@ -56,18 +57,18 @@ HybridAutomaton aux_gearbox() {
                                            0,   0,   0, 0, 0, 1,   0,   r51, r52, 0, 0, 1}));
     // transition 2: the lower tooth flank
     const Polytope guard2(matrix(3, 5, {0, 0, 1, 0, 0, 0, 0, -1, 0, 0, -sinT, cosT, 0, 0, 0}),
-                          column({delta_p, b / tanT, 0}), matrix(1, 5, {0, 0, -tanT, 1, 0}),
-                          column({2 * n * b}));
+                          vec({delta_p, b / tanT, 0}), matrix(1, 5, {0, 0, -tanT, 1, 0}),
+                          vec({2 * n * b}));
     const LinearReset reset2(matrix(5, 5, {r11, -r12, 0, 0, 0, -r21, r22, 0,   0,    0, 0, 0, 1,
                                            0,   0,    0, 0, 0, 1,    0,   r51, -r52, 0, 0, 1}));
     // transition 3: meshed
-    const Polytope guard3(Tensor::zeros({0, 5}), Tensor::zeros({0, 1}),
-                          matrix(1, 5, {0, 0, -1, 0, 0}), column({-delta_p}));
+    const Polytope guard3(Tensor::zeros({0, 5}), Tensor::zeros({0}), matrix(1, 5, {0, 0, -1, 0, 0}),
+                          vec({-delta_p}));
     const LinearReset reset3(matrix(
         5, 5, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, m_s, m_s, 0, 0, 1}));
     // the invariant: between the flanks, before the mesh, with a margin of 1e-3
     const Tensor Cinv = matrix(3, 5, {0, 0, tanT, 1, 0, 0, 0, tanT, -1, 0, 0, 0, 1, 0, 0});
-    const Tensor dinv = column({-2 * n * b + 1e-3, 2 * n * b + 1e-3, b / tanT + 1e-3});
+    const Tensor dinv = vec({-2 * n * b + 1e-3, 2 * n * b + 1e-3, b / tanT + 1e-3});
     const Polytope inv(Cinv, dinv);
     // one location with the three transitions; the meshed one leads to the final location
     Location loc1("loc1", inv,
@@ -82,11 +83,10 @@ cora::bench::HybridInstance aux_instance(const std::string &name) {
     HybridReachProblem problem;
     if (name == "GRBX01")
         problem.initial_set =
-            Interval(column({0, 0, -0.0168, 0.0029, 0}), column({0, 0, -0.0166, 0.0031, 0}))
-                .zonotope();
+            Interval(vec({0, 0, -0.0168, 0.0029, 0}), vec({0, 0, -0.0166, 0.0031, 0})).zonotope();
     else if (name == "GRBX02")
         problem.initial_set =
-            Interval(column({0, 0, -0.01675, 0.00285, 0}), column({0, 0, -0.01665, 0.00315, 0}))
+            Interval(vec({0, 0, -0.01675, 0.00285, 0}), vec({0, 0, -0.01665, 0.00315, 0}))
                 .zonotope();
     else
         CORA_FAIL(Error::wrong_value, "gearbox: unknown instance " + name);

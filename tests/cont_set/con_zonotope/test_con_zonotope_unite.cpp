@@ -3,9 +3,9 @@
 // CORA: contSet/@conZonotope/or.m
 // PROPERTY: contSet/@conZonotope/or.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -14,6 +14,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,7 +31,7 @@ void unite_known(const std::string &b) {
     check(u.contains(left.interval()) && u.contains(right.interval()),
           b + ": both boxes are inside");
     check(u.contains(column({0.0, 0.0})), b + ": and the gap, the set is convex");
-    check(left.unite(Interval(column({1.0, -1.0}), column({3.0, 1.0}))).contains(right.interval()),
+    check(left.unite(Interval(vec({1.0, -1.0}), vec({3.0, 1.0}))).contains(right.interval()),
           b + ": with a box");
     check(left.unite(column({5.0, 5.0})).contains(column({5.0, 5.0})), b + ": with a point");
     check(left.unite({right, left}).contains(right.interval()), b + ": with a list");

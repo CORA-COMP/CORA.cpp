@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -26,7 +26,7 @@ void the_image_has_the_rows_of_the_matrix(const std::string &b) {
     check(E.linear_map(M).dim() == 2 && (M * E).dim() == 2, b + ": a (2, 3) matrix");
     check((2.5 * E).dim() == 3 && E.linear_map(Tensor({{2.0}})).dim() == 3,
           b + ": a number keeps the dimension");
-    const Interval IM(M * 0.5, M * 2.0);
+    const Interval IM = Interval::matrix(M * 0.5, M * 2.0);
     check((IM * E).dim() == 2, b + ": an interval matrix");
     // random matrices of fixed seed: the rows decide
     Rng rng(16);

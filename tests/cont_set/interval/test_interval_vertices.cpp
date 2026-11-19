@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/vertices_.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -20,22 +20,22 @@ using test::check;
 namespace {
 
 void vertices_are_the_corners(const std::string &b) {
-    const Interval I(test::column({-1, 2}), test::column({1, 5}));
+    const Interval I(test::vec({-1, 2}), test::vec({1, 5}));
     const std::vector<Polygon> V = I.vertices();
     const Polygon want = {{-1, 2}, {1, 2}, {1, 5}, {-1, 5}};
     check(V.size() == 1 && V[0] == want, b + ": lower left, lower right, upper right, upper left");
 }
 
 void vertices_need_a_planar_box(const std::string &b) {
-    const Interval I(test::column({0, 0, 0}), test::column({1, 1, 1}));
+    const Interval I(test::vec({0, 0, 0}), test::vec({1, 1, 1}));
     check(test::throws([&] { I.vertices(); }), b + ": three dimensions have no polygon");
 }
 
 /// A set of three dimensions is refused; with the checks off the polygon is the same.
 void checks_and_their_switch() {
-    const Interval S3 = Interval(test::column({0, -1, 0}), test::column({1, 1, 2}));
+    const Interval S3 = Interval(test::vec({0, -1, 0}), test::vec({1, 1, 2}));
     check(test::raises([&] { S3.vertices(); }, Error::not_supported), "vertices: three dimensions");
-    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval S = Interval(test::vec({0, -1}), test::vec({1, 1}));
     const std::size_t on = S.vertices()[0].size();
     ChecksScope off(false);
     check(S.vertices()[0].size() == on, "vertices: the same with the checks off");

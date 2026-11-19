@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -96,8 +96,8 @@ bool Capsule::contains(const Zonotope &Z, Tol tol_arg) const {
 bool Capsule::contains(const Interval &I, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "contains");
-    CORA_CHECK(I.dim() == dim() && (I.is_empty() || I.inf().shape().back() == 1),
-               Error::dimension_mismatch, [&] {
+    CORA_CHECK(I.dim() == dim() && (I.is_empty() || I.elem_rank() == 1), Error::dimension_mismatch,
+               [&] {
                    return "contains: the interval must be a box of dimension " +
                           std::to_string(dim()) + ", got the shape " + shape_text(I.inf().shape());
                });

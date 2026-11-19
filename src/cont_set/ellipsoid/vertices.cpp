@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@ellipsoid/vertices_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -33,7 +33,7 @@ namespace cora {
 std::vector<Polygon> Ellipsoid::vertices_impl() const {
     if (priv_is_empty(*this)) CORA_FAIL(Error::empty_set, "vertices: the ellipsoid is empty");
     // the symmetric root of Q has a positive determinant, so the outline runs counter-clockwise
-    const Tensor G = generators().matmul(Q_.svd()[0].matrix_transpose());
+    const Tensor G = priv_generator_columns(Q_).matmul(Q_.svd()[0].matrix_transpose());
     const std::vector<double> qs = q_.data(), Gs = G.data();
     constexpr int kPoints = 256;
     std::vector<Polygon> out;

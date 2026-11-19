@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/min.m
 // CORA authors: Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,12 +24,11 @@ using test::column;
 namespace {
 
 void min_takes_the_smaller_bounds(const std::string &b) {
-    const Interval I(column({0.0, -1.0}), column({2.0, 1.0})),
-        J(column({1.0, -2.0}), column({3.0, 0.0}));
+    const Interval I(vec({0.0, -1.0}), vec({2.0, 1.0})), J(vec({1.0, -2.0}), vec({3.0, 0.0}));
     const Interval R = I.min(J);
     check(close(R.inf(), std::vector<double>{0, -2}) && close(R.sup(), std::vector<double>{2, 0}),
           b + ": [min(inf, inf2), min(sup, sup2)]");
-    const Interval Q = I.min(column({1.0, 0.5}));
+    const Interval Q = I.min(vec({1.0, 0.5}));
     check(close(Q.inf(), std::vector<double>{0, -1}) && close(Q.sup(), std::vector<double>{1, 0.5}),
           b + ": a column of numbers");
     check(close(I.min(Tensor::from_data({0.5}, {1, 1})).inf(), std::vector<double>{0, -1}),
@@ -40,22 +40,21 @@ void min_takes_the_smaller_bounds(const std::string &b) {
     check(close(I.min(), I.inf()), b + ": without an argument the lower bound");
     const Interval S = Interval::stack({I, J}).min(J);
     // a batch
-    check(S.inf().shape() == std::vector<int64_t>({2, 2, 1}) &&
-              close(S.sup().slice(0, 0, 1).reshape({2, 1}), R.sup()),
+    check(S.inf().shape() == std::vector<int64_t>({2, 2}) &&
+              close(S.sup().slice(0, 0, 1).reshape({2}), R.sup()),
           b + ": a batch");
 }
 
 /// A set or an array of the wrong dimension is refused; the checks off give the same.
 void checks_and_their_switch() {
-    const Interval I(column({0.0, -1.0}), column({2.0, 1.0}));
-    check(test::raises([&] { I.min(Interval(column({0.0}), column({1.0}))); },
-                       Error::dimension_mismatch),
+    const Interval I(vec({0.0, -1.0}), vec({2.0, 1.0}));
+    check(test::raises([&] { I.min(Interval(vec({0.0}), vec({1.0}))); }, Error::dimension_mismatch),
           "min: a box of dimension 1");
-    check(test::raises([&] { I.min(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { I.min(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "min: three numbers for two coordinates");
-    const Tensor on = I.min(column({1.0, 0.5})).sup();
+    const Tensor on = I.min(vec({1.0, 0.5})).sup();
     ChecksScope off(false);
-    check(close(I.min(column({1.0, 0.5})).sup(), on, 0), "min: the same with the checks off");
+    check(close(I.min(vec({1.0, 0.5})).sup(), on, 0), "min: the same with the checks off");
 }
 
 } // namespace

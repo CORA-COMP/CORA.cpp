@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@interval/exp.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -23,7 +23,7 @@ namespace cora {
 
 Interval Interval::exp() const {
     detail::Entry entry;
-    return {inf_.exp(), sup_.exp()};
+    return with(inf_.exp(), sup_.exp());
 }
 
 } // namespace cora

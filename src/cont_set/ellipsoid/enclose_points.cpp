@@ -6,18 +6,18 @@
 // give that point, where CORA raises an error (docs/cora-differences.md). "min-vol" (the minimum-
 // volume ellipsoid, an SDP) is Error::not_supported.
 //
-// Syntax:   Ellipsoid E = Ellipsoid::enclose_points(points);   Ellipsoid::enclose_points(points,
-// "cov"); Inputs:   points - the points as columns (n, p), at least one; method - "cov" (default)
-// or
-//           "min-vol"
+// Syntax:   Ellipsoid E = Ellipsoid::enclose_points(points);
+//           Ellipsoid E = Ellipsoid::enclose_points(points, "cov");
+// Inputs:   points - the points (p, n), one per row, at least one
+//           method - "cov" (default) or "min-vol"
 // Outputs:  E - the mean as the center, the points rotated onto the subspace they span
 // See also: Interval::enclose_points, Zonotope::enclose_points
 //
 // CORA: contSet/@ellipsoid/enclosePoints.m
 // CORA authors: Niklas Kochdumper, Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -62,14 +62,17 @@ std::pair<Tensor, Tensor> aux_reduced(const Tensor &points, const std::string &m
 
 // ===========================================  MAIN  =========================================== //
 
-Ellipsoid Ellipsoid::enclose_points(const Tensor &points, const std::string &method) {
+Ellipsoid Ellipsoid::enclose_points(const Tensor &points_rows, const std::string &method) {
     detail::Entry entry;
-    CORA_CHECK(
-        points.defined() && points.ndim() == 2 && points.numel() > 0, Error::wrong_value,
-        [] { return std::string("enclose_points: points must be a nonempty matrix (n, p)"); });
+    CORA_CHECK(points_rows.defined() && points_rows.ndim() == 2 && points_rows.numel() > 0,
+               Error::wrong_value, [] {
+                   return std::string("enclose_points: points must be a nonempty matrix (p, n)");
+               });
     CORA_CHECK(method == "cov" || method == "min-vol", Error::wrong_value, [&] {
         return "enclose_points: the method must be 'cov' or 'min-vol', got '" + method + "'";
     });
+    // the points as CORA's columns (n, p)
+    const Tensor points = points_rows.matrix_transpose();
     const int64_t n = points.shape()[0], count = points.shape()[1];
     const Tensor c = points.mean(1, true);
     const Tensor centered = points - c;
@@ -79,7 +82,7 @@ Ellipsoid Ellipsoid::enclose_points(const Tensor &points, const std::string &met
     const Tensor T = padded.svd()[0];
     const int64_t rank = padded.matrix_rank();
     // a cloud of one point is that point
-    if (rank == 0) return {points.zeros_like({n, n}), c};
+    if (rank == 0) return {c.squeeze(-1), points.zeros_like({n, n})};
     const auto [Q_reduced, q_reduced] =
         aux_reduced(T.matrix_transpose().matmul(centered).slice(0, 0, rank), method);
     const int64_t missing = n - rank;
@@ -89,7 +92,7 @@ Ellipsoid Ellipsoid::enclose_points(const Tensor &points, const std::string &met
                     : Q_reduced;
     const Tensor q_full =
         missing > 0 ? Tensor::concat({q_reduced, points.zeros_like({missing, 1})}, 0) : q_reduced;
-    return {priv_congruence(T, Q_full), T.matmul(q_full) + c};
+    return {(T.matmul(q_full) + c).squeeze(-1), priv_congruence(T, Q_full)};
 }
 
 } // namespace cora

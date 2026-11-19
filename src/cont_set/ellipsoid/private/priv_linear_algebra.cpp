@@ -1,15 +1,16 @@
-// priv_linear_algebra - the simultaneous diagonalization and the congruence of shape matrices
+// priv_linear_algebra - simultaneous diagonalization, congruence and generators of shape matrices
 //
 // Syntax:   auto [T, D] = priv_simdiag(M1, M2, tol);   Tensor Q = priv_congruence(M, Q);
+//           Tensor G = priv_generator_columns(Q);
 // Inputs:   M1, M2, Q - symmetric matrices (n, n) (the congruence: (..., n, n));  M - (..., m, n)
-// Outputs:  T - with T M1 T' = I and D = T M2 T' diagonal; the shape matrix M Q M' symmetrized
+// Outputs:  T - with T M1 T' = I and D = T M2 T' diagonal; M Q M' symmetrized; G with G G' = Q
 // See also: priv.h, Ellipsoid::is_bigger, Ellipsoid::is_bad_dir
 //
 // CORA: global/functions/helper/sets/contSet/ellipsoid/simdiag.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -44,6 +45,12 @@ std::pair<Tensor, Tensor> priv_simdiag(const Tensor &M1, const Tensor &M2, doubl
     const Tensor U2 = S_inv_root.matmul(U1_t).matmul(M2).matmul(usv[0]).matmul(S_inv_root).svd()[0];
     const Tensor T = U2.matrix_transpose().matmul(S_inv_root).matmul(U1_t);
     return {T, T.matmul(M2).matmul(T.matrix_transpose())};
+}
+
+Tensor priv_generator_columns(const Tensor &Q) {
+    const std::array<Tensor, 3> usv = Q.svd();
+    // U diag(sqrt(d)): each column of U scaled by the root of its singular value
+    return usv[0].multiply(usv[1].sqrt().matrix_transpose());
 }
 
 Tensor priv_congruence(const Tensor &M, const Tensor &Q) {

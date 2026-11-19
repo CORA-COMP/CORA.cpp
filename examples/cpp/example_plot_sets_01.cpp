@@ -9,7 +9,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
@@ -29,7 +29,8 @@ int main() {
 
     const Zonotope Z(Tensor({0, 0, 0}),
                      Tensor({{1, 0, 0}, {0, 1, 0}, {0.5, 0.5, 1}, {0.2, -0.3, 0.4}}));
-    const Interval I(Tensor({-1.5, -1, -0.5}), Tensor({0.5, 1.5, 2}));
+    const Interval I(Tensor::from_data({-1.5, -1, -0.5}, {3}),
+                     Tensor::from_data({0.5, 1.5, 2}, {3}));
 
     // One Dimension ---------------------------------------------------------------------------
 

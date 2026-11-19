@@ -17,9 +17,9 @@
 //
 // CORA: matrixSet/@intervalMatrix/expmAbsoluteBound.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
@@ -57,7 +57,7 @@ Tensor mat_exp::expm_absolute_bound(const Interval &A, double t) {
     CORA_CHECK(t >= 0, Error::wrong_value, [&] {
         return "expm_absolute_bound: the time must be nonnegative, got " + std::to_string(t);
     });
-    const Tensor C = A.center(), S = A.rad(), I = C.eye_like(A.inf().size(-2));
+    const Tensor C = A.center(), S = A.half_width(), I = C.eye_like(A.inf().size(-2));
     const Tensor abs_C = C.abs();
     const double j = 2.0;
     const Tensor B1 = abs_C * t / j, B2 = (abs_C + S) * t / j, C21 = S * t / j;

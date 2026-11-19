@@ -16,9 +16,9 @@
 //
 // CORA: contSet/@polytope/mtimes.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -83,7 +83,7 @@ Polytope aux_decomposed(const Polytope &P, const Tensor &M, int64_t r) {
     Tensor Ae = rotated.Ae.matmul(UrT), be = rotated.be;
     if (r < m) {
         Ae = Tensor::concat({Ae, null_space(M.matrix_transpose()).matrix_transpose()}, -2);
-        be = Tensor::concat({be, zeros_block(be, m - r, 1)}, -2);
+        be = Tensor::concat({be, be.zeros_like({m - r})}, -1);
     }
     return {rotated.A.matmul(UrT), rotated.b, Ae, be};
 }
@@ -105,7 +105,8 @@ Polytope Polytope::linear_map(const Tensor &M) const {
     // the zero matrix maps to the origin, whatever the set
     if (M.detach().abs().max().item() <= numerics::kPolytopeZeroMatrix) return origin(m);
     const bool single = M.ndim() == 2 && (is_h_rep() ? A_ : V_).ndim() == 2;
-    if (is_v_rep()) return Polytope(M.matmul(V_));
+    // the vertices map on CORA's columns, the order of CORALean's product
+    if (is_v_rep()) return Polytope(M.matmul(V_.matrix_transpose()).matrix_transpose());
     if (single && m == 1 && n == 1) return aux_scale(*this, M);
     // invertible square matrices (a batch is assumed invertible) divide the rows
     if (m == n && (!single || M.matrix_rank() == n))

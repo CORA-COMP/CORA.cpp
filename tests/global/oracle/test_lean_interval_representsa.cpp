@@ -10,7 +10,7 @@
 // ORACLE: contSet/@interval/representsa_.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -31,7 +31,7 @@ int main() {
     test::oracle::run("interval.representsa", [](test::oracle::Random &rnd) {
         const bool with_empty = test::oracle::nearest_is_strict();
         for (const int n : {1, 3}) {
-            const Tensor c = rnd.vector(n);
+            const Tensor c = rnd.vector(n).squeeze(-1);
             const std::vector<Interval> boxes{rnd.box(n), Interval(c, c),
                                               Interval(c.zeros_like(), c.zeros_like()),
                                               Interval(c.zeros_like(), c.abs())};

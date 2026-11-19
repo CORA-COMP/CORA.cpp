@@ -23,7 +23,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/neur_net_contr_sys/private/priv_holds.h"
@@ -75,7 +75,7 @@ Interval aux_box(const PolyZonotope &P) { return P.interval(); }
 
 Zonotope aux_set(const Zonotope &, const Interval &box) {
     const Tensor c = (box.inf() + box.sup()) * 0.5;
-    return Zonotope(c.squeeze(-1), box.rad().diag());
+    return Zonotope(c, box.half_width().expand_dims(-1).diag());
 }
 PolyZonotope aux_set(const PolyZonotope &, const Interval &box) { return PolyZonotope(box); }
 
@@ -89,11 +89,11 @@ bool aux_verified(const TimedSpecifications &specs, const ClosedLoopReach<S> &R)
 
 /// The two halves of the box cut at the middle of dimension n.
 std::pair<Interval, Interval> aux_halves(const Interval &box, int64_t n) {
-    const Tensor mid = (box.inf().slice(0, n, n + 1) + box.sup().slice(0, n, n + 1)) * 0.5;
+    const Tensor mid = (box.inf().slice(-1, n, n + 1) + box.sup().slice(-1, n, n + 1)) * 0.5;
     const auto cut = [&](const Tensor &bound, const Tensor &value) {
-        // the bound with row n replaced
+        // the bound with coordinate n replaced
         return Tensor::concat(
-            {bound.slice(0, 0, n), value, bound.slice(0, n + 1, bound.shape()[0])}, 0);
+            {bound.slice(-1, 0, n), value, bound.slice(-1, n + 1, bound.size(-1))}, -1);
     };
     return {Interval(box.inf(), cut(box.sup(), mid)), Interval(cut(box.inf(), mid), box.sup())};
 }
@@ -104,7 +104,7 @@ template <class S>
 int64_t aux_cut(const NeurNetContrSys &sys, const S &X0, const Interval &box,
                 const VerifySplit &split) {
     if (split.rule == VerifySplit::Rule::sensitivity) return sys.split_dimension(box);
-    const std::vector<double> rad = box.rad().data(), rad0 = aux_box(X0).rad().data();
+    const std::vector<double> rad = box.half_width().data(), rad0 = aux_box(X0).half_width().data();
     int64_t best = 0;
     double best_ratio = -1;
     for (std::size_t i = 0; i < rad.size(); ++i) {
@@ -248,17 +248,17 @@ ClosedLoopVerdict aux_verify(const NeurNetContrSys &sys, const S &X0, const Zono
 
 int64_t NeurNetContrSys::split_dimension(const Interval &box) const {
     detail::Entry entry;
-    // the box must be a column of the system's dimension
-    CORA_CHECK(box.inf().shape() == std::vector<int64_t>({dim(), 1}), Error::dimension_mismatch,
-               [&] {
+    // the box must be a single box of the system's dimension
+    CORA_CHECK(box.elem_rank() == 1 && box.inf().shape() == std::vector<int64_t>({dim()}),
+               Error::dimension_mismatch, [&] {
                    return std::string(
-                       "split_dimension: the box must be a column of the system's dimension");
+                       "split_dimension: the box must be a single box of the system's dimension");
                });
     // the radius of each dimension times the mean absolute sensitivity of the outputs to it
-    const Tensor center = (box.inf() + box.sup()) * 0.5;
+    const Tensor center = ((box.inf() + box.sup()) * 0.5).expand_dims(-1);
     const Tensor S = nn_.sensitivity(center);
-    const Tensor weight = S.abs().mean(0, true).matrix_transpose();
-    const std::vector<double> score = box.rad().multiply(weight).data();
+    const Tensor weight = S.abs().mean(0, true).squeeze(0);
+    const std::vector<double> score = box.half_width().multiply(weight).data();
     return std::max_element(score.begin(), score.end()) - score.begin();
 }
 

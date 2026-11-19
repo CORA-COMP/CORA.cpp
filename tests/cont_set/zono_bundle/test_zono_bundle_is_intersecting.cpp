@@ -4,7 +4,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -13,6 +13,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,8 +38,8 @@ void exact_test(const std::string &b) {
     check(!bundle.is_intersecting(in_one), b + ": a zonotope that meets one member only");
     check(bundle.is_intersecting(touching), b + ": a zonotope that touches the border");
     check(!bundle.is_intersecting(apart), b + ": a far zonotope");
-    check(bundle.is_intersecting(Interval(column({0.9, 0.9}), column({3.0, 3.0}))), b + ": a box");
-    check(!bundle.is_intersecting(Interval(column({-2.0, -2.0}), column({-0.5, -0.5}))),
+    check(bundle.is_intersecting(Interval(vec({0.9, 0.9}), vec({3.0, 3.0}))), b + ": a box");
+    check(!bundle.is_intersecting(Interval(vec({-2.0, -2.0}), vec({-0.5, -0.5}))),
           b + ": a box in the first member only");
     check(!bundle.is_intersecting(Interval::empty(2)), b + ": the empty box meets nothing");
     check(bundle.is_intersecting(ZonoBundle({inside, inside})), b + ": a bundle");
@@ -63,12 +64,10 @@ void approximate_test(const std::string &b) {
     check(bundle.is_intersecting(off_diagonal, "approx"), b + ": approx: the boxes overlap");
     check(!bundle.is_intersecting(Zonotope(column({9.0, 9.0}), Tensor({{1.0, 1.0}})), "approx"),
           b + ": approx: the boxes are apart");
-    check(
-        bundle.is_intersecting(Interval(column({1.0001, 0.0}), column({2.0, 1.0})), "approx", 0.01),
-        b + ": approx: the box enlarged by tol");
-    check(
-        !bundle.is_intersecting(Interval(column({1.0001, 0.0}), column({2.0, 1.0})), "approx", 0.0),
-        b + ": approx: not without it");
+    check(bundle.is_intersecting(Interval(vec({1.0001, 0.0}), vec({2.0, 1.0})), "approx", 0.01),
+          b + ": approx: the box enlarged by tol");
+    check(!bundle.is_intersecting(Interval(vec({1.0001, 0.0}), vec({2.0, 1.0})), "approx", 0.0),
+          b + ": approx: not without it");
     check(bundle.is_intersecting(ZonoBundle({off_diagonal}), "approx"), b + ": approx: a bundle");
 }
 

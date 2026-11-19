@@ -2,9 +2,9 @@
 //
 // Built by the ctest install/consumer with find_package(CORA) from the install tree only.
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cora.h"
@@ -34,7 +34,7 @@ int main() {
         std::cout << "consumer: " << e.identifier() << "\n";
     }
     // a pair of the registry
-    const Set S = plus(X0, Interval(Tensor({0.0, 0.0}), Tensor({1.0, 1.0})));
+    const Set S = plus(X0, Interval(Tensor::zeros({2}), Tensor::ones({2})));
     return R.time_point.size() == 11 && S.is<Zonotope>() ? 0 : 1;
 }
 

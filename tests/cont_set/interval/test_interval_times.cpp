@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -17,7 +17,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,12 +28,11 @@ namespace {
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
 void times_takes_the_hull_of_the_corners(const std::string &b) {
-    const Interval A(column({1.0, -2.0}), column({3.0, 4.0})),
-        B(column({2.0, 0.0}), column({5.0, 1.0}));
+    const Interval A(vec({1.0, -2.0}), vec({3.0, 4.0})), B(vec({2.0, 0.0}), vec({5.0, 1.0}));
     const Interval R = A.times(B);
     check(close(R.inf(), std::vector<double>{2, -2}) && close(R.sup(), std::vector<double>{15, 4}),
           b + ": box times box");
-    const Interval N = A.times(column({-2.0, 3.0}));
+    const Interval N = A.times(vec({-2.0, 3.0}));
     check(close(N.inf(), std::vector<double>{-6, -6}) &&
               close(N.sup(), std::vector<double>{-2, 12}),
           b + ": box times numbers");
@@ -43,16 +42,16 @@ void times_takes_the_hull_of_the_corners(const std::string &b) {
     const Interval S = A.times(Tensor::from_data({-1.0}, {1, 1}));
     check(close(S.inf(), std::vector<double>{-3, -4}) && close(S.sup(), std::vector<double>{-1, 2}),
           b + ": a negative scalar swaps the bounds");
-    const Interval U(column({0.0}), column({kInf}));
+    const Interval U(vec({0.0}), vec({kInf}));
     // 0 * Inf is 0
-    check(close(U.times(Interval(column({0.0}), column({0.0}))).sup(), std::vector<double>{0}),
+    check(close(U.times(Interval(vec({0.0}), vec({0.0}))).sup(), std::vector<double>{0}),
           b + ": 0 * Inf is 0");
-    const Interval W = A.times(Interval(column({2.0}), column({3.0})));
-    check(W.inf().shape() == std::vector<int64_t>({2, 1}) &&
+    const Interval W = A.times(Interval(vec({2.0}), vec({3.0})));
+    check(W.inf().shape() == std::vector<int64_t>({2}) &&
               close(W.sup(), std::vector<double>{9, 12}),
           b + ": a scalar box broadcasts");
     const Interval Bt = Interval::stack({A, A}).times(B);
-    check(Bt.inf().shape() == std::vector<int64_t>({2, 2, 1}), b + ": a batch has a batch shape");
+    check(Bt.inf().shape() == std::vector<int64_t>({2, 2}), b + ": a batch has a batch shape");
 }
 
 /// The product of sampled points lies in the result; it commutes and the box times itself matches
@@ -62,10 +61,12 @@ void times_encloses_the_products(const std::string &b) {
     for (int trial = 0; trial < 10; ++trial) {
         const Interval A = Interval::generate_random(rng, 3), B = Interval::generate_random(rng, 3);
         const Interval R = A.times(B);
-        const Tensor x = A.rand_point(20, rng), y = B.rand_point(20, rng);
+        // the points as rows (20, 3)
+        const Tensor x = A.rand_point(20, rng).matrix_transpose(),
+                     y = B.rand_point(20, rng).matrix_transpose();
         bool inside = true;
         for (int k = 0; k < 20; ++k)
-            inside = inside && R.contains(x.slice(-1, k, k + 1).multiply(y.slice(-1, k, k + 1)));
+            inside = inside && R.contains(x.slice(0, k, k + 1).multiply(y.slice(0, k, k + 1)));
         check(inside, b + ": the product of samples is in the result");
         check(close(R.inf(), B.times(A).inf(), 0) && close(R.sup(), B.times(A).sup(), 0),
               b + ": times commutes");
@@ -78,10 +79,10 @@ void times_encloses_the_products(const std::string &b) {
 
 /// The shapes must broadcast; with the checks off a valid call gives the same result.
 void checks_and_their_switch() {
-    const Interval A(column({1.0, -2.0}), column({3.0, 4.0}));
-    const Interval C(column({1.0, 2.0, 3.0}), column({2.0, 3.0, 4.0}));
+    const Interval A(vec({1.0, -2.0}), vec({3.0, 4.0}));
+    const Interval C(vec({1.0, 2.0, 3.0}), vec({2.0, 3.0, 4.0}));
     check(test::raises([&] { A.times(C); }, Error::dimension_mismatch), "times: boxes of 2 and 3");
-    check(test::raises([&] { A.times(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { A.times(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "times: numbers of 3");
     const Tensor on = A.times(A).sup();
     ChecksScope off(false);

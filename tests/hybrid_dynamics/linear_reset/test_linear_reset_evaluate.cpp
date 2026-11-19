@@ -7,7 +7,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,7 +29,7 @@ namespace {
 /// The reset (x, v) -> (x, -0.5 v) + (1, 0) of the box [0, 1] x [2, 4]: [1, 2] x [-2, -1].
 void box_by_hand(const std::string &b) {
     const LinearReset reset(Tensor({{1.0, 0.0}, {0.0, -0.5}}), std::nullopt, column({1.0, 0.0}));
-    const Zonotope box = Interval(column({0.0, 2.0}), column({1.0, 4.0})).zonotope();
+    const Zonotope box = Interval(vec({0.0, 2.0}), vec({1.0, 4.0})).zonotope();
     const Interval I = reset.evaluate(box)->interval();
     check(close(I.inf(), {1, -2}) && close(I.sup(), {2, -1}), b + ": the image of the box");
     // the input enters through B only
@@ -65,7 +66,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { reset.evaluate(Zonotope(column({1.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "evaluate: the dimension of the set");
-    check(test::raises([&] { reset.evaluate(Interval(column({0.0, 0.0}), column({1.0, 1.0}))); },
+    check(test::raises([&] { reset.evaluate(Interval(vec({0.0, 0.0}), vec({1.0, 1.0}))); },
                        Error::not_supported),
           "evaluate: a box is not a zonotope");
     check(test::raises([&] { reset.evaluate(Tensor({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),

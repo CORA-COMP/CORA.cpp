@@ -6,15 +6,15 @@
 //
 // Syntax:   Tensor v = I.volume();
 // Inputs:   -
-// Outputs:  v - the product of the widths of all entries, (..., 1, 1)
-// See also: rad, radius
+// Outputs:  v - the product of the widths of all entries, (batch...)
+// See also: half_width, ball_radius
 //
 // CORA: contSet/@interval/volume_.m
 // CORA: matrixSet/@intervalMatrix/volume.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_vec.h"
@@ -30,12 +30,11 @@ namespace cora {
 Tensor Interval::volume() const {
     detail::Entry entry;
     // an interval matrix is the box of its entries, stacked column by column
-    const bool matrix = inf_.size(-1) > 1;
-    const Interval box = matrix ? priv_vec(*this) : *this;
+    const Interval box = elem_rank_ == 2 ? priv_vec(*this) : *this;
     const Tensor width = box.sup_ - box.inf_;
-    const Tensor product = width.prod(-1, true).prod(-2, true);
-    if (is_empty() || (matrix && inf_.size(-2) == 0)) return product.zeros_like();
-    const Tensor degenerate = width.equal(width.zeros_like()).any(-1, true).any(-2, true);
+    const Tensor product = width.prod(-1);
+    if (is_empty() || width.size(-1) == 0) return product.zeros_like();
+    const Tensor degenerate = width.equal(width.zeros_like()).any(-1);
     return Tensor::where(degenerate, product.zeros_like(), product);
 }
 

@@ -10,9 +10,9 @@
 // tan are taken on boxes where the oracle's principal branch and CORA agree (inf >= 0, inside
 // (-1.4, 1.4)): they differ by at most kSqrtAgree and kTanAgree (measured: 2e-16, 2e-14).
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -43,7 +43,7 @@ Interval aux_box(test::oracle::Random &rnd, int n, double low, double high) {
         b[i] = rnd.uniform(low, high);
         if (a[i] > b[i]) std::swap(a[i], b[i]);
     }
-    return {test::column(a), test::column(b)};
+    return {test::vec(a), test::vec(b)};
 }
 
 /// Whether the bounds of a and b differ by at most `agree`, relatively.

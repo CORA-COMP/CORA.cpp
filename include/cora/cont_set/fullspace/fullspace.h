@@ -7,7 +7,7 @@
 // Syntax:     Fullspace F(n);   Fullspace F = Fullspace::inf(n);   Set R = M * F;
 // Operations: inf, box, intersect, plus, convex_hull, contains, is_intersecting, isequal,
 //             is_bounded, is_full_dim, enclose_points, lift, project_high_dim, linear_map,
-//             complement, radius, volume, representsa, generate_random, center, interval,
+//             complement, ball_radius, volume, representsa, generate_random, center, interval,
 //             support_function, rand_point, project, vertices, vertices_3d, display (one file
 //             each); the constructor checks its input (fullspace.cpp)
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/interval/interval.h
@@ -16,7 +16,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -88,7 +88,7 @@ class Fullspace : public detail::DimensionSet {
     bool is_bounded() const;
 
     /// The radius of the smallest ball around the set: Inf, NaN in R^0 (CORA's radius).
-    double radius() const;
+    double ball_radius() const;
 
     /// The volume: Inf, NaN in R^0 (CORA's volume_).
     double volume() const;

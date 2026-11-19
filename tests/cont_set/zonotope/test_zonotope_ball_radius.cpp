@@ -1,11 +1,11 @@
-// test_zonotope_radius - zonotope radius: a bound on the distance from the center
+// test_zonotope_ball_radius - zonotope ball_radius: a bound on the distance from the center
 //
 // CORA: contSet/@zonotope/radius.m
 // PROPERTY: contSet/@zonotope/radius.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -27,13 +27,13 @@ namespace {
 /// generator lengths, 5.4, is larger); a point has radius 0; a batch gives one per member.
 void radius_known(const std::string &b) {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 2.0}, {3.0, 1.0}}));
-    check(close(Z.radius(), std::vector<double>{5}, 1e-14),
+    check(close(Z.ball_radius(), std::vector<double>{5}, 1e-14),
           b + ": the box radius (4, 3) has norm 5");
-    check(Z.radius().shape() == std::vector<int64_t>({1, 1}), b + ": a (1, 1) result");
-    check(close(Zonotope::origin(3).radius(), std::vector<double>{0}, 0), b + ": a point");
+    check(Z.ball_radius().shape() == std::vector<int64_t>({1, 1}), b + ": a (1, 1) result");
+    check(close(Zonotope::origin(3).ball_radius(), std::vector<double>{0}, 0), b + ": a point");
     const Zonotope axis(column({1.0, 1.0}), Tensor({{3.0, 4.0}}));
-    check(close(axis.radius(), std::vector<double>{5}, 1e-14), b + ": one generator (3, 4)");
-    const Tensor batch = Zonotope::stack({Z, axis}).radius();
+    check(close(axis.ball_radius(), std::vector<double>{5}, 1e-14), b + ": one generator (3, 4)");
+    const Tensor batch = Zonotope::stack({Z, axis}).ball_radius();
     check(batch.shape() == std::vector<int64_t>({2, 1, 1}) &&
               close(batch, std::vector<double>{5, 5}, 1e-14),
           b + ": a batch");
@@ -45,7 +45,7 @@ void radius_bounds_the_set(const std::string &b) {
     cora::Rng rng(31);
     for (const auto &[n, m] : {std::pair{2, 3}, {4, 6}, {3, 1}}) {
         const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, m);
-        const double r = Z.radius().item();
+        const double r = Z.ball_radius().item();
         check(r <= Z.generator_length().sum().item() + 1e-12,
               b + ": at most the sum of the lengths");
         const Tensor points = Z.rand_point(200, rng, "extreme") - Z.center().expand_dims(-1);
@@ -58,7 +58,7 @@ void radius_bounds_the_set(const std::string &b) {
 void checks_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 2.0}, {3.0, 1.0}}));
     ChecksScope off(false);
-    check(close(Z.radius(), std::vector<double>{5}, 1e-14), "radius: checks off");
+    check(close(Z.ball_radius(), std::vector<double>{5}, 1e-14), "radius: checks off");
 }
 
 } // namespace

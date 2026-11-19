@@ -2,16 +2,16 @@
 //
 // CORA: contSet/@ellipsoid/enclose.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ namespace {
 /// does not have.
 void enclose_known(const std::string &b) {
     const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}})),
-        E2(Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({1.0, 0.0}));
+        E2(vec({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { E.enclose(E2); }, Error::not_supported), b + ": two ellipsoids");
     const Tensor M({{2.0, 1.0}, {1.0, 1.0}});
     check(test::raises([&] { E.enclose(M, E2); }, Error::not_supported), b + ": E and M Eplus");
@@ -34,7 +34,7 @@ void enclose_known(const std::string &b) {
     const Set S = E;
     check(test::raises([&] { S->enclose(Set(E2)); }, Error::not_supported),
           b + ": ContSet::enclose");
-    check(test::raises([&] { S->enclose(Set(Interval(column({0.0, 0.0}), column({1.0, 1.0})))); },
+    check(test::raises([&] { S->enclose(Set(Interval(vec({0.0, 0.0}), vec({1.0, 1.0})))); },
                        Error::noops),
           b + ": an ellipsoid and a box have no enclose");
 }

@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <limits>
 #include <optional>
+#include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -38,8 +39,12 @@ namespace {
 
 // Compression -------------------------------------------------------------------------------------
 
-/// The box around the columns of X (n, N): its center and radius, as interval.enclosePoints.
-Interval aux_box_of_points(const Tensor &X) { return {X.min(-1, true), X.max(-1, true)}; }
+/// The box around the columns of X (n, N): its center and radius as columns (n, 1), as
+/// interval.enclosePoints.
+std::pair<Tensor, Tensor> aux_box_of_points(const Tensor &X) {
+    const Interval box(X.min(-1), X.max(-1));
+    return {box.center().expand_dims(-1), box.half_width().expand_dims(-1)};
+}
 
 /// CORA's aux_compress: the columns of X moved towards the origin along g by at most |g|.
 Tensor aux_compress(const Tensor &X, const Tensor &g) {
@@ -57,8 +62,7 @@ Zonotope aux_cloud_to_zonotope(Tensor X, double ratio) {
     Tensor c = X.zeros_like({n, 1});
     std::vector<Tensor> generators;
     for (int64_t iter = 0; iter < n; ++iter) {
-        const Interval box = aux_box_of_points(X);
-        const Tensor mid = box.center(), r = box.rad();
+        const auto [mid, r] = aux_box_of_points(X);
         X = X - mid;
         const Tensor u = X.svd()[0].slice(-1, 0, 1);
         const Tensor g = u.multiply(u.matrix_transpose().matmul(r).abs() * ratio);
@@ -66,10 +70,9 @@ Zonotope aux_cloud_to_zonotope(Tensor X, double ratio) {
         c = c + mid;
         generators.push_back(g);
     }
-    const Interval box = aux_box_of_points(X);
-    generators.push_back(box.rad().diag());
-    return Zonotope((c + box.center()).squeeze(-1),
-                    Tensor::concat(generators, -1).matrix_transpose());
+    const auto [mid, r] = aux_box_of_points(X);
+    generators.push_back(r.diag());
+    return Zonotope((c + mid).squeeze(-1), Tensor::concat(generators, -1).matrix_transpose());
 }
 
 // Checks ------------------------------------------------------------------------------------------

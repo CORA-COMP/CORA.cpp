@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@ellipsoid/enclose.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   07-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_noops.h"
@@ -59,7 +59,8 @@ Ellipsoid Ellipsoid::enclose(const Tensor &M, const Ellipsoid &Eplus) const {
         refusal = std::pair{Error::empty_set, std::string("enclose: Eplus is empty")};
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the second ellipsoid is M Eplus
-    const Ellipsoid E2(priv_congruence(M, Eplus.Q()), M.matmul(Eplus.q()), Eplus.tol());
+    const Ellipsoid E2(M.matmul(Eplus.q().expand_dims(-1)).squeeze(-1),
+                       priv_congruence(M, Eplus.Q()), Eplus.tol());
     refusal = priv_pair_refusal(*this, E2, "enclose");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     aux_no_sdp_solver();

@@ -14,9 +14,9 @@
 // Outputs:  one line 'benchmark,instance,result,time', as the MATLAB script
 // See also: benchmark_hybrid.h, benchmark_hybrid_reach_arch23_spacecraft.cpp
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -36,6 +36,7 @@ using namespace cora;
 using cora::bench::column;
 using cora::bench::hyperplane;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 /// The dynamics of the model: x1' = x2, x2' = (1 - x1^2) x2 + x5 (x3 - x1) - x1, and the same
 /// for (x3, x4) with the coupling reversed, x5' = 0; the input u is not used.
@@ -54,11 +55,11 @@ HybridAutomaton aux_automaton() {
     for (const double v : c) minus_c.push_back(-v);
     const NonlinearSys sys(aux_dynamics, 5, 1);
     const LinearReset id(Tensor::eye(5), std::nullopt, column({0, 0, 0, 0, 0}));
-    Location loc1("loc1", Polytope(matrix(1, 5, c), column({d})),
+    Location loc1("loc1", Polytope(matrix(1, 5, c), vec({d})),
                   {Transition(hyperplane(c, d), id, 1)}, sys);
-    Location loc2("loc2", Polytope(matrix(1, 5, minus_c), column({-d})),
+    Location loc2("loc2", Polytope(matrix(1, 5, minus_c), vec({-d})),
                   {Transition(hyperplane(minus_c, -d), id, 2)}, sys);
-    Location loc3("loc3", Polytope(matrix(1, 5, {1, 0, 0, 0, 0}), column({1000})), {}, sys);
+    Location loc3("loc3", Polytope(matrix(1, 5, {1, 0, 0, 0, 0}), vec({1000})), {}, sys);
     return HybridAutomaton("vanDerPol_hybrid", {loc1, loc2, loc3});
 }
 
@@ -66,7 +67,7 @@ HybridAutomaton aux_automaton() {
 std::vector<Interval> aux_initial_sets() {
     const auto box = [](double lo1, double hi1, double lo2, double hi2, double x5_lo,
                         double x5_hi) {
-        return Interval(column({lo1, lo2, lo1, lo2, x5_lo}), column({hi1, hi2, hi1, hi2, x5_hi}));
+        return Interval(vec({lo1, lo2, lo1, lo2, x5_lo}), vec({hi1, hi2, hi1, hi2, x5_hi}));
     };
     const std::vector<std::array<double, 2>> x5 = {
         {1, 1.4}, {1.4, 1.8}, {1.8, 2.1}, {2.1, 2.3}, {2.3, 2.45}, {2.45, 2.66}, {2.66, 3}};
@@ -83,8 +84,8 @@ std::vector<Interval> aux_initial_sets() {
 /// The specifications: x2 < 2.75 and x4 < 2.75 (the unsafe sets -x2 <= -2.75 and -x4 <= -2.75).
 std::vector<HybridSpecification> aux_specs() {
     return {
-        {Specification::unsafe_set(Polytope(matrix(1, 5, {0, -1, 0, 0, 0}), column({-2.75}))), {}},
-        {Specification::unsafe_set(Polytope(matrix(1, 5, {0, 0, 0, -1, 0}), column({-2.75}))), {}}};
+        {Specification::unsafe_set(Polytope(matrix(1, 5, {0, -1, 0, 0, 0}), vec({-2.75}))), {}},
+        {Specification::unsafe_set(Polytope(matrix(1, 5, {0, 0, 0, -1, 0}), vec({-2.75}))), {}}};
 }
 
 /// The options of the script.

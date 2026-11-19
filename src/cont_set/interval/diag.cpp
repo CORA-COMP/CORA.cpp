@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@interval/diag.m
 // CORA authors: Matthias Althoff, Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -62,14 +62,17 @@ Tensor aux_diagonal_column(const Tensor &A, int64_t k) {
 
 Interval Interval::diag(int64_t k) const {
     detail::Entry entry;
-    const int64_t rows = inf_.size(-2), cols = inf_.size(-1);
+    const Tensor lo = inf_matrix(), hi = sup_matrix();
+    const int64_t rows = lo.size(-2), cols = lo.size(-1);
     const bool vector = rows == 1 || cols == 1;
     CORA_CHECK(vector || (k < cols && -k < rows), Error::not_supported, [&] {
         return "diag: the " + std::to_string(k) + "-th diagonal of the bounds " +
                shape_text(inf_.shape()) + " is empty";
     });
-    if (vector) return {aux_diagonal_matrix(inf_, k), aux_diagonal_matrix(sup_, k)};
-    return {aux_diagonal_column(inf_, k), aux_diagonal_column(sup_, k)};
+    // a vector gives the matrix, a matrix the box of its diagonal
+    if (vector) return {aux_diagonal_matrix(lo, k), aux_diagonal_matrix(hi, k), 2, empty_};
+    return {aux_diagonal_column(lo, k).squeeze(-1), aux_diagonal_column(hi, k).squeeze(-1), 1,
+            empty_};
 }
 
 } // namespace cora

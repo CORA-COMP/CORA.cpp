@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/lift_.m
 // CORA authors: Tobias Ladner, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -14,7 +14,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +25,7 @@ namespace {
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
 void lift_places_the_coordinates(const std::string &b) {
-    const Interval I(column({1.0, 3.0}), column({2.0, 4.0}));
+    const Interval I(vec({1.0, 3.0}), vec({2.0, 4.0}));
     const Interval R = I.lift(4, {2, 0});
     check(R.inf().data() == std::vector<double>({3.0, -kInf, 1.0, -kInf}) &&
               R.sup().data() == std::vector<double>({4.0, kInf, 2.0, kInf}),
@@ -34,7 +34,7 @@ void lift_places_the_coordinates(const std::string &b) {
     check(I.lift(3, {1, 1}).inf().data() == std::vector<double>({-kInf, 3.0, -kInf}),
           b + ": a repeated coordinate keeps the last, as CORA");
     const Interval S = Interval::stack({I, I}).lift(3, {1, 2});
-    check(S.inf().shape() == std::vector<int64_t>({2, 3, 1}) &&
+    check(S.inf().shape() == std::vector<int64_t>({2, 3}) &&
               S.sup().data() == std::vector<double>({kInf, 2.0, 4.0, kInf, 2.0, 4.0}),
           b + ": a batch");
 }
@@ -42,7 +42,7 @@ void lift_places_the_coordinates(const std::string &b) {
 /// A space that is too small, a wrong number or a range of coordinates, and an empty interval are
 /// refused; the checks off give the same.
 void checks_and_their_switch() {
-    const Interval I(column({1.0, 3.0}), column({2.0, 4.0}));
+    const Interval I(vec({1.0, 3.0}), vec({2.0, 4.0}));
     check(test::raises([&] { I.lift(1, {0, 0}); }, Error::wrong_value),
           "lift: N below the dimension");
     check(test::raises([&] { I.lift(3, {0}); }, Error::wrong_value),

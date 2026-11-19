@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -39,14 +40,13 @@ void convex_hull_known(const std::string &b) {
     check(R.A().shape() == Shape{4, 7} && R.b().shape() == Shape{4, 1},
           b + ": 2 (m1 + m2) slack rows");
     check(close(R.b(), {-0.5, -0.5, -0.5, -0.5}, 0), b + ": the offsets -1/2");
-    check(close(A.convex_hull(column({5.0})).interval().sup(), {5}, 1e-9), b + ": a point");
-    check(
-        close(A.convex_hull(Interval(column({-2.0}), column({-1.0}))).interval().inf(), {-2}, 1e-9),
-        b + ": a box");
+    check(close(A.convex_hull(test::column({5.0})).interval().sup(), {5}, 1e-9), b + ": a point");
+    check(close(A.convex_hull(Interval(vec({-2.0}), vec({-1.0}))).interval().inf(), {-2}, 1e-9),
+          b + ": a box");
     // hull with a zonotope
-    check(
-        close(A.convex_hull(Zonotope(column({3.0}), Tensor({{1.0}}))).interval().sup(), {4}, 1e-9),
-        b + ": a zonotope");
+    check(close(A.convex_hull(Zonotope(test::vec({3.0}), Tensor({{1.0}}))).interval().sup(), {4},
+                1e-9),
+          b + ": a zonotope");
     // constraints of both sets are kept: the segment x1 + x2 = 1 and the origin give a triangle
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), column({1.0}));

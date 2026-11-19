@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@ellipsoid/plot3D.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -29,7 +29,7 @@ namespace cora {
 
 std::vector<std::vector<Point3>> Ellipsoid::vertices_3d_impl() const {
     if (priv_is_empty(*this)) CORA_FAIL(Error::empty_set, "vertices_3d: the ellipsoid is empty");
-    const Tensor G = generators().matmul(Q_.svd()[0].matrix_transpose());
+    const Tensor G = priv_generator_columns(Q_).matmul(Q_.svd()[0].matrix_transpose());
     const std::vector<double> qs = q_.data(), Gs = G.data();
     const std::vector<Point3> sphere = unit_sphere_points(200);
     std::vector<std::vector<Point3>> out;

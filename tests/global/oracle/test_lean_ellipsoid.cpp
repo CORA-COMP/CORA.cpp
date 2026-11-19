@@ -16,9 +16,9 @@
 // ORACLE: contSet/@ellipsoid/project.m
 // ORACLE: contSet/@ellipsoid/lift_.m
 // ORACLE: contSet/@ellipsoid/isequal.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
@@ -39,14 +39,14 @@ namespace {
 Ellipsoid aux_ellipsoid(oracle::Random &rnd, int64_t n, double shrink = 1.0) {
     const Tensor A = rnd.matrix(n, n);
     const Tensor Q = (A.matmul(A.matrix_transpose()) + A.eye_like(n) * 0.5) * shrink;
-    return {(Q + Q.matrix_transpose()) * 0.5, rnd.vector(n)};
+    return {rnd.vector(n).squeeze(-1), (Q + Q.matrix_transpose()) * 0.5};
 }
 
 /// A degenerate ellipsoid of rank n - 1: Q = A A' with A of n x (n - 1).
 Ellipsoid aux_flat_ellipsoid(oracle::Random &rnd, int64_t n) {
     const Tensor A = rnd.matrix(n, n - 1);
     const Tensor Q = A.matmul(A.matrix_transpose());
-    return {(Q + Q.matrix_transpose()) * 0.5, rnd.vector(n)};
+    return {rnd.vector(n).squeeze(-1), (Q + Q.matrix_transpose()) * 0.5};
 }
 
 } // namespace
@@ -62,7 +62,7 @@ int main() {
     });
     oracle::run("ellipsoid.cartProd", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3);
-        const Tensor p = rnd.vector(2);
+        const Tensor p = rnd.vector(2).squeeze(-1);
         // the oracle's product with a point is exact: the nominal parts agree to the bit
         const Ellipsoid theirs = lean::Ellipsoid(E).cart_prod(p).nominal();
         const Ellipsoid mine = E.cart_prod(p);
@@ -77,7 +77,7 @@ int main() {
     oracle::run("ellipsoid.isBigger", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3);
         // a third of the shape is inside, and E is not inside it
-        const Ellipsoid small(E.Q() * (1.0 / 3.0), rnd.vector(3));
+        const Ellipsoid small(rnd.vector(3).squeeze(-1), E.Q() * (1.0 / 3.0));
         oracle::check(E.is_bigger(small), lean::Ellipsoid(E).is_bigger(lean::Ellipsoid(small)));
         oracle::check(small.is_bigger(E), lean::Ellipsoid(small).is_bigger(lean::Ellipsoid(E)));
         // in dimension 1 CORA.cpp compares (CORA does not)

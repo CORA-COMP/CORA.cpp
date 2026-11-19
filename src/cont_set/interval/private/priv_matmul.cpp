@@ -5,10 +5,11 @@
 // CORA.cpp only: a helper of mtimes for interval matrices.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_matmul.h"
+#include "cont_set/interval/private/priv_join.h"
 #include "cont_set/interval/private/priv_times.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -36,10 +37,15 @@ Tensor aux_nested_sum(const Tensor &t) {
 // ===========================================  MAIN  =========================================== //
 
 Interval priv_matmul(const Interval &A, const Interval &B) {
-    // A as (..., m, n, 1) and B as (..., 1, n, p): the products of all pairs (i, k, j)
-    const auto [lo, hi] = priv_times(A.inf().expand_dims(-1), A.sup().expand_dims(-1),
-                                     B.inf().expand_dims(-3), B.sup().expand_dims(-3));
-    return {aux_nested_sum(lo), aux_nested_sum(hi)};
+    // A as (..., m, n, 1), B as (..., 1, n, p) (a box a column): all products (i, k, j)
+    const Tensor a = priv_matrix_bounds(A, false), b = priv_matrix_bounds(A, true);
+    const Tensor c = priv_matrix_bounds(B, false), d = priv_matrix_bounds(B, true);
+    const auto [lo, hi] =
+        priv_times(a.expand_dims(-1), b.expand_dims(-1), c.expand_dims(-3), d.expand_dims(-3));
+    const Tensor low = aux_nested_sum(lo), high = aux_nested_sum(hi);
+    // a box B gives a box
+    if (B.elem_rank() == 1) return {low.squeeze(-1), high.squeeze(-1)};
+    return Interval::matrix(low, high);
 }
 
 } // namespace cora

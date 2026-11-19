@@ -11,9 +11,9 @@
 //
 // CORA: contSet/@zonotope/constrSat.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -37,7 +37,8 @@ bool Zonotope::constraints_satisfied(const Tensor &C, const Tensor &d) const {
                "shape " +
                shape_text(d.shape());
     });
-    const Tensor below = linear_map(C).interval().sup().detach().less(d.detach());
+    // the upper bounds (..., k) of C x against the column d (..., k, 1)
+    const Tensor below = linear_map(C).interval().sup().detach().less(d.detach().squeeze(-1));
     return below.min().item() != 0;
 }
 

@@ -16,7 +16,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -82,10 +82,9 @@ Taylm Taylm::from_range(double lo, double hi, int64_t vars, int max_order) {
 std::vector<Taylm> Taylm::from_interval(const Interval &I, int max_order) {
     detail::Entry entry;
     aux_check_order(max_order, "Taylm::from_interval");
-    CORA_CHECK(I.is_bounded() && !I.is_empty() && I.inf().ndim() == 2 && I.inf().shape()[1] == 1,
-               Error::wrong_value, [] {
-                   return std::string("Taylm::from_interval: the box must be one bounded column");
-               });
+    CORA_CHECK(I.is_bounded() && !I.is_empty() && I.elem_rank() == 1 && I.inf().ndim() == 1,
+               Error::wrong_value,
+               [] { return std::string("Taylm::from_interval: the box must be one bounded box"); });
     // one variable per coordinate of the box
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
     const auto n = int64_t(lo.size());

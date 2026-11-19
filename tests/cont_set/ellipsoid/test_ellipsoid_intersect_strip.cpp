@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/intersectStrip.m
 // PROPERTY: contSet/@ellipsoid/intersectStrip.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,29 +26,29 @@ void intersect_strip_known(const std::string &b) {
     const Ellipsoid E(Tensor({{1.0}}));
     const Tensor C({{1.0}});
     // Gollamudi: |x - 2| <= 3 holds E; weight 1e-4, sigma_sq = (1 + 2 lambda)^2, center 2 lambda
-    const auto [G, sigma_sq] = E.intersect_strip(C, 3.0, column({2.0}));
+    const auto [G, sigma_sq] = E.intersect_strip(C, 3.0, vec({2.0}));
     const double lambda = 1e-4;
     check(close(Tensor({{sigma_sq}}), {(1 + 2 * lambda) * (1 + 2 * lambda)}, 1e-12),
           b + ": Gollamudi: the level");
     check(close(G.Q(), {sigma_sq}, 1e-12) && close(G.q(), {2 * lambda}, 1e-12),
           b + ": Gollamudi: shape and center");
-    check(test::all_inside(G, column({-1.0})) && test::all_inside(G, column({1.0})),
+    check(test::all_inside(G, vec({-1.0})) && test::all_inside(G, vec({1.0})),
           b + ": Gollamudi: the points -1 and 1 of E are in the result");
     // a strip that holds E and a center on the strip's axis does not cut: unchanged
-    const auto [same, level] = E.intersect_strip(C, 3.0, column({0.0}), 0.25);
+    const auto [same, level] = E.intersect_strip(C, 3.0, vec({0.0}), 0.25);
     check(close(same.Q(), E.Q(), 0) && close(same.q(), E.q(), 0) && level == 0.25,
           b + ": Gollamudi: a strip that does not cut returns E and sigma_sq_prev");
     // Liu, V = bar_V = 1, y = 1/2, sigma_sq_prev = 1: lambda = 1/2, sigma_sq = 15/16, center 1/4
     const Ellipsoid::StripMeasurement sys{Tensor({{1.0}}), Tensor({{1.0}})};
-    const auto [L, sigma_liu] = E.intersect_strip(C, sys, column({0.5}), 1.0);
+    const auto [L, sigma_liu] = E.intersect_strip(C, sys, vec({0.5}), 1.0);
     check(close(Tensor({{sigma_liu}}), {15.0 / 16.0}, 1e-12), b + ": Liu: the level");
     check(close(L.Q(), {15.0 / 16.0}, 1e-12) && close(L.q(), {0.25}, 1e-12),
           b + ": Liu: shape and center");
-    check(test::all_inside(L, column({1.0})) && test::all_inside(L, column({-0.5})),
+    check(test::all_inside(L, vec({1.0})) && test::all_inside(L, vec({-0.5})),
           b + ": Liu: the ends of the intersection are in the result");
     // a strip far away: the combination has no point
-    const auto [none, negative] = E.intersect_strip(C, 1.0, column({200.0}));
-    check(none.Q().numel() == 0 && negative < 0.0, b + ": a strip that misses E: empty");
+    const auto [none, negative] = E.intersect_strip(C, 1.0, vec({200.0}));
+    check(none.is_empty() && negative < 0.0, b + ": a strip that misses E: empty");
 }
 
 /// Stated property: the points of E (at the level of the previous update) in the strip lie in the
@@ -61,17 +61,19 @@ void intersect_strip_property(const std::string &b) {
         const Tensor C = test::normal_matrix(rng, 2, 3);
         const double phi = 0.3;
         // the measurement is off the center of E by a vector of length about 0.6
-        const Tensor y = C.matmul(E.q()) + test::normal_matrix(rng, 2, 1, 0.45);
+        const Tensor y = C.matmul(E.q().expand_dims(-1)).squeeze(-1) +
+                         test::normal_matrix(rng, 2, 1, 0.45).squeeze(-1);
         const Tensor P = test::ellipsoid_points(E, rng, 3000);
-        const std::vector<double> misfit = (C.matmul(P) - y).square().sum(0, false).sqrt().data();
+        const std::vector<double> misfit =
+            (P.matmul(C.matrix_transpose()) - y).square().sum(-1, false).sqrt().data();
         std::vector<bool> in_strip;
         in_strip.reserve(misfit.size());
         for (const double r : misfit) in_strip.push_back(r <= phi);
-        const Tensor S = test::select_columns(P, in_strip);
+        const Tensor S = test::select_rows(P, in_strip);
         const auto [R, sigma_sq] = E.intersect_strip(C, phi, y);
-        updated += R.Q().numel() != 0 && sigma_sq != 0.0;
-        if (S.shape()[1] > 0)
-            check(R.Q().numel() > 0 && test::all_inside(R, S, 1e-9),
+        updated += !R.is_empty() && sigma_sq != 0.0;
+        if (S.shape()[0] > 0)
+            check(!R.is_empty() && test::all_inside(R, S, 1e-9),
                   b + ": Gollamudi: the points of E in the strip are in the result");
     }
     check(updated > 0, b + ": Gollamudi: some strip cut an ellipsoid");
@@ -80,21 +82,23 @@ void intersect_strip_property(const std::string &b) {
         for (int k = 0; k < 8; ++k) {
             const Ellipsoid E = test::random_ellipsoid(rng, 3);
             const Tensor C = test::normal_matrix(rng, 2, 3);
+            // the measurement noise and its scaling
             const Tensor V = Tensor({{0.3, 0.1}, {0.1, 0.2}}),
                          bar_V = Tensor({{1.0, 0.0}, {0.0, 1.0}});
-            const Tensor y = C.matmul(E.q()) + test::normal_matrix(rng, 2, 1, 0.5);
+            const Tensor y = C.matmul(E.q().expand_dims(-1)).squeeze(-1) +
+                             test::normal_matrix(rng, 2, 1, 0.5).squeeze(-1);
             const Tensor P =
                 E.q() + (test::ellipsoid_points(E, rng, 3000) - E.q()) * std::sqrt(prior);
             const Tensor r = y.zeros_like({1, 3000});
-            const Tensor d = C.matmul(P) - y;
-            const std::vector<double> form = d.multiply(V.inv().matmul(d)).sum(0, false).data();
+            const Tensor d = P.matmul(C.matrix_transpose()) - y;
+            const std::vector<double> form = d.multiply(d.matmul(V.inv())).sum(-1, false).data();
             std::vector<bool> in_set;
             in_set.reserve(form.size());
             for (const double f : form) in_set.push_back(f <= 1.0);
-            const Tensor S = test::select_columns(P, in_set);
+            const Tensor S = test::select_rows(P, in_set);
             const auto [R, sigma_sq] = E.intersect_strip(C, {V, bar_V}, y, prior);
-            if (S.shape()[1] > 0)
-                check(R.Q().numel() > 0 && test::all_inside(R, S, 1e-9),
+            if (S.shape()[0] > 0)
+                check(!R.is_empty() && test::all_inside(R, S, 1e-9),
                       b + ": Liu: the points in both sets are in the result");
             // r is not used in the checks above: the cast to void silences the unused warning
             static_cast<void>(r);
@@ -107,37 +111,36 @@ void intersect_strip_property(const std::string &b) {
 void checks_and_their_switch() {
     const Ellipsoid E(Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const Tensor C({{1.0, 0.0}});
-    check(test::raises([&] { E.intersect_strip(Tensor({{1.0, 0.0, 0.0}}), 1.0, column({1.0})); },
+    check(test::raises([&] { E.intersect_strip(Tensor({{1.0, 0.0, 0.0}}), 1.0, vec({1.0})); },
                        Error::dimension_mismatch),
           "intersect_strip: C has n columns");
-    check(test::raises([&] { E.intersect_strip(C, 1.0, column({1.0, 2.0})); },
+    check(test::raises([&] { E.intersect_strip(C, 1.0, vec({1.0, 2.0})); },
                        Error::dimension_mismatch),
           "intersect_strip: y has a row per row of C");
-    check(test::raises([&] { E.intersect_strip(C, std::nan(""), column({1.0})); },
-                       Error::wrong_value),
+    check(test::raises([&] { E.intersect_strip(C, std::nan(""), vec({1.0})); }, Error::wrong_value),
           "intersect_strip: phi is finite");
     check(test::raises(
-              [&] { E.intersect_strip(C, {Tensor({{1.0, 0.0}}), Tensor({{1.0}})}, column({1.0})); },
+              [&] { E.intersect_strip(C, {Tensor({{1.0, 0.0}}), Tensor({{1.0}})}, vec({1.0})); },
               Error::wrong_value),
           "intersect_strip: V and bar_V are m x m");
     check(test::raises(
               [] {
                   // a degenerate set is refused
                   Ellipsoid(Tensor::zeros({2, 2}))
-                      .intersect_strip(Tensor({{1.0, 0.0}}), 1.0, column({1.0}));
+                      .intersect_strip(Tensor({{1.0, 0.0}}), 1.0, vec({1.0}));
               },
               Error::degenerate_set),
           "intersect_strip: E must be full-dimensional");
-    check(test::raises([&] { Ellipsoid::empty(2).intersect_strip(C, 1.0, column({1.0})); },
+    check(test::raises([&] { Ellipsoid::empty(2).intersect_strip(C, 1.0, vec({1.0})); },
                        Error::empty_set),
           "intersect_strip: the empty ellipsoid");
     check(test::raises(
-              [&] { Ellipsoid(Tensor::zeros({2, 2, 2})).intersect_strip(C, 1.0, column({1.0})); },
+              [&] { Ellipsoid(Tensor::zeros({2, 2, 2})).intersect_strip(C, 1.0, vec({1.0})); },
               Error::not_supported),
           "intersect_strip: a batch is not supported");
-    const auto on = E.intersect_strip(C, 0.3, column({1.0}));
+    const auto on = E.intersect_strip(C, 0.3, vec({1.0}));
     ChecksScope off(false);
-    const auto same = E.intersect_strip(C, 0.3, column({1.0}));
+    const auto same = E.intersect_strip(C, 0.3, vec({1.0}));
     check(close(same.first.Q(), on.first.Q(), 0) && same.second == on.second,
           "intersect_strip: the same with the checks off");
 }

@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -122,7 +123,7 @@ void mink_diff_of_a_box(const std::string &b) {
     int warnings = 0;
     const WarningHandler previous =
         set_warning_handler([&](const std::string &, const std::string &) { ++warnings; });
-    const Zonotope D = square(2.0).mink_diff(Interval(column({-0.5, -0.5}), column({0.5, 0.5})));
+    const Zonotope D = square(2.0).mink_diff(Interval(vec({-0.5, -0.5}), vec({0.5, 0.5})));
     set_warning_handler(previous);
     check(warnings == 1, b + ": a box as subtrahend warns once");
     check(close(D.generators(), std::vector<double>{1.5, 0, 0, 1.5}, 1e-9),

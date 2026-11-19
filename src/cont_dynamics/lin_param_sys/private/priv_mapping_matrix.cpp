@@ -20,7 +20,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
@@ -40,7 +40,7 @@ namespace {
 /// The box [lower, 0] times the interval matrix M (CORA's 1 x 1 intervalMatrix times M).
 Interval aux_times_box(double lower, const Interval &M) {
     const Tensor lo = M.center().full_like({1, 1}, lower), hi = lo.zeros_like();
-    return M.times(Interval(lo, hi));
+    return M.times(Interval::matrix(lo, hi));
 }
 
 } // namespace

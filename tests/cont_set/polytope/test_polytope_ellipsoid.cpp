@@ -6,9 +6,9 @@
 // Property: the ellipsoid contains the vertices
 //
 // CORA authors: Victor Gassmann, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -16,7 +16,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -59,7 +59,7 @@ int main() {
           "ellipsoid: the method");
     check(test::raises([] { test::square_h().ellipsoid("inner"); }, Error::not_supported),
           "ellipsoid: the semidefinite programs are not ported");
-    check(test::raises([] { Polytope(Tensor({{1.0, 0.0}}), column({1.0})).ellipsoid(); },
+    check(test::raises([] { Polytope(Tensor({{1.0, 0.0}}), vec({1.0})).ellipsoid(); },
                        Error::special_error),
           "ellipsoid: unbounded");
     ChecksScope off(false);

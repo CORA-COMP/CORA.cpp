@@ -15,7 +15,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -34,6 +34,7 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 // The model ---------------------------------------------------------------------------------------
 
@@ -67,7 +68,7 @@ Tensor aux_uncontrolled() {
 /// The input matrix B, the initial set (the origin) and the input set [-9, 1].
 Tensor aux_B() { return column({0, 1, 0, 0, 0, 0, 0, 0, 0}); }
 Zonotope aux_R0() { return Zonotope(Tensor::zeros({9, 1}), Tensor::zeros({0, 9})); }
-Zonotope aux_U() { return Interval(column({-9}), column({1})).zonotope(); }
+Zonotope aux_U() { return Interval(vec({-9}), vec({1})).zonotope(); }
 
 /// The arbitrarily switching system: the matrix zonotope A_mid +- A_gen.
 LinParamSys aux_switching(ParamType type) {

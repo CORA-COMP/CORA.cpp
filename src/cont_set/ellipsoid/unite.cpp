@@ -6,16 +6,16 @@
 //
 // Syntax:   Eres = E.unite(S);   Eres = E.unite(S, mode);   Eres = E.unite(p, mode);
 // Inputs:   S - ellipsoid
-//           p - a point (n, 1)
+//           p - a point (n)
 //           mode - "outer" (default) or "inner"
 // Outputs:  Eres - the ellipsoid
 // See also: convex_hull, contains
 //
 // CORA: contSet/@ellipsoid/or.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -50,11 +50,11 @@ Ellipsoid Ellipsoid::unite(const Ellipsoid &S, const std::string &mode) const {
 
 Ellipsoid Ellipsoid::unite(const Tensor &p, const std::string &mode) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
-        return "unite: the point must be a column of the dimension " + std::to_string(dim()) +
-               ", got the shape " + shape_text(p.shape());
+    CORA_CHECK(p.defined() && p.ndim() == 1 && is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "unite: the point must be a vector (" + std::to_string(dim()) + "), got the shape " +
+               (p.defined() ? shape_text(p.shape()) : "()");
     });
-    return unite(Ellipsoid(Q_.zeros_like({dim(), dim()}), p, tol_), mode);
+    return unite(Ellipsoid(p, Q_.zeros_like({dim(), dim()}), tol_), mode);
 }
 
 } // namespace cora

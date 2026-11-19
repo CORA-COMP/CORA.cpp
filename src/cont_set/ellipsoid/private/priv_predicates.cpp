@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@ellipsoid/representsa_.m
 // CORA authors: Mark Wetzlinger, Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -24,7 +24,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-bool priv_is_empty(const Ellipsoid &E) { return E.Q().numel() == 0; }
+bool priv_is_empty(const Ellipsoid &E) { return E.empty_mask().all(); }
 
 bool priv_is_point(const Ellipsoid &E) {
     if (priv_is_empty(E)) return false;

@@ -13,9 +13,9 @@
 // CORA: contSet/@interval/norm_.m
 // CORA: matrixSet/@matZonotope/norm.m
 // CORA authors: Victor Gassmann
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -26,6 +26,16 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// A norm per member (...) as the zonotope's scalar results (..., 1, 1).
+Tensor aux_as_matrix(const Tensor &t) { return t.expand_dims(-1).expand_dims(-1); }
+
+} // namespace
 
 
 // ===========================================  MAIN  =========================================== //
@@ -55,16 +65,16 @@ Tensor Zonotope::norm_impl(Tensor::Norm type, const std::string &mode) const {
         if (type == Tensor::Norm::two)
             CORA_FAIL(Error::wrong_value,
                       "norm: the 2-norm of a matrix zonotope is not supported, use 1 or Inf");
-        return interval_impl().norm(type);
+        return aux_as_matrix(interval_impl().norm(type));
     }
     // the Frobenius norm of the box, as CORA's norm_ of the interval
-    if (type == Tensor::Norm::fro) return interval_impl().norm(type);
+    if (type == Tensor::Norm::fro) return aux_as_matrix(interval_impl().norm(type));
     // the largest magnitude of each coordinate
     const Interval box = interval_impl();
     const Tensor largest = box.inf().abs().maximum(box.sup().abs());
-    if (type == Tensor::Norm::one) return largest.sum(-2, true);
-    if (type == Tensor::Norm::two) return largest.square().sum(-2, true).sqrt();
-    return largest.max(-2, true);
+    if (type == Tensor::Norm::one) return aux_as_matrix(largest.sum(-1));
+    if (type == Tensor::Norm::two) return aux_as_matrix(largest.square().sum(-1).sqrt());
+    return aux_as_matrix(largest.max(-1));
 }
 
 } // namespace cora

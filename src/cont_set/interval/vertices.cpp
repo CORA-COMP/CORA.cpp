@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@interval/vertices_.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,10 +24,12 @@ namespace cora {
 
 std::vector<Polygon> Interval::vertices_impl() const {
     const std::vector<double> lo = inf_.data(), hi = sup_.data();
+    const std::vector<uint8_t> empty = empty_.flags(batch_shape());
     std::vector<Polygon> out;
     for (std::size_t b = 0; b + 1 < lo.size(); b += 2) // (x, y) of each batch member
-        out.push_back(
-            {{lo[b], lo[b + 1]}, {hi[b], lo[b + 1]}, {hi[b], hi[b + 1]}, {lo[b], hi[b + 1]}});
+        if (!empty[b / 2])
+            out.push_back(
+                {{lo[b], lo[b + 1]}, {hi[b], lo[b + 1]}, {hi[b], hi[b + 1]}, {lo[b], hi[b + 1]}});
     return out;
 }
 

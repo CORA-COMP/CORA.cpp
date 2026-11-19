@@ -19,7 +19,7 @@
 // CORA.cpp only: CORALean's float definition checks the dual solutions of CORA's programs
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -135,7 +135,7 @@ Interval aux_box(const Host &H, const ConZonotope::Certificate &w, const Tensor 
         sup[ii] = aux_bound(H, aux_axis(H.n, i, 1.0), w.up[ii]);
         inf[ii] = -aux_bound(H, aux_axis(H.n, i, -1.0), w.lo[ii]);
     }
-    return {Tensor::like(like, inf, {H.n, 1}), Tensor::like(like, sup, {H.n, 1})};
+    return {Tensor::like(like, inf, {H.n}), Tensor::like(like, sup, {H.n})};
 }
 
 /// The set as a cut without rows.
@@ -158,7 +158,9 @@ LinProg aux_program(const ConZonotope::Cut &K, const Host &H) {
         std::none_of(H.d.begin(), H.d.end(), [](double x) { return std::isinf(x) && x > 0; });
     if (all_finite) {
         const std::vector<double> lb(std::size_t(H.h), -1.0), ub(std::size_t(H.h), 1.0);
-        return Polytope::LinearPrograms(Polytope(K.C, K.d, K.A, K.b), lb, ub).program();
+        return Polytope::LinearPrograms(Polytope(K.C, K.d.squeeze(-1), K.A, K.b.squeeze(-1)), lb,
+                                        ub)
+            .program();
     }
     LinProg lp;
     lp.n = int(H.h);
@@ -278,7 +280,7 @@ Interval ConZonotope::Cut::interval_cert_tight(int passes) const {
         sup[i] = priv_float_min(sup[i], tsup[i]);
         if (inf[i] > sup[i]) return Interval::empty(c.shape()[0]);
     }
-    return {Tensor::like(c, inf, {c.shape()[0], 1}), Tensor::like(c, sup, {c.shape()[0], 1})};
+    return {Tensor::like(c, inf, {c.shape()[0]}), Tensor::like(c, sup, {c.shape()[0]})};
 }
 
 Interval ConZonotope::interval_cert(const Certificate &w) const {

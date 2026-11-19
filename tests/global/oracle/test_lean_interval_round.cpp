@@ -5,7 +5,7 @@
 // ORACLE: contSet/@interval/round.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -29,8 +29,8 @@ int main() {
             test::oracle::check(Interval(I.inf() * 7.0, big).round(),
                                 lean::Interval(Interval(I.inf() * 7.0, big)).round());
         }
-        const Interval halves(test::column({-2.5, -0.5, 0.5, 1.5, 2.0}),
-                              test::column({-1.5, 0.5, 1.5, 2.5, 3.0}));
+        const Interval halves(test::vec({-2.5, -0.5, 0.5, 1.5, 2.0}),
+                              test::vec({-1.5, 0.5, 1.5, 2.5, 3.0}));
         test::oracle::check(halves.round(), lean::Interval(halves).round());
     });
     return test::finish("lean interval round");

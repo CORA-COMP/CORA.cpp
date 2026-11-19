@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -33,7 +34,7 @@ void plus_known(const std::string &b) {
     check(close((zono_bundle.plus(W).zonotopes()[0]).generators().matrix_transpose(),
                 {2, 0, 1, 0, 1, 0}, 0),
           b + ": a zonotope joins its generators");
-    const ZonoBundle boxed = zono_bundle.plus(Interval(column({0.0, 0.0}), column({2.0, 4.0})));
+    const ZonoBundle boxed = zono_bundle.plus(Interval(vec({0.0, 0.0}), vec({2.0, 4.0})));
     check(close((boxed.zonotopes()[0]).center().expand_dims(-1), {1, 2}, 0) &&
               close((boxed.zonotopes()[0]).generators().matrix_transpose(),
                     {2, 0, 1, 0, 0, 1, 0, 2}, 0),

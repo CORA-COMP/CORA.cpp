@@ -7,9 +7,9 @@
 // Outputs:  example_plot_reach_01_over_time_plane.svg and _x1.svg
 // See also: example_plot_reach_01_over_time of the Python examples, example_plot_tikz_01_group
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -47,8 +47,9 @@ int main() {
     // The phase plane: the unsafe set, the reachable set, the initial set and the simulations.
     use_cora_colors("CORA:contDynamics");
     Figure plane;
-    plot(plane, Specification::unsafe_set(Polytope(Tensor({{-1.0, 0.0}}), Tensor({{0.5}}))), {0, 1},
-         {.label = "unsafe set"});
+    plot(plane,
+         Specification::unsafe_set(Polytope(Tensor({{-1.0, 0.0}}), Tensor::from_data({0.5}, {1}))),
+         {0, 1}, {.label = "unsafe set"});
     plot(plane, R, {0, 1}, {.label = "reachable set"});
     plot(plane, X0, {0, 1}, {.label = "initial set"});
     plot(plane, x, {0, 1}, {.label = "simulations"});

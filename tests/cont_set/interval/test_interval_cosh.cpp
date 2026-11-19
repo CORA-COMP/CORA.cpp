@@ -3,9 +3,9 @@
 // CORA: contSet/@interval/cosh.m
 // PROPERTY: contSet/@interval/cosh.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -18,7 +18,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,8 +28,8 @@ namespace {
 
 /// One box per case of CORA: left of 0, right of 0, around 0 (either side larger), a point at 0.
 void cosh_on_known_boxes(const std::string &b) {
-    const Interval I(column({-2.0, 1.0, -1.0, -3.0, 0.0, -1.0, 0.0}),
-                     column({-1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 1.0}));
+    const Interval I(vec({-2.0, 1.0, -1.0, -3.0, 0.0, -1.0, 0.0}),
+                     vec({-1.0, 2.0, 2.0, 2.0, 0.0, 0.0, 1.0}));
     const Interval R = I.cosh();
     const std::vector<double> inf{std::cosh(1.0), std::cosh(1.0), 1.0, 1.0, 1.0, 1.0, 1.0};
     const std::vector<double> sup{
@@ -37,8 +37,8 @@ void cosh_on_known_boxes(const std::string &b) {
         std::cosh(1.0), std::cosh(1.0)};
     check(close(R.inf(), inf) && close(R.sup(), sup), b + ": cosh of known boxes");
     const Interval S = Interval::stack({I, I}).cosh();
-    check(S.inf().shape() == std::vector<int64_t>({2, 7, 1}), b + ": a batch has a batch shape");
-    check(close(S.sup().slice(0, 1, 2).reshape({7, 1}), R.sup()), b + ": a batch member");
+    check(S.inf().shape() == std::vector<int64_t>({2, 7}), b + ": a batch has a batch shape");
+    check(close(S.sup().slice(0, 1, 2).reshape({7}), R.sup()), b + ": a batch member");
 }
 
 /// The image of every sampled point lies in the result, and the result is the range.
@@ -49,7 +49,7 @@ void cosh_is_the_range(const std::string &b) {
         rng.uniform(lo.data(), 1, -4, 4);
         rng.uniform(hi.data(), 1, 0, 4);
         hi[0] += lo[0];
-        const Interval I(column(lo), column(hi)), R = I.cosh();
+        const Interval I(vec(lo), vec(hi)), R = I.cosh();
         double low = 1e300, high = 0;
         for (int k = 0; k <= 400; ++k) {
             const double c = std::cosh(lo[0] + (hi[0] - lo[0]) * k / 400);
@@ -64,7 +64,7 @@ void cosh_is_the_range(const std::string &b) {
 
 /// cosh has no input to refuse; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval I(column({-1.0, 0.0}), column({1.0, 1.0}));
+    const Interval I(vec({-1.0, 0.0}), vec({1.0, 1.0}));
     const Tensor on = I.cosh().sup();
     ChecksScope off(false);
     check(close(I.cosh().sup(), on, 0), "cosh: the same with the checks off");

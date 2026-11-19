@@ -5,16 +5,16 @@
 // CORA: contSet/@contSet/representsa_emptyObject.m
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,7 +26,7 @@ namespace {
 void points_and_extremes(const std::string &b) {
     check(Polytope::origin(2).representsa("origin") && !test::square_h().representsa("origin"),
           b + ": origin");
-    check(Polytope(column({1.0, 2.0})).representsa("point") &&
+    check(Polytope(Tensor({{1.0, 2.0}})).representsa("point") &&
               !test::square_v().representsa("point"),
           b + ": point");
     check(!Polytope::empty(2).representsa("point"), b + ": the empty set is no point");
@@ -35,7 +35,7 @@ void points_and_extremes(const std::string &b) {
     check(Polytope::inf(2).representsa("fullspace") && !test::square_h().representsa("fullspace"),
           b + ": fullspace");
     // a point in one dimension: one vertex
-    check(Polytope(Tensor({{-1.0}, {1.0}}), column({-2.0, 2.0})).representsa("point"),
+    check(Polytope(Tensor({{-1.0}, {1.0}}), vec({-2.0, 2.0})).representsa("point"),
           b + ": 1D point");
 }
 
@@ -43,13 +43,13 @@ void points_and_extremes(const std::string &b) {
 void shapes(const std::string &b) {
     check(test::square_h().representsa("interval") && !test::triangle_h().representsa("interval"),
           b + ": interval");
-    const Polytope halfspace(Tensor({{1.0, 1.0}}), column({1.0}));
-    const Polytope parallel(Tensor({{1.0, 0.0}, {2.0, 0.0}}), column({1.0, 3.0}));
+    const Polytope halfspace(Tensor({{1.0, 1.0}}), vec({1.0}));
+    const Polytope parallel(Tensor({{1.0, 0.0}, {2.0, 0.0}}), vec({1.0, 3.0}));
     check(halfspace.representsa("halfspace") && parallel.representsa("halfspace") &&
               !test::square_h().representsa("halfspace"),
           b + ": halfspace");
-    const Polytope plane(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}), Tensor({{1.0, 1.0}}),
-                         column({1.0}));
+    const Polytope plane(Tensor::zeros({0, 2}), Tensor::zeros({0}), Tensor({{1.0, 1.0}}),
+                         vec({1.0}));
     check(plane.representsa("hyperplane") && !halfspace.representsa("hyperplane"),
           b + ": hyperplane");
     check(plane.representsa("conHyperplane") && !test::square_h().representsa("conHyperplane"),
@@ -58,10 +58,10 @@ void shapes(const std::string &b) {
     for (const char *type : {"conZonotope", "zonoBundle", "polyZonotope", "conPolyZono"})
         check(test::square_h().representsa(type) && !halfspace.representsa(type),
               b + ": bounded: " + std::string(type));
-    check(Polytope(Tensor({{-1.0}, {1.0}}), column({0.0, 1.0})).representsa("capsule") &&
+    check(Polytope(Tensor({{-1.0}, {1.0}}), vec({0.0, 1.0})).representsa("capsule") &&
               !test::square_h().representsa("capsule"),
           b + ": capsule");
-    check(Polytope(column({1.0, 1.0})).representsa("ellipsoid") &&
+    check(Polytope(Tensor({{1.0, 1.0}})).representsa("ellipsoid") &&
               !test::square_h().representsa("ellipsoid"),
           b + ": ellipsoid");
     check(test::square_h().representsa("polytope") && test::square_h().representsa("convexSet") &&

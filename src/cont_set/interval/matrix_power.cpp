@@ -13,9 +13,9 @@
 // CORA: contSet/@interval/mpower.m
 // CORA: matrixSet/@intervalMatrix/mpower.m
 // CORA authors: Matthias Althoff, Dmitry Grebenyuk
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_matmul.h"
@@ -31,7 +31,7 @@ namespace cora {
 
 Interval Interval::matrix_power(int64_t exponent) const {
     detail::Entry entry;
-    CORA_CHECK(inf_.size(-1) == inf_.size(-2), Error::dimension_mismatch, [&] {
+    CORA_CHECK(dim(1) == dim(2), Error::dimension_mismatch, [&] {
         return "matrix_power: the base must be a square matrix, got the shape " +
                shape_text(inf_.shape());
     });
@@ -39,8 +39,8 @@ Interval Interval::matrix_power(int64_t exponent) const {
         return "matrix_power: the exponent must be nonnegative, got " + std::to_string(exponent);
     });
     if (exponent == 0) {
-        const Tensor identity = inf_.eye_like(inf_.size(-1)) + inf_.zeros_like();
-        return {identity, identity};
+        const Tensor identity = inf_.eye_like(dim(2)) + inf_matrix().zeros_like();
+        return from_matrix(identity, identity);
     }
     Interval P = *this;
     for (int64_t i = 1; i < exponent; ++i) P = priv_matmul(*this, P);

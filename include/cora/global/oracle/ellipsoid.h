@@ -8,9 +8,9 @@
 // Crossing:   nominal() returns Q and q as a cora::Ellipsoid, exactly or throws
 // See also:   lean/con_zonotope.h, lean/request.h, cora/cont_set/ellipsoid/ellipsoid.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -32,7 +32,8 @@ class Ellipsoid {
     /// The dtype of the values.
     const std::string &dtype() const noexcept { return dtype_; }
 
-    /// The shape matrix Q and the center q as the oracle returns them; throws if a value is not a
+    /// The ellipsoid of the center q and the shape matrix Q the oracle returns, in CORA.cpp's
+    /// layout (a vector center, CORA's empty one as the empty mask); throws if a value is not a
     /// double. The error box is not looked at.
     cora::Ellipsoid nominal() const;
 

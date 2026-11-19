@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -34,7 +35,7 @@ void members_are_appended(const std::string &b) {
     check(bundle.intersect(Z3).parallel_sets() == 3 &&
               close((bundle.intersect(Z3).zonotopes()[2]).generators(), Z3.generators(), 0),
           b + ": a zonotope: one more member");
-    const Interval I(column({-1.0, -1.0}), column({1.0, 3.0}));
+    const Interval I(vec({-1.0, -1.0}), vec({1.0, 3.0}));
     check(close((bundle.intersect(I).zonotopes()[2]).center(), I.zonotope().center(), 0),
           b + ": a box: its zonotope");
     check(bundle.parallel_sets() == 2, b + ": the operand is unchanged");

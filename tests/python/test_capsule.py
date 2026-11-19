@@ -90,7 +90,7 @@ class EmptyAndOrigin(unittest.TestCase):
         self.assertEqual(E.dim, 3)
         self.assertEqual(E.r, -1.0)
         self.assertEqual(E.center.shape, (3, 0))
-        self.assertTrue(E.interval().inf.shape[-1] == 0 or E.interval().inf.size == 0)
+        self.assertTrue(E.interval().is_empty())
         with self.assertRaises(cora.errors.WrongValue):
             cora.Capsule.empty(-1)
 

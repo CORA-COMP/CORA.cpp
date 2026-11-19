@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/mtimes.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -14,7 +14,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -51,7 +51,7 @@ void mtimes_is_the_hull_of_the_image(const std::string &b) {
         std::vector<double> y(n, 0.0);
         for (int i = 0; i < n; ++i)
             for (int j = 0; j < n; ++j) y[i] += M[i * n + j] * x[j];
-        check(image.contains(column(y)), b + ": an image point left M * I");
+        check(image.contains(vec(y)), b + ": an image point left M * I");
     }
     // For a matrix that is a permutation with signs the hull is the image itself.
     const Interval flipped =
@@ -65,7 +65,7 @@ void mtimes_is_the_hull_of_the_image(const std::string &b) {
 
 /// A matrix of the wrong width is refused; with the checks off the map is the same.
 void checks_and_their_switch() {
-    const Interval S = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval S = Interval(test::vec({0, -1}), test::vec({1, 1}));
     const Tensor M({{1.0, 2.0}, {0.0, 1.0}}), wide({{1.0, 2.0, 3.0}});
     check(test::raises([&] { S.linear_map(wide); }, Error::dimension_mismatch),
           "linear_map: a matrix of three columns");

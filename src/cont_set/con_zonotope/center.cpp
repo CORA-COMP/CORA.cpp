@@ -13,7 +13,7 @@
 // CORA authors: Niklas Kochdumper, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -53,7 +53,7 @@ Tensor aux_center_full(const ConZonotope &cz) {
     const int64_t k = N.shape().back();
     // |x| <= 1 for x = N y + x0 is [N; -N] y <= [1 - x0; 1 + x0], a polytope of the y
     const Polytope Y(Tensor::concat({N, -N}, -2),
-                     Tensor::concat({x0.ones_like() - x0, x0.ones_like() + x0}, -2));
+                     Tensor::concat({x0.ones_like() - x0, x0.ones_like() + x0}, -2).squeeze(-1));
     constexpr double kInf = std::numeric_limits<double>::infinity();
     const auto y = Y.linear_programs(std::vector<double>(std::size_t(k), -kInf),
                                      std::vector<double>(std::size_t(k), kInf))

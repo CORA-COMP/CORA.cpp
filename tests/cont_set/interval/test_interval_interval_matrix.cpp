@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -16,7 +16,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,12 +26,13 @@ namespace {
 
 void interval_matrix_is_center_plus_minus_radius(const std::string &b) {
     const Tensor lo = Tensor::from_data({1, 2, 3, 4}, {2, 2});
-    const Interval M(lo, lo + 2.0);
+    const Interval M = Interval::matrix(lo, lo + 2.0);
     const Interval R = M.interval_matrix();
     check(R.inf().shape() == std::vector<int64_t>({2, 2}) && close(R.inf(), lo, 0) &&
               close(R.sup(), lo + 2.0, 0),
           b + ": a matrix of exact bounds is itself");
-    check(close(R.inf(), M.center() - M.rad(), 0) && close(R.sup(), M.center() + M.rad(), 0),
+    check(close(R.inf(), M.center() - M.half_width(), 0) &&
+              close(R.sup(), M.center() + M.half_width(), 0),
           b + ": c - r and c + r");
     const Interval S = Interval::stack({M, M}).interval_matrix();
     check(S.inf().shape() == std::vector<int64_t>({2, 2, 2}), b + ": a batch has a batch shape");
@@ -43,14 +44,15 @@ void interval_matrix_is_the_interval_up_to_rounding(const std::string &b) {
     for (int trial = 0; trial < 20; ++trial) {
         const Interval I = Interval::generate_random(rng, 4);
         const Interval R = I.interval_matrix();
-        check(close(R.inf(), I.inf(), 1e-15) && close(R.sup(), I.sup(), 1e-15),
+        check(close(R.inf(), I.inf().expand_dims(-1), 1e-15) &&
+                  close(R.sup(), I.sup().expand_dims(-1), 1e-15),
               b + ": equal up to rounding");
     }
 }
 
 /// interval_matrix has no input to refuse; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval I(column({-1.0, 0.0}), column({1.0, 1.0}));
+    const Interval I(vec({-1.0, 0.0}), vec({1.0, 1.0}));
     const Tensor on = I.interval_matrix().sup();
     ChecksScope off(false);
     check(close(I.interval_matrix().sup(), on, 0), "interval_matrix: the same with the checks off");

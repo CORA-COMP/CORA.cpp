@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -41,7 +42,7 @@ void pairs_of_members(const std::string &b) {
 void one_set_against_every_member(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 3.0}}));
     const ZonoBundle bundle({Z, Z});
-    const Interval I(column({0.0}), column({2.0}));
+    const Interval I(vec({0.0}), vec({2.0}));
     check(bundle.cart_prod(I).parallel_sets() == 2 && bundle.cart_prod(I).dim() == 3,
           b + ": a box");
     check(close((bundle.cart_prod(column({7.0})).zonotopes()[1]).center().expand_dims(-1),

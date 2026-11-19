@@ -24,7 +24,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -336,7 +336,7 @@ class Zonotope : public ContSet {
 
     /// An upper bound (..., 1, 1) of the distance from the center: the smaller of the sum of the
     /// generator lengths and the 2-norm of the radius of the box around the zonotope.
-    Tensor radius() const;
+    Tensor ball_radius() const;
 
     /// The rank of the generators (singular values up to tol count as zero). Not a batch. tol
     /// default: the repository tolerance (docs/architecture.md; CORA's own default is 0).

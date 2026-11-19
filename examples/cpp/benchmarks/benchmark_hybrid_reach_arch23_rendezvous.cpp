@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -29,6 +29,7 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 using cora::bench::matrix;
+using cora::bench::vec;
 namespace rendezvous = cora::bench::rendezvous;
 
 /// ~any(supremum(interval(C x) - d) > 0): CORA's custom check by the box of C x.
@@ -44,14 +45,14 @@ Specification aux_box_spec(const Tensor &C, const Tensor &d) {
 
 /// The safe set {x | C x <= d}, a polytope.
 Specification aux_safe(const Tensor &C, const std::vector<double> &d) {
-    return Specification::safe_set(Polytope(C, column(d)));
+    return Specification::safe_set(Polytope(C, vec(d)));
 }
 
 /// CORA's aux_checkSpaceStationHit: the projection onto (x, y) must miss the box [-0.1, 0.1]^2,
 /// first by its box, then reduced to order 3.
 Specification aux_station() {
     return Specification::custom([](const ContSet &S) {
-        const Interval station(column({-0.1, -0.1}), column({0.1, 0.1}));
+        const Interval station(vec({-0.1, -0.1}), vec({0.1, 0.1}));
         // the box of the projection decides most sets, the order-3 zonotope the rest
         const Set proj = S.project({0, 1});
         if (!is_intersecting(station, proj->interval())) return true;

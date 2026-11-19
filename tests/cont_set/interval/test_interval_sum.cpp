@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -15,7 +15,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +25,7 @@ namespace {
 
 Interval aux_matrix() {
     const Tensor lo = Tensor::from_data({1, 2, 3, 4, 5, 6}, {2, 3});
-    return {lo, lo + 1.0};
+    return Interval::matrix(lo, lo + 1.0);
 }
 
 void sum_adds_the_bounds(const std::string &b) {
@@ -39,7 +39,7 @@ void sum_adds_the_bounds(const std::string &b) {
               close(along.inf(), std::vector<double>{6, 15}) &&
               close(along.sup(), std::vector<double>{9, 18}),
           b + ": dim 2 sums along the columns");
-    const Interval v(column({1.0, 2.0, 3.0}), column({2.0, 3.0, 4.0}));
+    const Interval v(vec({1.0, 2.0, 3.0}), vec({2.0, 3.0, 4.0}));
     check(close(v.sum().inf(), std::vector<double>{6}) &&
               close(v.sum().sup(), std::vector<double>{9}),
           b + ": a column sums to one entry by default");
@@ -60,7 +60,8 @@ void sum_encloses_the_sums(const std::string &b) {
         const Interval I = Interval::generate_random(rng, 4), R = I.sum();
         const Tensor x = I.rand_point(20, rng);
         bool inside = true;
-        for (int k = 0; k < 20; ++k) inside = inside && R.contains(x.slice(-1, k, k + 1).sum());
+        for (int k = 0; k < 20; ++k)
+            inside = inside && R.contains(x.slice(-1, k, k + 1).squeeze(-1).sum());
         check(inside, b + ": the sum of a sample is in the result");
     }
 }

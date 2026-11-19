@@ -5,9 +5,9 @@
 // CORA: matrixSet/@intervalMatrix/expmAbsoluteBound.m
 // PROPERTY: matrixSet/@intervalMatrix/expmAbsoluteBound.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -26,7 +26,8 @@ namespace {
 /// The last block row of G^k [|C| t; S t; 0] for a large k, G CORA's block matrix: what the bound
 /// is the limit of.
 Tensor limit_by_powers(const Interval &A, double t) {
-    const Tensor C = A.center(), S = A.rad(), I = C.eye_like(A.inf().size(-2)), O = C.zeros_like();
+    const Tensor C = A.center(), S = A.half_width(), I = C.eye_like(A.inf().size(-2)),
+                 O = C.zeros_like();
     const Tensor row1 = Tensor::concat({C.abs() * t / 2, O, O}, 1);
     const Tensor row2 = Tensor::concat({S * t / 2, (C.abs() + S) * t / 2, O}, 1);
     const Tensor row3 = Tensor::concat({O, I, I}, 1);
@@ -107,8 +108,8 @@ void checks_and_their_switch() {
                 std::vector<double>(4, 0.0), 1e-12),
           "expm_absolute_bound: a nilpotent B2 is accepted");
     // true radius 1 + 3e-17, computed 1 - 1e-16: the plain B x < x passes, the margins refuse it
-    const Interval near_one = Interval(test::matrix({-0.528244331532636}, 1, 1),
-                                       test::matrix({1.8056955812214623}, 1, 1));
+    const Interval near_one = Interval::matrix(test::matrix({-0.528244331532636}, 1, 1),
+                                               test::matrix({1.8056955812214623}, 1, 1));
     check(test::raises([&] { mat_exp::expm_absolute_bound(near_one, 1.1076064098507128); },
                        Error::wrong_value),
           "expm_absolute_bound: a true radius above 1 that rounds to below 1");

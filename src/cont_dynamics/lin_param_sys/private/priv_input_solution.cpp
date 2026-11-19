@@ -21,7 +21,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/lin_param_sys/private/priv.h"
@@ -44,15 +44,15 @@ namespace {
 /// CORA's linParamSys test ignores c unless B = 0, as c is not in v_trans there).
 bool aux_origin_contained(const Zonotope &V, const Tensor &v_trans) {
     const Zonotope full = V + v_trans;
-    const Tensor origin = full.center().expand_dims(-1).zeros_like();
+    const Tensor origin = full.center().zeros_like();
     if (full.representsa("interval", machine_eps())) return full.interval().contains(origin);
-    return full.contains(origin);
+    return full.contains(origin.expand_dims(-1));
 }
 
 /// The interval matrix whose every entry is [-v, v].
 Interval aux_all(const Tensor &like, int64_t n, double v) {
     const Tensor ones = like.ones_like({n, n});
-    return Interval(ones * (-1.0), ones).times(like.full_like({1, 1}, v));
+    return Interval::matrix(ones * (-1.0), ones).times(like.full_like({1, 1}, v));
 }
 
 // The curvature of the constant input -------------------------------------------------------------
@@ -63,7 +63,7 @@ Interval aux_input_tie(const LinParamSys &sys, const LinParamSeries &series, dou
                        int taylor_terms) {
     const auto times_box = [](double lower, const Interval &M) {
         const Tensor lo = M.center().full_like({1, 1}, lower);
-        return M.times(Interval(lo, lo.zeros_like()));
+        return M.times(Interval::matrix(lo, lo.zeros_like()));
     };
     Interval sum = times_box(-0.25 * r, priv_power(series, 1)) * (1 / priv_factorial(2));
     for (int i = 3; i <= taylor_terms; ++i) {
@@ -103,7 +103,7 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     const Tensor v_trans = (sys.B() ? sys.B()->matmul(u_trans) : c.zeros_like()) + c;
     Zonotope input_set = V * r;
     const Tensor start = c.eye_like(n) * r;
-    Interval integral(start, start);
+    Interval integral = Interval::matrix(start, start);
     // the series: the matrix-zonotope powers, then the interval powers
     const auto z = static_cast<int>(series.zono_powers.size());
     for (int i = 1; i <= z; ++i) {
@@ -125,7 +125,8 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     // the constant input, and the sets without zero generators
     const Zonotope point = Zonotope(v_trans.squeeze(-1), v_trans.zeros_like({0, n}));
     const double eps = machine_eps();
-    const Zonotope trans = (integral * Interval(v_trans, v_trans).zonotope()).compact("zeros", eps);
+    const Tensor v = v_trans.squeeze(-1);
+    const Zonotope trans = (integral * Interval(v, v).zonotope()).compact("zeros", eps);
     input_set = input_set.compact("zeros", eps);
     Zonotope correction = Zonotope(c.zeros_like().squeeze(-1), c.zeros_like({0, n}));
     if (!aux_origin_contained(V, v_trans))

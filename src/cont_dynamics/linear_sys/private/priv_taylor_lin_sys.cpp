@@ -11,9 +11,9 @@
 //
 // CORA: global/classes/taylorLinSys.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_taylor_lin_sys.h"
@@ -137,7 +137,7 @@ std::optional<Interval> TaylorLinSys::F(double dt) {
         sum_pos = sum_pos + add_neg;
         sum_neg = sum_neg + add_pos;
     }
-    entry(dt).F = Interval(sum_neg, sum_pos);
+    entry(dt).F = Interval::matrix(sum_neg, sum_pos);
     return entry(dt).F;
 }
 
@@ -155,7 +155,7 @@ std::optional<Interval> TaylorLinSys::G(double dt) {
         sum_pos = sum_pos + add_neg;
         sum_neg = sum_neg + add_pos;
     }
-    entry(dt).G = Interval(sum_neg, sum_pos);
+    entry(dt).G = Interval::matrix(sum_neg, sum_pos);
     return entry(dt).G;
 }
 

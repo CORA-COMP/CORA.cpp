@@ -3,9 +3,9 @@
 // CORA: matrixSet/@intervalMatrix/representsa.m
 // PROPERTY: matrixSet/@intervalMatrix/representsa.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -33,7 +33,7 @@ void types_of_the_example(const std::string &b) {
     check(!A.representsa("fullspace") && !A.representsa("halfspace"), b + ": no unbounded set");
     // at most one entry with a width: a capsule; the example has three
     const Interval one = test::interval_matrix(
-        Interval(test::matrix({0, 1, 2, 3}, 2, 2), test::matrix({1, 1, 2, 3}, 2, 2)));
+        Interval::matrix(test::matrix({0, 1, 2, 3}, 2, 2), test::matrix({1, 1, 2, 3}, 2, 2)));
     check(one.representsa("capsule") && !A.representsa("capsule"), b + ": capsule");
 }
 

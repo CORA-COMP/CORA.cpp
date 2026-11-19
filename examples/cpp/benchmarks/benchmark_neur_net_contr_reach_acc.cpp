@@ -14,9 +14,9 @@
 //
 // CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_02_ACC.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_neur_net.h"
@@ -61,7 +61,7 @@ std::vector<AinncsInstance> aux_instances() {
              aux_acc(), "acc", 0.1, box_poly({90, 32, 0, 10, 30, 0}, {110, 32.2, 0, 11, 30.2, 0}),
              none, 5.0, loop_options(0.1, 2, 1, 10),
              {Specification::safe_set(Polytope(Tensor::from_data({-1, 0, 0, 1, 1.4, 0}, {1, 6}),
-                                               Tensor::from_data({-10.0}, {1, 1})))})});
+                                               Tensor::from_data({-10.0}, {1})))})});
     return v;
 }
 

@@ -2,9 +2,9 @@
 //
 // The extreme points are chosen without gradient; the result takes its columns from the cloud.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_gradients.h"
@@ -22,10 +22,10 @@ int main() {
     torch::manual_seed(31);
     Rng rng(31);
     const Tensor sphere = test::sphere_points(rng, 2, 6);
-    const Tensor inner = sphere.mean(-1, true) * 1.0;
+    const Tensor inner = sphere.mean(-2, true) * 1.0;
     test::gradcheck("enclose_points",
                     [](const Inputs &x) { return test::parts(Polytope::enclose_points(x[0])); },
-                    {to_torch(Tensor::concat({sphere, inner}, -1))});
+                    {to_torch(Tensor::concat({sphere, inner}, -2))});
     return test::finish("polytope enclose_points (torch)");
 }
 

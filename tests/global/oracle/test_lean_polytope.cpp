@@ -19,7 +19,7 @@
 // ORACLE: contSet/@interval/polytope.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -48,7 +48,8 @@ Tensor aux_sphere(oracle::Random &rnd, int64_t n, int64_t k, double radius = 1.0
         for (int64_t i = 0; i < n; ++i)
             x[i * k + c] = shift + radius * x[i * k + c] / std::sqrt(norm);
     }
-    return Tensor::from_data(x, {n, k});
+    // the draws are CORA's columns (n, k); the vertices are their columns, one per row
+    return Tensor::from_data(x, {n, k}).matrix_transpose();
 }
 
 /// The box |x| <= 2 and m random rows with offset 3: nonempty and bounded.
@@ -56,7 +57,7 @@ Polytope aux_halfspaces(oracle::Random &rnd, int64_t n, int64_t m) {
     // the negative identity with +0 off the diagonal, as the oracle prints it
     const Tensor eye = Tensor::eye(n), negative = eye * 0.0 - eye;
     return {Tensor::concat({eye, negative, rnd.matrix(m, n)}, 0),
-            Tensor::concat({Tensor::ones({2 * n, 1}) * 2.0, Tensor::ones({m, 1}) * 3.0}, 0)};
+            Tensor::concat({Tensor::ones({2 * n}) * 2.0, Tensor::ones({m}) * 3.0}, 0)};
 }
 
 /// The vertices of a result, reduced to the extreme ones as CORA.cpp keeps them.
@@ -105,7 +106,8 @@ int main() {
     oracle::run("polytope.contains", [](oracle::Random &rnd) {
         const Polytope P = aux_halfspaces(rnd, 3, 2);
         const Tensor c = rnd.vector(3) * 0.0;
-        const Interval inside(c - 0.1, c + 0.1), outside(c - 5.0, c + 5.0);
+        const Interval inside(c.squeeze(-1) - 0.1, c.squeeze(-1) + 0.1),
+            outside(c.squeeze(-1) - 5.0, c.squeeze(-1) + 5.0);
         oracle::check(P.contains(inside), lean::Polytope(P).contains(inside));
         oracle::check(P.contains(outside), lean::Polytope(P).contains(outside));
         const Zonotope near(c, rnd.matrix(3, 4).matrix_transpose() * 0.05),
@@ -124,7 +126,7 @@ int main() {
     // the hull of points: CORALean lists them all, CORA.cpp the extreme ones
     oracle::run("polytope.enclosePoints", [](oracle::Random &rnd) {
         const Tensor points = aux_sphere(rnd, 3, 9);
-        const Polytope theirs = lean::Polytope::enclose_points(points).gather();
+        const Polytope theirs = lean::Polytope::enclose_points(points.matrix_transpose()).gather();
         test::check(oracle::agree("enclosePoints", Polytope::enclose_points(points),
                                   lean::Polytope(aux_extreme(theirs))),
                     "enclosePoints: the extreme points of the oracle's list");

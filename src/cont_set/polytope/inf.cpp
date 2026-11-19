@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@polytope/Inf.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -28,8 +28,8 @@ CORA_FROM_NUMBERS Polytope Polytope::inf(int64_t n) {
     detail::Entry entry;
     CORA_CHECK(n >= 0, Error::wrong_value,
                [&] { return "inf: the dimension must be nonnegative, got " + std::to_string(n); });
-    return Polytope(Parts{Tensor::zeros({0, n}), Tensor::zeros({0, 1}), Tensor::zeros({0, n}),
-                          Tensor::zeros({0, 1}), Tensor()});
+    return Polytope(Parts{Tensor::zeros({0, n}), Tensor::zeros({0}), Tensor::zeros({0, n}),
+                          Tensor::zeros({0}), Tensor()});
 }
 
 } // namespace cora

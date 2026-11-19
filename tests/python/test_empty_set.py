@@ -156,7 +156,7 @@ class EmptySet(unittest.TestCase):
         self.assertEqual(E.project_high_dim(5, [3, 0]).dim, 5)
         with self.assertRaises(cora.errors.WrongValue):
             E.project_high_dim(1, [0, 0])
-        self.assertEqual((E.radius(), E.volume()), (0.0, 0.0))
+        self.assertEqual((E.ball_radius(), E.volume()), (0.0, 0.0))
         F = E.complement()
         self.assertIsInstance(F, cora.Fullspace)
         self.assertEqual(F.dim, 2)

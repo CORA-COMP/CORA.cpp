@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@polytope/box.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -31,8 +31,8 @@ Polytope Polytope::box() const {
     if (priv_is_fullspace(*this)) return inf(n);
     const Interval I = interval_impl();
     if (I.is_empty()) return empty(n);
-    const Tensor eye = identity_block(I.inf(), n);
-    return Polytope(Tensor::concat({eye, -eye}, -2), Tensor::concat({I.sup(), -I.inf()}, -2));
+    const Tensor eye = identity_block(I.inf().expand_dims(-1), n);
+    return Polytope(Tensor::concat({eye, -eye}, -2), Tensor::concat({I.sup(), -I.inf()}, -1));
 }
 
 } // namespace cora

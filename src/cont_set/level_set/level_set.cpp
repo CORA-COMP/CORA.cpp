@@ -16,9 +16,9 @@
 // CORA: contSet/@levelSet/empty.m
 // CORA: contSet/@levelSet/Inf.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/level_set/level_set.h"
@@ -117,15 +117,17 @@ Tensor LevelSet::fun_han(const Tensor &x) const {
 Interval LevelSet::fun_han(const Interval &I) const {
     detail::Entry entry;
     // the bounds of the box as the ranges of the states
-    CORA_CHECK(I.inf().ndim() == 2 && I.inf().shape() == std::vector<int64_t>({dim(), 1}),
+    CORA_CHECK(I.elem_rank() == 1 && I.inf().shape() == std::vector<int64_t>({dim()}),
                Error::dimension_mismatch, [&] {
-                   return "fun_han: the box must be a column of " + std::to_string(dim()) +
+                   return "fun_han: the box must be a single box of " + std::to_string(dim()) +
                           " states";
                });
+    // each state a range (1, 1), as the expressions take them
+    const Tensor inf = I.inf().expand_dims(-1), sup = I.sup().expand_dims(-1);
     std::vector<Range> state;
     state.reserve(std::size_t(dim()));
     for (int64_t j = 0; j < dim(); ++j)
-        state.emplace_back(I.inf().slice(0, j, j + 1), I.sup().slice(0, j, j + 1));
+        state.emplace_back(inf.slice(0, j, j + 1), sup.slice(0, j, j + 1));
     std::vector<Tensor> lo, hi;
     lo.reserve(eq_.size());
     hi.reserve(eq_.size());
@@ -133,7 +135,7 @@ Interval LevelSet::fun_han(const Interval &I) const {
         lo.push_back(r.lo);
         hi.push_back(r.hi);
     }
-    return {Tensor::concat(lo, 0), Tensor::concat(hi, 0)};
+    return {Tensor::concat(lo, 0).squeeze(-1), Tensor::concat(hi, 0).squeeze(-1)};
 }
 
 } // namespace cora

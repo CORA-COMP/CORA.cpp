@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_coordinate.h"
@@ -45,7 +45,7 @@ std::pair<ZonoBundle, ZonoBundle> aux_split_dim(const ZonoBundle &bundle, const 
     const Tensor &lower = I.inf(), &upper = I.sup();
     std::vector<double> unit(std::size_t(bundle.dim()), 0.0);
     unit[std::size_t(d)] = 1.0;
-    const Tensor at = Tensor::like(lower, unit, {bundle.dim(), 1});
+    const Tensor at = Tensor::like(lower, unit, {bundle.dim()});
     const Tensor middle = (lower + upper).multiply(at) * 0.5, keep = at * -1.0 + 1.0;
     const Tensor lower_end = upper.multiply(keep) + middle,
                  upper_start = lower.multiply(keep) + middle;

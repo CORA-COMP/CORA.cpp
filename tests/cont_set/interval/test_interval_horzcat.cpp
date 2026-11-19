@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/horzcat.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,8 +22,7 @@ using test::column;
 namespace {
 
 void horzcat_joins_columns(const std::string &b) {
-    const Interval I1(column({-0.5, 0.3}), column({0.5, 0.9})),
-        I2(column({2.0, 3.0}), column({2.5, 4.0}));
+    const Interval I1(vec({-0.5, 0.3}), vec({0.5, 0.9})), I2(vec({2.0, 3.0}), vec({2.5, 4.0}));
     const Interval H = Interval::horzcat({I1, I2, I1});
     check(H.inf().shape() == std::vector<int64_t>({2, 3}) &&
               close(H.inf(), std::vector<double>{-0.5, 2.0, -0.5, 0.3, 3.0, 0.3}) &&
@@ -40,7 +39,7 @@ void horzcat_joins_columns(const std::string &b) {
 
 /// No interval, or other numbers of rows, are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval I(column({0.0, 1.0}), column({1.0, 2.0})), J(column({0.0}), column({1.0}));
+    const Interval I(vec({0.0, 1.0}), vec({1.0, 2.0})), J(vec({0.0}), vec({1.0}));
     check(test::raises([] { Interval::horzcat({}); }, Error::wrong_value), "horzcat: no interval");
     check(test::raises([&] { Interval::horzcat({I, J}); }, Error::dimension_mismatch),
           "horzcat: columns of 2 and 1 rows");

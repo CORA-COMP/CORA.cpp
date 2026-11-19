@@ -4,9 +4,9 @@
 // offsets: differentiable in the operands and the point. The sum of two halfspace sets is a
 // host program: no gradient (a gradient request fails).
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       07-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_gradients.h"
@@ -26,7 +26,7 @@ int main() {
     // the operands: two vertex sets and a halfspace set on spheres and random rows, and a point
     const Tensor V1 = test::sphere_points(rng, 3, 5), V2 = test::sphere_points(rng, 3, 4);
     const std::vector<torch::Tensor> H = test::random_halfspaces(4, 3);
-    const torch::Tensor v = torch::randn({3, 1}, torch::kDouble);
+    const torch::Tensor v = torch::randn({3}, torch::kDouble);
     test::gradcheck(
         "plus (vertices)",
         [](const Inputs &x) { return test::parts(Polytope(x[0]).plus(Polytope(x[1]))); },

@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -15,6 +15,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +26,7 @@ namespace {
 /// A three-dimensional set splits into a block of two coordinates and one of one; a single block
 /// is a projection too.
 void decompose_projects_each_block(const std::string &b) {
-    const Interval I(column({-1.0, 0.0, 2.0}), column({1.0, 2.0, 5.0}));
+    const Interval I(vec({-1.0, 0.0, 2.0}), vec({1.0, 2.0, 5.0}));
     const Zonotope Z(column({1.0, 2.0, 3.0}), Tensor::from_data({1, 0, 0, 0, 1, 1}, {2, 3}));
     const std::vector<Set> parts = static_cast<const ContSet &>(I).decompose({{0, 1}, {2, 2}});
     check(parts.size() == 2 && parts[0].as<Interval>().dim() == 2 &&
@@ -44,7 +45,7 @@ void decompose_projects_each_block(const std::string &b) {
 
 /// Blocks outside the set or none are refused; the checks off skip the check.
 void errors_and_their_switch() {
-    const Interval I(column({0.0, 0.0, 0.0}), column({1.0, 1.0, 1.0}));
+    const Interval I(vec({0.0, 0.0, 0.0}), vec({1.0, 1.0, 1.0}));
     const ContSet &S = I;
     check(test::raises([&] { S.decompose({{1, 3}}); }, Error::wrong_value), "block past the end");
     check(test::raises([&] { S.decompose({{2, 1}}); }, Error::wrong_value), "first after last");

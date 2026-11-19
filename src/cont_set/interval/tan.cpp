@@ -11,7 +11,7 @@
 // CORA authors: Daniel Althoff, Dmitry Grebenyuk, Matthias Althoff, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -33,8 +33,8 @@ Interval Interval::tan() const {
     const Tensor no_pole = (sup_ - inf_)
                                .less(inf_.full_like(inf_.shape(), std::numbers::pi))
                                .multiply(lo.less_equal(hi));
-    return {Tensor::where(no_pole, lo, inf_.full_like(inf_.shape(), -kInf)),
-            Tensor::where(no_pole, hi, inf_.full_like(inf_.shape(), kInf))};
+    return with(Tensor::where(no_pole, lo, inf_.full_like(inf_.shape(), -kInf)),
+                Tensor::where(no_pole, hi, inf_.full_like(inf_.shape(), kInf)));
 }
 
 } // namespace cora

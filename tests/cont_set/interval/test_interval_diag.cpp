@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/diag.m
 // CORA authors: Matthias Althoff, Tobias Ladner
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,26 +22,26 @@ using test::column;
 namespace {
 
 void diag_of_a_vector(const std::string &b) {
-    const Interval v(column({1.0, 2.0, 3.0}), column({4.0, 5.0, 6.0}));
+    const Interval v(vec({1.0, 2.0, 3.0}), vec({4.0, 5.0, 6.0}));
     const Interval D = v.diag();
     check(D.inf().shape() == std::vector<int64_t>({3, 3}) &&
               close(D.inf(), std::vector<double>{1, 0, 0, 0, 2, 0, 0, 0, 3}) &&
               close(D.sup(), std::vector<double>{4, 0, 0, 0, 5, 0, 0, 0, 6}),
           b + ": the vector on the diagonal, [0, 0] elsewhere");
-    const Interval U = Interval(column({1.0, 2.0}), column({3.0, 4.0})).diag(1);
+    const Interval U = Interval(vec({1.0, 2.0}), vec({3.0, 4.0})).diag(1);
     check(U.inf().shape() == std::vector<int64_t>({3, 3}) &&
               close(U.sup(), std::vector<double>{0, 3, 0, 0, 0, 4, 0, 0, 0}),
           b + ": k = 1 above the diagonal");
-    const Interval L = Interval(column({1.0, 2.0}), column({3.0, 4.0})).diag(-2);
+    const Interval L = Interval(vec({1.0, 2.0}), vec({3.0, 4.0})).diag(-2);
     check(L.inf().shape() == std::vector<int64_t>({4, 4}) &&
               close(L.inf().sum().data()[0], 3.0, 0) && close(L.sup().data()[8], 3.0, 0) &&
               close(L.sup().data()[13], 4.0, 0),
           b + ": k = -2 below the diagonal");
     const Tensor row = Tensor::from_data({1, 2}, {1, 2});
-    check(close(Interval(row, row + 1.0).diag().sup(), std::vector<double>{2, 0, 0, 3}),
+    check(close(Interval::matrix(row, row + 1.0).diag().sup(), std::vector<double>{2, 0, 0, 3}),
           b + ": a row is a vector too");
     // a scalar and a batch
-    const Interval one(column({7.0}), column({8.0}));
+    const Interval one(vec({7.0}), vec({8.0}));
     check(close(one.diag().inf(), std::vector<double>{7}), b + ": a scalar");
     const Interval S = Interval::stack({v, v}).diag();
     check(S.inf().shape() == std::vector<int64_t>({2, 3, 3}), b + ": a batch member by member");
@@ -49,9 +49,9 @@ void diag_of_a_vector(const std::string &b) {
 
 void diag_of_a_matrix(const std::string &b) {
     const Tensor lo = Tensor::from_data({1, 2, 3, 4, 5, 6, 7, 8, 9}, {3, 3});
-    const Interval M(lo, lo + 1.0);
+    const Interval M = Interval::matrix(lo, lo + 1.0);
     check(close(M.diag().inf(), std::vector<double>{1, 5, 9}) &&
-              M.diag().inf().shape() == std::vector<int64_t>({3, 1}),
+              M.diag().inf().shape() == std::vector<int64_t>({3}),
           b + ": the main diagonal as a column");
     check(close(M.diag(1).sup(), std::vector<double>{3, 7}), b + ": k = 1");
     check(close(M.diag(-2).inf(), std::vector<double>{7}), b + ": k = -2");
@@ -62,7 +62,7 @@ void diag_of_a_matrix(const std::string &b) {
 /// An empty diagonal is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const Tensor lo = Tensor::from_data({1, 2, 3, 4}, {2, 2});
-    const Interval M(lo, lo + 1.0);
+    const Interval M = Interval::matrix(lo, lo + 1.0);
     check(test::raises([&] { M.diag(2); }, Error::not_supported), "diag: k = 2 of a 2 x 2 matrix");
     check(test::raises([&] { M.diag(-2); }, Error::not_supported),
           "diag: k = -2 of a 2 x 2 matrix");

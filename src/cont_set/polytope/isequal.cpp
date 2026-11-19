@@ -9,16 +9,16 @@
 //
 // Syntax:   res = P.isequal(S);   res = P.isequal(S, tol);   res = P.isequal(p, tol);
 // Inputs:   S - a polytope, or a box, zonotope, constrained zonotope, bundle, empty set, R^n
-//           p - a point (n, 1)
+//           p - a point (n)
 //           tol - what counts as equal (as within_tol); default: the repository tolerance
 // Outputs:  res - whether both describe the same set
 // See also: Polytope::contains, Polytope::compact
 //
 // CORA: contSet/@polytope/isequal.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -166,10 +166,10 @@ bool Polytope::isequal(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const Tensor &like = is_h_rep() ? A_ : V_;
     const double tol = resolve_tol(entry, tol_arg, like.dtype(), "isequal");
-    CORA_CHECK(is_column(p, dim()) && p.ndim() == 2 && like.ndim() == 2, Error::dimension_mismatch,
-               [&] {
-                   return "isequal: a point must be a column (" + std::to_string(dim()) +
-                          ", 1) and the polytope single";
+    CORA_CHECK(p.defined() && is_vector(p, dim()) && p.ndim() == 1 && like.ndim() == 2,
+               Error::dimension_mismatch, [&] {
+                   return "isequal: a point must be a vector (" + std::to_string(dim()) +
+                          ") and the polytope single";
                });
     // the set is that point: one vertex, equal up to tol
     if (!representsa("point", tol)) return false;

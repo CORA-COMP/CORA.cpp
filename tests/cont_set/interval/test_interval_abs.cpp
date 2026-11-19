@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -15,7 +15,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +25,7 @@ namespace {
 
 /// The three cases of a bound pair: below zero, across zero, above zero.
 void abs_of_the_three_cases(const std::string &b) {
-    const Interval I(column({-3.0, -2.0, 1.0}), column({-1.0, 4.0, 2.0}));
+    const Interval I(vec({-3.0, -2.0, 1.0}), vec({-1.0, 4.0, 2.0}));
     const Interval A = I.abs();
     check(close(A.inf(), std::vector<double>{1.0, 0.0, 1.0}), b + ": abs lower bounds");
     check(close(A.sup(), std::vector<double>{3.0, 4.0, 2.0}), b + ": abs upper bounds");
@@ -33,13 +33,13 @@ void abs_of_the_three_cases(const std::string &b) {
 
 /// A batch of boxes gives the batch of their images; a matrix of intervals is elementwise.
 void abs_of_a_batch_and_a_matrix(const std::string &b) {
-    const Interval I1(column({-3.0, 1.0}), column({-1.0, 2.0})),
-        I2(column({-1.0, -5.0}), column({2.0, 0.5}));
+    const Interval I1(vec({-3.0, 1.0}), vec({-1.0, 2.0})), I2(vec({-1.0, -5.0}), vec({2.0, 0.5}));
     const Interval A = Interval::stack({I1, I2}).abs();
     check(close(A.inf(), Interval::stack({I1.abs(), I2.abs()}).inf()) &&
               close(A.sup(), Interval::stack({I1.abs(), I2.abs()}).sup()),
           b + ": the batch is the batch of the images");
-    const Interval M(Tensor({{-1.0, 0.0}, {2.0, -3.0}}), Tensor({{1.0, 4.0}, {2.0, -1.0}}));
+    const Interval M =
+        Interval::matrix(Tensor({{-1.0, 0.0}, {2.0, -3.0}}), Tensor({{1.0, 4.0}, {2.0, -1.0}}));
     check(close(M.abs().sup(), std::vector<double>{1.0, 4.0, 2.0, 3.0}), b + ": matrix, upper");
 }
 
@@ -51,7 +51,8 @@ void abs_encloses_the_image_exactly(const std::string &b) {
         const Interval A = I.abs();
         const Tensor x = I.rand_point(40, rng); // (n, 40)
         bool inside = true;
-        for (int k = 0; k < 40; ++k) inside = inside && A.contains(x.abs().slice(-1, k, k + 1));
+        for (int k = 0; k < 40; ++k)
+            inside = inside && A.contains(x.abs().slice(-1, k, k + 1).squeeze(-1));
         check(inside, b + ": a sample maps into abs");
         const Tensor corners = I.inf().abs().maximum(I.sup().abs());
         check(close(A.sup(), corners), b + ": the largest |bound| is the upper bound");
@@ -60,7 +61,7 @@ void abs_encloses_the_image_exactly(const std::string &b) {
 
 /// abs has no input to refuse; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Interval S(column({-1, -2}), column({1, 3}));
+    const Interval S(vec({-1, -2}), vec({1, 3}));
     const Tensor on = S.abs().sup();
     ChecksScope off(false);
     check(close(S.abs().sup(), on, 0), "abs: the same with the checks off");

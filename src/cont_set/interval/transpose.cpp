@@ -9,7 +9,7 @@
 // CORA authors: Dmitry Grebenyuk
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -23,7 +23,8 @@ namespace cora {
 
 Interval Interval::transpose() const {
     detail::Entry entry;
-    return {inf_.matrix_transpose(), sup_.matrix_transpose()};
+    // a box is a column, its transpose a row
+    return {inf_matrix().matrix_transpose(), sup_matrix().matrix_transpose(), 2, empty_};
 }
 
 } // namespace cora

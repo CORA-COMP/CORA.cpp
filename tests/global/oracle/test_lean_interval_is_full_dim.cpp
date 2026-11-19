@@ -9,7 +9,7 @@
 // ORACLE: contSet/@interval/isFullDim.m
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -31,9 +31,9 @@ int main() {
             test::oracle::check(I.is_full_dim(), lean::Interval(I).is_full_dim());
             if (!test::oracle::nearest_is_strict()) continue;
             // a flat box: the first coordinate has no width
-            const Tensor flat = I.inf().slice(-2, 0, 1), rest = I.inf().slice(-2, 1, n);
-            const Interval F(Tensor::concat({flat, rest}, -2),
-                             Tensor::concat({flat, I.sup().slice(-2, 1, n)}, -2));
+            const Tensor flat = I.inf().slice(-1, 0, 1), rest = I.inf().slice(-1, 1, n);
+            const Interval F(Tensor::concat({flat, rest}, -1),
+                             Tensor::concat({flat, I.sup().slice(-1, 1, n)}, -1));
             test::oracle::check(F.is_full_dim(), lean::Interval(F).is_full_dim());
         }
     });

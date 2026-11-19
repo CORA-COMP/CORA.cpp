@@ -5,7 +5,7 @@
 // CORA authors: Tobias Ladner, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -16,6 +16,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +26,7 @@ namespace {
 
 /// The center and the dimension through the base class, for a box, a zonotope and a batch.
 void center_and_dim_of_any_set(const std::string &b) {
-    const Interval I(column({-1.0, 0.0, 2.0}), column({1.0, 2.0, 4.0}));
+    const Interval I(vec({-1.0, 0.0, 2.0}), vec({1.0, 2.0, 4.0}));
     const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     const ContSet &A = I, &B = Z;
     check(test::close(A.center(), {0.0, 1.0, 3.0}), b + ": the center of a box");
@@ -40,7 +41,7 @@ void center_and_dim_of_any_set(const std::string &b) {
 
 /// Neither has an input to refuse; the checks off change nothing.
 void checks_and_their_switch() {
-    const Interval I(column({-1.0}), column({1.0}));
+    const Interval I(vec({-1.0}), vec({1.0}));
     ChecksScope off(false);
     check(test::close(static_cast<const ContSet &>(I).center(), {0.0}), "the checks off");
 }

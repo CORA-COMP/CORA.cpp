@@ -7,10 +7,12 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
+
+#include "cora/cont_set/interval/interval.h"
 
 #include <cstdint>
 #include <vector>
@@ -20,6 +22,8 @@
 namespace cora {
 
 bool priv_broadcastable(const std::vector<int64_t> &a, const std::vector<int64_t> &b);
+
+bool priv_fits_elements(const Tensor &x, const Interval &I);
 
 } // namespace cora
 

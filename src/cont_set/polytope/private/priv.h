@@ -9,9 +9,9 @@
 //           auto s = priv_support(H, direction, true);   Rows V = priv_vertices(H);
 // See also: polytope.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -46,17 +46,17 @@ struct HostH {
 /// batch.
 HostH priv_host_h(const Polytope::Constraints &C);
 
-/// The tensors (rows, n) and (rows, 1) of a host polytope, on the backend of `like`.
+/// The tensors (rows, n) and (rows) of a host polytope, on the backend of `like`.
 Polytope::Constraints priv_tensors_h(const Tensor &like, const HostH &H);
 
-/// The points of a vertex tensor (n, p) as p rows of n numbers; Error::not_supported for a batch.
+/// The points of a vertex tensor (p, n) as p rows of n numbers; Error::not_supported for a batch.
 Rows priv_host_points(const Tensor &V);
 
-/// The matrix (n, p) of p points of n numbers, on the backend of `like`.
+/// The matrix (p, n) of p points of n numbers, one per row, on the backend of `like`.
 Tensor priv_points_tensor(const Tensor &like, int64_t n, const Rows &points);
 
-/// The column (n, 1) of the numbers, on the backend of `like`.
-Tensor priv_column_tensor(const Tensor &like, const Row &values);
+/// The vector (n) of the numbers, on the backend of `like`.
+Tensor priv_vector_tensor(const Tensor &like, const Row &values);
 
 /// The dot product and the Euclidean norm of rows (summed in order, as MATLAB's loops do).
 double priv_dot(const Row &a, const Row &b);
@@ -190,7 +190,7 @@ Rows priv_polytope_vertices(const Polytope &P);
 /// zeros elsewhere (a copy, no arithmetic).
 Tensor priv_place(const Tensor &M, int64_t N, const std::vector<int64_t> &dims, int axis);
 
-/// The polytope of a box (n, 1) (CORA's interval/polytope.m for the interval's rows).
+/// The polytope of a box (n) (CORA's interval/polytope.m for the interval's rows).
 Polytope priv_polytope_of_interval(const Interval &I);
 
 } // namespace cora

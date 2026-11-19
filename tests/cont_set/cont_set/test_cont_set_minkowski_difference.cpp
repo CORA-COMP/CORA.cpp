@@ -4,7 +4,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -16,6 +16,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,15 +27,14 @@ namespace {
 /// A box minus a box subtracts the bounds; a zonotope minus a box or a zonotope keeps the sum
 /// inside the minuend.
 void the_difference_of_any_pair(const std::string &b) {
-    const Interval I(column({-1.0, 0.0}), column({1.0, 2.0})),
-        S(column({-0.5, 0.0}), column({0.5, 0.5}));
+    const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0})), S(vec({-0.5, 0.0}), vec({0.5, 0.5}));
     const Set R = static_cast<const ContSet &>(I).minkowski_difference(S);
     check(test::close(R.as<Interval>().inf(), {-0.5, 0.0}) &&
               test::close(R.as<Interval>().sup(), {0.5, 1.5}),
           b + ": a box minus a box");
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const Zonotope Q(column({0.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
-    const Interval box(column({-0.5, -0.25}), column({0.5, 0.25}));
+    const Interval box(vec({-0.5, -0.25}), vec({0.5, 0.25}));
     for (const ContSet *T :
          {static_cast<const ContSet *>(&Q), static_cast<const ContSet *>(&box)}) {
         const Set D = static_cast<const ContSet &>(Z).minkowski_difference(*T, "inner");
@@ -49,7 +49,7 @@ void the_difference_of_any_pair(const std::string &b) {
 /// A set of another dimension is refused; a pair without an algorithm raises noops; the checks off
 /// skip the dimension check.
 void errors_and_their_switch() {
-    const Interval I(column({0.0, 0.0}), column({1.0, 1.0})), I3(column({0.0}), column({1.0}));
+    const Interval I(vec({0.0, 0.0}), vec({1.0, 1.0})), I3(vec({0.0}), vec({1.0}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     check(test::raises([&] { static_cast<const ContSet &>(I).minkowski_difference(I3); },
                        Error::dimension_mismatch),

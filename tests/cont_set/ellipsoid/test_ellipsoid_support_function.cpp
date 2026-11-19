@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/supportFunc_.m
 // PROPERTY: contSet/@ellipsoid/supportFunc_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -20,6 +20,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,20 +30,21 @@ namespace {
 
 /// Hand-computed along the axes and a diagonal; a point; the empty ellipsoid has -Inf.
 void support_known(const std::string &b) {
-    const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
+    const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
     check(close(E.support_function(column({1.0, 0.0})), {3.0}, 1e-14), b + ": d = (1, 0)");
     check(close(E.support_function(column({0.0, 1.0})), {3.0}, 1e-14), b + ": d = (0, 1)");
     check(close(E.support_function(column({1.0, 1.0})), {3.0 + std::sqrt(5.0)}, 1e-14),
           b + ": d = (1, 1)");
-    check(close(Ellipsoid(Tensor::zeros({2, 2}), column({1.0, 2.0}))
-                    .support_function(column({2.0, 1.0})),
-                {4.0}, 0),
-          b + ": a point");
+    check(
+        close(
+            Ellipsoid(vec({1.0, 2.0}), Tensor::zeros({2, 2})).support_function(column({2.0, 1.0})),
+            {4.0}, 0),
+        b + ": a point");
     check(Ellipsoid::empty(2).support_function(column({1.0, 0.0})).item() ==
               -std::numeric_limits<double>::infinity(),
           b + ": empty");
-    const Ellipsoid batch(Tensor::stack({Tensor({{4.0}}), Tensor({{9.0}})}, 0),
-                          Tensor::stack({column({0.0}), column({1.0})}, 0));
+    const Ellipsoid batch(Tensor::stack({vec({0.0}), vec({1.0})}, 0),
+                          Tensor::stack({Tensor({{4.0}}), Tensor({{9.0}})}, 0));
     check(close(batch.support_function(column({1.0})),
                 Tensor::stack({Tensor({{2.0}}), Tensor({{4.0}})}, 0), 0),
           b + ": a batch");
@@ -56,18 +58,18 @@ void support_property(const std::string &b) {
         const std::vector<double> d = test::random_direction(rng, 3);
         const double value = test::support(E, d);
         const Tensor P = test::ellipsoid_points(E, rng, 40, true);
-        check(column(d).matrix_transpose().matmul(P).max().item() <= value + 1e-9,
-              b + ": the points stay below");
+        check(P.matmul(column(d)).max().item() <= value + 1e-9, b + ": the points stay below");
         const Tensor Qd = E.Q().matmul(column(d));
         const double spread = std::sqrt(column(d).matrix_transpose().matmul(Qd).item());
-        check(close(column(d).matrix_transpose().matmul(E.q() + Qd / spread).item(), value, 1e-9),
+        check(close(column(d).matrix_transpose().matmul(E.q().expand_dims(-1) + Qd / spread).item(),
+                    value, 1e-9),
               b + ": the tip attains it");
     }
 }
 
 /// A direction of the wrong size is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
-    const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
+    const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { E.support_function(column({1.0})); }, Error::dimension_mismatch),
           "support_function: dimension");
     ChecksScope off(false);

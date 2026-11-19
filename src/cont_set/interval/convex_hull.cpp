@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@interval/convHull_.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -32,7 +32,7 @@ Interval Interval::convex_hull(const Interval &I2) const {
     });
     if (is_empty()) return I2;
     if (I2.is_empty()) return *this;
-    return {inf_.minimum(I2.inf()), sup_.maximum(I2.sup())};
+    return {inf_.minimum(I2.inf()), sup_.maximum(I2.sup()), elem_rank_, empty_.both(I2.empty_)};
 }
 
 } // namespace cora

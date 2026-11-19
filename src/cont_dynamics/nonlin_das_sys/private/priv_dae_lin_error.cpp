@@ -24,7 +24,7 @@
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlin_das_sys/private/priv.h"
@@ -55,11 +55,14 @@ Zonotope aux_box(const Tensor &radius) {
     return Zonotope(radius.zeros_like().squeeze(-1), radius.diag());
 }
 
+/// A box's bound (n) as the column (n, 1) the ranges are written on.
+Tensor aux_col(const Tensor &bound) { return bound.expand_dims(-1); }
+
 /// The bound max(|inf|, |sup|) of the box of a set, joined with the origin by the caller.
 Tensor aux_abs_max(const Interval &I) { return I.inf().abs().maximum(I.sup().abs()); }
 
 /// The bound sup |interval(Z)| of a set: the largest absolute value per coordinate.
-Tensor aux_bound(const Zonotope &Z) { return aux_abs_max(Z.interval()); }
+Tensor aux_bound(const Zonotope &Z) { return aux_col(aux_abs_max(Z.interval())); }
 
 /// The matrices of the midpoints and the values 1/2 dz' H_rad dz of the rows (first, first + count)
 /// of the second derivatives over a box, d variables; the zero entries stay zero.
@@ -96,8 +99,9 @@ Remainder aux_remainder(const NonlinDASys &sys, const Tensor &p_x, const Tensor 
     std::optional<Interval> du;
     if (m > 0) du = priv_with_origin(Uz->interval());
     const DaeHessians H = sys.hessian_enclosure(
-        Range(dx.inf() + p_x, dx.sup() + p_x), Range(dy.inf() + p_y, dy.sup() + p_y),
-        du ? Range(du->inf() + p_u, du->sup() + p_u) : Range(p_u));
+        Range(aux_col(dx.inf()) + p_x, aux_col(dx.sup()) + p_x),
+        Range(aux_col(dy.inf()) + p_y, aux_col(dy.sup()) + p_y),
+        du ? Range(aux_col(du->inf()) + p_u, aux_col(du->sup()) + p_u) : Range(p_u));
     // the set of (x, y, u) of CORA: the center of the added y is one more generator of y
     std::vector<Tensor> y_gens{Ry_cor.generators().matrix_transpose()};
     const std::vector<double> add_c = Ry_add.center().data();

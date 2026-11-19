@@ -13,7 +13,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -29,6 +29,7 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 /// The parameters of the scripts.
 constexpr double L = 0.001, K_P = 10000, K_I = 1000, R = 0.5, K = 0.02, d_rot = 0.1;
@@ -78,9 +79,9 @@ struct Cycle {
 
 Cycle aux_cycle() {
     const double t_min = -1e-8, t_max = 1e-7;
-    return {Polytope(matrix(1, 5, {0, 0, 0, 0, 1}), column({T_sample + t_max})),
+    return {Polytope(matrix(1, 5, {0, 0, 0, 0, 1}), vec({T_sample + t_max})),
             Polytope(matrix(2, 5, {0, 0, 0, 0, 1, 0, 0, 0, 0, -1}),
-                     column({T_sample + t_max, -(T_sample + t_min)})),
+                     vec({T_sample + t_max, -(T_sample + t_min)})),
             LinearReset(matrix(5, 5, {1, 0, 0, 0,         0, 0, 1, 0, 0, 0, 0, -1, 0,
                                       0, 0, 0, -T_sample, 0, 1, 0, 0, 0, 0, 0, 1}),
                         column({0, 0, 0, 0, 0}), column({0, 0, x0, T_sample * x0, -T_sample}))};

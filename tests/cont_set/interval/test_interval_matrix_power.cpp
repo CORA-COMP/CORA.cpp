@@ -3,9 +3,9 @@
 // CORA: contSet/@interval/mpower.m
 // PROPERTY: contSet/@interval/mpower.m
 // CORA authors: Matthias Althoff, Dmitry Grebenyuk
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,8 +24,8 @@ namespace {
 
 /// A = [[[1, 2], [0, 1]], [0, [1, 1]]].
 Interval upper_triangular() {
-    return Interval(Tensor::from_data({1, 0, 0, 1}, {2, 2}),
-                    Tensor::from_data({2, 1, 0, 1}, {2, 2}));
+    return Interval::matrix(Tensor::from_data({1, 0, 0, 1}, {2, 2}),
+                            Tensor::from_data({2, 1, 0, 1}, {2, 2}));
 }
 
 void matrix_power_multiplies_the_intervals(const std::string &b) {
@@ -56,11 +56,11 @@ void matrix_power_of_points_and_samples(const std::string &b) {
     std::vector<double> m(9);
     rng.normal(m.data(), 9, 1.0);
     const Tensor M = Tensor::from_data(m, {3, 3});
-    const Interval P = Interval(M, M).matrix_power(4);
+    const Interval P = Interval::matrix(M, M).matrix_power(4);
     const Tensor M2 = M.matmul(M);
     check(close(P.inf(), M2.matmul(M2), 1e-9) && close(P.sup(), M2.matmul(M2), 1e-9),
           b + ": a point matrix");
-    const Interval A(M - 0.1, M + 0.1);
+    const Interval A = Interval::matrix(M - 0.1, M + 0.1);
     const Interval Q = A.matrix_power(3);
     bool inside = true;
     for (int trial = 0; trial < 20; ++trial) {
@@ -82,7 +82,7 @@ void matrix_power_sums_nested(const std::string &b) {
     std::vector<double> m(81, 1.0);
     m[17] = 1e16;
     const Tensor M = Tensor::from_data(m, {9, 9});
-    const Interval P = Interval(M, M).matrix_power(2);
+    const Interval P = Interval::matrix(M, M).matrix_power(2);
     check(P.inf().data()[10] == 1e16 && P.sup().data()[10] == 1e16,
           b + ": the products are summed nested to the right");
 }
@@ -91,13 +91,15 @@ void matrix_power_sums_nested(const std::string &b) {
 /// checks off give the same.
 void checks_and_their_switch() {
     const Interval A = upper_triangular();
-    const Interval wide(Tensor::from_data({1, 2, 3}, {1, 3}), Tensor::from_data({1, 2, 3}, {1, 3}));
+    const Interval wide = Interval::matrix(Tensor::from_data({1, 2, 3}, {1, 3}),
+                                           Tensor::from_data({1, 2, 3}, {1, 3}));
     check(test::raises([&] { wide.matrix_power(2); }, Error::dimension_mismatch),
           "matrix_power: a matrix that is not square");
     check(test::raises([&] { A.matrix_power(-1); }, Error::wrong_value),
           "matrix_power: a negative exponent");
     // the product [-1, 2] [-1, 2] = [-2, 4] (CORA's intervalMatrix), not the square [0, 4]
-    const Interval scalar(Tensor::from_data({-1}, {1, 1}), Tensor::from_data({2}, {1, 1}));
+    const Interval scalar =
+        Interval::matrix(Tensor::from_data({-1}, {1, 1}), Tensor::from_data({2}, {1, 1}));
     check(close(scalar.matrix_power(2).inf(), std::vector<double>{-2}) &&
               close(scalar.matrix_power(2).sup(), std::vector<double>{4}),
           "matrix_power: a 1 x 1 base");

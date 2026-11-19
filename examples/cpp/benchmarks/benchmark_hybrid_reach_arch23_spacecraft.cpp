@@ -13,7 +13,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -32,6 +32,7 @@ using namespace cora;
 using cora::bench::column;
 using cora::bench::hyperplane;
 using cora::bench::matrix;
+using cora::bench::vec;
 
 /// The gravity of the target's orbit in the equations of vx and vy: mu (x + r) / D^(3/2) and
 /// mu y / D^(3/2) with D = (x + r)^2 - y^2, as the model files write them.
@@ -58,7 +59,7 @@ NonlinearSys aux_flow(const std::array<double, 4> &a, const std::array<double, 4
 HybridAutomaton aux_automaton() {
     const LinearReset id(Tensor::eye(5), std::nullopt, column({0, 0, 0, 0, 0}));
     // the passive mode is entered in the window t in [120, 150]
-    const Polytope window(matrix(2, 5, {0, 0, 0, 0, -1, 0, 0, 0, 0, 1}), column({-120, 150}));
+    const Polytope window(matrix(2, 5, {0, 0, 0, 0, -1, 0, 0, 0, 0, 1}), vec({-120, 150}));
     const NonlinearSys approach =
         aux_flow({-0.057638256806855922248709263104, 0.000201, -2.8999508, 0.008759786984672},
                  {-0.000174, -0.066493256806855922248709263104, -0.008741346984672, -2.9030026});
@@ -69,7 +70,7 @@ HybridAutomaton aux_automaton() {
         aux_flow({0.000019143193144077751290736896, 0, 0, 0.008750586984672},
                  {0, 0.000019143193144077751290736896, -0.008750586984672, 0});
     // approach: t <= 150 and x <= -100, left at x = -100 or by the window
-    Location S1("S1", Polytope(matrix(2, 5, {0, 0, 0, 0, 1, 1, 0, 0, 0, 0}), column({150, -100})),
+    Location S1("S1", Polytope(matrix(2, 5, {0, 0, 0, 0, 1, 1, 0, 0, 0, 0}), vec({150, -100})),
                 {Transition(hyperplane({-1, 0, 0, 0, 0}, 100), id, 1), Transition(window, id, 2)},
                 approach);
     // docking: t <= 150 and the octagon |x|, |y| <= 100, |x +- y| <= 141.1
@@ -78,24 +79,23 @@ HybridAutomaton aux_automaton() {
                                       1,  1, 0, 0, 0, 1,  0,  0, 0, 0, 1,  -1, 0, 0, 0};
     Location S2(
         "S2",
-        Polytope(matrix(9, 5, rows), column({150, 100, 141.1, 100, 141.1, 100, 141.1, 100, 141.1})),
+        Polytope(matrix(9, 5, rows), vec({150, 100, 141.1, 100, 141.1, 100, 141.1, 100, 141.1})),
         {Transition(window, id, 2)}, docking);
-    Location S3("S3",
-                Polytope(matrix(2, 5, {1, 0, 0, 0, 0, -1, 0, 0, 0, 0}), column({10000, 10000})), {},
-                passive);
+    Location S3("S3", Polytope(matrix(2, 5, {1, 0, 0, 0, 0, -1, 0, 0, 0, 0}), vec({10000, 10000})),
+                {}, passive);
     return HybridAutomaton("spacecraft_passive", {S1, S2, S3});
 }
 
 /// A safe set {x | C x <= d}; the one place that builds the specifications of this program.
 Specification aux_safe(const Tensor &C, const std::vector<double> &d) {
-    return Specification::safe_set(Polytope(C, column(d)));
+    return Specification::safe_set(Polytope(C, vec(d)));
 }
 
 /// CORA's aux_checkSpaceStationHit: the projection onto (x, y) must miss the box [-1, 1]^2, first
 /// by its box, then reduced to order 3.
 Specification aux_station() {
     return Specification::custom([](const ContSet &S) {
-        const Interval station(column({-1, -1}), column({1, 1}));
+        const Interval station(vec({-1, -1}), vec({1, 1}));
         const Set proj = S.project({0, 1});
         if (!is_intersecting(station, proj->interval())) return true;
         return !is_intersecting(station, *proj->reduce(3));

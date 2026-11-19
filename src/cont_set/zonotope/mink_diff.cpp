@@ -16,7 +16,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -236,8 +236,8 @@ Zonotope Zonotope::mink_diff(const Zonotope &subtrahend, const std::string &meth
 Zonotope Zonotope::mink_diff(const Interval &subtrahend, const std::string &method) const {
     detail::Entry entry;
     // a box is enclosed by a zonotope
-    CORA_CHECK(subtrahend.dim() == dim() && subtrahend.inf().shape().back() == 1 &&
-                   subtrahend.inf().ndim() == 2,
+    CORA_CHECK(subtrahend.dim() == dim() && subtrahend.elem_rank() == 1 &&
+                   subtrahend.inf().ndim() == 1,
                Error::dimension_mismatch, [&] {
                    return "mink_diff: the interval must be a single box of the dimension " +
                           std::to_string(dim()) + " of the zonotope";

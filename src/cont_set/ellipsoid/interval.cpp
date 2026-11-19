@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@ellipsoid/interval.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -26,7 +26,7 @@ namespace cora {
 
 Interval Ellipsoid::interval_impl() const {
     if (priv_is_empty(*this)) return Interval::empty(dim());
-    const Tensor radius = Q_.diagonal().sqrt();
+    const Tensor radius = Q_.diagonal().sqrt().squeeze(-1);
     return {q_ - radius, radius + q_};
 }
 

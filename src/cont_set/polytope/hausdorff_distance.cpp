@@ -9,15 +9,15 @@
 // Syntax:   double d = P.hausdorff_distance(P2);   d = P.hausdorff_distance(I);
 //           d = P.hausdorff_distance(points);
 // Inputs:   P2, I - a polytope or a box of the dimension of P
-//           points - the columns (n, N)
+//           points - (N, n), one per row
 // Outputs:  d - the Euclidean Hausdorff distance
 // See also: Polytope::contains, Zonotope::hausdorff_distance_to_box
 //
 // CORA: contSet/@polytope/hausdorffDist.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -51,14 +51,14 @@ double aux_farthest(const HostH &H, const Rows &points) {
 
 double Polytope::hausdorff_distance(const Tensor &points) const {
     detail::Entry entry;
-    CORA_CHECK(points.defined() && points.ndim() == 2 && points.shape()[0] == dim(),
+    CORA_CHECK(points.defined() && points.ndim() == 2 && points.shape()[1] == dim(),
                Error::dimension_mismatch, [&] {
-                   return "hausdorff_distance: the points must be a matrix (" +
-                          std::to_string(dim()) + ", N) of columns, got the shape " +
+                   return "hausdorff_distance: the points must be a matrix (N, " +
+                          std::to_string(dim()) + "), one per row, got the shape " +
                           shape_text(points.shape());
                });
     if (!priv_polytope_is_bounded(*this)) return kInf;
-    if (priv_polytope_is_empty(*this)) return points.shape()[1] == 0 ? 0.0 : kInf;
+    if (priv_polytope_is_empty(*this)) return points.shape()[0] == 0 ? 0.0 : kInf;
     return aux_farthest(priv_host_h(constraints()), priv_host_points(points));
 }
 

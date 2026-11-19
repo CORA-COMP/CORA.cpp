@@ -14,7 +14,7 @@
 // CORA authors: Victor Gassmann, Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
@@ -50,7 +50,7 @@ Ellipsoid Capsule::ellipsoid(const std::string &method) const {
         CORA_FAIL(Error::not_supported, "ellipsoid: the method '" + method +
                                             "' needs the union of two ellipsoids (an SDP)");
     }
-    return {r_.square().multiply(cc().eye_like(dim())), cc()};
+    return {c_, r_.square().multiply(c_.eye_like(dim()))};
 }
 
 } // namespace cora

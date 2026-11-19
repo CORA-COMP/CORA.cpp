@@ -9,7 +9,7 @@
 // ORACLE: contSet/@interval/mtimes.m
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -101,12 +101,16 @@ void aux_interval_products(test::oracle::Random &rnd) {
         const Tensor M = rnd.matrix(n, n);
         const lean::Interval J = lean::Interval::from(inf, sup);
         const auto [lo, hi] = Tensor::interval_matmul(inf, sup, M);
-        aux_case("interval_matmul",
-                 [&] { check("interval_matmul", Interval(lo, hi), aux_point(M).linear_map(J)); });
+        aux_case("interval_matmul", [&] {
+            check("interval_matmul", Interval::matrix(lo, hi), aux_point(M).linear_map(J));
+        });
         const Interval box = rnd.box(n);
-        const auto [lo2, hi2] = Tensor::matmul_interval(M, box.inf(), box.sup());
+        // the kernel takes the box as the column (n, 1)
+        const auto [lo2, hi2] =
+            Tensor::matmul_interval(M, box.inf().expand_dims(-1), box.sup().expand_dims(-1));
         aux_case("matmul_interval", [&] {
-            check("matmul_interval", Interval(lo2, hi2), lean::Interval(box).linear_map(M));
+            check("matmul_interval", Interval(lo2.squeeze(-1), hi2.squeeze(-1)),
+                  lean::Interval(box).linear_map(M));
         });
         aux_case("Interval::linear_map", [&] {
             // exact linear maps

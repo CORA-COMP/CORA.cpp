@@ -4,9 +4,9 @@
 //
 // CORA: contDynamics/@linearSys/taylorMatrices.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/matlab_reference.h"
@@ -48,14 +48,14 @@ void matches_matlab_cora(const std::string &b) {
 void is_zero_for_a_zero_system(const std::string &b) {
     const Interval F = LinearSys(Tensor::zeros({3, 3})).correction_matrix_state(0.1, 6);
     // F of A = 0 is zero
-    check(max_abs(F.center()) == 0.0 && max_abs(F.rad()) == 0.0, b + ": F of A = 0 is zero");
+    check(max_abs(F.center()) == 0.0 && max_abs(F.half_width()) == 0.0, b + ": F of A = 0 is zero");
 }
 
 void is_an_interval(const std::string &b) {
     const System &s = matlab_reference::three_dimensional();
     const Interval F = system_of(s).correction_matrix_state(s.time_step, s.taylor_terms);
     bool ordered = true;
-    for (const double r : F.rad().data()) ordered &= r >= 0.0;
+    for (const double r : F.half_width().data()) ordered &= r >= 0.0;
     check(ordered, b + ": the radius is not negative");
 }
 
@@ -64,7 +64,7 @@ void shrinks_with_the_time_step(const std::string &b) {
     const System &s = matlab_reference::oscillator();
     double previous = 1e9;
     for (const double dt : {0.4, 0.2, 0.1, 0.05, 0.025}) {
-        const double size = max_abs(system_of(s).correction_matrix_state(dt, 8).rad());
+        const double size = max_abs(system_of(s).correction_matrix_state(dt, 8).half_width());
         check(size < previous, b + ": F did not shrink at Δt = " + std::to_string(dt));
         previous = size;
     }
@@ -74,8 +74,8 @@ void shrinks_with_the_time_step(const std::string &b) {
 void is_tighter_with_more_terms(const std::string &b) {
     const System &s = matlab_reference::three_dimensional();
     const LinearSys sys = system_of(s);
-    check(max_abs(sys.correction_matrix_state(0.2, 10).rad()) <=
-              max_abs(sys.correction_matrix_state(0.2, 3).rad()),
+    check(max_abs(sys.correction_matrix_state(0.2, 10).half_width()) <=
+              max_abs(sys.correction_matrix_state(0.2, 3).half_width()),
           b + ": more Taylor terms widened F");
 }
 

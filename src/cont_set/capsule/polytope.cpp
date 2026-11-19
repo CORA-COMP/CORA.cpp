@@ -14,7 +14,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -76,9 +76,9 @@ Polytope Capsule::polytope(const std::string &method) const {
         // an interval: |x - c| <= |g| + r
         const Tensor reach = gc().abs().add(r_);
         return {Tensor::like(cc(), {1.0, -1.0}, {2, 1}),
-                Tensor::concat({cc() + reach, reach - cc()}, 0)};
+                Tensor::concat({cc() + reach, reach - cc()}, 0).squeeze(-1)};
     }
-    if (zero(gc()) && zero(r_)) return Polytope(cc());
+    if (zero(gc()) && zero(r_)) return Polytope(c_.expand_dims(0));
     // the orthonormal basis B, its first column along g
     const Tensor B = aux_basis(gc(), cc().eye_like(n));
     // the negated rows as 0 - B', so that a zero stays +0 as CORALean prints it
@@ -87,10 +87,12 @@ Polytope Capsule::polytope(const std::string &method) const {
         // the segment: |b1'x| <= |g|, and b'x = 0 for the other columns, shifted by c
         const Tensor A1 = Bt.slice(0, 0, 1), Ae = Bt.slice(0, 1, n);
         const Tensor length = priv_norm(gc()).reshape({1, 1});
+        // the offsets on CORA's columns, then the polytope's vectors
         return {Tensor::concat({A1, A1.negative()}, 0),
-                Tensor::concat({length, length}, 0) +
-                    Tensor::concat({A1, A1.negative()}, 0).matmul(cc()),
-                Ae, Ae.matmul(cc())};
+                (Tensor::concat({length, length}, 0) +
+                 Tensor::concat({A1, A1.negative()}, 0).matmul(cc()))
+                    .squeeze(-1),
+                Ae, Ae.matmul(cc()).squeeze(-1)};
     }
     CORA_CHECK(method != "exact", Error::no_exact_alg,
                [] { return std::string("polytope: a capsule is no polytope, use 'outer'"); });
@@ -98,7 +100,7 @@ Polytope Capsule::polytope(const std::string &method) const {
                [] { return std::string("polytope: the method 'inner' is not supported"); });
     // the support values a'c + |a'g| + r |a| of the rows, in this order as CORALean's boundDotUp
     const Tensor length = priv_norm(A.matrix_transpose()).reshape({2 * n, 1});
-    return {A, A.matmul(cc()) + A.matmul(gc()).abs() + r_.multiply(length)};
+    return {A, (A.matmul(cc()) + A.matmul(gc()).abs() + r_.multiply(length)).squeeze(-1)};
 }
 
 } // namespace cora

@@ -22,9 +22,9 @@
 // ORACLE: contSet/@polytope/project.m
 // ORACLE: contSet/@polytope/supportFunc_.m
 // ORACLE: contSet/@polytope/isIntersecting_.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -53,7 +53,8 @@ Tensor aux_sphere(oracle::Random &rnd, int64_t n, int64_t k, double shift = 0.0)
         for (int64_t i = 0; i < n; ++i) norm += x[i * k + c] * x[i * k + c];
         for (int64_t i = 0; i < n; ++i) x[i * k + c] = shift + x[i * k + c] / std::sqrt(norm);
     }
-    return Tensor::from_data(x, {n, k});
+    // the draws are CORA's columns (n, k); the vertices are their columns, one per row
+    return Tensor::from_data(x, {n, k}).matrix_transpose();
 }
 
 /// The box |x| <= 2 and m random rows with offset 3: nonempty and bounded.
@@ -61,29 +62,29 @@ Polytope aux_halfspaces(oracle::Random &rnd, int64_t n, int64_t m) {
     // the negative identity with +0 off the diagonal, as the oracle prints it
     const Tensor eye = Tensor::eye(n), negative = eye * 0.0 - eye;
     return {Tensor::concat({eye, negative, rnd.matrix(m, n)}, 0),
-            Tensor::concat({Tensor::ones({2 * n, 1}) * 2.0, Tensor::ones({m, 1}) * 3.0}, 0)};
+            Tensor::concat({Tensor::ones({2 * n}) * 2.0, Tensor::ones({m}) * 3.0}, 0)};
 }
 
 /// The vertices of a result, reduced to the extreme ones as CORA.cpp keeps them.
 Polytope aux_extreme(const Polytope &P) { return P.compact("V"); }
 
-/// The columns of a vertex polytope in lexicographic order: a vertex set has no order.
+/// The vertices (rows) of a vertex polytope in lexicographic order: a vertex set has no order.
 Polytope aux_sorted(const Polytope &P) {
     const Tensor &V = P.V();
-    const int64_t n = V.shape()[0], p = V.shape()[1];
+    const int64_t p = V.shape()[0], n = V.shape()[1];
     const std::vector<double> x = V.data();
     std::vector<int64_t> order(static_cast<std::size_t>(p));
     std::iota(order.begin(), order.end(), int64_t{0});
     std::sort(order.begin(), order.end(), [&](int64_t a, int64_t b) {
         // the first coordinate that differs decides
         for (int64_t i = 0; i < n; ++i)
-            if (x[i * p + a] != x[i * p + b]) return x[i * p + a] < x[i * p + b];
+            if (x[a * n + i] != x[b * n + i]) return x[a * n + i] < x[b * n + i];
         return false;
     });
     std::vector<double> sorted;
-    for (int64_t i = 0; i < n; ++i)
-        for (const int64_t c : order) sorted.push_back(x[i * p + c]);
-    return Polytope(Tensor::from_data(sorted, {n, p}));
+    for (const int64_t r : order)
+        sorted.insert(sorted.end(), x.begin() + r * n, x.begin() + (r + 1) * n);
+    return Polytope(Tensor::from_data(sorted, {p, n}));
 }
 
 /// The extreme vertices of CORA.cpp's result against those of the oracle's list (a vertex polytope
@@ -114,7 +115,7 @@ int main() {
         const Polytope full(aux_sphere(rnd, 3, 8));
         test::check(full.is_full_dim() == lean::Polytope(full).is_full_dim(), "isFullDim: a ball");
         // a flat set: the points of a plane
-        const Tensor flat = Tensor::concat({aux_sphere(rnd, 2, 6), Tensor::zeros({1, 6})}, 0);
+        const Tensor flat = Tensor::concat({aux_sphere(rnd, 2, 6), Tensor::zeros({6, 1})}, -1);
         const Polytope plane(flat);
         test::check(plane.is_full_dim() == lean::Polytope(plane).is_full_dim(),
                     "isFullDim: a plane");
@@ -137,7 +138,7 @@ int main() {
     oracle::run("polytope.minus", [](oracle::Random &rnd) {
         const Polytope P = aux_halfspaces(rnd, 3, 2);
         const Tensor v = rnd.vector(3);
-        oracle::check(P - v, lean::Polytope(P).minus(v));
+        oracle::check(P - v.squeeze(-1), lean::Polytope(P).minus(v));
     });
     oracle::run("polytope.lift", [](oracle::Random &rnd) {
         const Polytope P = aux_halfspaces(rnd, 3, 2);
@@ -184,7 +185,8 @@ int main() {
     oracle::run("polytope.isIntersecting", [](oracle::Random &rnd) {
         const Polytope P = aux_halfspaces(rnd, 3, 2);
         const Tensor c = rnd.vector(3) * 0.0;
-        const Interval near(c - 0.1, c + 0.1), far(c + 10.0, c + 11.0);
+        const Interval near(c.squeeze(-1) - 0.1, c.squeeze(-1) + 0.1),
+            far(c.squeeze(-1) + 10.0, c.squeeze(-1) + 11.0);
         // disjointness proven by the oracle holds for CORA.cpp
         oracle::check(P.is_intersecting(near), lean::Polytope(P).is_disjoint(near));
         oracle::check(P.is_intersecting(far), lean::Polytope(P).is_disjoint(far));

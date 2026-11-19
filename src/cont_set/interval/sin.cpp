@@ -11,7 +11,7 @@
 // CORA authors: Matthias Althoff, Dmitry Grebenyuk, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -28,7 +28,7 @@ namespace cora {
 Interval Interval::sin() const {
     detail::Entry entry;
     constexpr double kHalfPi = std::numbers::pi / 2;
-    return Interval(inf_ - kHalfPi, sup_ - kHalfPi).cos();
+    return with(inf_ - kHalfPi, sup_ - kHalfPi).cos();
 }
 
 } // namespace cora

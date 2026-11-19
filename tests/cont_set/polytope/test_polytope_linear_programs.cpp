@@ -8,7 +8,7 @@
 // CORA.cpp only: tests LinearPrograms, the programs CORA's conZonotope hands to CORAlinprog
 // Authors:       Claude Opus 5.5
 // Written:       17-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -20,7 +20,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,8 +32,8 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 /// The line x1 + x2 = 1 in the unit box [-1, 1]^2: the segment from (0, 1) to (1, 0).
 void segment(const std::string &b) {
-    const Polytope line(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}), Tensor({{1.0, 1.0}}),
-                        column({1.0}));
+    const Polytope line(Tensor::zeros({0, 2}), Tensor::zeros({0}), Tensor({{1.0, 1.0}}),
+                        vec({1.0}));
     const Polytope::LinearPrograms lp = line.linear_programs({-1.0, -1.0}, {1.0, 1.0});
     check(!lp.is_empty(), b + ": the segment has a point");
     const auto r = lp.range({1.0, -1.0});
@@ -48,8 +48,7 @@ void segment(const std::string &b) {
     const auto x = lp.chebyshev_center();
     check(x && std::abs((*x)[0] + (*x)[1] - 1.0) < 1e-12, b + ": the center is on the line");
     // the line x1 + x2 = 3 misses the box
-    const Polytope far(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}), Tensor({{1.0, 1.0}}),
-                       column({3.0}));
+    const Polytope far(Tensor::zeros({0, 2}), Tensor::zeros({0}), Tensor({{1.0, 1.0}}), vec({3.0}));
     const Polytope::LinearPrograms none = far.linear_programs({-1.0, -1.0}, {1.0, 1.0});
     check(none.is_empty() && !none.range({1.0, 0.0}) && !none.maximum({1.0, 0.0}),
           b + ": no point, no range and no maximum");
@@ -58,7 +57,7 @@ void segment(const std::string &b) {
 
 /// The halfspace x1 <= 0 in the box [-2, 2] x [-1, 1], and without a box (infinite bounds).
 void halfspace(const std::string &b) {
-    const Polytope H(Tensor({{1.0, 0.0}}), column({0.0}));
+    const Polytope H(Tensor({{1.0, 0.0}}), vec({0.0}));
     const Polytope::LinearPrograms lp = H.linear_programs({-2.0, -1.0}, {2.0, 1.0});
     const auto [lo, hi] = lp.bounds();
     check(std::abs(lo[0] + 2.0) < 1e-12 && std::abs(hi[0]) < 1e-12 &&
@@ -101,11 +100,11 @@ void same_programs() {
 
 /// A batch and a box of the wrong size are refused, the batch also with the checks off.
 void refusals() {
-    const Polytope line(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}), Tensor({{1.0, 1.0}}),
-                        column({1.0}));
+    const Polytope line(Tensor::zeros({0, 2}), Tensor::zeros({0}), Tensor({{1.0, 1.0}}),
+                        vec({1.0}));
     check(test::raises([&] { line.linear_programs({-1.0}, {1.0}); }, Error::dimension_mismatch),
           "a box of one dimension for two");
-    const Polytope batch(Tensor::ones({2, 1, 2}), Tensor::ones({2, 1, 1}));
+    const Polytope batch(Tensor::ones({2, 1, 2}), Tensor::ones({2, 1}));
     ChecksScope off(false);
     check(test::raises([&] { batch.linear_programs({-1.0, -1.0}, {1.0, 1.0}); },
                        Error::not_supported),

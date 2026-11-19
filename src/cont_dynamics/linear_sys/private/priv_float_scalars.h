@@ -10,7 +10,7 @@
 // CORA.cpp only: the float definitions of CORALean's MatExp.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -93,12 +93,12 @@ inline double priv_float_norm_upper_bound(const Interval &M) {
 /// The box scaled by a number within [lo, hi], the hull of the corner products.
 inline Interval priv_float_smul(const Interval &M, double lo, double hi) {
     const Tensor a = Tensor::like(M.inf(), {lo}, {1, 1}), b = Tensor::like(M.inf(), {hi}, {1, 1});
-    return M.times(Interval(a, b));
+    return M.times(Interval::matrix(a, b));
 }
 
-/// The box with every entry [-w, w].
+/// The interval matrix of the shape of `like` with every entry [-w, w].
 inline Interval priv_float_symmetric(const Tensor &like, double w) {
-    return {like.zeros_like() - w, like.zeros_like() + w};
+    return Interval::matrix(like.zeros_like() - w, like.zeros_like() + w);
 }
 
 // The dense matrices ------------------------------------------------------------------------------

@@ -15,7 +15,7 @@
 // CORA.cpp only: CORA assumes B B' = I; CORALean adds the defect (Location.orthDefectFloat)
 // Authors:       Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "hybrid_dynamics/location/private/priv.h"
@@ -123,15 +123,15 @@ std::vector<double> aux_radius(const std::vector<double> &mag, const Box &X) {
 Zonotope priv_box_zonotope(const Interval &box, bool dense) {
     if (!dense) return box.zonotope();
     const Tensor center = box.center();
-    return Zonotope(center.squeeze(-1),
-                    ((box.sup() - center).maximum(center - box.inf()).diag()).matrix_transpose());
+    const Tensor radius = (box.sup() - center).maximum(center - box.inf());
+    return Zonotope(center, radius.expand_dims(-1).diag().matrix_transpose());
 }
 
 Zonotope priv_box_zonotope(const std::vector<double> &lo, const std::vector<double> &hi,
                            const Tensor &like, bool dense) {
     const int64_t n = static_cast<int64_t>(lo.size());
-    return priv_box_zonotope(
-        Interval(Tensor::like(like, lo, {n, 1}), Tensor::like(like, hi, {n, 1})), dense);
+    return priv_box_zonotope(Interval(Tensor::like(like, lo, {n}), Tensor::like(like, hi, {n})),
+                             dense);
 }
 
 std::optional<Zonotope> priv_defect(const Tensor &basis, const std::vector<Set> &R, bool dense) {

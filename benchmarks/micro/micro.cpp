@@ -190,7 +190,7 @@ const std::map<std::string, Benchmark> &benchmarks() {
                  const Tensor M = Zonotope::generate_random(rng, 20, std::nullopt, 20).generators(),
                               C = Zonotope::generate_random(rng, 20, std::nullopt, 20).generators();
                  const Tensor w = 0.1 * Tensor::ones({20, 20});
-                 const Interval I(C - w, C + w);
+                 const Interval I = Interval::matrix(C - w, C + w);
                  return Work([=] {
                      double s = 0;
                      for (int k = 0; k < 5000; ++k) s += sum_of(I.linear_map(M).sup());

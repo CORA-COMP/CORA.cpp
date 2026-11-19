@@ -6,7 +6,7 @@
 // ORACLE: contSet/@interval/prod.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -28,7 +28,7 @@ int main() {
             test::oracle::check(I.prod(), lean::Interval(I).prod());
         }
         const Tensor c = rnd.matrix(6, 3), r = Tensor::from_data({0.5, 0.25, 1.0}, {1, 3});
-        const Interval M(c - r, c + r);
+        const Interval M = Interval::matrix(c - r, c + r);
         const lean::Interval theirs = lean::Interval(M).prod();
         if (theirs.inf().rows() == 1)
             test::oracle::check(M.prod(1), theirs);

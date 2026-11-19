@@ -5,9 +5,9 @@
 // CORA: matrixSet/@intervalMatrix/plus.m
 // PROPERTY: matrixSet/@intervalMatrix/plus.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -51,7 +51,7 @@ void members_add_up(const std::string &b) {
     for (int trial = 0; trial < 30; ++trial)
         inside = inside && S.contains(test::member(A, rng) + test::member(B, rng), 1e-12);
     check(inside, b + ": members add up");
-    check(close(S.rad(), A.rad() + B.rad(), 1e-12), b + ": the radii add");
+    check(close(S.half_width(), A.half_width() + B.half_width(), 1e-12), b + ": the radii add");
     const Interval batch = Interval::stack({A, B});
     const Tensor sum = (batch + batch).infimum();
     check(close(sum.slice(0, 0, 1).reshape({3, 3}), A.infimum() * 2.0, 1e-12), b + ": batch");

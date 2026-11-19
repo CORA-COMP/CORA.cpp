@@ -15,7 +15,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -187,7 +187,7 @@ EntrywiseCorrections aux_corrections(const Tensor &A, double r, int order, const
     const std::size_t n = std::size_t(A.size(-1));
     const Shape shape{A.size(-1), A.size(-1)};
     const auto box = [&](const std::pair<Mat, Mat> &b) {
-        return Interval(Tensor::like(A, b.first, shape), Tensor::like(A, b.second, shape));
+        return Interval::matrix(Tensor::like(A, b.first, shape), Tensor::like(A, b.second, shape));
     };
     const std::vector<Mat> powers = aux_powers(A.data(), n, order);
     return EntrywiseCorrections{
@@ -230,8 +230,8 @@ HostCorrections aux_host(const EntrywiseCorrections &c) {
 EntrywiseCorrections aux_on(const Tensor &A, const HostCorrections &h) {
     const Shape shape{A.size(-1), A.size(-1)};
     const auto on = [&](const std::vector<double> &v) { return Tensor::like(A, v, shape); };
-    return {h.order, on(h.W), Interval(on(h.F_inf), on(h.F_sup)),
-            Interval(on(h.G_inf), on(h.G_sup))};
+    return {h.order, on(h.W), Interval::matrix(on(h.F_inf), on(h.F_sup)),
+            Interval::matrix(on(h.G_inf), on(h.G_sup))};
 }
 
 } // namespace
@@ -322,12 +322,13 @@ std::optional<EntrywiseCorrections> priv_taylor_corrections(const Tensor &A, dou
 // The matrices of the step: [e^{A dt}], [F], [G], the boxes of the input solution
 struct ClosedFormStepper::Matrices {
     Matrices(const Tensor &A, double r, int eta, int halvings)
-        : e_adt(A, A), F(A, A), G(A, A), remainder(A, A) {
+        : e_adt(Interval::matrix(A, A)), F(Interval::matrix(A, A)), G(Interval::matrix(A, A)),
+          remainder(Interval::matrix(A, A)) {
         const std::size_t n = std::size_t(A.size(-1));
         const Shape shape{A.size(-1), A.size(-1)};
         const auto tensor = [&](const Mat &M) { return Tensor::like(A, M, shape); };
         const auto box = [&](const std::pair<Mat, Mat> &b) {
-            return Interval(tensor(b.first), tensor(b.second));
+            return Interval::matrix(tensor(b.first), tensor(b.second));
         };
         const Mat a = A.data();
         const Mat W = aux_entrywise_remainder(A, r, eta);

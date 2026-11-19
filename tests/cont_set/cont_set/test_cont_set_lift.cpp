@@ -5,7 +5,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -21,6 +21,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -33,7 +34,7 @@ const double kInf = std::numeric_limits<double>::infinity();
 /// A box keeps its coordinates at proj (the identity by default) and is unbounded elsewhere; a
 /// zonotope is permuted (and needs N = n).
 void lift_by_class(const std::string &b) {
-    const Interval I(column({0.0, 2.0}), column({1.0, 3.0}));
+    const Interval I(vec({0.0, 2.0}), vec({1.0, 3.0}));
     const Set A = static_cast<const ContSet &>(I).lift(4, std::vector<int64_t>{3, 1});
     check(A.is<Interval>() &&
               A.as<Interval>().inf().data() == std::vector<double>{-kInf, 2.0, -kInf, 0.0} &&
@@ -71,7 +72,7 @@ void lift_the_extremes() {
 
 /// CORA's checks (the same wrong_value for all), the class's own failure, noops, checks off.
 void errors_and_their_switch() {
-    const Interval I(column({0.0, 2.0}), column({1.0, 3.0}));
+    const Interval I(vec({0.0, 2.0}), vec({1.0, 3.0}));
     const ContSet &S = I;
     check(test::raises([&] { S.lift(1); }, Error::wrong_value), "N below the dimension");
     check(test::raises([&] { S.lift(3, std::vector<int64_t>{0}); }, Error::wrong_value),

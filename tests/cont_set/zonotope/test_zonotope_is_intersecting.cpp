@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -17,6 +17,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -38,11 +39,11 @@ void intersecting_known(const std::string &b) {
     check(Z.is_intersecting(square_at(2.0 + 1e-6), "exact", 1e-5), b + ": and within tol 1e-5");
 
     const Zonotope diamond(column({0.0, 0.0}), Tensor({{0.5, 0.5}, {0.5, -0.5}}));
-    const Interval corner(column({0.6, 0.6}), column({1.0, 1.0}));
+    const Interval corner(vec({0.6, 0.6}), vec({1.0, 1.0}));
     check(!diamond.is_intersecting(corner), b + ": the diamond |x| + |y| <= 1 misses [0.6, 1]^2");
     check(diamond.is_intersecting(corner, "approx"),
           b + ": their boxes meet, so 'approx' says true");
-    check(diamond.is_intersecting(Interval(column({0.2, 0.2}), column({1.0, 1.0}))),
+    check(diamond.is_intersecting(Interval(vec({0.2, 0.2}), vec({1.0, 1.0}))),
           b + ": a box that cuts the diamond");
     check(!diamond.is_intersecting(Zonotope(column({0.9, 0.9}), Tensor({{0.1, 0.1}}))),
           b + ": a segment beyond the corner");
@@ -53,7 +54,7 @@ void intersecting_known(const std::string &b) {
     check(!diamond.is_intersecting(Tensor({{0.0, 0.6}, {0.0, 0.6}})),
           b + ": points: all must be in");
     check(is_intersecting(Z, square_at(1.5)), b + ": through the registry");
-    check(!is_intersecting(Z, Interval(column({3.0, 0.0}), column({4.0, 1.0}))),
+    check(!is_intersecting(Z, Interval(vec({3.0, 0.0}), vec({4.0, 1.0}))),
           b + ": zonotope and box through the registry");
 }
 

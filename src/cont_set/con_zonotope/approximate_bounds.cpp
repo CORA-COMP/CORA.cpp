@@ -22,7 +22,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -86,8 +86,7 @@ std::pair<Tensor, Tensor> aux_fourier_motzkin(const Tensor &A, const Tensor &b, 
 /// programs (a row with the offset +Inf, which the Polytope drops, bounds nothing).
 LinProg aux_member_program(const Tensor &A, const Tensor &b, int64_t i) {
     const int64_t p = A.shape()[1], q = A.shape()[2];
-    const Tensor Ai = A.slice(0, i, i + 1).reshape({p, q}),
-                 bi = b.slice(0, i, i + 1).reshape({p, 1});
+    const Tensor Ai = A.slice(0, i, i + 1).reshape({p, q}), bi = b.slice(0, i, i + 1).reshape({p});
     const std::vector<double> lb(std::size_t(q), -1.0), ub(std::size_t(q), 1.0);
     return Polytope::LinearPrograms(Polytope(Ai, bi), lb, ub).program();
 }

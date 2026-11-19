@@ -11,7 +11,7 @@
 // CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -66,8 +66,8 @@ void the_sets_hold_every_run(const std::string &b) {
 /// A specification that the sets violate stops the run at that step; a loose one does not.
 void the_specification_stops_the_run(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
-    const Polytope tight(Tensor({{1.0, 0.0}}), Tensor({1.0}));
-    const Polytope loose(Tensor({{1.0, 0.0}}), Tensor({10.0}));
+    const Polytope tight(Tensor({{1.0, 0.0}}), Tensor::from_data({1.0}, {1}));
+    const Polytope loose(Tensor({{1.0, 0.0}}), Tensor::from_data({10.0}, {1}));
     const ClosedLoopReach<Zonotope> stopped =
         sys.reach(X0(), U(), 0.5, options(), TimedSpecification{Specification::safe_set(tight)});
     check(stopped.violated && !stopped.completed && stopped.time.back() < 0.1,
@@ -130,8 +130,8 @@ void a_pole_and_several_specifications(const std::string &b) {
     check(R.exploded && !R.completed, b + ": a pole ends the run as an explosion");
     // two specifications: the run stops at the first that a step violates
     const NeurNetContrSys loop(plant(), network(), 0.05);
-    const Polytope loose(Tensor({{1.0, 0.0}}), Tensor({10.0})),
-        never(Tensor({{1.0, 0.0}}), Tensor({1.0}));
+    const Polytope loose(Tensor({{1.0, 0.0}}), Tensor::from_data({10.0}, {1})),
+        never(Tensor({{1.0, 0.0}}), Tensor::from_data({1.0}, {1}));
     const ClosedLoopReach<Zonotope> ok = loop.reach(
         X0(), U(), 0.2, options(),
         TimedSpecifications{{Specification::safe_set(loose)}, {Specification::safe_set(loose)}});

@@ -6,7 +6,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -39,7 +39,7 @@ void simulate_random_is_seeded(const std::string &b) {
     check(close(a.back(), c.back()), b + ": the same seed gives the same trajectories");
     check(!close(a.back(), d.back()), b + ": another seed gives others");
     // The initial set is an interval too: any ContSet works.
-    const Interval box(Tensor({0.9, -0.1, -0.1}), Tensor({1.1, 0.1, 0.1}));
+    const Interval box(test::vec({0.9, -0.1, -0.1}), test::vec({1.1, 0.1, 0.1}));
     cora::Rng rng(1);
     check(sys.simulate_random({.initial_set = box, .t_final = 0.5}, alg::Exact{.time_step = 0.1}, 5,
                               rng)

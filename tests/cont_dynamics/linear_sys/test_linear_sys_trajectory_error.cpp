@@ -6,7 +6,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_steps_testing.h"
@@ -41,7 +41,8 @@ void at_the_expansion_point_only_the_series_remains(const std::string &b) {
           b + ": the error set");
     const Tensor beyond = (matrix() * kTime).expm() - Tensor::eye(2) - matrix() * kTime;
     const Tensor c_center = (e.c_tilde.inf() + e.c_tilde.sup()) * 0.5;
-    check(test::close(c_center, beyond.matrix_transpose().matmul(n), 1e-9), b + ": c_tilde");
+    check(test::close(c_center, beyond.matrix_transpose().matmul(n).squeeze(-1), 1e-9),
+          b + ": c_tilde");
     const double d_center = ((e.d_tilde.inf() + e.d_tilde.sup()) * 0.5).item();
     check(
         test::close(

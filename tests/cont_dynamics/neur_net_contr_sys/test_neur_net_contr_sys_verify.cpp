@@ -7,9 +7,9 @@
 //
 // CORA: contDynamics/@neurNetContrSys/verify.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -33,8 +33,8 @@ namespace {
 void verify_decides(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
     cora::Rng rng(2);
-    const Polytope loose(Tensor({{1.0, 0.0}}), Tensor({10.0}));
-    const Polytope never(Tensor({{1.0, 0.0}}), Tensor({1.0}));
+    const Polytope loose(Tensor({{1.0, 0.0}}), Tensor::from_data({10.0}, {1}));
+    const Polytope never(Tensor({{1.0, 0.0}}), Tensor::from_data({1.0}, {1}));
     // a loose set is verified, from a polynomial zonotope and from a zonotope
     const TimedSpecification safe{Specification::safe_set(loose)};
     check(sys.verify(PolyZonotope(X0()), U(), 0.5, options(), safe, 10, rng).verdict ==
@@ -56,7 +56,7 @@ void a_hard_specification_is_unknown(const std::string &b) {
     cora::Rng rng(3);
     // x2 <= c where c lies between the largest run and the enclosure: found by growing c
     for (const double c : {2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.8, 2.9, 3.0}) {
-        const Polytope P(Tensor({{0.0, 1.0}}), Tensor({c}));
+        const Polytope P(Tensor({{0.0, 1.0}}), Tensor::from_data({c}, {1}));
         const Verdict v = sys.verify(PolyZonotope(X0()), U(), 0.5, options(),
                                      {Specification::safe_set(P)}, 10, rng)
                               .verdict;
@@ -68,7 +68,7 @@ void a_hard_specification_is_unknown(const std::string &b) {
 /// The pieces of the split cover the box: sampled points lie in some piece, and the volumes add.
 void the_pieces_cover_the_initial_set(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
-    const Interval box(Tensor({{1.3}, {2.2}}), Tensor({{1.5}, {2.4}}));
+    const Interval box(test::vec({1.3, 2.2}), test::vec({1.5, 2.4}));
     for (const int levels : {0, 1, 3, 5}) {
         const std::vector<Interval> pieces = sys.split_pieces(box, levels);
         check(pieces.size() == (std::size_t{1} << levels), b + ": 2^levels pieces");
@@ -97,7 +97,7 @@ void the_pieces_cover_the_initial_set(const std::string &b) {
         check(outside == 0, b + ": the pieces cover the box");
     }
     // the dimension is the one with the largest radius times sensitivity
-    check(sys.split_dimension(Interval(Tensor({{0.0}, {0.0}}), Tensor({{1.0}, {1e-6}}))) == 0,
+    check(sys.split_dimension(Interval(test::vec({0.0, 0.0}), test::vec({1.0, 1e-6}))) == 0,
           b + ": the wide dimension is cut");
 }
 
@@ -107,7 +107,7 @@ void splitting_verifies(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
     // scan the bound c of x2 for one that the whole set cannot show but the pieces can
     for (double c = 2.3; c < 3.5; c += 0.05) {
-        const Polytope P(Tensor({{0.0, 1.0}}), Tensor({c}));
+        const Polytope P(Tensor({{0.0, 1.0}}), Tensor::from_data({c}, {1}));
         const TimedSpecification spec{Specification::safe_set(P)};
         cora::Rng rng(5);
         const ClosedLoopVerdict whole =
@@ -149,18 +149,19 @@ int main() {
     // no simulated run is refused
     check(test::raises(
               [&] {
-                  sys.verify(
-                      X0(), U(), 0.5, options(),
-                      {Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({1.0})))}, 0,
-                      rng);
+                  sys.verify(X0(), U(), 0.5, options(),
+                             {Specification::safe_set(
+                                 Polytope(Tensor({{1.0, 0.0}}), Tensor::from_data({1.0}, {1})))},
+                             0, rng);
               },
               Error::wrong_value),
           "verify: no simulated run");
     // the same verdict without the checks
     ChecksScope off(false);
     check(sys.verify(X0(), U(), 0.2, options(),
-                     {Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({10.0})))}, 3,
-                     rng)
+                     {Specification::safe_set(
+                         Polytope(Tensor({{1.0, 0.0}}), Tensor::from_data({10.0}, {1})))},
+                     3, rng)
                   .verdict == Verdict::verified,
           "verify: with the checks off");
     return test::finish("neurNetContrSys verify");

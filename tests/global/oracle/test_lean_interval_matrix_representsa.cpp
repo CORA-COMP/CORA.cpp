@@ -5,9 +5,9 @@
 // strict comparison is not strict there), so emptySet is compared on boxes of positive radius only.
 //
 // ORACLE: matrixSet/@intervalMatrix/representsa.m
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -34,7 +34,7 @@ int main() {
                         test::oracle::check(A.representsa(type, 0.0), L.representsa(type, 0.0));
             };
             compare(test::interval_matrix(rnd.box_matrix(m, n)), true);
-            compare(Interval(M - thin, M + thin), true);
+            compare(Interval::matrix(M - thin, M + thin), true);
             compare(test::interval_matrix(M), false);
             compare(test::interval_matrix(M * 0.0), false);
         }

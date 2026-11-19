@@ -10,9 +10,9 @@
 // rows that the intersection of two halfspace polytopes stacks. The facets of a vertex polytope
 // (CORALean's VPolytope.hPolytope, qhull in CORA) have no oracle op and are not compared.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -44,7 +44,7 @@ void aux_check_constraints(const Polytope &mine, const lean::Polytope &theirs) {
 Polytope aux_halfspaces(oracle::Random &rnd, int64_t n, int64_t m) {
     const Tensor eye = Tensor::eye(n), negative = eye * 0.0 - eye;
     return {Tensor::concat({eye, negative, rnd.matrix(m, n)}, 0),
-            Tensor::concat({Tensor::ones({2 * n, 1}) * 2.0, Tensor::ones({m, 1}) * 3.0}, 0)};
+            Tensor::concat({Tensor::ones({2 * n}) * 2.0, Tensor::ones({m}) * 3.0}, 0)};
 }
 
 } // namespace

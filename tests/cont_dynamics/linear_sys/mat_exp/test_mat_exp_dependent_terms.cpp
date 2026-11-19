@@ -7,7 +7,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -33,7 +33,7 @@ void terms_of_a_point_matrix(const std::string &b) {
     check(close(sq2.center(), std::vector<double>{1.75, 2.5, 3.75, 5.5}),
           b + ": r = 0.5, the square");
     check(close(H2.center(), std::vector<double>{2.375, 2.25, 3.375, 5.75}), b + ": r = 0.5, H");
-    check(close(H2.rad(), std::vector<double>{0, 0, 0, 0}), b + ": a point stays a point");
+    check(close(H2.half_width(), std::vector<double>{0, 0, 0, 0}), b + ": a point stays a point");
 }
 
 /// The terms of every member M are in the results; the diagonal range includes the vertex -1/r.
@@ -52,7 +52,7 @@ void terms_enclose_the_members(const std::string &b) {
         check(inside, b + ": members inside, r = " + std::to_string(r));
     }
     // -1/r inside the diagonal entry: the lower end of H is I - 1/2 there
-    const Interval V = Interval(test::matrix({-3}, 1, 1), test::matrix({-1}, 1, 1));
+    const Interval V = Interval::matrix(test::matrix({-3}, 1, 1), test::matrix({-1}, 1, 1));
     check(close(mat_exp::dependent_terms(V, 1.0).second.infimum(), std::vector<double>{0.5}, 1e-9),
           b + ": the vertex of the parabola");
 }

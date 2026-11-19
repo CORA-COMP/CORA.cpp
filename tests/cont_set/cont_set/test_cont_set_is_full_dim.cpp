@@ -4,7 +4,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -15,6 +15,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,8 +25,8 @@ namespace {
 
 /// Boxes and zonotopes through the base class; tol relaxes the width test.
 void full_dimension_of_any_set(const std::string &b) {
-    const Interval box(column({-1.0, 0.0}), column({1.0, 2.0})),
-        flat(column({-1.0, 1.0}), column({1.0, 1.0})), thin(column({0.0}), column({1e-4}));
+    const Interval box(vec({-1.0, 0.0}), vec({1.0, 2.0})), flat(vec({-1.0, 1.0}), vec({1.0, 1.0})),
+        thin(vec({0.0}), vec({1e-4}));
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
         segment(column({0.0, 0.0}), Tensor::from_data({1.0, 1.0}, {1, 2}));
     const ContSet &A = box, &B = flat, &D = Z, &E = segment, &T = thin;
@@ -37,7 +38,7 @@ void full_dimension_of_any_set(const std::string &b) {
 
 /// A negative tol is refused, a class without the query raises noops, and the checks off skip tol.
 void errors_and_their_switch() {
-    const Interval I(column({0.0}), column({1.0}));
+    const Interval I(vec({0.0}), vec({1.0}));
     const ContSet &S = I;
     check(test::raises([&] { S.is_full_dim(-1.0); }, Error::wrong_value), "tol -1");
     check(test::raises([] { test::UnregisteredSet().is_full_dim(); }, Error::noops), "noops");

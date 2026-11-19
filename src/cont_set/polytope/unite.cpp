@@ -5,15 +5,15 @@
 //
 // Syntax:   Pres = P.unite(S);   Pres = P.unite(I);   Pres = P.unite(p);
 // Inputs:   S, I - a polytope or a box of the dimension of P
-//           p - a point (n, 1)
+//           p - a point (n)
 // Outputs:  Pres - the convex hull of both, as Polytope::convex_hull
 // See also: Polytope::convex_hull, Polytope::enclose
 //
 // CORA: contSet/@polytope/or.m
 // CORA authors: Viktor Kotsev
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"

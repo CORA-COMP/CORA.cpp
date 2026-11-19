@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@ellipsoid/isBigger.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -60,9 +60,9 @@ bool Ellipsoid::is_bigger(const Ellipsoid &E2) const {
     if (r == dim()) return false;
     if (r == 0) return true;
     const Tensor U = sum.svd()[0];
-    const Tensor origin = Q_.zeros_like({r, 1});
-    return Ellipsoid(aux_subspace_shape(U, Q_, r), origin, tol_)
-        .is_bigger(Ellipsoid(aux_subspace_shape(U, E2.Q(), r), origin, E2.tol()));
+    const Tensor origin = Q_.zeros_like({r});
+    return Ellipsoid(origin, aux_subspace_shape(U, Q_, r), tol_)
+        .is_bigger(Ellipsoid(origin, aux_subspace_shape(U, E2.Q(), r), E2.tol()));
 }
 
 } // namespace cora

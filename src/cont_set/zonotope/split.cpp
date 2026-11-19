@@ -23,7 +23,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -45,7 +45,7 @@ namespace {
 /// The box around Z as a zonotope with a generator for every coordinate, even a flat one.
 Zonotope aux_box(const Zonotope &Z) {
     const Interval I = Z.interval();
-    return {I.center().squeeze(-1), I.rad().diag()};
+    return {I.center(), I.half_width().expand_dims(-1).diag()};
 }
 
 /// The unit vector of dir (n, 1).

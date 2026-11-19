@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/isBadDir.m
 // PROPERTY: contSet/@ellipsoid/isBadDir.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -23,11 +23,11 @@ namespace {
 /// direction is bad if sqrt(l' Q1 l) / sqrt(l' Q2 l) exceeds 1.
 void is_bad_dir_known(const std::string &b) {
     const Ellipsoid E1(Tensor({{1.0, 0.0}, {0.0, 1.0}})), E2(Tensor({{0.25, 0.0}, {0.0, 1.0}}));
-    const std::vector<bool> bad = E1.is_bad_dir(E2, Tensor({{1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}}));
+    const std::vector<bool> bad = E1.is_bad_dir(E2, Tensor({{1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}}));
     // l = e1: 1 / (1/2) = 2 > 1; l = e2: 1 / 1 is not above 1 + tol; l = (1, 1): sqrt 2 / sqrt 1.25
     check(bad.size() == 3 && bad[0] && !bad[1] && bad[2], b + ": bad, good and a mixed direction");
-    check(!E1.is_bad_dir(E1, Tensor({{1.0}, {2.0}}))[0], b + ": equal ellipsoids have none");
-    check(E1.is_bad_dir(E2, Tensor::zeros({2, 0})).empty(), b + ": no directions, no answers");
+    check(!E1.is_bad_dir(E1, Tensor({{1.0, 2.0}}))[0], b + ": equal ellipsoids have none");
+    check(E1.is_bad_dir(E2, Tensor::zeros({0, 2})).empty(), b + ": no directions, no answers");
 }
 
 /// Stated property for E2 = c E1: the ratio sqrt(l' Q1 l) / sqrt(l' Q2 l) is 1 / sqrt(c) in every
@@ -36,7 +36,7 @@ void is_bad_dir_property(const std::string &b) {
     cora::Rng rng(31);
     for (int k = 0; k < 5; ++k) {
         const Ellipsoid E1 = test::random_ellipsoid(rng, 3);
-        const Tensor L = test::normal_matrix(rng, 3, 8);
+        const Tensor L = test::normal_matrix(rng, 3, 8).matrix_transpose();
         for (const bool bad : E1.is_bad_dir(Ellipsoid(E1.Q() * 4.0), L))
             check(bad, b + ": a larger copy is bad in every direction");
         for (const bool bad : E1.is_bad_dir(Ellipsoid(E1.Q() * 0.25), L))
@@ -50,15 +50,15 @@ void is_bad_dir_property(const std::string &b) {
 /// answer is the same.
 void checks_and_their_switch() {
     const Ellipsoid E(Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    check(test::raises([&] { E.is_bad_dir(E, Tensor({{1.0}, {2.0}, {3.0}})); }, Error::wrong_value),
-          "is_bad_dir: L has n rows");
-    check(test::raises([&] { E.is_bad_dir(Ellipsoid(Tensor({{1.0}})), Tensor({{1.0}, {2.0}})); },
+    check(test::raises([&] { E.is_bad_dir(E, Tensor({{1.0, 2.0, 3.0}})); }, Error::wrong_value),
+          "is_bad_dir: L has n columns");
+    check(test::raises([&] { E.is_bad_dir(Ellipsoid(Tensor({{1.0}})), Tensor({{1.0, 2.0}})); },
                        Error::dimension_mismatch),
           "is_bad_dir: the dimensions agree");
-    check(test::raises([&] { E.is_bad_dir(Ellipsoid::empty(2), Tensor({{1.0}, {2.0}})); },
+    check(test::raises([&] { E.is_bad_dir(Ellipsoid::empty(2), Tensor({{1.0, 2.0}})); },
                        Error::empty_set),
           "is_bad_dir: an empty ellipsoid");
-    const Tensor L({{1.0}, {2.0}});
+    const Tensor L({{1.0, 2.0}});
     const std::vector<bool> on = E.is_bad_dir(E, L);
     ChecksScope off(false);
     check(E.is_bad_dir(E, L) == on, "is_bad_dir: the same with the checks off");

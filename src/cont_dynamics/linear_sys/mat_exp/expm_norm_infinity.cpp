@@ -11,9 +11,9 @@
 //
 // CORA: matrixSet/@intervalMatrix/expmNormInf.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
@@ -30,7 +30,7 @@ Tensor mat_exp::expm_norm_infinity(const Interval &A, double t) {
     CORA_CHECK(t >= 0, Error::wrong_value, [&] {
         return "expm_norm_infinity: the time must be nonnegative, got " + std::to_string(t);
     });
-    const Tensor C = A.center(), S = A.rad();
+    const Tensor C = A.center(), S = A.half_width();
     const Tensor norm_c = C.matrix_norm(Tensor::Norm::inf);
     const Tensor norm_s = S.matrix_norm(Tensor::Norm::inf);
     const Tensor norm_cs = (C.abs() + S).matrix_norm(Tensor::Norm::inf);

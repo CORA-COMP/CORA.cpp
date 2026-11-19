@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/vertices_.m
 // PROPERTY: contSet/@ellipsoid/vertices_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -34,7 +34,7 @@ void vertices_property(const std::string &b) {
         check(V.size() == 256, b + ": 256 vertices");
         std::vector<double> flat;
         for (const Point &p : V) flat.insert(flat.end(), {p[0], p[1]});
-        const Tensor P = Tensor::from_data(flat, {256, 2}).matrix_transpose();
+        const Tensor P = Tensor::from_data(flat, {256, 2});
         bool boundary = true;
         for (const double x : test::norms_of(E, P)) boundary = boundary && std::abs(x - 1.0) < 1e-6;
         check(boundary, b + ": on the boundary");

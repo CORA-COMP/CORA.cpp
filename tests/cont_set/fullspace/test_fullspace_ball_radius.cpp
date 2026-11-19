@@ -1,14 +1,17 @@
-// test_empty_set_radius - EmptySet radius: 0
+// test_fullspace_ball_radius - fullspace ball_radius: Inf
 //
-// CORA: contSet/@emptySet/radius.m
+// CORA: contSet/@fullspace/radius.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
-#include "cora/cont_set/empty_set/empty_set.h"
+#include "cora/cont_set/fullspace/fullspace.h"
 #include "testing.h"
+
+#include <cmath>
+#include <limits>
 
 using namespace cora;
 using test::check;
@@ -19,15 +22,17 @@ using test::check;
 
 namespace {
 
-void the_radius_is_zero(const std::string &b) {
-    for (const int64_t n : {0, 1, 7})
-        check(EmptySet(n).radius() == 0.0, b + ": dimension " + std::to_string(n));
+void the_radius_is_infinite(const std::string &b) {
+    for (const int64_t n : {1, 2, 7})
+        check(Fullspace(n).ball_radius() == std::numeric_limits<double>::infinity(),
+              b + ": dimension " + std::to_string(n));
+    check(std::isnan(Fullspace(0).ball_radius()), b + ": NaN in R^0, as CORA");
 }
 
 /// radius takes no input to refuse; with the checks off the answer is the same.
 void checks_and_their_switch() {
     ChecksScope off(false);
-    check(EmptySet(2).radius() == 0.0, "radius: the same with the checks off");
+    check(std::isinf(Fullspace(2).ball_radius()), "radius: the same with the checks off");
 }
 
 } // namespace
@@ -36,9 +41,9 @@ void checks_and_their_switch() {
 // ===========================================  MAIN  =========================================== //
 
 int main() {
-    test::for_each_backend(the_radius_is_zero);
+    test::for_each_backend(the_radius_is_infinite);
     checks_and_their_switch();
-    return test::finish("empty_set radius");
+    return test::finish("fullspace radius");
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

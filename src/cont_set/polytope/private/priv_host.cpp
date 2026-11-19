@@ -9,9 +9,9 @@
 // CORA.cpp only: MATLAB reads its matrices as they are; CORA's @interval/polytope.m is the
 //                polytope of a box
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -69,34 +69,25 @@ HostH priv_host_h(const Polytope::Constraints &C) {
 
 Polytope::Constraints priv_tensors_h(const Tensor &like, const HostH &H) {
     // back to tensors of the backend of `like`
-    return {aux_matrix(like, H.A, H.n), Tensor::like(like, H.b, {int64_t(H.b.size()), 1}),
-            aux_matrix(like, H.Ae, H.n), Tensor::like(like, H.be, {int64_t(H.be.size()), 1})};
+    return {aux_matrix(like, H.A, H.n), Tensor::like(like, H.b, {int64_t(H.b.size())}),
+            aux_matrix(like, H.Ae, H.n), Tensor::like(like, H.be, {int64_t(H.be.size())})};
 }
 
 Rows priv_host_points(const Tensor &V) {
     if (V.ndim() != 2)
         CORA_FAIL(Error::not_supported,
                   "Polytope: the vertices of a batch are not supported by this operation");
-    // column k of V (n, p) is the point k
-    const int64_t n = V.shape()[0], p = V.shape()[1];
-    const std::vector<double> flat = V.data();
-    Rows points(static_cast<std::size_t>(p), Row(static_cast<std::size_t>(n)));
-    for (int64_t k = 0; k < p; ++k)
-        for (int64_t i = 0; i < n; ++i) points[k][i] = flat[std::size_t(i * p + k)];
-    return points;
+    // row k of V (p, n) is the point k
+    return aux_rows_of(V);
 }
 
 Tensor priv_points_tensor(const Tensor &like, int64_t n, const Rows &points) {
-    // the points are the columns of (n, p)
-    const int64_t p = int64_t(points.size());
-    std::vector<double> flat(std::size_t(n * p));
-    for (int64_t k = 0; k < p; ++k)
-        for (int64_t i = 0; i < n; ++i) flat[std::size_t(i * p + k)] = points[k][i];
-    return Tensor::like(like, flat, {n, p});
+    // the points are the rows of (p, n)
+    return aux_matrix(like, points, n);
 }
 
-Tensor priv_column_tensor(const Tensor &like, const Row &values) {
-    return Tensor::like(like, values, {int64_t(values.size()), 1});
+Tensor priv_vector_tensor(const Tensor &like, const Row &values) {
+    return Tensor::like(like, values, {int64_t(values.size())});
 }
 
 // Small linear algebra ----------------------------------------------------------------------------
@@ -159,10 +150,14 @@ bool priv_is_fullspace(const Polytope &P, double tol) {
     return false;
 }
 
-bool priv_has_no_vertices(const Polytope &P) { return P.is_v_rep() && P.V().shape().back() == 0; }
+bool priv_has_no_vertices(const Polytope &P) {
+    return P.empty_mask().all() || (P.is_v_rep() && P.V().size(-2) == 0);
+}
 
 bool priv_polytope_is_empty(const Polytope &P) {
-    if (P.is_v_rep()) return P.V().shape().back() == 0;
+    // the mask says it, else the vertices or the linear programs of the rows
+    if (P.empty_mask().all()) return true;
+    if (P.is_v_rep()) return P.V().size(-2) == 0;
     return priv_is_empty(priv_host_h(P.constraints()));
 }
 
@@ -224,10 +219,10 @@ Polytope priv_polytope_of_interval(const Interval &I) {
     const int64_t n = I.dim();
     if (I.is_empty()) return Polytope::empty(n);
     // x <= sup and -x <= -inf; the rows with an infinite offset are dropped by the constructor
-    const Tensor eye = identity_block(I.inf(), n);
+    const Tensor eye = identity_block(I.inf().expand_dims(-1), n);
     // the negative identity as 0 - I, so that its zeros are +0 as in CORALean
-    const Tensor negative = zeros_block(I.inf(), n, n) - eye;
-    return {Tensor::concat({eye, negative}, -2), Tensor::concat({I.sup(), -I.inf()}, -2)};
+    const Tensor negative = zeros_block(I.inf().expand_dims(-1), n, n) - eye;
+    return {Tensor::concat({eye, negative}, -2), Tensor::concat({I.sup(), -I.inf()}, -1)};
 }
 
 } // namespace cora

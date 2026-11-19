@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@interval/log.m
 // CORA authors: Dmitry Grebenyuk
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_check_domain.h"
@@ -28,8 +28,8 @@ namespace cora {
 
 Interval Interval::log() const {
     detail::Entry entry;
-    priv_check_domain("log", inf_, sup_, 0, std::numeric_limits<double>::infinity());
-    return {inf_.log(), sup_.log()};
+    priv_check_domain("log", *this, 0, std::numeric_limits<double>::infinity());
+    return with(inf_.log(), sup_.log());
 }
 
 } // namespace cora

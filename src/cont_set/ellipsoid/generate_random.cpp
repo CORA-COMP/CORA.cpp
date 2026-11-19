@@ -2,21 +2,21 @@
 //
 // Q = A'A for a Gaussian A (n, n), its singular values below sqrt(tol) of the largest lifted, one
 // to three of them set to 0 for a degenerate ellipsoid, and Q scaled to entries below 10. The
-// dimension is given, else the length of the center, else uniform in 1..30; the center is N(0,
-// 1)^n.
+// dimension is given, else the length of the center, else uniform in 1..30; the center (n) is
+// N(0, 1)^n.
 //
-// Syntax:   E = Ellipsoid::generate_random(rng);   E = Ellipsoid::generate_random(rng, n,
-// is_degenerate, center); Inputs:   rng - the generator of the random numbers
-//           n, is_degenerate, center - optional, as CORA's name-value pairs Dimension,
-//           IsDegenerate, Center
+// Syntax:   E = Ellipsoid::generate_random(rng);
+//           E = Ellipsoid::generate_random(rng, n, is_degenerate, center);
+// Inputs:   rng - the generator of the random numbers
+//           n, is_degenerate, center - optional: CORA's Dimension, IsDegenerate, Center (n)
 // Outputs:  E - the ellipsoid
 // See also: Zonotope::generate_random
 //
 // CORA: contSet/@ellipsoid/generateRandom.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -44,8 +44,8 @@ CORA_FROM_NUMBERS Ellipsoid Ellipsoid::generate_random(Rng &rng, std::optional<i
         return "generate_random: the dimension must be at least 1, got " +
                std::to_string(*dimension);
     });
-    CORA_CHECK(!center || (center->ndim() == 2 && center->shape().back() == 1), Error::wrong_value,
-               [] { return std::string("generate_random: the center must be a column (n, 1)"); });
+    CORA_CHECK(!center || center->ndim() == 1, Error::wrong_value,
+               [] { return std::string("generate_random: the center must be a vector (n)"); });
     CORA_CHECK(!(dimension && center) || center->shape()[0] == *dimension,
                Error::dimension_mismatch,
                [] { return std::string("generate_random: the center and the dimension differ"); });
@@ -58,7 +58,7 @@ CORA_FROM_NUMBERS Ellipsoid Ellipsoid::generate_random(Rng &rng, std::optional<i
         rng.normal(values.data(), values.size(), 1.0);
         return Tensor::from_data(values, {rows, cols});
     };
-    const Tensor q = center ? *center : draw(n, 1);
+    const Tensor q = center ? *center : draw(n, 1).squeeze(-1);
     const Tensor A = draw(n, n);
     const Tensor S = A.matrix_transpose().matmul(A);
     // singular values below sqrt(tol) of the largest are lifted, so Q is not degenerate by accident
@@ -91,7 +91,7 @@ CORA_FROM_NUMBERS Ellipsoid Ellipsoid::generate_random(Rng &rng, std::optional<i
     const double biggest = std::max(std::abs(Q.min().item()), Q.max().item());
     constexpr double kMaxAbsValue = 10.0;
     if (Q.abs().max().item() > kMaxAbsValue) Q = Q * (kMaxAbsValue / biggest);
-    return {Q, q};
+    return {q, Q};
 }
 
 } // namespace cora

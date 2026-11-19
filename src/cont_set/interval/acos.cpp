@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@interval/acos.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_check_domain.h"
@@ -24,8 +24,8 @@ namespace cora {
 
 Interval Interval::acos() const {
     detail::Entry entry;
-    priv_check_domain("acos", inf_, sup_, -1, 1);
-    return {sup_.acos(), inf_.acos()};
+    priv_check_domain("acos", *this, -1, 1);
+    return with(sup_.acos(), inf_.acos());
 }
 
 } // namespace cora

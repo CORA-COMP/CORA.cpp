@@ -4,7 +4,7 @@
 // CORA authors: Victor Gassmann
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -22,7 +22,7 @@ namespace {
 
 Interval aux_matrix() {
     const Tensor lo = Tensor::from_data({1, 2, 3, 4, 5, 6, 7, 8, 9}, {3, 3});
-    return {lo, lo + 1.0};
+    return Interval::matrix(lo, lo + 1.0);
 }
 
 void triu_keeps_the_upper_part(const std::string &b) {

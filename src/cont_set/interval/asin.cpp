@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@interval/asin.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_check_domain.h"
@@ -24,8 +24,8 @@ namespace cora {
 
 Interval Interval::asin() const {
     detail::Entry entry;
-    priv_check_domain("asin", inf_, sup_, -1, 1);
-    return {inf_.asin(), sup_.asin()};
+    priv_check_domain("asin", *this, -1, 1);
+    return with(inf_.asin(), sup_.asin());
 }
 
 } // namespace cora

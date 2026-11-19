@@ -6,7 +6,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -54,7 +54,7 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
     rng.uniform(radius.data(), radius.size(), 0.0, 0.3);
     const Tensor C = Tensor::from_data(centre, {n, n}), R = Tensor::from_data(radius, {n, n});
 
-    const Zonotope point = Z.linear_map(Interval(C, C));
+    const Zonotope point = Z.linear_map(Interval::matrix(C, C));
     const Zonotope plain = Z.linear_map(C);
     check(close(point.center(), plain.center()) &&
               point.generators().data().size() ==
@@ -65,7 +65,7 @@ void mtimes_by_an_interval_matrix(const std::string &b) {
         check(close(support(point, d), support(plain, d), 1e-10), b + ": no width, no enlargement");
     }
 
-    const Zonotope wide = Z.linear_map(Interval(C - R, C + R));
+    const Zonotope wide = Z.linear_map(Interval::matrix(C - R, C + R));
     // one generator per dimension
     check(wide.generators().shape() == std::vector<int64_t>({m + n, n}),
           b + ": one generator per dimension");

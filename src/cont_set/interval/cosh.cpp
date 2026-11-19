@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@interval/cosh.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -32,7 +32,7 @@ Interval Interval::cosh() const {
         Tensor::where(left, at_sup, Tensor::where(right, at_inf, inf_.ones_like()));
     const Tensor larger = inf_.abs().maximum(sup_.abs()).cosh();
     const Tensor upper = Tensor::where(left, at_inf, Tensor::where(right, at_sup, larger));
-    return {lower, upper};
+    return with(lower, upper);
 }
 
 } // namespace cora

@@ -4,9 +4,9 @@
 // Sets:     the circle (x - cx)^2 + (y - cy)^2 - r^2 of two states, boxes of host numbers
 // See also: testing.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -26,7 +26,7 @@ inline cora::Expr circle(double cx, double cy, double r) {
 
 /// The box [lo, hi] of host numbers.
 inline cora::Interval box(const std::vector<double> &lo, const std::vector<double> &hi) {
-    return {column(lo), column(hi)};
+    return {vec(lo), vec(hi)};
 }
 
 } // namespace test

@@ -16,9 +16,9 @@
 //
 // CORA: contSet/@polytope/randPoint_.m
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -124,9 +124,10 @@ Rows aux_hit_and_run(const Host &host, int64_t N, Rng &rng) {
     return points;
 }
 
-/// The (n, N) tensor of the points, on the backend of `like`.
+/// The (n, N) tensor of the points, on the backend of `like` (the generic columns until #163's
+/// point sweep).
 Tensor aux_matrix(const Tensor &like, int64_t n, const Rows &points) {
-    return priv_points_tensor(like, n, points);
+    return priv_points_tensor(like, n, points).matrix_transpose();
 }
 
 } // namespace

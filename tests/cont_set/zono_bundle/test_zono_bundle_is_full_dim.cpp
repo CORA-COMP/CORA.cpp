@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -43,8 +43,8 @@ void ball_around_the_center(const std::string &b) {
     Rng rng(25);
     for (int trial = 0; trial < 4; ++trial) {
         const ZonoBundle bundle = test::random_zono_bundle(rng, 2, 2, 4);
-        const Tensor c = bundle.center();
-        const Tensor r = c.full_like({2, 1}, 1e-4);
+        const Tensor c = bundle.center().squeeze(-1);
+        const Tensor r = c.full_like({2}, 1e-4);
         const bool ball = bundle.contains(Interval(c - r, c + r));
         check(!ball || bundle.is_full_dim(), b + ": a ball inside means full-dimensional");
     }

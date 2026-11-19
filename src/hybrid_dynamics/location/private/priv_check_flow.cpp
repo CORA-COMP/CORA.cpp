@@ -24,7 +24,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -105,9 +105,11 @@ double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const 
     // the remainder by the Hessian over the box of Z
     const Interval box = Z.interval();
     const int64_t n = sys.dim(), m = sys.input_dim(), dz = n + m;
-    const Range x_box(box.inf().slice(-2, 0, n), box.sup().slice(-2, 0, n));
+    // the ranges take columns
+    const Tensor lo = box.inf().expand_dims(-1), hi = box.sup().expand_dims(-1);
+    const Range x_box(lo.slice(-2, 0, n), hi.slice(-2, 0, n));
     const std::optional<Range> u_box =
-        inputs ? std::optional<Range>(Range(box.inf().slice(-2, n, dz), box.sup().slice(-2, n, dz)))
+        inputs ? std::optional<Range>(Range(lo.slice(-2, n, dz), hi.slice(-2, n, dz)))
                : std::nullopt;
     const std::vector<std::optional<Range>> H = sys.hessian_enclosure(x_box, u_box);
     const std::vector<double> g = Z.generators().matrix_transpose().abs_sum().data(), w = a.data();

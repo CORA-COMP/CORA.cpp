@@ -1,9 +1,9 @@
 // test_lean_interval_matrix_rad - Interval::rad against the CORALean oracle
 //
 // ORACLE: matrixSet/@intervalMatrix/rad.m
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -23,7 +23,7 @@ int main() {
              {std::pair{2, 2}, std::pair{3, 4}, std::pair{5, 1}, std::pair{4, 4}}) {
             const Interval A = rnd.box_matrix(m, n);
             const lean::IntervalMatrix L{lean::Interval(A)};
-            test::oracle::check(A.rad(), L.rad());
+            test::oracle::check(A.half_width(), L.rad());
         }
     });
     return test::finish("lean interval_matrix rad");

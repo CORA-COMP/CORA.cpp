@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -39,7 +40,7 @@ void cart_prod_known(const std::string &b) {
     check(close(with_zonotope.c().expand_dims(-1), {1, 5}, 0) &&
               with_zonotope.A().shape() == Shape{1, 2},
           b + ": a zonotope");
-    const Interval I(column({0.0, -1.0}), column({2.0, 1.0}));
+    const Interval I(vec({0.0, -1.0}), vec({2.0, 1.0}));
     check(close(cz1.cart_prod(I).c().expand_dims(-1), {1, 1, 0}, 0), b + ": a box");
     const ConZonotope with_point = cz1.cart_prod(column({9.0}));
     check(close(with_point.c().expand_dims(-1), {1, 9}, 0) &&

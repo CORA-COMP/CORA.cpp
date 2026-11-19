@@ -7,16 +7,16 @@
 // Syntax:   Pres = P.cart_prod(P2);   Pres = P.cart_prod(I);   Pres = P.cart_prod(p);
 //           Pres = Polytope::cart_prod(p, P);
 // Inputs:   P2, I - a polytope or a box
-//           p - a point (n2, 1) of any dimension, as the second operand (the static form: first)
+//           p - a point (..., n2) of any dimension, second operand (the static form: first)
 // Outputs:  Pres - exact, of dimension n + n2, in the order of the operands
 // See also: intersect, Zonotope::cart_prod
 //
 // CORA: contSet/@polytope/cartProd_.m
 // CORA: contSet/@polytope/private/priv_cartProd.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -51,15 +51,14 @@ detail::Refusal aux_refusal(const Polytope &P1, const Polytope &P2) {
                          shape_text(aux_data(P2).shape())};
 }
 
-/// Why the point is refused, if it is: it must be one column.
+/// Why the point is refused, if it is: it must be a vector (..., n).
 detail::Refusal aux_point_refusal(const Tensor &p) {
-    if (!p.defined() || p.ndim() < 2)
-        return std::pair{Error::dimension_mismatch, "cart_prod: the point must be a column (n, 1)"};
-    if (p.shape().back() != 1)
+    if (!p.defined() || p.ndim() < 1)
+        return std::pair{Error::dimension_mismatch, "cart_prod: the point must be a vector (n)"};
+    if (p.ndim() != 1)
         return std::pair{
             Error::not_supported,
-            "cart_prod: the Cartesian product is only supported for single points, got "
-            "the shape " +
+            "cart_prod: the Cartesian product is only supported for single points, got the shape " +
                 shape_text(p.shape())};
     return std::nullopt;
 }
@@ -68,27 +67,28 @@ detail::Refusal aux_point_refusal(const Tensor &p) {
 
 /// The point as a polytope: the equalities I x = p.
 Polytope aux_point(const Tensor &p) {
-    const int64_t n = p.shape()[p.ndim() - 2];
-    return {zeros_block(p, 0, n), zeros_block(p, 0, 1), identity_block(p, n), p};
+    const int64_t n = p.size(-1);
+    const Tensor column = p.expand_dims(-1);
+    return {zeros_block(column, 0, n), zeros_block(column, 0, 1).squeeze(-1),
+            identity_block(column, n), p};
 }
 
 /// The product: the pairs of vertices if no operand has halfspaces, else the block diagonal.
 Polytope aux_product(const Polytope &P1, const Polytope &P2) {
     if (!P1.is_h_rep() && !P2.is_h_rep()) {
-        const int64_t n1 = P1.dim(), n2 = P2.dim(), m1 = P1.V().shape().back(),
-                      m2 = P2.V().shape().back();
-        if (m1 * m2 == 0) return Polytope(zeros_block(P1.V(), n1 + n2, 0));
-        // [repelem(V1, 1, m2); repmat(V2, 1, m1)]
+        const int64_t n1 = P1.dim(), n2 = P2.dim(), m1 = P1.V().size(-2), m2 = P2.V().size(-2);
+        if (m1 * m2 == 0) return Polytope(zeros_block(P1.V(), 0, n1 + n2));
+        // [repelem(V1, 1, m2); repmat(V2, 1, m1)] in rows: the vertex pairs side by side
         std::vector<int64_t> first(std::size_t(m1 * m2)), second(std::size_t(m1 * m2));
         for (int64_t k = 0; k < m1 * m2; ++k) {
             first[std::size_t(k)] = k / m2;
             second[std::size_t(k)] = k % m2;
         }
-        return Polytope(Tensor::concat({P1.V().take(first, -1), P2.V().take(second, -1)}, -2));
+        return Polytope(Tensor::concat({P1.V().take(first, -2), P2.V().take(second, -2)}, -1));
     }
     const Polytope::Constraints C1 = P1.constraints(), C2 = P2.constraints();
-    return {Tensor::block_diag({C1.A, C2.A}), Tensor::concat({C1.b, C2.b}, -2),
-            Tensor::block_diag({C1.Ae, C2.Ae}), Tensor::concat({C1.be, C2.be}, -2)};
+    return {Tensor::block_diag({C1.A, C2.A}), Tensor::concat({C1.b, C2.b}, -1),
+            Tensor::block_diag({C1.Ae, C2.Ae}), Tensor::concat({C1.be, C2.be}, -1)};
 }
 
 } // namespace

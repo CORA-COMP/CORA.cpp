@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@polytope/mldivide.m
 // CORA authors: Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -50,9 +50,9 @@ std::vector<Polytope> Polytope::set_difference(const Polytope &S) const {
     std::vector<Polytope> pieces;
     // piece i: beyond row i of S, inside rows 0..i-1 of S and the rows of P
     for (int64_t i = 0; i < C2.A.shape()[0]; ++i) {
-        const Tensor beyond_A = -C2.A.slice(-2, i, i + 1), beyond_b = -C2.b.slice(-2, i, i + 1);
+        const Tensor beyond_A = -C2.A.slice(-2, i, i + 1), beyond_b = -C2.b.slice(-1, i, i + 1);
         const Polytope piece(Tensor::concat({beyond_A, C2.A.slice(-2, 0, i), C1.A}, -2),
-                             Tensor::concat({beyond_b, C2.b.slice(-2, 0, i), C1.b}, -2));
+                             Tensor::concat({beyond_b, C2.b.slice(-1, 0, i), C1.b}, -1));
         if (piece.is_full_dim()) pieces.push_back(piece);
     }
     return pieces;

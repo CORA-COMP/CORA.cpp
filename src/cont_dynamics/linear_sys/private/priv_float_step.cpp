@@ -6,7 +6,7 @@
 // CORALean's LinearSys.reachFloatInput and NonlinearSys.oneStepFloat.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_float_step.h"
@@ -33,10 +33,10 @@ Tensor aux_vector(const Tensor &p) { return p.ndim() >= 2 && p.size(-1) == 1 ? p
 class Series {
   public:
     Series(const Tensor &A, double r, int eta)
-        : r_(r), eta_(eta), point_(A, A), scaled_(priv_float_smul(point_, r, r)),
+        : r_(r), eta_(eta), point_(Interval::matrix(A, A)), scaled_(priv_float_smul(point_, r, r)),
           remainder_(priv_float_remainder_bound(priv_float_norm_upper_bound(scaled_), eta)),
           spread_(priv_float_symmetric(A, r * remainder_)) {
-        powers_.emplace_back(A.eye_like(), A.eye_like());
+        powers_.push_back(Interval::matrix(A.eye_like(), A.eye_like()));
         for (int i = 1; i <= eta; ++i) powers_.push_back(priv_matmul(point_, powers_.back()));
         // the box of every order of the input solution, and of the remainder
         for (int i = 0; i <= eta; ++i) {
@@ -47,14 +47,14 @@ class Series {
 
     /// [e^{A r}], the Taylor sum of [r A] with the remainder in every entry.
     Interval exp() const {
-        Interval P(scaled_.inf().eye_like(), scaled_.inf().eye_like());
+        Interval P = Interval::matrix(scaled_.inf().eye_like(), scaled_.inf().eye_like());
         Interval S = priv_float_smul(P, 1.0, 1.0);
         for (int k = 0; k < eta_; ++k) {
             P = priv_matmul(scaled_, P);
             const double inv = 1.0 / priv_float_factorial(k + 1);
             S = priv_float_smul(P, inv, inv).plus(S);
         }
-        return {S.inf() - remainder_, S.sup() + remainder_};
+        return Interval::matrix(S.inf() - remainder_, S.sup() + remainder_);
     }
 
     /// [F], the orders 2 to eta each spanning the interval between it and 0, then the remainder.
@@ -67,7 +67,7 @@ class Series {
             lo = T.inf().minimum(lo.zeros_like()) + lo;
             hi = T.sup().maximum(hi.zeros_like()) + hi;
         }
-        return {lo - remainder_, hi + remainder_};
+        return Interval::matrix(lo - remainder_, hi + remainder_);
     }
 
     /// The set the input V contributes over one step: the orders 0 to eta, one box each, and the
@@ -96,7 +96,7 @@ class Series {
 
 std::optional<int> priv_float_order(const Tensor &A, double time_step, int taylor_terms) {
     const double nrm =
-        priv_float_norm_upper_bound(priv_float_smul(Interval(A, A), time_step, time_step));
+        priv_float_norm_upper_bound(priv_float_smul(Interval::matrix(A, A), time_step, time_step));
     const int first = std::max(taylor_terms, 2);
     for (int eta = first; eta < first + 4096; ++eta)
         if (nrm <= double(eta + 2) * 0.5) return eta;

@@ -19,7 +19,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   16-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -56,7 +56,7 @@ Interval LinearSys::correction_matrix_input(double time_step, int taylor_terms) 
         Ai = Ai.matmul(A());
     }
     const Interval E = expm_remainder(time_step, taylor_terms);
-    return {Gneg + E.inf() * time_step, Gpos + E.sup() * time_step};
+    return Interval::matrix(Gneg + E.inf() * time_step, Gpos + E.sup() * time_step);
 }
 
 } // namespace cora

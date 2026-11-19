@@ -63,8 +63,8 @@ def segment():
 
 
 def is_empty_box(box):
-    """Whether a box has no point: bounds without columns."""
-    return box.inf.ndim == 2 and box.inf.shape[1] == 0
+    """Whether a box has no point: every member flagged in its empty mask."""
+    return box.is_empty()
 
 
 def random_set(rng, n, m, p):

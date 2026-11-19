@@ -13,7 +13,7 @@
 //
 // Authors:       Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_hybrid.h"
@@ -29,6 +29,7 @@ namespace {
 using namespace cora;
 using cora::bench::column;
 using cora::bench::hyperplane;
+using cora::bench::vec;
 
 /// powertrainParameters.m (the control gains k_P, k_I, k_D, k_KK are zero and do not enter).
 struct Params {
@@ -116,10 +117,10 @@ Model aux_model(int64_t dim) {
     auto sys = [&](std::size_t l) {
         return LinearSys(Tensor::from_data(flows[l].A, {dim, dim}), Tensor::eye(dim));
     };
-    Location loc1("loc1", Polytope(-e1, column({-p.alpha})), {Transition(h1, id, 1)}, sys(0));
-    Location loc2("loc2", Polytope(Tensor::concat({e1, -e1}, -2), column({p.alpha, p.alpha})),
+    Location loc1("loc1", Polytope(-e1, vec({-p.alpha})), {Transition(h1, id, 1)}, sys(0));
+    Location loc2("loc2", Polytope(Tensor::concat({e1, -e1}, -2), vec({p.alpha, p.alpha})),
                   {Transition(h1, id, 0), Transition(h2, id, 2)}, sys(1));
-    Location loc3("loc3", Polytope(e1, column({-p.alpha})), {Transition(h2, id, 1)}, sys(2));
+    Location loc3("loc3", Polytope(e1, vec({-p.alpha})), {Transition(h2, id, 1)}, sys(2));
     // powertrainParameters.m: the initial set
     const double omega_c = 30, omega_d = 10, T_l = -300;
     const double x1_0 = p.b_l / p.k * omega_c - p.alpha + T_l / p.k;

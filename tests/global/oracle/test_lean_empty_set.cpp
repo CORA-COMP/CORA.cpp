@@ -30,7 +30,7 @@
 // ORACLE: contSet/@emptySet/volume_.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -149,7 +149,7 @@ int main() {
                                 lean::EmptySet(n).project_high_dim(n + 2, dims).dim());
                       }));
     test::oracle::run("emptySet.radius", each_dimension([](Random &, int64_t n) {
-                          check(EmptySet(n).radius(), lean::EmptySet(n).radius());
+                          check(EmptySet(n).ball_radius(), lean::EmptySet(n).radius());
                       }));
     test::oracle::run("emptySet.volume", each_dimension([](Random &, int64_t n) {
                           // volume and linear maps of the empty set

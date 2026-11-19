@@ -5,7 +5,7 @@
 // ellipsoids, a solver: Error::not_supported (CORA: noExactAlg).
 //
 // Syntax:   res = E.is_intersecting(p);   res = E.is_intersecting(S, tol);
-// Inputs:   p - points (n, N)
+// Inputs:   p - points (..., n), one per row
 //           S - ellipsoid
 //           tol - default: the repository tolerance (docs/architecture.md)
 // Outputs:  res - whether they meet
@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@ellipsoid/isIntersecting_.m
 // CORA authors: Victor Gassmann, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -33,11 +33,10 @@ namespace cora {
 bool Ellipsoid::is_intersecting(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, Q_.dtype(), "is_intersecting");
-    CORA_CHECK(p.defined() && p.ndim() == 2 && p.shape()[0] == dim(), Error::dimension_mismatch,
-               [&] {
-                   return "is_intersecting: the points must be a matrix with " +
-                          std::to_string(dim()) + " rows, got the shape " + shape_text(p.shape());
-               });
+    CORA_CHECK(p.defined() && is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "is_intersecting: the points must be (..., " + std::to_string(dim()) +
+               "), one per row, got the shape " + (p.defined() ? shape_text(p.shape()) : "()");
+    });
     // points meet the ellipsoid if all of them lie in it
     return contains(p, "exact", tol);
 }

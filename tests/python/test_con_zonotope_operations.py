@@ -1,9 +1,9 @@
 """test_con_zonotope_operations - ConZonotope in Python: support function, vertices, sampling and conversions.
 
 CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       06-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 # CORA: contSet/@conZonotope/dim.m
@@ -95,7 +95,7 @@ class ConZonotopeOperations(unittest.TestCase):
         self.assertTrue(bundle.contains(corners))
         P = H.polytope()
         self.assertIsInstance(P, cora.Polytope)
-        self.assertTrue(P.contains(corners))
+        self.assertTrue(P.contains(corners.T))
         self.assertFalse(P.contains(np.array([1.0, 1.0])))
         with self.assertRaises(cora.errors.EmptySet):
             cora.ConZonotope.empty(2).zonotope()

@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/randPoint_.m
 // PROPERTY: contSet/@ellipsoid/randPoint_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -19,7 +19,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,15 +32,17 @@ void rand_point_property(const std::string &b) {
     Rng rng(131);
     for (int k = 0; k < 4; ++k) {
         const Ellipsoid E = test::random_ellipsoid(rng, 3, k == 3 ? 2 : -1);
-        check(test::all_inside(E, E.rand_point(30, rng), 1e-6), b + ": standard points are inside");
-        check(test::all_inside(E, E.rand_point(30, rng, "uniform"), 1e-6),
+        check(test::all_inside(E, E.rand_point(30, rng).matrix_transpose(), 1e-6),
+              b + ": standard points are inside");
+        check(test::all_inside(E, E.rand_point(30, rng, "uniform").matrix_transpose(), 1e-6),
               b + ": uniform points are inside");
         const Tensor P = E.rand_point(30, rng, "extreme");
         bool boundary = true;
-        for (const double x : test::norms_of(E, P)) boundary = boundary && std::abs(x - 1.0) < 1e-6;
+        for (const double x : test::norms_of(E, P.matrix_transpose()))
+            boundary = boundary && std::abs(x - 1.0) < 1e-6;
         check(P.shape() == Shape({3, 30}) && boundary, b + ": extreme points are on the boundary");
     }
-    const Ellipsoid point(Tensor::zeros({2, 2}), column({1.0, 2.0}));
+    const Ellipsoid point(vec({1.0, 2.0}), Tensor::zeros({2, 2}));
     check(close(point.rand_point(3, rng), {1, 1, 1, 2, 2, 2}, 0),
           b + ": a point repeats its center");
 }
@@ -68,7 +70,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { E.rand_point(-1, rng); }, Error::wrong_value), "rand_point: N");
     check(test::raises([&] { Ellipsoid::empty(2).rand_point(1, rng); }, Error::empty_set),
           "rand_point: empty");
-    const Ellipsoid batch(Tensor::zeros({2, 2, 2}), Tensor::zeros({2, 2, 1}));
+    const Ellipsoid batch(Tensor::zeros({2, 2}), Tensor::zeros({2, 2, 2}));
     check(test::raises([&] { batch.rand_point(1, rng); }, Error::not_supported),
           "rand_point: batch");
     ChecksScope off(false);

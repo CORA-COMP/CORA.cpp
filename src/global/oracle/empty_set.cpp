@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/empty_set.h"
@@ -24,7 +24,9 @@ namespace {
 // The other operand on the wire: its dimension, and whether it is empty (a center without columns).
 Wire aux_other(const cora::ContSet &S) {
     Json j = Json::object();
-    j.set("n", Json(S.dim())).set("empty", Json(S.center().shape().back() == 0));
+    // a set with an empty mask, or one whose center has no columns (CORA's empty sets)
+    const bool empty = S.empty_mask().all() || S.center().shape().back() == 0;
+    j.set("n", Json(S.dim())).set("empty", Json(empty));
     return Wire(j, "");
 }
 

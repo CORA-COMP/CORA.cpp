@@ -11,7 +11,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -27,7 +27,7 @@ namespace cora {
 namespace {
 
 /// Whether the box is a bounded vector, the only one that has a zonotope.
-bool aux_has_zonotope(const Interval &I) { return I.is_bounded() && I.inf().shape().back() == 1; }
+bool aux_has_zonotope(const Interval &I) { return I.is_bounded() && I.elem_rank() == 1; }
 
 } // namespace
 

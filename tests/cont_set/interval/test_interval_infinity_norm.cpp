@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -42,8 +42,7 @@ void norm_bounds_the_members(const std::string &b) {
           b + ": the Inf-norm of abs");
     const Interval T = test::random_matrix(rng, 2, 1.0);
     const Interval batch = Interval::stack({T, test::example()});
-    check(close(batch.infinity_norm().slice(0, 1, 2).reshape({1, 1}),
-                test::example().infinity_norm()),
+    check(close(batch.infinity_norm().slice(0, 1, 2).squeeze(0), test::example().infinity_norm()),
           b + ": a batch");
 }
 

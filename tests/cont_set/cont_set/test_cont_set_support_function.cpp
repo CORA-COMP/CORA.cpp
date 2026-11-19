@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -26,7 +26,7 @@ namespace {
 /// A direction of the wrong dimension is refused for every class; the checks off skip it.
 void the_direction_is_checked() {
     const Zonotope Z = Zonotope(Tensor({1.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
-    const Interval I = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval I = Interval(test::vec({0, -1}), test::vec({1, 1}));
     for (const ContSet *S : {static_cast<const ContSet *>(&Z), static_cast<const ContSet *>(&I)}) {
         check(test::raises([&] { S->support_function(test::column({1, 0, 0})); },
                            Error::dimension_mismatch),

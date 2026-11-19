@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@contSet/vertices.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,10 +24,10 @@ namespace {
 
 /// A set of three dimensions is refused; a box has four vertices.
 void only_two_dimensions() {
-    const Interval I3 = Interval(test::column({0, -1, 0}), test::column({1, 1, 2}));
+    const Interval I3 = Interval(test::vec({0, -1, 0}), test::vec({1, 1, 2}));
     const ContSet &S3 = I3;
     check(test::raises([&] { S3.vertices(); }, Error::not_supported), "three dimensions");
-    const Interval I = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval I = Interval(test::vec({0, -1}), test::vec({1, 1}));
     const ContSet &S = I;
     check(S.vertices()[0].size() == 4, "a box has four vertices");
     ChecksScope off(false);

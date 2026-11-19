@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/Inf.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -24,11 +24,11 @@ namespace {
 void unbounded_has_infinite_bounds(const std::string &b) {
     const double kInf = std::numeric_limits<double>::infinity();
     const Interval I = Interval::unbounded(3);
-    check(I.dim() == 3 && I.inf().shape() == std::vector<int64_t>({3, 1}), b + ": a column of 3");
+    check(I.dim() == 3 && I.inf().shape() == std::vector<int64_t>({3}), b + ": a column of 3");
     check(I.inf().data() == std::vector<double>(3, -kInf) &&
               I.sup().data() == std::vector<double>(3, kInf),
           b + ": (-Inf, Inf) in every coordinate");
-    check(I.contains(test::column({1e300, -1e300, 0})), b + ": it contains every point");
+    check(I.contains(test::vec({1e300, -1e300, 0})), b + ": it contains every point");
     check(Interval::unbounded(0).dim() == 0, b + ": dimension 0, CORA's default");
 }
 

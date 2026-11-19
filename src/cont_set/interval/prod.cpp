@@ -12,7 +12,7 @@
 // CORA authors: Dmitry Grebenyuk
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_times.h"
@@ -29,16 +29,17 @@ namespace cora {
 
 Interval Interval::prod(std::optional<int> dim) const {
     detail::Entry entry;
-    const int along = dim.value_or(inf_.size(-2) == 1 ? 2 : 1);
+    const int along = dim.value_or(this->dim(1) == 1 ? 2 : 1);
     CORA_CHECK(along == 1 || along == 2, Error::wrong_value,
                [] { return std::string("prod: the second argument must be either 1 or 2"); });
     // columns are rows of the transpose
-    const Tensor a = along == 1 ? inf_ : inf_.matrix_transpose();
-    const Tensor b = along == 1 ? sup_ : sup_.matrix_transpose();
+    const Tensor a = along == 1 ? inf_matrix() : inf_matrix().matrix_transpose();
+    const Tensor b = along == 1 ? sup_matrix() : sup_matrix().matrix_transpose();
     Tensor lo = a.slice(-2, 0, 1).ones_like(), hi = lo;
     for (int64_t i = a.size(-2) - 1; i >= 0; --i)
         std::tie(lo, hi) = priv_times(a.slice(-2, i, i + 1), b.slice(-2, i, i + 1), lo, hi);
-    return along == 1 ? Interval(lo, hi) : Interval(lo.matrix_transpose(), hi.matrix_transpose());
+    return along == 1 ? from_matrix(lo, hi)
+                      : from_matrix(lo.matrix_transpose(), hi.matrix_transpose());
 }
 
 } // namespace cora

@@ -8,15 +8,15 @@
 //
 // Syntax:   d = P.distance(S);   Tensor d = P.distance(points);
 // Inputs:   S - a polytope of the dimension of P
-//           points - a matrix (n, N)
-// Outputs:  d - the distance, a number or a row (1, N)
+//           points - (..., n), one per row
+// Outputs:  d - the distance, a number, or one per point (...)
 // See also: Polytope::hausdorff_distance, Polytope::is_intersecting
 //
 // CORA: contSet/@polytope/distance.m
 // CORA authors: Victor Gassmann, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -69,27 +69,26 @@ Tensor Polytope::distance(const Tensor &points) const {
     detail::Entry entry;
     const detail::Refusal refusal = aux_refusal(*this);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    CORA_CHECK(points.defined() && points.ndim() == 2 && points.shape()[0] == dim(),
-               Error::dimension_mismatch, [&] {
-                   return "distance: the points must be a matrix (" + std::to_string(dim()) +
-                          ", N) of columns, got the shape " +
-                          shape_text(points.defined() ? points.shape() : Shape{});
-               });
+    CORA_CHECK(points.defined() && is_vector(points, dim()), Error::dimension_mismatch, [&] {
+        return "distance: the points must be (..., " + std::to_string(dim()) +
+               "), one per row, got the shape " +
+               shape_text(points.defined() ? points.shape() : Shape{});
+    });
     // zero for a point in the set, else the least-distance program; none for the empty set
     const Tensor &like = is_h_rep() ? A_ : V_;
-    const int64_t count = points.shape()[1];
+    const std::vector<int64_t> batch(points.shape().begin(), points.shape().end() - 1);
     Row distances;
     const bool empty = priv_polytope_is_empty(*this);
     const HostH H = empty ? HostH{} : priv_host_h(constraints());
-    for (const Row &y : priv_host_points(points)) {
+    for (const Row &y : priv_host_points(points.reshape({points.numel() / dim(), dim()}))) {
         // a point in the set has distance 0
-        const Tensor column = priv_column_tensor(like, y);
+        const Tensor point = priv_vector_tensor(like, y);
         distances.push_back(empty ? kInf
-                            : contains(column, "exact", numerics::kPolytopeDistance)
+                            : contains(point, "exact", numerics::kPolytopeDistance)
                                 ? 0.0
                                 : priv_distance_to_polytope(H, y));
     }
-    return Tensor::like(like, distances, {1, count});
+    return Tensor::like(like, distances, batch);
 }
 
 } // namespace cora

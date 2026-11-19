@@ -16,7 +16,7 @@
 // CORA authors: Mark Wetzlinger, Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_steps.h"
@@ -87,7 +87,8 @@ ReachStep LinearSys::init_reach(const Zonotope &R_init, const std::optional<Zono
     const Zonotope origin(A().zeros_like({dim()}), A().zeros_like({0, dim()}));
     const Zonotope RV =
         has_V ? s.sum->plus(V->linear_map(dt * E)) : origin; // the series and its remainder
-    const Interval e_at_int{s.integral + E.inf() * dt, s.integral + E.sup() * dt};
+    const Interval e_at_int =
+        Interval::matrix(s.integral + E.inf() * dt, s.integral + E.sup() * dt);
     std::optional<Zonotope> trans_point;
     if (u_trans)
         trans_point = Zonotope(B_->matmul(*u_trans).squeeze(-1), A().zeros_like({0, dim()}));

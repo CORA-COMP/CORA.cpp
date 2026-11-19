@@ -7,9 +7,9 @@
 //           outputs of a result
 // See also: cont_set/zonotope/zonotope_gradients.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -24,18 +24,18 @@ namespace test {
 /// The shape matrix and center of an ellipsoid, as the outputs of a function.
 inline Inputs parts(const cora::Ellipsoid &E) { return {E.Q(), E.q()}; }
 
-/// The ellipsoid of the factor L (n, n) and the center q (n, 1) from `first` on.
+/// The ellipsoid of the factor L (n, n) and the center q (n) from `first` on.
 inline cora::Ellipsoid ellipsoid_of(const Inputs &x, std::size_t first = 0) {
     const cora::Tensor &L = x[first];
     const cora::Tensor LL = L.matmul(L.matrix_transpose());
     const cora::Tensor Q = (LL + LL.matrix_transpose()) * 0.5 + L.eye_like(L.shape()[0]) * 0.5;
-    return {Q, x[first + 1]};
+    return {x[first + 1], Q};
 }
 
-/// L (n, n) and q (n, 1) away from zero.
+/// L (n, n) and q (n) away from zero.
 inline std::vector<torch::Tensor> random_ellipsoid_factors(int64_t n) {
     const std::vector<torch::Tensor> zonotope = random_zonotope(n, n);
-    return {zonotope[1], zonotope[0]};
+    return {zonotope[1], zonotope[0].squeeze(-1)};
 }
 
 } // namespace test

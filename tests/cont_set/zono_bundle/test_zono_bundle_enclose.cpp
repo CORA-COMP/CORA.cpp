@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "zono_bundle_testing.h"
@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -85,11 +86,10 @@ void checks_and_their_switch() {
     check(test::raises([&] { one.enclose(Zonotope(column({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "enclose: another dimension");
-    check(
-        test::raises(
-            [&] { Set(one).get().enclose(Set(Interval(column({0.0, 0.0}), column({1.0, 1.0})))); },
-            Error::noops),
-        "enclose: a box is not a class of CORA's bundle enclose");
+    check(test::raises(
+              [&] { Set(one).get().enclose(Set(Interval(vec({0.0, 0.0}), vec({1.0, 1.0})))); },
+              Error::noops),
+          "enclose: a box is not a class of CORA's bundle enclose");
     // the set interface pairs the members itself, so it refuses a mismatch with the checks off too
     ChecksScope off(false);
     check(test::raises([&] { Set(one).get().enclose(Set(two)); }, Error::wrong_value),

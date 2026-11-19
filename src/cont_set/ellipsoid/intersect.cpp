@@ -7,7 +7,7 @@
 // Error::not_supported.
 //
 // Syntax:   Ellipsoid R = E.intersect(p);   Ellipsoid R = E.intersect(S, mode);
-// Inputs:   p - a point (n, 1)
+// Inputs:   p - a point (n)
 //           S - an ellipsoid
 //           mode - "outer" (default) or "inner"
 // Outputs:  R - the point as an ellipsoid (Q = 0) if the ellipsoid contains it, else the empty one
@@ -15,9 +15,9 @@
 //
 // CORA: contSet/@ellipsoid/and_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -34,7 +34,7 @@ namespace {
 /// The point p as the result of an intersection that holds it: Q = 0 around p.
 Ellipsoid aux_point(const Ellipsoid &like, const Tensor &p) {
     const int64_t n = like.dim();
-    return {like.Q().zeros_like({n, n}), p};
+    return {p, like.Q().zeros_like({n, n})};
 }
 
 } // namespace
@@ -44,8 +44,8 @@ Ellipsoid aux_point(const Ellipsoid &like, const Tensor &p) {
 
 Ellipsoid Ellipsoid::intersect(const Tensor &p) const {
     detail::Entry entry;
-    CORA_CHECK(p.defined() && is_column(p, dim()) && p.ndim() == 2, Error::dimension_mismatch, [&] {
-        return "intersect: the point must be a column (" + std::to_string(dim()) + ", 1)";
+    CORA_CHECK(p.defined() && is_vector(p, dim()) && p.ndim() == 1, Error::dimension_mismatch, [&] {
+        return "intersect: the point must be a vector (" + std::to_string(dim()) + ")";
     });
     const detail::Refusal refusal = priv_unbatched_refusal(*this, "intersect");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });

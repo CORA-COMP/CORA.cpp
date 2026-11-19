@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -19,6 +19,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -53,7 +54,7 @@ void compact_of_a_zonotope(const std::string &b) {
 
 /// A box, the empty set and the whole space are returned as they are, whatever the arguments.
 void compact_of_the_others() {
-    const Interval I(column({0.0, 0.0}), column({1.0, 1.0}));
+    const Interval I(vec({0.0, 0.0}), vec({1.0, 1.0}));
     check(
         test::close(static_cast<const ContSet &>(I).compact("anything", -1.0).as<Interval>().sup(),
                     I.sup(), 0),

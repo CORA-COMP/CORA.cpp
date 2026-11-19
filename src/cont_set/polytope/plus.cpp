@@ -7,7 +7,7 @@
 //
 // Syntax:   Pres = P.plus(S);   Pres = P.plus(I);   Pres = P.plus(v);
 // Inputs:   S, I - a polytope or a box of the dimension of P
-//           v - a column (..., n, 1)
+//           v - a vector (..., n)
 // Outputs:  Pres - P + S, in the form of the operands (halfspaces unless both have vertices)
 // Gradients: differentiable, except the sum of two halfspace sets (a host program, no gradient)
 // See also: Polytope::minus, Polytope::linear_map
@@ -15,9 +15,9 @@
 // CORA: contSet/@polytope/plus.m
 // CORA: contSet/@polytope/private/priv_plus_minus_vector.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -31,15 +31,15 @@ namespace cora {
 
 namespace {
 
-/// All sums of a vertex of V1 (n, p1) and one of V2 (n, p2), the vertex of V2 varying slowest.
+/// All sums of a vertex of V1 (p1, n) and one of V2 (p2, n), the vertex of V2 varying slowest.
 Tensor aux_vertex_sums(const Tensor &V1, const Tensor &V2) {
     std::vector<int64_t> batch = V1.shape();
-    const int64_t n = batch[batch.size() - 2], p1 = batch.back(), p2 = V2.shape().back();
+    const int64_t n = batch.back(), p1 = batch[batch.size() - 2], p2 = V2.size(-2);
     batch.resize(batch.size() - 2);
     std::vector<int64_t> shape2 = batch, shape1 = batch, flat = batch;
-    shape2.insert(shape2.end(), {n, p2, 1});
-    shape1.insert(shape1.end(), {n, 1, p1});
-    flat.insert(flat.end(), {n, p2 * p1});
+    shape2.insert(shape2.end(), {p2, 1, n});
+    shape1.insert(shape1.end(), {1, p1, n});
+    flat.insert(flat.end(), {p2 * p1, n});
     return (V2.reshape(shape2) + V1.reshape(shape1)).reshape(flat);
 }
 
@@ -93,25 +93,33 @@ Polytope Polytope::plus(const Polytope &S) const {
 
 Polytope Polytope::plus(const Interval &I) const { return plus(Polytope(I)); }
 
+// Points ------------------------------------------------------------------------------------------
+
 // A point shifts the offsets of the rows and the vertices, whatever forms are held.
 Polytope Polytope::plus(const Tensor &v) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(v, dim()), Error::dimension_mismatch, [&] {
-        return "plus: the point must be a column of " + std::to_string(dim()) +
-               " entries, got the shape " + shape_text(v.shape());
+    CORA_CHECK(v.defined() && is_vector(v, dim()), Error::dimension_mismatch, [&] {
+        return "plus: the point must be a vector (..., " + std::to_string(dim()) +
+               "), got the shape " + (v.defined() ? shape_text(v.shape()) : std::string("()"));
     });
     Parts parts;
+    parts.empty = empty_;
+    // A v on CORA's columns, the order of CORALean's product
+    const Tensor column = v.expand_dims(-1);
     if (is_h_rep()) {
         parts.A = A_;
         parts.Ae = Ae_;
-        parts.b = b_ + A_.matmul(v);
-        parts.be = be_ + Ae_.matmul(v);
+        parts.b = b_ + A_.matmul(column).squeeze(-1);
+        parts.be = be_ + Ae_.matmul(column).squeeze(-1);
     }
-    if (is_v_rep()) parts.V = V_ + v;
+    if (is_v_rep()) parts.V = V_ + v.expand_dims(-2);
     return Polytope(std::move(parts));
 }
 
-Set Polytope::translate_impl(const Tensor &v) const { return plus(v); }
+// the generic entry passes a column until #163's point sweep
+Set Polytope::translate_impl(const Tensor &v) const {
+    return plus(is_column(v, dim()) ? v.squeeze(-1) : v);
+}
 
 } // namespace cora
 

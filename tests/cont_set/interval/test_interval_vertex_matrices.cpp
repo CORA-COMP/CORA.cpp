@@ -3,9 +3,9 @@
 // CORA: matrixSet/@intervalMatrix/vertices.m
 // PROPERTY: matrixSet/@intervalMatrix/vertices.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5, Tobias Ladner
+// Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -48,8 +48,8 @@ void vertices_span_the_set(const std::string &b) {
         inside = inside && A.contains(V.slice(0, k, k + 1).reshape({2, 3}), 0.0);
     check(inside, b + ": every vertex is in the set");
     check(close(V.sum(0) * (1.0 / 64), A.center(), 1e-12), b + ": the mean is the center");
-    const Interval E = test::interval_matrix(
-        Interval(test::matrix({1, -1, 0, 1, 2, 2}, 2, 3), test::matrix({2, 1, 3, 1, 2, 3}, 2, 3)));
+    const Interval E = test::interval_matrix(Interval::matrix(
+        test::matrix({1, -1, 0, 1, 2, 2}, 2, 3), test::matrix({2, 1, 3, 1, 2, 3}, 2, 3)));
     const std::vector<Tensor> batch = (Interval::stack({A, E})).vertex_matrices();
     check(batch.size() == 2 && batch[0].size(0) == 64 && batch[1].size(0) == 16, b + ": a batch");
 }

@@ -5,7 +5,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -24,7 +24,7 @@ namespace {
 
 void the_hull_is_the_other_set(const std::string &b) {
     const EmptySet E(2);
-    const Interval I(test::column({0.0, -1.0}), test::column({1.0, 3.0}));
+    const Interval I(test::vec({0.0, -1.0}), test::vec({1.0, 3.0}));
     const Set R = E.convex_hull(Set(I));
     check(R.is<Interval>() && R.as<Interval>().isequal(I, 0), b + ": a box stays a box");
     check(E.convex_hull(Set(E)).as<EmptySet>().dim() == 2, b + ": with itself");

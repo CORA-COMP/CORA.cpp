@@ -3,7 +3,7 @@
 // CORA.cpp only: the policy of the repository
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -114,8 +114,8 @@ void within_tol_of_numbers_and_tensors() {
 
 // operations resolve at the entry
 void operations_resolve_at_the_entry() {
-    const Interval I(Tensor({{0.0}, {0.0}}), Tensor({{1.0}, {1.0}}));
-    const Tensor p = Tensor({{1.0 + 1e-10}, {0.5}});
+    const Interval I = Interval(test::vec({0.0, 0.0}), test::vec({1.0, 1.0}));
+    const Tensor p = test::vec({1.0 + 1e-10, 0.5});
     check(!I.contains(p), "float64: 1e-10 outside is outside by default");
     check(I.contains(p, 1e-9), "an argument relaxes it");
     {
@@ -127,19 +127,19 @@ void operations_resolve_at_the_entry() {
     check(I.contains(p), "the process default relaxes it");
     set_default_tolerance(std::nullopt);
 
-    const Interval J(Tensor({{0.0}, {0.0}}).to(f32), Tensor({{1.0}, {1.0}}).to(f32));
-    const Tensor q = Tensor({{1.0 + 1e-6}, {0.5}}).to(f32);
-    check(J.contains(q) && !I.contains(Tensor({{1.0 + 1e-6}, {0.5}})),
+    const Interval J = Interval(test::vec({0.0, 0.0}).to(f32), test::vec({1.0, 1.0}).to(f32));
+    const Tensor q = test::vec({1.0 + 1e-6, 0.5}).to(f32);
+    check(J.contains(q) && !I.contains(test::vec({1.0 + 1e-6, 0.5})),
           "1e-6 outside: inside for float32, outside for float64, both by default");
     check(I.isequal(I), "isequal with the default");
-    const Interval K(Tensor({{0.0}, {0.0}}), Tensor({{1.0 + 1e-10}, {1.0}}));
+    const Interval K = Interval(test::vec({0.0, 0.0}), test::vec({1.0 + 1e-10, 1.0}));
     check(!I.isequal(K) && I.isequal(K, 1e-9), "isequal: the argument relaxes it");
     // boxes 1e-10 apart
-    check(!I.is_intersecting(Interval(Tensor({{1.0 + 1e-10}, {0.0}}), Tensor({{2.0}, {1.0}}))),
+    check(!I.is_intersecting(Interval(test::vec({1.0 + 1e-10, 0.0}), test::vec({2.0, 1.0}))),
           "is_intersecting: boxes 1e-10 apart do not meet by default");
     {
         ToleranceScope scope(1e-9);
-        check(I.is_intersecting(Interval(Tensor({{1.0 + 1e-10}, {0.0}}), Tensor({{2.0}, {1.0}}))),
+        check(I.is_intersecting(Interval(test::vec({1.0 + 1e-10, 0.0}), test::vec({2.0, 1.0}))),
               "... and do within a scope");
     }
     // a zonotope with a generator of norm 1e-12

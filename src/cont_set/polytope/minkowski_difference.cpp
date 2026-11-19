@@ -8,7 +8,7 @@
 // R^n stays R^n. A point v gives P - v. Not a batch.
 //
 // Syntax:   Pres = P.minkowski_difference(S);   Pres = P.minkowski_difference(S, "exact:vertices");
-// Inputs:   S - a set with a support function, or a point (n, 1)
+// Inputs:   S - a set with a support function, or a point (n)
 //           type - "exact" (default) or "exact:vertices"
 // Outputs:  Pres - the difference, in halfspace form
 // See also: Polytope::plus, Polytope::minus, Polytope::intersect
@@ -18,7 +18,7 @@
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -43,7 +43,8 @@ Polytope aux_exact(const Polytope &P, const ContSet &S) {
     HostH H = priv_host_h(C);
     const int64_t n = P.dim();
     for (std::size_t i = 0; i < H.A.size(); ++i) {
-        const double upper = S.support_function(priv_column_tensor(C.A, H.A[i])).item();
+        const double upper =
+            S.support_function(priv_vector_tensor(C.A, H.A[i]).expand_dims(-1)).item();
         if (std::isinf(upper)) return Polytope::empty(n);
         H.b[i] -= upper;
     }
@@ -51,8 +52,10 @@ Polytope aux_exact(const Polytope &P, const ContSet &S) {
         // an equality needs S flat along it: the least and the largest value agree
         Row negated = H.Ae[i];
         for (double &x : negated) x = -x;
-        const double upper = S.support_function(priv_column_tensor(C.A, H.Ae[i])).item();
-        const double lower = -S.support_function(priv_column_tensor(C.A, negated)).item();
+        const double upper =
+            S.support_function(priv_vector_tensor(C.A, H.Ae[i]).expand_dims(-1)).item();
+        const double lower =
+            -S.support_function(priv_vector_tensor(C.A, negated).expand_dims(-1)).item();
         if (!within_tol(lower, upper)) return Polytope::empty(n);
         H.be[i] -= lower;
     }
@@ -62,11 +65,11 @@ Polytope aux_exact(const Polytope &P, const ContSet &S) {
 
 // By shifts ---------------------------------------------------------------------------------------
 
-/// The intersection of the translates P - v of the vertices v (columns of V).
+/// The intersection of the translates P - v of the vertices v (rows of V).
 Polytope aux_vertex_translates(const Polytope &P, const Tensor &V) {
-    Polytope result = P.minus(V.slice(-1, 0, 1));
-    for (int64_t k = 1; k < V.shape().back(); ++k)
-        result = result.intersect(P.minus(V.slice(-1, k, k + 1)));
+    Polytope result = P.minus(V.slice(-2, 0, 1).squeeze(-2));
+    for (int64_t k = 1; k < V.size(-2); ++k)
+        result = result.intersect(P.minus(V.slice(-2, k, k + 1).squeeze(-2)));
     return result;
 }
 
@@ -84,9 +87,9 @@ Polytope aux_by_vertices(const Polytope &P, const ContSet &S) {
         const Zonotope Z = S.class_id() == ClassId::interval
                                ? static_cast<const Interval &>(S).zonotope()
                                : static_cast<const Zonotope &>(S);
-        Polytope result = P.minus(Z.center().expand_dims(-1));
+        Polytope result = P.minus(Z.center());
         for (int64_t k = 0; k < Z.nr_generators(); ++k) {
-            const Tensor g = Z.generators().matrix_transpose().slice(-1, k, k + 1);
+            const Tensor g = Z.generators().slice(-2, k, k + 1).squeeze(-2);
             result = result.plus(g).intersect(result.minus(g));
         }
         return result;

@@ -1,8 +1,8 @@
 // test_tensor_like_torch - Library code makes its tensors on the backend of the ones it is given
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -20,6 +20,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::throws;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,7 +33,7 @@ namespace {
 void tensors_stay_on_their_own_backend() {
     set_default_backend("eigen");
     const Zonotope Z(Tensor({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const Interval I(Tensor({0.0, 0.0}), Tensor({1.0, 2.0}));
+    const Interval I(test::vec({0.0, 0.0}), test::vec({1.0, 2.0}));
     const LinearSys sys(Tensor({{-0.2, 1.0}, {-1.0, -0.2}}));
     set_default_backend("torch");
     cora::Rng rng(1);
@@ -50,9 +51,8 @@ void tensors_stay_on_their_own_backend() {
     }),
           "reach on eigen, torch current");
     // a torch specification builds
-    check(
-        !throws([&] { Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({{9.0}}))); }),
-        "a torch spec builds");
+    check(!throws([&] { Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), vec({9.0}))); }),
+          "a torch spec builds");
     set_default_backend("eigen");
 }
 

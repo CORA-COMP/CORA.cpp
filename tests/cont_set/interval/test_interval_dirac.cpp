@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@interval/dirac.m
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -14,7 +14,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,7 +29,7 @@ bool aux_same(const Tensor &t, const std::vector<double> &values) { return t.dat
 
 /// Six boxes: left of 0, right of 0, around 0, 0 as the lower end, 0 as the upper end, the point 0.
 Interval aux_boxes() {
-    return {column({-3.0, 2.0, -1.0, 0.0, -2.0, 0.0}), column({-1.0, 4.0, 1.0, 3.0, 0.0, 0.0})};
+    return {vec({-3.0, 2.0, -1.0, 0.0, -2.0, 0.0}), vec({-1.0, 4.0, 1.0, 3.0, 0.0, 0.0})};
 }
 
 void dirac_of_order_0(const std::string &b) {
@@ -56,7 +56,7 @@ void dirac_of_higher_order(const std::string &b) {
               b + ": order " + std::to_string(n) + " is the line on 0");
     }
     const Interval S = Interval::stack({aux_boxes(), aux_boxes()}).dirac(1);
-    check(S.inf().shape() == std::vector<int64_t>({2, 6, 1}), b + ": a batch has a batch shape");
+    check(S.inf().shape() == std::vector<int64_t>({2, 6}), b + ": a batch has a batch shape");
 }
 
 /// A negative order is refused; with the checks off the result is the same.

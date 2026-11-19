@@ -7,9 +7,9 @@
 // Outputs:  -   (Error::out_of_domain if some bound lies outside, as CORA's NaN check does)
 // See also: acos, acosh
 //
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -22,8 +22,7 @@
 
 namespace cora {
 
-void priv_check_domain(const std::string &name, const Tensor &inf, const Tensor &sup, double low,
-                       double high);
+void priv_check_domain(const std::string &name, const Interval &I, double low, double high);
 
 } // namespace cora
 

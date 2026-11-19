@@ -1,9 +1,9 @@
 // test_lean_interval_interval_matrix - Interval::interval_matrix against the CORALean oracle
 //
 // ORACLE: contSet/@interval/intervalMatrix.m
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -25,9 +25,9 @@ int main() {
             const Interval I = rnd.box(n);
             const Interval M = Interval::horzcat({I, rnd.box(n), rnd.box(n)});
             for (const Interval &B : {I, M})
-                test::oracle::check(B.interval_matrix(),
-                                    lean::Interval::interval_matrix(lean::Tensor::from(B.center()),
-                                                                    lean::Tensor::from(B.rad())));
+                test::oracle::check(B.interval_matrix(), lean::Interval::interval_matrix(
+                                                             lean::Tensor::from(B.center()),
+                                                             lean::Tensor::from(B.half_width())));
         }
     });
     return test::finish("lean interval interval_matrix");

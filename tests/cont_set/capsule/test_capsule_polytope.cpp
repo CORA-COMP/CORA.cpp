@@ -3,9 +3,9 @@
 // CORA: contSet/@capsule/polytope.m
 // PROPERTY: contSet/@capsule/polytope.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -19,6 +19,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,16 +31,16 @@ namespace {
 void polytope_known(const std::string &b) {
     const Capsule line(column({1.0}), column({2.0}), 0.5);
     const Polytope P1 = line.polytope();
-    check(P1.contains(column({-1.4})) && P1.contains(column({3.4})) &&
-              !P1.contains(column({3.6})) && !P1.contains(column({-1.6})),
+    check(P1.contains(vec({-1.4})) && P1.contains(vec({3.4})) && !P1.contains(vec({3.6})) &&
+              !P1.contains(vec({-1.6})),
           b + ": 1D is [-1.5, 3.5]");
-    check(Capsule(column({1.0, 2.0})).polytope().contains(column({1.0, 2.0})), b + ": a point");
+    check(Capsule(column({1.0, 2.0})).polytope().contains(vec({1.0, 2.0})), b + ": a point");
     const Capsule segment(column({1.0, 1.0}), column({1.0, 1.0}), 0.0);
     const Polytope S = segment.polytope();
-    check(S.contains(column({1.0, 1.0})) && S.contains(column({1.9, 1.9})) &&
-              !S.contains(column({1.0, 1.5})) && !S.contains(column({2.2, 2.2})),
+    check(S.contains(vec({1.0, 1.0})) && S.contains(vec({1.9, 1.9})) &&
+              !S.contains(vec({1.0, 1.5})) && !S.contains(vec({2.2, 2.2})),
           b + ": a segment");
-    check(!Capsule::empty(2).polytope().contains(column({0.0, 0.0})), b + ": empty");
+    check(!Capsule::empty(2).polytope().contains(vec({0.0, 0.0})), b + ": empty");
 }
 
 /// Stated property: the outer polytope of a capsule holds its points, by method "outer", also for a
@@ -49,7 +50,8 @@ void polytope_property(const std::string &b) {
     for (int k = 0; k < 4; ++k) {
         const Capsule C = k == 3 ? Capsule(column({0.5, 1.0, 2.0}), column({0.0, 0.0, 0.0}), 0.7)
                                  : test::random_capsule(rng, 3);
-        check(C.polytope("outer").contains(test::sample_points(C, rng, 20), "exact", 1e-9),
+        check(C.polytope("outer").contains(test::sample_points(C, rng, 20).matrix_transpose(),
+                                           "exact", 1e-9),
               b + ": the points are inside");
     }
 }

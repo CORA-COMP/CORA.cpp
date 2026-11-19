@@ -8,9 +8,9 @@
 //
 // CORA: contSet/@interval/randPoint_.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -43,7 +43,8 @@ Tensor aux_fractions(const Tensor &like, int64_t N, Rng &rng) {
 
 Tensor Interval::rand_point_impl(int64_t N, Rng &rng) const {
     // inf + diag(sup - inf) * u scales row i of the fractions u by the width of side i.
-    return inf_ + (sup_ - inf_).diag().matmul(aux_fractions(inf_, N, rng));
+    const Tensor lo = inf_matrix();
+    return lo + (sup_matrix() - lo).diag().matmul(aux_fractions(lo, N, rng));
 }
 
 } // namespace cora

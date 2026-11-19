@@ -6,16 +6,16 @@
 // CORA.cpp lacks: Error::not_supported. An empty S2 gives the whole space.
 //
 // Syntax:   Eres = E.mink_diff(v);   Eres = E.mink_diff(S2);   S = E.minkowski_difference(S2);
-// Inputs:   v - column (n, 1)
+// Inputs:   v - vector (..., n)
 //           S2 - ellipsoid
 // Outputs:  Eres - {x | x + S2 in E}
 // See also: plus, is_bigger
 //
 // CORA: contSet/@ellipsoid/minkDiff.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -33,12 +33,12 @@ namespace cora {
 
 Ellipsoid Ellipsoid::mink_diff(const Tensor &v) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(v, dim()), Error::dimension_mismatch, [&] {
-        return "mink_diff: the vector must be a column of the dimension " + std::to_string(dim()) +
-               ", got the shape " + shape_text(v.shape());
+    CORA_CHECK(v.defined() && is_vector(v, dim()), Error::dimension_mismatch, [&] {
+        return "mink_diff: the vector must be (..., " + std::to_string(dim()) +
+               "), got the shape " + (v.defined() ? shape_text(v.shape()) : "()");
     });
     if (priv_is_empty(*this)) return *this;
-    return {Q_, q_ - v, tol_};
+    return {q_ - v, Q_, tol_};
 }
 
 Ellipsoid Ellipsoid::mink_diff(const Ellipsoid &S2) const {
@@ -49,11 +49,11 @@ Ellipsoid Ellipsoid::mink_diff(const Ellipsoid &S2) const {
     const int64_t rank1 = static_cast<int64_t>(priv_rank(Q_, tol_).item()),
                   rank2 = static_cast<int64_t>(priv_rank(S2.Q_, S2.tol_).item());
     // points: the difference of the centers, or nothing fits a proper S2 into a point
-    if (rank1 == 0 && rank2 == 0) return {Q_.zeros_like(), q_ - S2.q_, tol_};
+    if (rank1 == 0 && rank2 == 0) return {q_ - S2.q_, Q_.zeros_like(), tol_};
     if (rank1 == 0) return Ellipsoid::empty(dim());
-    if (rank2 == 0) return {Q_, q_ - S2.q_, tol_};
+    if (rank2 == 0) return {q_ - S2.q_, Q_, tol_};
     if (!is_bigger(S2)) return Ellipsoid::empty(dim());
-    if (within_tol(Q_, S2.Q_, tol).min().item() != 0.0) return {Q_.zeros_like(), q_ - S2.q_, tol_};
+    if (within_tol(Q_, S2.Q_, tol).min().item() != 0.0) return {q_ - S2.q_, Q_.zeros_like(), tol_};
     CORA_FAIL(Error::not_supported,
               "mink_diff: the difference of two ellipsoids needs directions of the equal-area "
               "partition of the sphere (eq_point_set)");

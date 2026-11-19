@@ -9,7 +9,7 @@
 // CORA authors: Victor Gassmann
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -25,7 +25,7 @@ Interval Interval::triu(int64_t K) const {
     detail::Entry entry;
     CORA_CHECK(K >= 0, Error::wrong_value,
                [&] { return "triu: K must be nonnegative, got " + std::to_string(K); });
-    return {inf_.triu(K), sup_.triu(K)};
+    return from_matrix(inf_matrix().triu(K), sup_matrix().triu(K));
 }
 
 } // namespace cora

@@ -217,8 +217,8 @@ class ContSetInterface(unittest.TestCase):
             F.project_high_dim(4, [0, 3])
         with self.assertRaises(cora.errors.WrongValue):
             F.project_high_dim(1, [0, 0])
-        self.assertEqual((F.radius(), F.volume()), (INF, INF))
-        self.assertTrue(np.isnan(cora.Fullspace(0).radius()) and np.isnan(cora.Fullspace(0).volume()))
+        self.assertEqual((F.ball_radius(), F.volume()), (INF, INF))
+        self.assertTrue(np.isnan(cora.Fullspace(0).ball_radius()) and np.isnan(cora.Fullspace(0).volume()))
         E = F.complement()
         self.assertIsInstance(E, cora.EmptySet)
         self.assertEqual(E.dim, 2)

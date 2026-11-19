@@ -9,7 +9,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -41,7 +41,7 @@ Polytope polytope(const std::vector<Row> &rows) {
         b.push_back(r.b);
     }
     const int64_t m = static_cast<int64_t>(rows.size());
-    return Polytope(Tensor::from_data(A, {m, 2}), Tensor::from_data(b, {m, 1}));
+    return Polytope(Tensor::from_data(A, {m, 2}), Tensor::from_data(b, {m}));
 }
 
 /// The box [l1, u1] x [l2, u2] as four rows.

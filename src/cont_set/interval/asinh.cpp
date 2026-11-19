@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@interval/asinh.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -23,7 +23,7 @@ namespace cora {
 
 Interval Interval::asinh() const {
     detail::Entry entry;
-    return {inf_.asinh(), sup_.asinh()};
+    return with(inf_.asinh(), sup_.asinh());
 }
 
 } // namespace cora

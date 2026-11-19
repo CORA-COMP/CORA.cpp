@@ -6,9 +6,9 @@
 // Property: the origin is the only point, in both forms
 //
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -16,7 +16,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -34,10 +34,10 @@ void origin_sets(const std::string &b) {
           b + ": the equalities x = 0");
     // exactly the origin
     Rng rng(4);
-    bool only = P.contains(column({0.0, 0.0, 0.0}));
+    bool only = P.contains(vec({0.0, 0.0, 0.0}));
     for (int k = 0; k < 20; ++k) {
         std::vector<double> x = test::random_direction(rng, 3);
-        only = only && !P.contains(column(x));
+        only = only && !P.contains(vec(x));
     }
     check(only, b + ": it holds the origin and no other point");
     check(P.interval().representsa("origin"), b + ": its box is the origin");

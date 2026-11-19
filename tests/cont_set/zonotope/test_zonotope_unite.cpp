@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -19,6 +19,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -60,10 +61,11 @@ void unions_by_hand(const std::string &b) {
 /// A box and a point enter as zonotopes; three sets take the unpaired one into the next level.
 void other_operands_and_odd_counts(const std::string &b) {
     const Zonotope A = box(0, 1, 0, 1);
-    const Interval I(column({2.0, 0.0}), column({3.0, 1.0}));
+    const Interval I(vec({2.0, 0.0}), vec({3.0, 1.0}));
     check(close(A.unite(I).interval().sup(), std::vector<double>{3, 1}, 1e-9), b + ": a box");
-    check(close(A.unite(column({5.0, 0.5})).interval().sup(), std::vector<double>{5, 1}, 1e-9),
-          b + ": a point");
+    check(
+        close(A.unite(test::column({5.0, 0.5})).interval().sup(), std::vector<double>{5, 1}, 1e-9),
+        b + ": a point");
     const Zonotope C = box(-4, -3, 0, 1);
     for (const char *method : {"linprog", "iterative", "parallelotope"}) {
         const Zonotope U = A.unite(std::vector<Zonotope>{box(2, 3, 0, 1), C}, method);
@@ -111,7 +113,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { A.unite(Zonotope::origin(3)); }, Error::dimension_mismatch),
           "unite: dimension");
     const double inf = std::numeric_limits<double>::infinity();
-    const Interval unbounded(column({0.0, 0.0}), column({inf, 1.0}));
+    const Interval unbounded(vec({0.0, 0.0}), vec({inf, 1.0}));
     check(test::raises([&] { A.unite(unbounded); }, Error::wrong_value), "unite: an unbounded box");
     check(test::raises([&] { Zonotope::stack({A, B}).unite(A); }, Error::not_supported),
           "unite: a batch");

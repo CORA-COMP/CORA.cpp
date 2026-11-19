@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@interval/lt.m
 // CORA authors: Matthias Althoff
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -30,7 +30,8 @@ bool Interval::less(const Interval &I2) const {
         return "less: the intervals differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(I2.dim());
     });
-    return inf_.numel() == 0 || I2.inf().less(inf_).minimum(sup_.less(I2.sup())).min().item() != 0;
+    if (is_empty() || inf_.numel() == 0) return true;
+    return !I2.is_empty() && I2.inf().less(inf_).minimum(sup_.less(I2.sup())).min().item() != 0;
 }
 
 } // namespace cora

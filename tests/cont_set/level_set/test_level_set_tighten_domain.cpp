@@ -3,9 +3,9 @@
 // CORA: contSet/@levelSet/tightenDomain.m
 // PROPERTY: contSet/@levelSet/tightenDomain.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "level_set_testing.h"
@@ -15,7 +15,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -41,7 +41,7 @@ void contractor_property(const std::string &name) {
         for (int s = 0; s < 400; ++s) {
             const double x = a + r * std::cos(0.0157 * s), y = bb + r * std::sin(0.0157 * s);
             if (x < lo[0] || x > hi[0] || y < lo[1] || y > hi[1]) continue;
-            check(J.has_value() && J->contains(column({x, y}), 1e-12),
+            check(J.has_value() && J->contains(vec({x, y}), 1e-12),
                   name + ": a solution stays in the box");
         }
     }

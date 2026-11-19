@@ -6,7 +6,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/empty_set/empty_set.h"
@@ -18,6 +18,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,7 +30,7 @@ void is_intersecting_unless_empty(const std::string &b) {
     const Fullspace F(2);
     const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     check(F.is_intersecting(Z) && F.is_intersecting(Fullspace(2)), b + ": a zonotope, the space");
-    check(F.is_intersecting(Interval(column({3.0, 3.0}), column({3.0, 3.0}))), b + ": a point");
+    check(F.is_intersecting(Interval(vec({3.0, 3.0}), vec({3.0, 3.0}))), b + ": a point");
     check(!F.is_intersecting(Interval::empty(2)), b + ": the empty interval");
     check(!F.is_intersecting(EmptySet(2)), b + ": the empty set");
     check(is_intersecting(F, Z) && is_intersecting(Z, F), b + ": through the registry");

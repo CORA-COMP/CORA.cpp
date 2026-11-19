@@ -18,7 +18,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Matthias Althoff, Adrian Kulmburg, Ivan Brkan
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -135,7 +135,7 @@ bool ConZonotope::contains(const Zonotope &S, const std::string &method, Tol tol
 bool ConZonotope::contains(const Interval &I, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
-    CORA_CHECK(I.inf().shape().back() == 1, Error::dimension_mismatch, [&] {
+    CORA_CHECK(I.elem_rank() == 1, Error::dimension_mismatch, [&] {
         return "contains: the interval must be a box with column bounds, got the shape " +
                shape_text(I.inf().shape());
     });

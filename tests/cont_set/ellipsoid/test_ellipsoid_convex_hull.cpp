@@ -2,16 +2,16 @@
 //
 // CORA: contSet/@ellipsoid/convHull_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -21,8 +21,8 @@ namespace {
 
 /// A point inside and an empty operand give the ellipsoid; the registry finds the pair.
 void convex_hull_known(const std::string &b) {
-    const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
-    const Ellipsoid inside(Tensor::zeros({2, 2}), column({1.0, 2.0}));
+    const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
+    const Ellipsoid inside(vec({1.0, 2.0}), Tensor::zeros({2, 2}));
     check(E.convex_hull(inside).isequal(E) && E.convex_hull(Ellipsoid::empty(2)).isequal(E),
           b + ": E");
     check(convex_hull(E, inside).is<Ellipsoid>(), b + ": registry");
@@ -30,7 +30,7 @@ void convex_hull_known(const std::string &b) {
 
 /// Two proper ellipsoids need an SDP and a dimension mismatch is refused; checks off works.
 void checks_and_their_switch() {
-    const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
+    const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { E.convex_hull(E); }, Error::not_supported),
           "convex_hull: two proper ones");
     check(

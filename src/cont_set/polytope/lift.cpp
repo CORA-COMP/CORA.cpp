@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@polytope/lift_.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -52,7 +52,7 @@ Polytope Polytope::lift(int64_t N, const std::vector<int64_t> &dims) const {
     const detail::Refusal refusal = aux_refusal(dim(), N, dims, "lift");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the vertices of a set that does not grow are permuted
-    if (is_v_rep() && N == dim()) return Polytope(priv_place(V_, N, dims, -2));
+    if (is_v_rep() && N == dim()) return Polytope(priv_place(V_, N, dims, -1));
     const Constraints C = constraints();
     return {priv_place(C.A, N, dims, -1), C.b, priv_place(C.Ae, N, dims, -1), C.be};
 }

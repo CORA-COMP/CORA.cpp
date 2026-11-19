@@ -8,7 +8,7 @@
 // ORACLE: hybridDynamics/@location/potInt.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/location.h"
@@ -35,10 +35,11 @@ Polytope aux_guard(test::oracle::Random &rnd, const std::vector<Zonotope> &sets,
         const Tensor row = A.slice(-2, i, i + 1).matrix_transpose();
         b[std::size_t(i)] = -S.support_function(-row).item() + rnd.uniform(-1, 1);
     }
-    if (!equality) return {A, Tensor::from_data(b, {p, 1})};
+    if (!equality) return {A, Tensor::from_data(b, {p})};
     const Tensor Ae = rnd.matrix(1, n);
-    const Tensor be = Ae.matmul(sets.front().center().expand_dims(-1)) + rnd.uniform(-2.0, 2.0);
-    return {A, Tensor::from_data(b, {p, 1}), Ae, be};
+    const Tensor be =
+        Ae.matmul(sets.front().center().expand_dims(-1)).squeeze(-1) + rnd.uniform(-2.0, 2.0);
+    return {A, Tensor::from_data(b, {p}), Ae, be};
 }
 
 } // namespace

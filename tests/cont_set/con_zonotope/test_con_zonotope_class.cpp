@@ -6,7 +6,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -42,7 +43,7 @@ void constructor_forms(const std::string &b) {
     // the conversions keep the center and the generator rows
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
     check(close(ConZonotope(Z).generators(), Z.generators(), 0), b + ": from a zonotope");
-    const Interval I(column({0.0, 1.0}), column({2.0, 5.0}));
+    const Interval I(vec({0.0, 1.0}), vec({2.0, 5.0}));
     check(close(ConZonotope(I).c(), {1, 3}, 0), b + ": from a box: its center");
     check(close(ConZonotope(I).generators(), {1, 0, 0, 2}, 0), b + ": from a box: its radius");
     const Set via_set = ConZonotope::empty(2);

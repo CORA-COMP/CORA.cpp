@@ -8,7 +8,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -93,19 +94,18 @@ void refusals() {
 /// The capsule of a box: the segment along the first widest edge, the ball over the other
 /// half-widths.
 void from_interval(const std::string &b) {
-    const Interval box(column({0.0, 0.0, 0.0}), column({4.0, 2.0, 1.0}));
+    const Interval box(vec({0.0, 0.0, 0.0}), vec({4.0, 2.0, 1.0}));
     const Capsule C(box);
     check(close(C.c(), {2, 1, 0.5}, 0) && close(C.generator(), {2, 0, 0}, 0),
           b + ": c and g of the widest edge");
     check(close(C.r(), {std::sqrt(1.25)}, 1e-14), b + ": r over the other half-widths");
     // the first of several widest edges is taken
-    const Capsule tie(Interval(column({0.0, 0.0}), column({2.0, 2.0})));
+    const Capsule tie(Interval(vec({0.0, 0.0}), vec({2.0, 2.0})));
     check(close(tie.generator(), {1, 0}, 0) && close(tie.r(), {1}, 0),
           b + ": the first widest edge");
-    check(close(Capsule(Interval(column({1.0}), column({3.0}))).generator(), {1}, 0),
+    check(close(Capsule(Interval(vec({1.0}), vec({3.0}))).generator(), {1}, 0),
           b + ": one dimension");
-    const Capsule batch(
-        Interval(Tensor::zeros({2, 2, 1}), Tensor::from_data({1, 3, 2, 1}, {2, 2, 1})));
+    const Capsule batch(Interval(Tensor::zeros({2, 2}), Tensor::from_data({1, 3, 2, 1}, {2, 2})));
     check(close(batch.generator(), {0, 1.5, 1, 0}, 0), b + ": a batch");
 }
 
@@ -116,7 +116,7 @@ void holds_the_box(const std::string &b) {
         std::vector<double> c(3), r(3);
         rng.normal(c.data(), c.size(), 1.0);
         rng.uniform(r.data(), r.size(), 0.1, 2.0);
-        const Interval box(column(c) - column(r), column(c) + column(r));
+        const Interval box(vec(c) - vec(r), vec(c) + vec(r));
         check(Capsule(box).contains(box), b + ": the box is inside its capsule");
     }
 }
@@ -147,7 +147,7 @@ void conversion_refusals() {
     check(test::raises([] { Capsule C(Interval::empty(2)); }, Error::empty_set),
           "Capsule(I): empty");
     ChecksScope off(false);
-    check(Capsule(Interval(column({0.0, 0.0}), column({1.0, 2.0}))).dim() == 2,
+    check(Capsule(Interval(vec({0.0, 0.0}), vec({1.0, 2.0}))).dim() == 2,
           "Capsule(I): works with the checks off");
 }
 

@@ -15,7 +15,7 @@
 // CORA authors: Niklas Kochdumper, Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -33,7 +33,7 @@ Polytope Zonotope::polytope() const {
     CORA_CHECK(c_.ndim() == 1, Error::not_supported,
                [] { return std::string("polytope: it supports a single zonotope, not a batch"); });
     const auto [C, d] = priv_zonotope_halfspaces(*this);
-    return {C, d};
+    return {C, d.squeeze(-1)};
 }
 
 } // namespace cora

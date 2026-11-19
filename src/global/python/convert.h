@@ -15,7 +15,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -191,6 +191,36 @@ inline std::optional<Tensor> as_tensor(const py::handle &o) {
         return host_tensor(o, true);
     }
     return std::nullopt;
+}
+
+/// A point (..., n) from Python as it is: a torch tensor, a numpy array or list (1-D, or a batch
+/// (..., n)), or a number (a point of one coordinate). The layout of a set's points (#163).
+inline Tensor point_of(const py::handle &o, const char *what) {
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
+    py::detail::make_caster<torch::Tensor> torch_caster;
+    if (torch_caster.load(o, /*convert=*/false)) return from_torch(py::cast<torch::Tensor>(o));
+#endif
+    if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) ||
+        py::isinstance<py::tuple>(o) || py::isinstance<py::float_>(o) ||
+        py::isinstance<py::int_>(o)) {
+        py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
+        if (a && a.ndim() >= 1) return host_tensor(o, false);
+        if (a && a.ndim() == 0) return host_tensor(a.reshape({1}), false);
+    }
+    CORA_FAIL(Error::wrong_value,
+              std::string("cora: ") + what +
+                  " must be a point: a torch tensor (..., n), a numpy array or a number");
+}
+
+/// A tensor in the array type of its backend, of its own shape; a 0-d result is a float.
+inline py::object values(const Tensor &t) {
+#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
+    if (is_torch(t)) return py::cast(to_torch(t));
+#endif
+    if (t.ndim() == 0) return py::cast(t.item());
+    if (is_host(t)) return host_array(t, t.shape());
+    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take; "
+                                    "use the eigen, torch or lean backend");
 }
 
 /// As as_tensor, an Error if it is not an array.

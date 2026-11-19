@@ -14,9 +14,9 @@
 //
 // CORA: contSet/@polytope/projectHighDim.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -54,15 +54,17 @@ Polytope Polytope::project_high_dim(int64_t N, const std::vector<int64_t> &dims)
     CORA_CHECK(std::adjacent_find(sorted.begin(), sorted.end()) == sorted.end(), Error::wrong_value,
                [] { return std::string("project_high_dim: a position is used twice"); });
     Parts parts;
+    parts.empty = empty_;
     if (is_h_rep()) {
         // lifted rows, and an equality for every coordinate that is new
         const Tensor zeros = aux_zero_rows(A_, N, dims);
         parts.A = priv_place(A_, N, dims, -1);
         parts.b = b_;
         parts.Ae = Tensor::concat({priv_place(Ae_, N, dims, -1), zeros}, -2);
-        parts.be = Tensor::concat({be_, zeros_block(be_, zeros.shape()[zeros.ndim() - 2], 1)}, -2);
+        parts.be = Tensor::concat(
+            {be_, zeros_block(zeros, zeros.shape()[zeros.ndim() - 2], 1).squeeze(-1)}, -1);
     }
-    if (is_v_rep()) parts.V = priv_place(V_, N, dims, -2);
+    if (is_v_rep()) parts.V = priv_place(V_, N, dims, -1);
     return Polytope(std::move(parts));
 }
 

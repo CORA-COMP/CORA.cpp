@@ -19,7 +19,7 @@
 // CORA authors: Dmitry Grebenyuk
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_broadcastable.h"
@@ -46,11 +46,9 @@ Tensor aux_compare(const Tensor &x, Tensor::Binary op, double s) { return x.scal
 /// The number s with the shape of x.
 Tensor aux_fill(const Tensor &x, double s) { return x.full_like(x.shape(), s); }
 
-/// Whether the numbers x are one or have the shape of the matrix of the bounds.
-bool aux_fits(const Tensor &x, const Tensor &bounds) {
-    if (x.ndim() < 2) return false;
-    const bool number = x.size(-1) == 1 && x.size(-2) == 1;
-    return number || (x.size(-1) == bounds.size(-1) && x.size(-2) == bounds.size(-2));
+/// Whether the numbers x are one or have the shape of the elements of I.
+bool aux_fits(const Tensor &x, const Interval &I) {
+    return x.numel() == 1 || priv_fits_elements(x, I);
 }
 
 /// x^k for integers k >= 0: the product 1 * x * ... * x of k factors, as CORALean's powUp, up to
@@ -119,20 +117,20 @@ Bounds aux_hull_power(const std::vector<Tensor> &bases, const std::vector<Tensor
 
 Interval Interval::power(double exponent) const {
     detail::Entry entry;
-    return power(inf_.full_like({1, 1}, exponent));
+    return power(inf_.full_like({1}, exponent));
 }
 
 Interval Interval::power(const Tensor &exponent) const {
     detail::Entry entry;
-    const bool scalar_base = inf_.size(-1) == 1 && inf_.size(-2) == 1;
-    CORA_CHECK(scalar_base || aux_fits(exponent, inf_), Error::dimension_mismatch, [&] {
+    const bool scalar_base = inf_.numel() == 1;
+    CORA_CHECK(scalar_base || aux_fits(exponent, *this), Error::dimension_mismatch, [&] {
         return "power: the exponents " + shape_text(exponent.shape()) +
                " must be one number or match the bounds " + shape_text(inf_.shape());
     });
-    if (inf_.numel() == 0) return *this;
+    if (is_empty()) return *this;
     const auto [lo, hi] = aux_numeric_power(inf_, sup_, exponent);
     priv_check_nan("power", lo, hi, "base >= 0");
-    return {lo, hi};
+    return with(lo, hi);
 }
 
 // Boxes as exponents ------------------------------------------------------------------------------
@@ -140,9 +138,8 @@ Interval Interval::power(const Tensor &exponent) const {
 Interval Interval::power(const Tensor &base, const Interval &exponent) {
     detail::Entry entry;
     // the base is one number or has the shape of the exponents
-    CORA_CHECK(aux_fits(base, exponent.inf()) ||
-                   (exponent.inf().size(-1) == 1 && exponent.inf().size(-2) == 1),
-               Error::dimension_mismatch, [&] {
+    CORA_CHECK(aux_fits(base, exponent) || exponent.inf().numel() == 1, Error::dimension_mismatch,
+               [&] {
                    return "power: the base " + shape_text(base.shape()) +
                           " must be one number or match the exponents " +
                           shape_text(exponent.inf().shape());
@@ -150,7 +147,7 @@ Interval Interval::power(const Tensor &base, const Interval &exponent) {
     // the hull of the powers at the two ends of the exponent
     const auto [lo, hi] = aux_hull_power({base}, {exponent.inf(), exponent.sup()});
     priv_check_nan("power", lo, hi, "base >= 0");
-    return {lo, hi};
+    return exponent.with(lo, hi);
 }
 
 Interval Interval::power(const Interval &exponent) const {
@@ -162,7 +159,7 @@ Interval Interval::power(const Interval &exponent) const {
                });
     const auto [lo, hi] = aux_hull_power({inf_, sup_}, {exponent.inf(), exponent.sup()});
     priv_check_nan("power", lo, hi, "base >= 0");
-    return {lo, hi};
+    return with(lo, hi);
 }
 
 } // namespace cora

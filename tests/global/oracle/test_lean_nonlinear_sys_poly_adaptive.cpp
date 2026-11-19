@@ -16,7 +16,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/nonlinear_sys/private/priv_poly_adaptive.h"
@@ -84,7 +84,7 @@ Interval aux_free_box(const PolyZonotope &Z) {
         hi[i] = (c[i] + rg) + rgi;
     }
     const auto N = static_cast<int64_t>(n);
-    return {Tensor::like(Z.center(), lo, {N, 1}), Tensor::like(Z.center(), hi, {N, 1})};
+    return {Tensor::like(Z.center(), lo, {N}), Tensor::like(Z.center(), hi, {N})};
 }
 
 /// The boxes agree to rel (relative to 1 and the larger width).

@@ -2,9 +2,9 @@
 //
 // CORA: specification/@specification/check.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -24,12 +24,12 @@ namespace {
 /// The halfspace {x | a'x <= b} as a polytope.
 Polytope halfspace(const std::vector<double> &a, double offset) {
     const int64_t n = static_cast<int64_t>(a.size());
-    return Polytope(Tensor::from_data(a, {1, n}), Tensor::from_data({offset}, {1, 1}));
+    return Polytope(Tensor::from_data(a, {1, n}), Tensor::from_data({offset}, {1}));
 }
 
 /// Any set the polytope can decide answers, here through a reference to the base class.
 void any_contset(const std::string &b) {
-    const Interval I(Tensor({1.0, 0.0}), Tensor({3.0, 2.0}));
+    const Interval I(test::vec({1.0, 0.0}), test::vec({3.0, 2.0}));
     check(Specification::safe_set(halfspace({1.0, 0.0}, 3.0)).check(I), b + ": an interval, safe");
     check(!Specification::safe_set(halfspace({1.0, 0.0}, 2.0)).check(I), b + ": an interval, left");
     check(Specification::unsafe_set(halfspace({1.0, 0.0}, 0.5)).check(I),
@@ -68,7 +68,7 @@ void on_a_reachable_set(const std::string &b) {
 
 /// A halfspace of the wrong dimension is refused; with the checks off the answer is the same.
 void checks_and_their_switch() {
-    const Interval I(Tensor({1.0, 0.0}), Tensor({3.0, 2.0}));
+    const Interval I(test::vec({1.0, 0.0}), test::vec({3.0, 2.0}));
     check(test::raises([&] { Specification::safe_set(halfspace({1.0, 0.0, 0.0}, 3.0)).check(I); },
                        Error::dimension_mismatch),
           "check: a halfspace of three dimensions");

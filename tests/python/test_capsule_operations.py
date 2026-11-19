@@ -1,9 +1,9 @@
 """test_capsule_operations - the Capsule operations in Python: sums, maps, conversions, samples
 
 CORA authors: Matthias Althoff, Mark Wetzlinger, Victor Gassmann, Niklas Kochdumper
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       06-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 # CORA: contSet/@capsule/radius.m
@@ -63,7 +63,7 @@ class Operations(unittest.TestCase):
         self.C = capsule([1.0, 2.0], [3.0, 4.0], 0.5)
 
     def test_radius_volume_and_small_queries(self):
-        self.assertAlmostEqual(self.C.radius(), 5.5)
+        self.assertAlmostEqual(self.C.ball_radius(), 5.5)
         self.assertAlmostEqual(self.C.volume(), np.pi * 0.25 + 4 * 0.5 * 5)
         self.assertAlmostEqual(capsule([1.0], [3.0], 0.5).volume(), 7.0)
         self.assertEqual(cora.Capsule.empty(2).volume(), 0.0)
@@ -143,7 +143,8 @@ class Operations(unittest.TestCase):
         segment = capsule([1.0, 1.0], [1.0, 1.0], 0.0)
         self.assertTrue(segment.polytope().contains(np.array([1.5, 1.5])))
         self.assertFalse(segment.polytope().contains(np.array([1.0, 1.5])))
-        self.assertTrue(self.C.polytope("outer").contains(sample(self.C, rng, 10)))
+        # the polytope takes one point per row
+        self.assertTrue(self.C.polytope("outer").contains(sample(self.C, rng, 10).T))
         # the capsules of a box and of a zonotope
         box = cora.Interval(np.array([0.0, 0.0, 0.0]), np.array([4.0, 2.0, 1.0]))
         from_box = cora.Capsule(box)

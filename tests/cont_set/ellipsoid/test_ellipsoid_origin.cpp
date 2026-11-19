@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@ellipsoid/origin.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -23,7 +23,7 @@ namespace {
 void origin_known(const std::string &b) {
     const Ellipsoid O = Ellipsoid::origin(3);
     check(O.dim() == 3 && close(O.Q(), Tensor::zeros({3, 3}), 0) &&
-              close(O.q(), Tensor::zeros({3, 1}), 0),
+              close(O.q(), Tensor::zeros({3}), 0),
           b + ": origin");
 }
 

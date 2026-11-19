@@ -22,7 +22,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Zhuoling Li
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/level_set/level_set.h"
@@ -181,10 +181,10 @@ std::optional<Interval> LevelSet::tighten_domain(const Interval &I, const std::s
     CORA_CHECK(std::all_of(ops_.begin(), ops_.end(), [](CompOp op) { return op == CompOp::eq; }),
                Error::noops,
                [] { return std::string("tighten_domain: all constraints must be equalities"); });
-    CORA_CHECK(!I.is_empty() && I.inf().ndim() == 2 &&
-                   I.inf().shape() == std::vector<int64_t>({dim(), 1}),
+    CORA_CHECK(!I.is_empty() && I.elem_rank() == 1 &&
+                   I.inf().shape() == std::vector<int64_t>({dim()}),
                Error::dimension_mismatch, [&] {
-                   return "tighten_domain: the box must be a nonempty column of " +
+                   return "tighten_domain: the box must be a single nonempty box of " +
                           std::to_string(dim()) + " states";
                });
     // the box as host intervals
@@ -203,8 +203,7 @@ std::optional<Interval> LevelSet::tighten_domain(const Interval &I, const std::s
         new_lo.push_back(b.lo);
         new_hi.push_back(b.hi);
     }
-    return Interval(Tensor::like(I.inf(), new_lo, {dim(), 1}),
-                    Tensor::like(I.inf(), new_hi, {dim(), 1}));
+    return Interval(Tensor::like(I.inf(), new_lo, {dim()}), Tensor::like(I.inf(), new_hi, {dim()}));
 }
 
 } // namespace cora

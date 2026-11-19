@@ -41,8 +41,8 @@ class Geometry(unittest.TestCase):
 
     def test_rad_and_radius(self):
         I = box([0.0, 1.0], [2.0, 9.0])
-        np.testing.assert_allclose(I.rad, [1.0, 4.0])
-        self.assertAlmostEqual(I.radius(), 17.0 ** 0.5)
+        np.testing.assert_allclose(I.half_width, [1.0, 4.0])
+        self.assertAlmostEqual(I.ball_radius(), 17.0 ** 0.5)
 
     def test_partition(self):
         pieces = box([0.0, 0.0], [4.0, 6.0]).partition(2)

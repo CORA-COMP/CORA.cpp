@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/registry.h"
@@ -14,6 +14,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -52,10 +53,8 @@ void sets(const std::string &b) {
         shifted(column({0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     check(bundle.contains(small), b + ": a small zonotope");
     check(!bundle.contains(shifted), b + ": a zonotope that leaves the second member");
-    check(bundle.contains(Interval(column({0.25, 0.25}), column({0.75, 0.75}))),
-          b + ": a box inside");
-    check(!bundle.contains(Interval(column({-0.25, 0.25}), column({0.75, 0.75}))),
-          b + ": a box outside");
+    check(bundle.contains(Interval(vec({0.25, 0.25}), vec({0.75, 0.75}))), b + ": a box inside");
+    check(!bundle.contains(Interval(vec({-0.25, 0.25}), vec({0.75, 0.75}))), b + ": a box outside");
     check(bundle.contains(Interval::empty(2)), b + ": the empty box");
     const ZonoBundle inner = bundle.intersect(small);
     check(bundle.contains(inner) && !inner.contains(bundle) && bundle.contains(bundle),

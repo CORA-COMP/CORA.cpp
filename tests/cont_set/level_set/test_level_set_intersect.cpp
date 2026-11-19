@@ -10,7 +10,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "level_set_testing.h"
@@ -21,6 +21,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -42,7 +43,7 @@ void intersect_property(const std::string &b) {
         for (int s = 0; s < 200; ++s) {
             const double x = 1.0 + r * std::cos(0.0314 * s), y = 1.0 + r * std::sin(0.0314 * s);
             if (x < lo[0] || x > hi[0] || y < lo[1] || y > hi[1]) continue;
-            check(R.has_value() && R->interval().contains(column({x, y}), 1e-9),
+            check(R.has_value() && R->interval().contains(vec({x, y}), 1e-9),
                   b + ": a solution stays in the result");
         }
     }
@@ -60,8 +61,8 @@ int main() {
         const LevelSet parabola(x2 + x1 * x1, 2, CompOp::eq);
         const auto R = parabola.intersect(PolyZonotope(test::box({-1, -2}, {1, 2})));
         const Interval J = R->interval();
-        check(R && close(J.inf(), column({-1.0, -1.0}), 1e-12) &&
-                  close(J.sup(), column({1.0, 0.0}), 1e-12),
+        check(R && close(J.inf(), test::vec({-1.0, -1.0}), 1e-12) &&
+                  close(J.sup(), test::vec({1.0, 0.0}), 1e-12),
               b + ": the parabola x2 = -x1^2");
         // the same set with the other sign of the constraint
         const LevelSet flipped(-(x2 + x1 * x1), 2, CompOp::eq);
@@ -82,7 +83,7 @@ int main() {
         // a flat equation (x1^2 = 1 has no slope at the center): the box itself
         const LevelSet flat(pow(Expr::var(0), 2) - 1.0, 1, CompOp::eq);
         const Interval F = flat.intersect(PolyZonotope(test::box({-1}, {1})))->interval();
-        check(close(F.inf(), column({-1.0})) && close(F.sup(), column({1.0})),
+        check(close(F.inf(), test::vec({-1.0})) && close(F.sup(), test::vec({1.0})),
               b + ": a flat equation");
         intersect_property(b);
     });

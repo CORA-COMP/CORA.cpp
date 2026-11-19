@@ -7,7 +7,7 @@
 // ORACLE: contSet/@interval/dirac.m
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -32,7 +32,7 @@ int main() {
                 test::oracle::check(I.dirac(order), lean::Interval(I).dirac(order));
         }
         if (test::oracle::nearest_is_strict()) {
-            const Interval tiny(test::column({std::ldexp(1.0, -100)}), test::column({1.0}));
+            const Interval tiny(test::vec({std::ldexp(1.0, -100)}), test::vec({1.0}));
             test::oracle::check(tiny.dirac(0), lean::Interval(tiny).dirac(0));
         }
     });

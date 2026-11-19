@@ -4,7 +4,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/interval/interval.h"
@@ -43,7 +43,7 @@ void support_function_matches_the_corners(const std::string &b) {
 
 /// A direction of the wrong dimension is refused; with the checks off the value is the same.
 void checks_and_their_switch() {
-    const Interval Z = Interval(test::column({0, -1}), test::column({1, 1}));
+    const Interval Z = Interval(test::vec({0, -1}), test::vec({1, 1}));
     check(test::raises([&] { Z.support_function(test::column({1, 0, 0})); },
                        Error::dimension_mismatch),
           "support_function: a direction of the wrong dimension");

@@ -5,7 +5,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/interval/interval_matrix_testing.h"
@@ -42,8 +42,8 @@ void products_with_a_matrix(const std::string &b) {
 
 /// The product of two sets is the sum of the hulls of the corner products; a point factor is exact.
 void product_of_two_sets(const std::string &b) {
-    const Interval A = Interval(test::matrix({1, -1}, 1, 2), test::matrix({2, 1}, 1, 2));
-    const Interval B = Interval(test::matrix({-1, 3}, 2, 1), test::matrix({2, 4}, 2, 1));
+    const Interval A = Interval::matrix(test::matrix({1, -1}, 1, 2), test::matrix({2, 1}, 1, 2));
+    const Interval B = Interval::matrix(test::matrix({-1, 3}, 2, 1), test::matrix({2, 4}, 2, 1));
     // [1, 2] [-1, 2] + [-1, 1] [3, 4] = [-2, 4] + [-4, 4] = [-6, 8]
     const Interval P = (A * B);
     check(close(P.inf(), std::vector<double>{-6}) && close(P.sup(), std::vector<double>{8}),

@@ -18,7 +18,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   16-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -40,7 +40,7 @@ Interval LinearSys::expm_remainder(double time_step, int taylor_terms) const {
     // CORALean's remainder by scaling and squaring, at the order asked for
     if (const auto c = priv_taylor_corrections(A(), time_step, taylor_terms);
         c && c->order == taylor_terms)
-        return {c->W * -1.0, c->W};
+        return Interval::matrix(c->W * -1.0, c->W);
     const Tensor Aabs = A().abs();
     Tensor Ai = A().eye_like(), series = A().eye_like(); // |A|^i and the series up to i
     double dt_over_fac = 1.0;                            // dt^i / i!
@@ -51,7 +51,7 @@ Interval LinearSys::expm_remainder(double time_step, int taylor_terms) const {
         series = series + Ai * dt_over_fac;
     }
     const Tensor W = ((Aabs * time_step).expm() - series).abs();
-    return {W * -1.0, W};
+    return Interval::matrix(W * -1.0, W);
 }
 
 } // namespace cora

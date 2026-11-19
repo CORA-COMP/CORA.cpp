@@ -6,7 +6,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/linear_sys_testing.h"
@@ -19,6 +19,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -79,11 +80,10 @@ int main() {
         const ReachSet R = LinearSys(Tensor({{-0.1, 1.0}, {-1.0, -0.1}}))
                                .reach({.initial_set = X0, .t_final = 2.0},
                                       alg::Standard{.time_step = 0.1, .taylor_terms = 8});
-        answers.push_back(Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), Tensor({{1.55}})))
+        answers.push_back(Specification::safe_set(Polytope(Tensor({{1.0, 0.0}}), vec({1.55})))
                               .check(R.time_interval));
-        answers.push_back(
-            Specification::unsafe_set(Polytope(Tensor({{0.0, 1.0}}), Tensor({{-1.4}})))
-                .check(R.time_interval));
+        answers.push_back(Specification::unsafe_set(Polytope(Tensor({{0.0, 1.0}}), vec({-1.4})))
+                              .check(R.time_interval));
     });
     for (std::size_t i = 2; i < answers.size(); ++i)
         check(answers[i] == answers[i % 2],

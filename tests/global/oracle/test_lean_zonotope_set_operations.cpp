@@ -13,7 +13,7 @@
 // ORACLE: contSet/@zonotope/enclose.m
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -103,7 +103,7 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             // constraints just above and just below the support of Z
             const Tensor C = rnd.matrix(3, n);
-            const Tensor sup = Z.linear_map(C).interval().sup();
+            const Tensor sup = Z.linear_map(C).interval().sup().expand_dims(-1); // d is a column
             for (const double margin : {1e-3, -1e-3}) {
                 const Tensor d = sup + margin;
                 oracle::check(Z.constraints_satisfied(C, d), lean::Zonotope(Z).constr_sat(C, d));

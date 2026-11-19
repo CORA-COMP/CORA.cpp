@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@polytope/Inf.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -22,10 +22,9 @@ namespace {
 /// No constraints; it holds every point and is its own box.
 void whole_space(const std::string &b) {
     const Polytope P = Polytope::inf(3);
-    check(P.dim() == 3 && P.is_h_rep() && P.A().shape() == Shape{0, 3} &&
-              P.b().shape() == Shape{0, 1},
+    check(P.dim() == 3 && P.is_h_rep() && P.A().shape() == Shape{0, 3} && P.b().shape() == Shape{0},
           b + ": no constraints");
-    check(P.contains(Tensor({{1e9}, {-1e9}, {0.0}})), b + ": it holds every point");
+    check(P.contains(Tensor({{1e9, -1e9, 0.0}})), b + ": it holds every point");
     check(close(P.center(), {0, 0, 0}, 0), b + ": its center is the origin");
     const Interval box = P.interval();
     check(box.inf().min().item() == -std::numeric_limits<double>::infinity() &&

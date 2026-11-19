@@ -11,7 +11,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   04-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -52,6 +52,10 @@ class Interval {
 
     /// Back to double bounds; throws if a bound is not a double.
     std::pair<cora::Tensor, cora::Tensor> gather() const;
+    /// The box (the bounds a column (n, 1) here) as a cora::Interval of vector bounds (n), and an
+    /// interval matrix as a cora::Interval::matrix (#163).
+    cora::Interval gather_box() const;
+    cora::Interval gather_matrix() const;
 
     Json to_json() const;
     static Interval from_json(const std::string &dtype, const Json &j);

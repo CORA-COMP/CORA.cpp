@@ -12,9 +12,9 @@
 // Operators:  M * C (linear_map)
 // Operations: constructors (capsule.cpp), empty, origin, enclose_points, center, interval,
 //             is_bounded, is_full_dim (the ContSet entries), isequal, contains, is_intersecting,
-//             convex_hull, enclose, linear_map, lift, plus, radius, volume, representsa, zonotope,
-//             ellipsoid, polytope, generate_random, isnan, support_function, rand_point, project,
-//             vertices, vertices_3d, reduce, display (one file each). dim is ContSet's.
+//             convex_hull, enclose, linear_map, lift, plus, ball_radius, volume, representsa,
+//             zonotope, ellipsoid, polytope, generate_random, isnan, support_function, rand_point,
+//             project, vertices, vertices_3d, reduce, display (one file each). dim is ContSet's.
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
 //
 // CORA: contSet/@capsule/capsule.m
@@ -23,7 +23,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -104,7 +104,7 @@ class Capsule : public ContSet {
 
     /// The radius of a ball around the center that holds the capsule (CORA's radius): |g| + r, as
     /// (..., 1, 1).
-    Tensor radius() const;
+    Tensor ball_radius() const;
 
     /// The volume (..., 1, 1): the ball of radius r plus the cylinder of length 2 |g| and radius r
     /// over the (n-1)-ball; 0 for the empty capsule.

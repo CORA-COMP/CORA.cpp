@@ -2,9 +2,9 @@
 //
 // CORA: specification/@specification/specification.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -14,6 +14,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,7 +27,7 @@ Zonotope box() { return {Tensor({2.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})}; 
 
 /// The unsafe halfspace {x | a'x <= b}.
 Specification halfspace(double a1, double a2, double offset) {
-    return Specification::unsafe_set(Polytope(Tensor({{a1, a2}}), Tensor({{offset}})));
+    return Specification::unsafe_set(Polytope(Tensor({{a1, a2}}), vec({offset})));
 }
 
 /// The unsafe halfspace must not touch the set.
@@ -39,7 +40,7 @@ void unsafe_set(const std::string &b) {
     check(halfspace(0.0, -1.0, -2.5).check(Z), b + ": x2 >= 2.5 is clear");
     check(halfspace(1.0, 0.0, 0.5).type() == SpecType::unsafe_set, b + ": the type");
     // any set class the polytope can intersect
-    check(halfspace(1.0, 0.0, 0.5).check(Interval(Tensor({1.0, 0.0}), Tensor({3.0, 2.0}))),
+    check(halfspace(1.0, 0.0, 0.5).check(Interval(test::vec({1.0, 0.0}), test::vec({3.0, 2.0}))),
           b + ": a box");
     check(!halfspace(1.0, 0.0, 1.5).check(ConZonotope(Z)), b + ": a constrained zonotope");
     check(halfspace(1.0, 0.0, 0.5).check(ZonoBundle({Z, Z})), b + ": a bundle");
