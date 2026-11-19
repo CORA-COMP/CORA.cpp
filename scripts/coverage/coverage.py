@@ -15,7 +15,7 @@ Exit code: 0 if all holds (or the files are written), else 1 with what is wrong.
 
 Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 Written:       02-November-2026
-Last update:   07-November-2026
+Last update:   19-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -83,7 +83,9 @@ against the rows that can be: a row with no operation to compare is left out of 
 of the numerator, as the rows that CORALean marks out of scope are. The rule is `is_plumbing` in the
 script: the constructor of a class (the method is named as the class), and `dim`, `generators`,
 `numgens`, `isemptyobject`, `representsa_emptyObject`, `reorder`. They have a column of their own
-in `benchmarks.md`; the status of the row in `status.json` does not change.
+in `benchmarks.md`; the status of the row in `status.json` does not change. A row that CORA.cpp
+implements but CORALean will not formalize is listed under "Not comparable with CORALean" in
+[out-of-scope.md](out-of-scope.md), with its reason, and is left out the same way.
 """
 
 
@@ -238,14 +240,22 @@ def untagged_operations(root, conv):
     return out
 
 
-def ledger_of(root, groups):
-    """`({row key: reason}, problems)` of coverage/out-of-scope.md."""
+# the section of out-of-scope.md with the rows that CORA.cpp implements and CORALean will not formalize
+APART = "## Not comparable with CORALean"
+
+
+def ledger_of(root, groups, section=None):
+    """`({row key: reason}, problems)` of coverage/out-of-scope.md: the first table (the ledger), or
+    the table under the heading `section`."""
     keys = {cora_rows.key_of(*row) for row in rows_of(groups)}
-    ledger, problems = {}, []
+    ledger, problems, inside = {}, [], section is None
     path = root / "coverage" / "out-of-scope.md"
     for number, line in enumerate(read(path) if path.is_file() else [], 1):
+        # a heading opens the section it names and closes every other
+        if line.startswith("## "):
+            inside = line.strip() == section
         cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.startswith("| `") else []
-        if not cells:
+        if not cells or not inside:
             continue
         key, reason = cells[0].strip("`"), " ".join(cells[1:]).strip()
         where = f"coverage/out-of-scope.md:{number}"
@@ -258,6 +268,13 @@ def ledger_of(root, groups):
         else:
             ledger[key] = reason
     return ledger, problems
+
+
+def apart_problems(evidence, ledger, apart):
+    """A row not comparable with CORALean is one that a source tags, and is not in the ledger too."""
+    return [f"coverage/out-of-scope.md: `{k}` is not implemented (no source tags it): "
+            f"it belongs in the first table" for k in apart if not evidence.get(k, {}).get("source")] + \
+           [f"coverage/out-of-scope.md: `{k}` is in both tables" for k in apart if k in ledger]
 
 
 def status_of(key, evidence, ledger):
@@ -473,8 +490,11 @@ def run(root, check=True, accept_drop=(), accept_debt=False, cora=None):
     groups, lean = inventory["groups"], load_json(root / "coverage" / "coralean-status.json").get("rows", {})
     evidence, problems = scan(root, groups)
     problems += untagged_operations(root, conventions())
+    # the ledger, and the rows apart that CORA.cpp implements and CORALean will not formalize
     ledger, more = ledger_of(root, groups)
-    problems += more + tagged_but_out_of_scope(evidence, ledger) + tests_without_source(evidence, groups)
+    apart, most = ledger_of(root, groups, APART)
+    problems += more + most + apart_problems(evidence, ledger, apart)
+    problems += tagged_but_out_of_scope(evidence, ledger) + tests_without_source(evidence, groups)
     problems += existence_problems(root, cora, inventory)
     expected, status = generate(root, inventory, lean, evidence, ledger, python_names(root))
     committed = load_json(root / "coverage" / "status.json")

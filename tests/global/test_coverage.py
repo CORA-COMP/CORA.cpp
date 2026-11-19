@@ -11,7 +11,7 @@ Exit code: 0 if all pass.
 
 Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 Written:       02-November-2026
-Last update:   04-November-2026
+Last update:   19-November-2026
 Reviewed:      ---
 """
 import json
@@ -208,6 +208,20 @@ class Checker(unittest.TestCase):
               "| Row | Reason |\n|---|---|\n| `contSet/zonotope/center` | |\n| `contSet/zonotope/x` | r |\n")
         self.assert_fails("`contSet/zonotope/center` needs a reason")
         self.assert_fails("`contSet/zonotope/x` is no CORA row")
+
+    # the rows that CORA.cpp implements and CORALean will not formalize
+    def test_a_row_not_comparable_with_CORALean_is_implemented_and_apart(self):
+        ledger = "| Row | Reason |\n|---|---|\n| `contSet/zonotope/center` | gone |\n"
+        section = cov.APART + "\n\n| Row | Reason |\n|---|---|\n| `contSet/zonotope/plus` | no solver |\n"
+        write(self.root, "coverage/out-of-scope.md", ledger + "\n" + section)
+        groups = json.loads((self.root / "coverage/cora-inventory.json").read_text())["groups"]
+        self.assertEqual(cov.ledger_of(self.root, groups)[0], {"contSet/zonotope/center": "gone"})
+        self.assertEqual(cov.ledger_of(self.root, groups, cov.APART)[0], {"contSet/zonotope/plus": "no solver"})
+        problems, _ = cov.run(self.root, check=True)
+        self.assertFalse([p for p in problems if "out-of-scope.md" in p], problems)
+        # a row no source tags belongs in the ledger, not apart
+        write(self.root, "coverage/out-of-scope.md", section.replace("plus", "center"))
+        self.assert_fails("`contSet/zonotope/center` is not implemented")
 
     def test_the_oracle_classes_do_not_hide_the_sets(self):
         write(self.root, "src/global/python/bindings.cpp",

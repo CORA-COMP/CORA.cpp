@@ -16,9 +16,9 @@ Checks:   --check renders the committed measurement against status.json and comp
           gcov (hours); --files: every measured file exists (pull request CI); --render-only writes it
 Exit code: 0 if all holds (or the files are written), else 1 with what differs.
 
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       09-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -52,9 +52,10 @@ the tags of the sources; never edited by hand (CONTRIBUTING.md, "Coverage"). A r
 instance if a source file tagged with it executed a line; the counts are file-level and approximate
 (built with -O2, inlined code may count toward the caller). `oracle` means the operation is bit-exact
 on its test inputs, not on this benchmark's exact path. Statuses are those of `status.json`.
-A row that CORALean marks out of scope (`coralean-status.json`), or that CORA.cpp's ledger does, can
-never become `oracle`: it has a column of its own and is left out of the bit-exact denominator, as
-are the plumbing rows (constructors and accessors, `is_plumbing`; no operation to compare).
+A row that CORALean marks out of scope (`coralean-status.json`), or that CORA.cpp's ledger does or
+lists as not comparable with CORALean (`out-of-scope.md`), can never become `oracle` here: it has a
+column of its own and is left out of the bit-exact numerator and denominator, as are the plumbing
+rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 """
 
@@ -158,10 +159,11 @@ def rows_of_files(root, files, groups):
     return sorted(set(rows)), only
 
 
-def summarize(measured, status, groups, root, lean=None):
-    """Per instance: the rows with their status, the files without a counterpart, and the counts."""
-    # rows out of scope in CORALean are counted apart (lean_out) and leave the denominator (eligible)
-    out, lean = {}, lean or {}
+def summarize(measured, status, groups, root, lean=None, apart=None):
+    """Per instance: the rows with their status, the files without a counterpart, and the counts.
+    `apart` are the rows of CORA.cpp's ledger that are not comparable with CORALean; they and the
+    rows out of scope in CORALean are counted apart (lean_out), in neither numerator nor denominator."""
+    out, lean, apart = {}, lean or {}, apart or {}
     # an instance that was not measured says why
     for name, entry in measured.items():
         if "files" not in entry:
@@ -170,18 +172,18 @@ def summarize(measured, status, groups, root, lean=None):
         rows, only = rows_of_files(root, entry["files"], groups)
         states = {key: status.get(key, "todo") for key in rows}
         counts = {s: sum(v == s for v in states.values()) for s in STATUSES}
-        beyond = [key for key, v in states.items()
-                  if v != cov.OUT and lean.get(key, {}).get("status") == "out-of-scope"]
+        beyond = [key for key, v in states.items() if v != cov.OUT and
+                  (key in apart or lean.get(key, {}).get("status") == "out-of-scope")]
         plumbing = [key for key, v in states.items()
                     if is_plumbing(key) and v != cov.OUT and key not in beyond]
         steps = sorted({tag for file in entry["files"] if file.endswith(".cpp")
                         for tag in private_steps(root, file)})
-        done = sum(states[key] == "oracle" for key in plumbing)
-        # the rows that only a property test backs, of those that can be bit-exact
+        # the bit-exact rows and those that only a property test backs, of those that can be bit-exact
         excluded = set(plumbing) | set(beyond)
+        exact = sum(v == "oracle" for key, v in states.items() if key not in excluded)
         weaker = sum(v == "property" for key, v in states.items() if key not in excluded)
         out[name] = {"rows": states, "only": only, "counts": counts, "total": len(rows),
-                     "oracle": counts["oracle"] - done, "lean_out": len(beyond), "steps": steps,
+                     "oracle": exact, "lean_out": len(beyond), "steps": steps,
                      "plumbing": len(plumbing), "property": weaker,
                      "eligible": len(rows) - counts[cov.OUT] - len(beyond) - len(plumbing)}
     return out
@@ -418,7 +420,8 @@ def main():
     inventory = cov.load_json(root / "coverage" / "cora-inventory.json")
     status = cov.load_json(root / "coverage" / "status.json").get("rows", {})
     lean = cov.load_json(root / "coverage" / "coralean-status.json").get("rows", {})
-    summary = summarize(measured, status, inventory["groups"], root, lean)
+    apart, _ = cov.ledger_of(root, inventory["groups"], cov.APART)
+    summary = summarize(measured, status, inventory["groups"], root, lean, apart)
     # the files to write, by path
     expected = {
         data: json.dumps({"instances": measured}, indent=1, sort_keys=True) + "\n",

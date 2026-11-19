@@ -29,11 +29,10 @@
 // CORA: nn/layers/nonlinear/nnSShapeLayer.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
-// CORA: nn/@neuralNetwork/getRefinableLayers.m
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -630,15 +629,6 @@ std::vector<std::vector<double>> NeuralNetwork::approx_errors(const PolyZonotope
     std::vector<std::vector<double>> errors;
     aux_evaluate(layers_, activations_, X, options, &errors);
     return errors;
-}
-
-std::vector<int64_t> NeuralNetwork::refinable_layers() const {
-    detail::Entry entry;
-    // the layers with a nonlinear activation
-    std::vector<int64_t> out;
-    for (std::size_t k = 0; k < activations_.size(); ++k)
-        if (activations_[k] != Activation::identity) out.push_back(int64_t(k));
-    return out;
 }
 
 PolyZonotope NeuralNetwork::evaluate(const PolyZonotope &X, const NnOptions &options) const {
