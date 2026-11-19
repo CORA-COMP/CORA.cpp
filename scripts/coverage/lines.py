@@ -10,10 +10,10 @@ Outputs:  the lines of src/ and include/ per file (run), a table per suite and c
 See also: scripts/coverage/benchmarks.py (files, not lines, per benchmark), CONTRIBUTING.md
 
 `changed` and `ratchet` exit with 1 below their limits. A suite is a ctest label: `run` clears the
-counters, runs the label, and reads them with
-`gcov --json-format`. The benchmarks and the examples are not measured. `changed` asks that the
-lines a branch adds under src/ and include/ are covered (executable lines only, by either suite);
-`ratchet` compares the totals with coverage/lines.json, which only rises.
+counters, runs the label, and reads them with `gcov --json-format`, also for the objects that no test
+program of the suite links (their lines count as not executed). The benchmarks and the examples are not
+measured. `changed` asks that the lines a branch adds under src/ and include/ are covered (executable
+lines only, by either suite); `ratchet` compares the totals with coverage/lines.json, which only rises.
 
 Authors:       Claude Sonnet 5.5
 Written:       16-November-2026
@@ -133,7 +133,9 @@ def command_run(args):
         counter.unlink()
     ran = subprocess.run(["ctest", "--test-dir", str(build), "-L", f"^{args.suite}$", "-j", str(args.jobs),
                           "--output-on-failure"], text=True)
+    # an unlinked object has no counters, but its lines are the library's: they count as not executed
     notes = sorted(build.rglob("*.gcda"))
+    notes += [note for note in sorted(build.rglob("*.gcno")) if not note.with_suffix(".gcda").exists()]
     files = {}
     for start in range(0, len(notes), 100):
         out = subprocess.run(["gcov", "--json-format", "--stdout", *map(str, notes[start:start + 100])],
