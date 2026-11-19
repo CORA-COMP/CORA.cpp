@@ -1310,7 +1310,7 @@ void bind_empty_set(py::module_ &m) {
             [](const EmptySet &E, const py::object &S) {
                 if (py::isinstance<ContSet>(S)) return E.plus(py::cast<const ContSet &>(S));
                 // the sum with a set or with a vector is empty
-                return E.plus(point_of(S, "the vector"));
+                return E.plus(vector_of(S, "the vector"));
             },
             py::arg("S"), "The sum with a set or a vector: empty")
         .def(
@@ -2562,17 +2562,17 @@ void bind_ellipsoid(py::module_ &m) {
         .def(py::init<const Zonotope &, const std::string &>(), py::arg("Z"),
              py::arg("mode") = "outer:norm_bnd",
              "An ellipsoid that holds a zonotope of n independent generators")
-        // the center first, as every set; a shape matrix alone is centered at 0
+        // a shape matrix alone is centered at 0 (an array as tol fails here: the next form)
+        .def(py::init(
+                 [](const py::object &Q, Tol tol) { return Ellipsoid(tensor_of(Q, "Q"), tol); }),
+             py::arg("Q"), py::arg("tol") = py::none(), "shape matrix Q (..., n, n) around 0")
+        // the center first, as every set
         .def(py::init([](const py::object &q, const py::object &Q, Tol tol) {
                  return Ellipsoid(point_of(q, "the center"), tensor_of(Q, "Q"), tol);
              }),
              py::arg("q"), py::arg("Q"), py::arg("tol") = py::none(),
              "center q (..., n) and shape matrix Q (..., n, n); tol bounds the asymmetry and the "
              "negative eigenvalues of Q")
-        .def(py::init(
-                 [](const py::object &Q, Tol tol) { return Ellipsoid(tensor_of(Q, "Q"), tol); }),
-             py::arg("Q"), py::kw_only(), py::arg("tol") = py::none(),
-             "shape matrix Q (..., n, n) around the origin")
         .def_static("empty", &Ellipsoid::empty, py::arg("n") = 0,
                     "The empty ellipsoid of n dimensions")
         .def_static("origin", &Ellipsoid::origin, py::arg("n"),
@@ -3257,7 +3257,8 @@ void bind_operators(py::module_ &m) {
     method(m.attr("Capsule"), "__radd__", capsule_sum);
     const auto ellipsoid_sum = [](const Ellipsoid &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
-        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.plus(*v));
+        // a vector (..., n) as it is
+        if (as_tensor(o)) return py::cast(A.plus(point_of(o, "the vector")));
         return not_implemented();
     };
     method(m.attr("Ellipsoid"), "__add__", ellipsoid_sum);
