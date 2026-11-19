@@ -6,7 +6,8 @@
 //             as CORA.cpp names CORA's: canonical_form, is_canonical_form, homogeneous_solution,
 //             particular_solution_time_varying, particular_solution_constant, affine_solution,
 //             one_step, one_step_closed_form, taylor_matrices, post, init_reach,
-//             error_solution_adaptive, verify_correction
+//             error_solution_adaptive, verify_correction, verify_zonotope_pass,
+//             verify_zonotope_run
 // Outputs:    lean zonotopes whose nominal part and error box together enclose the real result
 // Scheme:     CORALean's sound float definitions; the error terms are tuned bounds of their own,
 //             so they differ from CORA's (the nominal parts agree where no error term enters)
@@ -25,10 +26,13 @@
 
 #include <optional>
 #include <utility>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::lean {
+
+// The results -------------------------------------------------------------------------------------
 
 struct ReachSet {
     std::vector<Zonotope> time_point, time_interval;
@@ -84,6 +88,38 @@ struct VerifySupportRun {
     double time_step = 0;
     std::optional<int64_t> fals_step, fals_spec;
 };
+
+/// A specification of the zonotope verification: the rows A y <= b (A (r, q), b (r, 1)) of a safe
+/// or an unsafe set.
+struct VerifyZonotopeSpec {
+    bool safe = true;
+    cora::Tensor A, b;
+};
+
+/// A step of a grid of the zonotope verification: its size, whether it is computed in full, the
+/// budget of the reduction.
+struct VerifyZonotopeGridStep {
+    double time_step = 0;
+    bool full = true;
+    double budget = 0;
+};
+
+/// A full step of verify_zonotope_pass: the output set <c, G> plus the box r, and the flags.
+struct VerifyZonotopeStep {
+    Tensor c, r;
+    std::vector<Tensor> G;
+    std::vector<bool> flags;
+};
+
+/// A witness of verify_zonotope_run: the specification, the time, the coefficients b (m, 1) of the
+/// initial point and beta (p, 1) of the constant input.
+struct VerifyZonotopeWitness {
+    int64_t spec = 0;
+    double t = 0;
+    cora::Tensor b, beta;
+};
+
+// The system --------------------------------------------------------------------------------------
 
 class LinearSys {
   public:
@@ -163,6 +199,22 @@ class LinearSys {
                                          const cora::Tensor &Cs, const cora::Tensor &d,
                                          double t_final, double min_step, int fuel,
                                          const std::optional<Zonotope> &U = std::nullopt) const;
+
+    /// CORALean's LinearSys.verifyZonotopePassFloat of x' = A x + B u, y = C x from <x0, G0>, u in
+    /// <uc, GU> (none without B) on the grid: per step none (propagated only) or its output set and
+    /// flags; none if a step's enclosures are not computed.
+    std::optional<std::vector<std::optional<VerifyZonotopeStep>>>
+    verify_zonotope_pass(const cora::Tensor &x0, const cora::Tensor &G0, const cora::Tensor &uc,
+                         const cora::Tensor &GU, const std::vector<VerifyZonotopeSpec> &specs,
+                         const std::vector<VerifyZonotopeGridStep> &grid) const;
+
+    /// CORALean's LinearSys.verifyZonotopeRunFloat on the passes' grids and the witnesses: true
+    /// (verified), false (a witness holds) or none (undecided).
+    std::optional<bool>
+    verify_zonotope_run(const cora::Tensor &x0, const cora::Tensor &G0, const cora::Tensor &uc,
+                        const cora::Tensor &GU, const std::vector<VerifyZonotopeSpec> &specs,
+                        const std::vector<std::vector<VerifyZonotopeGridStep>> &passes,
+                        const std::vector<VerifyZonotopeWitness> &witnesses, double t_final) const;
 
     /// [e^{A dt}] X at the end of the step, and the enclosure of the step.
     Step post(const Zonotope &X, double time_step, int taylor_terms) const;

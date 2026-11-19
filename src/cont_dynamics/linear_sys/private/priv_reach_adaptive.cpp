@@ -717,7 +717,8 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
             ch.PUAsum = set.PUAsum[kIterChosen];
         }
         if (static_cast<int>(errs.step_red.size()) <= k) errs.step_red.resize(k + 1);
-        errs.step_red[k] = aux_reduce(taylor, t, set, ch, errs.bound_red[k][kIterChosen], P.is_u);
+        const double budget = P.is_u ? errs.bound_red[k][kIterChosen] : 0.0;
+        errs.step_red[k] = aux_reduce(taylor, t, set, ch, budget, P.is_u);
         errs.accumulate_errors(k, kIterChosen);
         errs.remove_redundant_values(k, kIterChosen);
 
@@ -777,6 +778,8 @@ AdaptiveResult priv_reach_adaptive(TaylorLinSys &taylor, const AdaptiveParams &p
         // The next step starts where this one ends; the approximation functions are now usable.
         t += time_step;
         out.time.push_back(t);
+        out.time_step.push_back(time_step);
+        out.budget.push_back(budget);
         errs.use_approx_fun = true;
     }
 

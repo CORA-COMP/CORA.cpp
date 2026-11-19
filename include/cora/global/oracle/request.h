@@ -39,6 +39,8 @@
 
 namespace cora::lean {
 
+// The operands ------------------------------------------------------------------------------------
+
 /// A request operand in wire form, built implicitly from the types an op takes.
 struct Wire {
     Json json;
@@ -81,6 +83,8 @@ struct Operand {
     Wire wire;
 };
 
+// The replies -------------------------------------------------------------------------------------
+
 /// The parsed response of an op and the dtype its values are in.
 class Reply {
   public:
@@ -95,6 +99,9 @@ class Reply {
 
     /// The member `key`, an object, as a reply on its own.
     Reply member(const char *key) const;
+
+    /// Whether the reply is JSON null (an element of a list that `list` returned, say).
+    bool is_null() const { return json_.kind == Json::Kind::null; }
 
     /// The answer of a `contains` (a proof when true) or an `isIntersecting` (a proof of
     /// disjointness, so a proof when false) request.

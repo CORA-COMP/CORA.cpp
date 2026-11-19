@@ -44,9 +44,6 @@
 #include <cmath>
 #include <limits>
 #include <optional>
-#if defined(__SSE2__) || defined(_M_X64)
-#include <xmmintrin.h>
-#endif
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -73,16 +70,6 @@ constexpr double kShrinkFixed = 0.2; // step size factor of a pass that does not
 constexpr double kShrinkNonconverged = 0.2; // factor when a Taylor sum does not converge
 
 using Intervals = std::vector<std::array<double, 2>>;
-
-/// Flushes denormal numbers to zero while it lives: the powers and squarings of a stiff matrix
-/// underflow through the denormal range, where every product is slow, and nothing there counts.
-struct FlushDenormals {
-#if defined(__SSE2__) || defined(_M_X64)
-    unsigned saved = _mm_getcsr();
-    FlushDenormals() { _mm_setcsr(saved | 0x8040); }
-    ~FlushDenormals() { _mm_setcsr(saved); }
-#endif
-};
 
 /// A matrix by rows of nonzeros.
 struct Csr {
@@ -176,7 +163,7 @@ std::vector<double> aux_mul_rows(const std::vector<double> &x, int64_t n, double
     [[maybe_unused]] const int threads = threads_for(blocks, n * n);
 #pragma omp parallel for num_threads(threads) schedule(dynamic) if (threads > 1)
     for (int64_t blk = 0; blk < blocks; ++blk) {
-        [[maybe_unused]] const FlushDenormals flush; // the flag is per thread
+        [[maybe_unused]] const VerifyFlushDenormals flush; // the flag is per thread
         const int64_t i0 = blk * kRows, i1 = std::min(n, i0 + kRows);
         for (int64_t k = 0; k < n; ++k) {
             if (empty(k)) continue;
@@ -436,7 +423,7 @@ std::vector<double> aux_propagate(const std::vector<double> &l0, const Banded &D
     [[maybe_unused]] const int threads = threads_for(n, static_cast<long long>(D.val.size()));
 #pragma omp parallel num_threads(threads) if (threads > 1)
     {
-        std::optional<FlushDenormals> flushing; // the flag is per thread
+        std::optional<VerifyFlushDenormals> flushing; // the flag is per thread
         if (flush) flushing.emplace();
 #ifdef _OPENMP
         const int64_t t = omp_get_thread_num(), nt = omp_get_num_threads();
@@ -550,8 +537,6 @@ Pass aux_pass(const Zonotope &R0, const Tensor &l_t, const std::vector<double> &
 constexpr int kStepsDiv = 100; // the first step size is t_final / ceil(t_final / (t_final/100))
 constexpr double kBoundLimit = 536870912.0; // 2^29: the largest exponent of the growth bound
 
-using ExactIntervals = std::vector<std::array<ExactTime, 2>>;
-
 /// sum_{j = n-1 .. 0} f(j), each term added in front of the sum of the later ones.
 template <class F>
 double aux_sum_up(int64_t n, const F &f) {
@@ -619,21 +604,6 @@ double aux_exp_up(double a) {
     return u;
 }
 
-/// The removal of the times [t0, t1] from the unverified intervals (LinearSys.verifyTimeSetdiff):
-/// exact, and nothing dropped.
-void aux_setdiff_exact(ExactIntervals &U, const ExactTime &t0, const ExactTime &t1) {
-    ExactIntervals kept;
-    for (const auto &iv : U) {
-        if (t1 <= iv[0] || iv[1] <= t0) {
-            kept.push_back(iv);
-            continue;
-        }
-        if (iv[0] < t0) kept.push_back({iv[0], t0});
-        if (t1 < iv[1]) kept.push_back({t1, iv[1]});
-    }
-    U = std::move(kept);
-}
-
 /// The smallest N with N dt >= tf, exactly.
 int64_t aux_steps_to(const ExactTime &tf, double dt) {
     auto N = static_cast<int64_t>(std::ceil(tf.nearest() / dt));
@@ -652,9 +622,8 @@ double aux_scaled_max(const std::vector<double> &x, const std::vector<double> &s
     return beta;
 }
 
-/// LinearSys.step_verifySupportInputBoxesFloat at nearest: empty if a series does not stop by
-/// order 74 or a remainder is not admissible. Order i is [dt^{i+1}/(i+1)] A^i/i! applied to u0 and
-/// M; zero terms of a sum are skipped (they change no sum that starts at +0).
+/// LinearSys.step_verifySupportInputBoxesFloat at nearest: the input's solution
+/// (priv_verify_input_solution) and G u0; empty if a series does not stop by order 74.
 std::optional<SoundInputBoxes> aux_input_boxes(Expmat &E, const SoundRun &run, int64_t n,
                                                double dt) {
     const SoundInput &in = run.in;
@@ -667,75 +636,16 @@ std::optional<SoundInputBoxes> aux_input_boxes(Expmat &E, const SoundRun &run, i
     b.rho.assign(n, 0.0);
     b.g_lo.assign(n, 0.0);
     b.g_hi.assign(n, 0.0);
+    // the input's solution, shared with the zonotope pass
     if (in.has_u || in.has_m) {
-        constexpr int kOrders = 75; // the search's fuel: orders 0 to 74
-        const double eps = machine_eps();
-        // the nonzeros of u0 and of each column of M, from the last index down
-        std::vector<int64_t> nzu;
-        for (int64_t j = n - 1; j >= 0; --j)
-            if (in.u0[j] != 0) nzu.push_back(j);
-        std::vector<std::vector<int64_t>> nzm(k);
-        for (int64_t j = n - 1; j >= 0; --j)
-            for (int64_t c = 0; c < k; ++c)
-                if (in.M[std::size_t(j) * k + c] != 0) nzm[c].push_back(j);
-        std::vector<double> S(n, 0.0), wsum(n, 0.0);
-        int eta = -1;
-        for (int i = 0; i < kOrders && eta < 0; ++i) {
-            // the coefficient dt^{i+1}/(i+1) and the power A^i/i! (the identity at i = 0)
-            const double coef = priv_float_power(i + 1, dt) / double(i + 1);
-            const std::vector<double> *P = i == 0 ? nullptr : &E.powers->power(i);
-            auto entry = [&](int64_t l, int64_t j) {
-                return P ? coef * (*P)[std::size_t(l) * n + j] : (l == j ? coef * 1.0 : 0.0);
-            };
-            // [P_i] u0 and [P_i] M, each entry summed from the last index down
-            std::vector<double> tw(n, 0.0), tv(nk, 0.0), a(n);
-            for (int64_t l = 0; l < n; ++l) {
-                double sum = 0;
-                for (const int64_t j : nzu) sum = entry(l, j) * in.u0[j] + sum;
-                tw[l] = sum;
-                double rs = 0; // sumUp over the columns of |[P_i M]_lc|, from the last
-                for (int64_t c = k - 1; c >= 0; --c) {
-                    double v = 0;
-                    for (const int64_t j : nzm[c])
-                        v = entry(l, j) * in.M[std::size_t(j) * k + c] + v;
-                    tv[std::size_t(l) * k + c] = v;
-                    rs = std::abs(v) + rs;
-                }
-                a[l] = std::abs(tw[l]) + rs;
-            }
-            // CORA's stop: the order's row sums at most eps times those of the orders before it
-            bool stop = i >= 1;
-            for (int64_t l = 0; l < n && stop; ++l) stop = a[l] <= eps * S[l];
-            if (stop) {
-                eta = i;
-                break;
-            }
-            for (int64_t l = 0; l < n; ++l) {
-                S[l] = S[l] + a[l];
-                wsum[l] = wsum[l] + tw[l];
-            }
-            for (std::size_t e = 0; e < nk; ++e) b.Vs[e] = b.Vs[e] + tv[e];
-            b.V.push_back(std::move(tv));
-        }
-        if (eta < 0) return std::nullopt;
-        // the remainder past the orders i < eta: dt W |u0| and dt W sum_c |M_c|
-        const std::optional<std::vector<double>> W =
-            priv_verify_scaled_remainder(E.powers->A(), E.scales, n, dt, eta - 1);
-        if (!W) return std::nullopt;
-        std::vector<double> m_abs(n);
-        for (int64_t j = 0; j < n; ++j) {
-            double rs = 0;
-            for (int64_t c = k - 1; c >= 0; --c) rs = std::abs(in.M[std::size_t(j) * k + c]) + rs;
-            m_abs[j] = rs;
-        }
-        for (int64_t l = 0; l < n; ++l) {
-            const double *Wl = &(*W)[std::size_t(l) * n];
-            const double ru =
-                dt * aux_sum_up(n, [&](int64_t j) { return Wl[j] * std::abs(in.u0[j]); });
-            b.rho[l] = dt * aux_sum_up(n, [&](int64_t j) { return Wl[j] * m_abs[j]; });
-            b.w_lo[l] = wsum[l] - ru;
-            b.w_hi[l] = wsum[l] + ru;
-        }
+        std::optional<VerifyInputSolution> I =
+            priv_verify_input_solution(*E.powers, E.scales, dt, in.u0, in.M, k);
+        if (!I) return std::nullopt;
+        b.w_lo = std::move(I->w_lo);
+        b.w_hi = std::move(I->w_hi);
+        b.V = std::move(I->V);
+        b.Vs = std::move(I->Vs);
+        b.rho = std::move(I->rho);
     }
     // G u0, the box of the constant input's curvature term
     if (in.has_u) {
@@ -1089,7 +999,7 @@ VerifyResult aux_verify_sound(const LinearSys &sys, const Zonotope &R0, const Zo
             const ExactTime step(dt);
             for (int64_t k = 0; k < N; ++k) {
                 const ExactTime t1 = t0 + step;
-                if (pass.flag[q][k]) aux_setdiff_exact(unsat[q], t0, t1);
+                if (pass.flag[q][k]) priv_verify_setdiff_exact(unsat[q], t0, t1);
                 t0 = t1;
             }
             // what is left, and its latest end: the next pass's horizon
@@ -1151,7 +1061,7 @@ VerifyResult priv_verify_ra_support_function(const LinearSys &sys, const Zonotop
             return aux_verify_sound(sys, R0, U, t_final, aux_spec_rows(specs, false), E, kappa,
                                     start);
     }
-    [[maybe_unused]] const FlushDenormals flush; // a no-op off x86
+    [[maybe_unused]] const VerifyFlushDenormals flush; // a no-op off x86
     if (isu || is_u) E.Ainv = priv_inverse(A);
 
     // Initial set ---------------------------------------------------------------------------------

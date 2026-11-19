@@ -77,6 +77,8 @@ double aux_balance_factor(double row, double col) {
     return f;
 }
 
+// The Taylor sums ---------------------------------------------------------------------------------
+
 /// The Taylor sums of F or G: term(eta) is the term of order eta; the sums stop at the first eta
 /// whose term no longer changes them, and the remainder at order rem_order(eta), times scale,
 /// widens them.
@@ -213,6 +215,91 @@ priv_verify_correction_input(VerifyPowers &P, const std::vector<double> &s, doub
             return std::pair<double, const std::vector<double> *>(c, &P.power(eta - 1));
         },
         2, dt);
+}
+
+// The input's solution ----------------------------------------------------------------------------
+
+std::optional<VerifyInputSolution>
+priv_verify_input_solution(VerifyPowers &P, const std::vector<double> &s, double dt,
+                           const std::vector<double> &u0, const std::vector<double> &M, int64_t k) {
+    const int64_t n = P.n();
+    const std::size_t nk = std::size_t(n) * k;
+    constexpr int kOrders = 75; // the search's fuel: orders 0 to 74
+    const double eps = machine_eps();
+    VerifyInputSolution b;
+    b.Vs.assign(nk, 0.0);
+    b.rho.assign(n, 0.0);
+    b.w_lo.assign(n, 0.0);
+    b.w_hi.assign(n, 0.0);
+    // the nonzeros of u0 and of each column of M, from the last index down
+    std::vector<int64_t> nzu;
+    for (int64_t j = n - 1; j >= 0; --j)
+        if (u0[j] != 0) nzu.push_back(j);
+    std::vector<std::vector<int64_t>> nzm(k);
+    for (int64_t j = n - 1; j >= 0; --j)
+        for (int64_t c = 0; c < k; ++c)
+            if (M[std::size_t(j) * k + c] != 0) nzm[c].push_back(j);
+    std::vector<double> S(n, 0.0), wsum(n, 0.0);
+    int eta = -1;
+    for (int i = 0; i < kOrders && eta < 0; ++i) {
+        // the coefficient dt^{i+1}/(i+1) and the power A^i/i! (the identity at i = 0)
+        const double coef = priv_float_power(i + 1, dt) / double(i + 1);
+        const std::vector<double> *Pi = i == 0 ? nullptr : &P.power(i);
+        auto entry = [&](int64_t l, int64_t j) {
+            return Pi ? coef * (*Pi)[std::size_t(l) * n + j] : (l == j ? coef * 1.0 : 0.0);
+        };
+        // [P_i] u0 and [P_i] M, each entry summed from the last index down
+        std::vector<double> tw(n, 0.0), tv(nk, 0.0), a(n);
+        for (int64_t l = 0; l < n; ++l) {
+            double sum = 0;
+            for (const int64_t j : nzu) sum = entry(l, j) * u0[j] + sum;
+            tw[l] = sum;
+            double rs = 0; // sumUp over the columns of |[P_i M]_lc|, from the last
+            for (int64_t c = k - 1; c >= 0; --c) {
+                double v = 0;
+                for (const int64_t j : nzm[c]) v = entry(l, j) * M[std::size_t(j) * k + c] + v;
+                tv[std::size_t(l) * k + c] = v;
+                rs = std::abs(v) + rs;
+            }
+            a[l] = std::abs(tw[l]) + rs;
+        }
+        // CORA's stop: the order's row sums at most eps times those of the orders before it
+        bool stop = i >= 1;
+        for (int64_t l = 0; l < n && stop; ++l) stop = a[l] <= eps * S[l];
+        if (stop) {
+            eta = i;
+            break;
+        }
+        for (int64_t l = 0; l < n; ++l) {
+            S[l] = S[l] + a[l];
+            wsum[l] = wsum[l] + tw[l];
+        }
+        for (std::size_t e = 0; e < nk; ++e) b.Vs[e] = b.Vs[e] + tv[e];
+        b.V.push_back(std::move(tv));
+    }
+    if (eta < 0) return std::nullopt;
+    // the remainder past the orders i < eta: dt W |u0| and dt W sum_c |M_c|
+    const std::optional<std::vector<double>> W =
+        priv_verify_scaled_remainder(P.A(), s, n, dt, eta - 1);
+    if (!W) return std::nullopt;
+    std::vector<double> m_abs(n);
+    for (int64_t j = 0; j < n; ++j) {
+        double rs = 0;
+        for (int64_t c = k - 1; c >= 0; --c) rs = std::abs(M[std::size_t(j) * k + c]) + rs;
+        m_abs[j] = rs;
+    }
+    for (int64_t l = 0; l < n; ++l) {
+        const double *Wl = &(*W)[std::size_t(l) * n];
+        double ru = 0, rm = 0; // W |u0| and W sum_c |M_c|, from the last index down
+        for (int64_t j = n - 1; j >= 0; --j) {
+            ru = Wl[j] * std::abs(u0[j]) + ru;
+            rm = Wl[j] * m_abs[j] + rm;
+        }
+        b.rho[l] = dt * rm;
+        b.w_lo[l] = wsum[l] - dt * ru;
+        b.w_hi[l] = wsum[l] + dt * ru;
+    }
+    return b;
 }
 
 } // namespace cora

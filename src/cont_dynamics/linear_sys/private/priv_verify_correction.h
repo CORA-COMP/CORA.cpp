@@ -71,6 +71,18 @@ priv_verify_correction_state(VerifyPowers &P, const std::vector<double> &s, doub
 std::optional<VerifyCorrection>
 priv_verify_correction_input(VerifyPowers &P, const std::vector<double> &s, double dt);
 
+/// CORALean's LinearSys.verifyInputSolutionFloat at nearest, for u(t) in u0 + M [-1, 1]^k: the box
+/// [w_lo, w_hi] of the constant input's solution, the orders V_i = [dt^{i+1}/(i+1)] A^i/i! M, their
+/// sum Vs and the remainder rho; empty if the series does not stop by order 74.
+struct VerifyInputSolution {
+    std::vector<double> w_lo, w_hi;
+    std::vector<std::vector<double>> V;
+    std::vector<double> Vs, rho;
+};
+std::optional<VerifyInputSolution>
+priv_verify_input_solution(VerifyPowers &P, const std::vector<double> &s, double dt,
+                           const std::vector<double> &u0, const std::vector<double> &M, int64_t k);
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
