@@ -1,14 +1,14 @@
 {
  "combined": {
   "percent": 95.33,
-  "thin_files": 11
+  "thin_files": 10
  },
  "oracle": {
-  "percent": 59.44,
-  "thin_files": 199
+  "percent": 47.68,
+  "thin_files": 307
  },
  "unit": {
-  "percent": 89.27,
-  "thin_files": 32
+  "percent": 87.37,
+  "thin_files": 36
  }
 }
