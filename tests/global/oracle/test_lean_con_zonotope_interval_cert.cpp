@@ -9,7 +9,7 @@
 // CORA.cpp only: tests interval_cert, CORALean's float checker of dual solutions
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -76,7 +76,7 @@ int main() {
     test::oracle::run("conZonotope.intervalCert", [](test::oracle::Random &rnd) {
         const ConZonotope cz = rnd.con_zonotope(2, 4, 1);
         const Polytope guard(Tensor::from_data({1.0, 0.5, -0.3, 1.0}, {2, 2}),
-                             cz.c().expand_dims(-1) + Tensor::from_data({0.2, 0.1}, {2, 1}));
+                             cz.c() + Tensor::from_data({0.2, 0.1}, {2}));
         const ConZonotope::Cut cut = cz.cut(guard);
         const std::optional<ConZonotope::Certificate> w = cut.certificate();
         test::check(w.has_value(), "intervalCert: the cut has a solution");

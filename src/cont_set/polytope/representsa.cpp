@@ -62,12 +62,12 @@ bool aux_empty_object_answer(const Polytope &P, const std::string &type) {
 
 /// The support function of the box (lb, ub) along a, as an Interval gives it.
 double aux_box_support(const Tensor &like, const Row &lb, const Row &ub, const Row &a, bool upper) {
-    const Interval box(priv_column_tensor(like, lb).squeeze(-1),
-                       priv_column_tensor(like, ub).squeeze(-1));
+    const Interval box(priv_vector_tensor(like, lb), priv_vector_tensor(like, ub));
     Row direction = a;
     if (!upper)
         for (double &x : direction) x = -x;
-    const double value = box.support_function(priv_column_tensor(like, direction)).item();
+    const double value =
+        box.support_function(priv_vector_tensor(like, direction).expand_dims(-1)).item();
     return upper ? value : -value;
 }
 
@@ -154,7 +154,7 @@ bool aux_is_point(const Polytope &P, Tol tol) {
 /// Whether the origin is the set: it contains the origin and its box is smaller than tol.
 bool aux_is_origin(const Polytope &P, double tol) {
     const Tensor &like = P.is_h_rep() ? P.A() : P.V();
-    if (!P.contains(zeros_block(like, P.dim(), 1), "exact", tol)) return false;
+    if (!P.contains(zeros_block(like, P.dim(), 1).squeeze(-1), "exact", tol)) return false;
     return P.interval().norm(Tensor::Norm::two).item() <= tol;
 }
 

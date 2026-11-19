@@ -11,9 +11,9 @@
 // operands come from oracle::run, Random(7))
 //
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -40,7 +40,7 @@ std::pair<Tensor, Tensor> aux_polytope(oracle::Random &rnd, const ContSet &S, in
     for (int64_t i = 0; i < p; ++i)
         b[i] = S.support_function(A.slice(-2, i, i + 1).matrix_transpose()).item() +
                rnd.uniform(-1.0, 1.0);
-    return {A, Tensor::from_data(b, {p, 1})};
+    return {A, Tensor::from_data(b, {p})};
 }
 
 } // namespace

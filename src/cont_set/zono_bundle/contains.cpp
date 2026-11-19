@@ -86,7 +86,8 @@ bool ZonoBundle::contains(const Tensor &p, const std::string &method, Tol tol_ar
     if (!r) r = aux_refusal(*this, method, true);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     if (method == "exact:zonotope") return aux_all_members(*this, p, tol);
-    if (method == "exact:polytope") return polytope().contains(p, "exact", tol);
+    // the polytope takes one point per row (#163), the bundle still columns
+    if (method == "exact:polytope") return polytope().contains(p.matrix_transpose(), "exact", tol);
     return con_zonotope().contains(p, "exact", tol);
 }
 

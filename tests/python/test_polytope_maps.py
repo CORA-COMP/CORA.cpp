@@ -2,9 +2,9 @@
 
 CORA authors: Mark Wetzlinger, Viktor Kotsev, Niklas Kochdumper, Tobias Ladner, Adrian Kulmburg,
               Matthias Althoff, Victor Gassmann
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       06-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 # CORA: contSet/@emptySet/polytope.m
@@ -56,8 +56,8 @@ def square():
     return cora.Polytope(*SQUARE_H)
 
 
-def column(*x):
-    return np.array(x, dtype=float).reshape(-1, 1)
+def point(*x):
+    return np.array(x, dtype=float)
 
 
 # ============================================  MAIN  ============================================ #
@@ -86,14 +86,14 @@ class PolytopeMaps(unittest.TestCase):
     # the operators shift, add and map
     def test_the_sum_shifts_and_adds(self):
         P = square()
-        shifted = P + column(2.0, 0.0)
-        self.assertTrue(shifted.contains(column(2.5, 0.5)))
-        self.assertFalse(shifted.contains(column(0.5, 0.5)))
-        back = shifted - column(2.0, 0.0)
+        shifted = P + point(2.0, 0.0)
+        self.assertTrue(shifted.contains(point(2.5, 0.5)))
+        self.assertFalse(shifted.contains(point(0.5, 0.5)))
+        back = shifted - point(2.0, 0.0)
         self.assertTrue(back.isequal(P))
         both = P + P
         self.assertAlmostEqual(both.volume(), 4.0, places=8)
-        self.assertTrue((column(1.0, 1.0) + P).contains(column(1.5, 1.5)))
+        self.assertTrue((point(1.0, 1.0) + P).contains(point(1.5, 1.5)))
 
     # a matrix scales the area
     def test_the_linear_map_scales(self):
@@ -103,27 +103,27 @@ class PolytopeMaps(unittest.TestCase):
     # a projection keeps the chosen coordinates; the high-dimensional set pads zeros
     def test_projection_and_lifting(self):
         P = square().project([0])
-        self.assertTrue(P.contains(column(0.5)))
-        self.assertFalse(P.contains(column(1.5)))
+        self.assertTrue(P.contains(point(0.5)))
+        self.assertFalse(P.contains(point(1.5)))
         high = square().project_high_dim(3, [0, 2])
         self.assertEqual(high.dim, 3)
-        self.assertTrue(high.contains(column(0.5, 0.0, 0.5)))
-        self.assertFalse(high.contains(column(0.5, 1.0, 0.5)))
+        self.assertTrue(high.contains(point(0.5, 0.0, 0.5)))
+        self.assertFalse(high.contains(point(0.5, 1.0, 0.5)))
 
     # the intersection test and the equality, the subset operator
     def test_the_intersection_test(self):
         P = square()
-        self.assertTrue(P.is_intersecting(P + column(0.5, 0.5)))
-        self.assertFalse(P.is_intersecting(P + column(3.0, 0.0)))
-        self.assertTrue(P.is_intersecting(column(0.5, 0.5)))
+        self.assertTrue(P.is_intersecting(P + point(0.5, 0.5)))
+        self.assertFalse(P.is_intersecting(P + point(3.0, 0.0)))
+        self.assertTrue(P.is_intersecting(point(0.5, 0.5)))
         self.assertTrue(P.isequal(square()))
-        self.assertTrue(square() <= (square() + column(0.0, 0.0)))
+        self.assertTrue(square() <= (square() + point(0.0, 0.0)))
 
     # the distance of disjoint squares and the hull of their union
     def test_distance_and_union(self):
         P = square()
-        self.assertAlmostEqual(P.distance(P + column(3.0, 0.0)), 2.0, places=8)
-        U = P.unite(P + column(3.0, 0.0))
+        self.assertAlmostEqual(P.distance(P + point(3.0, 0.0)), 2.0, places=8)
+        U = P.unite(P + point(3.0, 0.0))
         self.assertAlmostEqual(U.volume(), 4.0, places=8)
 
     # random sets and their samples satisfy the constraints; the zonotope contains them
@@ -133,7 +133,8 @@ class PolytopeMaps(unittest.TestCase):
         self.assertEqual(P.dim, 2)
         points = P.rand_point(5, rng)
         for k in range(5):
-            self.assertTrue(P.contains(points[:, [k]], tol=1e-9))
+            # rand_point still gives CORA's columns (n, N)
+            self.assertTrue(P.contains(points[:, k], tol=1e-9))
         self.assertTrue(P.zonotope().contains(points))
 
     # the pieces of the difference cover what lies outside the subtrahend
@@ -142,7 +143,7 @@ class PolytopeMaps(unittest.TestCase):
         parts = P.set_difference(cora.Polytope(np.vstack([np.eye(2), -np.eye(2)]),
                                                np.array([0.5, 1.0, 0.0, 0.0])))
         self.assertGreaterEqual(len(parts), 1)
-        self.assertTrue(any(p.contains(column(0.75, 0.5)) for p in parts))
+        self.assertTrue(any(p.contains(point(0.75, 0.5)) for p in parts))
 
     # the special sets convert to polytopes
     def test_empty_and_fullspace_convert(self):

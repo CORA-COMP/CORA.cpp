@@ -60,8 +60,8 @@ enum class BallFlow { linear, parametric, nonlinear };
 /// The ball on the floor x >= 0: one location, which the bounce enters again; its flow a
 /// LinearSys, a LinParamSys whose x' = (1 +- 0.001) v holds the nominal ball, or a NonlinearSys.
 HybridAutomaton aux_ball(BallFlow kind = BallFlow::linear) {
-    const Polytope floor(Tensor({{-1.0, 0.0}}), column({0.0}));
-    const Polytope guard(Tensor({{0.0, 1.0}}), column({0.0}), Tensor({{1.0, 0.0}}), column({0.0}));
+    const Polytope floor(Tensor({{-1.0, 0.0}}), vec({0.0}));
+    const Polytope guard(Tensor({{0.0, 1.0}}), vec({0.0}), Tensor({{1.0, 0.0}}), vec({0.0}));
     const LinearReset bounce(Tensor({{1.0, 0.0}, {0.0, -kBounce}}));
     const std::vector<Transition> trans{Transition(guard, bounce, 0)};
     const Tensor A({{0.0, 1.0}, {0.0, 0.0}});
@@ -213,13 +213,12 @@ void ball_poly() {
 
 /// A clock reaches t = 1 exactly at a step: the jump uses the set at t = 1, at that time only.
 void time_triggered() {
-    const Polytope before(Tensor({{0.0, 1.0}}), column({1.0}));
-    const Polytope at(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}), Tensor({{0.0, 1.0}}),
-                      column({1.0}));
+    const Polytope before(Tensor({{0.0, 1.0}}), vec({1.0}));
+    const Polytope at(Tensor::zeros({0, 2}), Tensor::zeros({0}), Tensor({{0.0, 1.0}}), vec({1.0}));
     const LinearSys decay(Tensor({{-1.0, 0.0}, {0.0, 0.0}}), Tensor::zeros({2, 1}));
     const Location first("first", before, {Transition(at, LinearReset(Tensor::eye(2)), 1)}, decay,
                          column({0.0, 1.0}));
-    const Location second("second", Polytope(Tensor({{0.0, -1.0}}), column({0.0})), {}, decay,
+    const Location second("second", Polytope(Tensor({{0.0, -1.0}}), vec({0.0})), {}, decay,
                           column({0.0, 1.0}));
     const HybridAutomaton HA("clock", {first, second});
     // a flat initial clock: the time-point set at t = 1 lies on the guard
@@ -257,7 +256,7 @@ void specifications() {
 void checks_and_their_switch() {
     const HybridAutomaton HA = aux_ball();
     const LinearSys flow(Tensor::zeros({2, 2}));
-    const Polytope inv(Tensor({{1.0, 0.0}}), column({0.0}));
+    const Polytope inv(Tensor({{1.0, 0.0}}), vec({0.0}));
     // the constructor: at least one location, and targets that exist
     check(test::raises([] { HybridAutomaton("none", {}); }, Error::wrong_input_in_constructor),
           "constructor: no location");

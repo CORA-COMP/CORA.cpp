@@ -60,7 +60,7 @@ void properties(const std::string &b) {
         double area = 0.0;
         for (std::size_t i = 0; i < corners.size(); ++i) {
             const Point &p = corners[i], &q = corners[(i + 1) % corners.size()];
-            inside = inside && P.contains(column({p[0], p[1]}), "exact", 1e-8);
+            inside = inside && P.contains(vec({p[0], p[1]}), "exact", 1e-8);
             area += p[0] * q[1] - q[0] * p[1];
         }
         same_area = same_area && close(area / 2.0, P.volume(), 1e-8);
@@ -80,7 +80,7 @@ int main() {
         properties(b);
     });
     // an unbounded set has no vertex list; a batch of halfspaces needs a program per member
-    check(test::raises([] { Polytope(Tensor({{1.0, 0.0}}), column({1.0})).vertices(); },
+    check(test::raises([] { Polytope(Tensor({{1.0, 0.0}}), vec({1.0})).vertices(); },
                        Error::special_error),
           "vertices: an unbounded set");
     check(test::raises([] { test::square_h().vertices_3d(); }, Error::not_supported),

@@ -28,13 +28,12 @@ namespace cora {
 Interval Polytope::interval_impl() const {
     const int64_t n = dim();
     if (is_v_rep()) {
-        if (V_.shape().back() == 0) return Interval::empty(n);
-        return {V_.min(-1), V_.max(-1)};
+        if (V_.size(-2) == 0) return Interval::empty(n);
+        return {V_.min(-2), V_.max(-2)};
     }
     const auto bounds = priv_box_bounds(priv_host_h(constraints()));
     if (!bounds) return Interval::empty(n);
-    return {priv_column_tensor(A_, bounds->first).squeeze(-1),
-            priv_column_tensor(A_, bounds->second).squeeze(-1)};
+    return {priv_vector_tensor(A_, bounds->first), priv_vector_tensor(A_, bounds->second)};
 }
 
 } // namespace cora

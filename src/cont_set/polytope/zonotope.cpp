@@ -53,7 +53,8 @@ Zonotope Polytope::zonotope(const std::string &method) const {
                [] { return std::string("The empty set is no zonotope."); });
     CORA_CHECK(method == "outer", Error::not_supported,
                [&] { return "zonotope: the method '" + method + "' is not supported"; });
-    const Tensor V = priv_points_tensor(like, dim(), priv_polytope_vertices(*this));
+    const Tensor V =
+        priv_points_tensor(like, dim(), priv_polytope_vertices(*this)).matrix_transpose();
     // the axes of the covariance ellipsoid, and the box of the vertices in them
     const Ellipsoid E = Ellipsoid::enclose_points(V.matrix_transpose());
     const Tensor R = aux_sqrtm(E.Q()), q = E.q().expand_dims(-1);

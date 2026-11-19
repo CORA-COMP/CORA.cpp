@@ -8,7 +8,7 @@
 // ORACLE: hybridDynamics/@location/calcBasis.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/location.h"
@@ -53,8 +53,8 @@ int main() {
             for (std::size_t k = 0; k < mine.size(); ++k) test::oracle::check(mine[k], theirs[k]);
             // a hyperplane guard
             Tensor normal = rnd.vector(n);
-            const Polytope guard(Tensor::zeros({0, n}), Tensor::zeros({0, 1}),
-                                 normal.matrix_transpose(), normal.full_like({1, 1}, 0.1));
+            const Polytope guard(Tensor::zeros({0, n}), Tensor::zeros({0}),
+                                 normal.matrix_transpose(), normal.full_like({1}, 0.1));
             const std::vector<Tensor> mine_h =
                 priv_calc_basis(loc, R, guard, {alg::Enclose::pca}, U);
             const std::vector<Tensor> theirs_h =

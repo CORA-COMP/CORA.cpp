@@ -43,12 +43,11 @@ Polytope Polytope::reduce_over_domain(const Interval &dom, const std::string &ty
     // the unit rows, the ranges of their entries and of their offsets
     const Polytope unit = normalize_constraints("A");
     const Interval A(unit.A().min(0), unit.A().max(0));
-    const Interval b(unit.b().min(0), unit.b().max(0));
+    const Interval b(unit.b().min(0, true), unit.b().max(0, true));
     const Tensor reduced = A.center();
     // b - (A - reduced)' dom, a box of one number
     const Interval offset = b.minus((A.minus(reduced)).times(dom).sum(1));
-    return {reduced.expand_dims(0),
-            (type == "outer" ? offset.sup() : offset.inf()).expand_dims(-1)};
+    return {reduced.expand_dims(0), type == "outer" ? offset.sup() : offset.inf()};
 }
 
 } // namespace cora

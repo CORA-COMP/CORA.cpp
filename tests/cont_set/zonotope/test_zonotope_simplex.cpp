@@ -3,9 +3,9 @@
 // CORA: contSet/@zonotope/simplex.m
 // PROPERTY: contSet/@zonotope/simplex.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -35,8 +35,9 @@ void simplex_property(const std::string &b) {
         check(P.A().shape() == Shape{n + 1, n}, b + ": n + 1 facets in " + std::to_string(n) + "D");
         // the extreme points lie on facets: a point this close to a facet is on it
         const Tensor corners = Z.rand_point(30, rng, "extreme");
-        check(P.contains(corners, "exact", numerics::kPolytopeFacet) &&
-                  P.contains(Z.center().expand_dims(-1)),
+        // the zonotope's random points are CORA's columns, the polytope's points rows
+        check(P.contains(corners.matrix_transpose(), "exact", numerics::kPolytopeFacet) &&
+                  P.contains(Z.center()),
               b + ": the zonotope is inside");
         const Tensor sums = P.A().matmul(P.A().matrix_transpose());
         check(close(sums.slice(0, 0, 1).slice(1, 0, 1), {1.0}, 1e-12), b + ": unit normals");

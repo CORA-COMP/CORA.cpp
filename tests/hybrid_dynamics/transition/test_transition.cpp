@@ -32,11 +32,11 @@ void construction() {
     const Transition t(box, LinearReset(Tensor::eye(2)), 1);
     check(t.target() == 1 && std::get<Polytope>(t.guard()).dim() == 2,
           "transition: target and guard");
-    check(std::get<Polytope>(t.guard()).contains(column({0.5, 0.0})) &&
-              !std::get<Polytope>(t.guard()).contains(column({2.0, 0.0})),
+    check(std::get<Polytope>(t.guard()).contains(vec({0.5, 0.0})) &&
+              !std::get<Polytope>(t.guard()).contains(vec({2.0, 0.0})),
           "transition: the box as a polytope");
     // a location without B, and one with B and c
-    const Polytope inv(Tensor({{1.0, 0.0}}), column({0.0}));
+    const Polytope inv(Tensor({{1.0, 0.0}}), vec({0.0}));
     const Location loc("free", inv, {t}, LinearSys(Tensor({{0.0, 1.0}, {0.0, 0.0}})));
     check(loc.name() == "free" && loc.dim() == 2 && loc.transitions().size() == 1 &&
               loc.input_dim() == 0 && close(loc.c(), {0, 0}, 0),
@@ -57,7 +57,7 @@ void construction() {
 /// Wrong dimensions and targets are refused; with the checks off construction is the same.
 void checks_and_their_switch() {
     const LinearReset id(Tensor::eye(2));
-    const Polytope guard(Tensor({{1.0, 0.0}}), column({0.0}));
+    const Polytope guard(Tensor({{1.0, 0.0}}), vec({0.0}));
     check(test::raises([&] { Transition(guard, LinearReset(Tensor::eye(3)), 0); },
                        Error::wrong_input_in_constructor),
           "transition: the guard and the reset differ in dimension");
@@ -65,7 +65,7 @@ void checks_and_their_switch() {
           "transition: a negative target");
     // a location's invariant and c have its dimension
     const LinearSys flow(Tensor::zeros({2, 2}));
-    check(test::raises([&] { Location("a", Polytope(Tensor({{1.0}}), column({0.0})), {}, flow); },
+    check(test::raises([&] { Location("a", Polytope(Tensor({{1.0}}), vec({0.0})), {}, flow); },
                        Error::wrong_input_in_constructor),
           "location: the invariant of another dimension");
     check(test::raises([&] { Location("a", guard, {}, flow, column({1.0})); },

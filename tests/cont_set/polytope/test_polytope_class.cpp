@@ -26,38 +26,36 @@ namespace {
 /// The halfspace forms, the vertex form and the processing the constructor does.
 void constructor_forms(const std::string &b) {
     const Tensor A({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}});
-    const Polytope P(A, column({1.0, 2.0, 3.0, 4.0}));
+    const Polytope P(A, vec({1.0, 2.0, 3.0, 4.0}));
     check(P.dim() == 2 && P.is_h_rep() && !P.is_v_rep() && P.class_name() == "Polytope",
           b + ": halfspaces: dimension and form");
-    check(P.Ae().shape() == Shape{0, 2} && P.be().shape() == Shape{0, 1},
+    check(P.Ae().shape() == Shape{0, 2} && P.be().shape() == Shape{0},
           b + ": without equalities Ae has no rows");
-    const Polytope with_equality(A, column({1.0, 2.0, 3.0, 4.0}), Tensor({{1.0, 1.0}}),
-                                 column({0.5}));
+    const Polytope with_equality(A, vec({1.0, 2.0, 3.0, 4.0}), Tensor({{1.0, 1.0}}), vec({0.5}));
     check(close(with_equality.Ae(), {1, 1}, 0) && close(with_equality.be(), {0.5}, 0),
           b + ": the equalities");
     // vertices
-    const Polytope V(Tensor({{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}));
-    check(V.dim() == 2 && V.is_v_rep() && !V.is_h_rep() && V.V().shape() == Shape{2, 3},
+    const Polytope V(Tensor({{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}}));
+    check(V.dim() == 2 && V.is_v_rep() && !V.is_h_rep() && V.V().shape() == Shape{3, 2},
           b + ": vertices: form and shape");
     // in 1D only the least and the greatest vertex are kept
-    const Polytope line(Tensor({{3.0, 1.0, 2.0, 5.0}}));
+    const Polytope line(Tensor({{3.0}, {1.0}, {2.0}, {5.0}}));
     check(close(line.V(), {1, 5}, 0), b + ": 1D keeps the extremes");
-    check(close(Polytope(Tensor({{2.0, 2.0}})).V(), {2}, 0), b + ": 1D: equal extremes are one");
-    const Polytope unbounded_line(Tensor({{-std::numeric_limits<double>::infinity(), 1.0}}));
-    check(unbounded_line.V().shape() == Shape{1, 2}, b + ": 1D: vertices may be infinite");
+    check(close(Polytope(Tensor({{2.0}, {2.0}})).V(), {2}, 0), b + ": 1D: equal extremes are one");
+    const Polytope unbounded_line(Tensor({{-std::numeric_limits<double>::infinity()}, {1.0}}));
+    check(unbounded_line.V().shape() == Shape{2, 1}, b + ": 1D: vertices may be infinite");
     // a polytope of no vertices is the empty set
-    check(Polytope(Tensor::zeros({3, 0})).V().shape() == Shape{3, 0}, b + ": no vertices");
+    check(Polytope(Tensor::zeros({0, 3})).V().shape() == Shape{0, 3}, b + ": no vertices");
     // rows with an infinite offset hold everywhere and go; an offset -Inf is the empty set
     const double inf = std::numeric_limits<double>::infinity();
-    const Polytope dropped(A, column({1.0, inf, 3.0, 4.0}));
+    const Polytope dropped(A, vec({1.0, inf, 3.0, 4.0}));
     check(dropped.A().shape() == Shape{3, 2} && close(dropped.b(), {1, 3, 4}, 0),
           b + ": +Inf offsets are dropped");
-    const Polytope infeasible(A, column({1.0, -inf, 3.0, 4.0}));
-    check(infeasible.is_h_rep() && infeasible.is_v_rep() && infeasible.V().shape() == Shape{2, 0},
+    const Polytope infeasible(A, vec({1.0, -inf, 3.0, 4.0}));
+    check(infeasible.is_h_rep() && infeasible.is_v_rep() && infeasible.V().shape() == Shape{0, 2},
           b + ": a -Inf offset: the empty set without vertices");
-    check(Polytope(A, column({1.0, 2.0, 3.0, 4.0}), Tensor({{1.0, 1.0}}), column({inf}))
-                  .V()
-                  .shape() == Shape{2, 0},
+    check(Polytope(A, vec({1.0, 2.0, 3.0, 4.0}), Tensor({{1.0, 1.0}}), vec({inf})).V().shape() ==
+              Shape{0, 2},
           b + ": an infinite equality offset: the empty set");
     // a Set holds it as its class
     const Set via_set = P;
@@ -76,79 +74,77 @@ void from_interval(const std::string &b) {
     check(close(half.A(), {0, 1, -1, 0}, 0) && close(half.b(), {3, 0}, 0),
           b + ": unbounded sides give no row");
     check(Polytope(Interval::unbounded(2)).A().shape() == Shape{0, 2}, b + ": a box of R^2 is R^2");
-    check(Polytope(Interval::empty(2)).V().shape() == Shape{2, 0}, b + ": the empty box is empty");
+    check(Polytope(Interval::empty(2)).V().shape() == Shape{0, 2}, b + ": the empty box is empty");
 }
 
 /// What the accessors refuse and what the constructors refuse.
 void refusals() {
     const Tensor A({{1.0, 0.0}, {0.0, 1.0}});
-    const Polytope P(A, column({1.0, 2.0}));
+    const Polytope P(A, vec({1.0, 2.0}));
     check(test::raises([&] { P.V(); }, Error::special_error), "V: only the halfspaces are held");
-    const Polytope V(Tensor({{0.0, 1.0}, {0.0, 1.0}}));
+    const Polytope V(Tensor({{0.0, 0.0}, {1.0, 1.0}}));
     check(test::raises([&] { V.A(); }, Error::special_error), "A: only the vertices are held");
     check(test::raises([&] { V.b(); }, Error::special_error), "b: only the vertices are held");
     check(test::raises([&] { V.Ae(); }, Error::special_error), "Ae: only the vertices are held");
     check(test::raises([&] { V.be(); }, Error::special_error), "be: only the vertices are held");
-    check(test::raises([&] { Polytope(A, column({1.0})); }, Error::wrong_input_in_constructor),
+    check(test::raises([&] { Polytope(A, vec({1.0})); }, Error::wrong_input_in_constructor),
           "Polytope: the rows of A and b");
     check(
         test::raises([&] { Polytope(A, Tensor({{1.0, 2.0}})); }, Error::wrong_input_in_constructor),
         "Polytope: b is a column");
-    check(test::raises(
-              [&] { Polytope(A, column({1.0, 2.0}), Tensor({{1.0, 1.0, 1.0}}), column({0.0})); },
-              Error::wrong_input_in_constructor),
+    check(test::raises([&] { Polytope(A, vec({1.0, 2.0}), Tensor({{1.0, 1.0, 1.0}}), vec({0.0})); },
+                       Error::wrong_input_in_constructor),
           "Polytope: the columns of A and Ae");
     // inconsistent constraint rows
-    check(test::raises(
-              [&] { Polytope(A, column({1.0, 2.0}), Tensor({{1.0, 1.0}}), column({0.0, 1.0})); },
-              Error::wrong_input_in_constructor),
+    check(test::raises([&] { Polytope(A, vec({1.0, 2.0}), Tensor({{1.0, 1.0}}), vec({0.0, 1.0})); },
+                       Error::wrong_input_in_constructor),
           "Polytope: the rows of Ae and be");
-    check(test::raises([&] { Polytope(Tensor({{0.0, std::nan("")}})); },
+    check(test::raises([&] { Polytope(Tensor({{0.0}, {std::nan("")}})); },
                        Error::wrong_input_in_constructor),
           "Polytope: vertices must not be NaN");
     check(
         test::raises(
-            [&] { Polytope(Tensor({{0.0, std::numeric_limits<double>::infinity()}, {0.0, 1.0}})); },
+            [&] { Polytope(Tensor({{0.0, 0.0}, {std::numeric_limits<double>::infinity(), 1.0}})); },
             Error::wrong_input_in_constructor),
         "Polytope: vertices must be finite for n > 1");
     check(test::raises([&] { Polytope(Tensor::zeros({3})); }, Error::wrong_input_in_constructor),
           "Polytope: the vertices are a matrix");
     // with the checks off the same valid call builds the same set
-    const Polytope on(A, column({1.0, 2.0}));
+    const Polytope on(A, vec({1.0, 2.0}));
     ChecksScope off(false);
-    const Polytope same(A, column({1.0, 2.0}));
+    const Polytope same(A, vec({1.0, 2.0}));
     check(close(same.A(), on.A(), 0) && close(same.b(), on.b(), 0),
           "Polytope: the same with the checks off");
 }
 
 /// A batch of polytopes shares one batch shape.
 void batches(const std::string &b) {
-    const Tensor A = Tensor::ones({3, 2, 2}), bb = Tensor::ones({3, 2, 1});
+    const Tensor A = Tensor::ones({3, 2, 2}), bb = Tensor::ones({3, 2});
     const Polytope P(A, bb);
     check(P.dim() == 2 && P.A().shape() == Shape{3, 2, 2} && P.Ae().shape() == Shape{3, 0, 2},
           b + ": a batch of three polytopes");
-    check(test::raises([&] { Polytope(A, Tensor::ones({2, 2, 1})); },
-                       Error::wrong_input_in_constructor),
-          b + ": one batch shape");
+    check(
+        test::raises([&] { Polytope(A, Tensor::ones({2, 2})); }, Error::wrong_input_in_constructor),
+        b + ": one batch shape");
     const double inf = std::numeric_limits<double>::infinity();
-    check(test::raises([&] { Polytope(A, Tensor::ones({3, 2, 1}) * inf); }, Error::not_supported),
+    check(test::raises([&] { Polytope(A, Tensor::ones({3, 2}) * inf); }, Error::not_supported),
           b + ": an infinite offset in a batch is refused");
-    const Polytope V(Tensor::ones({4, 2, 3}));
-    check(V.V().shape() == Shape{4, 2, 3}, b + ": a batch of vertex polytopes");
+    const Polytope V(Tensor::ones({4, 3, 2}));
+    check(V.V().shape() == Shape{4, 3, 2}, b + ": a batch of vertex polytopes");
 }
 
 /// The equalities alone: no inequality rows, the batch kept, an infinite offset refused.
 void equalities(const std::string &b) {
-    const Polytope line = Polytope::equalities(Tensor({{1.0, 1.0}}), column({1.0}));
+    const Polytope line = Polytope::equalities(Tensor({{1.0, 1.0}}), vec({1.0}));
     check(line.A().shape() == Shape{0, 2} && line.Ae().shape() == Shape{1, 2} &&
-              line.contains(column({0.25, 0.75})) && !line.contains(column({0.0, 0.0})),
+              line.contains(vec({0.25, 0.75})) && !line.contains(vec({0.0, 0.0})),
           b + ": the line x1 + x2 = 1");
-    const Polytope all = Polytope::equalities(Tensor::zeros({0, 3}), Tensor::zeros({0, 1}));
+    const Polytope all = Polytope::equalities(Tensor::zeros({0, 3}), Tensor::zeros({0}));
     check(all.dim() == 3 && all.A().shape() == Shape{0, 3}, b + ": no rows is R^3");
-    const Polytope batch = Polytope::equalities(Tensor::ones({2, 1, 2}), Tensor::ones({2, 1, 1}));
+    const Polytope batch = Polytope::equalities(Tensor::ones({2, 1, 2}), Tensor::ones({2, 1}));
     check(batch.A().shape() == Shape{2, 0, 2}, b + ": a batch keeps its batch shape");
     const double inf = std::numeric_limits<double>::infinity();
-    check(test::raises([&] { Polytope::equalities(Tensor({{1.0, 0.0}}), column({inf})); },
+    check(test::raises([&] { Polytope::equalities(Tensor({{1.0, 0.0}}), vec({inf})); },
                        Error::wrong_input_in_constructor),
           b + ": an infinite offset is refused");
 }
@@ -170,7 +166,7 @@ void the_forms_agree(const std::string &b) {
         for (int k = 0; k < 30; ++k) {
             std::vector<double> p(static_cast<std::size_t>(n));
             rng.uniform(p.data(), p.size(), -1.2, 1.2);
-            const Tensor probe = column(p);
+            const Tensor probe = vec(p);
             check(V.contains(probe) == H.contains(probe), b + ": a probe in both forms or none");
         }
     }

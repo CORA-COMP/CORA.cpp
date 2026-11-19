@@ -10,7 +10,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -226,7 +226,7 @@ inline Specification read_spec(const Json &spec) {
         for (const Json &x : spec["A"][k].array) rows.push_back(x.number);
         offsets.push_back(spec["b"][k].number);
     }
-    const Polytope P(Tensor::from_data(rows, {m, n}), Tensor::from_data(offsets, {m, 1}));
+    const Polytope P(Tensor::from_data(rows, {m, n}), Tensor::from_data(offsets, {m}));
     if (spec["type"].string == "safeSet") return Specification::safe_set(P);
     if (spec["type"].string != "unsafeSet")
         throw std::runtime_error("benchmark data: unknown specification type " +

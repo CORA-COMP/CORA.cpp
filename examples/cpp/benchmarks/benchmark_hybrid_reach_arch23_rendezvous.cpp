@@ -45,7 +45,7 @@ Specification aux_box_spec(const Tensor &C, const Tensor &d) {
 
 /// The safe set {x | C x <= d}, a polytope.
 Specification aux_safe(const Tensor &C, const std::vector<double> &d) {
-    return Specification::safe_set(Polytope(C, column(d)));
+    return Specification::safe_set(Polytope(C, vec(d)));
 }
 
 /// CORA's aux_checkSpaceStationHit: the projection onto (x, y) must miss the box [-0.1, 0.1]^2,

@@ -6,9 +6,9 @@
 //           outputs of a result
 // See also: cont_set/zonotope/zonotope_gradients.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -32,10 +32,10 @@ inline cora::Polytope halfspaces(const Inputs &x, std::size_t first = 0) {
     return {x[first], x[first + 1]};
 }
 
-/// A (m, n) with entries away from zero and b (m, 1).
+/// A (m, n) with entries away from zero and b (m).
 inline std::vector<torch::Tensor> random_halfspaces(int64_t m, int64_t n) {
     const torch::Tensor A = torch::randn({m, n}, torch::kDouble);
-    return {A + A.sign() * 0.3, torch::rand({m, 1}, torch::kDouble) + 0.5};
+    return {A + A.sign() * 0.3, torch::rand({m}, torch::kDouble) + 0.5};
 }
 
 } // namespace test

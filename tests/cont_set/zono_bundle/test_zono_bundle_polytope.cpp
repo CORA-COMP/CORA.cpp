@@ -3,9 +3,9 @@
 // CORA: contSet/@zonoBundle/polytope.m
 // PROPERTY: contSet/@zonoBundle/polytope.m
 // CORA authors: Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -14,6 +14,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,11 +26,10 @@ namespace {
 /// member are out.
 void polytope_known(const std::string &b) {
     const Polytope P = test::two_zonotopes().polytope();
-    check(P.contains(column({0.0, 0.0})) && P.contains(column({2.0, 0.0})) &&
-              P.contains(column({1.0, 1.0})),
+    check(P.contains(vec({0.0, 0.0})) && P.contains(vec({2.0, 0.0})) && P.contains(vec({1.0, 1.0})),
           b + ": points of both members");
-    check(!P.contains(column({2.5, 0.0})) && !P.contains(column({-1.5, 0.0})) &&
-              !P.contains(column({0.0, 1.5})),
+    check(!P.contains(vec({2.5, 0.0})) && !P.contains(vec({-1.5, 0.0})) &&
+              !P.contains(vec({0.0, 1.5})),
           b + ": points outside a member");
 }
 
@@ -38,7 +38,8 @@ void polytope_property(const std::string &b) {
     Rng rng(67);
     Tensor common;
     const ZonoBundle zono_bundle = test::random_zono_bundle(rng, 3, 2, 4, &common);
-    check(zono_bundle.polytope().contains(test::bundle_points(zono_bundle, rng, 12, common)),
+    check(zono_bundle.polytope().contains(
+              test::bundle_points(zono_bundle, rng, 12, common).matrix_transpose()),
           b + ": the points are inside");
 }
 

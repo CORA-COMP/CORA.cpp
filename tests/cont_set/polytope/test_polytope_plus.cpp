@@ -30,24 +30,23 @@ namespace {
 void sums(const std::string &b) {
     const Polytope sq = test::square_h();
     // a point shifts the offsets, in both forms
-    check(close(sq.plus(column({1.0, 2.0})).b(), {2.0, 3.0, -1.0, -2.0}),
-          b + ": halfspaces + point");
-    check(close(test::square_v().plus(column({1.0, 2.0})).V(),
-                {1.0, 2.0, 2.0, 1.0, 2.0, 2.0, 3.0, 3.0}),
-          b + ": vertices + point");
+    check(close(sq.plus(vec({1.0, 2.0})).b(), {2.0, 3.0, -1.0, -2.0}), b + ": halfspaces + point");
+    check(
+        close(test::square_v().plus(vec({1.0, 2.0})).V(), {1.0, 2.0, 2.0, 2.0, 2.0, 3.0, 1.0, 3.0}),
+        b + ": vertices + point");
     // two squares: [0, 2]^2 by their halfspaces
     const Polytope two = sq.plus(sq);
-    check(two.contains(column({2.0, 2.0})) && two.contains(column({0.0, 0.0})) &&
-              !two.contains(column({2.1, 1.0})) && close(test::support(two, {1.0, 1.0}), 4.0, 1e-8),
+    check(two.contains(vec({2.0, 2.0})) && two.contains(vec({0.0, 0.0})) &&
+              !two.contains(vec({2.1, 1.0})) && close(test::support(two, {1.0, 1.0}), 4.0, 1e-8),
           b + ": H + H: the square plus the square");
     // vertices: all pairs, the second varying slowest
-    const Polytope V = test::square_v().plus(Polytope(Tensor({{10.0, 20.0}, {0.0, 0.0}})));
-    check(V.V().shape() == Shape{2, 8} && close(V.V().slice(-1, 0, 1), {10.0, 0.0}),
+    const Polytope V = test::square_v().plus(Polytope(Tensor({{10.0, 0.0}, {20.0, 0.0}})));
+    check(V.V().shape() == Shape{8, 2} && close(V.V().slice(-2, 0, 1), {10.0, 0.0}),
           b + ": V + V: all pairs, the second set varying slowest");
     // a box and a mixed pair
-    check(sq.plus(Interval(vec({1.0, 1.0}), vec({2.0, 2.0}))).contains(column({3.0, 3.0})),
+    check(sq.plus(Interval(vec({1.0, 1.0}), vec({2.0, 2.0}))).contains(vec({3.0, 3.0})),
           b + ": + box");
-    check(test::square_v().plus(sq).contains(column({2.0, 2.0})), b + ": V + H");
+    check(test::square_v().plus(sq).contains(vec({2.0, 2.0})), b + ": V + H");
 }
 
 /// The special sets: R^n absorbs, the empty set annihilates, the origin is neutral.
@@ -94,7 +93,7 @@ int main() {
                        Error::dimension_mismatch),
           "plus: the point has the dimension");
     ChecksScope off(false);
-    check(close(test::square_h().plus(column({1.0, 1.0})).b(), {2.0, 2.0, -1.0, -1.0}),
+    check(close(test::square_h().plus(vec({1.0, 1.0})).b(), {2.0, 2.0, -1.0, -1.0}),
           "plus: the same with the checks off");
     return test::finish("polytope plus");
 }

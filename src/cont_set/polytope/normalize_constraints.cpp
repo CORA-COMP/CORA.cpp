@@ -13,9 +13,9 @@
 // CORA: contSet/@polytope/normalizeConstraints.m
 // CORA: contSet/@polytope/private/priv_normalizeConstraints.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -28,9 +28,10 @@ namespace cora {
 
 namespace {
 
-/// The rows A (..., m, n) divided by the factor (..., m, 1), and the offsets b by the same.
+/// The rows A (..., m, n) divided by the factor (..., m, 1), and the offsets b (..., m) by the
+/// same.
 std::pair<Tensor, Tensor> aux_scale(const Tensor &A, const Tensor &b, const Tensor &factor) {
-    return {A.divide(factor), b.divide(factor)};
+    return {A.divide(factor), b.divide(factor.squeeze(-1))};
 }
 
 /// The rows scaled by the magnitude of the offset: b = +-1 (CORA scales an equality by its signed
@@ -43,7 +44,7 @@ std::pair<Tensor, Tensor> aux_by_offset(const Tensor &A, const Tensor &b, bool e
     const Tensor sign = equality
                             ? b.ones_like()
                             : Tensor::where(b.greater(zero), b.ones_like(), b.ones_like() * -1.0);
-    return {A.divide(factor), Tensor::where(nonzero, sign, b)};
+    return {A.divide(factor.expand_dims(-1)), Tensor::where(nonzero, sign, b)};
 }
 
 /// The rows scaled to unit length, rows of length 0 (up to eps) unchanged.
@@ -67,6 +68,7 @@ Polytope Polytope::normalize_constraints(const std::string &type) const {
         return "normalize_constraints: the type must be b, be, A or Ae, got '" + type + "'";
     });
     Parts parts;
+    parts.empty = empty_;
     parts.V = V_;
     if (type == "b" || type == "be") {
         std::tie(parts.A, parts.b) = aux_by_offset(A_, b_, false);

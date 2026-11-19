@@ -27,35 +27,34 @@ namespace {
 
 /// Halfspaces: the block diagonal; vertices: all pairs; mixed forms; boxes; points.
 void products(const std::string &b) {
-    const Polytope H1(Tensor({{1.0}, {-1.0}}), column({1.0, 0.0}));
-    const Polytope H2(Tensor({{1.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}), column({1.0, 0.0, 0.0}));
+    const Polytope H1(Tensor({{1.0}, {-1.0}}), vec({1.0, 0.0}));
+    const Polytope H2(Tensor({{1.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}), vec({1.0, 0.0, 0.0}));
     const Polytope P = H1.cart_prod(H2);
     check(P.dim() == 3 && close(P.A(), {1, 0, 0, -1, 0, 0, 0, 1, 1, 0, -1, 0, 0, 0, -1}, 0),
           b + ": block diagonal rows");
     check(close(P.b(), {1, 0, 1, 0, 0}, 0), b + ": stacked offsets");
-    check(P.contains(column({0.5, 0.2, 0.2})) && !P.contains(column({1.5, 0.2, 0.2})) &&
-              !P.contains(column({0.5, 0.8, 0.8})),
+    check(P.contains(vec({0.5, 0.2, 0.2})) && !P.contains(vec({1.5, 0.2, 0.2})) &&
+              !P.contains(vec({0.5, 0.8, 0.8})),
           b + ": the points");
-    const Polytope V1(Tensor({{0.0, 1.0}})), V2(Tensor({{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}));
+    const Polytope V1(Tensor({{0.0}, {1.0}})), V2(Tensor({{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}}));
     const Polytope Q = V1.cart_prod(V2);
-    check(Q.is_v_rep() && Q.V().shape() == Shape{3, 6}, b + ": vertices: all pairs");
-    check(close(Q.V().take({0}, -1), {0, 0, 0}, 0) && close(Q.V().take({5}, -1), {1, 0, 1}, 0),
+    check(Q.is_v_rep() && Q.V().shape() == Shape{6, 3}, b + ": vertices: all pairs");
+    check(close(Q.V().take({0}, -2), {0, 0, 0}, 0) && close(Q.V().take({5}, -2), {1, 0, 1}, 0),
           b + ": vertices: the order, second varies fastest");
-    check(H1.cart_prod(V2).contains(column({0.5, 0.2, 0.2})), b + ": mixed forms");
-    check(Polytope(Tensor::zeros({2, 0})).cart_prod(V2).V().shape() == Shape{4, 0},
+    check(H1.cart_prod(V2).contains(vec({0.5, 0.2, 0.2})), b + ": mixed forms");
+    check(Polytope(Tensor::zeros({0, 2})).cart_prod(V2).V().shape() == Shape{0, 4},
           b + ": an empty vertex set");
     const Polytope boxed = H1.cart_prod(Interval(vec({0.0, 0.0}), vec({1.0, 2.0})));
     // the product with a box
-    check(boxed.dim() == 3 && boxed.contains(column({0.5, 0.5, 1.5})) &&
-              !boxed.contains(column({0.5, 1.5, 1.5})),
+    check(boxed.dim() == 3 && boxed.contains(vec({0.5, 0.5, 1.5})) &&
+              !boxed.contains(vec({0.5, 1.5, 1.5})),
           b + ": with a box");
-    const Polytope pt = H1.cart_prod(column({3.0, 4.0}));
-    check(pt.dim() == 3 && pt.contains(column({0.5, 3.0, 4.0})) &&
-              !pt.contains(column({0.5, 3.0, 5.0})),
+    const Polytope pt = H1.cart_prod(vec({3.0, 4.0}));
+    check(pt.dim() == 3 && pt.contains(vec({0.5, 3.0, 4.0})) && !pt.contains(vec({0.5, 3.0, 5.0})),
           b + ": with a point");
-    const Polytope front = Polytope::cart_prod(column({3.0}), H2);
-    check(front.dim() == 3 && front.contains(column({3.0, 0.5, 0.2})) &&
-              !front.contains(column({2.0, 0.5, 0.2})),
+    const Polytope front = Polytope::cart_prod(vec({3.0}), H2);
+    check(front.dim() == 3 && front.contains(vec({3.0, 0.5, 0.2})) &&
+              !front.contains(vec({2.0, 0.5, 0.2})),
           b + ": a point first");
     check(Polytope::inf(1).cart_prod(H1).dim() == 2 && Polytope::empty(1).cart_prod(H1).dim() == 2,
           b + ": R^n and the empty set");
@@ -63,23 +62,23 @@ void products(const std::string &b) {
 
 /// Batches multiply member by member.
 void batches(const std::string &b) {
-    const Polytope A(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2, 1}));
+    const Polytope A(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2}));
     const Polytope P = A.cart_prod(A);
     check(P.A().shape() == Shape{3, 4, 4}, b + ": a batch of three");
-    const Polytope V(Tensor::ones({3, 2, 4}));
-    check(V.cart_prod(V).V().shape() == Shape{3, 4, 16}, b + ": a batch of vertices");
+    const Polytope V(Tensor::ones({3, 4, 2}));
+    check(V.cart_prod(V).V().shape() == Shape{3, 16, 4}, b + ": a batch of vertices");
 }
 
 /// What is refused; checks off.
 void refusals() {
-    const Polytope A(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2, 1}));
-    const Polytope S(Tensor::ones({1, 2}), Tensor::ones({1, 1}));
+    const Polytope A(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2}));
+    const Polytope S(Tensor::ones({1, 2}), Tensor::ones({1}));
     check(test::raises([&] { A.cart_prod(S); }, Error::dimension_mismatch),
           "cart_prod: batch shapes");
     check(test::raises([&] { S.cart_prod(Tensor::ones({2, 3})); }, Error::not_supported),
           "cart_prod: only single points");
-    check(test::raises([&] { S.cart_prod(Tensor::zeros({2})); }, Error::dimension_mismatch),
-          "cart_prod: the point is a column");
+    check(test::raises([&] { S.cart_prod(Tensor()); }, Error::dimension_mismatch),
+          "cart_prod: the point is a vector");
     ChecksScope off(false);
     check(S.cart_prod(S).dim() == 4, "cart_prod: the same with the checks off");
 }
@@ -93,7 +92,7 @@ void properties(const std::string &b) {
     for (int k = 0; k < 60; ++k) {
         std::vector<double> x(5);
         rng.uniform(x.data(), x.size(), -3.5, 3.5);
-        const Tensor p = column(x);
+        const Tensor p = vec(x);
         same = same && product.contains(p) ==
                            (P1.contains(p.take({0, 1}, 0)) && P2.contains(p.take({2, 3, 4}, 0)));
     }

@@ -11,7 +11,7 @@
 // certificate and scaling outputs are not returned. Not a batch.
 //
 // Syntax:   res = P.contains(p);   res = P.contains(S, "exact", tol);
-// Inputs:   p - points (n, N)
+// Inputs:   p - points (..., n), one per row
 //           S - a set of the dimension of P: a box, a zonotope, a polytope, ...
 //           method - "exact" (default), "exact:venum" or "exact:polymax"
 //           tol - see the description; default: the repository tolerance
@@ -53,17 +53,19 @@ detail::Refusal aux_method_refusal(const std::string &method) {
 /// Whether every entry of a 0/1 mask is 1 (true for none).
 bool aux_all(const Tensor &mask) { return mask.numel() == 0 || mask.min().item() == 1.0; }
 
-/// Whether the points (n, N) satisfy the halfspaces up to tol: the offsets of the rows are at
-/// most tol, those of the equalities at most tol in magnitude.
-bool aux_points_in_halfspaces(const Polytope::Constraints &C, const Tensor &p, double tol) {
+/// Whether the points (N, n), one per row, satisfy the halfspaces up to tol: the offsets of the
+/// rows are at most tol, those of the equalities at most tol in magnitude (A x on CORA's columns).
+bool aux_points_in_halfspaces(const Polytope::Constraints &C, const Tensor &points, double tol) {
+    const Tensor p = points.matrix_transpose();
     if (C.b.numel() > 0 &&
-        !aux_all((C.A.matmul(p) - C.b).scalar_op(Tensor::Binary::less_equal, tol)))
+        !aux_all((C.A.matmul(p) - C.b.expand_dims(-1)).scalar_op(Tensor::Binary::less_equal, tol)))
         return false;
-    return C.be.numel() == 0 ||
-           aux_all((C.Ae.matmul(p) - C.be).abs().scalar_op(Tensor::Binary::less_equal, tol));
+    return C.be.numel() == 0 || aux_all((C.Ae.matmul(p) - C.be.expand_dims(-1))
+                                            .abs()
+                                            .scalar_op(Tensor::Binary::less_equal, tol));
 }
 
-/// Whether the points (n, N) are in the convex hull of the vertices of a single polytope.
+/// Whether the points (N, n) are in the convex hull of the vertices of a single polytope.
 bool aux_points_in_vertices(const Rows &vertices, int64_t n, const Tensor &p, double tol) {
     const Rows points = priv_host_points(p);
     for (const Row &x : points) {
@@ -78,7 +80,7 @@ bool aux_points_in_vertices(const Rows &vertices, int64_t n, const Tensor &p, do
     return true;
 }
 
-/// Whether the points (n, N) are in P by the routes of CORA's point cloud: the halfspaces if P has
+/// Whether the points (N, n) are in P by the routes of CORA's point cloud: the halfspaces if P has
 /// them, else the vertices.
 bool aux_points_in_polytope(const Polytope &P, const Tensor &p, double tol) {
     if (P.is_h_rep()) return aux_points_in_halfspaces({P.A(), P.b(), P.Ae(), P.be()}, p, tol);
@@ -97,7 +99,7 @@ double aux_support(const ContSet &S, const Tensor &like, const Row &direction) {
         const Polytope &Q = static_cast<const Polytope &>(S);
         return priv_support(priv_host_h(Q.constraints()), direction, true).value;
     }
-    const Tensor value = S.support_function(priv_column_tensor(like, direction));
+    const Tensor value = S.support_function(priv_vector_tensor(like, direction).expand_dims(-1));
     if (value.numel() != 1)
         CORA_FAIL(Error::not_supported, "contains: the set must be a single set, not a batch");
     return value.item();
@@ -143,15 +145,15 @@ bool Polytope::contains(const Tensor &p, const std::string &method, Tol tol_arg)
     const double tol = resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "contains");
     const detail::Refusal refusal = aux_method_refusal(method);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    CORA_CHECK(p.defined() && p.ndim() == 2 && p.shape()[0] == dim(), Error::dimension_mismatch,
-               [&] {
-                   return "contains: the points must be a matrix (" + std::to_string(dim()) +
-                          ", N) of columns, got the shape " + shape_text(p.shape());
-               });
+    CORA_CHECK(p.defined() && is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "contains: the points must be (..., " + std::to_string(dim()) +
+               "), one per row, got the shape " + (p.defined() ? shape_text(p.shape()) : "()");
+    });
     if (priv_is_fullspace(*this)) return true;
     if (is_h_rep() && A_.ndim() != 2)
         CORA_FAIL(Error::not_supported, "contains: a single polytope is supported, not a batch");
-    return aux_points_in_polytope(*this, p, tol);
+    if (p.numel() == 0) return true;
+    return aux_points_in_polytope(*this, p.reshape({p.numel() / dim(), dim()}), tol);
 }
 
 // Sets --------------------------------------------------------------------------------------------
@@ -180,9 +182,7 @@ bool Polytope::contains(const ContSet &S, const std::string &method, Tol tol_arg
     // in 1D a set is its two bounds
     if (dim() == 1) {
         const Interval hull = S.interval();
-        return contains(
-            Tensor::concat({hull.inf().expand_dims(-1), hull.sup().expand_dims(-1)}, -1), "exact",
-            tol);
+        return contains(Tensor::stack({hull.inf(), hull.sup()}, 0), "exact", tol);
     }
     // 'exact' goes by the form P has, 'exact:venum' by its vertices, 'exact:polymax' by its rows
     const Polytope *vertex_set = aux_vertex_polytope(S);

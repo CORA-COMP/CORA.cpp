@@ -116,16 +116,16 @@ inline HybridAutomaton automaton(const std::string &name, const Variant &v) {
     const std::vector<double> region_b = {100, 141.1, 100, 141.1, 100, 141.1, 100, 141.1};
     // SRNA01: no clock, no aborts
     if (!v.timed) {
-        Location approach("S1", Polytope(matrix(1, 5, {1, 0, 0, 0, 0}), column({-100})),
+        Location approach("S1", Polytope(matrix(1, 5, {1, 0, 0, 0, 0}), vec({-100})),
                           {Transition(docking_guard, id, 1)}, LinearSys(A1, B), c);
-        Location docking("S2", Polytope(matrix(8, 5, region), column(region_b)), {},
-                         LinearSys(A2, B), c);
+        Location docking("S2", Polytope(matrix(8, 5, region), vec(region_b)), {}, LinearSys(A2, B),
+                         c);
         return HybridAutomaton("rendezvous_" + name, {approach, docking});
     }
     // approach: t <= t_u and x <= -100, in the order of the model file
     const Polytope inv1 =
-        v.x_first ? Polytope(matrix(2, 5, {1, 0, 0, 0, 0, 0, 0, 0, 0, 1}), column({-100, v.t_u}))
-                  : Polytope(matrix(2, 5, {0, 0, 0, 0, 1, 1, 0, 0, 0, 0}), column({v.t_u, -100}));
+        v.x_first ? Polytope(matrix(2, 5, {1, 0, 0, 0, 0, 0, 0, 0, 0, 1}), vec({-100, v.t_u}))
+                  : Polytope(matrix(2, 5, {0, 0, 0, 0, 1, 1, 0, 0, 0, 0}), vec({v.t_u, -100}));
     std::vector<Transition> from_approach{Transition(docking_guard, id, 1)};
     for (Transition &t : aborts(v, v.approach_aborts, id)) from_approach.push_back(t);
     std::vector<double> rows2 = {0, 0, 0, 0, 1};
@@ -133,9 +133,9 @@ inline HybridAutomaton automaton(const std::string &name, const Variant &v) {
     std::vector<double> b2 = {v.t_u};
     b2.insert(b2.end(), region_b.begin(), region_b.end());
     Location approach("S1", inv1, from_approach, LinearSys(A1, B), c);
-    Location docking("S2", Polytope(matrix(9, 5, rows2), column(b2)),
-                     aborts(v, v.docking_aborts, id), LinearSys(A2, B), c);
-    Location passive("S3", Polytope(matrix(1, 5, {0, 0, 0, 0, -1}), column({v.passive_b})), {},
+    Location docking("S2", Polytope(matrix(9, 5, rows2), vec(b2)), aborts(v, v.docking_aborts, id),
+                     LinearSys(A2, B), c);
+    Location passive("S3", Polytope(matrix(1, 5, {0, 0, 0, 0, -1}), vec({v.passive_b})), {},
                      LinearSys(A3, B), c);
     return HybridAutomaton("rendezvous_" + name, {approach, docking, passive});
 }

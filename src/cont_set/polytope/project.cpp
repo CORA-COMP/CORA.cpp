@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@polytope/project.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -43,7 +43,7 @@ Polytope Polytope::project(const std::vector<int64_t> &dims) const {
     std::vector<int64_t> all(static_cast<std::size_t>(dim()));
     std::iota(all.begin(), all.end(), int64_t{0});
     if (dims == all) return *this;
-    if (is_v_rep()) return Polytope(V_.take(dims, -2));
+    if (is_v_rep()) return Polytope(V_.take(dims, -1));
     std::vector<int64_t> sorted = dims;
     std::sort(sorted.begin(), sorted.end());
     CORA_CHECK(std::adjacent_find(sorted.begin(), sorted.end()) == sorted.end(),

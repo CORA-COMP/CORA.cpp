@@ -32,13 +32,12 @@ void differences(const std::string &b) {
     const Set diff = test::square_h().minkowski_difference(box);
     check(diff->class_name() == "Polytope", b + ": the result is a polytope");
     const Polytope &D = diff.as<Polytope>();
-    check(D.contains(column({0.25, 0.25})) && D.contains(column({0.75, 0.75})) &&
-              !D.contains(column({0.2, 0.5})) && !D.contains(column({0.8, 0.5})),
+    check(D.contains(vec({0.25, 0.25})) && D.contains(vec({0.75, 0.75})) &&
+              !D.contains(vec({0.2, 0.5})) && !D.contains(vec({0.8, 0.5})),
           b + ": the square minus a box: [0.25, 0.75]^2");
     // a point shifts
-    check(
-        close(test::square_h().minkowski_difference(column({0.5, 0.5})).b(), {0.5, 0.5, 0.5, 0.5}),
-        b + ": a point");
+    check(close(test::square_h().minkowski_difference(vec({0.5, 0.5})).b(), {0.5, 0.5, 0.5, 0.5}),
+          b + ": a point");
     // too large: empty
     const Interval large(vec({-1.0, -1.0}), vec({1.0, 1.0}));
     check(test::square_h().minkowski_difference(large).as<Polytope>().representsa("emptySet"),
@@ -46,10 +45,10 @@ void differences(const std::string &b) {
     // the other type, with the vertices of a polytope and the generators of a zonotope
     const Set by_vertices =
         test::square_h().minkowski_difference(box, std::string("exact:vertices"));
-    check(by_vertices.as<Polytope>().contains(column({0.5, 0.5})) &&
-              !by_vertices.as<Polytope>().contains(column({0.9, 0.5})),
+    check(by_vertices.as<Polytope>().contains(vec({0.5, 0.5})) &&
+              !by_vertices.as<Polytope>().contains(vec({0.9, 0.5})),
           b + ": exact:vertices with a box");
-    const Polytope small(Tensor({{-0.25, 0.25, 0.25, -0.25}, {-0.25, -0.25, 0.25, 0.25}}));
+    const Polytope small(Tensor({{-0.25, -0.25}, {0.25, -0.25}, {0.25, 0.25}, {-0.25, 0.25}}));
     const Set by_polytope =
         test::square_h().minkowski_difference(small, std::string("exact:vertices"));
     check(by_polytope.as<Polytope>().isequal(D),
@@ -92,7 +91,7 @@ int main() {
                        Error::dimension_mismatch),
           "minkowski_difference: dimensions");
     ChecksScope off(false);
-    check(test::square_h().minkowski_difference(column({0.5, 0.5})).dim() == 2,
+    check(test::square_h().minkowski_difference(vec({0.5, 0.5})).dim() == 2,
           "minkowski_difference: the same with the checks off");
     return test::finish("polytope minkowski_difference");
 }

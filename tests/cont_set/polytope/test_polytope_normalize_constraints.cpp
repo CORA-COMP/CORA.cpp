@@ -7,9 +7,9 @@
 // Property: the set is unchanged, and the offsets are +-1 (or the rows unit)
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,8 +28,8 @@ namespace {
 
 /// The two normalizations on hand-computed rows.
 void scalings(const std::string &b) {
-    const Polytope P(Tensor({{2.0, 0.0}, {0.0, -4.0}, {3.0, 4.0}}), column({4.0, -2.0, 0.0}),
-                     Tensor({{0.0, 2.0}}), column({-6.0}));
+    const Polytope P(Tensor({{2.0, 0.0}, {0.0, -4.0}, {3.0, 4.0}}), vec({4.0, -2.0, 0.0}),
+                     Tensor({{0.0, 2.0}}), vec({-6.0}));
     const Polytope by_offset = P.normalize_constraints();
     check(close(by_offset.A(), {0.5, 0.0, 0.0, -2.0, 3.0, 4.0}) &&
               close(by_offset.b(), {1.0, -1.0, 0.0}),
@@ -54,7 +55,7 @@ void properties(const std::string &b) {
     for (const char *type : {"b", "A"}) {
         const Polytope N = P.normalize_constraints(type);
         for (int k = 0; k < 30; ++k) {
-            const Tensor x = column(test::random_direction(rng, 3));
+            const Tensor x = vec(test::random_direction(rng, 3));
             same = same && N.contains(x) == P.contains(x);
         }
     }

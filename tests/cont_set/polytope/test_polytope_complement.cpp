@@ -6,9 +6,9 @@
 // Property: no point is in a halfspace and in its complement
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,7 +27,7 @@ namespace {
 
 /// A halfspace, the empty set and the whole space.
 void complements(const std::string &b) {
-    const Polytope halfspace(Tensor({{1.0, 2.0}}), column({3.0}));
+    const Polytope halfspace(Tensor({{1.0, 2.0}}), vec({3.0}));
     const Polytope other = halfspace.complement();
     const double eps = machine_eps(DType::float64);
     check(close(other.A(), {-1.0, -2.0}, 0) && close(other.b(), {-3.0 - eps}, 0),
@@ -41,9 +42,9 @@ void properties(const std::string &b) {
     bool disjoint = true;
     for (int k = 0; k < 30; ++k) {
         std::vector<double> a = test::random_direction(rng, 3);
-        const Polytope halfspace(Tensor::from_data(a, {1, 3}), column({0.5}));
+        const Polytope halfspace(Tensor::from_data(a, {1, 3}), vec({0.5}));
         const Polytope other = halfspace.complement();
-        const Tensor x = column(test::random_direction(rng, 3));
+        const Tensor x = vec(test::random_direction(rng, 3));
         disjoint = disjoint && !(halfspace.contains(x) && other.contains(x));
     }
     check(disjoint, b + ": no point is in both");

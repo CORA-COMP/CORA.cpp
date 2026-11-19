@@ -43,7 +43,7 @@ void containments(const std::string &b) {
               !test::square_h().less_equal(EmptySet(2)) &&
               Polytope::empty(2).less_equal(EmptySet(2)),
           b + ": R^n and the empty set");
-    check(!Polytope(Tensor({{1.0, 0.0}}), column({1.0}))
+    check(!Polytope(Tensor({{1.0, 0.0}}), vec({1.0}))
                .less_equal(Interval(vec({-9.0, -9.0}), vec({9.0, 9.0}))),
           b + ": an unbounded set");
 }
@@ -55,8 +55,8 @@ void properties(const std::string &b) {
     for (int k = 0; k < 6; ++k) {
         const Polytope P1(test::sphere_points(rng, 2, 5)), P2 = test::random_polytope(rng, 2, 3);
         bool vertices = true;
-        for (int64_t c = 0; c < P1.V().shape()[1]; ++c)
-            vertices = vertices && P2.contains(P1.V().slice(-1, c, c + 1), "exact", 1e-9);
+        for (int64_t c = 0; c < P1.V().size(-2); ++c)
+            vertices = vertices && P2.contains(P1.V().slice(-2, c, c + 1), "exact", 1e-9);
         same = same && P1.less_equal(P2, 1e-9) == vertices;
     }
     check(same, b + ": P <= S exactly if the vertices of P are in S");

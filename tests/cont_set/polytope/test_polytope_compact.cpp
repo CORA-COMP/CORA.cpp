@@ -14,9 +14,9 @@
 // Property: the compacted set is the same set (same points inside) with fewer rows
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -25,6 +25,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -39,34 +40,33 @@ int64_t rows(const Polytope &P) { return P.A().shape()[0] + P.Ae().shape()[0]; }
 Polytope redundant() {
     return Polytope(
         Tensor({{1.0, 0.0}, {2.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}, {1.0, 1.0}}),
-        column({1.0, 4.0, 1.0, 0.0, 0.0, 5.0}));
+        vec({1.0, 4.0, 1.0, 0.0, 0.0, 5.0}));
 }
 
 /// Every method of the halfspaces.
 void methods(const std::string &b) {
     const Polytope P = redundant();
-    const Tensor inside = Tensor({{0.5, 0.0, 1.0, 0.2}, {0.5, 1.0, 0.0, 0.9}});
+    const Tensor inside = Tensor({{0.5, 0.5}, {0.0, 1.0}, {1.0, 0.0}, {0.2, 0.9}});
     for (const char *method : {"all", "A", "aligned", "zeros", "AtoAe"}) {
         const Polytope C = P.compact(method);
         check(test::inside_halfspaces(inside, C.constraints()),
               b + ": " + method + ": same points");
-        check(!C.contains(column({1.5, 0.5})) && !C.contains(column({0.5, -0.5})),
+        check(!C.contains(vec({1.5, 0.5})) && !C.contains(vec({0.5, -0.5})),
               b + ": " + method + ": same outside");
     }
     check(rows(P.compact("all")) == 4, b + ": all: the 4 facets of the square");
     check(rows(P.compact("A")) == 4, b + ": A: the 4 facets");
     check(rows(P.compact("aligned")) == 5, b + ": aligned: the doubled row goes");
     // a zero row 0 <= b holds everywhere and goes
-    const Polytope zero(Tensor({{0.0, 0.0}, {1.0, 0.0}}), column({1.0, 1.0}));
+    const Polytope zero(Tensor({{0.0, 0.0}, {1.0, 0.0}}), vec({1.0, 1.0}));
     check(rows(zero.compact("zeros")) == 1, b + ": zeros: the row 0 <= 1 goes");
     check(zero.compact("zeros").compact("zeros").A().shape()[0] == 1, b + ": zeros: idempotent");
-    check(Polytope(Tensor({{0.0, 0.0}}), column({-1.0}))
-                  .compact("zeros")
-                  .contains(column({0.0, 0.0})) == false,
+    check(Polytope(Tensor({{0.0, 0.0}}), vec({-1.0})).compact("zeros").contains(vec({0.0, 0.0})) ==
+              false,
           b + ": zeros: 0 <= -1 is the empty set");
     // two opposite rows pin a coordinate: an equality
     const Polytope pinned(Tensor({{1.0, 0.0}, {-1.0, 0.0}, {0.0, 1.0}, {0.0, -1.0}}),
-                          column({1.0, -1.0, 2.0, 0.0}));
+                          vec({1.0, -1.0, 2.0, 0.0}));
     const Polytope pin = pinned.compact("AtoAe");
     check(pin.Ae().shape()[0] == 1 && pin.A().shape()[0] == 2, b + ": AtoAe: x = 1 is an equality");
     check(close(pin.be(), {1}, 1e-9), b + ": AtoAe: its offset");
@@ -74,46 +74,46 @@ void methods(const std::string &b) {
 
 /// Equalities: aligned ones merge, contradicting ones are the empty set.
 void equalities(const std::string &b) {
-    const Polytope twice(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}),
-                         Tensor({{1.0, 1.0}, {2.0, 2.0}}), column({1.0, 2.0}));
+    const Polytope twice(Tensor::zeros({0, 2}), Tensor::zeros({0}),
+                         Tensor({{1.0, 1.0}, {2.0, 2.0}}), vec({1.0, 2.0}));
     check(rows(twice.compact("Ae")) == 1, b + ": Ae: parallel equalities merge");
-    const Polytope clash(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}),
-                         Tensor({{1.0, 1.0}, {2.0, 2.0}}), column({1.0, 3.0}));
-    check(clash.compact("Ae").V().shape()[1] == 0, b + ": Ae: contradicting equalities: empty");
-    check(clash.compact("all").V().shape()[1] == 0, b + ": all: contradicting equalities: empty");
+    const Polytope clash(Tensor::zeros({0, 2}), Tensor::zeros({0}),
+                         Tensor({{1.0, 1.0}, {2.0, 2.0}}), vec({1.0, 3.0}));
+    check(clash.compact("Ae").V().size(-2) == 0, b + ": Ae: contradicting equalities: empty");
+    check(clash.compact("all").V().size(-2) == 0, b + ": all: contradicting equalities: empty");
     check(rows(twice.compact("all")) == 1, b + ": all: one equality");
 }
 
 /// The dimensions and the special sets: 1D, 2D, nD, R^n, empty, vertices.
 void dimensions(const std::string &b) {
-    const Polytope line(Tensor({{1.0}, {-1.0}, {2.0}}), column({3.0, 0.0, 5.0}));
+    const Polytope line(Tensor({{1.0}, {-1.0}, {2.0}}), vec({3.0, 0.0, 5.0}));
     const Polytope line_c = line.compact("all");
-    check(rows(line_c) == 2 && line_c.contains(column({1.0})) && !line_c.contains(column({4.0})),
+    check(rows(line_c) == 2 && line_c.contains(vec({1.0})) && !line_c.contains(vec({4.0})),
           b + ": 1D: the tight bounds");
-    check(Polytope(Tensor({{1.0}, {-1.0}}), column({0.0, -1.0})).compact("all").V().shape()[1] == 0,
+    check(Polytope(Tensor({{1.0}, {-1.0}}), vec({0.0, -1.0})).compact("all").V().size(-2) == 0,
           b + ": 1D: x <= 0 and x >= 1 is empty");
     const Polytope cube =
         Polytope(Tensor::concat({Tensor::eye(3), -Tensor::eye(3), Tensor::ones({1, 3})}, 0),
-                 column({1, 1, 1, 0, 0, 0, 9}));
+                 vec({1, 1, 1, 0, 0, 0, 9}));
     check(rows(cube.compact("all")) == 6, b + ": nD: the redundant row goes");
-    check(Polytope(Tensor::concat({Tensor::eye(3), -Tensor::eye(3)}, 0), column({1, 1, 1, 0, 0, 0}))
+    check(Polytope(Tensor::concat({Tensor::eye(3), -Tensor::eye(3)}, 0), vec({1, 1, 1, 0, 0, 0}))
                   .compact("all")
                   .A()
                   .shape()[0] == 6,
           b + ": nD: a minimal set stays");
-    const Polytope whole = Polytope(Tensor({{0.0, 0.0}}), column({1.0})).compact("all");
+    const Polytope whole = Polytope(Tensor({{0.0, 0.0}}), vec({1.0})).compact("all");
     check(whole.A().shape()[0] == 0, b + ": no row left: R^n");
-    const Polytope sq(Tensor({{0.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0}}));
+    const Polytope sq(Tensor({{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}}));
     const Polytope compact_v = sq.compact("V");
     // the extreme vertices
-    check(compact_v.is_v_rep() && compact_v.V().shape() == Shape{2, 4},
+    check(compact_v.is_v_rep() && compact_v.V().shape() == Shape{4, 2},
           b + ": V: the extreme vertices");
-    const Polytope with_inner(Tensor({{0.0, 1.0, 0.0, 0.25}, {0.0, 0.0, 1.0, 0.25}}));
-    check(with_inner.compact("V").V().shape() == Shape{2, 3}, b + ": V: an inner vertex goes");
-    check(Polytope(Tensor({{0.0, 1.0, 0.5}})).compact("V").V().shape() == Shape{1, 2},
+    const Polytope with_inner(Tensor({{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {0.25, 0.25}}));
+    check(with_inner.compact("V").V().shape() == Shape{3, 2}, b + ": V: an inner vertex goes");
+    check(Polytope(Tensor({{0.0}, {1.0}, {0.5}})).compact("V").V().shape() == Shape{2, 1},
           b + ": V in 1D: the extremes");
     check(rows(sq.compact("all")) == 4, b + ": a vertex polytope: its facets");
-    check(Polytope::empty(2).compact("all").V().shape()[1] == 0, b + ": the empty set");
+    check(Polytope::empty(2).compact("all").V().size(-2) == 0, b + ": the empty set");
     check(test::raises([&] { sq.compact("V").A(); }, Error::special_error), b + ": V stays V");
     // generic dispatch of the set
     const Polytope R = redundant();
@@ -150,7 +150,7 @@ void properties(const std::string &b) {
             const Tensor probes = test::sample_points(Q.box(), rng, 40) * 1.2;
             bool same = true;
             for (int k = 0; k < 40; ++k) {
-                const Tensor p = probes.take({k}, -1);
+                const Tensor p = probes.take({k}, -2);
                 same = same && C.contains(p) == Q.contains(p);
             }
             // the same probes for every method

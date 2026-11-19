@@ -2,12 +2,14 @@
 //
 // CORA: contSet/@polytope/empty.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
+
+#include <cmath>
 
 using namespace cora;
 using test::check;
@@ -24,7 +26,7 @@ void empty_set(const std::string &b) {
     const Polytope P = Polytope::empty(3);
     check(P.dim() == 3 && close(P.A(), {0, 0, 0}, 0) && close(P.b(), {-1}, 0),
           b + ": the row 0 <= -1");
-    check(P.is_v_rep() && P.V().shape() == Shape{3, 0}, b + ": no vertices");
+    check(P.is_v_rep() && P.V().shape() == Shape{0, 3}, b + ": no vertices");
     check(P.Ae().shape() == Shape{0, 3}, b + ": no equalities");
     check(Polytope::empty(0).A().shape() == Shape{0, 0}, b + ": n = 0: no row");
     check(Polytope::empty().dim() == 0, b + ": the default dimension is 0");
@@ -34,8 +36,9 @@ void empty_set(const std::string &b) {
 /// The empty set has no point, no center, and an empty box.
 void properties(const std::string &b) {
     const Polytope P = Polytope::empty(2);
-    check(!P.contains(Tensor({{0.0}, {0.0}})), b + ": it holds no point");
-    check(P.center().shape() == Shape{2, 0}, b + ": it has no center");
+    check(!P.contains(Tensor({{0.0, 0.0}})), b + ": it holds no point");
+    check(P.center().shape() == Shape{2, 1} && std::isnan(P.center().data()[0]),
+          b + ": it has no center");
     check(P.interval().is_empty(), b + ": its box is empty");
 }
 

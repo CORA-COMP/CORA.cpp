@@ -28,7 +28,7 @@ namespace cora {
 
 namespace {
 
-/// The zonotope B box(B' V) for the vertices V (n, p) and the basis B (n, n).
+/// The zonotope B box(B' V) for the vertices V (n, p), CORA's columns, and the basis B (n, n).
 Zonotope aux_strip(const Tensor &V, const Tensor &B) {
     const Tensor coordinates = B.matrix_transpose().matmul(V);
     const Interval box(coordinates.min(-1), coordinates.max(-1));
@@ -54,12 +54,13 @@ ZonoBundle Polytope::zono_bundle() const {
     const Rows vertices = priv_polytope_vertices(*this);
     CORA_CHECK(!vertices.empty(), Error::special_error,
                [] { return std::string("The empty set is no zonotope bundle."); });
-    const Tensor V = priv_points_tensor(like, dim(), vertices);
+    const Tensor V = priv_points_tensor(like, dim(), vertices).matrix_transpose();
     // one strip per row of [A; Ae; -Ae]
     const HostH H = priv_host_h(constraints());
     std::vector<Zonotope> strips;
     for (const Row &a : priv_equality_to_inequality(H).first)
-        strips.push_back(aux_strip(V, priv_points_tensor(like, dim(), gram_schmidt(a))));
+        strips.push_back(
+            aux_strip(V, priv_points_tensor(like, dim(), gram_schmidt(a)).matrix_transpose()));
     return ZonoBundle(strips);
 }
 

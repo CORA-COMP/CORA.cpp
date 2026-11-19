@@ -7,9 +7,9 @@
 // the set
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,12 +31,12 @@ void embeddings(const std::string &b) {
     const Polytope H = test::square_h().project_high_dim(3, {2, 0});
     check(H.dim() == 3 && close(H.Ae(), {0, 1, 0}, 0) && close(H.be(), {0}, 0),
           b + ": halfspaces: the equality for the new coordinate");
-    check(H.contains(column({0.5, 0.0, 0.5})) && !H.contains(column({0.5, 0.1, 0.5})),
+    check(H.contains(vec({0.5, 0.0, 0.5})) && !H.contains(vec({0.5, 0.1, 0.5})),
           b + ": halfspaces: the points");
     const Polytope V = test::square_v().project_high_dim(3, {2, 0});
-    check(close(V.V(), {0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0}), b + ": vertices: the padding");
+    check(close(V.V(), {0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0}), b + ": vertices: the padding");
     // N = n only moves the coordinates
-    check(close(test::square_v().project_high_dim(2, {1, 0}).V(), {0, 0, 1, 1, 0, 1, 1, 0}),
+    check(close(test::square_v().project_high_dim(2, {1, 0}).V(), {0, 0, 0, 1, 1, 1, 1, 0}),
           b + ": N = n: a permutation");
     check(test::square_h().project_high_dim(2, {1, 0}).Ae().shape() == Shape{0, 2},
           b + ": N = n: no new equality");
@@ -49,8 +50,8 @@ void properties(const std::string &b) {
     const Polytope E = P.project_high_dim(4, {3, 1});
     for (int k = 0; k < 40; ++k) {
         std::vector<double> x = test::random_direction(rng, 2);
-        const Tensor in = column({0.0, x[1], 0.0, x[0]}), off = column({0.1, x[1], 0.0, x[0]});
-        same = same && E.contains(in, "exact", 1e-9) == P.contains(column({x[0], x[1]})) &&
+        const Tensor in = vec({0.0, x[1], 0.0, x[0]}), off = vec({0.1, x[1], 0.0, x[0]});
+        same = same && E.contains(in, "exact", 1e-9) == P.contains(vec({x[0], x[1]})) &&
                !E.contains(off, "exact", 1e-9);
     }
     check(same, b + ": the embedding holds the points with zeros elsewhere");

@@ -6,15 +6,15 @@
 //
 // Syntax:   Pres = P.convex_hull(P2);   Pres = P.convex_hull(I);   Pres = P.convex_hull(p);
 // Inputs:   P2, I - a polytope or a box of the dimension of P (bounded unless in 1D)
-//           p - a point (n, 1)
+//           p - a point (n)
 // Outputs:  Pres - exact, a vertex polytope of the extreme vertices of both sets in their order
 // See also: enclose, Polytope::compact
 //
 // CORA: contSet/@polytope/convHull_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -35,7 +35,7 @@ namespace {
 
 // The second operand ------------------------------------------------------------------------------
 
-/// The corners of the box (n, 1) as points: its sign patterns of lower and upper bounds.
+/// The corners of the box (n) as points: its sign patterns of lower and upper bounds.
 Rows aux_corners(const Interval &I) {
     const int64_t n = I.dim();
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
@@ -79,9 +79,9 @@ Polytope aux_hull(const Polytope &P, const Operand &S) {
     if (priv_is_fullspace(P) || S.fullspace) return Polytope::inf(n);
     // vertices on both sides: the hull takes its columns from them, which keeps the gradients
     if (P.is_v_rep() && S.vertices) {
-        const Tensor given = Tensor::concat({P.V(), *S.vertices}, -1);
+        const Tensor given = Tensor::concat({P.V(), *S.vertices}, -2);
         if (n == 1) return Polytope(given);
-        return Polytope(given.take(priv_extreme_points(priv_host_points(given)), -1));
+        return Polytope(given.take(priv_extreme_points(priv_host_points(given)), -2));
     }
     Rows all = priv_polytope_vertices(P);
     const Rows second = S.list();
@@ -132,12 +132,13 @@ Polytope Polytope::convex_hull(const Interval &I) const {
 
 Polytope Polytope::convex_hull(const Tensor &p) const {
     detail::Entry entry;
-    const bool column = p.defined() && p.ndim() == 2 && p.shape()[0] == dim() && p.shape()[1] == 1;
-    CORA_CHECK(column, Error::dimension_mismatch, [&] {
-        return "convex_hull: the point must be a column (" + std::to_string(dim()) + ", 1)";
+    const bool point = p.defined() && p.ndim() == 1 && p.size(-1) == dim();
+    CORA_CHECK(point, Error::dimension_mismatch, [&] {
+        return "convex_hull: the point must be a vector (" + std::to_string(dim()) + ")";
     });
-    // a point is the polytope of one vertex
-    Operand S{false, false, Polytope(p), [&] { return priv_host_points(p); }, p};
+    // a point is the polytope of one vertex, the row (1, n)
+    const Tensor row = p.expand_dims(0);
+    Operand S{false, false, Polytope(row), [&] { return priv_host_points(row); }, row};
     return aux_hull(*this, S);
 }
 

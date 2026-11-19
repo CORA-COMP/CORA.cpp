@@ -2,9 +2,9 @@
 //
 // The product stacks and pads: differentiable in both operands, in both forms.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_gradients.h"
@@ -32,7 +32,7 @@ int main() {
     test::gradcheck(
         "cart_prod, vertices",
         [](const Inputs &x) { return test::parts(Polytope(x[0]).cart_prod(Polytope(x[1]))); },
-        {torch::randn({2, 3}, torch::kDouble), torch::randn({3, 2}, torch::kDouble)});
+        {torch::randn({3, 2}, torch::kDouble), torch::randn({2, 3}, torch::kDouble)});
     return test::finish("polytope cart_prod (torch)");
 }
 

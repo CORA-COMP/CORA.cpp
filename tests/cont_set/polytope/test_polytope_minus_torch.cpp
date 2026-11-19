@@ -2,9 +2,9 @@
 //
 // The set shifted by -v: differentiable in the set and the point, in both forms.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       07-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_gradients.h"
@@ -23,7 +23,7 @@ int main() {
     Rng rng(61);
     const Tensor V = test::sphere_points(rng, 3, 5);
     const std::vector<torch::Tensor> H = test::random_halfspaces(4, 3);
-    const torch::Tensor v = torch::randn({3, 1}, torch::kDouble);
+    const torch::Tensor v = torch::randn({3}, torch::kDouble);
     test::gradcheck("minus (vertices)",
                     [](const Inputs &x) { return test::parts(Polytope(x[0]).minus(x[1])); },
                     {to_torch(V), v});

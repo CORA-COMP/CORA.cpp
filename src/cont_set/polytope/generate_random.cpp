@@ -16,9 +16,9 @@
 //
 // CORA: contSet/@polytope/generateRandom.m
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_random_dimension.h"
@@ -259,8 +259,8 @@ CORA_FROM_NUMBERS Polytope Polytope::generate_random(Rng &rng, std::optional<int
     const Options o = aux_options(rng, dimension, nr_constraints, is_degenerate, is_bounded);
     Rows2 r = o.bounded ? aux_bounded(rng, o) : aux_unbounded(rng, o);
     const int64_t m = int64_t(r.A.size());
-    Tensor A = priv_points_tensor(Tensor::zeros({1, 1}), o.n, r.A).matrix_transpose();
-    Tensor b = Tensor::from_data(r.b, {m, 1});
+    Tensor A = priv_points_tensor(Tensor::zeros({1, 1}), o.n, r.A);
+    Tensor b = Tensor::from_data(r.b, {m});
     // rotate by the orthogonal factor of a random matrix: A M^-1 = A M'
     if (o.n > 1) {
         std::vector<double> noise(std::size_t(o.n * o.n));
@@ -272,7 +272,7 @@ CORA_FROM_NUMBERS Polytope Polytope::generate_random(Rng &rng, std::optional<int
     if (o.bounded) {
         std::vector<double> z(std::size_t(o.n));
         rng.normal(z.data(), z.size(), 1.0);
-        b = b + A.matmul(Tensor::from_data(z, {o.n, 1}));
+        b = b + A.matmul(Tensor::from_data(z, {o.n, 1})).squeeze(-1);
     }
     return {A, b};
 }

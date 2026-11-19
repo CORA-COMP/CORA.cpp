@@ -28,7 +28,7 @@ namespace {
 /// Polytopes of the two forms, boxes, zonotopes, constrained zonotopes and bundles.
 void sets(const std::string &b) {
     const Polytope sq = test::square_h();
-    const Polytope near = sq.plus(column({0.5, 0.5})), far = sq.plus(column({3.0, 3.0}));
+    const Polytope near = sq.plus(vec({0.5, 0.5})), far = sq.plus(vec({3.0, 3.0}));
     check(sq.is_intersecting(near) && !sq.is_intersecting(far), b + ": H and H");
     check(test::square_v().is_intersecting(near) && !test::square_v().is_intersecting(far) &&
               sq.is_intersecting(test::as_vertices(near)) &&
@@ -54,8 +54,8 @@ void sets(const std::string &b) {
                              Zonotope(column({3.2, 3.0}), Tensor::eye(2))});
     check(sq.is_intersecting(meets) && !sq.is_intersecting(misses), b + ": a bundle");
     // points: all must be inside
-    check(sq.is_intersecting(Tensor({{0.5, 0.2}, {0.5, 0.9}})) &&
-              !sq.is_intersecting(Tensor({{0.5, 1.2}, {0.5, 0.9}})),
+    check(sq.is_intersecting(Tensor({{0.5, 0.5}, {0.2, 0.9}})) &&
+              !sq.is_intersecting(Tensor({{0.5, 0.5}, {1.2, 0.9}})),
           b + ": points");
 }
 
@@ -66,21 +66,21 @@ void special(const std::string &b) {
         Zfar(column({3.0, 3.0}), Tensor::eye(2) * 0.6);
     check(sq.is_intersecting(Z, "approx") && !sq.is_intersecting(Zfar, "approx"), b + ": approx");
     // a halfspace x <= 1 is met by a set that reaches into it
-    const Polytope halfspace(Tensor({{1.0, 0.0}}), column({1.0}));
+    const Polytope halfspace(Tensor({{1.0, 0.0}}), vec({1.0}));
     check(halfspace.is_intersecting(Z) &&
               !halfspace.is_intersecting(Zonotope(column({3.0, 0.0}), Tensor::eye(2) * 0.5)) &&
               halfspace.is_intersecting(halfspace) && halfspace.is_intersecting(sq),
           b + ": a halfspace");
-    check(Polytope(Tensor({{1.0, 0.0}}), column({1.0}))
-                  .is_intersecting(Polytope(Tensor({{-1.0, 0.0}}), column({-2.0}))) == false,
+    check(Polytope(Tensor({{1.0, 0.0}}), vec({1.0}))
+                  .is_intersecting(Polytope(Tensor({{-1.0, 0.0}}), vec({-2.0}))) == false,
           b + ": two halfspaces that face away");
     // R^n meets every set that is not empty; in 1D the intervals decide
     check(Polytope::inf(2).is_intersecting(sq) &&
               !Polytope::inf(2).is_intersecting(Polytope::empty(2)) &&
               !sq.is_intersecting(Polytope::empty(2)),
           b + ": R^n and the empty set");
-    check(Polytope(Tensor({{-1.0}, {1.0}}), column({0.0, 1.0}))
-                  .is_intersecting(Polytope(Tensor({{-1.0}, {1.0}}), column({-2.0, 3.0}))) == false,
+    check(Polytope(Tensor({{-1.0}, {1.0}}), vec({0.0, 1.0}))
+                  .is_intersecting(Polytope(Tensor({{-1.0}, {1.0}}), vec({-2.0, 3.0}))) == false,
           b + ": 1D");
 }
 
@@ -105,10 +105,11 @@ void properties(const std::string &b) {
     bool meet = true, apart = true;
     for (int n = 2; n <= 3; ++n) {
         const Polytope P = test::random_polytope(rng, n, n + 2);
+        // one sample, a row (1, n): the center of a zonotope and the vertex of a polytope
         const Tensor x = test::sample_points(P, rng, 1);
-        meet = meet && P.is_intersecting(Zonotope(x, Tensor::eye(n) * 0.1)) &&
+        meet = meet && P.is_intersecting(Zonotope(x.squeeze(-2), Tensor::eye(n) * 0.1)) &&
                P.is_intersecting(Polytope(x));
-        apart = apart && !P.is_intersecting(Zonotope(x + 100.0, Tensor::eye(n) * 0.1));
+        apart = apart && !P.is_intersecting(Zonotope(x.squeeze(-2) + 100.0, Tensor::eye(n) * 0.1));
     }
     check(meet && apart, b + ": a shared sample meets; a far set does not");
 }

@@ -28,44 +28,42 @@ namespace {
 /// Polytopes: the rows stack; R^n is neutral; boxes; points.
 void intersections(const std::string &b) {
     const Polytope P(Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
-                     column({2.0, 2.0, 0.0, 0.0}));
+                     vec({2.0, 2.0, 0.0, 0.0}));
     const Polytope Q(Tensor({{-1.0, 0.0}, {0.0, -1.0}, {1.0, 0.0}, {0.0, 1.0}}),
-                     column({-1.0, -1.0, 3.0, 3.0}));
+                     vec({-1.0, -1.0, 3.0, 3.0}));
     const Polytope R = P.intersect(Q);
     check(R.A().shape() == Shape{8, 2}, b + ": the rows stack");
-    check(R.contains(column({1.5, 1.5})) && !R.contains(column({0.5, 1.5})) &&
-              !R.contains(column({2.5, 1.5})),
+    check(R.contains(vec({1.5, 1.5})) && !R.contains(vec({0.5, 1.5})) &&
+              !R.contains(vec({2.5, 1.5})),
           b + ": the points");
     check(close(P.intersect(Polytope::inf(2)).A(), P.A(), 0), b + ": R^n on the right");
     check(close(Polytope::inf(2).intersect(P).A(), P.A(), 0), b + ": R^n on the left");
     const Polytope S = P.intersect(Interval(vec({1.0, 1.0}), vec({5.0, 5.0})));
-    check(S.contains(column({1.5, 1.5})) && !S.contains(column({0.5, 1.5})), b + ": a box");
+    check(S.contains(vec({1.5, 1.5})) && !S.contains(vec({0.5, 1.5})), b + ": a box");
     check(P.intersect(Interval::empty(2)).interval().is_empty() ||
-              !P.intersect(Interval::empty(2)).contains(column({1.0, 1.0})),
+              !P.intersect(Interval::empty(2)).contains(vec({1.0, 1.0})),
           b + ": the empty box");
-    const Polytope pt = P.intersect(column({1.0, 1.0}));
+    const Polytope pt = P.intersect(vec({1.0, 1.0}));
     check(pt.is_v_rep() && close(pt.V(), {1, 1}, 0), b + ": a point inside: the point");
     // a point inside, outside
-    check(P.intersect(column({3.0, 1.0})).V().shape() == Shape{2, 0},
-          b + ": a point outside: empty");
-    check(P.intersect(column({2.0 + 1e-6, 1.0}), 1e-5).V().shape()[1] != 0, b + ": a tolerance");
+    check(P.intersect(vec({3.0, 1.0})).V().shape() == Shape{0, 2}, b + ": a point outside: empty");
+    check(P.intersect(vec({2.0 + 1e-6, 1.0}), 1e-5).V().size(-2) != 0, b + ": a tolerance");
     // vertex polytopes are intersected as their halfspaces
-    const Polytope V(Tensor({{0.0, 3.0, 3.0, 0.0}, {0.0, 0.0, 3.0, 3.0}}));
-    check(V.intersect(P).contains(column({1.0, 1.0})) &&
-              !V.intersect(P).contains(column({2.5, 1.0})),
+    const Polytope V(Tensor({{0.0, 0.0}, {3.0, 0.0}, {3.0, 3.0}, {0.0, 3.0}}));
+    check(V.intersect(P).contains(vec({1.0, 1.0})) && !V.intersect(P).contains(vec({2.5, 1.0})),
           b + ": vertices");
 }
 
 /// Batches stack member by member.
 void batches(const std::string &b) {
-    const Polytope A(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2, 1}));
+    const Polytope A(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2}));
     check(A.intersect(A).A().shape() == Shape{3, 4, 2}, b + ": a batch of three");
 }
 
 /// What is refused; checks off.
 void refusals() {
-    const Polytope S(Tensor::ones({1, 2}), Tensor::ones({1, 1}));
-    const Polytope A(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2, 1}));
+    const Polytope S(Tensor::ones({1, 2}), Tensor::ones({1}));
+    const Polytope A(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2}));
     check(test::raises([&] { S.intersect(Polytope::inf(3)); }, Error::dimension_mismatch),
           "intersect: dimensions");
     check(test::raises([&] { S.intersect(A); }, Error::dimension_mismatch),
@@ -87,7 +85,7 @@ void properties(const std::string &b) {
         for (int k = 0; k < 60; ++k) {
             std::vector<double> x(static_cast<std::size_t>(n));
             rng.uniform(x.data(), x.size(), -3.5, 3.5);
-            const Tensor p = column(x);
+            const Tensor p = vec(x);
             same = same && both.contains(p) == (P1.contains(p) && P2.contains(p));
         }
         check(same, b + ": exactly the common points, " + std::to_string(n) + "D");

@@ -15,6 +15,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +28,7 @@ Zonotope box() { return {Tensor({2.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})}; 
 
 /// The halfspace {x | a'x <= b} as a safe set.
 Specification halfspace(double a1, double a2, double offset) {
-    return Specification::safe_set(Polytope(Tensor({{a1, a2}}), Tensor({{offset}})));
+    return Specification::safe_set(Polytope(Tensor({{a1, a2}}), vec({offset})));
 }
 
 void safe_set(const std::string &b) {
@@ -44,14 +45,13 @@ void safe_set(const std::string &b) {
 void safe_polytope(const std::string &b) {
     const Zonotope Z = box();
     const Tensor A({{1.0, 0.0}, {0.0, 1.0}});
-    check(Specification::safe_set(Polytope(A, Tensor({{3.0}, {2.0}}))).check(Z),
-          b + ": inside both");
-    const Specification low_top = Specification::safe_set(Polytope(A, Tensor({{3.0}, {1.0}})));
+    check(Specification::safe_set(Polytope(A, vec({3.0, 2.0}))).check(Z), b + ": inside both");
+    const Specification low_top = Specification::safe_set(Polytope(A, vec({3.0, 1.0})));
     check(!low_top.check(Z), b + ": one of two fails");
     check(low_top.type() == SpecType::safe_set, b + ": the type");
     check(low_top.set().is<Polytope>(), b + ": the set is kept");
     // the same polytope decides an interval, a constrained zonotope and a bundle
-    const Specification spec = Specification::safe_set(Polytope(A, Tensor({{3.0}, {2.0}})));
+    const Specification spec = Specification::safe_set(Polytope(A, vec({3.0, 2.0})));
     check(spec.check(Interval(test::vec({1.0, 0.0}), test::vec({3.0, 2.0}))), b + ": a box");
     check(spec.check(ConZonotope(Z)), b + ": a constrained zonotope");
     check(!spec.check(ConZonotope(Zonotope(Tensor({2.5, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})))),

@@ -14,6 +14,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,7 +27,7 @@ Zonotope box() { return {Tensor({2.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})}; 
 
 /// The unsafe halfspace {x | a'x <= b}.
 Specification halfspace(double a1, double a2, double offset) {
-    return Specification::unsafe_set(Polytope(Tensor({{a1, a2}}), Tensor({{offset}})));
+    return Specification::unsafe_set(Polytope(Tensor({{a1, a2}}), vec({offset})));
 }
 
 /// The unsafe halfspace must not touch the set.

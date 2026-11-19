@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,41 +28,41 @@ namespace {
 
 /// Vertices: the extremes; a batch works; the empty set is the empty box.
 void vertices(const std::string &b) {
-    const Interval I = Polytope(Tensor({{0.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0}})).interval();
+    const Interval I =
+        Polytope(Tensor({{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}})).interval();
     check(close(I.inf(), {0, 0}, 0) && close(I.sup(), {1, 1}, 0), b + ": the square");
     check(Polytope::empty(2).interval().is_empty(), b + ": the empty set");
-    const Interval batch = Polytope(Tensor::ones({3, 2, 4})).interval();
+    const Interval batch = Polytope(Tensor::ones({3, 4, 2})).interval();
     check(batch.inf().shape() == Shape{3, 2}, b + ": a batch of three");
 }
 
 /// Halfspaces: the linear programs; unbounded sides are infinite; an infeasible set is empty.
 void halfspaces(const std::string &b) {
-    const Polytope tri(Tensor({{-1.0, 0.0}, {0.0, -1.0}, {1.0, 1.0}}), column({0.0, 0.0, 2.0}));
+    const Polytope tri(Tensor({{-1.0, 0.0}, {0.0, -1.0}, {1.0, 1.0}}), vec({0.0, 0.0, 2.0}));
     const Interval I = tri.interval();
     check(close(I.inf(), {0, 0}, 1e-9) && close(I.sup(), {2, 2}, 1e-9), b + ": a triangle");
     const double inf = std::numeric_limits<double>::infinity();
-    const Interval half = Polytope(Tensor({{1.0, 0.0}}), column({1.0})).interval();
+    const Interval half = Polytope(Tensor({{1.0, 0.0}}), vec({1.0})).interval();
     check(half.inf().data()[0] == -inf && half.sup().data()[0] == 1.0 &&
               half.sup().data()[1] == inf,
           b + ": a halfspace: unbounded sides");
-    const Polytope none(Tensor({{1.0, 0.0}, {-1.0, 0.0}}), column({0.0, -1.0}));
+    const Polytope none(Tensor({{1.0, 0.0}, {-1.0, 0.0}}), vec({0.0, -1.0}));
     check(none.interval().is_empty(), b + ": infeasible: the empty box");
     check(Polytope::inf(2).interval().sup().min().item() == inf, b + ": R^2");
     const Polytope eq(Tensor({{1.0, 0.0}, {-1.0, 0.0}, {0.0, 1.0}, {0.0, -1.0}}),
-                      column({2.0, 2.0, 2.0, 2.0}), Tensor({{1.0, 1.0}}), column({1.0}));
+                      vec({2.0, 2.0, 2.0, 2.0}), Tensor({{1.0, 1.0}}), vec({1.0}));
     check(close(eq.interval().inf(), {-1, -1}, 1e-9) && close(eq.interval().sup(), {2, 2}, 1e-9),
           b + ": with an equality");
 }
 
 /// A checks-off call on a valid set.
 void refusals() {
-    const Polytope P(Tensor({{0.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0}}));
+    const Polytope P(Tensor({{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}}));
     ChecksScope off(false);
     check(close(P.interval().sup(), {1, 1}, 0), "interval: the same with the checks off");
-    check(
-        test::raises([&] { Polytope(Tensor::ones({2, 1, 2}), Tensor::ones({2, 1, 1})).interval(); },
-                     Error::not_supported),
-        "interval: a batch of halfspace polytopes");
+    check(test::raises([&] { Polytope(Tensor::ones({2, 1, 2}), Tensor::ones({2, 1})).interval(); },
+                       Error::not_supported),
+          "interval: a batch of halfspace polytopes");
 }
 
 /// A halfspace polytope built from random vertices has the box of those vertices; the samples of a
@@ -71,7 +72,7 @@ void properties(const std::string &b) {
     for (const int n : {2, 3, 4}) {
         const Tensor points = test::sphere_points(rng, n, n + 4);
         const Interval box = Polytope(points).interval();
-        check(close(box.inf(), points.min(-1), 0) && close(box.sup(), points.max(-1), 0),
+        check(close(box.inf(), points.min(-2), 0) && close(box.sup(), points.max(-2), 0),
               b + ": vertices: the extremes, " + std::to_string(n) + "D");
         const Polytope::Constraints C = Polytope(points).constraints();
         const Interval from_rows = Polytope(C.A, C.b).interval();
@@ -82,8 +83,8 @@ void properties(const std::string &b) {
         const Interval hull = Q.interval();
         const Tensor samples = test::sample_points(Q, rng, 30);
         // samples lie in the box
-        check((samples - hull.inf().expand_dims(-1)).min().item() >= -1e-9 &&
-                  (hull.sup().expand_dims(-1) - samples).min().item() >= -1e-9,
+        check((samples - hull.inf()).min().item() >= -1e-9 &&
+                  (hull.sup() - samples).min().item() >= -1e-9,
               b + ": samples lie in the box, " + std::to_string(n) + "D");
     }
 }

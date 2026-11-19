@@ -48,8 +48,8 @@ void properties(const std::string &b) {
         ok = ok && outer.contains(test::sample_points(P, rng, 15), "exact", 1e-8);
         // points of the box that the inner halfspace holds are points of P
         const Tensor y = test::sample_points(Polytope(dom), rng, 40);
-        for (int64_t k = 0; k < y.shape()[1]; ++k) {
-            const Tensor p = y.slice(-1, k, k + 1);
+        for (int64_t k = 0; k < y.shape()[0]; ++k) {
+            const Tensor p = y.slice(-2, k, k + 1);
             ok = ok && (!inner.contains(p, "exact", 0.0) || P.contains(p, "exact", 1e-9));
         }
     }

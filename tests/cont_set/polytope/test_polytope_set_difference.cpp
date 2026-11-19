@@ -34,11 +34,10 @@ void frames(const std::string &b) {
             if (piece.contains(p, "exact", 1e-9)) return true;
         return false;
     };
-    check(in_pieces(column({0.1, 0.5})) && in_pieces(column({0.9, 0.9})) &&
-              !in_pieces(column({0.5, 0.5})),
+    check(in_pieces(vec({0.1, 0.5})) && in_pieces(vec({0.9, 0.9})) && !in_pieces(vec({0.5, 0.5})),
           b + ": the frame, not the hole");
     // S outside of P: P itself, one piece; S around P: nothing
-    const Polytope away = test::square_h().plus(column({5.0, 5.0}));
+    const Polytope away = test::square_h().plus(vec({5.0, 5.0}));
     check(test::square_h().set_difference(away).size() == 1, b + ": a disjoint S leaves P");
     check(test::square_h()
               .set_difference(Polytope(Interval(vec({-1.0, -1.0}), vec({2.0, 2.0}))))
@@ -54,10 +53,10 @@ void properties(const std::string &b) {
     Rng rng(4);
     bool same = true;
     const Polytope P1 = test::random_polytope(rng, 2, 4),
-                   P2 = test::random_polytope(rng, 2, 3).plus(column({0.5, 0.5}));
+                   P2 = test::random_polytope(rng, 2, 3).plus(vec({0.5, 0.5}));
     const std::vector<Polytope> pieces = P1.set_difference(P2);
     for (int k = 0; k < 60; ++k) {
-        const Tensor x = column(test::random_direction(rng, 2));
+        const Tensor x = vec(test::random_direction(rng, 2));
         bool in_piece = false;
         for (const Polytope &piece : pieces)
             in_piece = in_piece || piece.contains(x, "exact", 1e-9);
@@ -81,8 +80,8 @@ int main() {
     check(test::raises([] { test::square_h().set_difference(Polytope::inf(3)); },
                        Error::dimension_mismatch),
           "set_difference: dimensions");
-    const Polytope plane(Tensor::zeros({0, 2}), Tensor::zeros({0, 1}), Tensor({{1.0, 0.0}}),
-                         column({0.5}));
+    const Polytope plane(Tensor::zeros({0, 2}), Tensor::zeros({0}), Tensor({{1.0, 0.0}}),
+                         vec({0.5}));
     check(test::raises([&] { test::square_h().set_difference(plane); }, Error::not_supported),
           "set_difference: a lower-dimensional operand");
     ChecksScope off(false);

@@ -6,9 +6,9 @@
 // Property: every point is in the set; the extreme points are vertices; hit and run covers the set
 //
 // CORA authors: Mark Wetzlinger, Adrian Kulmburg
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -16,6 +16,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,13 +31,15 @@ void samples(const std::string &b) {
         for (const Polytope &P :
              {test::random_polytope(rng, 3, 5), test::triangle_h(), test::square_v()}) {
             const Tensor p = P.rand_point(20, rng, type);
-            check(p.shape() == Shape{P.dim(), 20} && P.contains(p, "exact", 1e-7),
+            check(p.shape() == Shape{P.dim(), 20} &&
+                      P.contains(p.matrix_transpose(), "exact", 1e-7),
                   b + ": inside the set, " + type);
         }
     }
     // the default of the generic entry is "standard"
     const Tensor q = static_cast<const ContSet &>(test::square_h()).rand_point(5, rng);
-    check(q.shape() == Shape{2, 5} && test::square_h().contains(q, "exact", 1e-7),
+    check(q.shape() == Shape{2, 5} &&
+              test::square_h().contains(q.matrix_transpose(), "exact", 1e-7),
           b + ": the generic entry");
     // the extreme points of a square are corners
     const Tensor e = test::square_v().rand_point(10, rng, "extreme");
@@ -51,9 +54,9 @@ void special(const std::string &b) {
     Rng rng(4);
     check(Polytope::inf(3).rand_point(4, rng).shape() == Shape{3, 4}, b + ": R^n");
     check(Polytope::empty(3).rand_point(4, rng).shape() == Shape{3, 0}, b + ": the empty set");
-    const Polytope halfspace(Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, -1.0}}),
-                             column({1.0, 1.0, 0.0}));
-    check(halfspace.contains(halfspace.rand_point(10, rng, "extreme"), "exact", 1e-7),
+    const Polytope halfspace(Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, -1.0}}), vec({1.0, 1.0, 0.0}));
+    check(halfspace.contains(halfspace.rand_point(10, rng, "extreme").matrix_transpose(), "exact",
+                             1e-7),
           b + ": unbounded: extreme");
 }
 

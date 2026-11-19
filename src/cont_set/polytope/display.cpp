@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@polytope/display.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -29,8 +29,8 @@ std::string Polytope::display_impl() const {
     std::string text = "polytope\n";
     text += "- dimension: " + std::to_string(dim()) + "\n";
     if (is_v_rep()) {
-        text +=
-            "- vertices (" + std::to_string(V_.shape().back()) + "):\n" + format_matrix(V_, "    ");
+        text += "- vertices (" + std::to_string(V_.size(-2)) + "):\n" +
+                format_matrix(V_.matrix_transpose(), "    ");
     } else {
         text += "- vertices: (not computed)\n";
     }
@@ -39,10 +39,10 @@ std::string Polytope::display_impl() const {
         const std::string rows_eq = std::to_string(Ae_.shape()[Ae_.ndim() - 2]);
         text +=
             "- inequality constraints A x <= b (" + rows + " rows):\n" + format_matrix(A_, "    ");
-        text += format_matrix(b_, "    ");
+        text += format_matrix(b_.expand_dims(-1), "    ");
         text += "- equality constraints Ae x = be (" + rows_eq + " rows):\n" +
                 format_matrix(Ae_, "    ");
-        text += format_matrix(be_, "    ");
+        text += format_matrix(be_.expand_dims(-1), "    ");
     } else {
         // without constraints, the text says so
         text += "- constraints: (not computed)\n";

@@ -55,11 +55,11 @@ HybridAutomaton aux_automaton() {
     for (const double v : c) minus_c.push_back(-v);
     const NonlinearSys sys(aux_dynamics, 5, 1);
     const LinearReset id(Tensor::eye(5), std::nullopt, column({0, 0, 0, 0, 0}));
-    Location loc1("loc1", Polytope(matrix(1, 5, c), column({d})),
+    Location loc1("loc1", Polytope(matrix(1, 5, c), vec({d})),
                   {Transition(hyperplane(c, d), id, 1)}, sys);
-    Location loc2("loc2", Polytope(matrix(1, 5, minus_c), column({-d})),
+    Location loc2("loc2", Polytope(matrix(1, 5, minus_c), vec({-d})),
                   {Transition(hyperplane(minus_c, -d), id, 2)}, sys);
-    Location loc3("loc3", Polytope(matrix(1, 5, {1, 0, 0, 0, 0}), column({1000})), {}, sys);
+    Location loc3("loc3", Polytope(matrix(1, 5, {1, 0, 0, 0, 0}), vec({1000})), {}, sys);
     return HybridAutomaton("vanDerPol_hybrid", {loc1, loc2, loc3});
 }
 
@@ -84,8 +84,8 @@ std::vector<Interval> aux_initial_sets() {
 /// The specifications: x2 < 2.75 and x4 < 2.75 (the unsafe sets -x2 <= -2.75 and -x4 <= -2.75).
 std::vector<HybridSpecification> aux_specs() {
     return {
-        {Specification::unsafe_set(Polytope(matrix(1, 5, {0, -1, 0, 0, 0}), column({-2.75}))), {}},
-        {Specification::unsafe_set(Polytope(matrix(1, 5, {0, 0, 0, -1, 0}), column({-2.75}))), {}}};
+        {Specification::unsafe_set(Polytope(matrix(1, 5, {0, -1, 0, 0, 0}), vec({-2.75}))), {}},
+        {Specification::unsafe_set(Polytope(matrix(1, 5, {0, 0, 0, -1, 0}), vec({-2.75}))), {}}};
 }
 
 /// The options of the script.

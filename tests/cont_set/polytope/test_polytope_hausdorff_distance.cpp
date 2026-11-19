@@ -28,12 +28,13 @@ namespace {
 
 /// Hand-computed distances between squares, a point, boxes and halfspace sets.
 void distances(const std::string &b) {
-    const Polytope S1(Tensor({{0.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0}}));
-    const Polytope S2(Tensor({{2.0, 3.0, 3.0, 2.0}, {0.0, 0.0, 1.0, 1.0}}));
+    const Polytope S1(Tensor({{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}}));
+    const Polytope S2(Tensor({{2.0, 0.0}, {3.0, 0.0}, {3.0, 1.0}, {2.0, 1.0}}));
+    // two squares side by side
     check(close(S1.hausdorff_distance(S2), 2.0, 1e-8), b + ": two squares");
     check(close(S2.hausdorff_distance(S1), 2.0, 1e-8), b + ": symmetric");
     check(close(S1.hausdorff_distance(S1), 0.0, 1e-8), b + ": equal sets");
-    const Polytope big(Tensor({{0.0, 2.0, 2.0, 0.0}, {0.0, 0.0, 2.0, 2.0}}));
+    const Polytope big(Tensor({{0.0, 0.0}, {2.0, 0.0}, {2.0, 2.0}, {0.0, 2.0}}));
     check(close(S1.hausdorff_distance(big), std::sqrt(2.0), 1e-8), b + ": nested squares");
     check(close(S1.hausdorff_distance(Tensor({{3.0, 0.0}, {0.0, 0.0}})), 2.0, 1e-8),
           b + ": the farthest point");
@@ -41,12 +42,13 @@ void distances(const std::string &b) {
                 1e-8),
           b + ": a box");
     const Polytope H(Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
-                     column({1.0, 1.0, 0.0, 0.0}));
+                     vec({1.0, 1.0, 0.0, 0.0}));
     check(close(H.hausdorff_distance(S2), 2.0, 1e-8) && close(H.hausdorff_distance(S1), 0.0, 1e-8),
           b + ": halfspaces");
-    check(close(Polytope(Tensor({{0.0, 1.0}})).hausdorff_distance(Polytope(Tensor({{3.0, 5.0}}))),
-                4.0, 1e-8),
-          b + ": 1D");
+    check(
+        close(Polytope(Tensor({{0.0}, {1.0}})).hausdorff_distance(Polytope(Tensor({{3.0}, {5.0}}))),
+              4.0, 1e-8),
+        b + ": 1D");
     // R^n and itself, the empty set
     const Polytope inf = Polytope::inf(2);
     check(close(inf.hausdorff_distance(inf), 0.0, 0.0), b + ": R^n and itself");
@@ -59,7 +61,7 @@ void distances(const std::string &b) {
 
 /// What is refused; checks off.
 void refusals() {
-    const Polytope S(Tensor({{0.0, 1.0, 1.0}, {0.0, 0.0, 1.0}}));
+    const Polytope S(Tensor({{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}}));
     check(test::raises([&] { S.hausdorff_distance(Polytope::inf(3)); }, Error::dimension_mismatch),
           "hausdorff_distance: dimensions");
     check(test::raises([&] { S.hausdorff_distance(Tensor::zeros({3, 1})); },
@@ -84,7 +86,7 @@ void properties(const std::string &b) {
         rng.uniform(t.data(), t.size(), -1.0, 1.0);
         double length = 0.0;
         for (const double x : t) length += x * x;
-        const Polytope shifted(points + column(t));
+        const Polytope shifted(points + vec(t));
         check(close(P.hausdorff_distance(shifted), std::sqrt(length), 1e-6),
               b + ": a translate: the length, " + std::to_string(n) + "D");
         check(close(shifted.hausdorff_distance(P), P.hausdorff_distance(shifted), 1e-6),

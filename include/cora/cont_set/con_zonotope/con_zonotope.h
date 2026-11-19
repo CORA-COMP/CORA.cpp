@@ -21,7 +21,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -68,12 +68,12 @@ class ConZonotope : public ContSet {
                                    const std::optional<Tensor> &b = std::nullopt);
 
     /// The stored center c (..., n), generator rows G (..., m, n), constraint matrix A and offset
-    /// b; A and b are the equalities of the factor polytope.
+    /// b, a column (..., p, 1) as CORA's; A and b are the equalities of the factor polytope.
     const Tensor &c() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
     int64_t nr_generators() const { return G_.size(-2); }
     const Tensor &A() const { return F_.Ae(); }
-    const Tensor &b() const { return F_.be(); }
+    Tensor b() const { return F_.be().expand_dims(-1); }
 
     /// The factor polytope {x | A x = b} (without the unit box, which every factor keeps).
     const Polytope &factor_polytope() const noexcept { return F_; }

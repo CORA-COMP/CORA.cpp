@@ -3,9 +3,9 @@
 // See also: lean/con_zonotope.h, lean/request.h
 //
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/polytope.h"
@@ -36,7 +36,7 @@ cora::Tensor aux_part(const std::string &dtype, const Json &j, const char *key) 
 
 // Construction and crossing ------------------------------------------------------------------
 
-// the wire form of an exact set is {A, b, Ae, be} or {V}
+// the wire form {A, b, Ae, be} or {V} is CORA's: the offsets (m, 1) and the vertices (n, p)
 Polytope::Polytope(const cora::Polytope &P) : dtype_(), json_(Json::object()) {
     if (P.is_h_rep()) {
         dtype_ = Tensor(P.A()).dtype();
@@ -44,7 +44,7 @@ Polytope::Polytope(const cora::Polytope &P) : dtype_(), json_(Json::object()) {
         json_.set("Ae", Tensor(P.Ae()).to_json()).set("be", Tensor(P.be()).to_json());
     } else {
         dtype_ = Tensor(P.V()).dtype();
-        json_.set("V", Tensor(P.V()).to_json());
+        json_.set("V", Tensor(P.V().matrix_transpose()).to_json());
     }
 }
 
@@ -56,14 +56,18 @@ bool Polytope::exact() const {
 }
 
 CORA_FROM_NUMBERS cora::Polytope Polytope::nominal() const {
-    if (vertices()) return cora::Polytope(aux_part(dtype_, json_, "V"));
+    // back to one vertex per row and to the offset vectors (m)
+    if (vertices()) return cora::Polytope(aux_part(dtype_, json_, "V").matrix_transpose());
+    const auto offsets = [&](const char *key) {
+        const cora::Tensor b = aux_part(dtype_, json_, key);
+        return b.reshape({b.numel()});
+    };
     // the equalities are optional in a response of the oracle
     const int64_t n = Tensor::from_json(dtype_, json_.at("A")).cols();
     const cora::Tensor Ae = json_.find("Ae") ? aux_part(dtype_, json_, "Ae")
                                              : cora::Tensor::zeros({0, n}),
-                       be = json_.find("be") ? aux_part(dtype_, json_, "be")
-                                             : cora::Tensor::zeros({0, 1});
-    return {aux_part(dtype_, json_, "A"), aux_part(dtype_, json_, "b"), Ae, be};
+                       be = json_.find("be") ? offsets("be") : cora::Tensor::zeros({0});
+    return {aux_part(dtype_, json_, "A"), offsets("b"), Ae, be};
 }
 
 cora::Polytope Polytope::gather() const {

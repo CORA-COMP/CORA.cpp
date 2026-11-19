@@ -607,7 +607,7 @@ void bind_cont_set(py::module_ &m) {
             if (py::isinstance<ZonoBundle>(S1))
                 return py::cast<const ZonoBundle &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<Polytope>(S1))
-                return py::cast<const Polytope &>(S1).contains(tensor_of(S2, "the points"));
+                return py::cast<const Polytope &>(S1).contains(point_of(S2, "the points"));
             if (py::isinstance<Ellipsoid>(S1))
                 return py::cast<const Ellipsoid &>(S1).contains(point_of(S2, "the points"));
             if (py::isinstance<Capsule>(S1))
@@ -2298,9 +2298,9 @@ Polytope polytope_of(const py::object &first, const py::object &b, const py::obj
     if (py::isinstance<EmptySet>(first)) return Polytope(py::cast<EmptySet>(first));
     if (py::isinstance<Fullspace>(first)) return Polytope(py::cast<Fullspace>(first));
     if (b.is_none()) return Polytope(tensor_of(first, "the vertices V"));
-    if (Ae.is_none()) return Polytope(tensor_of(first, "A"), vector_of(b, "b"));
-    return Polytope(tensor_of(first, "A"), vector_of(b, "b"), tensor_of(Ae, "Ae"),
-                    vector_of(be, "be"));
+    if (Ae.is_none()) return Polytope(tensor_of(first, "A"), point_of(b, "b"));
+    return Polytope(tensor_of(first, "A"), point_of(b, "b"), tensor_of(Ae, "Ae"),
+                    point_of(be, "be"));
 }
 
 /// A polytope from Python: a Polytope, or a box as one.
@@ -2317,7 +2317,7 @@ void bind_polytope(py::module_ &m) {
                          const py::object &be) { return polytope_of(first, b, Ae, be); }),
              py::arg("A"), py::arg("b") = py::none(), py::arg("Ae") = py::none(),
              py::arg("be") = py::none(),
-             "Polytope(V): vertices (n, p); Polytope(A, b[, Ae, be]): halfspaces; Polytope(I): a "
+             "Polytope(V): vertices (p, n); Polytope(A, b[, Ae, be]): halfspaces; Polytope(I): a "
              "box")
         .def_static("empty", &Polytope::empty, py::arg("n") = 0, "The empty set of n dimensions")
         .def_static("inf", &Polytope::inf, py::arg("n") = 0, "R^n")
@@ -2327,25 +2327,26 @@ void bind_polytope(py::module_ &m) {
                 // the hull of the points
                 return Polytope::enclose_points(tensor_of(points, "points"));
             },
-            py::arg("points"), "The hull of the points (n, N), by its extreme points")
+            py::arg("points"), "The hull of the points (N, n), one per row, by its extreme points")
         .def_property_readonly(
             "A", [](const Polytope &P) { return matrix(P.A()); },
             "The inequality matrix (..., m, n)")
         .def_property_readonly(
-            "b", [](const Polytope &P) { return vector(P.b()); }, "The inequality offset (..., m)")
+            "b", [](const Polytope &P) { return values(P.b()); }, "The inequality offset (..., m)")
         .def_property_readonly(
             "Ae", [](const Polytope &P) { return matrix(P.Ae()); },
             "The equality matrix (..., me, n)")
         .def_property_readonly(
-            "be", [](const Polytope &P) { return vector(P.be()); }, "The equality offset (..., me)")
+            "be", [](const Polytope &P) { return values(P.be()); }, "The equality offset (..., me)")
         .def_property_readonly(
-            "V", [](const Polytope &P) { return matrix(P.V()); }, "The vertices (..., n, p)")
+            "V", [](const Polytope &P) { return matrix(P.V()); },
+            "The vertices (..., p, n), one per row")
         .def(
             "constraints",
             [](const Polytope &P) {
                 const Polytope::Constraints C = P.constraints();
                 // the halfspaces as a tuple
-                return py::make_tuple(matrix(C.A), vector(C.b), matrix(C.Ae), vector(C.be));
+                return py::make_tuple(matrix(C.A), values(C.b), matrix(C.Ae), values(C.be));
             },
             "(A, b, Ae, be): the halfspaces, from the vertices if need be")
         .def("box", &Polytope::box, "The polytope of the tightest box")
@@ -2374,16 +2375,16 @@ void bind_polytope(py::module_ &m) {
             [](const Polytope &P, const py::object &S, const std::string &method, Tol tol) {
                 if (py::isinstance<ContSet>(S))
                     return P.contains(py::cast<const ContSet &>(S), method, tol);
-                return P.contains(tensor_of(S, "the points"), method, tol);
+                return P.contains(point_of(S, "the points"), method, tol);
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
-            "Whether the polytope contains the points (n, N) or a set")
+            "Whether the polytope contains the points (..., n) or a set")
         .def(
             "intersect",
             [](const Polytope &P, const py::object &S, Tol tol) {
                 if (py::isinstance<ContSet>(S)) return P.intersect(polytope_arg(S));
                 // intersection with a polytope, a box or a point
-                return P.intersect(tensor_of(S, "the point"), tol);
+                return P.intersect(point_of(S, "the point"), tol);
             },
             py::arg("S"), py::arg("tol") = py::none(),
             "The intersection with a polytope, a box or a point")
@@ -2391,14 +2392,14 @@ void bind_polytope(py::module_ &m) {
             "cart_prod",
             [](const Polytope &P, const py::object &S) {
                 if (py::isinstance<ContSet>(S)) return P.cart_prod(polytope_arg(S));
-                return P.cart_prod(vector_of(S, "the point"));
+                return P.cart_prod(point_of(S, "the point"));
             },
             py::arg("S"), "The Cartesian product with a polytope, a box or a point")
         .def(
             "convex_hull",
             [](const Polytope &P, const py::object &S) {
                 if (py::isinstance<ContSet>(S)) return P.convex_hull(polytope_arg(S));
-                return P.convex_hull(vector_of(S, "the point"));
+                return P.convex_hull(point_of(S, "the point"));
             },
             py::arg("S"), "The convex hull with a polytope, a box or a point")
         // enclose with a set
@@ -2415,7 +2416,7 @@ void bind_polytope(py::module_ &m) {
                 if (py::isinstance<Polytope>(S)) return P.hausdorff_distance(py::cast<Polytope>(S));
                 return P.hausdorff_distance(tensor_of(S, "the points"));
             },
-            py::arg("S"), "The Hausdorff distance to a polytope, a box or the points (n, N)")
+            py::arg("S"), "The Hausdorff distance to a polytope, a box or the points (N, n)")
         // the second batch: the statics, the queries, the maps and the conversions
         .def_static("origin", &Polytope::origin, py::arg("n"), "The origin of R^n as a polytope")
         .def_static(
@@ -2450,7 +2451,7 @@ void bind_polytope(py::module_ &m) {
             [](const Polytope &P, const py::object &S, Tol tol) {
                 if (py::isinstance<Polytope>(S)) return P.isequal(py::cast<Polytope>(S), tol);
                 if (py::isinstance<ContSet>(S)) return P.isequal(py::cast<const ContSet &>(S), tol);
-                return P.isequal(tensor_of(S, "the point"), tol);
+                return P.isequal(point_of(S, "the point"), tol);
             },
             py::arg("S"), py::arg("tol") = py::none(),
             "Whether the polytope equals a set or a point")
@@ -2468,7 +2469,7 @@ void bind_polytope(py::module_ &m) {
                     return P.is_intersecting(py::cast<ConZonotope>(S), type, tol);
                 if (py::isinstance<ZonoBundle>(S))
                     return P.is_intersecting(py::cast<ZonoBundle>(S), type, tol);
-                return P.is_intersecting(tensor_of(S, "the point"), type, tol);
+                return P.is_intersecting(point_of(S, "the point"), type, tol);
             },
             py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
             "Whether the polytope and a set or a point intersect; type 'exact' or 'approx'")
@@ -2483,16 +2484,16 @@ void bind_polytope(py::module_ &m) {
             "distance",
             [](const Polytope &P, const py::object &S) -> py::object {
                 if (py::isinstance<Polytope>(S)) return py::cast(P.distance(py::cast<Polytope>(S)));
-                return vector(P.distance(tensor_of(S, "the points")));
+                return values(P.distance(point_of(S, "the points")));
             },
-            py::arg("S"), "The distance to a polytope or the signed distance to points (n, N)")
+            py::arg("S"), "The distance to a polytope or the signed distance to points (..., n)")
         // the sets built from the set
         .def(
             "unite",
             [](const Polytope &P, const py::object &S) {
                 if (py::isinstance<Polytope>(S)) return P.unite(py::cast<Polytope>(S));
                 if (py::isinstance<Interval>(S)) return P.unite(py::cast<Interval>(S));
-                return P.unite(tensor_of(S, "the point"));
+                return P.unite(point_of(S, "the point"));
             },
             py::arg("S"), "The convex hull of the union with a polytope, a box or points")
         // the normal forms and the reductions
@@ -3103,14 +3104,15 @@ void bind_operators(py::module_ &m) {
     const auto polytope_sum = [](const Polytope &A, const py::object &o) -> py::object {
         if (py::isinstance<Polytope>(o)) return py::cast(A.plus(py::cast<Polytope>(o)));
         if (py::isinstance<Interval>(o)) return py::cast(A.plus(py::cast<Interval>(o)));
-        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.plus(*v));
+        // a point (..., n) as it is
+        if (as_tensor(o)) return py::cast(A.plus(point_of(o, "the point")));
         return not_implemented();
     };
     // the sum is commutative; the difference only shifts
     method(P, "__add__", polytope_sum);
     method(P, "__radd__", polytope_sum);
     method(P, "__sub__", [](const Polytope &A, const py::object &o) -> py::object {
-        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A.minus(*v));
+        if (as_tensor(o)) return py::cast(A.minus(point_of(o, "the point")));
         return not_implemented();
     });
     // a matrix maps the set, a number scales it

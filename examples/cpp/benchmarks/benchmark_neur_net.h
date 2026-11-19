@@ -79,7 +79,7 @@ inline Polytope box_polytope(const std::vector<double> &lo, const std::vector<do
             ++rows;
         }
     }
-    return {Tensor::from_data(A, {rows, n}), Tensor::from_data(b, {rows, 1})};
+    return {Tensor::from_data(A, {rows, n}), Tensor::from_data(b, {rows})};
 }
 
 /// The zonotope of the box (CORA's zonotope(interval(lo, hi))).

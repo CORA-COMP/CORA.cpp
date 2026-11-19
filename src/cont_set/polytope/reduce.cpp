@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@polytope/reduce.m
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -44,9 +44,10 @@ Polytope Polytope::reduce(int order, Rng &rng, const std::string &method) const 
     std::vector<double> offsets;
     for (int64_t i = 0; i < rows; ++i) {
         const Row direction(directions.begin() + i * n, directions.begin() + (i + 1) * n);
-        offsets.push_back(P.support_function(priv_column_tensor(like, direction)).item());
+        offsets.push_back(
+            P.support_function(priv_vector_tensor(like, direction).expand_dims(-1)).item());
     }
-    return {Tensor::like(like, directions, {rows, n}), Tensor::like(like, offsets, {rows, 1})};
+    return {Tensor::like(like, directions, {rows, n}), Tensor::like(like, offsets, {rows})};
 }
 
 } // namespace cora

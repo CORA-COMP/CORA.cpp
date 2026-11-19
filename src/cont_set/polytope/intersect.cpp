@@ -5,16 +5,16 @@
 //
 // Syntax:   Pres = P.intersect(P2);   Pres = P.intersect(I);   Pres = P.intersect(p, tol);
 // Inputs:   P2, I - a polytope or a box of the dimension of P
-//           p - a point (n, 1)
+//           p - a point (n)
 //           tol - how far the point may be outside P; default: the repository tolerance
 // Outputs:  Pres - exact, as halfspaces: the inequalities of both sets stacked, and the equalities
 // See also: cart_prod, Polytope::contains
 //
 // CORA: contSet/@polytope/and_.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -52,8 +52,8 @@ Polytope aux_intersect(const Polytope &P, const Polytope &S) {
     if (priv_is_fullspace(S)) return P;
     if (priv_is_fullspace(P)) return S;
     const Polytope::Constraints C1 = P.constraints(), C2 = S.constraints();
-    return {Tensor::concat({C1.A, C2.A}, -2), Tensor::concat({C1.b, C2.b}, -2),
-            Tensor::concat({C1.Ae, C2.Ae}, -2), Tensor::concat({C1.be, C2.be}, -2)};
+    return {Tensor::concat({C1.A, C2.A}, -2), Tensor::concat({C1.b, C2.b}, -1),
+            Tensor::concat({C1.Ae, C2.Ae}, -2), Tensor::concat({C1.be, C2.be}, -1)};
 }
 
 } // namespace
@@ -82,13 +82,13 @@ Polytope Polytope::intersect(const Interval &I) const {
 Polytope Polytope::intersect(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, aux_data(*this).dtype(), "intersect");
-    const bool column = p.defined() && p.ndim() == 2 && p.shape()[0] == dim() && p.shape()[1] == 1;
-    CORA_CHECK(column, Error::dimension_mismatch, [&] {
-        return "intersect: the point must be a column (" + std::to_string(dim()) +
-               ", 1), got the shape " + shape_text(p.shape());
+    const bool point = p.defined() && p.ndim() == 1 && p.size(-1) == dim();
+    CORA_CHECK(point, Error::dimension_mismatch, [&] {
+        return "intersect: the point must be a vector (" + std::to_string(dim()) +
+               "), got the shape " + (p.defined() ? shape_text(p.shape()) : std::string("()"));
     });
     // the intersection with a point is the point if it is in the set, else nothing
-    if (contains(p, "exact", tol)) return Polytope(p);
+    if (contains(p, "exact", tol)) return Polytope(p.expand_dims(0));
     return empty(dim());
 }
 

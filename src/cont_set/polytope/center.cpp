@@ -2,7 +2,7 @@
 //
 // "chebyshev": the center of the largest ball in the set, from the halfspaces (a linear program;
 // for equalities alone their solution); "avg": the mean of the extreme vertices. R^n gives the
-// origin; the empty set a column without entries (n, 0); a set whose Chebyshev radius is
+// origin; the empty set NaN (CORA: no entries, (n, 0)); a set whose Chebyshev radius is
 // unbounded, or whose equalities leave a freedom, gives NaN. In 1D the middle of the two
 // vertices. Not a batch, except for "avg" of the vertices of a single set.
 //
@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@polytope/center.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -38,8 +38,11 @@ constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
 /// The tensor of the numbers as a column on the backend of the polytope's data.
 Tensor aux_column(const Polytope &P, const Row &values) {
-    return priv_column_tensor(P.is_h_rep() ? P.A() : P.V(), values);
+    return priv_vector_tensor(P.is_h_rep() ? P.A() : P.V(), values).expand_dims(-1);
 }
+
+/// The center of the empty set: NaN, as the empty box's (CORA's has no entries).
+Tensor aux_none(const Polytope &P) { return aux_column(P, Row(std::size_t(P.dim()), kNaN)); }
 
 /// The center of a one-dimensional polytope from its vertices: the vertex, the middle of two, NaN
 /// if one is infinite, nothing if there is none.
@@ -51,8 +54,7 @@ Tensor aux_center_1d(const Polytope &P) {
         bool empty = false;
         v = priv_vertices_1d(priv_host_h(P.constraints()), empty);
     }
-    const Tensor like = P.is_h_rep() ? P.A() : P.V();
-    if (v.empty()) return zeros_block(like, 1, 0);
+    if (v.empty()) return aux_none(P);
     if (v.size() == 1) return aux_column(P, {v[0]});
     if (std::isinf(v[0]) || std::isinf(v[1])) return aux_column(P, {kNaN});
     return aux_column(P, {(v[0] + v[1]) / 2.0});
@@ -63,12 +65,12 @@ Tensor aux_center_avg(const Polytope &P) {
     if (P.is_v_rep()) {
         const Rows points = priv_host_points(P.V());
         // of several vertices only the extreme ones count
-        const Tensor V = points.size() > 1 ? P.V().take(priv_extreme_points(points), -1) : P.V();
-        return V.mean(-1, true);
+        const Tensor V = points.size() > 1 ? P.V().take(priv_extreme_points(points), -2) : P.V();
+        return V.mean(-2, true).matrix_transpose();
     }
     const Rows vertices = priv_polytope_vertices(P);
     const int64_t n = P.dim();
-    if (vertices.empty()) return zeros_block(P.A(), n, 0);
+    if (vertices.empty()) return aux_none(P);
     Row mean(std::size_t(n), 0.0);
     for (const Row &v : vertices)
         for (int64_t i = 0; i < n; ++i) mean[std::size_t(i)] += v[std::size_t(i)];
@@ -118,7 +120,7 @@ Tensor aux_center_chebyshev(const Polytope &P) {
     const HostH H = priv_host_h(P.constraints());
     const std::optional<Row> c =
         H.A.empty() && !H.Ae.empty() ? aux_equalities_only(H) : priv_chebyshev_center(H);
-    if (!c) return zeros_block(P.is_h_rep() ? P.A() : P.V(), H.n, 0);
+    if (!c) return aux_none(P);
     return aux_column(P, *c);
 }
 
@@ -140,7 +142,7 @@ Tensor Polytope::center(const std::string &method) const {
     const int64_t n = dim();
     // R^n has the origin as its center, a set without vertices none
     if (priv_is_fullspace(*this)) return zeros_block(like, n, 1);
-    if (priv_has_no_vertices(*this)) return zeros_block(like, n, 0);
+    if (priv_has_no_vertices(*this)) return aux_none(*this);
     if (n == 1) return aux_center_1d(*this);
     return method == "avg" ? aux_center_avg(*this) : aux_center_chebyshev(*this);
 }

@@ -16,7 +16,7 @@
 // ORACLE: hybridDynamics/@location/guardIntersect.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "../../../examples/cpp/benchmarks/benchmark_rendezvous_model.h"
@@ -38,13 +38,13 @@ namespace {
 /// The hyperplane normal'x = d.
 Polytope aux_hyperplane(const std::vector<double> &normal, double d) {
     const auto n = int64_t(normal.size());
-    return {Tensor::zeros({0, n}), Tensor::zeros({0, 1}), Tensor::from_data(normal, {1, n}),
-            Tensor::from_data({d}, {1, 1})};
+    return {Tensor::zeros({0, n}), Tensor::zeros({0}), Tensor::from_data(normal, {1, n}),
+            Tensor::from_data({d}, {1})};
 }
 
 /// The halfspace normal'x <= d.
 Polytope aux_halfspace(const std::vector<double> &normal, double d) {
-    return {Tensor::from_data(normal, {1, int64_t(normal.size())}), Tensor::from_data({d}, {1, 1})};
+    return {Tensor::from_data(normal, {1, int64_t(normal.size())}), Tensor::from_data({d}, {1})};
 }
 
 /// One transition: guard, reset x -> W x + w and target.

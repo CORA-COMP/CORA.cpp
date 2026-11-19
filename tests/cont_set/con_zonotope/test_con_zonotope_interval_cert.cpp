@@ -8,7 +8,7 @@
 // CORA.cpp only: tests interval_cert, CORALean's float replacement of the programs of interval
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -43,12 +44,11 @@ void by_hand(const std::string &b) {
     const ConZonotope empty(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), column({3.0}));
     check(empty.interval_cert().is_empty(), b + ": no point: the empty box");
     const ConZonotope square(Zonotope(column({0.0, 0.0}), Tensor::eye(2)));
-    const Interval half =
-        square.cut(Polytope(Tensor({{1.0, 0.0}}), column({0.25}))).interval_cert();
+    const Interval half = square.cut(Polytope(Tensor({{1.0, 0.0}}), vec({0.25}))).interval_cert();
     check(close(half.inf(), {-1, -1}, 1e-12) && close(half.sup(), {0.25, 1}, 1e-12),
           b + ": a cut square");
     // a cut beyond the set has no point either
-    check(square.cut(Polytope(Tensor({{1.0, 0.0}}), column({-3.0}))).interval_cert().is_empty(),
+    check(square.cut(Polytope(Tensor({{1.0, 0.0}}), vec({-3.0}))).interval_cert().is_empty(),
           b + ": a cut beyond the set");
 }
 
@@ -103,8 +103,7 @@ void cuts(const std::string &b) {
     cora::Rng rng(9);
     for (int trial = 0; trial < 4; ++trial) {
         const ConZonotope A = test::random_con_zonotope(rng, 2, 4, 1);
-        const Polytope P(Tensor({{1.0, 0.5}, {-0.3, 1.0}}),
-                         A.c().expand_dims(-1) + column({0.2, 0.1}));
+        const Polytope P(Tensor({{1.0, 0.5}, {-0.3, 1.0}}), A.c() + vec({0.2, 0.1}));
         const ConZonotope::Cut K = A.cut(P);
         const Interval I = K.interval_cert(), exact = A.intersect(P).interval();
         check(!I.is_empty() && close(I.inf(), exact.inf(), 1e-8) &&

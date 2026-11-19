@@ -9,7 +9,7 @@
 // ORACLE: hybridDynamics/@location/guardIntersect_zonoGirard.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       09-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -40,8 +40,8 @@ int main() {
                     reach.emplace_back(sets.back());
                 }
                 // two bases: the identity and a random one
-                const Polytope guard(Tensor::zeros({0, n}), Tensor::zeros({0, 1}),
-                                     normal.matrix_transpose(), normal.full_like({1, 1}, gamma));
+                const Polytope guard(Tensor::zeros({0, n}), Tensor::zeros({0}),
+                                     normal.matrix_transpose(), normal.full_like({1}, gamma));
                 // and the pca basis of the sets, orthogonal up to rounding
                 const Location loc("l", Polytope::inf(n), {}, LinearSys(rnd.matrix(n, n)));
                 const Tensor pca =

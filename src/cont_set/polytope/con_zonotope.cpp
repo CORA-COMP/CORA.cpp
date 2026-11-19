@@ -80,8 +80,10 @@ ConZonotope Polytope::con_zonotope(const std::string &method,
         // the vertices and the constraints give the bounds of the rows
         if (vertices.empty()) return ConZonotope::empty(n);
         const Constraints C = constraints();
-        const Tensor V = priv_points_tensor(like, n, vertices);
-        const Tensor A_all = Tensor::concat({C.A, C.Ae}, 0), b_all = Tensor::concat({C.b, C.be}, 0);
+        // the vertices and the offsets as CORA's columns, the constrained zonotope's layout
+        const Tensor V = priv_points_tensor(like, n, vertices).matrix_transpose();
+        const Tensor A_all = Tensor::concat({C.A, C.Ae}, 0),
+                     b_all = Tensor::concat({C.b, C.be}, 0).expand_dims(-1);
         // the least value of each row over the vertices
         return aux_around_box(V.min(-1, true), V.max(-1, true), A_all, b_all,
                               A_all.matmul(V).min(-1, true));
@@ -91,13 +93,14 @@ ConZonotope Polytope::con_zonotope(const std::string &method,
     if (B.inf().detach().isinf().max().item() > 0.0 || B.sup().detach().isinf().max().item() > 0.0)
         aux_unbounded();
     const Constraints C = constraints();
-    const Tensor A_all = Tensor::concat({C.A, C.Ae}, 0), b_all = Tensor::concat({C.b, C.be}, 0);
+    const Tensor A_all = Tensor::concat({C.A, C.Ae}, 0),
+                 b_all = Tensor::concat({C.b, C.be}, 0).expand_dims(-1);
     // the least value of an inequality's row over the box (lower bound where positive, else upper)
     const Tensor lo = B.inf().expand_dims(-2), hi = B.sup().expand_dims(-2); // rows (1, n)
     const Tensor corner = Tensor::where(C.A.less(C.A.zeros_like()), hi, lo);
     const Tensor sigma_inequalities =
-        C.A.shape()[0] == 0 ? C.b : C.A.multiply(corner).sum(-1, true);
-    const Tensor sigma = Tensor::concat({sigma_inequalities, C.be}, 0);
+        C.A.shape()[0] == 0 ? C.b.expand_dims(-1) : C.A.multiply(corner).sum(-1, true);
+    const Tensor sigma = Tensor::concat({sigma_inequalities, C.be.expand_dims(-1)}, 0);
     return aux_around_box(B.inf().expand_dims(-1), B.sup().expand_dims(-1), A_all, b_all, sigma);
 }
 

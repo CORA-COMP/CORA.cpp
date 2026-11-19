@@ -32,25 +32,25 @@ void volumes(const std::string &b) {
     check(close(test::triangle_h().volume(), 2.0), b + ": the triangle");
     // the unit simplex in 3D: 1/6
     const Polytope simplex(
-        Tensor({{0.0, 1.0, 0.0, 0.0}, {0.0, 0.0, 1.0, 0.0}, {0.0, 0.0, 0.0, 1.0}}));
+        Tensor({{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}));
     check(close(simplex.volume(), 1.0 / 6.0), b + ": the 3D simplex");
     const Polytope box(Interval(vec({0.0, 1.0, 2.0}), vec({2.0, 4.0, 3.0})));
     check(close(box.volume(), 6.0), b + ": a 3D box");
     constexpr double inf = std::numeric_limits<double>::infinity();
     check(Polytope::inf(2).volume() == inf &&
-              Polytope(Tensor({{1.0, 0.0}}), column({1.0})).volume() == inf,
+              Polytope(Tensor({{1.0, 0.0}}), vec({1.0})).volume() == inf,
           b + ": unbounded: Inf");
-    check(Polytope::empty(2).volume() == 0.0 && Polytope(column({1.0, 2.0})).volume() == 0.0,
+    check(Polytope::empty(2).volume() == 0.0 && Polytope(Tensor({{1.0, 2.0}})).volume() == 0.0,
           b + ": empty and a point: 0");
-    check(Polytope(Tensor({{0.0, 1.0}, {0.0, 1.0}})).volume() == 0.0, b + ": a segment in 2D: 0");
-    check(close(Polytope(Tensor({{-1.0}, {1.0}}), column({0.0, 3.0})).volume(), 3.0), b + ": 1D");
+    check(Polytope(Tensor({{0.0, 0.0}, {1.0, 1.0}})).volume() == 0.0, b + ": a segment in 2D: 0");
+    check(close(Polytope(Tensor({{-1.0}, {1.0}}), vec({0.0, 3.0})).volume(), 3.0), b + ": 1D");
 }
 
 /// The image of the unit cube under M has the volume |det M|.
 void determinant(const std::string &b) {
     Rng rng(4);
     bool same = true;
-    const Polytope cube(Tensor({{0.0, 1.0, 0.0, 1.0}, {0.0, 0.0, 1.0, 1.0}}));
+    const Polytope cube(Tensor({{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}}));
     for (int k = 0; k < 5; ++k) {
         std::vector<double> m(4);
         rng.normal(m.data(), m.size(), 1.0);
@@ -71,7 +71,7 @@ int main() {
         volumes(b);
         determinant(b);
     });
-    check(test::raises([] { Polytope(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2, 1})).volume(); },
+    check(test::raises([] { Polytope(Tensor::ones({3, 2, 2}), Tensor::ones({3, 2})).volume(); },
                        Error::not_supported),
           "volume: a batch");
     ChecksScope off(false);

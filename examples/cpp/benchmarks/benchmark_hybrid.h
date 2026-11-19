@@ -48,7 +48,7 @@ inline Tensor vec(const std::vector<double> &entries) {
 /// CORA's polytope([], [], a, b): the hyperplane a'x = b.
 inline Polytope hyperplane(const std::vector<double> &a, double b) {
     const auto n = int64_t(a.size());
-    return Polytope(Tensor::zeros({0, n}), Tensor::zeros({0, 1}), matrix(1, n, a), column({b}));
+    return Polytope(Tensor::zeros({0, n}), Tensor::zeros({0}), matrix(1, n, a), vec({b}));
 }
 
 /// An instance: the automaton and its problem, the specifications, a check of the sets after

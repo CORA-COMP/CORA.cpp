@@ -6,9 +6,9 @@
 // Property: the vertices are the extreme points of the cloud, and every point is inside
 //
 // CORA authors: Niklas Kochdumper, Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -25,28 +25,30 @@ namespace {
 
 /// Extreme points are kept in order, the others go; degenerate clouds work.
 void clouds(const std::string &b) {
-    const Polytope P =
-        Polytope::enclose_points(Tensor({{0.0, 1.0, 1.0, 0.0, 0.5}, {0.0, 0.0, 1.0, 1.0, 0.5}}));
-    check(P.is_v_rep() && close(P.V(), {0, 1, 1, 0, 0, 0, 1, 1}, 0), b + ": the inner point goes");
-    check(close(Polytope::enclose_points(Tensor({{1.0, 1.0}, {2.0, 2.0}})).V(), {1, 2}, 0),
+    const Polytope P = Polytope::enclose_points(
+        Tensor({{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}, {0.5, 0.5}}));
+    check(P.is_v_rep() && close(P.V(), {0, 0, 1, 0, 1, 1, 0, 1}, 0), b + ": the inner point goes");
+    // degenerate clouds: equal, collinear and coinciding points
+    check(close(Polytope::enclose_points(Tensor({{1.0, 2.0}, {1.0, 2.0}})).V(), {1, 2}, 0),
           b + ": equal points: the first");
-    check(Polytope::enclose_points(Tensor({{0.0, 1.0, 2.0}, {0.0, 1.0, 2.0}})).V().shape() ==
+    check(Polytope::enclose_points(Tensor({{0.0, 0.0}, {1.0, 1.0}, {2.0, 2.0}})).V().shape() ==
               Shape{2, 2},
           b + ": collinear points: the ends");
-    check(Polytope::enclose_points(Tensor::zeros({3, 4})).V().shape() == Shape{3, 1},
+    check(Polytope::enclose_points(Tensor::zeros({4, 3})).V().shape() == Shape{1, 3},
           b + ": all at the origin");
     check(Polytope::enclose_points(
-              Tensor({{0.0, 1.0, 0.0, 1.0}, {0.0, 0.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0}}))
+              Tensor({{0.0, 0.0, 1.0}, {1.0, 0.0, 1.0}, {0.0, 1.0, 1.0}, {1.0, 1.0, 1.0}}))
                   .V()
-                  .shape() == Shape{3, 4},
+                  .shape() == Shape{4, 3},
           b + ": a flat square in space");
-    check(close(Polytope::enclose_points(Tensor({{3.0, 1.0, 2.0}})).V(), {1, 3}, 0), b + ": 1D");
+    check(close(Polytope::enclose_points(Tensor({{3.0}, {1.0}, {2.0}})).V(), {1, 3}, 0),
+          b + ": 1D");
     Rng rng(5);
     const Tensor sphere = test::sphere_points(rng, 3, 8);
-    const Tensor mean = sphere.mean(-1, true);
+    const Tensor mean = sphere.mean(-2, true);
     // a sphere and its inside
-    const Tensor both = Tensor::concat({sphere, mean + (sphere - mean) * 0.3}, -1);
-    check(test::same_columns(Polytope::enclose_points(both).V(), sphere),
+    const Tensor both = Tensor::concat({sphere, mean + (sphere - mean) * 0.3}, -2);
+    check(test::same_rows(Polytope::enclose_points(both).V(), sphere),
           b + ": a sphere and its inside");
     check(Polytope::enclose_points(both).contains(both, "exact", 1e-8),
           b + ": every point is inside");
@@ -60,7 +62,7 @@ void refusals() {
                        Error::wrong_value),
           "enclose_points: not a batch");
     ChecksScope off(false);
-    check(Polytope::enclose_points(Tensor({{0.0, 1.0}, {0.0, 1.0}})).V().shape() == Shape{2, 2},
+    check(Polytope::enclose_points(Tensor({{0.0, 0.0}, {1.0, 1.0}})).V().shape() == Shape{2, 2},
           "enclose_points: the same with the checks off");
 }
 
@@ -70,10 +72,10 @@ void properties(const std::string &b) {
     Rng rng(4);
     for (const int n : {2, 3, 4}) {
         const Tensor sphere = test::sphere_points(rng, n, n + 4);
-        const Tensor weights = Tensor::ones({n + 4, 3}) * (1.0 / (n + 4));
-        const Tensor inner = sphere.matmul(weights);
-        const Polytope P = Polytope::enclose_points(Tensor::concat({sphere, inner}, -1));
-        check(test::same_columns(P.V(), sphere),
+        const Tensor weights = Tensor::ones({3, n + 4}) * (1.0 / (n + 4));
+        const Tensor inner = weights.matmul(sphere);
+        const Polytope P = Polytope::enclose_points(Tensor::concat({sphere, inner}, -2));
+        check(test::same_rows(P.V(), sphere),
               b + ": only the sphere stays, " + std::to_string(n) + "D");
         check(P.contains(inner, "exact", 1e-8),
               b + ": the inner points are inside, " + std::to_string(n) + "D");

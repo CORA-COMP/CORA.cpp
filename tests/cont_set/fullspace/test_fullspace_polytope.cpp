@@ -3,9 +3,9 @@
 // CORA: contSet/@fullspace/polytope.m
 //
 // CORA authors: Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -28,7 +28,7 @@ void conversions(const std::string &b) {
         check(P.dim() == n && P.A().shape()[0] == 0 && P.representsa("fullspace"),
               b + ": R^" + std::to_string(n));
     }
-    check(Polytope(Fullspace(2)).contains(Tensor::ones({2, 1}) * 1e9), b + ": every point");
+    check(Polytope(Fullspace(2)).contains(Tensor::ones({2}) * 1e9), b + ": every point");
 }
 
 } // namespace

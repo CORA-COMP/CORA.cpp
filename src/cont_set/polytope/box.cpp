@@ -32,8 +32,7 @@ Polytope Polytope::box() const {
     const Interval I = interval_impl();
     if (I.is_empty()) return empty(n);
     const Tensor eye = identity_block(I.inf().expand_dims(-1), n);
-    return Polytope(Tensor::concat({eye, -eye}, -2),
-                    Tensor::concat({I.sup().expand_dims(-1), -I.inf().expand_dims(-1)}, -2));
+    return Polytope(Tensor::concat({eye, -eye}, -2), Tensor::concat({I.sup(), -I.inf()}, -1));
 }
 
 } // namespace cora

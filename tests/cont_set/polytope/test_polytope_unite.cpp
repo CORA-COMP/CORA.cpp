@@ -26,15 +26,15 @@ namespace {
 
 /// The hull of two squares and of a square and a point and a box.
 void hulls(const std::string &b) {
-    const Polytope far(Tensor({{2.0, 3.0, 3.0, 2.0}, {0.0, 0.0, 1.0, 1.0}}));
+    const Polytope far(Tensor({{2.0, 0.0}, {3.0, 0.0}, {3.0, 1.0}, {2.0, 1.0}}));
     const Polytope hull = test::square_v().unite(far);
-    check(hull.contains(column({1.5, 0.5})) && hull.contains(column({3.0, 1.0})) &&
-              !hull.contains(column({3.1, 0.5})),
+    check(hull.contains(vec({1.5, 0.5})) && hull.contains(vec({3.0, 1.0})) &&
+              !hull.contains(vec({3.1, 0.5})),
           b + ": two squares");
-    check(test::square_v().unite(column({3.0, 0.0})).contains(column({2.0, 0.0})), b + ": a point");
+    check(test::square_v().unite(vec({3.0, 0.0})).contains(vec({2.0, 0.0})), b + ": a point");
     check(test::square_v()
               .unite(Interval(vec({2.0, 0.0}), vec({3.0, 1.0})))
-              .contains(column({2.5, 0.5})),
+              .contains(vec({2.5, 0.5})),
           b + ": a box");
     // the same as convex_hull
     check(hull.isequal(test::square_v().convex_hull(far)), b + ": it is convex_hull");

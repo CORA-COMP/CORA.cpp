@@ -19,7 +19,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -96,7 +96,7 @@ detail::Refusal aux_polytope_refusal(const Tensor &c, const Tensor &G, const Pol
     };
     if (!F.is_h_rep() || F.A().shape()[F.A().ndim() - 2] != 0)
         return fail("the factor polytope must be equalities A x = b only");
-    return aux_refusal(c, G, F.Ae(), F.be());
+    return aux_refusal(c, G, F.Ae(), F.be().expand_dims(-1));
 }
 
 } // namespace
@@ -111,7 +111,8 @@ Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, Tenso
     detail::Entry entry;
     const detail::Refusal refusal = aux_refusal(c, G, A, b);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    return Polytope::equalities(std::move(A), std::move(b));
+    // the polytope's offsets are vectors (..., p)
+    return Polytope::equalities(std::move(A), b.squeeze(-1));
 }
 
 ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)

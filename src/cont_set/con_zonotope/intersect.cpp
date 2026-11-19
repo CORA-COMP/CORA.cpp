@@ -16,7 +16,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper, Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -66,7 +66,8 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
         // Ae (c + G x) = be for the factors x
         const Tensor A =
             Tensor::concat({cz.A(), H.Ae.matmul(cz.generators().matrix_transpose())}, -2);
-        const Tensor b = Tensor::concat({cz.b(), H.be - H.Ae.matmul(cz.c().expand_dims(-1))}, -2);
+        const Tensor b = Tensor::concat(
+            {cz.b(), H.be.expand_dims(-1) - H.Ae.matmul(cz.c().expand_dims(-1))}, -2);
         out = ConZonotope(cz.c(), cz.generators(), A, b);
     }
     // a constrained hyperplane takes the bounds from the set so far, else from the set after Ae

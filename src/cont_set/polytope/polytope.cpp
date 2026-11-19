@@ -1,15 +1,15 @@
 // polytope - the constructors of a polytope, checked, as CORA's polytope
 //
 // The halfspaces share one batch shape. A row of A with the offset +Inf is dropped (it holds
-// everywhere; not in a batch); an offset -Inf in b or +-Inf in be makes the set empty, which then
-// also holds no vertices. In 1D only the least and the greatest vertex are kept (one if they
-// agree).
+// everywhere; not in a batch); an offset -Inf in b or +-Inf in be makes the set empty: flagged in
+// the empty mask, with no vertices. In 1D only the least and the greatest vertex are kept (one if
+// they agree).
 //
 // Syntax:   Polytope P(A, b);   Polytope P(A, b, Ae, be);   Polytope P(V);   Polytope P(I);
 //           Polytope F = Polytope::equalities(Ae, be);
-// Inputs:   A (..., m, n), b (..., m, 1), Ae (..., k, n), be (..., k, 1) - A x <= b, Ae x = be
-//           V (..., n, p) - the vertices, p = 0 for none, finite unless n = 1
-//           I - a box (n, 1) bounds
+// Inputs:   A (..., m, n), b (..., m), Ae (..., k, n), be (..., k) - A x <= b, Ae x = be
+//           V (..., p, n) - the vertices, one per row, p = 0 for none, finite unless n = 1
+//           I - a box of the bounds (n)
 // Outputs:  P - the polytope; no rows is R^n
 // See also: empty, inf, constraints
 //
@@ -18,7 +18,7 @@
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   17-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -36,13 +36,13 @@ namespace cora {
 
 namespace {
 
-/// The leading (batch) axes of a tensor.
-std::vector<int64_t> aux_batch(const Tensor &t) {
+/// The leading (batch) axes of a matrix (elem 2) or a vector (elem 1).
+std::vector<int64_t> aux_batch(const Tensor &t, int elem = 2) {
     const std::vector<int64_t> shape = t.shape();
-    return {shape.begin(), shape.end() - 2};
+    return {shape.begin(), shape.end() - elem};
 }
 
-/// Whether the tensor is a matrix or a batch of them, with rows (the second to last axis).
+/// The rows of a matrix or a batch of them (the second to last axis).
 int64_t aux_rows(const Tensor &t) { return t.shape()[t.ndim() - 2]; }
 
 /// Whether any entry of t is NaN.
@@ -62,22 +62,23 @@ detail::Refusal aux_h_refusal(const Tensor &A, const Tensor &b, const Tensor &Ae
     if (A.ndim() < 2 || Ae.ndim() < 2)
         return fail("the constraint matrices must be matrices (..., rows, n), got " +
                     shape_text(A.shape()) + " and " + shape_text(Ae.shape()));
-    if (b.ndim() < 2 || b.shape().back() != 1 || be.ndim() < 2 || be.shape().back() != 1)
-        return fail("the offsets must be columns (..., rows, 1), got " + shape_text(b.shape()) +
+    // the offsets are vectors (..., rows): one axis fewer than the matrices
+    if (b.ndim() != A.ndim() - 1 || be.ndim() != Ae.ndim() - 1)
+        return fail("the offsets must be vectors (..., rows), got " + shape_text(b.shape()) +
                     " and " + shape_text(be.shape()));
     // the rows of the matrices and of their offsets, and the columns of both matrices, must agree
-    if (aux_rows(A) != aux_rows(b))
+    if (aux_rows(A) != b.size(-1))
         return fail("the number of rows does not hold between the arguments A and b: " +
                     shape_text(A.shape()) + " and " + shape_text(b.shape()));
-    if (aux_rows(Ae) != aux_rows(be))
+    if (aux_rows(Ae) != be.size(-1))
         return fail("the number of rows does not hold between the arguments Ae and be: " +
                     shape_text(Ae.shape()) + " and " + shape_text(be.shape()));
     if (A.shape().back() != Ae.shape().back())
         return fail("the number of columns does not hold between the arguments A and Ae: " +
                     shape_text(A.shape()) + " and " + shape_text(Ae.shape()));
     // a batch has one shape in all four parts
-    if (aux_batch(A) != aux_batch(b) || aux_batch(A) != aux_batch(Ae) ||
-        aux_batch(A) != aux_batch(be))
+    if (aux_batch(A) != aux_batch(b, 1) || aux_batch(A) != aux_batch(Ae) ||
+        aux_batch(A) != aux_batch(be, 1))
         return fail("the constraints must have one batch shape");
     return std::nullopt;
 }
@@ -89,9 +90,10 @@ detail::Refusal aux_v_refusal(const Tensor &V) {
     };
     if (!V.defined()) return fail("the vertices must be a tensor");
     if (V.ndim() < 2)
-        return fail("the vertices must be a matrix (..., n, p), got " + shape_text(V.shape()));
+        return fail("the vertices must be a matrix (..., p, n), one per row, got " +
+                    shape_text(V.shape()));
     if (aux_has_nan(V)) return fail("vertices have to be non-nan");
-    if (aux_rows(V) > 1 && aux_has_inf(V)) return fail("nD vertices for n > 1 have to be finite");
+    if (V.size(-1) > 1 && aux_has_inf(V)) return fail("nD vertices for n > 1 have to be finite");
     return std::nullopt;
 }
 
@@ -129,11 +131,13 @@ Polytope::Polytope(Tensor V) : ContSet(kClassId), V_(std::move(V)) {
     detail::Entry entry;
     const detail::Refusal refusal = aux_v_refusal(V_);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    if (aux_rows(V_) != 1 || V_.shape().back() == 0) return;
+    // no vertex: the empty set
+    if (aux_rows(V_) == 0) empty_ = EmptyMask::all_members();
+    if (V_.size(-1) != 1 || aux_rows(V_) == 0) return;
     // in 1D only the extremes matter; a single point if they agree
-    const Tensor lo = V_.min(-1, true), hi = V_.max(-1, true);
+    const Tensor lo = V_.min(-2, true), hi = V_.max(-2, true);
     const bool single = V_.ndim() == 2 && within_tol(lo.item(), hi.item(), machine_eps());
-    V_ = single ? lo : Tensor::concat({lo, hi}, -1);
+    V_ = single ? lo : Tensor::concat({lo, hi}, -2);
 }
 
 // Halfspaces --------------------------------------------------------------------------------------
@@ -153,29 +157,32 @@ Polytope::Polytope(Tensor A, Tensor b, Tensor Ae, Tensor be)
                 CORA_FAIL(Error::not_supported,
                           "Polytope: a batch with an infinite offset is not supported");
             A_ = keep.empty() ? zeros_block(A_, 0, A_.shape().back()) : A_.take(keep, -2);
-            b_ = keep.empty() ? zeros_block(b_, 0, 1) : b_.take(keep, -2);
+            b_ = keep.empty() ? b_.zeros_like({0}) : b_.take(keep, -1);
         }
     }
     // an infeasible offset: the set is empty, and so has no vertices
-    if (aux_infeasible_offset(b_, be_)) V_ = zeros_block(A_, A_.shape().back(), 0);
+    if (aux_infeasible_offset(b_, be_)) {
+        V_ = zeros_block(A_, 0, A_.shape().back());
+        empty_ = EmptyMask::all_members();
+    }
 }
 
 Polytope::Polytope(const Tensor &A, Tensor b)
     : Polytope(A, std::move(b),
                A.defined() && A.ndim() >= 2 ? zeros_block(A, 0, A.shape().back()) : Tensor(),
-               A.defined() && A.ndim() >= 2 ? zeros_block(A, 0, 1) : Tensor()) {}
+               A.defined() && A.ndim() >= 2 ? zeros_block(A, 0, 1).squeeze(-1) : Tensor()) {}
 
 // equalities only: an equality block without rows serves as the empty inequality block
 Polytope Polytope::equalities(Tensor Ae, Tensor be) {
     detail::Entry entry;
-    CORA_CHECK(Ae.defined() && be.defined() && Ae.ndim() >= 2 && be.ndim() >= 2,
+    CORA_CHECK(Ae.defined() && be.defined() && Ae.ndim() >= 2 && be.ndim() >= 1,
                Error::wrong_input_in_constructor, [] {
-                   return std::string("Polytope: the equalities must be matrices (..., k, n) and "
-                                      "(..., k, 1)");
+                   return std::string("Polytope: the equalities must be a matrix (..., k, n) and "
+                                      "a vector (..., k)");
                });
     const bool none = aux_rows(Ae) == 0;
     Tensor A = none ? Ae : zeros_block(Ae, 0, Ae.shape().back());
-    Tensor b = none ? be : zeros_block(be, 0, 1);
+    Tensor b = none ? be : zeros_block(Ae, 0, 1).squeeze(-1);
     const detail::Refusal refusal = entry.check() ? aux_h_refusal(A, b, Ae, be) : std::nullopt;
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     CORA_CHECK(!aux_has_inf(be), Error::wrong_input_in_constructor,
@@ -184,8 +191,8 @@ Polytope Polytope::equalities(Tensor Ae, Tensor be) {
 }
 
 Polytope::Polytope(Parts parts)
-    : ContSet(kClassId), A_(std::move(parts.A)), b_(std::move(parts.b)), Ae_(std::move(parts.Ae)),
-      be_(std::move(parts.be)), V_(std::move(parts.V)) {}
+    : ContSet(kClassId, std::move(parts.empty)), A_(std::move(parts.A)), b_(std::move(parts.b)),
+      Ae_(std::move(parts.Ae)), be_(std::move(parts.be)), V_(std::move(parts.V)) {}
 
 // A box -------------------------------------------------------------------------------------------
 

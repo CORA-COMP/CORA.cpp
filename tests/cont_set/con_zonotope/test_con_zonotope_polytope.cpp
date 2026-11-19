@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "con_zonotope_testing.h"
@@ -14,6 +14,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,11 +25,11 @@ namespace {
 /// Hand-computed: the hexagon contains its corners and midpoints, not the points beyond a facet.
 void polytope_known(const std::string &b) {
     const Polytope P = test::hexagon().polytope();
-    check(P.contains(column({1.0, 0.0})) && P.contains(column({-1.0, 1.0})) &&
-              P.contains(column({0.5, -0.5})) && P.contains(column({0.0, 0.0})),
+    check(P.contains(vec({1.0, 0.0})) && P.contains(vec({-1.0, 1.0})) &&
+              P.contains(vec({0.5, -0.5})) && P.contains(vec({0.0, 0.0})),
           b + ": points of the hexagon");
-    check(!P.contains(column({1.0, 1.0})) && !P.contains(column({-1.0, -1.0})) &&
-              !P.contains(column({1.1, 0.0})),
+    check(!P.contains(vec({1.0, 1.0})) && !P.contains(vec({-1.0, -1.0})) &&
+              !P.contains(vec({1.1, 0.0})),
           b + ": points outside");
 }
 
@@ -36,7 +37,8 @@ void polytope_known(const std::string &b) {
 void polytope_property(const std::string &b) {
     Rng rng(76);
     const ConZonotope cz = test::random_con_zonotope(rng, 3, 5, 2);
-    check(cz.polytope().contains(test::sample_points(cz, rng, 20)), b + ": the points are inside");
+    check(cz.polytope().contains(test::sample_points(cz, rng, 20).matrix_transpose()),
+          b + ": the points are inside");
 }
 
 } // namespace

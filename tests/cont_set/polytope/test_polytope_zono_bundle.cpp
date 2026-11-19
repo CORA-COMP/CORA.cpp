@@ -6,9 +6,9 @@
 // Property: the bundle holds exactly the polytope: its intersection has the same points
 //
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -16,6 +16,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -34,7 +35,7 @@ void bundles(const std::string &b) {
     check(test::triangle_h().zono_bundle().parallel_sets() == 3, b + ": the triangle");
     // an equality gives two zonotopes
     const Polytope flat(test::square_h().A(), test::square_h().b(), Tensor({{1.0, -1.0}}),
-                        column({0.0}));
+                        vec({0.0}));
     check(flat.zono_bundle().parallel_sets() == 6, b + ": an equality counts twice");
 }
 
@@ -46,8 +47,9 @@ void properties(const std::string &b) {
         const Polytope P = test::random_polytope(rng, n, n + 1);
         const ZonoBundle bundle = P.zono_bundle();
         for (int k = 0; k < 30; ++k) {
-            const Tensor x = column(test::random_direction(rng, n));
-            same = same && bundle.contains(x, "exact", 1e-7) == P.contains(x, "exact", 1e-7);
+            const Tensor x = vec(test::random_direction(rng, n));
+            same = same && bundle.contains(x.expand_dims(-1), "exact", 1e-7) ==
+                               P.contains(x, "exact", 1e-7);
         }
     }
     check(same, b + ": the bundle holds the points of P");
@@ -65,7 +67,7 @@ int main() {
     });
     check(test::raises([] { Polytope::inf(2).zono_bundle(); }, Error::special_error),
           "zono_bundle: R^n");
-    check(test::raises([] { Polytope(Tensor({{1.0, 0.0}}), column({1.0})).zono_bundle(); },
+    check(test::raises([] { Polytope(Tensor({{1.0, 0.0}}), vec({1.0})).zono_bundle(); },
                        Error::special_error),
           "zono_bundle: an unbounded set");
     ChecksScope off(false);

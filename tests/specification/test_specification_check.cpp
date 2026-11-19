@@ -14,6 +14,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,7 +25,7 @@ namespace {
 /// The halfspace {x | a'x <= b} as a polytope.
 Polytope halfspace(const std::vector<double> &a, double offset) {
     const int64_t n = static_cast<int64_t>(a.size());
-    return Polytope(Tensor::from_data(a, {1, n}), Tensor::from_data({offset}, {1, 1}));
+    return Polytope(Tensor::from_data(a, {1, n}), Tensor::from_data({offset}, {1}));
 }
 
 /// Any set the polytope can decide answers, here through a reference to the base class.

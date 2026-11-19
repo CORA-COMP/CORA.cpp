@@ -2,9 +2,9 @@
 //
 // The bounds of vertices are their coordinate-wise extremes: piecewise, away from ties.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_gradients.h"
@@ -20,7 +20,7 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(31);
-    const std::vector<torch::Tensor> V{torch::randn({3, 5}, torch::kDouble)};
+    const std::vector<torch::Tensor> V{torch::randn({5, 3}, torch::kDouble)};
     test::gradcheck(
         "interval",
         [](const Inputs &x) {

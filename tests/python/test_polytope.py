@@ -2,9 +2,9 @@
 
 CORA authors: Mark Wetzlinger, Viktor Kotsev, Niklas Kochdumper, Tobias Ladner, Adrian Kulmburg,
               Matthias Althoff, Victor Gassmann
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       04-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 # CORA: contSet/@polytope/Inf.m
@@ -40,7 +40,7 @@ import numpy as np
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
-SQUARE = np.array([[0.0, 1.0, 1.0, 0.0], [0.0, 0.0, 1.0, 1.0]])
+SQUARE = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
 EYE = np.eye(2)
 SQUARE_H = (np.vstack([EYE, -EYE]), np.array([1.0, 1.0, 0.0, 0.0]))
 
@@ -55,6 +55,10 @@ def square_halfspaces():
 
 def triangle():
     return cora.Polytope(np.array([[-1.0, 0.0], [0.0, -1.0], [1.0, 1.0]]), np.array([0.0, 0.0, 2.0]))
+
+
+def point(*x):
+    return np.array(x, dtype=float)
 
 
 def column(*x):
@@ -77,13 +81,13 @@ class Polytope(unittest.TestCase):
         self.assertEqual(H.b.shape, (4,))
         self.assertEqual(H.Ae.shape, (0, 2))
         V = square_vertices()
-        self.assertEqual(V.V.shape, (2, 4))
+        self.assertEqual(V.V.shape, (4, 2))
         eq = cora.Polytope(*SQUARE_H, np.array([[1.0, 1.0]]), np.array([1.0]))
         np.testing.assert_array_equal(eq.Ae, [[1.0, 1.0]])
         np.testing.assert_array_equal(eq.be, [1.0])
         box = cora.Polytope(cora.Interval(np.array([0.0, 1.0]), np.array([2.0, 3.0])))
         np.testing.assert_array_equal(box.b, [2.0, 3.0, 0.0, -1.0])
-        np.testing.assert_array_equal(cora.Polytope(np.array([[3.0, 1.0, 2.0]])).V, [[1.0, 3.0]])
+        np.testing.assert_array_equal(cora.Polytope(np.array([[3.0], [1.0], [2.0]])).V, [[1.0], [3.0]])
         self.assertIn("polytope", repr(H).lower())
         with self.assertRaises(cora.errors.SpecialError):
             _ = H.V
@@ -99,11 +103,11 @@ class Polytope(unittest.TestCase):
 
     def test_empty_and_inf(self):
         E = cora.Polytope.empty(2)
-        self.assertEqual(E.V.shape, (2, 0))
-        self.assertFalse(E.contains(np.zeros((2, 1))))
+        self.assertEqual(E.V.shape, (0, 2))
+        self.assertFalse(E.contains(np.zeros(2)))
         W = cora.Polytope.inf(2)
         self.assertEqual(W.A.shape, (0, 2))
-        self.assertTrue(W.contains(np.array([[1e9], [-1e9]])))
+        self.assertTrue(W.contains(np.array([1e9, -1e9])))
         self.assertEqual(cora.Polytope.empty().dim, 0)
         with self.assertRaises(cora.errors.WrongValue):
             cora.Polytope.empty(-1)
@@ -112,7 +116,7 @@ class Polytope(unittest.TestCase):
         A, b, Ae, be = square_vertices().constraints()
         # the halfspaces from the vertices
         self.assertEqual((A.shape, b.shape, Ae.shape, be.shape), ((4, 2), (4,), (0, 2), (0,)))
-        self.assertTrue(np.all(A @ SQUARE <= b[:, None] + 1e-9))
+        self.assertTrue(np.all(A @ SQUARE.T <= b[:, None] + 1e-9))
         box = square_vertices().interval()
         np.testing.assert_allclose(box.inf, [0.0, 0.0])
         np.testing.assert_allclose(box.sup, [1.0, 1.0])
@@ -134,7 +138,7 @@ class Polytope(unittest.TestCase):
         self.assertEqual(P.compact("A").A.shape[0], 4)
         # compact
         self.assertEqual(P.compact("AtoAe").A.shape[0], 6)
-        self.assertEqual(square_vertices().compact("V").V.shape, (2, 4))
+        self.assertEqual(square_vertices().compact("V").V.shape, (4, 2))
         self.assertEqual(P.compact("all", 1e-6).A.shape[0], 4)
         with self.assertRaises(cora.errors.WrongValue):
             P.compact("nope")
@@ -158,65 +162,65 @@ class Polytope(unittest.TestCase):
         # containment
         H, V = square_halfspaces(), square_vertices()
         for P in (H, V):
-            self.assertTrue(P.contains(column(0.5, 0.5)))
-            self.assertFalse(P.contains(column(1.5, 0.5)))
-            self.assertIn(np.array([[0.5], [0.5]]), P)
-        points = np.array([[0.5, 2.0], [0.5, 0.5]])
+            self.assertTrue(P.contains(point(0.5, 0.5)))
+            self.assertFalse(P.contains(point(1.5, 0.5)))
+            self.assertIn(np.array([0.5, 0.5]), P)
+        points = np.array([[0.5, 0.5], [2.0, 0.5]])
         self.assertFalse(H.contains(points))
         for method in ("exact:venum", "exact:polymax", "approx"):
-            self.assertTrue(H.contains(column(0.5, 0.5), method))
+            self.assertTrue(H.contains(point(0.5, 0.5), method))
         self.assertTrue(H.contains(cora.Interval(np.array([0.2, 0.2]), np.array([0.8, 0.8]))))
         self.assertFalse(H.contains(cora.Interval(np.array([0.5, 0.5]), np.array([1.5, 1.0]))))
         self.assertTrue(H.contains(cora.Zonotope(np.array([0.5, 0.5]), 0.2 * EYE)))
-        self.assertTrue(H.contains(cora.Polytope(np.array([[0.2, 0.8, 0.8], [0.2, 0.2, 0.8]]))))
-        self.assertTrue(H.contains(column(1.0 + 1e-6, 0.5), "exact", 1e-5))
+        self.assertTrue(H.contains(cora.Polytope(np.array([[0.2, 0.2], [0.8, 0.2], [0.8, 0.8]]))))
+        self.assertTrue(H.contains(point(1.0 + 1e-6, 0.5), "exact", 1e-5))
         with self.assertRaises(cora.errors.NoSpecificAlg):
-            H.contains(column(0.5, 0.5), "nope")
+            H.contains(point(0.5, 0.5), "nope")
         with self.assertRaises(cora.errors.DimensionMismatch):
-            H.contains(column(0.5))
+            H.contains(point(0.5))
 
     def test_set_operations(self):
         H = square_halfspaces()
         # intersection
         Q = cora.Polytope(np.vstack([-EYE, EYE]), np.array([-0.5, -0.5, 2.0, 2.0]))
         R = H.intersect(Q)
-        self.assertTrue(R.contains(column(0.75, 0.75)))
-        self.assertFalse(R.contains(column(0.25, 0.75)))
+        self.assertTrue(R.contains(point(0.75, 0.75)))
+        self.assertFalse(R.contains(point(0.25, 0.75)))
         clip = cora.Interval(np.array([0.5, 0.5]), np.array([3.0, 3.0]))
-        self.assertTrue(H.intersect(clip).contains(column(0.75, 0.75)))
-        np.testing.assert_array_equal(H.intersect(column(0.5, 0.5)).V, [[0.5], [0.5]])
-        self.assertEqual(H.intersect(column(3.0, 3.0)).V.shape, (2, 0))
+        self.assertTrue(H.intersect(clip).contains(point(0.75, 0.75)))
+        np.testing.assert_array_equal(H.intersect(point(0.5, 0.5)).V, [[0.5, 0.5]])
+        self.assertEqual(H.intersect(point(3.0, 3.0)).V.shape, (0, 2))
         self.assertEqual(R.dim, (H & Q).dim)
         product = H.cart_prod(Q)
         self.assertEqual(product.dim, 4)
-        self.assertTrue(product.contains(column(0.5, 0.5, 1.0, 1.0)))
+        self.assertTrue(product.contains(point(0.5, 0.5, 1.0, 1.0)))
         self.assertEqual(H.cart_prod(np.array([3.0])).dim, 3)
         self.assertEqual(H.cart_prod(cora.Interval(np.array([0.0]), np.array([1.0]))).dim, 3)
         V1 = square_vertices()
-        V2 = cora.Polytope(SQUARE + np.array([[2.0], [0.0]]))
+        V2 = cora.Polytope(SQUARE + np.array([2.0, 0.0]))
         hull = V1.convex_hull(V2)
-        self.assertEqual(hull.V.shape, (2, 4))
-        self.assertTrue(hull.contains(column(1.5, 0.5)))
-        self.assertEqual(V1.enclose(V2).V.shape, (2, 4))
+        self.assertEqual(hull.V.shape, (4, 2))
+        self.assertTrue(hull.contains(point(1.5, 0.5)))
+        self.assertEqual(V1.enclose(V2).V.shape, (4, 2))
         # convex hull
-        self.assertEqual(V1.convex_hull(np.array([2.0, 0.5])).V.shape, (2, 5))
-        self.assertEqual(V1.convex_hull(cora.Polytope.empty(2)).V.shape, (2, 4))
+        self.assertEqual(V1.convex_hull(np.array([2.0, 0.5])).V.shape, (5, 2))
+        self.assertEqual(V1.convex_hull(cora.Polytope.empty(2)).V.shape, (4, 2))
         with self.assertRaises(cora.errors.DimensionMismatch):
             H.intersect(cora.Polytope.inf(3))
         with self.assertRaises(cora.errors.DimensionMismatch):
-            V1.convex_hull(column(1.0, 2.0, 3.0))
+            V1.convex_hull(point(1.0, 2.0, 3.0))
 
     def test_enclose_points_and_hausdorff(self):
-        cloud = np.hstack([SQUARE, [[0.5], [0.5]]])
+        cloud = np.vstack([SQUARE, [[0.5, 0.5]]])
         P = cora.Polytope.enclose_points(cloud)
         np.testing.assert_array_equal(P.V, SQUARE)
-        self.assertEqual(cora.Polytope.enclose_points(np.zeros((3, 4))).V.shape, (3, 1))
-        shifted = cora.Polytope(SQUARE + np.array([[2.0], [0.0]]))
+        self.assertEqual(cora.Polytope.enclose_points(np.zeros((4, 3))).V.shape, (1, 3))
+        shifted = cora.Polytope(SQUARE + np.array([2.0, 0.0]))
         self.assertAlmostEqual(square_vertices().hausdorff_distance(shifted), 2.0, places=8)
         self.assertAlmostEqual(square_halfspaces().hausdorff_distance(square_vertices()), 0.0, places=8)
         big = cora.Interval(np.array([0.0, 0.0]), np.array([2.0, 2.0]))
         self.assertAlmostEqual(square_vertices().hausdorff_distance(big), np.sqrt(2.0), places=8)
-        self.assertAlmostEqual(square_vertices().hausdorff_distance(np.array([[3.0], [0.0]])), 2.0, places=8)
+        self.assertAlmostEqual(square_vertices().hausdorff_distance(np.array([[3.0, 0.0]])), 2.0, places=8)
         with self.assertRaises(cora.errors.WrongValue):
             cora.Polytope.enclose_points(np.zeros((2, 2, 3)))
 
@@ -237,7 +241,7 @@ class Polytope(unittest.TestCase):
         self.assertEqual(P.A.shape, (3, 4, 2))
         self.assertEqual(P.cart_prod(P).A.shape, (3, 8, 4))
         self.assertEqual(P.intersect(P).A.shape, (3, 8, 2))
-        V = cora.Polytope(np.broadcast_to(SQUARE, (3, 2, 4)).copy())
+        V = cora.Polytope(np.broadcast_to(SQUARE, (3, 4, 2)).copy())
         self.assertEqual(V.interval().inf.shape, (3, 2))
 
 

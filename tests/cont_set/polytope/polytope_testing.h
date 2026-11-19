@@ -8,9 +8,9 @@
 //           sample_points: points of a halfspace polytope by rejection in its box
 // See also: testing.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -35,10 +35,10 @@ inline cora::Polytope random_polytope(cora::Rng &rng, int n, int m) {
         }
     }
     const int64_t rows = int64_t(b.size());
-    return {cora::Tensor::from_data(A, {rows, n}), cora::Tensor::from_data(b, {rows, 1})};
+    return {cora::Tensor::from_data(A, {rows, n}), cora::Tensor::from_data(b, {rows})};
 }
 
-/// The vertices of a bounded polytope (n, p), from either form.
+/// The vertices of a bounded polytope (p, n), one per row, from either form.
 inline cora::Tensor vertices_of(const cora::Polytope &P) {
     const cora::Tensor &like = P.is_h_rep() ? P.A() : P.V();
     return cora::priv_points_tensor(like, P.dim(), cora::priv_polytope_vertices(P));
@@ -52,24 +52,26 @@ inline cora::Polytope as_vertices(const cora::Polytope &P) {
 /// The unit square [0, 1]^2 by its halfspaces, and by its vertices.
 inline cora::Polytope square_h() {
     return {cora::Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
-            cora::Tensor::from_data({1.0, 1.0, 0.0, 0.0}, {4, 1})};
+            cora::Tensor::from_data({1.0, 1.0, 0.0, 0.0}, {4})};
 }
 
 inline cora::Polytope square_v() {
-    return cora::Polytope(cora::Tensor({{0.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0}}));
+    return cora::Polytope(cora::Tensor({{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}}));
 }
 
 /// The triangle x >= 0, y >= 0, x + y <= 2 by its halfspaces.
 inline cora::Polytope triangle_h() {
     return {cora::Tensor({{-1.0, 0.0}, {0.0, -1.0}, {1.0, 1.0}}),
-            cora::Tensor::from_data({0.0, 0.0, 2.0}, {3, 1})};
+            cora::Tensor::from_data({0.0, 0.0, 2.0}, {3})};
 }
 
-/// k points (n, k) on the sphere of the radius about the point (shift, ..., shift): all vertices.
+/// k points (k, n), one per row, on the sphere of the radius about the point (shift, ..., shift):
+/// all vertices.
 inline cora::Tensor sphere_points(cora::Rng &rng, int n, int k, double radius = 1.0,
                                   double shift = 0.0) {
     std::vector<double> points(std::size_t(n) * k);
     rng.normal(points.data(), points.size(), 1.0);
+    // the draws fill CORA's columns (n, k); the points are their columns
     for (int c = 0; c < k; ++c) {
         double norm = 0.0;
         for (int i = 0; i < n; ++i)
@@ -78,18 +80,18 @@ inline cora::Tensor sphere_points(cora::Rng &rng, int n, int k, double radius = 
         for (int i = 0; i < n; ++i)
             points[std::size_t(i) * k + c] = shift + radius * points[std::size_t(i) * k + c] / norm;
     }
-    return cora::Tensor::from_data(points, {n, k});
+    return cora::Tensor::from_data(points, {n, k}).matrix_transpose();
 }
 
-/// N points (n, N) of a bounded halfspace polytope with inequalities only: uniform in its box,
-/// kept if they satisfy the rows.
+/// N points (N, n), one per row, of a bounded halfspace polytope with inequalities only: uniform
+/// in its box, kept if they satisfy the rows.
 inline cora::Tensor sample_points(const cora::Polytope &P, cora::Rng &rng, int N) {
     const cora::Interval box = P.interval();
     const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
     const std::vector<double> A = P.A().data(), b = P.b().data();
     const int64_t n = P.dim(), m = P.A().shape()[0];
-    std::vector<std::vector<double>> kept;
-    while (int(kept.size()) < N) {
+    std::vector<double> flat;
+    while (int64_t(flat.size()) < n * N) {
         std::vector<double> x(static_cast<std::size_t>(n));
         for (int64_t i = 0; i < n; ++i)
             rng.uniform(&x[std::size_t(i)], 1, lo[std::size_t(i)], hi[std::size_t(i)]);
@@ -99,43 +101,38 @@ inline cora::Tensor sample_points(const cora::Polytope &P, cora::Rng &rng, int N
             for (int64_t i = 0; i < n; ++i) value += A[std::size_t(r * n + i)] * x[std::size_t(i)];
             inside = value <= b[std::size_t(r)];
         }
-        if (inside) kept.push_back(x);
+        // a kept point is the next row
+        if (inside) flat.insert(flat.end(), x.begin(), x.end());
     }
-    std::vector<double> flat(std::size_t(n) * N);
-    // the kept points become the columns of an (n, N) matrix
-    for (int k = 0; k < N; ++k)
-        for (int64_t i = 0; i < n; ++i)
-            flat[std::size_t(i) * N + k] = kept[std::size_t(k)][std::size_t(i)];
-    return cora::Tensor::from_data(flat, {n, int64_t(N)});
+    return cora::Tensor::from_data(flat, {int64_t(N), n});
 }
 
-/// Whether the columns of P (n, N) all satisfy the halfspaces up to slack.
+/// Whether the points (N, n) all satisfy the halfspaces up to slack.
 inline bool inside_halfspaces(const cora::Tensor &points, const cora::Polytope::Constraints &C,
                               double slack = 1e-8) {
-    const cora::Tensor ineq = C.A.matmul(points) - C.b;
+    const cora::Tensor columns = points.matrix_transpose();
+    const cora::Tensor ineq = C.A.matmul(columns) - C.b.expand_dims(-1);
     if (ineq.numel() > 0 && ineq.max().item() > slack) return false;
-    const cora::Tensor eq = (C.Ae.matmul(points) - C.be).abs();
+    const cora::Tensor eq = (C.Ae.matmul(columns) - C.be.expand_dims(-1)).abs();
     return eq.numel() == 0 || eq.max().item() <= slack;
 }
 
-/// The columns of a matrix (n, p) as sorted rows, for comparisons of vertex sets that do not
-/// depend on the order.
-inline std::vector<std::vector<double>> columns_sorted(const cora::Tensor &V) {
-    const int64_t n = V.shape()[0], p = V.shape()[1];
+/// The rows of a matrix (p, n), sorted, for comparisons of vertex sets that do not depend on the
+/// order.
+inline std::vector<std::vector<double>> rows_sorted(const cora::Tensor &V) {
+    const int64_t p = V.shape()[0], n = V.shape()[1];
     const std::vector<double> flat = V.data();
-    std::vector<std::vector<double>> columns(static_cast<std::size_t>(p),
-                                             std::vector<double>(static_cast<std::size_t>(n)));
+    std::vector<std::vector<double>> rows(static_cast<std::size_t>(p));
     for (int64_t k = 0; k < p; ++k)
-        for (int64_t i = 0; i < n; ++i)
-            columns[std::size_t(k)][std::size_t(i)] = flat[std::size_t(i * p + k)];
-    std::sort(columns.begin(), columns.end());
-    return columns;
+        rows[std::size_t(k)].assign(flat.begin() + k * n, flat.begin() + (k + 1) * n);
+    std::sort(rows.begin(), rows.end());
+    return rows;
 }
 
-/// Whether two sets of columns agree up to tol, whatever the order.
-inline bool same_columns(const cora::Tensor &A, const cora::Tensor &B, double tol = 1e-9) {
+/// Whether two sets of rows (vertices) agree up to tol, whatever the order.
+inline bool same_rows(const cora::Tensor &A, const cora::Tensor &B, double tol = 1e-9) {
     if (A.shape() != B.shape()) return false;
-    const auto a = columns_sorted(A), b = columns_sorted(B);
+    const auto a = rows_sorted(A), b = rows_sorted(B);
     for (std::size_t k = 0; k < a.size(); ++k)
         for (std::size_t i = 0; i < a[k].size(); ++i)
             if (!close(a[k][i], b[k][i], tol)) return false;

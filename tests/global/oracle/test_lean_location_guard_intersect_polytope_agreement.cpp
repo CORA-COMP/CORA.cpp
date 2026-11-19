@@ -6,9 +6,9 @@
 // bundle's members agree to a relative 1e-8 on random sets (the bit-exact case, where the dual
 // solution is unique and dyadic, is in `test_lean_location_guard_intersect_polytope`).
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -33,9 +33,9 @@ Polytope aux_guard(test::oracle::Random &rnd, const Tensor &x0, int64_t n, bool 
         const Tensor row = A.slice(-2, int64_t(i), int64_t(i) + 1);
         b[i] = row.matmul(x0).item() + rnd.uniform(0.0, 0.3);
     }
-    if (!hyperplane) return {A, Tensor::from_data(b, {2, 1})};
+    if (!hyperplane) return {A, Tensor::from_data(b, {2})};
     const Tensor Ae = A.slice(-2, 0, 1);
-    return {A, Tensor::from_data(b, {2, 1}), Ae, Ae.matmul(x0)};
+    return {A, Tensor::from_data(b, {2}), Ae, Ae.matmul(x0).squeeze(-1)};
 }
 
 /// Sets of n dimensions with centers near x0 and generators wide enough to cross the guard.

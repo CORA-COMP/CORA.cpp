@@ -158,7 +158,9 @@ LinProg aux_program(const ConZonotope::Cut &K, const Host &H) {
         std::none_of(H.d.begin(), H.d.end(), [](double x) { return std::isinf(x) && x > 0; });
     if (all_finite) {
         const std::vector<double> lb(std::size_t(H.h), -1.0), ub(std::size_t(H.h), 1.0);
-        return Polytope::LinearPrograms(Polytope(K.C, K.d, K.A, K.b), lb, ub).program();
+        return Polytope::LinearPrograms(Polytope(K.C, K.d.squeeze(-1), K.A, K.b.squeeze(-1)), lb,
+                                        ub)
+            .program();
     }
     LinProg lp;
     lp.n = int(H.h);

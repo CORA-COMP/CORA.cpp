@@ -13,9 +13,9 @@
 //
 // CORA: contSet/@polytope/constraints.m
 // CORA authors: Viktor Kotsev
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -35,10 +35,10 @@ Polytope::Constraints Polytope::constraints() const {
     // no vertex: the empty set, which is the row 0 <= -1
     if (priv_has_no_vertices(*this)) {
         if (n == 0)
-            return {zeros_block(V_, 0, 0), zeros_block(V_, 0, 1), zeros_block(V_, 0, 0),
-                    zeros_block(V_, 0, 1)};
-        return {zeros_block(V_, 1, n), zeros_block(V_, 1, 1) - 1.0, zeros_block(V_, 0, n),
-                zeros_block(V_, 0, 1)};
+            return {zeros_block(V_, 0, 0), V_.zeros_like({0}), zeros_block(V_, 0, 0),
+                    V_.zeros_like({0})};
+        return {zeros_block(V_, 1, n), V_.zeros_like({1}) - 1.0, zeros_block(V_, 0, n),
+                V_.zeros_like({0})};
     }
     return priv_tensors_h(V_, priv_constraints_of_points(V_, priv_host_points(V_), n));
 }

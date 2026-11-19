@@ -40,9 +40,8 @@ Ellipsoid Polytope::ellipsoid(const std::string &method) const {
     CORA_CHECK(method == "outer", Error::not_supported, [&] {
         return "ellipsoid: '" + method + "' is a semidefinite program, which has no solver here";
     });
-    // the vertices as rows (p, n)
     return Ellipsoid::enclose_points(
-        priv_points_tensor(like, dim(), priv_polytope_vertices(*this)).matrix_transpose());
+        priv_points_tensor(like, dim(), priv_polytope_vertices(*this)));
 }
 
 } // namespace cora

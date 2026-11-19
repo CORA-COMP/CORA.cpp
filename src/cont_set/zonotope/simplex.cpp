@@ -14,7 +14,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -47,7 +47,9 @@ Polytope Zonotope::simplex() const {
             normals[std::size_t(j * n + k)] = -B[std::size_t(k + 1)][std::size_t(j)] / norm;
     }
     const Tensor A = Tensor::like(c_.expand_dims(-1), normals, {n + 1, n});
-    return {A, A.matmul(c_.expand_dims(-1)) + A.matmul(G_.matrix_transpose()).abs_sum()};
+    // the offsets on CORA's columns, then the polytope's vector (m)
+    return {A,
+            (A.matmul(c_.expand_dims(-1)) + A.matmul(G_.matrix_transpose()).abs_sum()).squeeze(-1)};
 }
 
 } // namespace cora

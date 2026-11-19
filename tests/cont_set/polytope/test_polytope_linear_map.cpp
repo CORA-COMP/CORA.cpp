@@ -7,9 +7,9 @@
 // image
 //
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,17 +30,18 @@ namespace {
 /// origin.
 void images(const std::string &b) {
     const Tensor M({{2.0, 0.0}, {0.0, 3.0}});
-    check(close((M * test::square_v()).V(), Tensor({{0.0, 2.0, 2.0, 0.0}, {0.0, 0.0, 3.0, 3.0}})),
-          b + ": vertices");
+    check(
+        close((M * test::square_v()).V(), Tensor({{0.0, 0.0}, {2.0, 0.0}, {2.0, 3.0}, {0.0, 3.0}})),
+        b + ": vertices");
     const Polytope image = M * test::square_h();
-    check(image.contains(column({2.0, 3.0})) && !image.contains(column({2.1, 3.0})) &&
+    check(image.contains(vec({2.0, 3.0})) && !image.contains(vec({2.1, 3.0})) &&
               close(test::support(image, {1.0, 1.0}), 5.0, 1e-8),
           b + ": halfspaces, invertible M");
     // a scalar: positive scales the offsets, negative flips the rows too
     const Polytope scaled =
-        Polytope(Tensor({{-1.0}, {1.0}}), column({0.0, 1.0})).linear_map(Tensor({{-2.0}}));
-    check(scaled.contains(column({-2.0})) && scaled.contains(column({0.0})) &&
-              !scaled.contains(column({0.5})),
+        Polytope(Tensor({{-1.0}, {1.0}}), vec({0.0, 1.0})).linear_map(Tensor({{-2.0}}));
+    check(scaled.contains(vec({-2.0})) && scaled.contains(vec({0.0})) &&
+              !scaled.contains(vec({0.5})),
           b + ": 1D: scaling by a negative number");
     check(close(test::square_h().linear_map(Tensor::zeros({2, 2})).V(), {0.0, 0.0}),
           b + ": the zero matrix: the origin");
@@ -49,19 +51,18 @@ void images(const std::string &b) {
 void decomposed(const std::string &b) {
     // a wide matrix drops the second coordinate: the projection onto x
     const Polytope shadow = Tensor({{1.0, 0.0}}) * test::triangle_h();
-    check(shadow.dim() == 1 && shadow.contains(column({2.0})) && !shadow.contains(column({2.1})) &&
-              shadow.contains(column({0.0})) && !shadow.contains(column({-0.1})),
+    check(shadow.dim() == 1 && shadow.contains(vec({2.0})) && !shadow.contains(vec({2.1})) &&
+              shadow.contains(vec({0.0})) && !shadow.contains(vec({-0.1})),
           b + ": wide: the shadow of the triangle");
     // a tall matrix embeds the plane in space: the equality z = x + y holds
     const Polytope lifted = Tensor({{1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}}) * test::square_h();
-    check(lifted.dim() == 3 && lifted.contains(column({1.0, 1.0, 2.0})) &&
-              !lifted.contains(column({1.0, 1.0, 3.0})) &&
-              !lifted.contains(column({1.0, 1.1, 2.1})),
+    check(lifted.dim() == 3 && lifted.contains(vec({1.0, 1.0, 2.0})) &&
+              !lifted.contains(vec({1.0, 1.0, 3.0})) && !lifted.contains(vec({1.0, 1.1, 2.1})),
           b + ": tall: the plane z = x + y");
     // a singular matrix, x -> (x + y, x + y), maps the square onto the diagonal segment [0, 2]
     const Polytope segment = Tensor({{1.0, 1.0}, {1.0, 1.0}}) * test::square_h();
-    check(segment.contains(column({1.0, 1.0})) && segment.contains(column({2.0, 2.0})) &&
-              !segment.contains(column({1.0, 1.5})) && !segment.contains(column({2.1, 2.1})),
+    check(segment.contains(vec({1.0, 1.0})) && segment.contains(vec({2.0, 2.0})) &&
+              !segment.contains(vec({1.0, 1.5})) && !segment.contains(vec({2.1, 2.1})),
           b + ": singular: a diagonal segment");
     // R^n: the whole space for a matrix of full row rank, else its range
     check((Tensor({{1.0, 0.0}}) * Polytope::inf(2)).representsa("fullspace"), b + ": R^n: R^m");
@@ -71,7 +72,7 @@ void decomposed(const std::string &b) {
 void batches(const std::string &b) {
     const Tensor M = Tensor::stack({Tensor::eye(2), Tensor::eye(2) * 2.0}, 0);
     const Polytope image = test::square_v().linear_map(M);
-    check(image.V().shape() == Shape{2, 2, 4} && close(image.V().slice(0, 1, 2).max(), {2.0}),
+    check(image.V().shape() == Shape{2, 4, 2} && close(image.V().slice(0, 1, 2).max(), {2.0}),
           b + ": a batch of matrices");
 }
 
@@ -86,7 +87,7 @@ void properties(const std::string &b) {
         const Tensor M = Tensor::from_data(m, {n, n}) + Tensor::eye(n) * 3.0;
         const Polytope image = P.linear_map(M);
         const Tensor x = test::sample_points(P, rng, 10);
-        inside = inside && image.contains(M.matmul(x), "exact", 1e-7);
+        inside = inside && image.contains(x.matmul(M.matrix_transpose()), "exact", 1e-7);
         back = back && image.linear_map(M.inv()).isequal(P, 1e-6);
     }
     check(inside && back, b + ": samples map into the image, and M^-1 M P = P");

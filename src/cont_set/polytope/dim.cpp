@@ -7,9 +7,9 @@
 //
 // CORA: contSet/@polytope/dim.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/polytope/polytope.h"
@@ -21,9 +21,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-int64_t Polytope::dim_impl() const {
-    return is_h_rep() ? A_.shape().back() : V_.shape()[V_.ndim() - 2];
-}
+int64_t Polytope::dim_impl() const { return is_h_rep() ? A_.shape().back() : V_.shape().back(); }
 
 } // namespace cora
 

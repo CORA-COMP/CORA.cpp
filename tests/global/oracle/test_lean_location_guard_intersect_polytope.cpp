@@ -11,9 +11,9 @@
 //
 // ORACLE: hybridDynamics/@location/guardIntersect_nondetGuard.m
 // ORACLE: hybridDynamics/@location/guardIntersect_conZonotope.m
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   12-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -40,9 +40,9 @@ Polytope aux_guard(test::oracle::Random &rnd, const Tensor &x0, int64_t n, bool 
         const Tensor row = A.slice(-2, int64_t(i), int64_t(i) + 1);
         b[i] = row.matmul(x0).item() + rnd.uniform(0.0, 0.3);
     }
-    if (!hyperplane) return {A, Tensor::from_data(b, {2, 1})};
+    if (!hyperplane) return {A, Tensor::from_data(b, {2})};
     const Tensor Ae = A.slice(-2, 0, 1);
-    return {A, Tensor::from_data(b, {2, 1}), Ae, Ae.matmul(x0)};
+    return {A, Tensor::from_data(b, {2}), Ae, Ae.matmul(x0).squeeze(-1)};
 }
 
 /// Sets of n dimensions with centers near x0 and generators wide enough to cross the guard.
@@ -63,7 +63,7 @@ void aux_dyadic(std::vector<Zonotope> &sets, std::vector<Set> &reach, Polytope &
     sets.emplace_back(Tensor::from_data({0.125, 0.25}, {2, 1}),
                       Tensor::from_data({0.25, 0.125, 0.0, 0.5}, {2, 2}));
     for (const Zonotope &Z : sets) reach.emplace_back(Z);
-    guard = Polytope(Tensor::from_data({1.0, 1.0}, {1, 2}), Tensor::from_data({0.3125}, {1, 1}));
+    guard = Polytope(Tensor::from_data({1.0, 1.0}, {1, 2}), Tensor::from_data({0.3125}, {1}));
     bases = {Tensor::eye(2), Tensor::from_data({0.0, 1.0, 1.0, 0.0}, {2, 2})};
 }
 
@@ -135,7 +135,7 @@ int main() {
         // the dyadic sets, the guard and the bases
         std::vector<Zonotope> sets;
         std::vector<Set> reach;
-        Polytope guard = Polytope(Tensor::eye(2), Tensor::zeros({2, 1}));
+        Polytope guard = Polytope(Tensor::eye(2), Tensor::zeros({2}));
         std::vector<Tensor> bases;
         aux_dyadic(sets, reach, guard, bases);
         const std::optional<Set> cert =
@@ -158,7 +158,7 @@ int main() {
         // the dyadic sets, the guard and the bases
         std::vector<Zonotope> sets;
         std::vector<Set> reach;
-        Polytope guard = Polytope(Tensor::eye(2), Tensor::zeros({2, 1}));
+        Polytope guard = Polytope(Tensor::eye(2), Tensor::zeros({2}));
         std::vector<Tensor> bases;
         aux_dyadic(sets, reach, guard, bases);
         const std::optional<Set> cert =

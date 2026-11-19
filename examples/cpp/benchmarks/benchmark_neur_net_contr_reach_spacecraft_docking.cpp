@@ -17,9 +17,9 @@
 //
 // CORA: contDynamics/neurNetContrSys/example_neuralNet_reach_10_spacecraftDocking.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "benchmark_neur_net.h"
@@ -92,7 +92,7 @@ Polytope aux_docking_polytope(double n, int sides) {
         A.insert(A.end(), {-w, -w, std::cos(phi), std::sin(phi)});
         b.push_back(0.2 * c);
     }
-    return {Tensor::from_data(A, {sides, 4}), Tensor::from_data(b, {sides, 1})};
+    return {Tensor::from_data(A, {sides, 4}), Tensor::from_data(b, {sides})};
 }
 
 /// Whether the state (sx, sy, vx, vy) satisfies the constraint of the docking.

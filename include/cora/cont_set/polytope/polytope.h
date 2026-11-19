@@ -2,8 +2,9 @@
 //
 // A polytope is given by its halfspaces (A, b, Ae, be) or by its vertices V, never both by the
 // user; some operations add the other form (empty has both). A polytope without constraints is
-// R^n. Shapes: A (..., m, n), b (..., m, 1), Ae (..., k, n), be (..., k, 1), V (..., n, p), the
-// leading axes a batch. Immutable: every operation returns a new polytope. The operations that
+// R^n. Batch first (#163): A (..., m, n), b (..., m), Ae (..., k, n), be (..., k) and the vertices
+// V (..., p, n), one per row. Points are (..., n); the empty set is flagged in empty_mask() and
+// keeps n. Immutable: every operation returns a new polytope. The operations that
 // solve linear programs or branch on the data run on one polytope, not a batch
 // (Error::not_supported). CORA stores what it has found out (emptiness, boundedness) in the object;
 // here a polytope holds its data and every property is computed when it is asked for.
@@ -20,9 +21,9 @@
 // CORA: contSet/@emptySet/polytope.m
 // CORA: contSet/@fullspace/polytope.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -53,13 +54,13 @@ class Polytope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::polytope;
 
-    /// The convex hull of the vertices V (..., n, p), one per column; none (p = 0) is the empty
+    /// The convex hull of the vertices V (..., p, n), one per row; none (p = 0) is the empty
     /// set. The vertices must not be NaN, and finite unless n = 1. In one dimension only the
     /// smallest and the largest are kept (CORA: one if they agree).
     explicit Polytope(Tensor V);
 
-    /// {x | A x <= b}, and with the second form also {x | Ae x = be}: A (..., m, n), b (..., m, 1),
-    /// Ae (..., k, n), be (..., k, 1). A row with the offset +Inf holds everywhere and is dropped
+    /// {x | A x <= b}, and with the second form also {x | Ae x = be}: A (..., m, n), b (..., m),
+    /// Ae (..., k, n), be (..., k). A row with the offset +Inf holds everywhere and is dropped
     /// (not in a batch); an offset -Inf (or an equality offset +-Inf) makes the set empty.
     Polytope(const Tensor &A, Tensor b);
     Polytope(Tensor A, Tensor b, Tensor Ae, Tensor be);
@@ -73,15 +74,15 @@ class Polytope : public ContSet {
     explicit Polytope(const EmptySet &E);
     explicit Polytope(const Fullspace &F);
 
-    /// The empty set of n dimensions (CORA's polytope.empty): the row 0 <= -1 (none for n = 0)
-    /// and no vertices.
+    /// The empty set of n dimensions (CORA's polytope.empty): flagged in empty_mask(), with the
+    /// row 0 <= -1 (none for n = 0) and no vertices (0, n).
     static Polytope empty(int64_t n = 0);
 
     /// R^n (CORA's polytope.Inf): no constraints. CORA also stores the 2^n vertices at infinity
     /// for n <= 8; vertices are not ported, so none are held here.
     static Polytope inf(int64_t n = 0);
 
-    /// {x | Ae x = be} without inequalities (Ae (..., k, n), be (..., k, 1)), e.g. the factor
+    /// {x | Ae x = be} without inequalities (Ae (..., k, n), be (..., k)), e.g. the factor
     /// polytope of a constrained zonotope; the offsets must be finite (an input check). A batch is
     /// fine.
     static Polytope equalities(Tensor Ae, Tensor be);
@@ -98,9 +99,9 @@ class Polytope : public ContSet {
                                     std::optional<bool> is_degenerate = std::nullopt,
                                     std::optional<bool> is_bounded = std::nullopt);
 
-    /// The convex hull of the points (n, N), as a vertex polytope of the extreme ones in their
-    /// order (CORA's enclosePoints: rank, QR and convhulln; a degenerate cloud is reduced to its
-    /// affine hull first). Not a batch.
+    /// The convex hull of the points (N, n), one per row, as a vertex polytope of the extreme ones
+    /// in their order (CORA's enclosePoints: rank, QR and convhulln; a degenerate cloud is reduced
+    /// to its affine hull first). Not a batch.
     static Polytope enclose_points(const Tensor &points);
 
     // Data ----------------------------------------------------------------------------------------
@@ -115,7 +116,7 @@ class Polytope : public ContSet {
     const Tensor &Ae() const;
     const Tensor &be() const;
 
-    /// The vertices; Error::special_error if only the halfspaces are held.
+    /// The vertices (..., p, n), one per row; Error::special_error if only the halfspaces are held.
     const Tensor &V() const;
 
     /// The halfspace form of a polytope, computed from the vertices if need be.
@@ -134,7 +135,7 @@ class Polytope : public ContSet {
     Polytope box() const;
 
     /// The center: "chebyshev" (default), the center of the largest ball, or "avg", the mean of
-    /// the extreme vertices. R^n gives the origin, the empty set (n, 0). Not a batch.
+    /// the extreme vertices, a column (n, 1). R^n gives the origin, the empty set NaN. Not a batch.
     using ContSet::center;
     Tensor center(const std::string &method) const;
 
@@ -149,7 +150,7 @@ class Polytope : public ContSet {
     ConZonotope con_zonotope(const std::string &method = "exact:supportFunc",
                              const std::optional<Interval> &box = std::nullopt) const;
 
-    /// Whether the set contains the points (n, N), all of them, or a set (CORA's contains_):
+    /// Whether the set contains the points (..., n), all of them, or a set (CORA's contains_):
     /// "exact" (default), "exact:venum" or "exact:polymax", up to tol. Not a batch.
     bool contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
@@ -201,24 +202,24 @@ class Polytope : public ContSet {
 
     // Combining with other sets -------------------------------------------------------------------
 
-    /// The intersection with a polytope, a box or a point (n, 1) (CORA's and_): the rows of both
+    /// The intersection with a polytope, a box or a point (n) (CORA's and_): the rows of both
     /// stack, exactly, as halfspaces; a point gives itself if it is contained, else the empty set.
     /// R^n is neutral. A polytope in vertex form is converted by constraints (not a batch).
     Polytope intersect(const Polytope &S) const;
     Polytope intersect(const Interval &I) const;
     Polytope intersect(const Tensor &p, Tol tol = std::nullopt) const;
 
-    /// The Cartesian product with a polytope, a box or a point (n2, 1), exact: halfspaces on the
+    /// The Cartesian product with a polytope, a box or a point (n2), exact: halfspaces on the
     /// block diagonal, or all pairs of vertices if both are in vertex form. R^n times a point is
     /// not R^(n+n2): the point's equalities are rows. A mixed pair converts the vertex form.
     Polytope cart_prod(const Polytope &P2) const;
     Polytope cart_prod(const Interval &I) const;
     Polytope cart_prod(const Tensor &p) const;
 
-    /// The Cartesian product of a point p (n1, 1) with a polytope.
+    /// The Cartesian product of a point p (n1) with a polytope.
     static Polytope cart_prod(const Tensor &p, const Polytope &P);
 
-    /// The convex hull with a polytope, a box or a point (n, 1) (CORA's convHull_), as a vertex
+    /// The convex hull with a polytope, a box or a point (n) (CORA's convHull_), as a vertex
     /// polytope of the extreme vertices. The hull with R^n is R^n. Not a batch.
     Polytope convex_hull(const Polytope &P2) const;
     Polytope convex_hull(const Interval &I) const;
@@ -231,7 +232,7 @@ class Polytope : public ContSet {
     /// polytopes: Error::not_supported until they are ported.
     Polytope enclose(const Tensor &M, const Polytope &Pplus) const;
 
-    /// The Hausdorff distance to a polytope, a box or the points (n, N) (CORA's hausdorffDist):
+    /// The Hausdorff distance to a polytope, a box or the points (N, n) (CORA's hausdorffDist):
     /// the largest distance of a vertex of one set to the other, by quadratic programs. Not a
     /// batch.
     double hausdorff_distance(const Polytope &P2) const;
@@ -254,7 +255,7 @@ class Polytope : public ContSet {
     bool is_full_dim(Tol tol = std::nullopt) const;
     std::pair<bool, Tensor> is_full_dim_subspace(Tol tol = std::nullopt) const;
 
-    /// Whether the set equals a polytope, a point (n, 1) or another set (CORA's isequal): by the
+    /// Whether the set equals a polytope, a point (n) or another set (CORA's isequal): by the
     /// rows, by the vertices or by containment both ways. tol default: the repository's. Not a
     /// batch.
     bool isequal(const Polytope &S, Tol tol = std::nullopt) const;
@@ -262,8 +263,8 @@ class Polytope : public ContSet {
     bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
     /// Whether the set meets a polytope, a box, a zonotope, a constrained zonotope, a bundle or
-    /// points (n, N) (CORA's isIntersecting_): type "exact" (default; a linear program) or "approx"
-    /// (support functions along the rows; not for a polytope). Not a batch.
+    /// points (..., n) (CORA's isIntersecting_): type "exact" (default; a linear program) or
+    /// "approx" (support functions along the rows; not for a polytope). Not a batch.
     bool is_intersecting(const Polytope &S, const std::string &type = "exact",
                          Tol tol = std::nullopt) const;
     bool is_intersecting(const Interval &I, const std::string &type = "exact",
@@ -280,14 +281,14 @@ class Polytope : public ContSet {
     /// Whether this set is contained in S (CORA's le, P <= S): S contains the set, up to tol.
     bool less_equal(const ContSet &S, Tol tol = std::nullopt) const;
 
-    /// The Euclidean distance to a polytope, or of each point (n, N) to the set, shape (1, N):
+    /// The Euclidean distance to a polytope, or of each point (..., n) to the set, shape (...):
     /// Inf for the empty set, 0 for a set that meets (CORA's distance). Not a batch.
     double distance(const Polytope &S) const;
     Tensor distance(const Tensor &points) const;
 
     // Maps and sums -------------------------------------------------------------------------------
 
-    /// The Minkowski sum with a polytope, a box or a column v (n, 1) (CORA's plus): exact; R^n
+    /// The Minkowski sum with a polytope, a box or a vector v (..., n) (CORA's plus): exact; R^n
     /// absorbs, the empty set annihilates, the sum of two halfspace sets is the projection of their
     /// block product, of two vertex sets all pairs of vertices.
     Polytope plus(const Polytope &S) const;
@@ -397,6 +398,7 @@ class Polytope : public ContSet {
     /// The parts of a polytope that is built by an operation (in either or both forms).
     struct Parts {
         Tensor A, b, Ae, be, V;
+        EmptyMask empty = {};
     };
     explicit Polytope(Parts parts);
 

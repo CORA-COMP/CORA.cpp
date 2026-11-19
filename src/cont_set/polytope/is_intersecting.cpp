@@ -10,7 +10,7 @@
 // (CORA's test reads two fields that do not exist). In one dimension the boxes decide. Not a batch.
 //
 // Syntax:   res = P.is_intersecting(S);   res = P.is_intersecting(S, "approx", tol);
-// Inputs:   S - a polytope, a box, a zonotope, a constrained zonotope, a bundle, or points (n, N)
+// Inputs:   S - a polytope, a box, a zonotope, a constrained zonotope, a bundle, or points (..., n)
 //           type - "exact" (default) or "approx"
 //           tol - for points and halfspaces, as for contains; default: the repository tolerance
 // Outputs:  res - whether the sets have a common point (all points must be in P for points)
@@ -196,7 +196,7 @@ bool aux_meets_vertices(const HostH &H, const Rows &V) {
 double aux_lowest(const ContSet &S, const Row &a, const Tensor &like) {
     Row negated = a;
     for (double &x : negated) x = -x;
-    return -S.support_function(priv_column_tensor(like, negated)).item();
+    return -S.support_function(priv_vector_tensor(like, negated).expand_dims(-1)).item();
 }
 
 /// Whether two polytopes meet, by the forms they hold.
@@ -229,7 +229,8 @@ bool aux_not_beyond(const Polytope &P, const ContSet &S, double tol) {
     // an equality row needs its offset inside the range of S
     for (std::size_t i = 0; i < H.Ae.size(); ++i) {
         const double low = aux_lowest(S, H.Ae[i], C.A);
-        const double high = S.support_function(priv_column_tensor(C.A, H.Ae[i])).item();
+        const double high =
+            S.support_function(priv_vector_tensor(C.A, H.Ae[i]).expand_dims(-1)).item();
         if (!(low <= H.be[i] && H.be[i] <= high) && !within_tol(H.be[i], low, tol) &&
             !within_tol(H.be[i], high, tol))
             return false;
@@ -354,10 +355,15 @@ bool Polytope::is_intersecting(const Tensor &p, const std::string &type, Tol tol
     detail::Entry entry;
     const Tensor &like = is_h_rep() ? A_ : V_;
     const double tol = resolve_tol(entry, tol_arg, like.dtype(), "is_intersecting");
-    // the refusal reads the dimension from the rows of a center column
-    const Tensor center = priv_column_tensor(like, Row(static_cast<std::size_t>(dim()), 0.0));
-    const Refusal refusal = priv_intersecting_points_refusal(type, center, p);
-    CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
+    CORA_CHECK(type == "exact" || type == "approx", Error::wrong_value, [&] {
+        return "is_intersecting: the type must be 'exact' or 'approx', got '" + type + "'";
+    });
+    CORA_CHECK(p.defined() && is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "is_intersecting: the points must be (..., " + std::to_string(dim()) +
+               "), one per row, got the shape " + (p.defined() ? shape_text(p.shape()) : "()");
+    });
+    CORA_CHECK(like.ndim() == 2, Error::not_supported,
+               [] { return std::string("is_intersecting: it supports single sets, not a batch"); });
     // points are in the set or not: all of them
     return contains(p, type, tol);
 }

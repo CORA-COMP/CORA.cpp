@@ -19,9 +19,9 @@
 // CORA: contSet/@polytope/private/priv_compact_V.m
 // CORA: contSet/@polytope/private/priv_copyProperties.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -93,8 +93,8 @@ Polytope Polytope::compact(const std::string &method, Tol tol_arg) const {
         Polytope out = *this;
         if (points.size() <= 1) return out;
         // in 1D the least and the greatest vertex, else the extreme ones
-        out.V_ = dim() == 1 ? Tensor::concat({V_.min(-1, true), V_.max(-1, true)}, -1)
-                            : V_.take(priv_extreme_points(points), -1);
+        out.V_ = dim() == 1 ? Tensor::concat({V_.min(-2, true), V_.max(-2, true)}, -2)
+                            : V_.take(priv_extreme_points(points), -2);
         return out;
     }
     const int64_t n = dim();
