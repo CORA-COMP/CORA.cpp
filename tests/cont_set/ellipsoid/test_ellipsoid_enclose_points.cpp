@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/enclosePoints.m
 // PROPERTY: contSet/@ellipsoid/enclosePoints.m
 // CORA authors: Niklas Kochdumper, Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,24 +25,24 @@ namespace {
 /// is centered at its mean.
 void enclose_points_known(const std::string &b) {
     // two points on the x axis: the segment [1, 3], radius 1 around 2
-    const Ellipsoid segment = Ellipsoid::enclose_points(Tensor({{1.0, 3.0}, {0.0, 0.0}}));
+    const Ellipsoid segment = Ellipsoid::enclose_points(Tensor({{1.0, 0.0}, {3.0, 0.0}}));
     check(close(segment.q(), {2, 0}, 1e-12), b + ": the center of a segment");
     check(close(segment.Q().abs(), {1, 0, 0, 0}, 1e-12) && !segment.is_full_dim(),
           b + ": a degenerate cloud: the range, Q = diag(1, 0)");
     // one point: that point (CORA raises an error)
-    const Ellipsoid point = Ellipsoid::enclose_points(Tensor({{2.0, 2.0}, {3.0, 3.0}}));
+    const Ellipsoid point = Ellipsoid::enclose_points(Tensor({{2.0, 3.0}, {2.0, 3.0}}));
     check(close(point.q(), {2, 3}, 0) && close(point.Q(), Tensor::zeros({2, 2}), 0),
           b + ": coinciding points give the point");
-    check(close(Ellipsoid::enclose_points(column({4.0, 5.0})).q(), {4, 5}, 0), b + ": one column");
+    check(close(Ellipsoid::enclose_points(Tensor({{4.0, 5.0}})).q(), {4, 5}, 0), b + ": one row");
     // the corners of a square: center 0, every corner inside, the farthest on the boundary
-    const Tensor corners({{1.0, 1.0, -1.0, -1.0}, {1.0, -1.0, 1.0, -1.0}});
+    const Tensor corners({{1.0, 1.0}, {1.0, -1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
     const Ellipsoid square = Ellipsoid::enclose_points(corners);
     check(close(square.q(), {0, 0}, 1e-12) && test::all_inside(square, corners),
           b + ": the corners of a square");
     check(test::close(Tensor({{test::norms_of(square, corners)[0]}}), Tensor({{1.0}}), 1e-9),
           b + ": the farthest point is on the boundary");
     // one dimension: the range
-    const Ellipsoid line = Ellipsoid::enclose_points(Tensor({{1.0, 2.0, 7.0}}));
+    const Ellipsoid line = Ellipsoid::enclose_points(Tensor({{1.0}, {2.0}, {7.0}}));
     check(close(line.q(), {4}, 1e-12) && close(line.Q(), {9}, 1e-12), b + ": one dimension");
 }
 
@@ -51,29 +51,30 @@ void enclose_points_known(const std::string &b) {
 void enclose_points_property(const std::string &b) {
     cora::Rng rng(13);
     for (const int64_t count : {2, 3, 5, 40}) {
-        const Tensor P = test::normal_matrix(rng, 4, count);
+        const Tensor P = test::normal_matrix(rng, 4, count).matrix_transpose();
         check(test::all_inside(Ellipsoid::enclose_points(P), P), b + ": a random cloud");
     }
     // a cloud in a plane of R^4
-    const Tensor plane = test::normal_matrix(rng, 4, 2).matmul(test::normal_matrix(rng, 2, 30));
+    const Tensor plane =
+        test::normal_matrix(rng, 4, 2).matmul(test::normal_matrix(rng, 2, 30)).matrix_transpose();
     const Ellipsoid E = Ellipsoid::enclose_points(plane);
     check(test::all_inside(E, plane) && !E.is_full_dim(), b + ": a cloud in a plane");
-    check(close(E.q(), plane.mean(1, true), 1e-12), b + ": the center is the mean");
+    check(close(E.q(), plane.mean(0, false), 1e-12), b + ": the center is the mean");
 }
 
 /// An empty cloud, a wrong method and the SDP method are refused; with the checks off the result
 /// is the same.
 void checks_and_their_switch() {
     check(
-        test::raises([] { Ellipsoid::enclose_points(Tensor::zeros({2, 0})); }, Error::wrong_value),
+        test::raises([] { Ellipsoid::enclose_points(Tensor::zeros({0, 2})); }, Error::wrong_value),
         "enclose_points: at least one point");
-    check(test::raises([] { Ellipsoid::enclose_points(Tensor({{1.0, 2.0}}), "mean"); },
+    check(test::raises([] { Ellipsoid::enclose_points(Tensor({{1.0}, {2.0}}), "mean"); },
                        Error::wrong_value),
           "enclose_points: the method is cov or min-vol");
-    const Tensor P({{1.0, 2.0, 0.0}, {0.0, 1.0, 3.0}});
+    const Tensor P({{1.0, 0.0}, {2.0, 1.0}, {0.0, 3.0}});
     check(test::raises([&] { Ellipsoid::enclose_points(P, "min-vol"); }, Error::not_supported),
           "enclose_points: min-vol needs an SDP solver");
-    check(Ellipsoid::enclose_points(Tensor({{1.0, 3.0}}), "min-vol").Q().item() == 1.0,
+    check(Ellipsoid::enclose_points(Tensor({{1.0}, {3.0}}), "min-vol").Q().item() == 1.0,
           "enclose_points: min-vol of one dimension needs no solver, as in CORA");
     const Ellipsoid on = Ellipsoid::enclose_points(P);
     ChecksScope off(false);

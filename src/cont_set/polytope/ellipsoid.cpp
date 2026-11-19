@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@polytope/ellipsoid.m
 // CORA authors: Victor Gassmann, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -40,8 +40,9 @@ Ellipsoid Polytope::ellipsoid(const std::string &method) const {
     CORA_CHECK(method == "outer", Error::not_supported, [&] {
         return "ellipsoid: '" + method + "' is a semidefinite program, which has no solver here";
     });
+    // the vertices as rows (p, n)
     return Ellipsoid::enclose_points(
-        priv_points_tensor(like, dim(), priv_polytope_vertices(*this)));
+        priv_points_tensor(like, dim(), priv_polytope_vertices(*this)).matrix_transpose());
 }
 
 } // namespace cora

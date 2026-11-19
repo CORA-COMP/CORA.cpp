@@ -9,9 +9,9 @@
 //
 // CORA: contSet/@ellipsoid/zonotope.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -27,7 +27,7 @@ namespace cora {
 
 Tensor priv_range_factor(const Ellipsoid &E) {
     const int64_t rank = static_cast<int64_t>(priv_rank(E.Q(), E.tol()).item());
-    return E.generators().slice(1, 0, rank);
+    return priv_generator_columns(E.Q()).slice(1, 0, rank);
 }
 
 } // namespace cora

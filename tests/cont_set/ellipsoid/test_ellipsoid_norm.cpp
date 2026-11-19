@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/norm_.m
 // PROPERTY: contSet/@ellipsoid/norm_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -19,7 +19,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -44,10 +44,12 @@ void norm_property(const std::string &b) {
     for (int k = 0; k < 5; ++k) {
         const Ellipsoid E(test::random_ellipsoid(rng, 3).Q());
         const double value = E.norm().item();
-        check(test::ellipsoid_points(E, rng, 40, true).square().sum(0).sqrt().max().item() <=
+        check(test::ellipsoid_points(E, rng, 40, true).square().sum(-1).sqrt().max().item() <=
                   value + 1e-9,
               b + ": the points stay below");
-        check(close(E.radius().item(), value, 1e-9), b + ": the largest radius");
+        check(close(E.semi_axes().item(), value, 1e-9) &&
+                  close(E.ball_radius().item(), value, 1e-9),
+              b + ": the largest semi-axis, the ball radius");
     }
 }
 
@@ -56,7 +58,7 @@ void checks_and_their_switch() {
     check(test::raises([] { Ellipsoid(Tensor::eye(2)).norm(Tensor::Norm::one); },
                        Error::no_exact_alg),
           "norm: type");
-    check(test::raises([] { Ellipsoid(Tensor::eye(2), column({1.0, 0.0})).norm(); },
+    check(test::raises([] { Ellipsoid(vec({1.0, 0.0}), Tensor::eye(2)).norm(); },
                        Error::not_supported),
           "norm: center");
     check(test::raises([] { Ellipsoid(Tensor::eye(2)).norm(Tensor::Norm::two, "best"); },

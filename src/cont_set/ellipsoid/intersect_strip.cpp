@@ -10,7 +10,7 @@
 // Syntax:   auto [E2, sigma_sq] = E.intersect_strip(C, phi, y, sigma_sq_prev);
 //           auto [E2, sigma_sq] = E.intersect_strip(C, sys, y, sigma_sq_prev);
 // Inputs:   C - the strip's matrix (m, n)
-//           y - its center (m, 1)
+//           y - its center (m)
 //           phi - the half-width of the strip ||C x - y|| <= phi (Gollamudi 1996)
 //           sys - the measurement model with V and bar_V (m, m) (Liu 2016), instead of phi
 //           sigma_sq_prev - the level of the previous update (default 0)
@@ -21,9 +21,9 @@
 //
 // CORA: contSet/@ellipsoid/intersectStrip.m
 // CORA authors: Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -49,7 +49,7 @@ struct Innovation {
 };
 
 Innovation aux_innovation(const Ellipsoid &E, const Tensor &C, const Tensor &y) {
-    const Tensor delta = y - C.matmul(E.q());
+    const Tensor delta = y.expand_dims(-1) - C.matmul(E.q().expand_dims(-1));
     return {delta, delta.matrix_transpose().matmul(delta).item()};
 }
 
@@ -65,7 +65,7 @@ double aux_quadratic(const Tensor &delta, const Tensor &M) {
 /// level, where the combination has no point.
 Ellipsoid aux_result(const Ellipsoid &E, const Tensor &Q, const Tensor &c, double sigma_sq) {
     if (sigma_sq < 0.0) return Ellipsoid::empty(E.dim());
-    return {(Q + Q.matrix_transpose()) * 0.5, c};
+    return {c.squeeze(-1), (Q + Q.matrix_transpose()) * 0.5};
 }
 
 /// The update of Gollamudi (1996), Theorems 1 and 2, with the corrected shape and center.
@@ -95,7 +95,8 @@ Ellipsoid::StripResult aux_gollamudi(const Ellipsoid &E, const Tensor &C, double
     const Tensor information =
         E.Q().inv() * (1.0 - lambda) + C.matrix_transpose().matmul(C) * lambda;
     const Tensor shape = information.inv();
-    const Tensor center = E.q() + shape.matmul(C.matrix_transpose()).matmul(delta) * lambda;
+    const Tensor center =
+        E.q().expand_dims(-1) + shape.matmul(C.matrix_transpose()).matmul(delta) * lambda;
     return {aux_result(E, shape * sigma_sq, center, sigma_sq), sigma_sq};
 }
 
@@ -120,7 +121,7 @@ Ellipsoid::StripResult aux_liu(const Ellipsoid &E, const Tensor &C,
         (1.0 - lambda) * sigma_sq_prev + lambda - aux_quadratic(delta, weighted_inv);
     const Tensor identity = E.Q().eye_like(E.dim());
     const Tensor shape = (identity - K.matmul(C)).matmul(E.Q()) * (sigma_sq / (1.0 - lambda));
-    return {aux_result(E, shape, E.q() + K.matmul(delta), sigma_sq), sigma_sq};
+    return {aux_result(E, shape, E.q().expand_dims(-1) + K.matmul(delta), sigma_sq), sigma_sq};
 }
 
 /// Why the ellipsoid, the strip or the number is refused, if it is.
@@ -138,10 +139,10 @@ detail::Refusal aux_refusal(const Ellipsoid &E, const Tensor &C, const Tensor &y
     if (!C.defined() || C.ndim() != 2 || C.shape()[1] != n)
         return std::pair{Error::dimension_mismatch,
                          "intersect_strip: C must be a matrix (m, " + std::to_string(n) + ")"};
-    if (!y.defined() || y.ndim() != 2 || !is_column(y, C.shape()[0]))
-        return std::pair{Error::dimension_mismatch, "intersect_strip: y must be a column (" +
+    if (!y.defined() || y.ndim() != 1 || !is_vector(y, C.shape()[0]))
+        return std::pair{Error::dimension_mismatch, "intersect_strip: y must be a vector (" +
                                                         std::to_string(C.shape()[0]) +
-                                                        ", 1), one center per row of C"};
+                                                        "), one center per row of C"};
     // sigma_sq_prev must be finite
     if (!std::isfinite(sigma_sq_prev))
         return std::pair{Error::wrong_value,

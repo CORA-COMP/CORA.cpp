@@ -57,7 +57,7 @@ void safe_polytope(const std::string &b) {
     check(!spec.check(ConZonotope(Zonotope(Tensor({2.5, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})))),
           b + ": a shifted one is left");
     check(spec.check(ZonoBundle({Z, Z})), b + ": a bundle");
-    check(spec.check(Ellipsoid(Tensor({{0.25, 0.0}, {0.0, 0.25}}), Tensor({2.0, 1.0}))),
+    check(spec.check(Ellipsoid(test::vec({2.0, 1.0}), Tensor({{0.25, 0.0}, {0.0, 0.25}}))),
           b + ": an ellipsoid");
     // a safe set may be any set, such as a zonotope
     check(Specification::safe_set(Zonotope(Tensor({2.0, 1.0}), Tensor({{2.0, 0.0}, {0.0, 2.0}})))

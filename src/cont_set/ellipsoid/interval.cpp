@@ -26,8 +26,8 @@ namespace cora {
 
 Interval Ellipsoid::interval_impl() const {
     if (priv_is_empty(*this)) return Interval::empty(dim());
-    const Tensor radius = Q_.diagonal().sqrt();
-    return {(q_ - radius).squeeze(-1), (radius + q_).squeeze(-1)};
+    const Tensor radius = Q_.diagonal().sqrt().squeeze(-1);
+    return {q_ - radius, radius + q_};
 }
 
 } // namespace cora

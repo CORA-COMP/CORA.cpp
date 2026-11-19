@@ -3,16 +3,16 @@
 // CORA: contSet/@ellipsoid/isBigger.m
 // PROPERTY: contSet/@ellipsoid/isBigger.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +27,7 @@ void is_bigger_known(const std::string &b) {
     check(E.is_bigger(small) && !small.is_bigger(E), b + ": a quarter of the shape is smaller");
     check(E.is_bigger(E), b + ": an ellipsoid is not smaller than itself");
     check(!E.is_bigger(skewed) && !skewed.is_bigger(E), b + ": neither contains the other");
-    check(E.is_bigger(Ellipsoid(Q, column({5.0, 5.0}))), b + ": the centers do not matter");
+    check(E.is_bigger(Ellipsoid(vec({5.0, 5.0}), Q)), b + ": the centers do not matter");
     // the ratio 1 + 5e-7 is within the tolerance 1e-6, but not at the default one
     check(Ellipsoid(Q, 1e-6).is_bigger(Ellipsoid(Q * (1.0 + 5e-7), 1e-6)), b + ": within tol");
     check(!E.is_bigger(Ellipsoid(Q * (1.0 + 5e-7))), b + ": beyond the default tolerance");
@@ -51,7 +51,7 @@ void is_bigger_property(const std::string &b) {
         const Ellipsoid E1 = test::random_ellipsoid(rng, 3), E2 = test::random_ellipsoid(rng, 3);
         const Ellipsoid E1c(E1.Q()), E2c(E2.Q());
         // a shape that is certainly inside: a third of E1 shifted to the center of E2
-        const Ellipsoid inner(E1.Q() * 0.3, E2.q());
+        const Ellipsoid inner(E2.q(), E1.Q() * 0.3);
         check(E1.is_bigger(inner) && !inner.is_bigger(E1), b + ": a shrunk copy is inside");
         const bool res = E1.is_bigger(E2);
         const Tensor P = test::ellipsoid_points(E2c, rng, 40, true);

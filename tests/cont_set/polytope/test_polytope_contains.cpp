@@ -105,8 +105,8 @@ void table(const std::string &b) {
           b + ": a constrained zonotope");
     check(contains(H, ZonoBundle({in, in})) && !contains(H, ZonoBundle({out, out})),
           b + ": a bundle");
-    check(contains(H, Ellipsoid(Tensor::eye(2) * 0.01, column({0.5, 0.5}))) &&
-              !contains(H, Ellipsoid(Tensor::eye(2) * 0.01, column({1.0, 1.0}))),
+    check(contains(H, Ellipsoid(vec({0.5, 0.5}), Tensor::eye(2) * 0.01)) &&
+              !contains(H, Ellipsoid(vec({1.0, 1.0}), Tensor::eye(2) * 0.01)),
           b + ": an ellipsoid");
     check(contains(H, Capsule(column({0.5, 0.5}), column({0.1, 0.0}), 0.1)) &&
               !contains(H, Capsule(column({1.0, 1.0}), column({0.1, 0.0}), 0.1)),

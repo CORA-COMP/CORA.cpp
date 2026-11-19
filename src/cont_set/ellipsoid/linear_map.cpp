@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@ellipsoid/mtimes.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   07-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -33,7 +33,7 @@ Ellipsoid Ellipsoid::linear_map(const Tensor &M) const {
                " columns (the dimension of E), got the shape " + shape_text(M.shape());
     });
     if (priv_is_empty(*this)) return Ellipsoid::empty(M.size(-2));
-    return {priv_congruence(M, Q_), M.matmul(q_), tol_};
+    return {M.matmul(q_.expand_dims(-1)).squeeze(-1), priv_congruence(M, Q_), tol_};
 }
 
 Set Ellipsoid::linear_map_impl(const Tensor &M) const { return linear_map(M); }

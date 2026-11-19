@@ -5,7 +5,7 @@
 // CORA authors: Victor Gassmann
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -19,7 +19,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,7 +29,7 @@ namespace {
 
 /// Hand-computed: the symmetric root as generators, scaled for the inner one; a point; degenerate.
 void zonotope_known(const std::string &b) {
-    const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
+    const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
     const Zonotope Z = E.zonotope();
     check(close(Z.center().expand_dims(-1), {1, 2}, 0) &&
               close(Z.generators().matrix_transpose(), {2, 0, 0, 1}, 1e-13),
@@ -43,7 +43,7 @@ void zonotope_known(const std::string &b) {
     check(close(G.matmul(G.matrix_transpose()), R.Q(), 1e-12) &&
               close(G, G.matrix_transpose(), 1e-12),
           b + ": G is the symmetric root");
-    const Ellipsoid flat(Tensor({{1.0, 1.0}, {1.0, 1.0}}), column({0.0, 0.0}), 1e-6);
+    const Ellipsoid flat(vec({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, 1.0}}), 1e-6);
     check(flat.zonotope().generators().matrix_transpose().shape() == Shape({2, 1}),
           b + ": rank 1 gives one generator");
     check((Ellipsoid(Tensor::zeros({2, 2})).zonotope()).generators().matrix_transpose().shape() ==
@@ -57,10 +57,11 @@ void zonotope_property(const std::string &b) {
     Rng rng(113);
     for (int k = 0; k < 4; ++k) {
         const Ellipsoid E = test::random_ellipsoid(rng, 3);
-        check(E.zonotope().contains(test::ellipsoid_points(E, rng, 12, true), "exact", 1e-8),
+        check(E.zonotope().contains(test::ellipsoid_points(E, rng, 12, true).matrix_transpose(),
+                                    "exact", 1e-8),
               b + ": outer holds the points");
         const Zonotope inner = E.zonotope("inner:box");
-        check(test::all_inside(E, inner.rand_point(30, rng, "extreme"), 1e-8),
+        check(test::all_inside(E, inner.rand_point(30, rng, "extreme").matrix_transpose(), 1e-8),
               b + ": inner corners are inside");
     }
 }

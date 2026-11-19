@@ -10,7 +10,7 @@
 // ellipsoid as the contained set unless it is a point or empty. Not a batch.
 //
 // Syntax:   bool res = E.contains(p);   bool res = E.contains(Z, method, tol);   E.contains(I);
-// Inputs:   p - points as columns (n, N), all must be inside
+// Inputs:   p - points (..., n), one per row, all must be inside
 //           Z, I - a zonotope, a box
 //           S - an ellipsoid
 //           method - "exact" (default; the points ignore it)
@@ -22,7 +22,7 @@
 // CORA authors: Victor Gassmann, Niklas Kochdumper, Adrian Kulmburg, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -42,12 +42,17 @@ namespace {
 
 // Search ------------------------------------------------------------------------------------------
 
+// The search keeps CORA's layout: points and generators are the columns of P and G (n, N).
+
+/// The center of E as a column (n, 1).
+Tensor aux_center(const Ellipsoid &E) { return E.q().expand_dims(-1); }
+
 /// The ellipsoid norm of every column of P (n, N) after the center q is subtracted, on the host.
 std::vector<double> aux_norms(const Ellipsoid &E, const Tensor &P) {
     std::vector<double> norms;
     norms.reserve(std::size_t(P.shape()[1]));
     for (int64_t j = 0; j < P.shape()[1]; ++j)
-        norms.push_back(E.ellipsoid_norm(P.slice(1, j, j + 1) - E.q()).item());
+        norms.push_back(priv_ellipsoid_norm(E, P.slice(1, j, j + 1) - aux_center(E)).item());
     return norms;
 }
 
@@ -62,7 +67,7 @@ bool aux_contains_points(const Ellipsoid &E, const Tensor &P, double tol) {
 bool aux_inside(const Ellipsoid &E, const Tensor &G, const std::vector<double> &norms,
                 const std::vector<int64_t> &order, std::size_t next, const Tensor &sum, double rest,
                 double tol) {
-    const double value = E.ellipsoid_norm(sum).item();
+    const double value = priv_ellipsoid_norm(E, sum).item();
     // a partial sum is a point of the set
     if (value > 1.0 + tol) return false;
     if (next == order.size() || value + rest <= 1.0 + tol) return true;
@@ -76,7 +81,7 @@ bool aux_inside(const Ellipsoid &E, const Tensor &G, const std::vector<double> &
 /// Whether the zonotope c + G [-1, 1]^m lies in E up to tol (the offset c - q is a generator with
 /// a factor of +-1, which the symmetry of the norm makes equivalent).
 bool aux_contains_zonotope(const Ellipsoid &E, const Tensor &c, const Tensor &G, double tol) {
-    const Tensor all = Tensor::concat({c - E.q(), G}, 1);
+    const Tensor all = Tensor::concat({c - aux_center(E), G}, 1);
     std::vector<double> norms = aux_norms(E, all);
     std::vector<int64_t> order(norms.size());
     std::iota(order.begin(), order.end(), 0);
@@ -106,12 +111,12 @@ detail::Refusal aux_refusal(const Ellipsoid &E, int64_t n, const std::string &me
 }
 
 /// The outcome for an ellipsoid that is a point p0 or empty, if it is one: whether the set
-/// (a point `q`, empty, or neither) is contained.
+/// (a point `q`, a column, empty, or neither) is contained.
 std::optional<bool> aux_degenerate(const Ellipsoid &E, bool s_empty, const Tensor *s_point,
                                    double tol) {
     if (priv_is_empty(E)) return s_empty;
     if (!priv_is_point(E)) return std::nullopt;
-    if (s_point) return (*s_point - E.q()).abs().max().item() <= tol;
+    if (s_point) return (*s_point - aux_center(E)).abs().max().item() <= tol;
     return s_empty;
 }
 
@@ -125,16 +130,17 @@ std::optional<bool> aux_degenerate(const Ellipsoid &E, bool s_empty, const Tenso
 bool Ellipsoid::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, Q_.dtype(), "contains");
-    CORA_CHECK(p.defined() && p.ndim() == 2, Error::wrong_value, [] {
-        return std::string("contains: the points must be a matrix (n, N), one point per column");
+    CORA_CHECK(p.defined() && p.ndim() >= 1, Error::wrong_value, [] {
+        return std::string("contains: the points must be (..., n), one point per row");
     });
-    const detail::Refusal refusal = aux_refusal(*this, p.shape()[0], method, false);
+    const detail::Refusal refusal = aux_refusal(*this, p.size(-1), method, false);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // no points: nothing to violate
     if (p.numel() == 0) return true;
     if (priv_is_empty(*this)) return false;
     if (priv_is_point(*this)) return (p - q_).abs().max().item() <= tol;
-    return aux_contains_points(*this, p, tol);
+    return aux_contains_points(*this, p.reshape({p.numel() / dim(), dim()}).matrix_transpose(),
+                               tol);
 }
 
 bool Ellipsoid::contains(const Zonotope &S, const std::string &method, Tol tol_arg) const {
@@ -170,10 +176,11 @@ bool Ellipsoid::contains(const Ellipsoid &S, const std::string &method, Tol tol_
         return std::string("contains: it decides one ellipsoid; a batch is not supported");
     });
     const bool s_point = priv_is_point(S);
-    if (const auto done = aux_degenerate(*this, priv_is_empty(S), s_point ? &S.q() : nullptr, tol))
+    const Tensor c = aux_center(S);
+    if (const auto done = aux_degenerate(*this, priv_is_empty(S), s_point ? &c : nullptr, tol))
         return *done;
     if (priv_is_empty(S)) return true;
-    if (s_point) return aux_contains_points(*this, S.q(), tol);
+    if (s_point) return aux_contains_points(*this, c, tol);
     // an ellipsoid in an ellipsoid needs an SDP
     CORA_FAIL(
         Error::not_supported,

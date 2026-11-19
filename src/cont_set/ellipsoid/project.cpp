@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@ellipsoid/project.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -30,7 +30,7 @@ namespace cora {
 Set Ellipsoid::project_impl(const std::vector<int64_t> &dims) const {
     if (priv_is_empty(*this)) return Ellipsoid::empty(static_cast<int64_t>(dims.size()));
     const Tensor P = select_dims(q_, dims, dim());
-    return Ellipsoid(priv_congruence(P, Q_), P.matmul(q_), tol_);
+    return Ellipsoid(P.matmul(q_.expand_dims(-1)).squeeze(-1), priv_congruence(P, Q_), tol_);
 }
 
 } // namespace cora

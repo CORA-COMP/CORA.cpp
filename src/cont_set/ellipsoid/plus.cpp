@@ -6,7 +6,7 @@
 // enclosing ellipsoid, and the directions L the intersection of ellipsoids: Error::not_supported.
 //
 // Syntax:   Eres = E.plus(v);   Eres = E.plus(S);   Eres = E.plus(S, mode);
-// Inputs:   v - column (n, 1)
+// Inputs:   v - vector (..., n)
 //           S - ellipsoid
 //           mode - "outer:halder" (the default of CORA for two ellipsoids)
 // Outputs:  Eres - an ellipsoid that holds E + S
@@ -15,9 +15,9 @@
 //
 // CORA: contSet/@ellipsoid/plus.m
 // CORA authors: Victor Gassmann, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -36,13 +36,13 @@ namespace cora {
 
 Ellipsoid Ellipsoid::plus(const Tensor &v) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(v, dim()), Error::dimension_mismatch, [&] {
-        return "plus: the vector must be a column of the dimension " + std::to_string(dim()) +
-               ", got the shape " + shape_text(v.shape());
+    CORA_CHECK(v.defined() && is_vector(v, dim()), Error::dimension_mismatch, [&] {
+        return "plus: the vector must be (..., " + std::to_string(dim()) + "), got the shape " +
+               (v.defined() ? shape_text(v.shape()) : "()");
     });
     // the sum with an empty set is empty
     if (priv_is_empty(*this)) return *this;
-    return {Q_, q_ + v, tol_};
+    return {q_ + v, Q_, tol_};
 }
 
 Ellipsoid Ellipsoid::plus(const Ellipsoid &S, const std::string &mode) const {
@@ -59,12 +59,12 @@ Ellipsoid Ellipsoid::plus(const Ellipsoid &S, const std::string &mode) const {
     CORA_CHECK(Q_.ndim() == 2 && S.Q_.ndim() == 2, Error::not_supported,
                [] { return std::string("plus: it supports single ellipsoids, not a batch"); });
     // points add exactly: the sum with a point is a shift, with the origin the ellipsoid itself
-    if (priv_is_point(S)) return {Q_, q_ + S.q_, tol_};
-    if (priv_is_point(*this)) return {S.Q_, q_ + S.q_, S.tol_};
+    if (priv_is_point(S)) return {q_ + S.q_, Q_, tol_};
+    if (priv_is_point(*this)) return {q_ + S.q_, S.Q_, S.tol_};
     // in one dimension the sum of the intervals is the sum of the radii
     if (dim() == 1) {
         const Tensor radius = Q_.sqrt() + S.Q_.sqrt();
-        return {radius.square(), q_ + S.q_, std::min(tol_, S.tol_)};
+        return {q_ + S.q_, radius.square(), std::min(tol_, S.tol_)};
     }
     CORA_CHECK(mode == "outer:halder", Error::not_supported, [&] {
         return "plus: the mode '" + mode + "' needs an SDP solver; use 'outer:halder'";
@@ -90,10 +90,13 @@ Ellipsoid Ellipsoid::plus(const Ellipsoid &S, const std::string &mode) const {
     }
     CORA_CHECK(next > 0.0 && !within_tol(next, 0.0, tol), Error::special_error,
                [] { return std::string("plus: the weight of Halder is almost zero"); });
-    return {Q_ * (1.0 + 1.0 / next) + S.Q_ * (1.0 + next), q_ + S.q_, tol};
+    return {q_ + S.q_, Q_ * (1.0 + 1.0 / next) + S.Q_ * (1.0 + next), tol};
 }
 
-Set Ellipsoid::translate_impl(const Tensor &v) const { return plus(v); }
+// the generic translation takes a column (..., n, 1), the center is a vector
+Set Ellipsoid::translate_impl(const Tensor &v) const {
+    return plus(is_column(v, dim()) ? v.squeeze(-1) : v);
+}
 
 } // namespace cora
 

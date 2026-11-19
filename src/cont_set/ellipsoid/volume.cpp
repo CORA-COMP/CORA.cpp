@@ -4,14 +4,14 @@
 //
 // Syntax:   vol = E.volume();
 // Inputs:   -
-// Outputs:  vol - the volume, (..., 1, 1)
-// See also: radius, Capsule::volume
+// Outputs:  vol - the volume, (...)
+// See also: semi_axes, Capsule::volume
 //
 // CORA: contSet/@ellipsoid/volume_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -30,12 +30,13 @@ namespace cora {
 
 Tensor Ellipsoid::volume() const {
     detail::Entry entry;
-    if (priv_is_empty(*this)) return q_.zeros_like({1, 1});
+    const Shape batch(std::vector<int64_t>(q_.shape().begin(), q_.shape().end() - 1));
+    if (priv_is_empty(*this)) return q_.zeros_like(batch);
     const double n = static_cast<double>(dim());
     const double unit = std::pow(std::numbers::pi, n / 2) / std::tgamma(n / 2 + 1);
     // det Q is the product of the eigenvalues; rounding may leave a tiny negative one
     const Tensor det = Q_.eigh().first.maximum(0.0).prod(static_cast<int>(Q_.ndim()) - 2, true);
-    return det.sqrt() * unit;
+    return (det.sqrt() * unit).reshape(batch);
 }
 
 } // namespace cora

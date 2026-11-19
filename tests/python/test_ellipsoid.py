@@ -2,9 +2,9 @@
 
 CORA authors: Adrian Kulmburg, Mark Wetzlinger, Matthias Althoff, Niklas Kochdumper,
               Victor Gassmann
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       04-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 # CORA: contSet/@ellipsoid/and_.m
@@ -40,22 +40,25 @@ import numpy as np
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def ellipsoid(Q, q=None, tol=None):
-    return cora.Ellipsoid(np.array(Q, dtype=float), None if q is None else np.array(q, dtype=float), tol)
+    """The ellipsoid of Q and q (the constructor takes the center first), or of Q around 0."""
+    if q is None:
+        return cora.Ellipsoid(np.array(Q, dtype=float), tol=tol)
+    return cora.Ellipsoid(np.array(q, dtype=float), np.array(Q, dtype=float), tol)
 
 
 def random_ellipsoid(rng, n, rank=None):
     """Q = A A' (+ I/2 if full rank) and a normal center."""
     A = rng.standard_normal((n, n if rank is None else rank))
     Q = A @ A.T + (0.5 * np.eye(n) if rank is None else 0.0)
-    return cora.Ellipsoid(0.5 * (Q + Q.T), rng.standard_normal(n))
+    return cora.Ellipsoid(rng.standard_normal(n), 0.5 * (Q + Q.T))
 
 
 def boundary_points(E, rng, count):
-    """Points q + G u of the boundary, G without the generators of rounding size."""
+    """Points q + u G of the boundary, one per row, G (rows) without the generators of rounding size."""
     G = E.generators()
-    G = G[:, np.linalg.norm(G, axis=0) > 1e-6]
-    U = rng.standard_normal((G.shape[1], count))
-    return E.q[:, None] + G @ (U / np.linalg.norm(U, axis=0))
+    G = G[np.linalg.norm(G, axis=1) > 1e-6]
+    U = rng.standard_normal((G.shape[0], count))
+    return E.q + (U / np.linalg.norm(U, axis=0)).T @ G
 
 
 # ===========================================  MAIN  =========================================== #
@@ -88,11 +91,13 @@ class Ellipsoid(unittest.TestCase):
             np.testing.assert_array_equal(ellipsoid([[1.0, 0.5], [0.0, 1.0]]).Q, [[1.0, 0.5], [0.0, 1.0]])
 
     def test_empty_bounded_and_full_dim(self):
+        # the empty ellipsoid is flagged and keeps its shapes
         E = cora.Ellipsoid.empty(3)
         self.assertEqual(E.dim, 3)
         self.assertEqual(cora.Ellipsoid.empty().dim, 0)
-        self.assertEqual(E.Q.shape, (0, 0))
-        self.assertEqual(E.q.shape[0], 3)
+        self.assertTrue(E.is_empty())
+        self.assertEqual(E.Q.shape, (3, 3))
+        self.assertEqual(E.q.shape, (3,))
         self.assertTrue(E.is_bounded())
         self.assertFalse(E.is_full_dim())
         with self.assertRaises(cora.errors.WrongValue):
@@ -114,15 +119,15 @@ class Ellipsoid(unittest.TestCase):
         np.testing.assert_array_equal(box.inf, [-1.0, 1.0])
         np.testing.assert_array_equal(box.sup, [3.0, 3.0])
         G = E.generators()
-        np.testing.assert_allclose(G @ G.T, E.Q, atol=1e-12)
-        self.assertEqual(cora.Ellipsoid.empty(2).generators().shape, (2, 0))
+        np.testing.assert_allclose(G.T @ G, E.Q, atol=1e-12)
+        self.assertEqual(cora.Ellipsoid.empty(2).generators().shape, (0, 2))
         rng = np.random.default_rng(1)
         for k in range(5):
             F = random_ellipsoid(rng, 3, 2 if k == 4 else None)
             B = boundary_points(F, rng, 20)
             box = F.interval()
-            self.assertTrue(np.all(B >= box.inf[:, None] - 1e-12) and np.all(B <= box.sup[:, None] + 1e-12))
-            np.testing.assert_allclose(F.generators() @ F.generators().T, F.Q, atol=1e-10)
+            self.assertTrue(np.all(B >= box.inf - 1e-12) and np.all(B <= box.sup + 1e-12))
+            np.testing.assert_allclose(F.generators().T @ F.generators(), F.Q, atol=1e-10)
 
     def test_ellipsoid_norm(self):
         E = ellipsoid([[4.0, 0.0], [0.0, 1.0]])
@@ -139,7 +144,7 @@ class Ellipsoid(unittest.TestCase):
         rng = np.random.default_rng(2)
         for k in range(4):
             F = random_ellipsoid(rng, 3, 2 if k == 3 else None)
-            for p in boundary_points(F, rng, 5).T:
+            for p in boundary_points(F, rng, 5):
                 np.testing.assert_allclose(F.ellipsoid_norm(p - F.q), 1.0, atol=1e-8)
 
     def test_is_bigger_and_is_bad_dir(self):
@@ -157,37 +162,37 @@ class Ellipsoid(unittest.TestCase):
         with self.assertRaises(cora.errors.EmptySet):
             E.is_bigger(cora.Ellipsoid.empty(2))
         E1, E2 = ellipsoid(np.eye(2)), ellipsoid(np.diag([0.25, 1.0]))
-        self.assertEqual(list(E1.is_bad_dir(E2, np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]]))),
+        self.assertEqual(list(E1.is_bad_dir(E2, np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]))),
                          [True, False, True])
         rng = np.random.default_rng(3)
         F = random_ellipsoid(rng, 3)
-        L = rng.standard_normal((3, 6))
+        L = rng.standard_normal((3, 6)).T
         self.assertTrue(all(F.is_bad_dir(ellipsoid(4.0 * F.Q), L)))
         self.assertFalse(any(F.is_bad_dir(ellipsoid(0.25 * F.Q), L)))
         with self.assertRaises(cora.errors.WrongValue):
-            E1.is_bad_dir(E2, np.ones((3, 1)))
+            E1.is_bad_dir(E2, np.ones((1, 3)))
 
     def test_enclose_points(self):
-        segment = cora.Ellipsoid.enclose_points(np.array([[1.0, 3.0], [0.0, 0.0]]))
+        segment = cora.Ellipsoid.enclose_points(np.array([[1.0, 0.0], [3.0, 0.0]]))
         np.testing.assert_allclose(segment.q, [2.0, 0.0], atol=1e-12)
         # enclosing points
         self.assertFalse(segment.is_full_dim())
-        point = cora.Ellipsoid.enclose_points(np.array([[2.0, 2.0], [3.0, 3.0]]))
+        point = cora.Ellipsoid.enclose_points(np.array([[2.0, 3.0], [2.0, 3.0]]))
         np.testing.assert_array_equal(point.q, [2.0, 3.0])
         np.testing.assert_array_equal(point.Q, np.zeros((2, 2)))
-        line = cora.Ellipsoid.enclose_points(np.array([[1.0, 2.0, 7.0]]))
+        line = cora.Ellipsoid.enclose_points(np.array([[1.0], [2.0], [7.0]]))
         np.testing.assert_allclose([line.q[0], line.Q[0, 0]], [4.0, 9.0], atol=1e-12)
         rng = np.random.default_rng(4)
         for count in (2, 3, 5, 40):
-            P = rng.standard_normal((4, count))
+            P = rng.standard_normal((4, count)).T
             E = cora.Ellipsoid.enclose_points(P)
-            self.assertTrue(all(E.ellipsoid_norm(p - E.q) <= 1 + 1e-9 for p in P.T))
+            self.assertTrue(np.all(E.ellipsoid_norm(P - E.q) <= 1 + 1e-9))
         with self.assertRaises(cora.errors.WrongValue):
-            cora.Ellipsoid.enclose_points(np.zeros((2, 0)))
+            cora.Ellipsoid.enclose_points(np.zeros((0, 2)))
         with self.assertRaises(cora.errors.WrongValue):
-            cora.Ellipsoid.enclose_points(np.ones((2, 3)), method="mean")
+            cora.Ellipsoid.enclose_points(np.ones((3, 2)), method="mean")
         with self.assertRaises(cora.errors.NotSupported):
-            cora.Ellipsoid.enclose_points(rng.standard_normal((2, 5)), method="min-vol")
+            cora.Ellipsoid.enclose_points(rng.standard_normal((2, 5)).T, method="min-vol")
 
     def test_intersect_strip(self):
         E = ellipsoid([[1.0]])
@@ -216,18 +221,18 @@ class Ellipsoid(unittest.TestCase):
         F = random_ellipsoid(rng, 3)
         C3 = rng.standard_normal((2, 3))
         y3 = C3 @ F.q + 0.45 * rng.standard_normal(2)
-        P = F.q[:, None] + F.generators() @ (rng.standard_normal((3, 2000)) * 0.3)
-        P = P[:, [F.ellipsoid_norm(p - F.q) <= 1 for p in P.T]]
-        P = P[:, np.linalg.norm(C3 @ P - y3[:, None], axis=0) <= 0.3]
+        P = F.q + (rng.standard_normal((3, 2000)) * 0.3).T @ F.generators()
+        P = P[F.ellipsoid_norm(P - F.q) <= 1]
+        P = P[np.linalg.norm(P @ C3.T - y3, axis=1) <= 0.3]
         R3, _ = F.intersect_strip(C3, 0.3, y3)
-        self.assertTrue(all(R3.ellipsoid_norm(p - R3.q) <= 1 + 1e-9 for p in P.T))
+        self.assertTrue(np.all(R3.ellipsoid_norm(P - R3.q) <= 1 + 1e-9))
 
     def test_intersect_cart_prod_contains_and_enclose(self):
         E = ellipsoid([[4.0, 0.0], [0.0, 1.0]], [1.0, 2.0])
         inside = E.intersect(np.array([2.0, 2.5]))
         np.testing.assert_array_equal(inside.q, [2.0, 2.5])
         np.testing.assert_array_equal(inside.Q, np.zeros((2, 2)))
-        self.assertEqual(E.intersect(np.array([5.0, 2.0])).Q.shape, (0, 0))
+        self.assertTrue(E.intersect(np.array([5.0, 2.0])).is_empty())
         point = ellipsoid(np.zeros((2, 2)), [1.0, 2.5])
         np.testing.assert_array_equal(E.intersect(point).q, [1.0, 2.5])
         self.assertEqual((E & point).Q.shape, (2, 2))

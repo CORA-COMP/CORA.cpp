@@ -3,9 +3,9 @@
 // See also: lean/con_zonotope.h, lean/request.h
 //
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/ellipsoid.h"
@@ -41,15 +41,20 @@ bool aux_zero(const Json &j) {
 
 // ===========================================  MAIN  =========================================== //
 
-// the wire form of an exact set is {Q, q}
+// the wire form {Q, q} is CORA's: q a column (n, 1), the empty set Q (0, 0) with q (n, 0)
 Ellipsoid::Ellipsoid(const cora::Ellipsoid &E)
     : dtype_(Tensor(E.Q()).dtype()), json_(Json::object()) {
-    json_.set("Q", Tensor(E.Q()).to_json()).set("q", Tensor(E.q()).to_json());
+    const int64_t n = E.dim();
+    const cora::Tensor Q = E.is_empty() ? E.Q().zeros_like({0, 0}) : E.Q();
+    const cora::Tensor q = E.is_empty() ? E.q().zeros_like({n, 0}) : E.q().expand_dims(-1);
+    json_.set("Q", Tensor(Q).to_json()).set("q", Tensor(q).to_json());
 }
 
 cora::Ellipsoid Ellipsoid::nominal() const {
-    return {Tensor::from_json(dtype_, json_.at("Q")).gather(),
-            Tensor::from_json(dtype_, json_.at("q")).gather()};
+    const cora::Tensor Q = Tensor::from_json(dtype_, json_.at("Q")).gather();
+    const cora::Tensor q = Tensor::from_json(dtype_, json_.at("q")).gather();
+    if (q.size(-1) == 0) return cora::Ellipsoid::empty(q.size(-2));
+    return {q.squeeze(-1), Q};
 }
 
 bool Ellipsoid::exact() const {

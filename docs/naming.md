@@ -25,7 +25,7 @@ changed, and the reasons are listed below.
   - `// CORA.cpp only: <reason>`, if CORA has no such file.
 - **One meaning per name** (#163): `ball_radius()` is the radius of the ball around the center
   that encloses the set (CORA's `radius`), on every set; `half_width()` is a box's half-width per
-  dimension (CORA's `rad`).
+  dimension (CORA's `rad`); `semi_axes(i)` is an ellipsoid's semi-axes (CORA's `radius(E, i)`).
 - **Python** uses the C++ names. Sets have properties (`Z.center`, `Z.generators`, `Z.dim`), and
   options are keyword arguments with the same names as the fields of the C++ structs.
 - **Overrides:** a method of a `ContSet` subclass accepts every argument that `ContSet`'s method
@@ -125,7 +125,8 @@ changed, and the reasons are listed below.
 | `cartProd(P, S)` | `P.cart_prod(S)` | `P.cart_prod(S)` |
 | `convHull(P, S)`, `enclose(P, P2)` | `P.convex_hull(S)`, `P.enclose(P2)` | `P.convex_hull(S)`, `P.enclose(P2)` |
 | `hausdorffDist(P, S)` | `P.hausdorff_distance(S)` | `P.hausdorff_distance(S)` |
-| `ellipsoid(Q, q, TOL)`, `ellipsoid.empty(n)` | `Ellipsoid(Q, q, tol)`, `Ellipsoid::empty(n)` | `cora.Ellipsoid(Q, q, tol)`, `cora.Ellipsoid.empty(n)` |
+| `ellipsoid(Q, q, TOL)`, `ellipsoid.empty(n)` | `Ellipsoid(q, Q, tol)` (the center first), `Ellipsoid(Q)`, `Ellipsoid::empty(n)` | `cora.Ellipsoid(q, Q, tol)`, `cora.Ellipsoid(Q)`, `cora.Ellipsoid.empty(n)` |
+| `radius(E, i)`, `radius(E)` | `E.semi_axes(i)`, `E.ball_radius()` | `E.semi_axes(i)`, `E.ball_radius()` |
 | `E.Q`, `E.q`, `E.TOL`, `generators(E)`, `ellipsoidNorm(E, p)` | `E.Q()`, `E.q()`, `E.tol()`, `E.generators()`, `E.ellipsoid_norm(p)` | `E.Q`, `E.q`, `E.tol`, `E.generators()`, `E.ellipsoid_norm(p)` |
 | `isBigger(E1, E2)`, `isBadDir(E1, E2, L)` | `E1.is_bigger(E2)`, `E1.is_bad_dir(E2, L)` | the same |
 | `ellipsoid.enclosePoints(P, method)` | `Ellipsoid::enclose_points(P, method)` | `cora.Ellipsoid.enclose_points(P, method)` |

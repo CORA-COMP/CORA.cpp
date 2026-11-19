@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@ellipsoid/randPoint_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -52,10 +52,12 @@ Tensor Ellipsoid::rand_point_impl(int64_t N, Rng &rng, const std::string &type) 
     if (priv_is_empty(*this)) CORA_FAIL(Error::empty_set, "rand_point: the ellipsoid is empty");
     if (Q_.ndim() != 2)
         CORA_FAIL(Error::not_supported, "rand_point: it supports a single ellipsoid, not a batch");
-    if (priv_is_point(*this)) return q_.tile({1, N});
+    // the points are columns (n, N), as ContSet::rand_point's
+    const Tensor q = q_.expand_dims(-1);
+    if (priv_is_point(*this)) return q.tile({1, N});
     const Tensor G = priv_range_factor(*this);
     const int64_t rank = G.shape().back();
-    if (rank == 0) return q_.tile({1, N});
+    if (rank == 0) return q.tile({1, N});
     // directions: Gaussian columns of unit length
     std::vector<double> x(static_cast<std::size_t>(rank * N));
     rng.normal(x.data(), x.size(), 1.0);
@@ -67,7 +69,7 @@ Tensor Ellipsoid::rand_point_impl(int64_t N, Rng &rng, const std::string &type) 
         rng.uniform(radius.data(), radius.size(), 0.0, 1.0);
         u = u.multiply(Tensor::like(q_, radius, {1, N}).pow(1.0 / static_cast<double>(rank)));
     }
-    return q_.add(G.matmul(u));
+    return q.add(G.matmul(u));
 }
 
 } // namespace cora

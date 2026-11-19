@@ -10,9 +10,9 @@
 //
 // CORA: contSet/@ellipsoid/supportFunc_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -34,7 +34,7 @@ Tensor Ellipsoid::support_function_impl(const Tensor &d) const {
     shape[shape.size() - 2] = 1;
     if (priv_is_empty(*this)) return d.full_like(shape, -std::numeric_limits<double>::infinity());
     const Tensor dt = d.matrix_transpose();
-    const Tensor shift = dt.matmul(q_), quadratic = dt.matmul(Q_).matmul(d);
+    const Tensor shift = dt.matmul(q_.expand_dims(-1)), quadratic = dt.matmul(Q_).matmul(d);
     // a point has no spread; the root of the placeholder 1 keeps its gradient finite
     const Tensor point =
         within_tol(Q_, Q_.zeros_like(), machine_eps(Q_.dtype())).all(-1, true).all(-2, true);

@@ -142,9 +142,14 @@ dimensions first:
   generator per row; the same holds for `ConZonotope`, `PolyZonotope` (G, GI) and `Capsule`;
 - a box has the bounds (batch..., n), an interval matrix (`Interval::matrix`) the bounds
   (batch..., r, c); in a matrix operation a box is the column (n, 1);
+- an ellipsoid has the center q (batch..., n) and the shape matrix Q (batch..., n, n), the center
+  first in `Ellipsoid(q, Q)`, and its `generators()` are rows, as a zonotope's;
+- the point arguments of `Interval` and `Ellipsoid` (`contains`, `distance`, `plus`, ...) are
+  (..., n), one point per row;
 - operations broadcast over the batch and the element dimensions as NumPy does, and the generator
   axis never broadcasts;
-- the scalar results of `Interval` (volume, norms, `ball_radius`) have the batch shape (...);
+- the scalar results of `Interval` and `Ellipsoid` (volume, norms, `ball_radius`) have the batch
+  shape (...);
 - the generic entries of `ContSet` (`center()`, the direction of `support_function`, the points
   of `rand_point`) still take and give columns;
 - CORA's n x h columns appear only where data crosses to CORA: the private MATLAB-data loader and
@@ -210,7 +215,8 @@ vertices, CORA's colors, the union of overlapping sets, z-order) and puts it int
 
 **Empty sets carry a mask.** (#163) A set says which members of its batch are empty by a mask of
 the batch shape (`ContSet::empty_mask()`, the class `EmptyMask`), never by its data: its shapes
-keep n. `Interval::empty(n)` has bounds (n) and every member flagged. The other classes adopt the
+keep n. `Interval::empty(n)` has bounds (n) and `Ellipsoid::empty(n)` the center (n) and Q (n, n),
+every member flagged. The other classes adopt the
 mask the same way; until they do, they encode the empty set in their data (zero columns, a
 negative radius, an infeasible row). Files: `include/cora/cont_set/empty_mask.h`,
 `src/cont_set/cont_set/empty_mask.cpp`.

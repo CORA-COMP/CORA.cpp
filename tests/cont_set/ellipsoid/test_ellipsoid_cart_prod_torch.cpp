@@ -3,9 +3,9 @@
 // With a point the product is built of concatenations: differentiable in both operands. With an
 // ellipsoid it is piecewise: the radii of the boxes are widened below 5e-3, which the inputs avoid.
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_gradients.h"
@@ -22,7 +22,7 @@ int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(14);
     std::vector<torch::Tensor> x = test::random_ellipsoid_factors(2);
-    x.push_back(torch::rand({3, 1}, torch::kDouble) + 0.5);
+    x.push_back(torch::rand({3}, torch::kDouble) + 0.5);
     test::gradcheck(
         "cart_prod (point)",
         [](const Inputs &x) { return test::parts(test::ellipsoid_of(x).cart_prod(x[2])); }, x);

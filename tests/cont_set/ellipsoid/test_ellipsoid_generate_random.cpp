@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/generateRandom.m
 // PROPERTY: contSet/@ellipsoid/generateRandom.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -14,7 +14,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,9 +25,9 @@ namespace {
 /// The given dimension and center are used; Q is symmetric, positive semidefinite, and below 10.
 void generate_random_property(const std::string &b) {
     Rng rng(151);
-    const Ellipsoid given = Ellipsoid::generate_random(rng, 4, false, column({1.0, 2.0, 3.0, 4.0}));
+    const Ellipsoid given = Ellipsoid::generate_random(rng, 4, false, vec({1.0, 2.0, 3.0, 4.0}));
     check(given.dim() == 4 && close(given.q(), {1, 2, 3, 4}, 0), b + ": given");
-    check(Ellipsoid::generate_random(rng, std::nullopt, false, column({1.0, 2.0})).dim() == 2,
+    check(Ellipsoid::generate_random(rng, std::nullopt, false, vec({1.0, 2.0})).dim() == 2,
           b + ": the dimension of the center");
     for (int k = 0; k < 8; ++k) {
         const Ellipsoid E = Ellipsoid::generate_random(rng, 5);
@@ -46,7 +46,7 @@ void checks_and_their_switch() {
     Rng rng(1);
     check(test::raises([&] { Ellipsoid::generate_random(rng, 0); }, Error::wrong_value),
           "generate_random: n");
-    check(test::raises([&] { Ellipsoid::generate_random(rng, 3, false, column({1.0})); },
+    check(test::raises([&] { Ellipsoid::generate_random(rng, 3, false, vec({1.0})); },
                        Error::dimension_mismatch),
           "generate_random: center");
     ChecksScope off(false);

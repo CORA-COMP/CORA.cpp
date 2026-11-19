@@ -6,9 +6,9 @@
 // Property: the ellipsoid contains the vertices
 //
 // CORA authors: Victor Gassmann, Mark Wetzlinger
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "polytope_testing.h"
@@ -28,8 +28,10 @@ namespace {
 void ellipsoids(const std::string &b) {
     const Ellipsoid E = test::square_h().ellipsoid();
     check(close(E.q(), {0.5, 0.5}), b + ": centered at the mean");
-    check(E.contains(test::square_v().V(), "exact", 1e-8), b + ": it contains the corners");
-    check(test::square_v().ellipsoid().contains(test::square_v().V(), "exact", 1e-8),
+    check(E.contains(test::square_v().V().matrix_transpose(), "exact", 1e-8),
+          b + ": it contains the corners");
+    check(test::square_v().ellipsoid().contains(test::square_v().V().matrix_transpose(), "exact",
+                                                1e-8),
           b + ": vertices");
     check(Polytope::empty(2).ellipsoid().dim() == 2, b + ": the empty set");
 }
@@ -40,7 +42,8 @@ void properties(const std::string &b) {
     bool contained = true;
     for (int n = 2; n <= 3; ++n) {
         const Polytope P = test::random_polytope(rng, n, n + 2);
-        contained = contained && P.ellipsoid().contains(test::vertices_of(P), "exact", 1e-7);
+        contained = contained &&
+                    P.ellipsoid().contains(test::vertices_of(P).matrix_transpose(), "exact", 1e-7);
     }
     check(contained, b + ": it contains the vertices");
 }

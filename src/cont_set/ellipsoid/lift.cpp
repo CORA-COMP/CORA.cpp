@@ -12,9 +12,9 @@
 //
 // CORA: contSet/@ellipsoid/lift_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
@@ -34,7 +34,7 @@ Ellipsoid Ellipsoid::lift(int64_t N, const std::vector<int64_t> &dims) const {
     // lift_impl comes here after the generic checks, which do not see the permutation: always fail
     if (plan.refusal) CORA_FAIL(plan.refusal->first, plan.refusal->second);
     if (priv_is_empty(*this)) return *this;
-    return {Q_.take(plan.source, -2).take(plan.source, -1), q_.take(plan.source, -2), tol_};
+    return {q_.take(plan.source, -1), Q_.take(plan.source, -2).take(plan.source, -1), tol_};
 }
 
 Set Ellipsoid::lift_impl(int64_t N, const std::vector<int64_t> &proj) const {

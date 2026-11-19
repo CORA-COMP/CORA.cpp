@@ -291,6 +291,14 @@ bool is_number(const py::handle &o) {
     return py::isinstance<py::float_>(o) || py::isinstance<py::int_>(o);
 }
 
+/// The empty members of a set of the batch shape `batch` as a numpy bool array of that shape.
+py::array_t<bool> empty_mask_array(const EmptyMask &mask, const Shape &batch) {
+    const std::vector<uint8_t> f = mask.flags(batch);
+    py::array_t<bool> a(std::vector<py::ssize_t>(batch.begin(), batch.end()));
+    std::copy(f.begin(), f.end(), a.mutable_data());
+    return a;
+}
+
 /// An optional vector argument: None stays empty, a number is a 1 x 1 array (one value for all).
 std::optional<Tensor> optional_vector(const py::object &o, const char *what) {
     if (o.is_none()) return std::nullopt;
@@ -601,7 +609,7 @@ void bind_cont_set(py::module_ &m) {
             if (py::isinstance<Polytope>(S1))
                 return py::cast<const Polytope &>(S1).contains(tensor_of(S2, "the points"));
             if (py::isinstance<Ellipsoid>(S1))
-                return py::cast<const Ellipsoid &>(S1).contains(tensor_of(S2, "the points"));
+                return py::cast<const Ellipsoid &>(S1).contains(point_of(S2, "the points"));
             if (py::isinstance<Capsule>(S1))
                 return py::cast<const Capsule &>(S1).contains(tensor_of(S2, "the points"));
             CORA_FAIL(Error::not_supported,
@@ -776,13 +784,7 @@ void bind_interval(py::module_ &m) {
         // the empty members as numpy booleans
         .def_property_readonly(
             "empty_mask",
-            [](const Interval &I) {
-                const std::vector<uint8_t> f = I.empty_mask().flags(I.batch_shape());
-                py::array_t<bool> a(
-                    std::vector<py::ssize_t>(I.batch_shape().begin(), I.batch_shape().end()));
-                std::copy(f.begin(), f.end(), a.mutable_data());
-                return a;
-            },
+            [](const Interval &I) { return empty_mask_array(I.empty_mask(), I.batch_shape()); },
             "Which members of the batch are empty, a bool array of the batch shape")
         .def("is_empty", &Interval::is_empty, "Whether the interval is empty (every member)")
         .def(
@@ -1308,7 +1310,7 @@ void bind_empty_set(py::module_ &m) {
             [](const EmptySet &E, const py::object &S) {
                 if (py::isinstance<ContSet>(S)) return E.plus(py::cast<const ContSet &>(S));
                 // the sum with a set or with a vector is empty
-                return E.plus(vector_of(S, "the vector"));
+                return E.plus(point_of(S, "the vector"));
             },
             py::arg("S"), "The sum with a set or a vector: empty")
         .def(
@@ -2560,14 +2562,17 @@ void bind_ellipsoid(py::module_ &m) {
         .def(py::init<const Zonotope &, const std::string &>(), py::arg("Z"),
              py::arg("mode") = "outer:norm_bnd",
              "An ellipsoid that holds a zonotope of n independent generators")
-        .def(py::init([](const py::object &Q, const py::object &q, Tol tol) {
-                 if (q.is_none()) return Ellipsoid(tensor_of(Q, "Q"), tol);
-                 // a shape matrix without a center is centered at 0
-                 return Ellipsoid(tensor_of(Q, "Q"), vector_of(q, "the center"), tol);
+        // the center first, as every set; a shape matrix alone is centered at 0
+        .def(py::init([](const py::object &q, const py::object &Q, Tol tol) {
+                 return Ellipsoid(point_of(q, "the center"), tensor_of(Q, "Q"), tol);
              }),
-             py::arg("Q"), py::arg("q") = py::none(), py::arg("tol") = py::none(),
-             "shape matrix Q (..., n, n), center q (..., n), default 0; tol bounds the asymmetry "
-             "and the negative eigenvalues of Q")
+             py::arg("q"), py::arg("Q"), py::arg("tol") = py::none(),
+             "center q (..., n) and shape matrix Q (..., n, n); tol bounds the asymmetry and the "
+             "negative eigenvalues of Q")
+        .def(py::init(
+                 [](const py::object &Q, Tol tol) { return Ellipsoid(tensor_of(Q, "Q"), tol); }),
+             py::arg("Q"), py::kw_only(), py::arg("tol") = py::none(),
+             "shape matrix Q (..., n, n) around the origin")
         .def_static("empty", &Ellipsoid::empty, py::arg("n") = 0,
                     "The empty ellipsoid of n dimensions")
         .def_static("origin", &Ellipsoid::origin, py::arg("n"),
@@ -2577,8 +2582,10 @@ void bind_ellipsoid(py::module_ &m) {
             "generate_random",
             [](cora::Rng &rng, const std::optional<int64_t> &dimension, bool is_degenerate,
                const py::object &center) {
-                return Ellipsoid::generate_random(rng, dimension, is_degenerate,
-                                                  optional_vector(center, "center"));
+                return Ellipsoid::generate_random(
+                    rng, dimension, is_degenerate,
+                    center.is_none() ? std::nullopt
+                                     : std::optional<Tensor>(point_of(center, "center")));
             },
             py::arg("rng"), py::arg("dimension") = py::none(), py::arg("is_degenerate") = false,
             py::arg("center") = py::none(),
@@ -2594,10 +2601,23 @@ void bind_ellipsoid(py::module_ &m) {
         // small queries: NaN, semi-axes, volume and equality
         .def("isnan", &Ellipsoid::isnan, "Whether the ellipsoid holds NaN: always False")
         .def(
-            "radius", [](const Ellipsoid &E, int64_t i) { return vector(E.radius(i)); },
-            py::arg("i") = 1, "The semi-axes: the roots of the i largest eigenvalues of Q")
+            "semi_axes", [](const Ellipsoid &E, int64_t i) { return values(E.semi_axes(i)); },
+            py::arg("i") = 1, "The semi-axes (..., i): the roots of the i largest eigenvalues of Q")
         .def(
-            "volume", [](const Ellipsoid &E) { return scalar(E.volume()); }, "The volume")
+            "ball_radius", [](const Ellipsoid &E) { return values(E.ball_radius()); },
+            "The radius of the ball around the center that holds the ellipsoid (...)")
+        // the empty members
+        .def("is_empty", &Ellipsoid::is_empty, "Whether the ellipsoid is empty")
+        .def_property_readonly(
+            "empty_mask",
+            [](const Ellipsoid &E) {
+                const Shape q = E.q().shape();
+                return empty_mask_array(E.empty_mask(),
+                                        Shape(std::vector<int64_t>(q.begin(), q.end() - 1)));
+            },
+            "Which members of the batch are empty, a bool array of the batch shape")
+        .def(
+            "volume", [](const Ellipsoid &E) { return values(E.volume()); }, "The volume (...)")
         .def(
             "isequal",
             [](const Ellipsoid &E, const Ellipsoid &S, Tol tol) { return E.isequal(S, tol); },
@@ -2607,24 +2627,25 @@ void bind_ellipsoid(py::module_ &m) {
         .def(
             "distance",
             [](const Ellipsoid &E, const py::object &p) {
-                return matrix(E.distance(tensor_of(p, "the points")));
+                return values(E.distance(point_of(p, "the points")));
             },
-            py::arg("p"), "(x - q)' Q^-1 (x - q) - 1 for the points p (n, N): negative inside")
+            py::arg("p"), "(x - q)' Q^-1 (x - q) - 1 for the points p (..., n): negative inside")
         // meeting points or an ellipsoid
         .def(
             "is_intersecting",
             [](const Ellipsoid &E, const py::object &S, Tol tol) {
                 if (py::isinstance<Ellipsoid>(S)) return E.is_intersecting(ellipsoid_of(S), tol);
-                return E.is_intersecting(tensor_of(S, "the points"), tol);
+                return E.is_intersecting(point_of(S, "the points"), tol);
             },
             py::arg("S"), py::arg("tol") = py::none(),
-            "Whether the ellipsoid meets an ellipsoid (one a point) or contains the points (n, N)")
+            "Whether the ellipsoid meets an ellipsoid (one a point) or contains the points (..., "
+            "n)")
         // the Minkowski sum
         .def(
             "plus",
             [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
                 if (py::isinstance<Ellipsoid>(S)) return E.plus(ellipsoid_of(S), mode);
-                return E.plus(vector_of(S, "the vector"));
+                return E.plus(point_of(S, "the vector"));
             },
             py::arg("S"), py::arg("mode") = "outer:halder",
             "The Minkowski sum with a vector or an ellipsoid (the enclosure of Halder)")
@@ -2633,14 +2654,14 @@ void bind_ellipsoid(py::module_ &m) {
             "mink_diff",
             [](const Ellipsoid &E, const py::object &S) {
                 if (py::isinstance<Ellipsoid>(S)) return E.mink_diff(ellipsoid_of(S));
-                return E.mink_diff(vector_of(S, "the vector"));
+                return E.mink_diff(point_of(S, "the vector"));
             },
             py::arg("S"), "The Minkowski difference with a vector or an ellipsoid")
         .def(
             "unite",
             [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
                 if (py::isinstance<Ellipsoid>(S)) return E.unite(ellipsoid_of(S), mode);
-                return E.unite(vector_of(S, "the point"), mode);
+                return E.unite(point_of(S, "the point"), mode);
             },
             py::arg("S"), py::arg("mode") = "outer",
             "An ellipsoid that holds the union with an ellipsoid or a point")
@@ -2653,19 +2674,19 @@ void bind_ellipsoid(py::module_ &m) {
         .def_property_readonly(
             "Q", [](const Ellipsoid &E) { return matrix(E.Q()); }, "The shape matrix Q (..., n, n)")
         .def_property_readonly(
-            "q", [](const Ellipsoid &E) { return vector(E.q()); }, "The center q (..., n)")
+            "q", [](const Ellipsoid &E) { return values(E.q()); }, "The center q (..., n)")
         .def_property_readonly("tol", &Ellipsoid::tol, "The tolerance of the object")
         .def("is_bounded", &Ellipsoid::is_bounded, "Always true")
         .def("is_full_dim", &Ellipsoid::is_full_dim, py::arg("tol") = py::none(),
              "Whether the shape matrix has full rank; tol replaces the tolerance of the object")
         .def(
             "generators", [](const Ellipsoid &E) { return matrix(E.generators()); },
-            "A matrix G with G G' = Q from the singular value decomposition")
+            "The generators (..., n, n), one per row, with G' G = Q")
         // the generators and the norm of the ellipsoid
         .def(
             "ellipsoid_norm",
             [](const Ellipsoid &E, const py::object &p) {
-                return scalar(E.ellipsoid_norm(vector_of(p, "p")));
+                return values(E.ellipsoid_norm(point_of(p, "p")));
             },
             py::arg("p"), "The norm of p whose unit ball is the ellipsoid shifted to the origin")
         .def("is_bigger", &Ellipsoid::is_bigger, py::arg("E2"), "Whether E2 - q2 lies in E - q")
@@ -2675,7 +2696,7 @@ void bind_ellipsoid(py::module_ &m) {
                 return E.is_bad_dir(E2, tensor_of(L, "L"));
             },
             py::arg("E2"), py::arg("L"),
-            "For every column of L whether it is a bad direction of the Minkowski difference")
+            "For every row of L (k, n) whether it is a bad direction of the Minkowski difference")
         .def_static(
             "enclose_points",
             [](const py::object &points, const std::string &method) {
@@ -2683,7 +2704,7 @@ void bind_ellipsoid(py::module_ &m) {
                 return Ellipsoid::enclose_points(tensor_of(points, "points"), method);
             },
             py::arg("points"), py::arg("method") = "cov",
-            "An ellipsoid that contains the points (n, p); method 'cov'")
+            "An ellipsoid that contains the points (p, n), one per row; method 'cov'")
         .def(
             "intersect_strip",
             [](const Ellipsoid &E, const py::object &C, const py::object &phi, const py::object &y,
@@ -2694,7 +2715,7 @@ void bind_ellipsoid(py::module_ &m) {
                               "intersect_strip: the method '" + *method +
                                   "' does not go with this width (a number: 'Gollamudi1996', "
                                   "a dict of V and bar_V: 'Liu2016')");
-                const Tensor Ct = tensor_of(C, "C"), yt = vector_of(y, "y");
+                const Tensor Ct = tensor_of(C, "C"), yt = point_of(y, "y");
                 const auto result =
                     liu ? E.intersect_strip(Ct, strip_measurement_of(phi), yt, sigma_sq_prev)
                         : E.intersect_strip(Ct, py::cast<double>(phi), yt, sigma_sq_prev);
@@ -2710,7 +2731,7 @@ void bind_ellipsoid(py::module_ &m) {
             "intersect",
             [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
                 if (py::isinstance<Ellipsoid>(S)) return E.intersect(ellipsoid_of(S), mode);
-                return E.intersect(vector_of(S, "the point"));
+                return E.intersect(point_of(S, "the point"));
             },
             py::arg("S"), py::arg("mode") = "outer",
             "The intersection with an ellipsoid or a point (an ellipsoid with Q = 0 or empty)")
@@ -2719,7 +2740,7 @@ void bind_ellipsoid(py::module_ &m) {
             [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
                 if (py::isinstance<Ellipsoid>(S)) return E.cart_prod(ellipsoid_of(S), mode);
                 // Cartesian product with an ellipsoid or a point
-                return E.cart_prod(vector_of(S, "the point"), mode);
+                return E.cart_prod(point_of(S, "the point"), mode);
             },
             py::arg("S"), py::arg("mode") = "outer",
             "The Cartesian product with an ellipsoid (of the bounding boxes) or a point (exact)")
@@ -2731,10 +2752,10 @@ void bind_ellipsoid(py::module_ &m) {
                 if (py::isinstance<Interval>(S))
                     return E.contains(py::cast<Interval>(S), method, tol);
                 if (py::isinstance<Ellipsoid>(S)) return E.contains(ellipsoid_of(S), method, tol);
-                return E.contains(tensor_of(S, "the points"), method, tol);
+                return E.contains(point_of(S, "the points"), method, tol);
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
-            "Whether the ellipsoid contains the points (n, N), a zonotope, a box or an ellipsoid")
+            "Whether the ellipsoid contains the points (..., n), a zonotope, a box or an ellipsoid")
         .def(
             "enclose",
             [](const Ellipsoid &E, const ContSet &S2) {

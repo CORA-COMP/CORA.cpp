@@ -6,9 +6,9 @@
 //           auto [T, D] = priv_simdiag(Q1, Q2, tol);
 // See also: ellipsoid.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -23,7 +23,7 @@ namespace cora {
 
 // Predicates --------------------------------------------------------------------------------------
 
-/// Whether E is the empty ellipsoid: its shape matrix has no entries.
+/// Whether E is the empty ellipsoid: every member is flagged in its empty mask.
 bool priv_is_empty(const Ellipsoid &E);
 
 /// Whether the shape matrix of the unbatched E is zero up to eps: E is a point (CORA's
@@ -49,9 +49,17 @@ Tensor priv_rank(const Tensor &Q, double tol);
 /// matrices are symmetric up to tol, M1 has eigenvalues at least tol and M2 at least -tol.
 std::pair<Tensor, Tensor> priv_simdiag(const Tensor &M1, const Tensor &M2, double tol);
 
+/// The generators of Q (..., n, n) as CORA's columns, U sqrt(D) from Q = U D U' (G G' = Q): the
+/// kernel of Ellipsoid::generators, which returns them as rows.
+Tensor priv_generator_columns(const Tensor &Q);
+
 /// The factor U_r sqrt(D_r) (n, r) of the unbatched, nonempty E, r its rank: a matrix G with
-/// G G' = Q (no columns for a point).
+/// G G' = Q, one generator per column (no columns for a point).
 Tensor priv_range_factor(const Ellipsoid &E);
+
+/// The ellipsoid norm of the columns p (..., n, 1) as (..., 1, 1): the kernel of
+/// Ellipsoid::ellipsoid_norm, which takes rows.
+Tensor priv_ellipsoid_norm(const Ellipsoid &E, const Tensor &p);
 
 /// The shape matrix M Q M' of the image of an ellipsoid under M, symmetrized (CORA's mtimes).
 Tensor priv_congruence(const Tensor &M, const Tensor &Q);

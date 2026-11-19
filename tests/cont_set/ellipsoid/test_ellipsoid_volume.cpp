@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/volume_.m
 // PROPERTY: contSet/@ellipsoid/volume_.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -19,7 +19,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,11 +29,15 @@ namespace {
 
 /// Hand-computed: 2D and 1D, a point, the empty ellipsoid.
 void volume_known(const std::string &b) {
-    const Ellipsoid E(Tensor({{1.0, 0.0}, {0.0, 4.0}}), column({1.0, 2.0}));
+    const Ellipsoid E(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 4.0}}));
     check(close(E.volume(), {2.0 * std::numbers::pi}, 1e-13), b + ": pi * 2");
     check(close(Ellipsoid(Tensor({{9.0}})).volume(), {6.0}, 1e-14), b + ": 1D: 2 * 3");
     check(close(Ellipsoid(Tensor::zeros({2, 2})).volume(), {0.0}, 0), b + ": a point");
     check(close(Ellipsoid::empty(2).volume(), {0.0}, 0), b + ": empty");
+    check(E.volume().ndim() == 0 &&
+              Ellipsoid(Tensor::stack({Tensor::eye(2), Tensor::eye(2)}, 0)).volume().shape() ==
+                  Shape{2},
+          b + ": one number per member");
 }
 
 /// Stated property: the volume of a ball of radius r is 4/3 pi r^3 in 3D, and it scales with

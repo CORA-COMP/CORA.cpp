@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/mtimes.m
 // PROPERTY: contSet/@ellipsoid/mtimes.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ namespace {
 
 /// Hand-computed: a row map, a rotation, the empty ellipsoid takes the rows of M.
 void linear_map_known(const std::string &b) {
-    const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
+    const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
     const Ellipsoid R = E.linear_map(Tensor({{1.0, 2.0}}));
     check(close(R.Q(), {8.0}, 1e-14) && close(R.q(), {5.0}, 1e-14), b + ": M = (1 2)");
     const Ellipsoid S = E.linear_map(Tensor({{0.0, 1.0}, {1.0, 0.0}}));
@@ -39,7 +39,8 @@ void linear_map_property(const std::string &b) {
         const Ellipsoid E = test::random_ellipsoid(rng, 3, k == 4 ? 2 : -1);
         const Tensor M = test::normal_matrix(rng, 2, 3);
         const Ellipsoid R = E.linear_map(M);
-        check(test::all_inside(R, M.matmul(test::ellipsoid_points(E, rng, 30)), 1e-6),
+        check(test::all_inside(R, test::ellipsoid_points(E, rng, 30).matmul(M.matrix_transpose()),
+                               1e-6),
               b + ": the images are inside");
         check(close(R.Q(), R.Q().matrix_transpose(), 0), b + ": Q stays symmetric");
     }
@@ -47,7 +48,7 @@ void linear_map_property(const std::string &b) {
 
 /// A matrix of the wrong width is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
-    const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
+    const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { E.linear_map(Tensor({{1.0, 2.0, 3.0}})); }, Error::dimension_mismatch),
           "linear_map: width");
     ChecksScope off(false);

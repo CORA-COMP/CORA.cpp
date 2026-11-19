@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@ellipsoid/display.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_testing.h"
@@ -13,7 +13,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,7 +22,7 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const Ellipsoid E(Tensor({{4.0, 0.0}, {0.0, 1.0}}), column({1.0, 2.0}));
+        const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
         const std::string text = E.display();
         check(text.find("ellipsoid") != std::string::npos &&
                   text.find("dimension: 2") != std::string::npos,

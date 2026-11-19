@@ -1,8 +1,8 @@
 // test_lean_ellipsoid_bound - Ellipsoid::linear_map against the CORALean oracle, within ulps
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
@@ -41,7 +41,8 @@ bool aux_near(const std::vector<double> &a, const std::vector<double> &b, double
 Ellipsoid aux_ellipsoid(oracle::Random &rnd, int64_t n, bool centered) {
     const Tensor A = rnd.matrix(n, n);
     const Tensor Q = A.matmul(A.matrix_transpose()) + A.eye_like(n) * 0.5;
-    return {(Q + Q.matrix_transpose()) * 0.5, centered ? Q.zeros_like({n, 1}) : rnd.vector(n)};
+    return {centered ? Q.zeros_like({n}) : rnd.vector(n).squeeze(-1),
+            (Q + Q.matrix_transpose()) * 0.5};
 }
 
 } // namespace

@@ -3,9 +3,9 @@
 // CORA: contSet/@ellipsoid/plot3D.m
 // PROPERTY: contSet/@ellipsoid/plot3D.m
 // CORA authors: Victor Gassmann
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -32,7 +32,7 @@ void vertices_3d_property(const std::string &b) {
     const std::vector<Point3> V = E.vertices_3d()[0];
     std::vector<double> flat;
     for (const Point3 &p : V) flat.insert(flat.end(), {p[0], p[1], p[2]});
-    const Tensor P = Tensor::from_data(flat, {int64_t(V.size()), 3}).matrix_transpose();
+    const Tensor P = Tensor::from_data(flat, {int64_t(V.size()), 3});
     bool boundary = V.size() == 200;
     for (const double x : test::norms_of(E, P)) boundary = boundary && std::abs(x - 1.0) < 1e-6;
     check(boundary, b + ": 200 points on the boundary");

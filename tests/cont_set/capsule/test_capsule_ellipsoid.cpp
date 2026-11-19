@@ -2,9 +2,9 @@
 //
 // CORA: contSet/@capsule/ellipsoid.m
 // CORA authors: Victor Gassmann, Matthias Althoff
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "capsule_testing.h"
@@ -32,8 +32,7 @@ void ellipsoid_known(const std::string &b) {
     const Ellipsoid E = ball.ellipsoid();
     check(close(E.Q(), {9, 0, 0, 9}, 0) && close(E.q(), {1, 2}, 0), b + ": r^2 I at c");
     check(close(ball.ellipsoid("outer").Q(), E.Q(), 0), b + ": a ball ignores the method");
-    check(Capsule::empty(3).ellipsoid().dim() == 3 &&
-              Capsule::empty(3).ellipsoid().Q().numel() == 0,
+    check(Capsule::empty(3).ellipsoid().dim() == 3 && Capsule::empty(3).ellipsoid().is_empty(),
           b + ": empty");
 }
 

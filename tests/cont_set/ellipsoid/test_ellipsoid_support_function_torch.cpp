@@ -1,8 +1,8 @@
 // test_ellipsoid_support_function_torch - Ellipsoid support_function, maps, plus: gradients
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "ellipsoid_gradients.h"
@@ -38,7 +38,7 @@ int main() {
         test::random_ellipsoid_factors(3));
     // the sum with a vector (that of two ellipsoids holds the weight of Halder as a host number)
     std::vector<torch::Tensor> v = test::random_ellipsoid_factors(3);
-    v.push_back(torch::randn({3, 1}, torch::kDouble));
+    v.push_back(torch::randn({3}, torch::kDouble));
     test::gradcheck(
         "plus vector",
         [](const Inputs &x) { return test::parts(test::ellipsoid_of(x).plus(x[2])); }, v);

@@ -1,9 +1,9 @@
 """test_ellipsoid_operations - the Ellipsoid operations in Python: maps, sums, conversions, samples
 
 CORA authors: Victor Gassmann, Mark Wetzlinger
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       06-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 # CORA: contSet/@ellipsoid/supportFunc_.m
@@ -47,21 +47,24 @@ import numpy as np
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def ellipsoid(Q, q=None, tol=None):
-    return cora.Ellipsoid(np.array(Q, dtype=float), None if q is None else np.array(q, dtype=float), tol)
+    """The ellipsoid of Q and q (the constructor takes the center first), or of Q around 0."""
+    if q is None:
+        return cora.Ellipsoid(np.array(Q, dtype=float), tol=tol)
+    return cora.Ellipsoid(np.array(q, dtype=float), np.array(Q, dtype=float), tol)
 
 
 def random_ellipsoid(rng, n):
     """Q = A A' + I/2 and a normal center."""
     A = rng.standard_normal((n, n))
     Q = A @ A.T + 0.5 * np.eye(n)
-    return cora.Ellipsoid(0.5 * (Q + Q.T), rng.standard_normal(n))
+    return cora.Ellipsoid(rng.standard_normal(n), 0.5 * (Q + Q.T))
 
 
 def boundary_points(E, rng, count):
-    """Points q + G u of the boundary."""
+    """Points q + u G of the boundary, one per row."""
     G = E.generators()
-    U = rng.standard_normal((G.shape[1], count))
-    return E.q[:, None] + G @ (U / np.linalg.norm(U, axis=0))
+    U = rng.standard_normal((G.shape[0], count))
+    return E.q + (U / np.linalg.norm(U, axis=0)).T @ G
 
 
 # ===========================================  MAIN  =========================================== #
@@ -74,11 +77,12 @@ class Operations(unittest.TestCase):
         self.enterContext(cora.backend("eigen"))
         self.E = ellipsoid([[4.0, 0.0], [0.0, 1.0]], [1.0, 2.0])
 
-    def test_support_function_radius_volume_norm(self):
+    def test_support_function_semi_axes_volume_norm(self):
         # the support function along the axes and a diagonal
         self.assertAlmostEqual(self.E.support_function(np.array([1.0, 0.0])), 3.0)
         self.assertAlmostEqual(self.E.support_function(np.array([1.0, 1.0])), 3.0 + np.sqrt(5.0))
-        np.testing.assert_allclose(self.E.radius(2), [2.0, 1.0])
+        np.testing.assert_allclose(self.E.semi_axes(2), [2.0, 1.0])
+        self.assertAlmostEqual(self.E.ball_radius(), 2.0)
         self.assertAlmostEqual(self.E.volume(), 2 * np.pi)
         self.assertAlmostEqual(ellipsoid([[4.0, 0.0], [0.0, 1.0]]).norm(), 2.0)
         with self.assertRaises(cora.errors.NotSupported):
@@ -88,7 +92,7 @@ class Operations(unittest.TestCase):
         np.testing.assert_array_equal(self.E.reduce(2).Q, self.E.Q)
         np.testing.assert_array_equal(cora.Ellipsoid.origin(3).Q, np.zeros((3, 3)))
         with self.assertRaises(cora.errors.WrongValue):
-            self.E.radius(3)
+            self.E.semi_axes(3)
 
     def test_maps(self):
         # a row map, a projection and a permutation
@@ -106,7 +110,7 @@ class Operations(unittest.TestCase):
         rng = np.random.default_rng(13)
         F = random_ellipsoid(rng, 3)
         M = rng.standard_normal((2, 3))
-        self.assertTrue(F.linear_map(M).contains(M @ boundary_points(F, rng, 20), tol=1e-6))
+        self.assertTrue(F.linear_map(M).contains(boundary_points(F, rng, 20) @ M.T, tol=1e-6))
 
     def test_sums_and_hulls(self):
         # a vector shifts, two ellipsoids add by the enclosure of Halder
@@ -136,8 +140,8 @@ class Operations(unittest.TestCase):
 
     def test_distance_and_intersection(self):
         # -1 at the center, 0 on the boundary, positive outside
-        d = self.E.distance(np.array([[1.0, 3.0, 1.0], [2.0, 2.0, 4.0]]))
-        np.testing.assert_allclose(d, [[-1.0, 0.0, 3.0]], atol=1e-12)
+        d = self.E.distance(np.array([[1.0, 2.0], [3.0, 2.0], [1.0, 4.0]]))
+        np.testing.assert_allclose(d, [-1.0, 0.0, 3.0], atol=1e-12)
         point = ellipsoid(np.zeros((2, 2)), [1.0, 3.0])
         self.assertTrue(self.E.is_intersecting(point))
         self.assertTrue(self.E.is_intersecting(np.array([1.0, 2.0])))
@@ -151,13 +155,14 @@ class Operations(unittest.TestCase):
         np.testing.assert_allclose(Z.generators, [[2, 0], [0, 1]], atol=1e-12)
         rng = np.random.default_rng(19)
         F = random_ellipsoid(rng, 3)
-        self.assertTrue(F.zonotope().contains(boundary_points(F, rng, 10), tol=1e-8))
+        # the zonotope takes the points as columns until #163 turns them into rows
+        self.assertTrue(F.zonotope().contains(boundary_points(F, rng, 10).T, tol=1e-8))
         with self.assertRaises(cora.errors.NotSupported):
             F.zonotope("outer:norm")
-        # random points, the box and the zonotope converted
+        # random points (rand_point gives columns until #163 turns them into rows), conversions
         points = F.rand_point(20, cora.Rng(7))
-        self.assertTrue(F.contains(points, tol=1e-6))
-        self.assertTrue(F.contains(F.rand_point(20, cora.Rng(8), type="extreme"), tol=1e-6))
+        self.assertTrue(F.contains(points.T, tol=1e-6))
+        self.assertTrue(F.contains(F.rand_point(20, cora.Rng(8), type="extreme").T, tol=1e-6))
         # the ellipsoids of a box and of a zonotope
         box = cora.Interval(np.array([0.0, 0.0]), np.array([2.0, 1.0]))
         np.testing.assert_allclose(cora.Ellipsoid(box).Q, 2 * np.diag([1.0, 0.25]), atol=1e-12)

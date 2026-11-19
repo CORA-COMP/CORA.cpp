@@ -16,7 +16,7 @@
 // CORA authors: Mark Wetzlinger, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -55,12 +55,12 @@ Zonotope Polytope::zonotope(const std::string &method) const {
                [&] { return "zonotope: the method '" + method + "' is not supported"; });
     const Tensor V = priv_points_tensor(like, dim(), priv_polytope_vertices(*this));
     // the axes of the covariance ellipsoid, and the box of the vertices in them
-    const Ellipsoid E = Ellipsoid::enclose_points(V);
-    const Tensor R = aux_sqrtm(E.Q());
-    const Tensor Y = R.pinv().matmul(V - E.q());
+    const Ellipsoid E = Ellipsoid::enclose_points(V.matrix_transpose());
+    const Tensor R = aux_sqrtm(E.Q()), q = E.q().expand_dims(-1);
+    const Tensor Y = R.pinv().matmul(V - q);
     const Tensor lower = Y.min(-1, true), upper = Y.max(-1, true);
     const Tensor center = (upper + lower) * 0.5, radius = (upper - lower) * 0.5;
-    return Zonotope((E.q() + R.matmul(center)).squeeze(-1),
+    return Zonotope((q + R.matmul(center)).squeeze(-1),
                     (R.multiply(radius.matrix_transpose())).matrix_transpose());
 }
 
