@@ -175,6 +175,8 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 
 [d] HEAT04: ARCH26 ran a new support-function Krylov verification (Perschl and Althoff, HSCC 2026, not in CORA v2026.1.0); CORA.cpp runs the ARCH23 script's reach with a step of 0.001, and JuliaReach's 3180 s are its discrete-time mode (continuous did not solve it), so CORA's 1193 s is the best.
 
+[e] RAND01, RAND02, RND01: the sound zonotope verify (CORALean's `verifyZonotopePassFloat` on CORA's grid, Farkas/SAT certificates, checked witnesses) adds about 0.5-7 ms to CORA's algorithm on these instances.
+
 **PLAN01** is not verified by CORA's ARCH23 script, MATLAB R2024b, CORA v2026.1.0 on this machine
 (verdict 0, the CORA column), and CORA.cpp agrees: its 50 s reach with varying parameters reaches x1, x4,
 x7 >= -50.65, past the bound -50. The ARCH26 report lists PLAN01 as verified (162 s) with a different
