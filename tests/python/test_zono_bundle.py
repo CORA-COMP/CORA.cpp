@@ -77,7 +77,7 @@ class ZonoBundle(unittest.TestCase):
         E = cora.ZonoBundle.empty(3)
         self.assertEqual(E.dim, 3)
         self.assertEqual(E.parallel_sets, 2)
-        self.assertEqual(E.interval().inf.shape[-1], 0)
+        self.assertTrue(E.interval().is_empty())
         self.assertEqual(E.center.shape[-1], 0)
         self.assertFalse(E.is_full_dim())
         with self.assertRaises(cora.errors.WrongValue):

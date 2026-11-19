@@ -79,7 +79,7 @@ class Predicates(unittest.TestCase):
         self.assertFalse(I.isequal(box([0.0, -1.0], [1.0 + 1e-9, 2.0])))
         self.assertTrue(I.isequal(box([0.0, -1.0], [1.0 + 1e-9, 2.0]), tol=1e-8))
         self.assertFalse(I.isequal(box([0.0], [1.0])))
-        self.assertTrue(box([1.0, 2.0], [1.0, 2.0]).isequal(np.array([[1.0], [2.0]])))
+        self.assertTrue(box([1.0, 2.0], [1.0, 2.0]).isequal(np.array([1.0, 2.0])))
         H = box([0.0, -INF], [INF, 1.0])
         self.assertTrue(H.isequal(H))
         self.assertFalse(H.isequal(box([0.0, -INF], [1e300, 1.0])))
@@ -159,7 +159,7 @@ class Arithmetic(unittest.TestCase):
         B = box([0.0, 0.0], [4.0, 4.0])
         np.testing.assert_allclose(B.minkowski_difference(Z).inf, [0.5, 0.5])
         np.testing.assert_allclose(B.minkowski_difference(Z, "inner").sup, [3.5, 3.5])
-        self.assertTrue(box([0.0], [1.0]).minkowski_difference(box([-1.0], [1.0])).inf.size == 0)
+        self.assertTrue(box([0.0], [1.0]).minkowski_difference(box([-1.0], [1.0])).is_empty())
         with self.assertRaises(cora.errors.NoExactAlg):
             I.minkowski_difference(Z, "exact")
         with self.assertRaises(cora.errors.WrongValue):
@@ -187,7 +187,7 @@ class Arithmetic(unittest.TestCase):
             A.matrix_power(-1)
         # a 1 x 1 base is a matrix: [-1, 2] [-1, 2] = [-2, 4], not the square [0, 4]
         S = cora.Interval.matrix(np.array([[-1.0]]), np.array([[2.0]])).matrix_power(2)
-        np.testing.assert_allclose([S.inf[0], S.sup[0]], [-2.0, 4.0])
+        np.testing.assert_allclose([S.inf[0, 0], S.sup[0, 0]], [-2.0, 4.0])
 
     # logarithm
     def test_log(self):

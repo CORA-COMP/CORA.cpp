@@ -168,7 +168,7 @@ class Squares(unittest.TestCase):
         np.testing.assert_allclose((A ** 3).sup, [[8, 1], [0, 1]])
         np.testing.assert_allclose(A.matrix_power(0).inf, np.eye(2))
         S = interval_matrix(cora.Interval.matrix(np.array([[-1.0]]), np.array([[1.0]])))
-        np.testing.assert_allclose(S.matrix_power(2).inf, [-1.0])
+        np.testing.assert_allclose(S.matrix_power(2).inf, [[-1.0]])
         with self.assertRaises(cora.errors.WrongValue):
             A.matrix_power(-1)
 
@@ -199,7 +199,7 @@ class Exponential(unittest.TestCase):
         S = interval_matrix(np.array([[0.0]]), np.array([[1.0]]))
         W = np.e - 2.5
         E = cora.mat_exp.exponential_remainder(S, 2)
-        np.testing.assert_allclose([E.inf[0], E.sup[0]], [-W, W])  # a 1 x 1 bound reads as a vector
+        np.testing.assert_allclose([E.inf[0, 0], E.sup[0, 0]], [-W, W])  # a 1 x 1 matrix
         with self.assertRaises(cora.errors.DimensionMismatch):
             cora.mat_exp.exponential_remainder(interval_matrix(np.ones((1, 3))), 2)
 
@@ -374,7 +374,7 @@ class MoreOperations(unittest.TestCase):
         A = interval_matrix(np.array([[-1.0]]))
         for style in (0, 1):
             E = cora.mat_exp.expm_taylor_horner_scaling(A, 2, style)
-            np.testing.assert_allclose([E.inf[0], E.sup[0]], [5 / 18, 13 / 18], rtol=1e-12)
+            np.testing.assert_allclose([E.inf[0, 0], E.sup[0, 0]], [5 / 18, 13 / 18], rtol=1e-12)
         # the Taylor Horner scaling
         self.assertTrue(cora.mat_exp.expm_taylor_horner_scaling(A, 2, 2).contains(np.array([[np.exp(-1.0)]])))
         self.assertIsNone(cora.mat_exp.expm_taylor_horner_scaling(interval_matrix(np.array([[5.0]])), 2, 0))

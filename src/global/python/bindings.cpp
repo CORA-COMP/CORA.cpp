@@ -1009,7 +1009,7 @@ void bind_interval(py::module_ &m) {
             [](const Interval &I, const py::object &e) {
                 if (py::isinstance<Interval>(e)) return I.power(py::cast<Interval>(e));
                 if (is_number(e)) return I.power(py::cast<double>(e));
-                return I.power(tensor_of(e, "the exponent"));
+                return I.power(point_of(e, "the exponent"));
             },
             py::arg("exponent"),
             "The elementwise power: exponent a number, an array of the shape of the bounds or a "
@@ -3157,23 +3157,27 @@ void bind_operators(py::module_ &m) {
     });
     method(Z, "__pow__", [](const Zonotope &A, int64_t k) { return mat_exp::matrix_power(A, k); });
 
-    // Interval
-    const auto interval_sum = [](const Interval &A, const py::object &o) -> py::object {
+    // Interval: an array is a point (..., n) or a matrix (..., r, c) as it is, not a column
+    const auto array_of = [](const py::object &o) -> std::optional<Tensor> {
+        if (!as_tensor(o)) return std::nullopt;
+        return point_of(o, "the operand");
+    };
+    const auto interval_sum = [array_of](const Interval &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
         if (is_number(o)) return py::cast(A + py::cast<double>(o));
-        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A + *v);
+        if (const std::optional<Tensor> v = array_of(o)) return py::cast(A + *v);
         return not_implemented();
     };
     method(I, "__add__", interval_sum);
     method(I, "__radd__", interval_sum);
     // an interval, a number or a matrix subtracted
-    method(I, "__sub__", [](const Interval &A, const py::object &o) -> py::object {
+    method(I, "__sub__", [array_of](const Interval &A, const py::object &o) -> py::object {
         if (py::isinstance<Interval>(o)) return py::cast(A - py::cast<Interval>(o));
-        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(A - *v);
+        if (const std::optional<Tensor> v = array_of(o)) return py::cast(A - *v);
         return not_implemented();
     });
-    method(I, "__rsub__", [](const Interval &A, const py::object &o) -> py::object {
-        if (const std::optional<Tensor> v = as_tensor(o)) return py::cast(*v - A);
+    method(I, "__rsub__", [array_of](const Interval &A, const py::object &o) -> py::object {
+        if (const std::optional<Tensor> v = array_of(o)) return py::cast(*v - A);
         return not_implemented();
     });
     method(I, "__truediv__", [](const Interval &A, const py::object &o) -> py::object {
@@ -3189,7 +3193,7 @@ void bind_operators(py::module_ &m) {
     method(I, "__pow__", [](const Interval &A, const py::object &o) -> py::object {
         if (py::isinstance<Interval>(o)) return py::cast(A.power(py::cast<Interval>(o)));
         if (is_number(o)) return py::cast(A.power(py::cast<double>(o)));
-        if (const std::optional<Tensor> e = as_tensor(o)) return py::cast(A.power(*e));
+        if (as_tensor(o)) return py::cast(A.power(point_of(o, "the exponent")));
         return not_implemented();
     });
     method(I, "__rpow__", [](const Interval &A, const py::object &o) -> py::object {
