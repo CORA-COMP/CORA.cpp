@@ -487,7 +487,7 @@ VerifyZonotopePass::Step &VerifyZonotopePass::step(double dt, bool full) {
         // step_verifyZonoInputFloat: no input, or its solution and the box of G u0
         S.gu_ok = true;
         if (has_u_ || has_m_) {
-            S.input = priv_verify_input_solution(powers_, s_, dt, u0_, MU_, p);
+            S.input = priv_verify_input_solution(powers_, s_, dt, u0_, MU_, p, true);
         } else {
             S.input = VerifyInputSolution{
                 Vec(n, 0.0), Vec(n, 0.0), {}, Vec(std::size_t(n * p), 0.0), Vec(n, 0.0)};

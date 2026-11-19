@@ -706,6 +706,9 @@ double aux_init_error(const Tensor &A, const std::optional<Tensor> &C, const Ten
 constexpr double kTimeMargin = numerics::kTimeStepMatch;
 /// The passes after CORA's tuning has verified everything while the sound flags have not.
 constexpr int kSoundRefinements = 3;
+/// Tuning: no refinement for the sound pass starts after this many seconds (CORA has no such pass;
+/// each refinement tightens the tuning's bound tenfold, and its reach can take very long).
+constexpr double kSoundRefineSeconds = 60.0;
 /// Tuning: the growth e^x of the scaled errors over the horizon above which a weight is tried.
 constexpr double kWeightGrowth = 20.0;
 /// The halvings of a step size whose enclosures are not computed.
@@ -1088,7 +1091,9 @@ VerifyResult priv_verify_ra_zonotope(const LinearSys &sys, const Zonotope &R0, c
             // the sound pass gained nothing on a finer bound: the error carry it cannot shrink
             const bool progress = aux_unverified_length(unsat) < left_before;
             ++sound_refinements;
-            if (sound_refinements > kSoundRefinements || (sound_refinements > 1 && !progress))
+            // the cap (tuning): undecided once the refinements are spent, gain nothing or take long
+            if (sound_refinements > kSoundRefinements || (sound_refinements > 1 && !progress) ||
+                priv_seconds_since(start) > kSoundRefineSeconds)
                 return finish();
             emax *= 0.1;
             continue;

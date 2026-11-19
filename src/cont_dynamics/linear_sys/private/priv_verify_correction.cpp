@@ -19,6 +19,7 @@
 
 #include "cont_dynamics/linear_sys/private/priv_verify_correction.h"
 #include "cont_dynamics/linear_sys/private/priv_float_scalars.h"
+#include "cont_dynamics/linear_sys/private/priv_krylov_rounding.h"
 #include "cora/global/tensor/tolerance.h"
 #include "cora/global/threads.h"
 
@@ -123,6 +124,37 @@ std::optional<VerifyCorrection> aux_correction(VerifyPowers &P, const std::vecto
     return std::nullopt;
 }
 
+/// The order at which a tight search stops as an untight one (tuning).
+constexpr int kTightCap = 60;
+
+/// LinearSys.step_verifyInputRemainderOkFloat: max_l dt sum_k W_lk (|u0_k| + sum_c |M_kc|) / s_l
+/// at most eps max_l S_l / s_l, W the scaled remainder past order i - 1 (false if not admissible).
+bool aux_remainder_ok(VerifyPowers &P, const std::vector<double> &s, double dt,
+                      const std::vector<double> &u0, const std::vector<double> &M, int64_t k, int i,
+                      const std::vector<double> &S, double eps) {
+    const int64_t n = P.n();
+    const std::optional<std::vector<double>> W =
+        priv_verify_scaled_remainder(P.A(), s, n, dt, i - 1);
+    if (!W) return false;
+    std::vector<double> x(n);
+    for (int64_t j = 0; j < n; ++j) {
+        double rs = 0;
+        for (int64_t c = k - 1; c >= 0; --c) rs = std::abs(M[std::size_t(j) * k + c]) + rs;
+        x[j] = std::abs(u0[j]) + rs;
+    }
+    // maximumOver, nested to the right from the last row
+    double r = 0, q = 0;
+    for (int64_t l = n - 1; l >= 0; --l) {
+        const double *Wl = &(*W)[std::size_t(l) * n];
+        double sum = 0;
+        for (int64_t j = n - 1; j >= 0; --j) sum = Wl[j] * x[j] + sum;
+        const double rl = (dt * sum) / s[l], ql = S[l] / s[l];
+        r = l == n - 1 ? rl : lean_maximum(rl, r);
+        q = l == n - 1 ? ql : lean_maximum(ql, q);
+    }
+    return r <= eps * q;
+}
+
 } // namespace
 
 
@@ -221,7 +253,8 @@ priv_verify_correction_input(VerifyPowers &P, const std::vector<double> &s, doub
 
 std::optional<VerifyInputSolution>
 priv_verify_input_solution(VerifyPowers &P, const std::vector<double> &s, double dt,
-                           const std::vector<double> &u0, const std::vector<double> &M, int64_t k) {
+                           const std::vector<double> &u0, const std::vector<double> &M, int64_t k,
+                           bool tight) {
     const int64_t n = P.n();
     const std::size_t nk = std::size_t(n) * k;
     constexpr int kOrders = 75; // the search's fuel: orders 0 to 74
@@ -266,6 +299,8 @@ priv_verify_input_solution(VerifyPowers &P, const std::vector<double> &s, double
         // CORA's stop: the order's row sums at most eps times those of the orders before it
         bool stop = i >= 1;
         for (int64_t l = 0; l < n && stop; ++l) stop = a[l] <= eps * S[l];
+        // with tight (tuning): also the remainder past i - 1 at the level of eps, or i >= 60
+        if (stop && tight && i < kTightCap) stop = aux_remainder_ok(P, s, dt, u0, M, k, i, S, eps);
         if (stop) {
             eta = i;
             break;
