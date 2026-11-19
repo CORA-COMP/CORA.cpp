@@ -5,7 +5,7 @@ gcov says which library files (src/, include/) executed a line. The `// CORA: <p
 tags of such a file name its rows; their status comes from coverage/status.json, never re-derived.
 `oracle` is bit-exact on the inputs of the row's test, not on this benchmark's path.
 
-Syntax:   python scripts/coverage/benchmarks.py [--check [--remeasure] | --render-only] [--only NAME]
+Syntax:   python scripts/coverage/benchmarks.py [--check [--remeasure] | --files | --render-only] [--only NAME]
                                                 [--timeout S]
 Reads:    coverage/status.json, coverage/cora-inventory.json, the tags of the sources, the preset `coverage`
 Writes:   coverage/benchmarks.json (the files each instance executed), coverage/benchmarks.md and the
@@ -13,7 +13,7 @@ Writes:   coverage/benchmarks.json (the files each instance executed), coverage/
           examples/benchmarks/README.md
 Checks:   --check renders the committed measurement against status.json and compares with the
           committed files (no build, seconds); --check --remeasure runs every instance again under
-          gcov (hours); --render-only writes the rendering (after a status change)
+          gcov (hours); --files: every measured file exists (pull request CI); --render-only writes it
 Exit code: 0 if all holds (or the files are written), else 1 with what differs.
 
 Authors:       Claude Sonnet 5.5
@@ -365,12 +365,29 @@ def build_programs(root, preset):
     subprocess.run(["cmake", "--build", "--preset", preset, "--target", *targets], cwd=root, check=True)
 
 
+# ============================================  CHECK  =========================================== #
+
+def missing_files(root, measured):
+    """The lines that say which instances list a file that is gone, and how to measure them again."""
+    gone = {name: [f for f in entry.get("files", []) if not (Path(root) / f).exists()]
+            for name, entry in measured.items()}
+    gone = {name: files for name, files in gone.items() if files}
+    lines = [f"  {name}: {file} no longer exists" for name, files in gone.items() for file in files]
+    if gone:
+        only = " ".join(f"--only {name}" for name in gone)
+        lines.append("coverage/benchmarks.json lists files that a change deleted or renamed. Measure these "
+                     f"instances again (coverage preset, minutes each):\n"
+                     f"  python3 scripts/coverage/benchmarks.py {only}")
+    return lines
+
+
 # ============================================  MAIN  ============================================ #
 
 def main():
     # --check runs no benchmark: a stale rendering or a measured file that is gone fails it
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--check", action="store_true", help="compare the committed files, write nothing")
+    parser.add_argument("--files", action="store_true", help="only check that every measured file exists")
     parser.add_argument("--remeasure", action="store_true", help="with --check: also run every instance again")
     parser.add_argument("--render-only", action="store_true", help="render the committed measurement")
     parser.add_argument("--only", action="append", default=[], help="measure just this instance")
@@ -381,8 +398,14 @@ def main():
     root = REPO
     data = root / "coverage" / "benchmarks.json"
     committed = cov.load_json(data)
-    if args.render_only or (args.check and not args.remeasure):
+    if args.render_only or args.files or (args.check and not args.remeasure):
         measured = committed.get("instances", {})
+        # a file that is gone cannot be tagged: say so before the rendering fails on it
+        if args.files or args.check:
+            lines = missing_files(root, measured)
+            print("\n".join(lines))
+            if lines or args.files:
+                return 1 if lines else 0
     else:
         build_programs(root, "coverage")
         build = root / args.build_dir
@@ -409,12 +432,7 @@ def main():
                  if not p.exists() or p.read_text(encoding="utf-8") != text]
         for name in stale:
             print(f"  {name} is stale; run python scripts/coverage/benchmarks.py --render-only")
-        # a measured file that is gone is no measurement of the tree any more
-        gone = [f"{name}: {file}" for name, entry in measured.items() for file in entry.get("files", [])
-                if not (root / file).exists()]
-        for line in gone:
-            print(f"  {line} no longer exists; measure the instance again (--only)")
-        return 1 if stale or gone else 0
+        return 1 if stale else 0
     for path, text in expected.items():
         path.write_text(text, encoding="utf-8")
     print("benchmarks: wrote coverage/benchmarks.json, coverage/benchmarks.md and the README table")
