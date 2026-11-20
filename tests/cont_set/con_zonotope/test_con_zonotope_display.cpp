@@ -22,7 +22,7 @@ using test::vec;
 // ===========================================  MAIN  =========================================== //
 
 int main() {
-    const ConZonotope cz(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope cz(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}), Tensor({{1.0, 1.0}}),
                          vec({0.5}));
     const std::string text = cz.display();
     check(text.find("constrained zonotope") != std::string::npos, "display: the class");

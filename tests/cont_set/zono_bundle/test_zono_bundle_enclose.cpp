@@ -24,9 +24,9 @@ namespace {
 
 /// Member i of the result is the enclosure of member i of both bundles; a zonotope meets every one.
 void member_by_member(const std::string &b) {
-    const Zonotope A1(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-        A2(column({1.0, 0.0}), Tensor({{1.0, 1.0}})), B1(column({4.0, 0.0}), Tensor({{1.0, 0.5}})),
-        B2(column({0.0, 3.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope A1(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
+        A2(vec({1.0, 0.0}), Tensor({{1.0, 1.0}})), B1(vec({4.0, 0.0}), Tensor({{1.0, 0.5}})),
+        B2(vec({0.0, 3.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
     const ZonoBundle R = ZonoBundle({A1, A2}).enclose(ZonoBundle({B1, B2}));
     check(R.parallel_sets() == 2, b + ": two members");
     check(close((R.zonotopes()[0]).generators(), A1.enclose(B1).generators(), 0) &&
@@ -43,8 +43,8 @@ void member_by_member(const std::string &b) {
 /// The form with a map and a shift takes M Z_i + Zplus; a bundle as shift is replaced by the
 /// zonotope of its box (any number of members).
 void with_a_map(const std::string &b) {
-    const Zonotope A1(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-        A2(column({1.0, 0.0}), Tensor({{1.0, 1.0}})), Zp(column({0.5, 0.5}), Tensor({{0.1, 0.0}}));
+    const Zonotope A1(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
+        A2(vec({1.0, 0.0}), Tensor({{1.0, 1.0}})), Zp(vec({0.5, 0.5}), Tensor({{0.1, 0.0}}));
     const Tensor M({{0.0, -1.0}, {1.0, 0.0}});
     const ZonoBundle bundle({A1, A2});
     const ZonoBundle R = bundle.enclose(M, Zp);
@@ -78,12 +78,12 @@ void convex_combinations(const std::string &b) {
 /// Bundles of other sizes, a map of another size and a box are refused; the same call with the
 /// checks off.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle one({Z}), two({Z, Z});
     check(test::raises([&] { one.enclose(two); }, Error::wrong_value), "enclose: member counts");
     check(test::raises([&] { one.enclose(Tensor({{1.0}}), Z); }, Error::dimension_mismatch),
           "enclose: M must be square of the dimension");
-    check(test::raises([&] { one.enclose(Zonotope(column({0.0}), Tensor({{1.0}}))); },
+    check(test::raises([&] { one.enclose(Zonotope(vec({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "enclose: another dimension");
     check(test::raises(

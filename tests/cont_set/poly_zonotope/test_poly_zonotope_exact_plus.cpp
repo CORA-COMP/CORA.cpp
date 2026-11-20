@@ -11,6 +11,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -46,13 +47,13 @@ int main() {
         const PolyZonotope W = P.plus(P.linear_map(Tensor::eye(2) * -1.0));
         check(W.num_dependent() == 4, b + ": plus does not know the factors are shared");
         // a set with other identifiers is added with the union of the identifiers
-        const PolyZonotope Q(column({0.0, 0.0}), Tensor::from_data({1, 1}, {1, 2}),
+        const PolyZonotope Q(vec({0.0, 0.0}), Tensor::from_data({1, 1}, {1, 2}),
                              Tensor::zeros({0, 2}), {{1}}, {3});
         check(P.exact_plus(Q).num_factors() == 3, b + ": the union of the identifiers");
     });
     check(test::raises(
               [] {
-                  known().exact_plus(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({0, 1}))));
+                  known().exact_plus(PolyZonotope(Zonotope(vec({1.0}), Tensor::zeros({0, 1}))));
               },
               Error::dimension_mismatch),
           "exact_plus: dimension");

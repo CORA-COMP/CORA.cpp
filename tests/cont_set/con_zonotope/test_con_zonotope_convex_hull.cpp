@@ -26,8 +26,8 @@ namespace {
 /// Hand-computed: the hull of [0, 1] and [2, 3] is [0, 3], by both methods; a point, a box, a
 /// zonotope.
 void convex_hull_known(const std::string &b) {
-    const ConZonotope A(column({0.5}), Tensor({{0.5}}));
-    const ConZonotope B(column({2.5}), Tensor({{0.5}}));
+    const ConZonotope A(vec({0.5}), Tensor({{0.5}}));
+    const ConZonotope B(vec({2.5}), Tensor({{0.5}}));
     for (const char *method : {"exact", "exact:Raghuraman", "exact:Kochdumper"}) {
         const ConZonotope H = A.convex_hull(B, method);
         check(close(H.interval().inf(), {0}, 1e-9) && close(H.interval().sup(), {3}, 1e-9),
@@ -48,7 +48,7 @@ void convex_hull_known(const std::string &b) {
                 1e-9),
           b + ": a zonotope");
     // constraints of both sets are kept: the segment x1 + x2 = 1 and the origin give a triangle
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));
     const ConZonotope T = segment.convex_hull(vec({0.0, 0.0}));
     check(close(T.interval().inf(), {0, 0}, 1e-9) && close(T.interval().sup(), {1, 1}, 1e-9),
@@ -60,8 +60,8 @@ void convex_hull_known(const std::string &b) {
 
 /// The hull of a list contains this set and every member (CORA's list form leaves the first out).
 void convex_hull_of_a_list(const std::string &b) {
-    const ConZonotope A(column({0.0}), Tensor({{0.5}})), B(column({3.0}), Tensor({{0.5}})),
-        C(column({-4.0}), Tensor({{0.5}}));
+    const ConZonotope A(vec({0.0}), Tensor({{0.5}})), B(vec({3.0}), Tensor({{0.5}})),
+        C(vec({-4.0}), Tensor({{0.5}}));
     const ConZonotope H = A.convex_hull(std::vector<ConZonotope>{B, C});
     check(close(H.interval().inf(), {-4.5}, 1e-9) && close(H.interval().sup(), {3.5}, 1e-9),
           b + ": the list: all three sets, the first included");
@@ -92,9 +92,9 @@ void convex_hull_property(const std::string &b) {
 
 /// Wrong operands and methods are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const ConZonotope A(column({0.5}), Tensor({{0.5}}));
+    const ConZonotope A(vec({0.5}), Tensor({{0.5}}));
     check(
-        test::raises([&] { A.convex_hull(ConZonotope(column({1.0, 2.0}), Tensor({{1.0, 1.0}}))); },
+        test::raises([&] { A.convex_hull(ConZonotope(vec({1.0, 2.0}), Tensor({{1.0, 1.0}}))); },
                      Error::dimension_mismatch),
         "convex_hull: different dimensions");
     check(test::raises([&] { A.convex_hull(A, "outer"); }, Error::wrong_value),
@@ -104,7 +104,7 @@ void checks_and_their_switch() {
     check(test::raises(
               [&] {
                   A.convex_hull(std::vector<ConZonotope>{
-                      ConZonotope(column({1.0, 2.0}), Tensor({{1.0, 1.0}}))});
+                      ConZonotope(vec({1.0, 2.0}), Tensor({{1.0, 1.0}}))});
               },
               Error::dimension_mismatch),
           "convex_hull: a list of other dimensions");

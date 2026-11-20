@@ -32,7 +32,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 /// Hand-computed: the box around the zonotope is [0, 2] x [-3, 1], whose largest magnitudes are (2,
 /// 3).
 void norm_known(const std::string &b) {
-    const Zonotope Z(column({1.0, -1.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
+    const Zonotope Z(vec({1.0, -1.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     check(close(Z.norm(), std::vector<double>{std::sqrt(13.0)}, 1e-14),
           b + ": the 2-norm, by default");
     check(close(Z.norm(2, "ub"), Z.norm(), 0), b + ": 'ub' is the default mode");
@@ -68,7 +68,7 @@ void norm_bounds_the_points(const std::string &b) {
 /// The modes that need a solver and an unknown type or mode are refused; with the checks off the
 /// result is the same.
 void norm_refuses() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(test::raises([&] { Z.norm(2, "exact"); }, Error::not_supported), "norm: mode exact");
     check(test::raises([&] { Z.norm(2, "ub_convex"); }, Error::not_supported),
           "norm: mode ub_convex");

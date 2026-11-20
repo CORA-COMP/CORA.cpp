@@ -26,8 +26,8 @@ namespace {
 /// Hand-computed: [0, 2] and [1, 3] meet in [1, 2], through the agreement row; a zonotope and a
 /// box.
 void intersect_known(const std::string &b) {
-    const ConZonotope A(column({1.0}), Tensor({{1.0}}));
-    const ConZonotope B(column({2.0}), Tensor({{1.0}}));
+    const ConZonotope A(vec({1.0}), Tensor({{1.0}}));
+    const ConZonotope B(vec({2.0}), Tensor({{1.0}}));
     const ConZonotope R = A.intersect(B);
     check(close(R.c().expand_dims(-1), {1}, 0) &&
               close(R.generators().matrix_transpose(), {1, 0}, 0),
@@ -37,9 +37,9 @@ void intersect_known(const std::string &b) {
     check(close(R.interval().inf(), {1}, 1e-9) && close(R.interval().sup(), {2}, 1e-9),
           b + ": the intersection [1, 2]");
     // the constraints of both sets stay; zero columns and rows go
-    const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope C(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         vec({1.0}));
-    const ConZonotope D = C.intersect(Zonotope(column({0.5, 0.5}), Tensor({{0.0, 0.0}})));
+    const ConZonotope D = C.intersect(Zonotope(vec({0.5, 0.5}), Tensor({{0.0, 0.0}})));
     check(close(D.interval().inf(), {0.5, 0.5}, 1e-9), b + ": a point of the segment");
     const ConZonotope E = A.intersect(Interval(vec({1.5}), vec({4.0})));
     check(close(E.interval().inf(), {1.5}, 1e-9) && close(E.interval().sup(), {2}, 1e-9),
@@ -69,8 +69,8 @@ void intersect_property(const std::string &b) {
 
 /// Wrong operands are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const ConZonotope A(column({1.0}), Tensor({{1.0}}));
-    check(test::raises([&] { A.intersect(ConZonotope(column({1.0, 2.0}), Tensor({{1.0, 1.0}}))); },
+    const ConZonotope A(vec({1.0}), Tensor({{1.0}}));
+    check(test::raises([&] { A.intersect(ConZonotope(vec({1.0, 2.0}), Tensor({{1.0, 1.0}}))); },
                        Error::dimension_mismatch),
           "intersect: different dimensions");
     const Tensor on = A.intersect(A).A();

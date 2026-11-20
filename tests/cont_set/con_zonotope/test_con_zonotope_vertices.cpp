@@ -35,14 +35,14 @@ void vertices_known(const std::string &b) {
     check(hex.size() == 6 && aux_has(hex, 1, 0) && aux_has(hex, 1, -1) && aux_has(hex, 0, -1) &&
               aux_has(hex, -1, 0) && aux_has(hex, -1, 1) && aux_has(hex, 0, 1),
           b + ": the hexagon");
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({0.0}));
     const Polygon ends = Set(segment)->vertices()[0];
     check(ends.size() == 2 && aux_has(ends, 0, 1) && aux_has(ends, 0, -1), b + ": a segment");
-    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope square(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(Set(square)->vertices()[0].size() == 4, b + ": without constraints: the zonotope's");
     check(Set(ConZonotope::empty(2))->vertices()[0].empty(), b + ": the empty set has none");
-    const ConZonotope plane(column({0.0, 0.0, 0.0}),
+    const ConZonotope plane(vec({0.0, 0.0, 0.0}),
                             Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}),
                             Tensor({{1.0, 1.0, 1.0}}), vec({0.0}));
     check(Set(plane)->vertices_3d()[0].size() == 6, b + ": the cube cut by a plane: six corners");

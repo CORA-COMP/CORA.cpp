@@ -12,6 +12,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::column;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -22,8 +23,8 @@ using test::column;
 int main() {
     test::for_each_backend([](const std::string &b) {
         const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-        const Zonotope big(column({0.0, 0.0}), I2 * 2.0), small(column({0.5, 0.0}), I2),
-            away(column({10.0, 0.0}), I2);
+        const Zonotope big(vec({0.0, 0.0}), I2 * 2.0), small(vec({0.5, 0.0}), I2),
+            away(vec({10.0, 0.0}), I2);
         const std::vector<int64_t> kept = Zonotope::filter_out({small, big, away});
         check(kept == std::vector<int64_t>{1, 2}, b + ": the cell inside another is dropped");
         check(Zonotope::filter_out({big, away}) == std::vector<int64_t>{0, 1},
@@ -32,13 +33,13 @@ int main() {
               b + ": equal cells drop each other, as in CORA");
         check(Zonotope::filter_out({small}) == std::vector<int64_t>{0}, b + ": one cell stays");
     });
-    const Zonotope Z(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(vec({0.0}), Tensor({{1.0}}));
     // wrong input is refused; the same call works with the checks off
     check(test::raises([] { Zonotope::filter_out({}); }, Error::wrong_value),
           "filter_out: no cell");
     check(
         test::raises(
-            [&] { Zonotope::filter_out({Z, Zonotope(column({0.0, 0.0}), Tensor::zeros({0, 2}))}); },
+            [&] { Zonotope::filter_out({Z, Zonotope(vec({0.0, 0.0}), Tensor::zeros({0, 2}))}); },
             Error::wrong_value),
         "filter_out: cells of another dimension");
     ChecksScope off(false);

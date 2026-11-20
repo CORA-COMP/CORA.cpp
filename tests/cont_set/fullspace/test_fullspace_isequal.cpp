@@ -34,7 +34,7 @@ void isequal_recognizes_the_whole_space(const std::string &b) {
     check(!F.isequal(Interval(vec({-1e300, -1e300}), vec({1e300, 1e300}))), b + ": huge");
     check(!F.isequal(Interval::empty(2)), b + ": the empty interval (CORA says true)");
     check(!F.isequal(Interval::unbounded(3)), b + ": another dimension");
-    check(!F.isequal(Zonotope(column({0.0, 0.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}))),
+    check(!F.isequal(Zonotope(vec({0.0, 0.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}))),
           b + ": a zonotope");
     check(!F.isequal(Interval(vec({0.0, 0.0}), vec({0.0, 0.0}))), b + ": a point");
     check(F.isequal(Fullspace(2), 0.0) && F.isequal(Fullspace(2), 1.0), b + ": any tol");

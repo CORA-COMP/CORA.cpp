@@ -11,6 +11,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -30,14 +31,14 @@ bool aux_has(const Polygon &polygon, double x, double y) {
 /// The members [-2, 2] x [-1, 1] and [-1, 3] x [-1, 1] meet in [-1, 2] x [-1, 1]; in space two
 /// cubes meet in a cube.
 void vertices_known(const std::string &b) {
-    const Zonotope A(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
-    const Zonotope B(column({1.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope A(vec({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope B(vec({1.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
     const Polygon square = Set(ZonoBundle({A, B}))->vertices()[0];
     check(square.size() == 4 && aux_has(square, -1, -1) && aux_has(square, 2, -1) &&
               aux_has(square, 2, 1) && aux_has(square, -1, 1),
           b + ": the four corners of the box");
     const Tensor G = Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}});
-    const Zonotope C(column({0.0, 0.0, 0.0}), G), D(column({1.0, 1.0, 1.0}), G);
+    const Zonotope C(vec({0.0, 0.0, 0.0}), G), D(vec({1.0, 1.0, 1.0}), G);
     check(Set(ZonoBundle({C, D}))->vertices_3d()[0].size() == 8,
           b + ": the eight corners of the cube");
     check(Set(ZonoBundle::empty(2))->vertices()[0].empty(), b + ": the empty set has no vertex");

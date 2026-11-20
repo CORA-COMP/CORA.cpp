@@ -26,8 +26,8 @@ namespace {
 /// Hand-computed: the blocks of the generators and of the constraints; a zonotope, a box and a
 /// point.
 void cart_prod_known(const std::string &b) {
-    const ConZonotope cz1(column({1.0}), Tensor({{2.0}}), Tensor({{1.0}}), vec({0.5}));
-    const ConZonotope cz2(column({3.0, 4.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope cz1(vec({1.0}), Tensor({{2.0}}), Tensor({{1.0}}), vec({0.5}));
+    const ConZonotope cz2(vec({3.0, 4.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope P = cz1.cart_prod(cz2);
     check(close(P.c().expand_dims(-1), {1, 3, 4}, 0), b + ": the centers stack");
     check(close(P.generators().matrix_transpose(), {2, 0, 0, 0, 1, 0, 0, 0, 1}, 0),
@@ -36,7 +36,7 @@ void cart_prod_known(const std::string &b) {
     // the constraints of the second set come second
     const ConZonotope Q = cz2.cart_prod(cz1);
     check(close(Q.A(), {0, 0, 1}, 0), b + ": its constraints on its own factors");
-    const ConZonotope with_zonotope = cz1.cart_prod(Zonotope(column({5.0}), Tensor({{6.0}})));
+    const ConZonotope with_zonotope = cz1.cart_prod(Zonotope(vec({5.0}), Tensor({{6.0}})));
     check(close(with_zonotope.c().expand_dims(-1), {1, 5}, 0) &&
               with_zonotope.A().shape() == Shape{1, 2},
           b + ": a zonotope");
@@ -85,7 +85,7 @@ void cart_prod_of_batches(const std::string &b) {
 
 /// Wrong operands are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const ConZonotope cz(column({1.0}), Tensor({{2.0}}));
+    const ConZonotope cz(vec({1.0}), Tensor({{2.0}}));
     check(test::raises([&] { cz.cart_prod(Tensor::zeros(Shape{})); }, Error::dimension_mismatch),
           "cart_prod: a point must be a column");
     check(test::raises([&] { ConZonotope::cart_prod(Tensor::zeros(Shape{}), cz); },

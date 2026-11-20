@@ -14,6 +14,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -25,7 +26,7 @@ namespace {
 
 /// A hand-computed case, a batch member by member, and the zonotope of a negated one.
 void abs_of_known_zonotopes(const std::string &b) {
-    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, -2.0}, {-3.0, 0.5}}));
+    const Zonotope Z(vec({1.0, -2.0}), Tensor({{1.0, -2.0}, {-3.0, 0.5}}));
     const Zonotope A = Z.abs();
     check(close(A.center(), std::vector<double>{1, 2}, 0), b + ": |c|");
     check(close(A.generators(), std::vector<double>{1, 2, 3, 0.5}, 0), b + ": |G|");
@@ -58,7 +59,7 @@ int main() {
         abs_corner_bounds_the_set(b);
     });
     ChecksScope off(false);
-    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, -2.0}, {-3.0, 0.5}}));
+    const Zonotope Z(vec({1.0, -2.0}), Tensor({{1.0, -2.0}, {-3.0, 0.5}}));
     check(close(Z.abs().center(), std::vector<double>{1, 2}, 0),
           "abs: the same with the checks off");
     return test::finish("zonotope abs");

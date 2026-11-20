@@ -28,7 +28,7 @@ namespace {
 
 void is_intersecting_unless_empty(const std::string &b) {
     const Fullspace F(2);
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     check(F.is_intersecting(Z) && F.is_intersecting(Fullspace(2)), b + ": a zonotope, the space");
     check(F.is_intersecting(Interval(vec({3.0, 3.0}), vec({3.0, 3.0}))), b + ": a point");
     check(!F.is_intersecting(Interval::empty(2)), b + ": the empty interval");

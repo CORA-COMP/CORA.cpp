@@ -33,7 +33,7 @@ void min_takes_the_smaller_bounds(const std::string &b) {
           b + ": a column of numbers");
     check(close(I.min(Tensor::from_data({0.5}, {1, 1})).inf(), std::vector<double>{0, -1}),
           b + ": one number for every coordinate");
-    const Zonotope Z(column({3.0, 3.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
+    const Zonotope Z(vec({3.0, 3.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     check(close(I.min(Z).inf(), std::vector<double>{0, -1}) &&
               close(I.min(Z).sup(), std::vector<double>{2, 1}),
           b + ": another set by its interval hull");

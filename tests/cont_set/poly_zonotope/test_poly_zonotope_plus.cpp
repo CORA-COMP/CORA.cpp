@@ -50,7 +50,7 @@ void plus_property(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         const PolyZonotope P = known();
-        const Zonotope Z(column({1.0, 1.0}), Tensor::from_data({1, 0}, {1, 2}));
+        const Zonotope Z(vec({1.0, 1.0}), Tensor::from_data({1, 0}, {1, 2}));
         const PolyZonotope S = P.plus(Z);
         check(close(S.center(), {2.0, 1.0}, 0) && S.independent_generators().shape()[0] == 2 &&
                   S.num_dependent() == P.num_dependent(),
@@ -65,7 +65,7 @@ int main() {
     });
     check(test::raises([] { known().plus(vec({1.0})); }, Error::dimension_mismatch), "plus: point");
     check(test::raises(
-              [] { known().plus(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({0, 1})))); },
+              [] { known().plus(PolyZonotope(Zonotope(vec({1.0}), Tensor::zeros({0, 1})))); },
               Error::dimension_mismatch),
           "plus: set");
     ChecksScope off(false);

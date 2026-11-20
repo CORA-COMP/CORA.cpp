@@ -15,6 +15,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -39,8 +40,8 @@ LinParamSys aux_sys(bool three = false) {
 /// The second step of reach; no time-point set without them.
 void second_step() {
     const LinParamSys sys = aux_sys();
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
-    const Zonotope U(column({0.1}), Tensor({{0.2}}));
+    const Zonotope R0(vec({1.0, 0.5}), Tensor({{0.05, 0.0}}));
+    const Zonotope U(vec({0.1}), Tensor({{0.2}}));
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const ReachSet R = sys.reach({R0, U, 0.15}, a);
@@ -62,8 +63,8 @@ void second_step() {
 
 /// A step of another dimension is refused; with the checks off the step is the same.
 void checks_and_their_switch() {
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
-    const Zonotope U(column({0.0}), Tensor({{0.1}}));
+    const Zonotope R0(vec({1.0, 0.5}), Tensor({{0.05, 0.0}}));
+    const Zonotope U(vec({0.0}), Tensor({{0.1}}));
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const LinParamStep first = aux_sys().init_reach(R0, U, column({0.0}), a);

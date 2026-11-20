@@ -30,7 +30,7 @@ void plus_known(const std::string &b) {
     check(close((moved.zonotopes()[0]).center().expand_dims(-1), {1, 2}, 0) &&
               close((moved.zonotopes()[1]).center().expand_dims(-1), {2, 2}, 0),
           b + ": a point moves the centers");
-    const Zonotope W(column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope W(vec({0.0, 0.0}), Tensor({{1.0, 0.0}}));
     check(close((zono_bundle.plus(W).zonotopes()[0]).generators().matrix_transpose(),
                 {2, 0, 1, 0, 1, 0}, 0),
           b + ": a zonotope joins its generators");
@@ -40,7 +40,7 @@ void plus_known(const std::string &b) {
                     {2, 0, 1, 0, 0, 1, 0, 2}, 0),
           b + ": a box is added as its zonotope");
     // a bundle is added pair by pair, the first one varying slowest
-    const Zonotope W2(column({5.0, 5.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope W2(vec({5.0, 5.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle pairs = zono_bundle.plus(ZonoBundle({W, W2}));
     check(pairs.parallel_sets() == 4 &&
               close((pairs.zonotopes()[1]).center().expand_dims(-1), {5, 5}, 0) &&
@@ -81,7 +81,7 @@ int main() {
     check(test::raises([&] { zono_bundle.plus(vec({1.0})); }, Error::dimension_mismatch),
           "plus: a point of another dimension");
     check(test::raises(
-              [&] { zono_bundle.plus(Zonotope(column({0.0, 0.0, 0.0}), Tensor::zeros({0, 3}))); },
+              [&] { zono_bundle.plus(Zonotope(vec({0.0, 0.0, 0.0}), Tensor::zeros({0, 3}))); },
               Error::dimension_mismatch),
           "plus: a zonotope of another dimension");
     ChecksScope off(false);

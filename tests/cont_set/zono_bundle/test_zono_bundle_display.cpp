@@ -13,6 +13,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::column;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -23,7 +24,7 @@ namespace {
 
 /// The text names the class, the dimension, the number of members and shows every member.
 void text_of_a_bundle(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 3.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 3.0}}));
     const ZonoBundle bundle({Z, Z});
     const std::string text = bundle.display();
     check(text.find("zonotope bundle") == 0, b + ": starts with the class");

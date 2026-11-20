@@ -24,24 +24,24 @@ namespace {
 
 /// Hand-computed: without constraints c; a segment; a square pinned by a trivial factor.
 void center_known(const std::string &b) {
-    const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
+    const ConZonotope plain(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
     check(close(plain.center(), {1, 2}, 0), b + ": without constraints the offset");
     // x = xi on the line xi1 + xi2 = 1: the segment from (0, 1) to (1, 0), centered at (1/2, 1/2)
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));
     check(close(segment.center(), {0.5, 0.5}, 1e-9), b + ": the midpoint of a segment");
     // the third factor is zero: the square [-1, 1]^2, centered at the origin
-    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
+    const ConZonotope square(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
                              Tensor({{0.0, 0.0, 1.0}}), vec({0.0}));
     check(close(square.center(), {0, 0}, 1e-9), b + ": the center of a square with a fixed factor");
     // one factor determined by the other: x = xi1 + 2, xi2 = 0.5 xi1 + ... full-dimensional in 1D
-    const ConZonotope shifted(column({2.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
+    const ConZonotope shifted(vec({2.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
                               vec({0.0}));
     check(close(shifted.center(), {2}, 1e-9), b + ": xi1 = xi2: the points 2 + 2 xi, center 2");
     check(ConZonotope::empty(2).center().shape() == Shape{2} &&
               std::isnan(ConZonotope::empty(2).center().data()[0]),
           b + ": empty: NaN, as the empty box");
-    const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
+    const ConZonotope none(vec({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
     check(none.center().shape() == Shape{1} && std::isnan(none.center().item()),
           b + ": infeasible constraints: NaN");
 }
@@ -70,7 +70,7 @@ void checks_and_their_switch() {
                   .center(),
               Tensor::zeros({2, 1}), 0),
           "center: a batch without constraints is its offset");
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));
     const Tensor on = segment.center();
     ChecksScope off(false);

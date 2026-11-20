@@ -26,14 +26,14 @@ namespace {
 
 /// The segment x1 + x2 = 1 in the unit square is boxed by one pass to [0, 1]^2, none to [-1, 1]^2.
 void by_hand(const std::string &b) {
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));
     const Interval one = segment.interval_tight(1);
     check(close(one.inf(), {0, 0}, 0) && close(one.sup(), {1, 1}, 0), b + ": one pass");
     const Interval none = segment.interval_tight(0);
     check(close(none.inf(), {-1, -1}, 0) && close(none.sup(), {1, 1}, 0), b + ": no pass");
     // the constraint x1 = 3 has no solution in the box
-    const ConZonotope empty(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
+    const ConZonotope empty(vec({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
     check(empty.interval_tight(2).is_empty(), b + ": no point: the empty box");
 }
 
@@ -61,7 +61,7 @@ void properties(const std::string &b) {
 
 /// A negative number of passes is refused; with the checks off the result is the same.
 void refusals() {
-    const ConZonotope cz(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope cz(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { cz.interval_tight(-1); }, Error::wrong_value),
           "interval_tight: negative passes");
     const Interval on = cz.interval_tight(2);

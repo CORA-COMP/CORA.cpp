@@ -15,6 +15,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -25,7 +26,7 @@ using test::column;
 namespace {
 
 void dim_and_center(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {0.5, 0.5}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {0.5, 0.5}}));
     check(Z.dim() == 2, b + ": dim");
     check(close(Z.center(), std::vector<double>{1, 2}), b + ": center");
     const ContSet &S = Z;
@@ -59,7 +60,7 @@ int main() {
         center_is_the_midpoint(b);
     });
     ChecksScope off(false);
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.5}}));
     check(close(Z.center(), std::vector<double>{1, 2}, 0), "center: the same with the checks off");
     return test::finish("zonotope center");
 }

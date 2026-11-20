@@ -52,7 +52,7 @@ int main() {
         polytope_known(b);
         polytope_property(b);
     });
-    const Zonotope Z(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { ZonoBundle({Zonotope::stack({Z, Z})}).polytope(); },
                        Error::not_supported),
           "polytope: a batch");

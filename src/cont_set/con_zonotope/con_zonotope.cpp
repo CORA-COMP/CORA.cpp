@@ -43,14 +43,6 @@ bool aux_finite(const Tensor &t) {
     return t.detach().isfinite().sum().item() == double(t.numel());
 }
 
-/// A center given as a column (..., n, 1) next to the rows G (..., m, n) is the vector (..., n).
-Tensor aux_center_vector(Tensor c, const Tensor &G) {
-    if (c.defined() && G.defined() && c.ndim() >= 2 && c.ndim() == G.ndim() && c.size(-1) == 1 &&
-        c.size(-2) == G.size(-1))
-        return c.squeeze(-1);
-    return c;
-}
-
 /// Why the data are no constrained zonotope, if they are none.
 detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, const Tensor &b) {
     const auto fail = [](const std::string &text) {
@@ -115,12 +107,12 @@ Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, Tenso
 }
 
 ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
-    : ContSet(kClassId), c_(aux_center_vector(std::move(c), G)), G_(std::move(G)),
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)),
       F_(factor_polytope_of(c_, G_, std::move(A), std::move(b))) {}
 
 // the factor polytope as it is, checked against the center and the generators
 ConZonotope::ConZonotope(Tensor c, Tensor G, Polytope F)
-    : ContSet(kClassId), c_(aux_center_vector(std::move(c), G)), G_(std::move(G)),
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)),
       F_(std::move(F)) {
     detail::Entry entry;
     const detail::Refusal refusal = aux_polytope_refusal(c_, G_, F_);
@@ -152,7 +144,7 @@ ConZonotope ConZonotope::from_matrix(const Tensor &Z, const std::optional<Tensor
     CORA_CHECK(A.has_value() == b.has_value(), Error::wrong_input_in_constructor, [] {
         return std::string("ConZonotope: give the constraint matrix and the offset together");
     });
-    const Tensor c = Z.slice(-1, 0, 1), G = Z.slice(-1, 1, Z.shape().back());
+    const Tensor c = Z.slice(-1, 0, 1).squeeze(-1), G = Z.slice(-1, 1, Z.shape().back());
     // the stored parts keep the batch shape of the center
     if (A) return {c, G.matrix_transpose(), *A, *b};
     return {c, G.matrix_transpose()};

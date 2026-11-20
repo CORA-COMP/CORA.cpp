@@ -25,7 +25,7 @@ namespace {
 /// Hand-computed: x1 + x2 = 1.5 in the box [-1, 1]^2 leaves both factors in [0.5, 1]: the middle
 /// 0.75 moves into the center and the offset, the radius 0.25 scales generators and constraint.
 void rescale_known(const std::string &b) {
-    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope a(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         vec({1.5}));
     for (const char *method : {"exact", "iter"}) {
         const ConZonotope r = a.rescale(method);
@@ -64,13 +64,13 @@ int main() {
         rescale_known(b);
         rescale_property(b);
     });
-    const ConZonotope plain(column({0.0}), Tensor({{1.0}}));
-    const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
+    const ConZonotope plain(vec({0.0}), Tensor({{1.0}}));
+    const ConZonotope none(vec({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
     check(test::raises([&] { plain.rescale(); }, Error::special_error), "rescale: no constraints");
     check(test::raises([&] { none.rescale(); }, Error::empty_set), "rescale: an empty set");
     check(test::raises([&] { plain.rescale("fast"); }, Error::wrong_value), "rescale: a method");
     ChecksScope off(false);
-    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope a(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         vec({1.5}));
     check(close(a.rescale().b(), {0}, 1e-9), "rescale: the same with the checks off");
     return test::finish("con_zonotope rescale");

@@ -31,7 +31,7 @@ namespace {
 
 /// A column scales per coordinate, a number scales all; for a zonotope and a box.
 void times_scales(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({0.5, 0.2, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::from_data({0.5, 0.2, 0.0, 0.5}, {2, 2}));
     const Interval I(vec({-1.0, 0.0}), vec({2.0, 3.0}));
     const Tensor f = vec({2.0, -1.0});
     const Set A = static_cast<const ContSet &>(Z).times(f),

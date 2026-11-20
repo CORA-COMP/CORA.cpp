@@ -12,6 +12,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -23,7 +24,7 @@ namespace {
 
 /// A single member has the zonotope's own center.
 void single_member(const std::string &b) {
-    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
+    const Zonotope Z(vec({1.0, -2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     check(close(ZonoBundle({Z}).center(), Z.center(), 0), b + ": the center of the member");
 }
 

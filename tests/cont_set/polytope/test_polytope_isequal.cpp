@@ -62,7 +62,7 @@ void others(const std::string &b) {
     check(test::square_h().isequal(Interval(vec({0.0, 0.0}), vec({1.0, 1.0}))) &&
               !test::square_h().isequal(Interval(vec({0.0, 0.0}), vec({1.0, 2.0}))),
           b + ": a box");
-    check(test::square_h().isequal(Zonotope(column({0.5, 0.5}), Tensor::eye(2) * 0.5)),
+    check(test::square_h().isequal(Zonotope(vec({0.5, 0.5}), Tensor::eye(2) * 0.5)),
           b + ": a zonotope");
     check(Polytope::inf(2).isequal(Fullspace(2)) && Polytope::empty(2).isequal(EmptySet(2)),
           b + ": the special sets");

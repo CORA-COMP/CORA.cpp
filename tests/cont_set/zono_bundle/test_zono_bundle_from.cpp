@@ -23,7 +23,7 @@ using test::vec;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
+        const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.5}, {0.0, 1.0}}));
         const ZonoBundle from_zonotope = ZonoBundle::from(Z);
         check(from_zonotope.parallel_sets() == 1 &&
                   close((from_zonotope.zonotopes()[0]).center(), Z.center(), 0) &&

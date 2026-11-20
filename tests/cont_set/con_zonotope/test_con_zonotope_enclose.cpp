@@ -25,7 +25,7 @@ namespace {
 /// Hand-computed: [-1, 1] and 2 [-1, 1] + 4 = [2, 6]; the generators and the constraints of the
 /// result.
 void enclose_known(const std::string &b) {
-    const ConZonotope A(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope A(vec({0.0}), Tensor({{1.0}}));
     const ConZonotope image = A.enclose(Tensor({{2.0}}), vec({4.0}));
     check(close(image.c().expand_dims(-1), {2}, 0), b + ": the center is the mean");
     check(close(image.generators().matrix_transpose(), {1.5, -2, -0.5}, 0),
@@ -33,19 +33,19 @@ void enclose_known(const std::string &b) {
     check(close(image.interval().inf(), {-2}, 1e-9) && close(image.interval().sup(), {6}, 1e-9),
           b + ": the box [-2, 6] holds both");
     // the second set with fewer generators: the longer one's extra generators are kept
-    const ConZonotope two(column({0.0}), Tensor({{1.0}, {0.5}}));
-    const ConZonotope shorter(column({4.0}), Tensor({{1.0}}));
+    const ConZonotope two(vec({0.0}), Tensor({{1.0}, {0.5}}));
+    const ConZonotope shorter(vec({4.0}), Tensor({{1.0}}));
     check(close(two.enclose(shorter).generators().matrix_transpose(), {1, -2, 0, 0.5}, 0),
           b + ": extra generators last");
     // the same constraints on the common factors: they stay, the new factors are free
-    const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope C(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         vec({1.0}));
     const ConZonotope R = C.enclose(Tensor({{1.0, 0.0}, {0.0, 2.0}}), vec({1.0, 1.0}));
     check(R.A().shape() == Shape{1, 5} && close(R.A(), {1, 1, 0, 0, 0}, 0),
           b + ": A padded with zeros");
     check(close(R.b(), {1}, 0), b + ": b is the first set's");
     // with a set to add: M * C + S
-    const ConZonotope S(column({1.0, 1.0}), Tensor({{1.0, 0.0}}));
+    const ConZonotope S(vec({1.0, 1.0}), Tensor({{1.0, 0.0}}));
     check(C.enclose(Tensor({{1.0, 0.0}, {0.0, 1.0}}), S).dim() == 2, b + ": M C + S");
 }
 
@@ -66,28 +66,28 @@ void enclose_property(const std::string &b) {
 /// A set that is no image, other dimensions and a matrix of the wrong size are refused; the same
 /// valid call with the checks off.
 void checks_and_their_switch() {
-    const ConZonotope C(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), vec({1.0}));
-    const ConZonotope other(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
+    const ConZonotope C(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), vec({1.0}));
+    const ConZonotope other(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
                             vec({1.0}));
     check(test::raises([&] { C.enclose(other); }, Error::special_error),
           "enclose: the constraints differ");
-    check(test::raises([&] { C.enclose(ConZonotope(column({0.0}), Tensor({{1.0}, {1.0}}))); },
+    check(test::raises([&] { C.enclose(ConZonotope(vec({0.0}), Tensor({{1.0}, {1.0}}))); },
                        Error::special_error),
           "enclose: a set without the constraints");
-    check(test::raises([&] { C.enclose(ConZonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}}))); },
+    check(test::raises([&] { C.enclose(ConZonotope(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}))); },
                        Error::dimension_mismatch),
           "enclose: different dimensions");
     check(test::raises([&] { C.enclose(Tensor({{1.0, 2.0}}), vec({1.0})); },
                        Error::dimension_mismatch),
           "enclose: M must have n columns");
     // the longer set's constraints use a factor that the other lacks: CORA drops them
-    const ConZonotope longer(column({0.0}), Tensor({{1.0}, {1.0}, {1.0}}),
+    const ConZonotope longer(vec({0.0}), Tensor({{1.0}, {1.0}, {1.0}}),
                              Tensor({{1.0, 1.0, 1.0}}), vec({1.0}));
-    const ConZonotope shorter(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope shorter(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}),
                               vec({1.0}));
     check(test::raises([&] { longer.enclose(shorter); }, Error::special_error),
           "enclose: constraints on factors only one set has");
-    const ConZonotope A(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope A(vec({0.0}), Tensor({{1.0}}));
     const Tensor on = A.enclose(Tensor({{2.0}}), vec({4.0})).generators().matrix_transpose();
     ChecksScope off(false);
     check(close(A.enclose(Tensor({{2.0}}), vec({4.0})).generators().matrix_transpose(), on, 0),

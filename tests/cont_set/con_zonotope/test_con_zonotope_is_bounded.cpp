@@ -21,7 +21,7 @@ using test::vec;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const ConZonotope cz(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}),
+        const ConZonotope cz(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}),
                              Tensor({{1.0, 1.0}}), vec({0.5}));
         check(cz.is_bounded(), b + ": a constrained zonotope is bounded");
         check(ConZonotope::empty(2).is_bounded(), b + ": the empty set is bounded");

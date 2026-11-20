@@ -58,8 +58,8 @@ void enclose_by_class(const std::string &b) {
 /// A dimension mismatch, a pair of classes without it, the checks off.
 void errors_and_their_switch() {
     const Interval A(vec({0.0, 0.0}), vec({1.0, 1.0}));
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
-    const Zonotope Z3(column({0.0, 0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0}, {1, 3}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
+    const Zonotope Z3(vec({0.0, 0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0}, {1, 3}));
     check(test::raises([&] { static_cast<const ContSet &>(A).enclose(Z3); },
                        Error::dimension_mismatch),
           "different dimensions");

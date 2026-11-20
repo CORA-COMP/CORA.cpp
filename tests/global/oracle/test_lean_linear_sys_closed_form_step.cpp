@@ -109,7 +109,7 @@ int main() {
                  {std::ldexp(1.0, -17), 5}, {std::ldexp(1.0, -9), 4}, {std::ldexp(1.0, -9), 8}})
             aux_compare("conserved sum dt" + std::to_string(dt) + " eta" + std::to_string(eta), A,
                         Zonotope(Tensor({0.5, 0.5}), G), Zonotope(Tensor({0.0, 0.0}), H),
-                        Tensor({0.0, 1.0 / 1024.0}), dt, eta);
+                        test::column({0.0, 1.0 / 1024.0}), dt, eta);
     });
     // sparse generators (diagonal, with a zero column), as the passes of the nonlinear steps have
     test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &rnd) {

@@ -16,6 +16,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -35,8 +36,8 @@ LinParamSys aux_sys() {
 /// The first step: reach's first sets, R_init inside the set over the step.
 void first_step() {
     const LinParamSys sys = aux_sys();
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
-    const Zonotope U(column({0.1}), Tensor({{0.2}}));
+    const Zonotope R0(vec({1.0, 0.5}), Tensor({{0.05, 0.0}}));
+    const Zonotope U(vec({0.1}), Tensor({{0.2}}));
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const ReachSet R = sys.reach({R0, U, 0.1}, a);
@@ -54,8 +55,8 @@ void first_step() {
 /// Wrong dimensions are refused; with the checks off the step is the same.
 void checks_and_their_switch() {
     const LinParamSys sys = aux_sys();
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
-    const Zonotope U(column({0.0}), Tensor({{0.1}}));
+    const Zonotope R0(vec({1.0, 0.5}), Tensor({{0.05, 0.0}}));
+    const Zonotope U(vec({0.0}), Tensor({{0.1}}));
     alg::LinParamStandard a;
     a.time_step = 0.05;
     check(test::raises([&] { sys.init_reach(R0, U, column({0.0, 0.0}), a); },
@@ -63,7 +64,7 @@ void checks_and_their_switch() {
           "init_reach: u_trans of the columns of B");
     check(
         test::raises(
-            [&] { sys.init_reach(Zonotope(column({1.0}), Tensor({{1.0}})), U, column({0.0}), a); },
+            [&] { sys.init_reach(Zonotope(vec({1.0}), Tensor({{1.0}})), U, column({0.0}), a); },
             Error::dimension_mismatch),
         "init_reach: R_init of the dimension of the system");
     const Tensor on = (sys.init_reach(R0, U, column({0.0}), a).time_interval).center();

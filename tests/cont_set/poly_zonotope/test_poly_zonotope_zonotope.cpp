@@ -12,6 +12,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -47,7 +48,7 @@ void zonotope_property(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         // the generator a b has an odd exponent, a has too: both stay; an even one (a^2) is halved
-        const PolyZonotope P(column({0.0}), Tensor::from_data({2.0, 1.0}, {2, 1}),
+        const PolyZonotope P(vec({0.0}), Tensor::from_data({2.0, 1.0}, {2, 1}),
                              Tensor::from_data({3.0}, {1, 1}), {{2}, {1}}, {1});
         const Zonotope Z = P.zonotope();
         check(close(Z.center().expand_dims(-1), {1.0}, 0), b + ": c + half of the even generator");

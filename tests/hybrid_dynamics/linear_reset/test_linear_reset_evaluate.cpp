@@ -34,12 +34,12 @@ void box_by_hand(const std::string &b) {
     check(close(I.inf(), {1, -2}) && close(I.sup(), {2, -1}), b + ": the image of the box");
     // the input enters through B only
     const LinearReset input(Tensor::eye(2), Tensor({{1.0}, {0.0}}));
-    const Zonotope U(column({0.0}), Tensor({{1.0}}));
+    const Zonotope U(vec({0.0}), Tensor({{1.0}}));
     const Interval J = input.evaluate(box, U)->interval();
     check(close(J.inf(), {-1, 2}) && close(J.sup(), {2, 4}), b + ": with the input set");
     check(close(reset.evaluate(box, U)->interval().sup(), {2, -1}), b + ": no B, no input");
     // a bundle maps zonotope by zonotope; points column by column
-    const ZonoBundle bundle({box, Zonotope(column({0.5, 3.0}), Tensor({{1.0, 1.0}}))});
+    const ZonoBundle bundle({box, Zonotope(vec({0.5, 3.0}), Tensor({{1.0, 1.0}}))});
     const Set image = reset.evaluate(bundle);
     check(image.is<ZonoBundle>() && image.as<ZonoBundle>().parallel_sets() == 2,
           b + ": a bundle stays a bundle");
@@ -63,7 +63,7 @@ void checks_and_their_switch() {
           "constructor: c with the rows of A");
     // evaluate: zonotopes and points of the pre-state dimension
     const LinearReset reset(Tensor::eye(2));
-    check(test::raises([&] { reset.evaluate(Zonotope(column({1.0}), Tensor({{1.0}}))); },
+    check(test::raises([&] { reset.evaluate(Zonotope(vec({1.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "evaluate: the dimension of the set");
     check(test::raises([&] { reset.evaluate(Interval(vec({0.0, 0.0}), vec({1.0, 1.0}))); },
@@ -71,7 +71,7 @@ void checks_and_their_switch() {
           "evaluate: a box is not a zonotope");
     check(test::raises([&] { reset.evaluate(Tensor({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "evaluate: points are columns");
-    const Zonotope Z(column({1.0, 2.0}), Tensor::eye(2));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::eye(2));
     const Tensor on = reset.evaluate(Z)->center();
     ChecksScope off(false);
     check(close(reset.evaluate(Z)->center(), on, 0), "evaluate: the same with the checks off");

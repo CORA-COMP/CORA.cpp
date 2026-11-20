@@ -26,7 +26,7 @@ namespace {
 /// Two squares [0, 2]^2 and [1, 3]^2 meet in [1, 2]^2: one equality per dimension joins them.
 void two_squares(const std::string &b) {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-    const ZonoBundle bundle({Zonotope(column({1.0, 1.0}), I2), Zonotope(column({2.0, 2.0}), I2)});
+    const ZonoBundle bundle({Zonotope(vec({1.0, 1.0}), I2), Zonotope(vec({2.0, 2.0}), I2)});
     const ConZonotope cz = bundle.con_zonotope();
     check(cz.generators().matrix_transpose().shape() == Shape{2, 4},
           b + ": the generators of both members");
@@ -39,7 +39,7 @@ void two_squares(const std::string &b) {
 
 /// One member is the zonotope itself, without constraints.
 void single_member(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     const ConZonotope cz = ZonoBundle({Z}).con_zonotope();
     check(cz.A().shape() == Shape{0, 2} &&
               close(cz.c().expand_dims(-1), Z.center().expand_dims(-1), 0) &&

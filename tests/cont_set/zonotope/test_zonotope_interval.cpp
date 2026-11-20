@@ -26,7 +26,7 @@ using test::vec;
 namespace {
 
 void hull_of_a_known_zonotope(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {0.5, 0.5}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {0.5, 0.5}}));
     check(close(Z.interval().inf(), std::vector<double>{-0.5, -0.5}),
           b + ": the hull's lower corner");
     check(close(Z.interval().sup(), std::vector<double>{2.5, 4.5}),

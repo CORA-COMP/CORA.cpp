@@ -28,6 +28,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -57,7 +58,7 @@ Tensor aux_exact(const Tensor &A, const Tensor &v, const Tensor &x0, double t) {
 
 /// Whether reach of sys from R0 under U holds the exact trajectories (the stated property).
 void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U) {
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
+    const Zonotope R0(vec({1.0, 0.5}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
     alg::LinParamStandard a;
     a.time_step = kDt;
     a.taylor_terms = 6;
@@ -91,7 +92,7 @@ void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U
 /// Wrong problems and options are refused; with the checks off reach is the same.
 void checks_and_their_switch() {
     const LinParamSys sys(aux_set(1), Tensor({{0.0}, {1.0}}));
-    const Zonotope R0(column({1.0, 0.5}), Tensor({{0.05, 0.0}}));
+    const Zonotope R0(vec({1.0, 0.5}), Tensor({{0.05, 0.0}}));
     alg::LinParamStandard a;
     a.time_step = kDt;
     // the problem: an initial set, a horizon of a step, inputs of B
@@ -110,7 +111,7 @@ void checks_and_their_switch() {
     alg::LinParamStandard stiff = a;
     stiff.time_step = 5.0;
     stiff.taylor_terms = 6;
-    const Zonotope away(column({0.75}), Tensor({{0.25}}));
+    const Zonotope away(vec({0.75}), Tensor({{0.25}}));
     check(test::raises([&] { sys.reach({R0, away, 5.0}, stiff); }, Error::reach_set_explosion),
           "reach: the curvature of a constant input needs norm(A) r < taylor_terms + 2");
     const Tensor on = (sys.reach({R0, std::nullopt, 0.2}, a).time_interval.back()).center();
@@ -126,7 +127,7 @@ void checks_and_their_switch() {
 
 int main() {
     const Tensor B = Tensor({{0.0}, {1.0}}), c = column({0.5, 0.0});
-    const Zonotope U(column({0.05}), Tensor({{0.25}})), away(column({0.75}), Tensor({{0.25}}));
+    const Zonotope U(vec({0.05}), Tensor({{0.25}})), away(vec({0.75}), Tensor({{0.25}}));
     // one generator, two, varying parameters, and inputs that miss the origin
     encloses("one generator", LinParamSys(aux_set(1), B, c), U);
     encloses("two generators", LinParamSys(aux_set(2), B, c), U);

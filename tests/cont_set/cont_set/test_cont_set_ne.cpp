@@ -27,8 +27,8 @@ namespace {
 /// Whether two sets differ across the classes: a box and the same box as a zonotope are equal.
 void ne_across_classes(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0})), J(vec({-1.0, 0.0}), vec({1.0, 2.001}));
-    const Zonotope Z(column({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
-        W(column({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 2.0}, {2, 2}));
+    const Zonotope Z(vec({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
+        W(vec({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 2.0}, {2, 2}));
     check(ne(I, J) && ne(Z, W) && ne(W, I) && !ne(I, Z) && !ne(Z, I), b + ": ne");
     check(I != J && Z != W && !(I != Z) && !(Z != I), b + ": the operator !=");
     check(ne(I, J) && !ne(I, J, 1e-2), b + ": tol relaxes the bounds");

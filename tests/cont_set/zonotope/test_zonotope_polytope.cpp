@@ -44,12 +44,12 @@ void facets_bound_the_zonotope(const std::string &b) {
 
 /// A square has four facets, a point its box and a segment in the plane two.
 void exact_forms(const std::string &b) {
-    const Zonotope square(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
+    const Zonotope square(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
     const Polytope P = square.polytope();
     check(P.A().shape() == Shape{4, 2} && P.contains(vec({2.0, 5.0})) &&
               !P.contains(vec({2.1, 5.0})) && P.contains(vec({0.0, -1.0})),
           b + ": the square");
-    const Zonotope point(column({1.0, 2.0}), Tensor::zeros({0, 2}));
+    const Zonotope point(vec({1.0, 2.0}), Tensor::zeros({0, 2}));
     check(point.polytope().A().shape() == Shape{4, 2}, b + ": the box of a point");
 }
 
@@ -61,7 +61,7 @@ void exact_forms(const std::string &b) {
 int main() {
     test::for_each_backend(facets_bound_the_zonotope);
     test::for_each_backend(exact_forms);
-    const Zonotope Z(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Zonotope::stack({Z, Z}).polytope(); }, Error::not_supported),
           "polytope: a batch");
     ChecksScope off(false);

@@ -23,31 +23,31 @@ namespace {
 /// Hand-computed: the same data in another order of the factors; another representation of the
 /// same set (the vertex test); a different set; empty sets; points; a zonotope and a box.
 void isequal_known(const std::string &b) {
-    const ConZonotope seg(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope seg(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                           Tensor({{1.0, 2.0}}), vec({0.5}));
-    const ConZonotope swapped(column({0.0, 0.0}), Tensor({{0.0, 1.0}, {1.0, 0.0}}),
+    const ConZonotope swapped(vec({0.0, 0.0}), Tensor({{0.0, 1.0}, {1.0, 0.0}}),
                               Tensor({{2.0, 1.0}}), vec({0.5}));
     check(seg.isequal(seg) && seg.isequal(swapped) && swapped.isequal(seg),
           b + ": equal up to the order of the factors");
-    const ConZonotope other(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope other(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                             Tensor({{1.0, 2.0}}), vec({0.25}));
     check(!seg.isequal(other), b + ": another offset");
     // the unit square, with and without a pinned extra factor
-    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const ConZonotope pinned(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {5.0, 5.0}}),
+    const ConZonotope square(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope pinned(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {5.0, 5.0}}),
                              Tensor({{0.0, 0.0, 1.0}}), vec({0.0}));
     check(square.isequal(pinned) && pinned.isequal(square), b + ": another representation");
-    check(!square.isequal(ConZonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}))),
+    check(!square.isequal(ConZonotope(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}))),
           b + ": another box");
     // empty sets are equal to each other only
     const ConZonotope none = ConZonotope::empty(2);
     check(none.isequal(ConZonotope::empty(2)) && !none.isequal(square) && !square.isequal(none),
           b + ": empty sets");
-    const ConZonotope p(column({1.0, 2.0}), Tensor({{0.0, 0.0}}));
-    check(p.isequal(ConZonotope(column({1.0, 2.0}), Tensor({{0.0, 0.0}, {0.0, 0.0}}))) &&
+    const ConZonotope p(vec({1.0, 2.0}), Tensor({{0.0, 0.0}}));
+    check(p.isequal(ConZonotope(vec({1.0, 2.0}), Tensor({{0.0, 0.0}, {0.0, 0.0}}))) &&
               !p.isequal(square),
           b + ": points");
-    check(square.isequal(Zonotope(column({0.0, 0.0}), Tensor({{0.0, 1.0}, {1.0, 0.0}}))) &&
+    check(square.isequal(Zonotope(vec({0.0, 0.0}), Tensor({{0.0, 1.0}, {1.0, 0.0}}))) &&
               square.isequal(Interval(vec({-1.0, -1.0}), vec({1.0, 1.0}))) &&
               !seg.isequal(Zonotope(seg.c(), seg.generators())),
           b + ": a zonotope and a box");
@@ -61,7 +61,7 @@ void isequal_known(const std::string &b) {
 
 int main() {
     test::for_each_backend(isequal_known);
-    const ConZonotope a(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope a(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { a.isequal(a, -1.0); }, Error::wrong_value), "isequal: tol < 0");
     const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::zeros({2, 1, 1}));
     check(test::raises([&] { batch.isequal(batch); }, Error::not_supported), "isequal: a batch");

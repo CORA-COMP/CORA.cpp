@@ -28,7 +28,7 @@ namespace {
 
 /// The unit square cut by the strip |x1 - 0.25| <= 0.5.
 struct Strip {
-    Zonotope Z{column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})};
+    Zonotope Z{vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})};
     Tensor C = Tensor({{1.0, 0.0}}), phi = vec({0.5}), y = vec({0.25});
 };
 

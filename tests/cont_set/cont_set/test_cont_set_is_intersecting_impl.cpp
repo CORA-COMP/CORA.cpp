@@ -28,7 +28,7 @@ namespace {
 void is_intersecting_impl_agrees_with_the_entry(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0})), J(vec({0.5, 1.0}), vec({3.0, 3.0})),
         K(vec({-0.25, 0.75}), vec({0.25, 1.25}));
-    const Zonotope Z(column({0.0, 1.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({0.0, 1.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     for (const ContSet *A : {static_cast<const ContSet *>(&I), static_cast<const ContSet *>(&Z)})
         for (const ContSet *B : {static_cast<const ContSet *>(&J), static_cast<const ContSet *>(&K),
                                  static_cast<const ContSet *>(&Z)})

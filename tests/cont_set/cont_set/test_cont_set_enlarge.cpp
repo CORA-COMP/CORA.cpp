@@ -28,7 +28,7 @@ namespace {
 /// generators scale by the factor of their coordinate.
 void enlarge_scales_about_the_center(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0}));
-    const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     const ContSet &A = I, &B = Z;
     const Set RI = A.enlarge(2.0), RJ = A.enlarge(vec({2.0, 0.5}));
     check(test::close(RI.as<Interval>().inf(), {-2.0, -1.0}) &&
@@ -52,7 +52,7 @@ void enlarge_scales_about_the_center(const std::string &b) {
 /// A factor of the wrong size is refused; a class without the shift raises noops; the checks off
 /// skip the check.
 void errors_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const ContSet &S = Z;
     check(test::raises([&] { S.enlarge(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "three factors");

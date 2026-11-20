@@ -24,12 +24,12 @@ namespace {
 
 /// Without constraints the zonotope itself; the hexagon is inside its zonotope by both methods.
 void zonotope_known(const std::string &b) {
-    const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
+    const ConZonotope plain(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     check(close(plain.zonotope().center().expand_dims(-1), {1, 2}, 0) &&
               close(plain.zonotope().generators().matrix_transpose(), {1, 0, 0, 2}, 0),
           b + ": without constraints");
     // a point: the constraints fix both factors
-    const ConZonotope point(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope point(vec({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                             Tensor({{1.0, 0.0}, {0.0, 1.0}}), vec({0.5, 0.25}));
     check(close(point.zonotope().center().expand_dims(-1), {1.5, 1.25}, 1e-9) &&
               point.zonotope().nr_generators() <= 2,

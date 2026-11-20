@@ -24,8 +24,8 @@ namespace {
 
 /// Hand-computed: the union of two boxes is enclosed, and the result has no constraints.
 void unite_known(const std::string &b) {
-    const ConZonotope left(column({-2.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const ConZonotope right(column({2.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope left(vec({-2.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope right(vec({2.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope u = left.unite(right);
     check(u.A().numel() == 0, b + ": no constraints");
     check(u.contains(left.interval()) && u.contains(right.interval()),
@@ -61,7 +61,7 @@ int main() {
         unite_known(b);
         unite_property(b);
     });
-    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope a(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { a.unite(a, "tedrake"); }, Error::not_supported), "unite: tedrake");
     check(test::raises([&] { a.unite(a, "linprog", 2); }, Error::not_supported), "unite: order");
     check(test::raises([&] { a.unite(a, "other"); }, Error::wrong_value), "unite: method");

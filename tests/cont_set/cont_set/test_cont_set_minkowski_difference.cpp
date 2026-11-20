@@ -32,8 +32,8 @@ void the_difference_of_any_pair(const std::string &b) {
     check(test::close(R.as<Interval>().inf(), {-0.5, 0.0}) &&
               test::close(R.as<Interval>().sup(), {0.5, 1.5}),
           b + ": a box minus a box");
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
-    const Zonotope Q(column({0.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
+    const Zonotope Q(vec({0.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
     const Interval box(vec({-0.5, -0.25}), vec({0.5, 0.25}));
     for (const ContSet *T :
          {static_cast<const ContSet *>(&Q), static_cast<const ContSet *>(&box)}) {
@@ -50,7 +50,7 @@ void the_difference_of_any_pair(const std::string &b) {
 /// skip the dimension check.
 void errors_and_their_switch() {
     const Interval I(vec({0.0, 0.0}), vec({1.0, 1.0})), I3(vec({0.0}), vec({1.0}));
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     check(test::raises([&] { static_cast<const ContSet &>(I).minkowski_difference(I3); },
                        Error::dimension_mismatch),
           "dimensions 2 and 1");

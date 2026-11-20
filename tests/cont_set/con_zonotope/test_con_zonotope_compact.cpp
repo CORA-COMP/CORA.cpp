@@ -25,7 +25,7 @@ namespace {
 /// Hand-computed: a zero row 0 = 0 and a zero generator in no constraint go; an infeasible zero
 /// row 0 = 1 and a generator that is in a constraint stay.
 void compact_known(const std::string &b) {
-    const ConZonotope cz(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}, {2.0, 3.0}}),
+    const ConZonotope cz(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}, {2.0, 3.0}}),
                          Tensor({{0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}}), vec({0.0, 1.0}));
     for (const char *method : {"zeros", "all"}) {
         const ConZonotope c = cz.compact(method);
@@ -35,7 +35,7 @@ void compact_known(const std::string &b) {
         check(close(c.c().expand_dims(-1), cz.c().expand_dims(-1), 0), b + ": the center stays");
     }
     // a generator that is zero but in a constraint stays; so does the row 0 = 1
-    const ConZonotope kept(column({0.0}), Tensor({{0.0}, {1.0}}), Tensor({{1.0, 0.0}, {0.0, 0.0}}),
+    const ConZonotope kept(vec({0.0}), Tensor({{0.0}, {1.0}}), Tensor({{1.0, 0.0}, {0.0, 0.0}}),
                            vec({0.5, 1.0}));
     check(kept.compact().generators().matrix_transpose().shape() == Shape{1, 2},
           b + ": a constrained generator stays");
@@ -71,7 +71,7 @@ void compact_property(const std::string &b) {
 
 /// A wrong method and a negative tol are refused; a batch drops what every member drops.
 void checks_and_batches() {
-    const ConZonotope cz(column({0.0}), Tensor({{1.0}, {0.0}}));
+    const ConZonotope cz(vec({0.0}), Tensor({{1.0}, {0.0}}));
     check(test::raises([&] { cz.compact("rows"); }, Error::wrong_value),
           "compact: an unknown method");
     check(test::raises([&] { cz.compact("zeros", -1.0); }, Error::wrong_value), "compact: tol < 0");

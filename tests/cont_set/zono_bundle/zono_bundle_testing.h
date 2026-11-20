@@ -41,8 +41,8 @@ inline cora::ZonoBundle random_zono_bundle(cora::Rng &rng, int n, int k, int m,
 /// both contain the origin, and their boxes meet in [-1, 2] x [-1, 1].
 inline cora::ZonoBundle two_zonotopes() {
     return cora::ZonoBundle(
-        {cora::Zonotope(column({0.0, 0.0}), cora::Tensor({{2.0, 0.0}, {0.0, 1.0}})),
-         cora::Zonotope(column({1.0, 0.0}), cora::Tensor({{1.0, 0.0}, {1.0, 1.0}}))});
+        {cora::Zonotope(vec({0.0, 0.0}), cora::Tensor({{2.0, 0.0}, {0.0, 1.0}})),
+         cora::Zonotope(vec({1.0, 0.0}), cora::Tensor({{1.0, 0.0}, {1.0, 1.0}}))});
 }
 
 /// Whether the points p (..., n) lie in every member of the bundle.

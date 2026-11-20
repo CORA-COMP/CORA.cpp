@@ -223,7 +223,7 @@ void time_triggered() {
     const HybridAutomaton HA("clock", {first, second});
     // a flat initial clock: the time-point set at t = 1 lies on the guard
     HybridReachProblem p;
-    p.initial_set = Zonotope(column({1.0, 0.0}), Tensor({{0.1, 0.0}}));
+    p.initial_set = Zonotope(vec({1.0, 0.0}), Tensor({{0.1, 0.0}}));
     p.t_final = 1.5;
     const HybridReachSet R = HA.reach(p, aux_alg(alg::ZonoGirard{}));
     check(R.branches.size() == 2 && R.branches[1].location == 1, "clock: one jump");
@@ -277,7 +277,7 @@ void checks_and_their_switch() {
     p.t_final = 0;
     check(test::raises([&] { HA.reach(p, a); }, Error::wrong_value), "reach: t_final");
     p = aux_drop();
-    p.input_set = {Zonotope(column({0.0, 0.0}), Tensor::eye(2))};
+    p.input_set = {Zonotope(vec({0.0, 0.0}), Tensor::eye(2))};
     check(test::raises([&] { HA.reach(p, a); }, Error::dimension_mismatch), "reach: input set");
     // the algorithm and the specifications against the automaton
     alg::HybridStandard two = a;

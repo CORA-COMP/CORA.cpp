@@ -29,7 +29,7 @@ namespace {
 /// selection matrix of the generic one.
 void the_embedding(const std::string &b) {
     const Interval I(vec({1.0, 3.0}), vec({2.0, 4.0}));
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
     const Set RI = static_cast<const ContSet &>(I).project_high_dim(4, {2, 0});
     check(test::close(RI.as<Interval>().inf(), {3.0, 0.0, 1.0, 0.0}) &&
               test::close(RI.as<Interval>().sup(), {4.0, 0.0, 2.0, 0.0}),
@@ -47,7 +47,7 @@ void the_embedding(const std::string &b) {
 /// A smaller space, a wrong number of coordinates and a coordinate outside are refused; a class
 /// without the map raises noops; the checks off skip the checks.
 void errors_and_their_switch() {
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.25}, {2, 2}));
     const ContSet &S = Z;
     check(test::raises([&] { S.project_high_dim(1, {0, 0}); }, Error::wrong_value), "N below n");
     check(test::raises([&] { S.project_high_dim(3, {0}); }, Error::wrong_value), "one coordinate");

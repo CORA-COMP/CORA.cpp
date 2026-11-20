@@ -24,7 +24,7 @@ namespace {
 
 /// Hand-computed: the segment x = xi, xi1 + xi2 = 1 holds its points and nothing else.
 void contains_known(const std::string &b) {
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));
     check(segment.contains(vec({0.5, 0.5})) && segment.contains(vec({0.0, 1.0})),
           b + ": points of the segment");
@@ -34,25 +34,25 @@ void contains_known(const std::string &b) {
     check(!segment.contains(Tensor({{0.5, 0.5}, {1.0, 1.0}})), b + ": several points: one out");
     check(segment.contains(vec({0.5, 0.5 + 1e-9}), "exact", 1e-6),
           b + ": a tolerance admits a point off the line");
-    check(segment.contains(Zonotope(column({0.5, 0.5}), Tensor({{0.25, -0.25}}))),
+    check(segment.contains(Zonotope(vec({0.5, 0.5}), Tensor({{0.25, -0.25}}))),
           b + ": a zonotope on it");
-    check(!segment.contains(Zonotope(column({0.5, 0.5}), Tensor({{0.25, 0.25}}))),
+    check(!segment.contains(Zonotope(vec({0.5, 0.5}), Tensor({{0.25, 0.25}}))),
           b + ": a zonotope across it");
     check(segment.contains(Interval(vec({0.5, 0.5}), vec({0.5, 0.5}))), b + ": a point box");
     check(!segment.contains(Interval(vec({0.0, 0.0}), vec({1.0, 1.0}))),
           b + ": a box is not in a segment");
     // the box [-1, 1]^2 as a constrained zonotope with a trivial constraint
-    const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
+    const ConZonotope square(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
                              Tensor({{0.0, 0.0, 1.0}}), vec({0.0}));
     check(square.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.0}))), b + ": a box in a square");
     check(!square.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.5}))),
           b + ": a box sticking out");
-    check(square.contains(Zonotope(column({0.0, 0.0}), Tensor({{0.5, 0.5}, {0.5, -0.5}}))),
+    check(square.contains(Zonotope(vec({0.0, 0.0}), Tensor({{0.5, 0.5}, {0.5, -0.5}}))),
           b + ": a zonotope in a square");
     check(square.contains(vec({1.0 + 1e-9, 0.0}), "exact", 1e-6), b + ": a tolerance admits it");
     check(!square.contains(vec({1.001, 0.0})), b + ": and the default tolerance does not");
     // a set that is a point: the points within tol
-    const ConZonotope point(column({2.0, 3.0}), Tensor({{0.0, 0.0}}));
+    const ConZonotope point(vec({2.0, 3.0}), Tensor({{0.0, 0.0}}));
     check(point.contains(vec({2.0, 3.0 + 1e-10}), "exact", 1e-8) &&
               !point.contains(vec({2.0, 3.1})),
           b + ": a point holds the points within tol");
@@ -82,11 +82,11 @@ void contains_property(const std::string &b) {
 /// A batch, a wrong shape, an unknown or unported method are refused; the same valid call with the
 /// checks off.
 void checks_and_their_switch() {
-    const ConZonotope A(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope A(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { A.contains(Tensor({{1.0, 2.0}, {1.0, 2.0}})); },
                        Error::dimension_mismatch),
           "contains: the points are (N, n)");
-    check(test::raises([&] { A.contains(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}}))); },
+    check(test::raises([&] { A.contains(Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}))); },
                        Error::dimension_mismatch),
           "contains: another dimension");
     check(test::raises([&] { A.contains(vec({0.0}), "nothing"); }, Error::no_specific_alg),
@@ -104,7 +104,7 @@ void checks_and_their_switch() {
               },
               Error::not_supported),
           "contains: a batch");
-    check(test::raises([&] { A.contains(Zonotope(column({0.0}), Tensor::ones({13, 1}))); },
+    check(test::raises([&] { A.contains(Zonotope(vec({0.0}), Tensor::ones({13, 1}))); },
                        Error::not_supported),
           "contains: too many corners");
     check(A.contains(vec({0.5})), "contains: the same call with the checks on");

@@ -78,7 +78,7 @@ ConZonotope priv_compact(const ConZonotope &cz) {
     // the constraint rows 0 = 0 go, an infeasible zero row 0 = b stays
     const Tensor kept_A = rows.empty() ? zeros_block(A, 0, A.shape().back()) : A.take(rows, -2);
     const Tensor kept_b = rows.empty() ? cz.b().slice(-1, 0, 0) : cz.b().take(rows, -1);
-    return {cz.c().expand_dims(-1),
+    return {cz.c(),
             (select_columns(cz.generators().matrix_transpose(), cols)).matrix_transpose(), kept_A,
             kept_b};
 }

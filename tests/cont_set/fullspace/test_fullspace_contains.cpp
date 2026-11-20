@@ -29,7 +29,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 void contains_every_set(const std::string &b) {
     const Fullspace F(2);
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     check(F.contains(Z) && F.contains(Fullspace(2)) && F.contains(Interval::unbounded(2)),
           b + ": a zonotope, the space and the unbounded box");
     check(F.contains(Interval(vec({kInf, 0.0}), vec({kInf, 1.0}))), b + ": a box at Inf");

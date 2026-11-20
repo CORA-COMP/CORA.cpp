@@ -27,8 +27,8 @@ namespace {
 /// Hand-computed: two unit squares along the x-axis in the standard frame, and the frame of the
 /// diagonal direction (1, 1).
 void enclose_many_known(const std::string &b) {
-    const Zonotope A(column({0.5, 0.5}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
-    const Zonotope B(column({2.5, 0.5}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    const Zonotope A(vec({0.5, 0.5}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    const Zonotope B(vec({2.5, 0.5}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     const auto [E, inverse] = Zonotope::enclose_many({A, B}, vec({1.0, 0.0}));
     check(close(E.center(), std::vector<double>{1.5, 0.5}, 1e-14),
           b + ": the box [0, 3] x [0, 1]: center");
@@ -80,7 +80,7 @@ void enclose_many_encloses(const std::string &b) {
 
 /// Wrong inputs are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(test::raises([&] { Zonotope::enclose_many({}, vec({1.0, 0.0})); }, Error::wrong_value),
           "enclose_many: none");
     check(test::raises([&] { Zonotope::enclose_many({Z}, vec({0.0, 0.0})); }, Error::wrong_value),
@@ -90,7 +90,7 @@ void checks_and_their_switch() {
           "enclose_many: direction");
     check(test::raises(
               [&] {
-                  Zonotope::enclose_many({Z, Zonotope(column({0.0}), Tensor({{1.0}}))},
+                  Zonotope::enclose_many({Z, Zonotope(vec({0.0}), Tensor({{1.0}}))},
                                          vec({1.0, 0.0}));
               },
               Error::dimension_mismatch),

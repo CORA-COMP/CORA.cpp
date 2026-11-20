@@ -61,7 +61,7 @@ detail::Refusal aux_point_refusal(const Tensor &p) {
 
 /// The product of two sets: centers stack, generators and constraints on the block diagonal.
 ConZonotope aux_product(const ConZonotope &cz1, const ConZonotope &cz2) {
-    return {Tensor::concat({cz1.c().expand_dims(-1), cz2.c().expand_dims(-1)}, -2),
+    return {Tensor::concat({cz1.c(), cz2.c()}, -1),
             (Tensor::block_diag(
                  {cz1.generators().matrix_transpose(), cz2.generators().matrix_transpose()}))
                 .matrix_transpose(),

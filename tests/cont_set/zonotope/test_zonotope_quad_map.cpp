@@ -14,6 +14,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -25,8 +26,8 @@ namespace {
 
 /// CORA's unit test: two matrices on a zonotope of two generators, and on two zonotopes.
 void quad_map_by_hand(const std::string &b) {
-    const Zonotope Z1(column({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}}));
-    const Zonotope Z2(column({1.0, -3.0}), Tensor({{4.0, 2.0}, {2.0, -1.0}}));
+    const Zonotope Z1(vec({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}}));
+    const Zonotope Z2(vec({1.0, -3.0}), Tensor({{4.0, 2.0}, {2.0, -1.0}}));
     const std::vector<Tensor> Q{Tensor({{1.0, -2.0}, {-3.0, 4.0}}),
                                 Tensor({{0.5, 0.0}, {2.0, -1.0}})};
     const Zonotope R = Z1.quad_map(Q);
@@ -46,24 +47,24 @@ void quad_map_by_hand(const std::string &b) {
 /// A single nonzero matrix gives one box generator; x^2 on [-1, 1] is enclosed by [0, 2]; a
 /// zonotope without generators maps to its point; a batch maps member by member.
 void special_cases(const std::string &b) {
-    const Zonotope I(column({0.0}), Tensor({{1.0}}));
+    const Zonotope I(vec({0.0}), Tensor({{1.0}}));
     const Zonotope R = I.quad_map({Tensor({{2.0}})});
     check(close(R.center(), std::vector<double>{1}, 0) &&
               close(R.generators(), std::vector<double>{1}, 0),
           b + ": 2 x^2 on [-1, 1] is enclosed by [0, 2]");
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.5}}));
     const Zonotope S = Z.quad_map({Tensor({{1.0, 0.0}, {0.0, 0.0}}), Tensor::zeros({2, 2})});
     check(S.dim() == 2 && S.generators().shape() == std::vector<int64_t>({1, 2}),
           b + ": one nonzero matrix: a box generator");
     check(close(S.generators(), std::vector<double>{2.5, 0}, 1e-14) &&
               close(S.center(), std::vector<double>{1.5, 0}, 1e-14),
           b + ": (1 + b)^2 is enclosed by [-1, 4]; the zero output stays 0");
-    const Zonotope P(column({3.0, 1.0}), Tensor::zeros({0, 2}));
+    const Zonotope P(vec({3.0, 1.0}), Tensor::zeros({0, 2}));
     const Zonotope Pq =
         P.quad_map({Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{0.0, 1.0}, {0.0, 0.0}})});
     check(close(Pq.center(), std::vector<double>{10, 3}, 0) && Pq.nr_generators() == 0,
           b + ": no generators: the image of the point");
-    const Zonotope T(column({0.5, 1.0}), Tensor({{0.5, 0.0}, {0.0, 1.0}}));
+    const Zonotope T(vec({0.5, 1.0}), Tensor({{0.5, 0.0}, {0.0, 1.0}}));
     const std::vector<Tensor> Q{Tensor({{1.0, 2.0}, {0.0, 1.0}}), Tensor({{0.0, 1.0}, {1.0, 0.0}})};
     // a batch
     const Zonotope batch = Zonotope::stack({Z, T}).quad_map(Q);
@@ -106,7 +107,7 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
 
 /// Wrong matrices and dimensions are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.5}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.5}}));
     const Tensor Q = Tensor({{1.0, 0.0}, {0.0, 1.0}});
     check(test::raises([&] { Z.quad_map({}); }, Error::dimension_mismatch), "quad_map: no matrix");
     check(test::raises([&] { Z.quad_map({Tensor({{1.0}})}); }, Error::dimension_mismatch),

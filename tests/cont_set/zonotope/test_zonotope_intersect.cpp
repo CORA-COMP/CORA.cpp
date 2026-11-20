@@ -28,15 +28,15 @@ namespace {
 
 /// Two boxes intersect exactly, with either method; the result is a zonotope of a box.
 void boxes_intersect_exactly(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const Zonotope Z2(column({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z2(vec({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}}));
     for (const std::string method : {"conZonotope", "averaging"}) {
         const Zonotope R = Z.intersect(Z2, method);
         check(close(R.center(), std::vector<double>{0.5, 0}, 0), b + ": " + method + ": center");
         check(close(R.generators(), std::vector<double>{0.5, 0, 0, 0.5}, 0),
               b + ": " + method + ": the box [0,1]x[-0.5,0.5]");
     }
-    const Zonotope touching = Z.intersect(Zonotope(column({2.0, 0.0}), Tensor({{1.0, 0.0}})));
+    const Zonotope touching = Z.intersect(Zonotope(vec({2.0, 0.0}), Tensor({{1.0, 0.0}})));
     check(close(touching.center(), std::vector<double>{1, 0}, 0) &&
               touching.generators().shape() == std::vector<int64_t>({0, 2}),
           b + ": boxes that touch meet in a point");
@@ -48,7 +48,7 @@ void boxes_intersect_exactly(const std::string &b) {
 /// Averaging two zonotopes that are not boxes: equal weights for equal zonotopes, and the
 /// 1 / trace(G G') weights otherwise.
 void averaging_weights(const std::string &b) {
-    const Zonotope Z(column({1.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}}));
     const Zonotope same = Z.intersect(Z, "averaging");
     cora::Rng rng(20);
     for (int k = 0; k < 20; ++k) {
@@ -56,7 +56,7 @@ void averaging_weights(const std::string &b) {
         check(close(test::support(same, d), test::support(Z, d), 1e-12),
               b + ": Z and Z average to Z");
     }
-    const Zonotope Z2(column({0.0, 1.0}), Tensor({{2.0, 0.0}, {0.0, 2.0}}));
+    const Zonotope Z2(vec({0.0, 1.0}), Tensor({{2.0, 0.0}, {0.0, 2.0}}));
     const Zonotope R = Z.intersect(Z2, "averaging");
     // traces 4 and 8: weights 2/3 and 1/3
     check(close(R.center(), std::vector<double>{2.0 / 3.0, 1.0 / 3.0}, 1e-12),
@@ -91,17 +91,17 @@ void averaging_contains_the_intersection(const std::string &b) {
 /// Refusals: a pair of zonotopes that are not boxes needs ConZonotope, disjoint boxes the empty
 /// set.
 void refusals_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}}));
-    const Zonotope box(column({5.0, 5.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}}));
+    const Zonotope box(vec({5.0, 5.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { Z.intersect(Z); }, Error::not_supported), "intersect: conZonotope");
     check(test::raises([&] { Z.intersect(Z, "exact"); }, Error::wrong_value),
           "intersect: unknown method");
     check(
         test::raises(
-            [&] { box.intersect(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))); },
+            [&] { box.intersect(Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))); },
             Error::empty_set),
         "intersect: disjoint boxes");
-    check(test::raises([&] { Z.intersect(Zonotope(column({0.0}), Tensor({{1.0}}))); },
+    check(test::raises([&] { Z.intersect(Zonotope(vec({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "intersect: dimensions 2 and 1");
     const Tensor on = Z.intersect(Z, "averaging").generators();

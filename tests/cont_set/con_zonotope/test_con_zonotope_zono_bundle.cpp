@@ -25,12 +25,12 @@ namespace {
 
 /// Without constraints one member; a fixed point is one point; the empty set is the empty bundle.
 void zono_bundle_known(const std::string &b) {
-    const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
+    const ConZonotope plain(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     check(plain.zono_bundle().parallel_sets() == 1 &&
               close((plain.zono_bundle().zonotopes()[0]).generators().matrix_transpose(),
                     {1, 0, 0, 2}, 0),
           b + ": without constraints");
-    const ConZonotope point(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope point(vec({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                             Tensor({{1.0, 0.0}, {0.0, 1.0}}), vec({0.5, 0.25}));
     check(
         point.zono_bundle().parallel_sets() == 1 &&

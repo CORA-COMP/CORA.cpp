@@ -35,7 +35,7 @@ int main() {
         const Interval touch(vec({1.0, 0.0}), vec({2.0, 0.0}));
         check(disc.is_intersecting(touch) && !open.is_intersecting(touch), b + ": '<=' versus '<'");
         // any set goes through its box
-        const Zonotope Z(column({3.0, 3.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
+        const Zonotope Z(vec({3.0, 3.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
         check(!circ.is_intersecting(Z), b + ": a zonotope outside");
         // all rows must pass: the circle and the half-plane x <= -2 do not meet the box
         const LevelSet two({test::circle(0, 0, 1), Expr::var(0) + 2.0}, 2,

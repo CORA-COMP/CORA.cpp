@@ -26,11 +26,11 @@ namespace {
 
 /// Hand-computed lengths, no generators, and a batch.
 void lengths_known(const std::string &b) {
-    const Zonotope Z(column({7.0, 7.0}), Tensor({{3.0, 4.0}, {0.0, 2.0}, {-1.0, 0.0}}));
+    const Zonotope Z(vec({7.0, 7.0}), Tensor({{3.0, 4.0}, {0.0, 2.0}, {-1.0, 0.0}}));
     const Tensor len = Z.generator_length();
     check(len.shape() == std::vector<int64_t>({1, 3}), b + ": a row, one length per generator");
     check(close(len, std::vector<double>{5, 2, 1}, 1e-14), b + ": (3,4), (0,2), (-1,0)");
-    const Zonotope point(column({1.0, 2.0}), Tensor::zeros({0, 2}));
+    const Zonotope point(vec({1.0, 2.0}), Tensor::zeros({0, 2}));
     check(point.generator_length().shape() == std::vector<int64_t>({1, 0}), b + ": no generators");
     const Zonotope batch = Zonotope::stack({Z, Z + vec({1.0, 1.0})});
     check(batch.generator_length().shape() == std::vector<int64_t>({2, 1, 3}), b + ": a batch");
@@ -56,7 +56,7 @@ void lengths_bound_the_set(const std::string &b) {
 
 /// With the checks off the result is the same.
 void checks_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{3.0, 4.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{3.0, 4.0}}));
     ChecksScope off(false);
     check(close(Z.generator_length(), std::vector<double>{5}, 1e-14),
           "generator_length: checks off");

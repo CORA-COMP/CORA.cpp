@@ -31,7 +31,7 @@ namespace {
 
 /// +S equals S, down to the sign of a zero, for a zonotope and a box.
 void uplus_is_the_identity(const std::string &b) {
-    const Zonotope Z(column({-0.0, 1.0}), Tensor::from_data({0.5, -0.0, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({-0.0, 1.0}), Tensor::from_data({0.5, -0.0, 0.0, 0.5}, {2, 2}));
     const Interval I(vec({-0.0, 0.0}), vec({2.0, 3.0}));
     const Set A = static_cast<const ContSet &>(Z).uplus(),
               B = static_cast<const ContSet &>(I).uplus();

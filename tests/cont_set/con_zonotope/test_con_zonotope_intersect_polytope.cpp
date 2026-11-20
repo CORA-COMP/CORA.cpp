@@ -28,7 +28,7 @@ namespace {
 
 /// [-1, 1]^2 cut by x1 <= 0.5 is [-1, 0.5] x [-1, 1]; by x2 = 0.5, x1 <= 0 the segment.
 void by_hand(const std::string &b) {
-    const ConZonotope square(Zonotope(column({0.0, 0.0}), Tensor::eye(2)));
+    const ConZonotope square(Zonotope(vec({0.0, 0.0}), Tensor::eye(2)));
     const ConZonotope cut = square.intersect(Polytope(Tensor({{1.0, 0.0}}), vec({0.5})));
     const Interval I = cut.interval();
     check(close(I.inf(), {-1, -1}, 1e-9) && close(I.sup(), {0.5, 1}, 1e-9), b + ": a halfspace");
@@ -59,7 +59,7 @@ void property(const std::string &b) {
 
 /// Another dimension is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const ConZonotope A(column({1.0}), Tensor({{1.0}}));
+    const ConZonotope A(vec({1.0}), Tensor({{1.0}}));
     check(test::raises([&] { A.intersect(Polytope(Tensor({{1.0, 0.0}}), vec({0.0}))); },
                        Error::dimension_mismatch),
           "intersect: different dimensions");

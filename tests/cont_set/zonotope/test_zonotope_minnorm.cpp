@@ -14,6 +14,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -25,19 +26,19 @@ namespace {
 
 /// Hand-computed: the square [-1, 1]^2 (first facet on a tie), a rectangle, a diamond, a flat set.
 void minnorm_known(const std::string &b) {
-    const auto [v, x] = Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})).minnorm();
+    const auto [v, x] = Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})).minnorm();
     check(close(v, std::vector<double>{1}, 1e-14), b + ": the square: distance 1");
     check(close(x, std::vector<double>{0, -1}, 1e-14),
           b + ": the point of the first facet, (0, -1)");
-    const auto [v2, x2] = Zonotope(column({1.0, 1.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}})).minnorm();
+    const auto [v2, x2] = Zonotope(vec({1.0, 1.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}})).minnorm();
     check(close(v2, std::vector<double>{1}, 1e-14) && close(x2, std::vector<double>{1, 0}, 1e-14),
           b + ": the rectangle about (1, 1): distance 1 to the lower edge");
-    const auto [v3, x3] = Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}})).minnorm();
+    const auto [v3, x3] = Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}})).minnorm();
     check(close(v3, std::vector<double>{std::sqrt(2.0)}, 1e-14),
           b + ": the diamond |x| + |y| <= 2");
     check(close(x3.multiply(x3).sum(), std::vector<double>{2}, 1e-12),
           b + ": the nearest point is at distance sqrt(2)");
-    const auto [v4, x4] = Zonotope(column({3.0, 4.0}), Tensor({{1.0, 1.0}})).minnorm();
+    const auto [v4, x4] = Zonotope(vec({3.0, 4.0}), Tensor({{1.0, 1.0}})).minnorm();
     check(close(v4, std::vector<double>{0}, 0) && close(x4, std::vector<double>{3, 4}, 0),
           b + ": a flat zonotope: distance 0 at the center");
 }
@@ -73,7 +74,7 @@ void minnorm_is_the_inradius(const std::string &b) {
 
 /// A batch is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { Zonotope::stack({Z, Z}).minnorm(); }, Error::not_supported),
           "minnorm: a batch");
     const Tensor on = Z.minnorm().first;

@@ -11,6 +11,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -37,13 +38,13 @@ PolyZonotope known() {
 int main() {
     test::for_each_backend([](const std::string &b) {
         // the factor 2 has no generator but the independent one: it goes
-        const PolyZonotope P(column({0.0}), Tensor::from_data({1.0, 0.0}, {2, 1}),
+        const PolyZonotope P(vec({0.0}), Tensor::from_data({1.0, 0.0}, {2, 1}),
                              Tensor::zeros({0, 1}), {{1, 0}, {0, 0}}, {1, 2});
         const PolyZonotope C = P.compact();
         check(C.num_factors() == 1 && C.num_dependent() == 1,
               b + ": unused identifiers and zero generators go");
         // a constant generator moves to the center
-        const PolyZonotope K(column({1.0}), Tensor::from_data({2.0}, {1, 1}), Tensor::zeros({0, 1}),
+        const PolyZonotope K(vec({1.0}), Tensor::from_data({2.0}, {1, 1}), Tensor::zeros({0, 1}),
                              {{0}}, {1});
         check(close(K.compact().center(), {3.0}, 0) && K.compact().num_dependent() == 0,
               b + ": a constant joins c");

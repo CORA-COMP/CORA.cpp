@@ -25,11 +25,11 @@ namespace {
 /// Hand-computed: few enough generators stay; otherwise the long ones stay and a box per row of
 /// [G; A] replaces the rest, so that the constraint rows get free factors.
 void reduce_known(const std::string &b) {
-    const ConZonotope few(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 1.0}}), vec({0.5}));
+    const ConZonotope few(vec({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 1.0}}), vec({0.5}));
     check(close(few.reduce(2).generators().matrix_transpose(), {1, 2}, 0),
           b + ": few generators stay");
     // n = 1, p = 1: more than 1 * 1 + 1 generators are reduced; (order - 1) n = 0 stay
-    const ConZonotope many(column({3.0}), Tensor({{1.0}, {-2.0}, {0.5}}), Tensor({{1.0, 1.0, 1.0}}),
+    const ConZonotope many(vec({3.0}), Tensor({{1.0}, {-2.0}, {0.5}}), Tensor({{1.0, 1.0, 1.0}}),
                            vec({0.5}));
     const ConZonotope r = many.reduce(1);
     check(close(r.generators().matrix_transpose(), {3.5, 0}, 0),
@@ -40,7 +40,7 @@ void reduce_known(const std::string &b) {
                 r.generators().matrix_transpose(), 0),
           b + ": girard is the default");
     // without constraints it is the zonotope's reduction
-    const ConZonotope plain(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {3.0, 1.0}}));
+    const ConZonotope plain(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {3.0, 1.0}}));
     const Zonotope Z = Zonotope(plain.c(), plain.generators());
     check(close(plain.reduce(1).generators().matrix_transpose(),
                 Z.reduce(1).generators().matrix_transpose(), 0),
@@ -74,7 +74,7 @@ int main() {
         reduce_known(b);
         reduce_property(b);
     });
-    const ConZonotope a(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope a(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { a.reduce(0); }, Error::wrong_value), "reduce: order < 1");
     check(test::raises([&] { a.reduce(1, "pca"); }, Error::not_supported), "reduce: other methods");
     ChecksScope off(false);

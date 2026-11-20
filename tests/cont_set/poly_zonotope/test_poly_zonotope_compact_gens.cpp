@@ -11,6 +11,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -22,7 +23,7 @@ using test::column;
 int main() {
     test::for_each_backend([](const std::string &b) {
         // generators 0, 2, 3 have the exponent (1, 0), 1 has (0, 1), 4 has (0, 0), 5 is zero (2, 1)
-        const PolyZonotope P(column({1.0, 2.0}),
+        const PolyZonotope P(vec({1.0, 2.0}),
                              Tensor::from_data({1.0, -1.0, 0.5, 3.0, 0.25, 0.125, //
                                                 4.0, 8.0, 1.0, 2.0, 0.0, 0.0},
                                                {6, 2}),
@@ -46,7 +47,7 @@ int main() {
         check(P.compact().num_dependent() < C.num_dependent(),
               b + ": compact drops what this keeps");
         // distinct exponents: the set is returned as it is
-        const PolyZonotope D(column({0.0}), Tensor::from_data({1.0, 0.0}, {2, 1}),
+        const PolyZonotope D(vec({0.0}), Tensor::from_data({1.0, 0.0}, {2, 1}),
                              Tensor::zeros({0, 1}), {{1}, {2}}, {1}, cora::detail::Verbatim{});
         check(D.compact_gens().num_dependent() == 2,
               b + ": distinct exponents (and a zero column) stay");

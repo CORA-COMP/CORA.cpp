@@ -27,8 +27,8 @@ namespace {
 /// Hand-computed: the shorter zonotope's generators are combined with the leading ones of the
 /// other.
 void enclose_known_zonotopes(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const Zonotope Z2(column({2.0, 0.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z2(vec({2.0, 0.0}), Tensor({{1.0, 0.0}}));
     const Zonotope E = Z.enclose(Z2);
     check(close(E.center(), std::vector<double>{1, 0}, 0), b + ": center (c+c2)/2");
     check(close(E.generators(), std::vector<double>{1, 0, -1, 0, 0, 0, 0, 1}, 0),
@@ -60,7 +60,7 @@ void enclose_contains_both(const std::string &b) {
 
 /// A set of another dimension is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Z.enclose(Z1); }, Error::dimension_mismatch),
           "enclose: dimensions 2 and 1");
     const Tensor on = Z.enclose(Z).generators();

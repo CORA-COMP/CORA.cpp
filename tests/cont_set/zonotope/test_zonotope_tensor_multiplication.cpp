@@ -13,6 +13,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -26,7 +27,7 @@ using Lists = Zonotope::TensorLists;
 
 /// n = 1, M = 2, g = (1, 2): 2 (b1 + 2 b2)^3 has the generators 2 (1, 3 g1^2 g2, 3 g1 g2^2, g2^3).
 void one_dimension_by_hand(const std::string &b) {
-    const Zonotope Z(column({0.0}), Tensor({{1.0}, {2.0}}));
+    const Zonotope Z(vec({0.0}), Tensor({{1.0}, {2.0}}));
     const Tensor M = Tensor::from_data({2.0}, {1, 1, 1, 1});
     const Zonotope R = Z.tensor_multiplication(M, test::triples(2));
     check(close(R.center(), std::vector<double>{0}, 0), b + ": the center is the origin");
@@ -39,7 +40,7 @@ void one_dimension_by_hand(const std::string &b) {
 void the_image_of_the_set_is_enclosed(const std::string &b) {
     cora::Rng rng(31);
     const int n = 3, m = 3;
-    const Zonotope Z(column({0.0, 0.0, 0.0}),
+    const Zonotope Z(vec({0.0, 0.0, 0.0}),
                      Zonotope::generate_random(rng, n, std::nullopt, m).generators());
     const Tensor M = test::random_tensor(rng, n);
     const Lists list = test::triples(m);
@@ -72,7 +73,7 @@ void the_image_of_the_set_is_enclosed(const std::string &b) {
 /// A second-order tensor, wrong shapes, bad lists and a center off the origin are refused; with
 /// the checks off the same call gives the same result.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0}), Tensor({{1.0}, {2.0}}));
+    const Zonotope Z(vec({0.0}), Tensor({{1.0}, {2.0}}));
     const Tensor M = Tensor::from_data({2.0}, {1, 1, 1, 1});
     const Lists list = test::triples(2);
     const auto raises = [&](const Zonotope &S, const Tensor &T, const Lists &l, Error::Id id) {
@@ -92,7 +93,7 @@ void checks_and_their_switch() {
     bad.perm[0].pop_back();
     check(raises(Z, M, bad, Error::wrong_value), "tensor_multiplication: a pair, not a triple");
     // center and pair errors
-    const Zonotope shifted(column({1.0}), Tensor({{1.0}, {2.0}}));
+    const Zonotope shifted(vec({1.0}), Tensor({{1.0}, {2.0}}));
     check(raises(shifted, M, list, Error::wrong_value), "tensor_multiplication: center not 0");
     const Tensor on = Z.tensor_multiplication(M, list).generators();
     ChecksScope off(false);

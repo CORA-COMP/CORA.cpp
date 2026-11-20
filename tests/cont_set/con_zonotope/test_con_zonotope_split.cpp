@@ -24,7 +24,7 @@ namespace {
 
 /// Hand-computed: the segment from (0, 1) to (1, 0) cut at x1 = 0.5 gives two halves.
 void split_known(const std::string &b) {
-    const ConZonotope seg(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope seg(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                           Tensor({{1.0, 1.0}}), vec({1.0}));
     const auto [low, high] = seg.split(0);
     check(close(low.interval().sup(), {0.5, 1.0}, 1e-9) &&
@@ -67,7 +67,7 @@ int main() {
         split_known(b);
         split_property(b);
     });
-    const ConZonotope a(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope a(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { a.split(1); }, Error::wrong_value), "split: a coordinate");
     check(test::raises([&] { ConZonotope::empty(2).split(0); }, Error::empty_set), "split: empty");
     ChecksScope off(false);

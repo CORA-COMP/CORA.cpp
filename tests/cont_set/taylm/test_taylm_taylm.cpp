@@ -33,7 +33,7 @@ int main() {
                   close(x[1].bounds()[0], -2.0) && close(x[1].bounds()[1], 2.0),
               b + ": the bounds of a box are the box");
         // the zonotope (1, 0) + a (1, 1) + b (0, 2): x_1 = a + 2 b
-        const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({1, 1, 0, 2}, {2, 2}));
+        const Zonotope Z(vec({1.0, 0.0}), Tensor::from_data({1, 1, 0, 2}, {2, 2}));
         const std::vector<Taylm> z = Taylm::from_zonotope(Z);
         check(close(z[1].bounds()[0], -3.0) && close(z[1].bounds()[1], 3.0),
               b + ": the bounds of a zonotope coordinate");

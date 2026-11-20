@@ -31,12 +31,12 @@ inline Tensor integrator() { return Tensor({{0.0, 1.0}, {0.0, 0.0}}); }
 
 /// The initial set of the examples: center (1, 2), generators diag(1, 0.5).
 inline Zonotope initial_set() {
-    return {test::column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}})};
+    return {test::vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}})};
 }
 
 /// The point u as a set.
 inline Zonotope point(const std::vector<double> &u) {
-    return {test::column(u), Tensor::zeros({0, int64_t(u.size())})};
+    return {test::vec(u), Tensor::zeros({0, int64_t(u.size())})};
 }
 
 /// The set {0} of the dimension n.

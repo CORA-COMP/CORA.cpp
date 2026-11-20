@@ -27,7 +27,7 @@ namespace {
 /// The center and the dimension through the base class, for a box, a zonotope and a batch.
 void center_and_dim_of_any_set(const std::string &b) {
     const Interval I(vec({-1.0, 0.0, 2.0}), vec({1.0, 2.0, 4.0}));
-    const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     const ContSet &A = I, &B = Z;
     check(test::close(A.center(), {0.0, 1.0, 3.0}), b + ": the center of a box");
     check(A.dim() == 3 && B.dim() == 2, b + ": the dimensions");

@@ -24,7 +24,7 @@ namespace {
 /// The squares [-1, 1]^2 and [0, 2]^2 meet in [0, 1]^2.
 ZonoBundle squares() {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-    return ZonoBundle({Zonotope(column({0.0, 0.0}), I2), Zonotope(column({1.0, 1.0}), I2)});
+    return ZonoBundle({Zonotope(vec({0.0, 0.0}), I2), Zonotope(vec({1.0, 1.0}), I2)});
 }
 
 /// The exact test decides: sets that meet the intersection, sets that meet one member only, and
@@ -32,8 +32,8 @@ ZonoBundle squares() {
 void exact_test(const std::string &b) {
     const ZonoBundle bundle = squares();
     const Tensor I2({{0.5, 0.0}, {0.0, 0.5}});
-    const Zonotope inside(column({0.5, 0.5}), I2), in_one(column({-0.75, -0.75}), I2),
-        touching(column({1.5, 0.5}), I2), apart(column({5.0, 5.0}), I2);
+    const Zonotope inside(vec({0.5, 0.5}), I2), in_one(vec({-0.75, -0.75}), I2),
+        touching(vec({1.5, 0.5}), I2), apart(vec({5.0, 5.0}), I2);
     check(bundle.is_intersecting(inside), b + ": a zonotope inside");
     check(!bundle.is_intersecting(in_one), b + ": a zonotope that meets one member only");
     check(bundle.is_intersecting(touching), b + ": a zonotope that touches the border");
@@ -56,12 +56,12 @@ void exact_test(const std::string &b) {
 /// overlap, and false when the boxes are apart.
 void approximate_test(const std::string &b) {
     const Tensor I2({{5.0, 0.0}, {0.0, 5.0}});
-    const Zonotope diagonal(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
-    const ZonoBundle bundle({diagonal, Zonotope(column({0.0, 0.0}), I2)});
-    const Zonotope off_diagonal(column({0.9, -0.9}), Tensor({{0.01, 0.0}}));
+    const Zonotope diagonal(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const ZonoBundle bundle({diagonal, Zonotope(vec({0.0, 0.0}), I2)});
+    const Zonotope off_diagonal(vec({0.9, -0.9}), Tensor({{0.01, 0.0}}));
     check(!bundle.is_intersecting(off_diagonal), b + ": exact: they are apart");
     check(bundle.is_intersecting(off_diagonal, "approx"), b + ": approx: the boxes overlap");
-    check(!bundle.is_intersecting(Zonotope(column({9.0, 9.0}), Tensor({{1.0, 1.0}})), "approx"),
+    check(!bundle.is_intersecting(Zonotope(vec({9.0, 9.0}), Tensor({{1.0, 1.0}})), "approx"),
           b + ": approx: the boxes are apart");
     check(bundle.is_intersecting(Interval(vec({1.0001, 0.0}), vec({2.0, 1.0})), "approx", 0.01),
           b + ": approx: the box enlarged by tol");
@@ -74,10 +74,10 @@ void approximate_test(const std::string &b) {
 /// checks off.
 void checks_and_their_switch() {
     const ZonoBundle bundle = squares();
-    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25, 0.0}}));
+    const Zonotope Z(vec({0.5, 0.5}), Tensor({{0.25, 0.0}}));
     check(test::raises([&] { bundle.is_intersecting(Z, "fast"); }, Error::wrong_value),
           "is_intersecting: type");
-    check(test::raises([&] { bundle.is_intersecting(Zonotope(column({0.5}), Tensor({{1.0}}))); },
+    check(test::raises([&] { bundle.is_intersecting(Zonotope(vec({0.5}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "is_intersecting: another dimension");
     check(test::raises([&] { bundle.is_intersecting(Zonotope::stack({Z, Z})); },

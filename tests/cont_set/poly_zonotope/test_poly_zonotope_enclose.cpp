@@ -12,6 +12,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -60,7 +61,7 @@ int main() {
         enclose_property(b);
     });
     check(test::raises(
-              [] { known().enclose(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({0, 1})))); },
+              [] { known().enclose(PolyZonotope(Zonotope(vec({1.0}), Tensor::zeros({0, 1})))); },
               Error::dimension_mismatch),
           "enclose: dimension");
     ChecksScope off(false);

@@ -27,8 +27,8 @@ namespace {
 void full_dimension_of_any_set(const std::string &b) {
     const Interval box(vec({-1.0, 0.0}), vec({1.0, 2.0})), flat(vec({-1.0, 1.0}), vec({1.0, 1.0})),
         thin(vec({0.0}), vec({1e-4}));
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
-        segment(column({0.0, 0.0}), Tensor::from_data({1.0, 1.0}, {1, 2}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
+        segment(vec({0.0, 0.0}), Tensor::from_data({1.0, 1.0}, {1, 2}));
     const ContSet &A = box, &B = flat, &D = Z, &E = segment, &T = thin;
     check(A.is_full_dim() && !B.is_full_dim(), b + ": boxes");
     check(D.is_full_dim() && !E.is_full_dim(), b + ": zonotopes");

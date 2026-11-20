@@ -68,9 +68,9 @@ void sets(const std::string &b) {
     const Interval in(vec({0.2, 0.2}), vec({0.8, 0.8})), out(vec({0.5, 0.5}), vec({1.5, 1.0}));
     check(H.contains(in) && !H.contains(out), b + ": a box");
     check(H.contains(in, "approx") && !H.contains(out, "approx"), b + ": a box, approx");
-    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.3, 0.0}, {0.1, 0.3}}));
+    const Zonotope Z(vec({0.5, 0.5}), Tensor({{0.3, 0.0}, {0.1, 0.3}}));
     check(H.contains(Z) && H.contains(Z, "approx"), b + ": a zonotope");
-    check(!H.contains(Zonotope(column({1.0, 1.0}), Tensor({{0.3, 0.0}, {0.0, 0.3}}))),
+    check(!H.contains(Zonotope(vec({1.0, 1.0}), Tensor({{0.3, 0.0}, {0.0, 0.3}}))),
           b + ": a zonotope out");
     const Polytope small(Tensor({{0.2, 0.2}, {0.8, 0.2}, {0.8, 0.8}}));
     check(H.contains(small) && !small.contains(H), b + ": a vertex polytope");
@@ -97,8 +97,8 @@ void sets(const std::string &b) {
 void table(const std::string &b) {
     const Polytope H = Polytope(Tensor({{1.0, 0.0}, {0.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}}),
                                 vec({1.0, 1.0, 0.0, 0.0}));
-    const Zonotope in(column({0.5, 0.5}), Tensor::eye(2) * 0.3),
-        out(column({1.0, 1.0}), Tensor::eye(2) * 0.3);
+    const Zonotope in(vec({0.5, 0.5}), Tensor::eye(2) * 0.3),
+        out(vec({1.0, 1.0}), Tensor::eye(2) * 0.3);
     check(contains(H, in) && !contains(H, out), b + ": a zonotope");
     check(contains(H, ConZonotope(in)) && !contains(H, ConZonotope(out)),
           b + ": a constrained zonotope");

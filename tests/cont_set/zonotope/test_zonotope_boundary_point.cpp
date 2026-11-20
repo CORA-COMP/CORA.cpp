@@ -24,7 +24,7 @@ using test::vec;
 
 namespace {
 
-Zonotope diamond() { return Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}})); }
+Zonotope diamond() { return Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}})); }
 
 /// Hand-computed rays: from the center, from another start, and in one dimension.
 void known_rays(const std::string &b) {
@@ -36,7 +36,7 @@ void known_rays(const std::string &b) {
     check(close(Z.boundary_point(vec({1.0, 1.0}), vec({1.0, 0.0})), std::vector<double>{1.5, 0.5},
                 1e-9),
           b + ": from (1, 0) along (1, 1)");
-    const Zonotope Z1(column({3.0}), Tensor({{1.0}, {-2.0}}));
+    const Zonotope Z1(vec({3.0}), Tensor({{1.0}, {-2.0}}));
     check(close(Z1.boundary_point(vec({-1.0})), std::vector<double>{0}, 0), b + ": 1-D, left");
     check(close(Z1.boundary_point(vec({2.0})), std::vector<double>{6}, 0), b + ": 1-D, right");
 }

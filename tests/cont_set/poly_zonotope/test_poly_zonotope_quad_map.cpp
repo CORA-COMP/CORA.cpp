@@ -12,6 +12,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -57,7 +58,7 @@ void quad_property(const std::string &b) {
 
 /// No dependent generators: the image is the quadratic map of the zonotope (c, GI).
 void independent_only() {
-    const PolyZonotope P(column({1.0, 0.0}), Tensor::zeros({0, 2}),
+    const PolyZonotope P(vec({1.0, 0.0}), Tensor::zeros({0, 2}),
                          Tensor::from_data({0.5, 1.0}, {1, 2}), {}, {});
     const std::vector<Tensor> Q = {Tensor::from_data({0, 1, 0, 0}, {2, 2}), Tensor::eye(2)};
     const Zonotope image = P.quad_map(Q).zonotope(), expected = P.zonotope().quad_map(Q);
@@ -74,7 +75,7 @@ void independent_only() {
 int main() {
     test::for_each_backend([](const std::string &b) {
         // x = 1, y = a: x y = a and y y = a^2 are the generators of the image
-        const PolyZonotope P(column({1.0, 0.0}), Tensor::from_data({0.0, 1.0}, {1, 2}),
+        const PolyZonotope P(vec({1.0, 0.0}), Tensor::from_data({0.0, 1.0}, {1, 2}),
                              Tensor::zeros({0, 2}), {{1}}, {1});
         const PolyZonotope Z = P.quad_map(
             {Tensor::from_data({0, 1, 0, 0}, {2, 2}), Tensor::from_data({0, 0, 0, 1}, {2, 2})});

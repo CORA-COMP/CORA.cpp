@@ -37,13 +37,13 @@ ConZonotope::Certificate aux_weights(int64_t n, std::size_t m, std::size_t p, do
 /// The segment x1 + x2 = 1 in the unit square is boxed to [0, 1]^2; x1 = 3 has no point; the
 /// square cut by x1 <= 0.25 is [-1, 0.25] x [-1, 1].
 void by_hand(const std::string &b) {
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));
     const Interval I = segment.interval_cert();
     check(close(I.inf(), {0, 0}, 1e-12) && close(I.sup(), {1, 1}, 1e-12), b + ": a segment");
-    const ConZonotope empty(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
+    const ConZonotope empty(vec({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
     check(empty.interval_cert().is_empty(), b + ": no point: the empty box");
-    const ConZonotope square(Zonotope(column({0.0, 0.0}), Tensor::eye(2)));
+    const ConZonotope square(Zonotope(vec({0.0, 0.0}), Tensor::eye(2)));
     const Interval half = square.cut(Polytope(Tensor({{1.0, 0.0}}), vec({0.25}))).interval_cert();
     check(close(half.inf(), {-1, -1}, 1e-12) && close(half.sup(), {0.25, 1}, 1e-12),
           b + ": a cut square");
@@ -121,7 +121,7 @@ void cuts(const std::string &b) {
 /// Multipliers of the wrong sizes are refused, as is a batch; the same with checks off is
 /// the same box.
 void refusals() {
-    const ConZonotope cz(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({0.5}));
+    const ConZonotope cz(vec({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({0.5}));
     check(test::raises([&] { cz.interval_cert(aux_weights(2, 0, 1, 0.0)); },
                        Error::dimension_mismatch),
           "interval_cert: a multiplier per coordinate");

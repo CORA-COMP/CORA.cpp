@@ -23,7 +23,7 @@ namespace {
 
 /// Hand-computed: state i goes to position dims[i] (CORA's lift_ would put (2,3,1) there).
 void lift_known(const std::string &b) {
-    const ConZonotope a(column({1.0, 2.0, 3.0}), Tensor({{1.0, 2.0, 3.0}}), Tensor({{1.0}}),
+    const ConZonotope a(vec({1.0, 2.0, 3.0}), Tensor({{1.0, 2.0, 3.0}}), Tensor({{1.0}}),
                         vec({0.5}));
     const ConZonotope r = a.lift(3, {1, 2, 0});
     check(close(r.c().expand_dims(-1), {3, 1, 2}, 0) &&
@@ -42,7 +42,7 @@ void lift_known(const std::string &b) {
 
 int main() {
     test::for_each_backend(lift_known);
-    const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0, 2.0}}));
+    const ConZonotope a(vec({1.0, 2.0}), Tensor({{1.0, 2.0}}));
     check(test::raises([&] { a.lift(3, {0, 1}); }, Error::not_defined), "lift: new dimensions");
     check(test::raises([&] { a.lift(2, {1, 1}); }, Error::wrong_value), "lift: a position twice");
     check(test::raises([&] { a.lift(2, {0, 5}); }, Error::wrong_value), "lift: a position outside");

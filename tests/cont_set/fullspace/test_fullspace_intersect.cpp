@@ -25,7 +25,7 @@ namespace {
 
 void intersect_returns_the_operand(const std::string &b) {
     const Fullspace F(2);
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     const Interval I(vec({0.0, 1.0}), vec({2.0, 3.0}));
     const Set SZ = F.intersect(Z), SI = F.intersect(I), SF = F.intersect(Fullspace(2));
     check(SZ.is<Zonotope>() &&

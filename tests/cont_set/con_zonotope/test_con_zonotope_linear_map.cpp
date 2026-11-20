@@ -24,7 +24,7 @@ namespace {
 
 /// Hand-computed: center and generators map, the constraints stay; M may change the dimension.
 void linear_map_known(const std::string &b) {
-    const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope a(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         vec({0.5}));
     const ConZonotope r = a.linear_map(Tensor({{2.0, 0.0}, {0.0, 3.0}, {1.0, 1.0}}));
     check(r.dim() == 3 && close(r.c().expand_dims(-1), {2, 6, 3}, 0), b + ": the center maps");
@@ -51,7 +51,7 @@ void linear_map_property(const std::string &b) {
 
 /// A matrix with the wrong number of columns is refused.
 void checks_and_batches() {
-    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope a(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { a.linear_map(Tensor({{1.0, 2.0, 3.0}})); }, Error::dimension_mismatch),
           "linear_map: columns");
     const Tensor M = Tensor::concat(

@@ -21,6 +21,7 @@ using test::close;
 using test::column;
 using test::random_direction;
 using test::support;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -49,8 +50,8 @@ void linear_combination_encloses_both(const std::string &b) {
     check(close(Z.linear_combination(Z).interval().inf(), Z.interval().inf(), 1e-12),
           b + ": linear_combination(Z, Z) is Z");
     // two points: the segment between them, the shift its one generator
-    const Zonotope p(column({0.0, 2.0}), Tensor::zeros({0, 2})),
-        q(column({4.0, 2.0}), Tensor::zeros({0, 2}));
+    const Zonotope p(vec({0.0, 2.0}), Tensor::zeros({0, 2})),
+        q(vec({4.0, 2.0}), Tensor::zeros({0, 2}));
     const Zonotope seg = p.linear_combination(q);
     check(close(seg.center(), {2, 2}) && close(seg.generators(), {-2, 0}),
           b + ": the segment between two points");

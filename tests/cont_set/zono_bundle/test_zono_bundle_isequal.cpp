@@ -12,6 +12,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::column;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -24,13 +25,13 @@ namespace {
 /// sets and other dimensions are not equal.
 void known_bundles(const std::string &b) {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-    const Zonotope A(column({0.0, 0.0}), I2), B(column({1.0, 1.0}), I2), C(column({0.0, 0.5}), I2);
+    const Zonotope A(vec({0.0, 0.0}), I2), B(vec({1.0, 1.0}), I2), C(vec({0.0, 0.5}), I2);
     check(ZonoBundle({A, B}).isequal(ZonoBundle({A, B})), b + ": the same members");
     check(ZonoBundle({A, B}).isequal(ZonoBundle({B, A})), b + ": the members reordered");
     check(ZonoBundle({A, B}).isequal(ZonoBundle({A, B, A})), b + ": a redundant member");
     check(!ZonoBundle({A, B}).isequal(ZonoBundle({A, C})), b + ": another member");
     check(!ZonoBundle({A}).isequal(ZonoBundle({A, B})), b + ": a smaller intersection");
-    check(!ZonoBundle({A}).isequal(ZonoBundle({Zonotope(column({0.0}), Tensor({{1.0}}))})),
+    check(!ZonoBundle({A}).isequal(ZonoBundle({Zonotope(vec({0.0}), Tensor({{1.0}}))})),
           b + ": another dimension");
     check(isequal(Set(ZonoBundle({A, B})), Set(ZonoBundle({B, A}))), b + ": through the registry");
     check(Set(ZonoBundle({A, B})) == Set(ZonoBundle({B, A})), b + ": the operator ==");
@@ -39,8 +40,8 @@ void known_bundles(const std::string &b) {
 /// The members are compared up to tol.
 void tolerance(const std::string &b) {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-    const Zonotope A(column({0.0, 0.0}), I2), near(column({1e-15, 0.0}), I2),
-        apart(column({1e-3, 0.0}), I2);
+    const Zonotope A(vec({0.0, 0.0}), I2), near(vec({1e-15, 0.0}), I2),
+        apart(vec({1e-3, 0.0}), I2);
     check(ZonoBundle({A}).isequal(ZonoBundle({near})), b + ": equal up to the default tolerance");
     check(!ZonoBundle({A}).isequal(ZonoBundle({apart})), b + ": not equal at 1e-3");
     check(ZonoBundle({A}).isequal(ZonoBundle({apart}), 1e-2), b + ": equal with tol 1e-2");
@@ -48,7 +49,7 @@ void tolerance(const std::string &b) {
 
 /// A negative tol and a batch are refused; the same call with the checks off.
 void checks_and_their_switch() {
-    const Zonotope A(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope A(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({A});
     check(test::raises([&] { bundle.isequal(bundle, -1.0); }, Error::wrong_value),
           "isequal: tol < 0");

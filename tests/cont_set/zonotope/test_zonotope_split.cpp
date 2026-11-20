@@ -43,7 +43,7 @@ void split_by_coordinates(const std::string &b) {
               close(upper.generators(), std::vector<double>{6, 0, 0, 4.5}, 1e-14),
           b + ": coordinate 1");
     // a flat coordinate: CORA indexes the nonzero generators and breaks; here both halves are a box
-    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope flat(vec({0.0, 0.0}), Tensor({{1.0, 0.0}}));
     const auto [a, c] = flat.split(1);
     check(close(a.center(), c.center(), 0) &&
               close(a.generators(), std::vector<double>{1, 0, 0, 0}, 0),
@@ -51,14 +51,14 @@ void split_by_coordinates(const std::string &b) {
 }
 
 void split_along_a_generator(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 4.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 4.0}}));
     const auto [lower, upper] = Z.split(1, 2);
     check(close(lower.center(), std::vector<double>{0, -2}, 0) &&
               close(upper.center(), std::vector<double>{0, 2}, 0) &&
               close(upper.generators(), std::vector<double>{2, 0, 0, 2}, 0),
           b + ": generator 1, no reduction needed");
     // a reduction to order 1 leaves two generators: the kept longest one and a box generator
-    const Zonotope W(column({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 3.0}, {1.0, 1.0}}));
+    const Zonotope W(vec({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 3.0}, {1.0, 1.0}}));
     const auto [l2, u2] = W.split(0, 1);
     check(l2.generators().shape() == std::vector<int64_t>({2, 2}), b + ": reduced to order 1");
     check(close(u2.center(), std::vector<double>{2.5, 0}, 0),

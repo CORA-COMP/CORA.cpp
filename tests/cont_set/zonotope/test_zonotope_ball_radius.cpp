@@ -14,6 +14,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -26,12 +27,12 @@ namespace {
 /// CORA's unit test: G = [1 3; 2 1] has the box radius (4, 3), whose norm is 5 (the sum of the
 /// generator lengths, 5.4, is larger); a point has radius 0; a batch gives one per member.
 void radius_known(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 2.0}, {3.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 2.0}, {3.0, 1.0}}));
     check(close(Z.ball_radius(), std::vector<double>{5}, 1e-14),
           b + ": the box radius (4, 3) has norm 5");
     check(Z.ball_radius().shape() == std::vector<int64_t>({}), b + ": a number ()");
     check(close(Zonotope::origin(3).ball_radius(), std::vector<double>{0}, 0), b + ": a point");
-    const Zonotope axis(column({1.0, 1.0}), Tensor({{3.0, 4.0}}));
+    const Zonotope axis(vec({1.0, 1.0}), Tensor({{3.0, 4.0}}));
     check(close(axis.ball_radius(), std::vector<double>{5}, 1e-14), b + ": one generator (3, 4)");
     const Tensor batch = Zonotope::stack({Z, axis}).ball_radius();
     check(batch.shape() == std::vector<int64_t>({2}) &&
@@ -56,7 +57,7 @@ void radius_bounds_the_set(const std::string &b) {
 
 /// With the checks off the result is the same.
 void checks_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 2.0}, {3.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 2.0}, {3.0, 1.0}}));
     ChecksScope off(false);
     check(close(Z.ball_radius(), std::vector<double>{5}, 1e-14), "radius: checks off");
 }

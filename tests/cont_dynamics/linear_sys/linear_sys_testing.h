@@ -39,7 +39,7 @@ inline alg::LinearReach algorithm(const std::string &a, double time_step, int ta
 
 /// The zonotope of MATLAB's exported center and generator columns: the one place they become rows.
 inline Zonotope set_of(const System &s) {
-    return {Tensor::from_data(s.c, {s.n, 1}),
+    return {Tensor::from_data(s.c, {s.n}),
             Tensor::from_data(s.G, {s.n, s.m}).matrix_transpose()};
 }
 

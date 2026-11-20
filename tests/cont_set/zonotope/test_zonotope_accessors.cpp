@@ -13,6 +13,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::close;
 using test::column;
 
@@ -23,7 +24,7 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const Zonotope Z(column({1.0, 2.0, 3.0}), Tensor({{1.0, 0.0, 2.0}, {0.0, 1.0, 2.0}}));
+        const Zonotope Z(vec({1.0, 2.0, 3.0}), Tensor({{1.0, 0.0, 2.0}, {0.0, 1.0, 2.0}}));
         check(Z.dim() == 3 && Set(Z)->dim() == 3, b + ": the dimension is the rows of the center");
         check(close(Z.generators(), {1, 0, 2, 0, 1, 2}, 0) && Z.generators().shape() == Shape{2, 3},
               b + ": the generators");

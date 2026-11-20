@@ -12,6 +12,7 @@
 
 using namespace cora;
 using test::check;
+using test::vec;
 using test::column;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -22,8 +23,8 @@ namespace {
 
 /// Two planar zonotopes: a box and a segment.
 std::vector<Zonotope> two_members() {
-    return {Zonotope(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-            Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}}))};
+    return {Zonotope(vec({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
+            Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}))};
 }
 
 /// The bundle stores its members in order and is a set of the class with CORA's precedence.
@@ -41,7 +42,7 @@ void members_and_class(const std::string &b) {
 /// A list that is empty, mixes dimensions or batch shapes is refused; a valid one passes with the
 /// checks off.
 void checks_and_their_switch() {
-    const Zonotope Z1(column({0.0, 0.0}), Tensor({{1.0, 1.0}})), Z3(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z1(vec({0.0, 0.0}), Tensor({{1.0, 1.0}})), Z3(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([] { ZonoBundle(std::vector<Zonotope>{}); },
                        Error::wrong_input_in_constructor),
           "ZonoBundle: an empty list");

@@ -27,7 +27,7 @@ using test::vec;
 namespace {
 
 /// The diamond |x| + |y| <= 2.
-Zonotope diamond() { return Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}})); }
+Zonotope diamond() { return Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, -1.0}})); }
 
 /// Points: inside, on the boundary, outside, and the tolerance that relaxes the boundary.
 void points_in_a_diamond(const std::string &b) {
@@ -44,17 +44,17 @@ void points_in_a_diamond(const std::string &b) {
 
 /// The special cases of CORA's contains_: a point, a box, and a flat zonotope.
 void special_zonotopes(const std::string &b) {
-    const Zonotope point(column({1.0, 2.0}), Tensor({{0.0, 0.0}}));
+    const Zonotope point(vec({1.0, 2.0}), Tensor({{0.0, 0.0}}));
     check(point.contains(vec({1.0, 2.0})) && !point.contains(vec({1.0, 2.5})), b + ": a point");
-    check(point.contains(Zonotope(column({1.0, 2.0}), Tensor({{0.0, 0.0}}))),
+    check(point.contains(Zonotope(vec({1.0, 2.0}), Tensor({{0.0, 0.0}}))),
           b + ": a point holds itself");
     check(!point.contains(diamond()), b + ": a point holds no set");
-    const Zonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope box(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(box.contains(vec({1.0, -1.0})) && !box.contains(vec({1.1, 0.0})), b + ": a box");
     check(box.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.0}))), b + ": a box holds a box");
     check(!box.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.5}))),
           b + ": a box, not a larger one");
-    const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(segment.contains(vec({0.5, 0.5})), b + ": a segment holds its points");
     check(!segment.contains(vec({0.5, 0.6})), b + ": and no other");
 }
@@ -109,8 +109,8 @@ void polymax_agrees_with_venum(const std::string &b) {
               b + ": polymax and venum agree, trial " + std::to_string(trial));
         check(Z.contains(T) == Z.contains(T, "exact:polymax"), b + ": exact is polymax");
     }
-    const Zonotope segment(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
-    const Zonotope half(column({0.0, 0.0}), Tensor({{0.5, 0.5}}));
+    const Zonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope half(vec({0.0, 0.0}), Tensor({{0.5, 0.5}}));
     check(segment.contains(half, "exact:polymax"), b + ": a flat zonotope holds half of itself");
     check(!segment.contains(half + vec({0.0, 0.1}), "exact:polymax"), b + ": not off its line");
 }
@@ -134,7 +134,7 @@ void checks_and_their_switch() {
     const Zonotope Z = diamond();
     check(test::raises([&] { Z.contains(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "contains: a point of dimension 3");
-    check(test::raises([&] { Z.contains(Zonotope(column({0.0}), Tensor({{1.0}}))); },
+    check(test::raises([&] { Z.contains(Zonotope(vec({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "contains: a zonotope of dimension 1");
     check(test::raises([&] { Z.contains(vec({0.0, 0.0}), "exact", -1.0); }, Error::wrong_value),

@@ -47,7 +47,7 @@ ConZonotope aux_around_box(const Tensor &lo, const Tensor &hi, const Tensor &A_a
                            const Tensor &b_all, const Tensor &sigma) {
     const int64_t n = lo.shape()[0], rows = A_all.shape()[0];
     const Tensor c = (lo + hi) * 0.5, G = ((hi - lo) * 0.5).diag();
-    return {c, (Tensor::concat({G, G.zeros_like({n, rows})}, -1)).matrix_transpose(),
+    return {c.squeeze(-1), (Tensor::concat({G, G.zeros_like({n, rows})}, -1)).matrix_transpose(),
             Tensor::concat({A_all.matmul(G), ((sigma - b_all) * 0.5).diag()}, -1),
             ((b_all + sigma) * 0.5 - A_all.matmul(c)).squeeze(-1)};
 }

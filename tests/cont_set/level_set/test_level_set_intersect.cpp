@@ -72,7 +72,7 @@ int main() {
         // a point on the level set stays, one off it is empty
         const LevelSet line(x1 - 1.0, 2, CompOp::eq);
         const auto pt = [&](double x) {
-            return PolyZonotope(Zonotope(column({x, 0.0}), Tensor::zeros({0, 2})));
+            return PolyZonotope(Zonotope(vec({x, 0.0}), Tensor::zeros({0, 2})));
         };
         check(line.intersect(pt(1.0)).has_value(), b + ": a point on the set");
         check(!line.intersect(pt(2.0)).has_value(), b + ": a point beyond the set");
