@@ -72,7 +72,8 @@ class Simulate(unittest.TestCase):
         A, _, _ = system()
         c, G = torch.randn(4, 3, **F64), torch.randn(4, 2, 3, **F64)
         Z = cora.Zonotope(c, G)
-        x = cora.LinearSys(A).simulate(Z.rand_point(6, cora.Rng(0)).T, time_step=0.1, t_final=0.5)
+        # the rows (4, 6, 3) as CORA's columns (4, 3, 6), which simulate still takes
+        x = cora.LinearSys(A).simulate(Z.rand_point(6, cora.Rng(0)).mT, time_step=0.1, t_final=0.5)
         self.assertEqual(tuple(x.shape), (6, 4, 3, 6))
 
     def test_gradient(self):
