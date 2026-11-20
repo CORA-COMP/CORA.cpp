@@ -9,7 +9,7 @@
 | AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 16.8 / 11.7 | 27 / 22 (23 instances) |
 
 <!-- BEGIN overall -->
-Over the 86 instances, 2255 of 2387 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2250 of 2382 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 <!-- END overall -->
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
@@ -156,8 +156,8 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 | DTN04 | 1 | 1 | 22.5 | 29/30 bit-exact, 1 property | - | 48.29 | 48.29 (CORA) [a] | 2.15 |
 | DTN05 | 1 | 1 | 41.3 | 29/30 bit-exact, 1 property | - | 90.76 | 90.76 (CORA) [a] | 2.2 |
 | DTN06 | 1 | 1 | 112 | 29/30 bit-exact, 1 property | - | 227 | 227 (CORA) [a] | 2.02 |
-| PLAA01_BND42 | 1 | 1 | 10.6 | 27/30 bit-exact, 3 property | - | 25.02 | 25.02 (CORA) | 2.36 |
-| PLAA01_BND50 | 1 | 1 | 3.51 | 27/30 bit-exact, 3 property | - | 7.77 | 7.77 (CORA) | 2.22 |
+| PLAA01_BND42 | 1 | 1 | 10.6 | 26/29 bit-exact, 3 property | - | 25.02 | 25.02 (CORA) | 2.36 |
+| PLAA01_BND50 | 1 | 1 | 3.51 | 26/29 bit-exact, 3 property | - | 7.77 | 7.77 (CORA) | 2.22 |
 | PLAD01_BND30 | 1 | 1 | 0.302 | 17/18 bit-exact, 0 property | - | 4.03 | 4.03 (CORA) | 13.4 |
 | PLAD01_BND42 | 1 | 1 | 0.0695 | 17/18 bit-exact, 0 property | - | 3.07 | 0.05 (JuliaReach) | 0.72 |
 | PLAN01 | 1 (script: 0) | 0 | 49.4 | 34/39 bit-exact, 5 property | 173 | 162 | 162 (CORA) | - |
@@ -361,7 +361,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 
 | instance | expected (ARCH26) | CORA.cpp | CORA.cpp [s] | oracle check (rows) | CORA [s] | CORA ARCH26 [s] | best ARCH26 [s] (tool) | speedup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TRAF22 | 1 | 1 | 0.955 | 28/28 bit-exact, 0 property | 138 | 152 | 152 (CORA) [a] | 159 |
+| TRAF22 | 1 | 1 | 0.955 | 25/25 bit-exact, 0 property | 138 | 152 | 152 (CORA) [a] | 159 |
 | SPRE22 | 1 | 1 | 0.993 | 48/49 bit-exact, 1 property | 34.3 | 37 | 37 (CORA) | 37.3 |
 | ROBE25 (1) | 1 | 1 | 23.4 | 18/18 bit-exact, 0 property | 137.5 | 151 | 25 (JuliaReach) [b] | 1.07 |
 | ROBE25 (2) | 1 | 1 | 64.6 | 18/18 bit-exact, 0 property | 225.7 | 239 | 92 (JuliaReach) [b] | 1.42 |
@@ -852,8 +852,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LOVO25-script | 56/77 | 21 | 32 |
 | NAV-robust | 37/39 | 2 | 28 |
 | NAV-standard | 42/45 | 3 | 28 |
-| PLAA01_BND42 | 27/30 | 3 | 14 |
-| PLAA01_BND50 | 27/30 | 3 | 14 |
+| PLAA01_BND42 | 26/29 | 3 | 14 |
+| PLAA01_BND50 | 26/29 | 3 | 14 |
 | PLAD01_BND30 | 17/18 | 1 | 12 |
 | PLAD01_BND42 | 17/18 | 1 | 12 |
 | PLAN01 | - | not measured | - |
@@ -885,7 +885,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | TORA-reach-sigmoid | 54/56 | 2 | 26 |
 | TORA-reach-tanh | 40/41 | 1 | 23 |
 | TORA-remain | 54/56 | 2 | 26 |
-| TRAF22 | 28/28 | 0 | 14 |
+| TRAF22 | 25/25 | 0 | 14 |
 | TSPS25 | 28/35 | 7 | 14 |
 | Unicycle-reach | 32/33 | 1 | 23 |
 | Unicycle-reach-disturbance | 32/33 | 1 | 23 |

@@ -11,7 +11,7 @@ column of its own and is left out of the bit-exact numerator and denominator, as
 rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 
-Over the 86 instances, 2255 of 2387 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2250 of 2382 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 
 ## Per instance
 
@@ -60,8 +60,8 @@ Over the 86 instances, 2255 of 2387 rows (94.5%) that they execute and that can 
 | LOVO25-script | 109 | 60 | 8 | 38 | 3 | 0 | 0 | 16 | 16 | 56/77 |
 | NAV-robust | 67 | 42 | 3 | 20 | 2 | 0 | 0 | 17 | 11 | 37/39 |
 | NAV-standard | 73 | 47 | 4 | 20 | 2 | 0 | 0 | 17 | 11 | 42/45 |
-| PLAA01_BND42 | 44 | 28 | 5 | 11 | 0 | 0 | 0 | 8 | 6 | 27/30 |
-| PLAA01_BND50 | 44 | 28 | 5 | 11 | 0 | 0 | 0 | 8 | 6 | 27/30 |
+| PLAA01_BND42 | 43 | 27 | 5 | 11 | 0 | 0 | 0 | 8 | 6 | 26/29 |
+| PLAA01_BND50 | 43 | 27 | 5 | 11 | 0 | 0 | 0 | 8 | 6 | 26/29 |
 | PLAD01_BND30 | 30 | 17 | 2 | 10 | 1 | 0 | 0 | 7 | 5 | 17/18 |
 | PLAD01_BND42 | 30 | 17 | 2 | 10 | 1 | 0 | 0 | 7 | 5 | 17/18 |
 | PLAN01 | not measured: failed or over 900 s | | | | | | | | | |
@@ -93,7 +93,7 @@ Over the 86 instances, 2255 of 2387 rows (94.5%) that they execute and that can 
 | TORA-reach-sigmoid | 82 | 59 | 3 | 19 | 1 | 0 | 0 | 15 | 11 | 54/56 |
 | TORA-reach-tanh | 64 | 45 | 2 | 16 | 1 | 0 | 0 | 13 | 10 | 40/41 |
 | TORA-remain | 82 | 59 | 3 | 19 | 1 | 0 | 0 | 15 | 11 | 54/56 |
-| TRAF22 | 42 | 29 | 2 | 11 | 0 | 0 | 0 | 9 | 5 | 28/28 |
+| TRAF22 | 39 | 26 | 2 | 11 | 0 | 0 | 0 | 9 | 5 | 25/25 |
 | TSPS25 | 49 | 28 | 7 | 14 | 0 | 0 | 0 | 8 | 6 | 28/35 |
 | Unicycle-reach | 56 | 37 | 2 | 16 | 1 | 0 | 0 | 13 | 10 | 32/33 |
 | Unicycle-reach-disturbance | 56 | 37 | 2 | 16 | 1 | 0 | 0 | 13 | 10 | 32/33 |
@@ -168,7 +168,7 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 ## Files with no CORA counterpart
 
 - `include/cora/cont_set/dimension_set.h`: 2 instances
-- `include/cora/cont_set/empty_mask.h`: 33 instances
+- `include/cora/cont_set/empty_mask.h`: 35 instances
 - `include/cora/cont_set/set.h`: 68 instances
 - `include/cora/global/tensor/tolerance.h`: 49 instances
 - `include/cora/hybrid_dynamics/region.h`: 25 instances
@@ -200,7 +200,8 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 - `src/cont_set/con_zonotope/interval_tight.cpp`: 9 instances
 - `src/cont_set/con_zonotope/private/priv_blocks.cpp`: 37 instances
 - `src/cont_set/con_zonotope/private/priv_linear_programs.cpp`: 10 instances
-- `src/cont_set/cont_set/empty_mask.cpp`: 12 instances
+- `src/cont_set/cont_set/empty_mask.cpp`: 14 instances
+- `src/cont_set/cont_set/private/priv_matrix_set.cpp`: 1 instance
 - `src/cont_set/cont_set/private/priv_rand_point.cpp`: 18 instances
 - `src/cont_set/interval/private/priv_empty.cpp`: 3 instances
 - `src/cont_set/interval/private/priv_times.cpp`: 3 instances
@@ -211,7 +212,6 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 - `src/cont_set/zono_bundle/private/priv_linear_programs.cpp`: 3 instances
 - `src/cont_set/zono_bundle/private/priv_members_refusal.cpp`: 6 instances
 - `src/cont_set/zonotope/private/priv_host_zonotope.cpp`: 1 instance
-- `src/cont_set/zonotope/private/priv_point_row.cpp`: 33 instances
 - `src/cont_set/zonotope/private/priv_select_generators.cpp`: 15 instances
 - `src/cont_set/zonotope/private/priv_stacking.cpp`: 3 instances
 - `src/cont_set/zonotope/private/priv_zonotope_norm.cpp`: 1 instance
@@ -562,13 +562,13 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>PLAA01_BND42: 27/30</summary>
+<details><summary>PLAA01_BND42: 26/29</summary>
 
 `contDynamics/linParamSys/initReach` (property), `contDynamics/linParamSys/linParamSys` (ported), `contDynamics/linParamSys/post` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/expmOneParam` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
-<details><summary>PLAA01_BND50: 27/30</summary>
+<details><summary>PLAA01_BND50: 26/29</summary>
 
 `contDynamics/linParamSys/initReach` (property), `contDynamics/linParamSys/linParamSys` (ported), `contDynamics/linParamSys/post` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/expmOneParam` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
@@ -754,7 +754,7 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>TRAF22: 28/28</summary>
+<details><summary>TRAF22: 25/25</summary>
 
 `contDynamics/contDynamics/derivatives` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/vertices` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
