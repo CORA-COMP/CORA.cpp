@@ -27,11 +27,12 @@ inline cora::Capsule capsule(const Inputs &x, std::size_t first = 0) {
     return {x[first], x[first + 1], x[first + 2]};
 }
 
-/// c (n, 1) and g (n, 1) away from zero, and a radius in [0.3, 1.3].
+/// c (n) and g (n) away from zero, and a radius () in [0.3, 1.3].
 inline std::vector<torch::Tensor> random_capsule_parts(int64_t n) {
     std::vector<torch::Tensor> out = random_zonotope(n, 1);
-    out[1] = out[1].reshape({n, 1});
-    out.push_back(0.3 + torch::rand({1, 1}, torch::kDouble));
+    out[0] = out[0].reshape({n});
+    out[1] = out[1].reshape({n});
+    out.push_back(0.3 + torch::rand({}, torch::kDouble));
     return out;
 }
 

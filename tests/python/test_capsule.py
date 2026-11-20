@@ -88,7 +88,10 @@ class EmptyAndOrigin(unittest.TestCase):
         E = empty(3)
         self.assertTrue(E.is_empty())
         self.assertEqual(E.dim, 3)
-        self.assertEqual(E.r, -1.0)
+        # flagged in the mask, as every empty set; the radius is 0
+        self.assertTrue(E.empty_mask.all())
+        self.assertEqual(E.empty_mask.shape, ())
+        self.assertEqual(E.r, 0.0)
         # the center of the empty capsule is NaN
         self.assertEqual(E.center.shape, (3,))
         self.assertTrue(np.isnan(E.center).all())

@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,12 +23,12 @@ namespace {
 
 /// Hand-computed: |g| + r, for a batch, and the lengths against a brute-force bound.
 void radius_known(const std::string &b) {
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     check(close(C.ball_radius(), {5.5}, 1e-14), b + ": |(3, 4)| + 0.5");
-    check(close(Capsule(column({1.0})).ball_radius(), {0.0}, 0), b + ": a point");
-    const Tensor c = Tensor::zeros({2, 2, 1});
-    const Capsule batch(c, Tensor::from_data({3, 4, 0, 1}, {2, 2, 1}),
-                        Tensor::from_data({0.5, 0.25}, {2, 1, 1}));
+    check(close(Capsule(vec({1.0})).ball_radius(), {0.0}, 0), b + ": a point");
+    const Tensor c = Tensor::zeros({2, 2});
+    const Capsule batch(c, Tensor::from_data({3, 4, 0, 1}, {2, 2}),
+                        Tensor::from_data({0.5, 0.25}, {2}));
     check(close(batch.ball_radius(), {5.5, 1.25}, 1e-14), b + ": a batch");
 }
 
@@ -46,7 +46,7 @@ void radius_property(const std::string &b) {
 
 /// The checks of the entry have nothing to refuse: the call works with them off too.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     const Tensor on = C.ball_radius();
     ChecksScope off(false);
     check(close(C.ball_radius(), on, 0), "radius: the same with the checks off");

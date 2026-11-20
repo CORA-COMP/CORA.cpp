@@ -34,8 +34,9 @@ bool Capsule::isequal(const Capsule &S, Tol tol_arg) const {
     const auto agree = [&](const Tensor &a, const Tensor &b) {
         return within_tol(a, b, tol).min(-2, true);
     };
-    const Tensor same = agree(cc(), S.cc()).multiply(agree(gc(), S.gc())).multiply(agree(r_, S.r_));
-    const Tensor mine = priv_empty_mask(r_), theirs = priv_empty_mask(S.r_);
+    const Tensor same =
+        agree(cc(), S.cc()).multiply(agree(gc(), S.gc())).multiply(agree(rc(), S.rc()));
+    const Tensor mine = priv_empty_mask(*this), theirs = priv_empty_mask(S);
     // two empty capsules are equal whatever their other fields hold
     const Tensor both_empty = mine.multiply(theirs);
     const Tensor both_set = (1.0 - mine).multiply(1.0 - theirs).multiply(same);

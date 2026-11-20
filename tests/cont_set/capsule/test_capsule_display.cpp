@@ -13,7 +13,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,7 +22,7 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+        const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
         const std::string text = C.display();
         check(text.find("capsule") != std::string::npos &&
                   text.find("dimension: 2") != std::string::npos &&
@@ -31,11 +31,11 @@ int main() {
         std::ostringstream out;
         out << C;
         check(out.str() == text, b + ": operator<< prints the display");
-        const Capsule batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 2, 1}), 0.1);
+        const Capsule batch(Tensor::zeros({2, 2}), Tensor::zeros({2, 2}), 0.1);
         check(batch.display().find("batch") != std::string::npos, b + ": a batch shows shapes");
     });
     // the text has no input to refuse; with the checks off it is the same
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     const std::string on = C.display();
     ChecksScope off(false);
     test::check(C.display() == on, "display: the same with the checks off");

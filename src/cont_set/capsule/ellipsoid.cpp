@@ -50,7 +50,7 @@ Ellipsoid Capsule::ellipsoid(const std::string &method) const {
         CORA_FAIL(Error::not_supported, "ellipsoid: the method '" + method +
                                             "' needs the union of two ellipsoids (an SDP)");
     }
-    return {c_, r_.square().multiply(c_.eye_like(dim()))};
+    return {c_, rc().square().multiply(c_.eye_like(dim()))};
 }
 
 } // namespace cora

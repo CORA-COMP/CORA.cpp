@@ -14,7 +14,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,8 +24,8 @@ namespace {
 
 /// Hand-computed: the longer generator stays, the shorter one joins the radius.
 void plus_known(const std::string &b) {
-    const Capsule A(column({0.0, 0.0}), column({3.0, 4.0}), 1.0),
-        B(column({1.0, 1.0}), column({1.0, 0.0}), 0.5);
+    const Capsule A(vec({0.0, 0.0}), vec({3.0, 4.0}), 1.0),
+        B(vec({1.0, 1.0}), vec({1.0, 0.0}), 0.5);
     for (const Capsule &S : {A.plus(B), B.plus(A)}) {
         check(close(S.c(), {1, 1}, 0) && close(S.generator(), {3, 4}, 0),
               b + ": c adds, the longer g stays");
@@ -38,7 +37,7 @@ void plus_known(const std::string &b) {
     const Capsule with_box = A.plus(I);
     check(close(with_box.c(), {1, 2}, 0) && close(with_box.r(), {1.0 + std::sqrt(5.0)}, 1e-14),
           b + ": a box");
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     check(close(A.plus(Z).r(), with_box.r(), 0), b + ": a zonotope is its box");
     check(A.plus(Capsule::empty(2)).is_empty() && Capsule::empty(2).plus(A).is_empty(),
           b + ": empty");
@@ -58,8 +57,8 @@ void plus_property(const std::string &b) {
 
 /// A capsule of another dimension is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
-    const Capsule A(column({0.0, 0.0}), column({3.0, 4.0}), 1.0);
-    check(test::raises([&] { A.plus(Capsule(column({1.0}))); }, Error::dimension_mismatch),
+    const Capsule A(vec({0.0, 0.0}), vec({3.0, 4.0}), 1.0);
+    check(test::raises([&] { A.plus(Capsule(vec({1.0}))); }, Error::dimension_mismatch),
           "plus: dimension");
     check(test::raises([&] { A.plus(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "plus: vector");

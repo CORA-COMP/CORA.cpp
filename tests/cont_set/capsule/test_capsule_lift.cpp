@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ namespace {
 
 /// State i goes to position dims[i]; the radius is kept; the identity changes nothing.
 void lift_known(const std::string &b) {
-    const Capsule C(column({1.0, 2.0, 3.0}), column({4.0, 5.0, 6.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0, 3.0}), vec({4.0, 5.0, 6.0}), 0.5);
     const Capsule L = C.lift(3, {1, 2, 0});
     check(close(L.c(), {3, 1, 2}, 0) && close(L.generator(), {6, 4, 5}, 0) &&
               close(L.r(), {0.5}, 0),
@@ -34,7 +34,7 @@ void lift_known(const std::string &b) {
     check(close(S->lift(3, std::vector<int64_t>{2, 1, 0}).as<Capsule>().c(), {3, 2, 1}, 0),
           b + ": ContSet::lift");
     check(close(S->lift(3).as<Capsule>().c(), C.c(), 0), b + ": the default positions");
-    const Tensor c = Tensor::from_data({1, 2, 3, 4}, {2, 2, 1});
+    const Tensor c = Tensor::from_data({1, 2, 3, 4}, {2, 2});
     check(close(Capsule(c, c, 0.1).lift(2, {1, 0}).c(), {2, 1, 4, 3}, 0), b + ": a batch");
 }
 
@@ -49,7 +49,7 @@ void lift_property(const std::string &b) {
 /// New dimensions would be unbounded (not_defined); a position used twice, out of range or too
 /// few are refused; with the checks off a valid call gives the same set.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0, 3.0}), column({4.0, 5.0, 6.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0, 3.0}), vec({4.0, 5.0, 6.0}), 0.5);
     check(test::raises([&] { C.lift(4, {0, 1, 2}); }, Error::not_defined),
           "lift: more dimensions than the capsule has");
     check(test::raises([&] { C.lift(3, {0, 0, 1}); }, Error::wrong_value),

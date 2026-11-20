@@ -121,7 +121,7 @@ int main() {
         // a segment is not full-dimensional in R^3, and in R^1 it is
         const Capsule segment(C.c(), C.generator(), 0.0);
         oracle::check(segment.is_full_dim(), lean::Capsule(segment).is_full_dim());
-        const Capsule line(rnd.vector(1), rnd.vector(1), 0.0);
+        const Capsule line(rnd.point(1), rnd.point(1), 0.0);
         oracle::check(line.is_full_dim(), lean::Capsule(line).is_full_dim());
     });
     // equality with another capsule and with itself
@@ -133,8 +133,7 @@ int main() {
     oracle::run("capsule.isIntersecting", [](oracle::Random &rnd) {
         for (const double spread : {1.0, 6.0}) {
             const Capsule a = rnd.capsule(3);
-            const Capsule b(a.c().expand_dims(-1) + rnd.vector(3) * spread, rnd.vector(3),
-                            rnd.uniform(0.1, 1.0));
+            const Capsule b(a.c() + rnd.point(3) * spread, rnd.point(3), rnd.uniform(0.1, 1.0));
             oracle::check(a.is_intersecting(b), lean::Capsule(a).is_intersecting(b));
         }
     });
@@ -164,7 +163,7 @@ int main() {
         // a ball, a generator along an axis, a general one and a line
         const Tensor zero = C.c().zeros_like();
         const Capsule ball(C.c(), zero, C.r().item()),
-            axis(C.c(), Tensor::from_data({0.0, 2.5, 0.0}, {3, 1}), C.r().item());
+            axis(C.c(), Tensor::from_data({0.0, 2.5, 0.0}, {3}), C.r().item());
         for (const Capsule *S : {&ball, &axis, &C, &line})
             oracle::check(S->polytope("outer"), lean::Capsule(*S).polytope());
     });

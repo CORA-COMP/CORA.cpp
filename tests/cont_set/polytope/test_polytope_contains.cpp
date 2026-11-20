@@ -107,8 +107,8 @@ void table(const std::string &b) {
     check(contains(H, Ellipsoid(vec({0.5, 0.5}), Tensor::eye(2) * 0.01)) &&
               !contains(H, Ellipsoid(vec({1.0, 1.0}), Tensor::eye(2) * 0.01)),
           b + ": an ellipsoid");
-    check(contains(H, Capsule(column({0.5, 0.5}), column({0.1, 0.0}), 0.1)) &&
-              !contains(H, Capsule(column({1.0, 1.0}), column({0.1, 0.0}), 0.1)),
+    check(contains(H, Capsule(vec({0.5, 0.5}), vec({0.1, 0.0}), 0.1)) &&
+              !contains(H, Capsule(vec({1.0, 1.0}), vec({0.1, 0.0}), 0.1)),
           b + ": a capsule");
 }
 

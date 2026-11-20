@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -51,8 +51,8 @@ bool aux_points_inside(const Capsule &C, const Tensor &p, double tol) {
     if (p.size(-1) == 0) return true;
     const Tensor distance =
         priv_axis_distance(C.c().expand_dims(-1), C.generator().expand_dims(-1), p);
-    const Tensor inside = priv_at_most(distance, C.r(), tol);
-    return priv_all((1.0 - priv_empty_mask(C.r())).multiply(inside).min(-1, true));
+    const Tensor inside = priv_at_most(distance, C.r().expand_dims(-1).expand_dims(-1), tol);
+    return priv_all((1.0 - priv_empty_mask(C)).multiply(inside).min(-1, true));
 }
 
 } // namespace
@@ -78,10 +78,10 @@ bool Capsule::contains(const Capsule &S, Tol tol_arg) const {
     });
     // the ends of the axis of S, each with the radius of S
     const Tensor ends = Tensor::concat({S.cc().add(S.gc()), S.cc().subtract(S.gc())}, -1);
-    const Tensor reach = priv_axis_distance(cc(), gc(), ends).add(S.r_);
-    const Tensor inside = priv_at_most(reach, r_, tol).min(-1, true);
+    const Tensor reach = priv_axis_distance(cc(), gc(), ends).add(S.rc());
+    const Tensor inside = priv_at_most(reach, rc(), tol).min(-1, true);
     // the empty capsule is inside every capsule, and holds only the empty one
-    const Tensor mine = priv_empty_mask(r_), theirs = priv_empty_mask(S.r_);
+    const Tensor mine = priv_empty_mask(*this), theirs = priv_empty_mask(S);
     return priv_all(theirs.maximum((1.0 - mine).multiply(inside)));
 }
 

@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,8 +23,8 @@ namespace {
 
 /// Hand-computed: the axis runs between the centers, the radius is the larger |g| + r.
 void convex_hull_known(const std::string &b) {
-    const Capsule C1(column({0.0, 0.0}), column({1.0, 0.0}), 0.5);
-    const Capsule C2(column({4.0, 0.0}), column({0.0, 1.0}), 0.25);
+    const Capsule C1(vec({0.0, 0.0}), vec({1.0, 0.0}), 0.5);
+    const Capsule C2(vec({4.0, 0.0}), vec({0.0, 1.0}), 0.25);
     const Capsule H = C1.convex_hull(C2);
     // c_ = (2, 0), g_ = (c1 - c2)/2 = (-2, 0), r_ = max(1 + 0.5, 1 + 0.25)
     check(close(H.c(), {2, 0}, 0) && close(H.generator(), {-2, 0}, 0) && close(H.r(), {1.5}, 1e-15),
@@ -40,8 +40,8 @@ void convex_hull_known(const std::string &b) {
     check(convex_hull(Fullspace(2), C1).class_id() == ClassId::fullspace,
           b + ": with the whole space");
     // a batch hulls member by member
-    const Tensor c = Tensor::from_data({0, 0, 4, 0}, {2, 2, 1});
-    const Capsule batch(c, Tensor::zeros({2, 2, 1}), 0.5);
+    const Tensor c = Tensor::from_data({0, 0, 4, 0}, {2, 2});
+    const Capsule batch(c, Tensor::zeros({2, 2}), 0.5);
     check(close(batch.convex_hull(batch).c(), {0, 0, 4, 0}, 0), b + ": a batch");
 }
 
@@ -60,8 +60,8 @@ void convex_hull_property(const std::string &b) {
 
 /// Capsules of different dimensions are refused; with the checks off a valid call gives the same.
 void checks_and_their_switch() {
-    const Capsule C1(column({0.0, 0.0}), column({1.0, 0.0}), 0.5);
-    check(test::raises([&] { C1.convex_hull(Capsule(column({1.0}))); }, Error::dimension_mismatch),
+    const Capsule C1(vec({0.0, 0.0}), vec({1.0, 0.0}), 0.5);
+    check(test::raises([&] { C1.convex_hull(Capsule(vec({1.0}))); }, Error::dimension_mismatch),
           "convex_hull: the dimensions agree");
     const Capsule on = C1.convex_hull(C1);
     ChecksScope off(false);

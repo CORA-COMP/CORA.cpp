@@ -27,7 +27,7 @@ std::string Capsule::display_impl() const {
     text += "- dimension: " + std::to_string(dim()) + "\n";
     text += "- center:\n" + format_matrix(cc(), "    ");
     text += "- generator:\n" + format_matrix(gc(), "    ");
-    return text + "- radius:\n" + format_matrix(r_, "    ");
+    return text + "- radius:\n" + format_matrix(rc(), "    ");
 }
 
 } // namespace cora

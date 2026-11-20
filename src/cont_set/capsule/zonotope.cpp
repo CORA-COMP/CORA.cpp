@@ -33,8 +33,9 @@ Zonotope Capsule::zonotope() const {
     CORA_CHECK(!is_empty(), Error::empty_set,
                [] { return std::string("zonotope: the capsule is empty"); });
     // the generator row, then r times the axes (a symmetric matrix, its rows are its columns)
-    if (priv_all(r_.equal(r_.zeros_like()))) return Zonotope(c_, g_.expand_dims(-2));
-    return Zonotope(c_, Tensor::concat({g_.expand_dims(-2), r_.multiply(c_.eye_like(dim()))}, -2));
+    if (priv_all(rc().equal(rc().zeros_like()))) return Zonotope(c_, g_.expand_dims(-2));
+    return Zonotope(c_,
+                    Tensor::concat({g_.expand_dims(-2), rc().multiply(c_.eye_like(dim()))}, -2));
 }
 
 } // namespace cora

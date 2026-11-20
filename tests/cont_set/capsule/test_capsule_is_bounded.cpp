@@ -11,7 +11,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -20,7 +20,7 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        check(Capsule(column({1.0, 2.0}), column({3.0, 4.0}), 0.5).is_bounded(),
+        check(Capsule(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5).is_bounded(),
               b + ": a capsule is bounded");
         check(Capsule::empty(2).is_bounded(), b + ": so is the empty one");
         const Set S = Capsule::origin(2);

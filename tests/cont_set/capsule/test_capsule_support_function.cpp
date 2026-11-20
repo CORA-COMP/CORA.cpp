@@ -26,7 +26,7 @@ namespace {
 
 /// Hand-computed along the axes; the empty capsule has -Inf.
 void support_known(const std::string &b) {
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     check(close(C.support_function(vec({1.0, 0.0})), {4.5}, 1e-14), b + ": d = (1, 0)");
     check(close(C.support_function(vec({0.0, 2.0})), {13.0}, 1e-14), b + ": d = (0, 2)");
     check(close(C.support_function(vec({-1.0, 0.0})), {2.5}, 1e-14), b + ": d = (-1, 0)");
@@ -60,7 +60,7 @@ void support_property(const std::string &b) {
 
 /// A direction of the wrong size is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     check(test::raises([&] { C.support_function(vec({1.0})); }, Error::dimension_mismatch),
           "support_function: dimension");
     ChecksScope off(false);

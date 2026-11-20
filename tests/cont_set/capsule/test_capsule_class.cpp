@@ -17,7 +17,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -28,17 +27,16 @@ namespace {
 
 /// The forms of CORA's constructor: a center alone is a point, a generator gives a segment.
 void constructor_forms(const std::string &b) {
-    const Capsule point(column({1.0, 2.0}));
+    const Capsule point(vec({1.0, 2.0}));
     check(point.dim() == 2 && close(point.c(), {1, 2}, 0) && close(point.generator(), {0, 0}, 0) &&
               close(point.r(), {0}, 0),
           b + ": a center alone is a point");
-    const Capsule segment(column({1.0, 2.0}), column({3.0, 4.0}));
+    const Capsule segment(vec({1.0, 2.0}), vec({3.0, 4.0}));
     check(close(segment.generator(), {3, 4}, 0) && close(segment.r(), {0}, 0),
           b + ": a segment has the radius 0");
-    const Capsule full(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule full(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     check(close(full.r(), {0.5}, 0), b + ": the radius as a number");
-    const Capsule tensor_radius(column({1.0, 2.0}), column({3.0, 4.0}),
-                                Tensor::from_data({0.25}, {1, 1}));
+    const Capsule tensor_radius(vec({1.0, 2.0}), vec({3.0, 4.0}), Tensor::from_data({0.25}, {}));
     check(close(tensor_radius.r(), {0.25}, 0), b + ": the radius as a tensor");
     check(full.class_name() == "Capsule" && full.class_id() == ClassId::capsule,
           b + ": the class name and id");
@@ -50,35 +48,35 @@ void constructor_forms(const std::string &b) {
 
 /// Leading axes are batches: one radius per capsule.
 void batches(const std::string &b) {
-    const Tensor c = Tensor::zeros({3, 2, 1}), g = Tensor::ones({3, 2, 1});
-    const Capsule batch(c, g, Tensor::from_data({0.1, 0.2, 0.3}, {3, 1, 1}));
-    check(batch.dim() == 2 && batch.r().shape() == Shape{3, 1, 1}, b + ": a batch of three");
+    const Tensor c = Tensor::zeros({3, 2}), g = Tensor::ones({3, 2});
+    const Capsule batch(c, g, Tensor::from_data({0.1, 0.2, 0.3}, {3}));
+    check(batch.dim() == 2 && batch.r().shape() == Shape{3}, b + ": a batch of three");
     check(close(Capsule(c, g, 0.5).r(), {0.5, 0.5, 0.5}, 0), b + ": a number is every radius");
-    check(test::raises([&] { Capsule(c, Tensor::ones({2, 2, 1})); },
-                       Error::wrong_input_in_constructor),
-          b + ": one batch shape for c and g");
-    check(test::raises([&] { Capsule(c, g, Tensor::from_data({0.1, 0.2}, {2, 1, 1})); },
+    check(
+        test::raises([&] { Capsule(c, Tensor::ones({2, 2})); }, Error::wrong_input_in_constructor),
+        b + ": one batch shape for c and g");
+    check(test::raises([&] { Capsule(c, g, Tensor::from_data({0.1, 0.2}, {2})); },
                        Error::wrong_value),
           b + ": one radius per capsule");
 }
 
 /// What the constructor refuses, and the same input with the checks off.
 void refusals() {
-    const Tensor c = column({1.0, 2.0}), g = column({3.0, 4.0});
+    const Tensor c = vec({1.0, 2.0}), g = vec({3.0, 4.0});
     check(test::raises([&] { Capsule(Tensor::zeros({0})); }, Error::wrong_value),
           "Capsule: the center is a nonempty vector");
     check(test::raises([&] { Capsule(c, Tensor({1.0, 2.0, 3.0})); },
                        Error::wrong_input_in_constructor),
           "Capsule: the generator has the shape of the center");
-    check(test::raises([&] { Capsule(c, column({1.0})); }, Error::wrong_input_in_constructor),
+    check(test::raises([&] { Capsule(c, vec({1.0})); }, Error::wrong_input_in_constructor),
           "Capsule: the generator has the dimension of the center");
     check(test::raises([&] { Capsule(c, g, -0.5); }, Error::wrong_value),
           "Capsule: the radius is nonnegative");
     check(test::raises([&] { Capsule(c, g, std::nan("")); }, Error::wrong_value),
           "Capsule: the radius is a number");
-    check(test::raises([&] { Capsule(column({1.0, std::nan("")}), g); }, Error::wrong_value),
+    check(test::raises([&] { Capsule(vec({1.0, std::nan("")}), g); }, Error::wrong_value),
           "Capsule: finite entries");
-    check(test::raises([&] { Capsule(Tensor::zeros({0, 1})); }, Error::wrong_value),
+    check(test::raises([&] { Capsule(Tensor::zeros({0})); }, Error::wrong_value),
           "Capsule: a nonempty center");
     check(
         test::raises([&] { Capsule(c, g, Tensor::from_data({1, 2}, {1, 2})); }, Error::wrong_value),
@@ -128,7 +126,7 @@ void from_zonotope(const std::string &b) {
     for (const int generators : {1, 2, 3, 7}) {
         std::vector<double> G(static_cast<std::size_t>(3 * generators));
         rng.normal(G.data(), G.size(), 1.0);
-        const Zonotope Z(column({1.0, -1.0, 0.5}),
+        const Zonotope Z(vec({1.0, -1.0, 0.5}),
                          Tensor::from_data(G, {3, generators}).matrix_transpose());
         const Capsule C(Z);
         check(C.contains(Z), b + ": the zonotope is inside the capsule of " +
@@ -136,13 +134,13 @@ void from_zonotope(const std::string &b) {
         check(C.dim() == 3 && C.r().item() >= 0, b + ": a capsule of the dimension");
     }
     // a segment is a capsule of radius 0
-    const Capsule segment(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}})));
+    const Capsule segment(Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 1.0}})));
     check(close(segment.r(), {0}, 1e-12), b + ": a zonotope with one generator has radius 0");
 }
 
 /// A batch of zonotopes and an interval matrix are refused.
 void conversion_refusals() {
-    const Zonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 1, 2}));
+    const Zonotope batch(Tensor::zeros({2, 2}), Tensor::zeros({2, 1, 2}));
     check(test::raises([&] { Capsule C(batch); }, Error::not_supported), "Capsule(Z): a batch");
     check(test::raises([] { Capsule C(Interval::empty(2)); }, Error::empty_set),
           "Capsule(I): empty");

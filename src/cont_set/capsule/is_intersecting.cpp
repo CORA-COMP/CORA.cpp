@@ -45,8 +45,8 @@ bool Capsule::is_intersecting(const Capsule &S, Tol tol_arg) const {
                " and " + std::to_string(S.dim());
     });
     const Tensor distance = priv_segment_distance(cc(), gc(), S.cc(), S.gc());
-    const Tensor meet = priv_at_most(distance, r_.add(S.r_), tol);
-    const Tensor present = (1.0 - priv_empty_mask(r_)).multiply(1.0 - priv_empty_mask(S.r_));
+    const Tensor meet = priv_at_most(distance, rc().add(S.rc()), tol);
+    const Tensor present = (1.0 - priv_empty_mask(*this)).multiply(1.0 - priv_empty_mask(S));
     return priv_all(present.multiply(meet));
 }
 

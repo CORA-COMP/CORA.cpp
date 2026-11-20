@@ -14,7 +14,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -42,7 +42,7 @@ Capsule Capsule::enclose_points(const Tensor &rows) {
     const int64_t N = points.size(-1);
     if (N == 0)
         return {Unchecked{}, points.zeros_like(column_shape), points.zeros_like(column_shape),
-                points.full_like(radius_shape, -1.0)};
+                points.zeros_like(radius_shape), EmptyMask::all_members()};
     const Tensor c = points.sum(-1, true) / double(N);
     const Tensor d = points.subtract(c);
     // the first point of the largest squared distance from the mean

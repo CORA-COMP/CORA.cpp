@@ -12,7 +12,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,25 +22,25 @@ namespace {
 
 /// Hand-computed: parallel and crossing segments, touching, apart, an end against a side.
 void is_intersecting_known(const std::string &b) {
-    const Capsule C1(column({0.0, 0.0}), column({1.0, 0.0}), 0.1);
+    const Capsule C1(vec({0.0, 0.0}), vec({1.0, 0.0}), 0.1);
     // CORA's quadratic program finds a minimizer at the box and says false; the axes cross
-    const Capsule cross(column({0.5, 0.0}), column({0.0, 1.0}), 0.1);
+    const Capsule cross(vec({0.5, 0.0}), vec({0.0, 1.0}), 0.1);
     check(C1.is_intersecting(cross), b + ": crossing axes (CORA says false)");
-    const Capsule parallel(column({0.0, 1.0}), column({1.0, 0.0}), 0.4);
+    const Capsule parallel(vec({0.0, 1.0}), vec({1.0, 0.0}), 0.4);
     check(!C1.is_intersecting(parallel), b + ": parallel at distance 1, radii 0.5");
-    check(C1.is_intersecting(Capsule(column({0.0, 1.0}), column({1.0, 0.0}), 0.9)),
+    check(C1.is_intersecting(Capsule(vec({0.0, 1.0}), vec({1.0, 0.0}), 0.9)),
           b + ": parallel, radii 1.0: touching");
-    check(!C1.is_intersecting(Capsule(column({3.0, 0.0}), column({0.0, 1.0}), 0.1)),
+    check(!C1.is_intersecting(Capsule(vec({3.0, 0.0}), vec({0.0, 1.0}), 0.1)),
           b + ": beyond the end");
-    check(C1.is_intersecting(Capsule(column({2.0, 0.0}), column({0.0, 1.0}), 0.95)),
+    check(C1.is_intersecting(Capsule(vec({2.0, 0.0}), vec({0.0, 1.0}), 0.95)),
           b + ": an end against a side");
-    check(C1.is_intersecting(Capsule(column({0.0, 0.0}), column({0.0, 0.0}), 0.1)),
+    check(C1.is_intersecting(Capsule(vec({0.0, 0.0}), vec({0.0, 0.0}), 0.1)),
           b + ": a ball on the axis");
     // three dimensions: skew lines at distance 1
-    const Capsule x_axis(column({0.0, 0.0, 0.0}), column({1.0, 0.0, 0.0}), 0.4);
-    const Capsule skew(column({0.0, 0.0, 1.0}), column({0.0, 1.0, 0.0}), 0.4);
+    const Capsule x_axis(vec({0.0, 0.0, 0.0}), vec({1.0, 0.0, 0.0}), 0.4);
+    const Capsule skew(vec({0.0, 0.0, 1.0}), vec({0.0, 1.0, 0.0}), 0.4);
     check(!x_axis.is_intersecting(skew), b + ": skew segments, radii 0.8 < 1");
-    check(x_axis.is_intersecting(Capsule(column({0.0, 0.0, 1.0}), column({0.0, 1.0, 0.0}), 0.6)),
+    check(x_axis.is_intersecting(Capsule(vec({0.0, 0.0, 1.0}), vec({0.0, 1.0, 0.0}), 0.6)),
           b + ": skew segments, radii 1.0");
     check(!C1.is_intersecting(Capsule::empty(2)) && !Capsule::empty(2).is_intersecting(C1),
           b + ": the empty capsule meets nothing");
@@ -76,9 +76,8 @@ void is_intersecting_property(const std::string &b) {
 /// Capsules of different dimensions, a negative tolerance are refused; with the checks off the
 /// same valid call gives the same answer.
 void checks_and_their_switch() {
-    const Capsule C1(column({0.0, 0.0}), column({1.0, 0.0}), 0.1);
-    check(test::raises([&] { C1.is_intersecting(Capsule(column({1.0}))); },
-                       Error::dimension_mismatch),
+    const Capsule C1(vec({0.0, 0.0}), vec({1.0, 0.0}), 0.1);
+    check(test::raises([&] { C1.is_intersecting(Capsule(vec({1.0}))); }, Error::dimension_mismatch),
           "is_intersecting: the dimensions agree");
     check(test::raises([&] { C1.is_intersecting(C1, -1.0); }, Error::wrong_value),
           "is_intersecting: tol is nonnegative");

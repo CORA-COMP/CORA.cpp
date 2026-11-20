@@ -19,7 +19,7 @@
 // CORA.cpp only: the Python package has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "global/python/convert.h"
@@ -2778,10 +2778,6 @@ void bind_ellipsoid(py::module_ &m) {
 
 // Capsule -----------------------------------------------------------------------------------------
 
-/// The radius of a capsule from Python: a number for every member, or an array of the batch.
-Tensor capsule_radius_of(const py::object &r) {
-    return point_of(r, "the radius").expand_dims(-1).expand_dims(-1);
-}
 
 void bind_capsule(py::module_ &m) {
     py::class_<Capsule, ContSet>(m, "Capsule",
@@ -2794,13 +2790,13 @@ void bind_capsule(py::module_ &m) {
                      g.is_none() ? center.zeros_like() : point_of(g, "the generator");
                  if (r.is_none()) return Capsule(center, generator);
                  if (is_number(r)) return Capsule(center, generator, py::cast<double>(r));
-                 // the radius is absent, a number or a vector
-                 return Capsule(center, generator, capsule_radius_of(r));
+                 // the radius is absent, a number or an array of the batch shape
+                 return Capsule(center, generator, tensor_of(r, "the radius"));
              }),
              py::arg("c"), py::arg("g") = py::none(), py::arg("r") = py::none(),
              "center c (..., n), generator g (..., n; default 0) and radius r (default 0)")
         .def_static("empty", &Capsule::empty, py::arg("n") = 0,
-                    "The empty capsule of n dimensions: the radius -1")
+                    "The empty capsule of n dimensions, flagged in empty_mask")
         .def_static("origin", &Capsule::origin, py::arg("n"),
                     "The capsule that is the origin of R^n")
         // a random capsule
@@ -2825,11 +2821,11 @@ void bind_capsule(py::module_ &m) {
         // small queries: NaN, radius, volume and the type
         .def("isnan", &Capsule::isnan, "Whether the capsule holds NaN: always False")
         .def(
-            "ball_radius", [](const Capsule &C) { return scalar(C.ball_radius()); },
+            "ball_radius", [](const Capsule &C) { return values(C.ball_radius()); },
             "The radius of a ball around the center that holds the capsule: |g| + r")
         // the volume and the type
         .def(
-            "volume", [](const Capsule &C) { return scalar(C.volume()); }, "The volume")
+            "volume", [](const Capsule &C) { return values(C.volume()); }, "The volume")
         .def("representsa", &Capsule::representsa, py::arg("type"), py::arg("tol") = py::none(),
              "Whether the capsule is also a set of the CORA type ('point', 'zonotope', ...)")
         .def(
@@ -2853,7 +2849,7 @@ void bind_capsule(py::module_ &m) {
                 return Capsule::enclose_points(point_of(points, "the points"));
             },
             py::arg("points"),
-            "A capsule that contains the points (..., n, N): mean, farthest point, largest "
+            "A capsule that contains the points (..., N, n): mean, farthest point, largest "
             "distance from the axis")
         .def_property_readonly(
             "c", [](const Capsule &C) { return matrix(C.c()); }, "The stored center c (..., n)")
@@ -2862,10 +2858,15 @@ void bind_capsule(py::module_ &m) {
             "generator", [](const Capsule &C) { return matrix(C.generator()); },
             "The generator g (..., n)")
         .def_property_readonly(
-            "r", [](const Capsule &C) { return scalar(C.r()); },
-            "The radius r (-1 for the empty capsule)")
+            "r", [](const Capsule &C) { return values(C.r()); },
+            "The radius r (...); is_empty() tells the empty capsule")
+        // the empty members
         .def("is_empty", &Capsule::is_empty,
              "Whether the capsule is empty (of a batch: every member)")
+        .def_property_readonly(
+            "empty_mask",
+            [](const Capsule &C) { return empty_mask_array(C.empty_mask(), C.r().shape()); },
+            "Which members of the batch are empty, a bool array of the batch shape")
         .def(
             "isequal",
             [](const Capsule &C, const Capsule &S, Tol tol) { return C.isequal(S, tol); },
