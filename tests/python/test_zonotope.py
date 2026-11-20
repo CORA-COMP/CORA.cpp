@@ -164,10 +164,10 @@ class RandomSets(unittest.TestCase):
         c, G = random_zonotope()
         Z = cora.Zonotope(c, G)
         P = Z.rand_point(1000, cora.Rng(3))
-        self.assertEqual(tuple(P.shape), (3, 1000))
+        self.assertEqual(tuple(P.shape), (1000, 3))
         for _ in range(20):
             d = torch.randn(3, **F64)
-            self.assertLessEqual(float((d @ P).max()), float(Z.support_function(d)) + 1e-10)
+            self.assertLessEqual(float((P @ d).max()), float(Z.support_function(d)) + 1e-10)
 
     def test_extreme_points_are_corners(self):
         c, G = random_zonotope(3, 3)
@@ -175,7 +175,7 @@ class RandomSets(unittest.TestCase):
         P = cora.Zonotope(c, G).rand_point(30, cora.Rng(0), type="extreme")
         signs = itertools.product([-1.0, 1.0], repeat=3)
         corners = torch.stack([c + torch.tensor(b, **F64) @ G for b in signs])
-        nearest = (P.T[:, None, :] - corners[None]).norm(dim=-1).min(dim=1).values
+        nearest = (P[:, None, :] - corners[None]).norm(dim=-1).min(dim=1).values
         self.assertLess(float(nearest.max()), 1e-10)
 
     def test_a_seed_repeats_a_draw(self):
@@ -196,9 +196,9 @@ class RandomSets(unittest.TestCase):
         Z = cora.Zonotope(c, G)
         P = Z.rand_point(200, cora.Rng(0))
         # the best of many points
-        self.assertEqual(tuple(P.shape), (3, 2, 200))
+        self.assertEqual(tuple(P.shape), (3, 200, 2))
         d = torch.randn(2, **F64)
-        best = (d @ P).max(-1).values
+        best = (P @ d).max(-1).values
         self.assertTrue(bool((best <= Z.support_function(d) + 1e-10).all()))
 
     def test_generate_random_follows_the_current_backend(self):

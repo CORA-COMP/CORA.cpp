@@ -112,9 +112,9 @@ class Interval(unittest.TestCase):
     def test_rand_point_fills_the_box(self):
         I = cora.Interval(torch.tensor([0.0, -1.0], **F64), torch.tensor([2.0, 1.0], **F64))
         P = I.rand_point(2000, cora.Rng(4))
-        self.assertEqual(tuple(P.shape), (2, 2000))
-        self.assertTrue(bool((P.T >= I.inf).all() and (P.T <= I.sup).all()))
-        self.assertLess(float((P.mean(-1) - I.center).abs().max()), 0.1)
+        self.assertEqual(tuple(P.shape), (2000, 2))
+        self.assertTrue(bool((P >= I.inf).all() and (P <= I.sup).all()))
+        self.assertLess(float((P.mean(0) - I.center).abs().max()), 0.1)
 
     def test_generate_random(self):
         # random intervals are ordered
