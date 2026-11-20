@@ -23,6 +23,7 @@
 #include "cora/global/oracle/zonotope.h"
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -77,6 +78,9 @@ class PolyZonotope {
     /// CORA's isIntersecting_(P, S, 'approx') with a polytope: false (certain) if a row of S is
     /// violated by the box of its image of zonotope(P), the equalities within tol.
     bool is_intersecting(const cora::Polytope &S, double tol) const;
+    /// CORA's splitDepFactor(P, id) and splitLongestGen(P): the halves [0, 1] and [-1, 0].
+    std::pair<PolyZonotope, PolyZonotope> split_dep_factor(int64_t id) const;
+    std::pair<PolyZonotope, PolyZonotope> split_longest_gen() const;
 
     /// CORA's reduce(P, 'girard', order) and enclose(P, Q).
     PolyZonotope reduce(int order) const;
