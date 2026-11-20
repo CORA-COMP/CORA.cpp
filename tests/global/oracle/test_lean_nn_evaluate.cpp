@@ -81,7 +81,7 @@ NeuralNetwork aux_random_network(oracle::Random &rnd, const std::vector<int64_t>
                                  const std::vector<Activation> &activations) {
     std::vector<NeuralNetwork::Layer> layers;
     for (std::size_t k = 0; k + 1 < sizes.size(); ++k)
-        layers.push_back({rnd.matrix(sizes[k + 1], sizes[k]), rnd.vector(sizes[k + 1])});
+        layers.push_back({rnd.matrix(sizes[k + 1], sizes[k]), rnd.point(sizes[k + 1])});
     return {layers, activations};
 }
 
@@ -196,7 +196,7 @@ void aux_check_gi(const std::string &label, const NeuralNetwork &nn, const Tenso
 void aux_check_layer(const std::string &name, Activation activation, const Zonotope &Z,
                      const std::string &error) {
     const int64_t n = Z.center().expand_dims(-1).shape()[0];
-    const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
+    const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n})}}, {activation});
     const lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
                                 : name == "sigmoid" ? lean::NnLayer::sigmoid()
                                                     : lean::NnLayer::tanh();
@@ -240,7 +240,7 @@ int main() {
         for (const auto &[name, activation] : kinds) {
             for (const auto &[n, m] : std::vector<std::pair<int, int>>{{2, 3}, {5, 4}, {12, 12}}) {
                 const Zonotope Z(rnd.point(n) * 2.0, rnd.matrix(n, m).matrix_transpose());
-                const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n, 1})}}, {activation});
+                const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n})}}, {activation});
                 lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
                                       : name == "sigmoid" ? lean::NnLayer::sigmoid()
                                                           : lean::NnLayer::tanh();

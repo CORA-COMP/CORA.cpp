@@ -43,8 +43,8 @@ def interval_set(lo, hi):
 def outside(net, X, Y, n=300):
     """How many outputs of sampled points of X leave the box of Y."""
     box = Y.zonotope().interval()
-    y = net.evaluate(np.asarray(X.rand_point(n, cora.Rng(3))).T)
-    return int(((y < np.asarray(box.inf)[:, None] - 1e-9) | (y > np.asarray(box.sup)[:, None] + 1e-9)).sum())
+    y = net.evaluate(np.asarray(X.rand_point(n, cora.Rng(3))))
+    return int(((y < np.asarray(box.inf) - 1e-9) | (y > np.asarray(box.sup) + 1e-9)).sum())
 
 
 # ============================================  MAIN  ============================================ #

@@ -118,8 +118,8 @@ for label, mask in (("certified", certified), ("not certified", ~certified)):
     X = cora.Zonotope(points[index], plot_eps * torch.eye(2, dtype=dtype))
     Y = net.evaluate(X)
     cora.plot(Y, label=f"Output set ({label})")
-    y = net.evaluate(X.rand_point(300, cora.Rng(0)).T)  # the points as columns
-    right.scatter(y[0], y[1], s=4, label=f"Sampled outputs ({label})")
+    y = net.evaluate(X.rand_point(300, cora.Rng(0)))  # one output per row
+    right.scatter(y[:, 0], y[:, 1], s=4, label=f"Sampled outputs ({label})")
     box = Y.interval()
     lo, hi = torch.minimum(lo, box.inf), torch.maximum(hi, box.sup)
 pad = 0.25 * (hi - lo)

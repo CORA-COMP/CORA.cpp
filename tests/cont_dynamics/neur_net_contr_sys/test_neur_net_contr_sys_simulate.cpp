@@ -41,7 +41,8 @@ void the_output_is_held_over_a_period(const std::string &b) {
 void a_period_holds_the_output_of_its_start(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
     const Tensor x0({{1.4}, {2.3}});
-    const Tensor held = Tensor::concat({network().evaluate(x0), Tensor({{0.0}})}, 0);
+    const Tensor held = Tensor::concat(
+        {network().evaluate(x0.matrix_transpose()).matrix_transpose(), Tensor({{0.0}})}, 0);
     const ClosedLoopTrajectories run = sys.simulate(x0, Tensor({{0.0}}), 0.05, 0.05);
     const Tensor open = plant()
                             .simulate({.initial_state = x0, .input = held, .t_final = 0.05},

@@ -54,7 +54,7 @@ NnLayer NnLayer::linear(const cora::Tensor &W, const cora::Tensor &b) {
     NnLayer layer;
     layer.kind = "linear";
     layer.W = W;
-    layer.b = b;
+    layer.b = b.ndim() == 1 ? b.expand_dims(-1) : b; // the wire takes CORA's column (n, 1)
     return layer;
 }
 

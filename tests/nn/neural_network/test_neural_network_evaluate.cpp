@@ -41,16 +41,16 @@ NeuralNetwork random_network(cora::Rng &rng, const std::vector<int64_t> &sizes) 
     std::vector<NeuralNetwork::Layer> layers;
     for (std::size_t k = 1; k < sizes.size(); ++k)
         layers.push_back({random_matrix(rng, sizes[k], sizes[k - 1], 1.0),
-                          random_matrix(rng, sizes[k], 1, 0.5)});
+                          random_matrix(rng, sizes[k], 1, 0.5).squeeze(-1)});
     return NeuralNetwork(layers);
 }
 
 void points_follow_the_layers(const std::string &b) {
     const NeuralNetwork nn(
         {{Tensor({{1, -1}, {2, 0}}), Tensor({0.0, -1.0})}, {Tensor({{1, 1}}), Tensor({0.5})}});
-    const Tensor y = nn.evaluate(Tensor({{1.0, 3.0}, {2.0, 1.0}}));
+    const Tensor y = nn.evaluate(Tensor({{1.0, 2.0}, {3.0, 1.0}}));
     // (1, 2): hidden (-1, 1) -> (0, 1) -> 1.5;  (3, 1): hidden (2, 5) -> 7.5
-    check(y.shape() == std::vector<int64_t>({1, 2}), b + ": one output per point");
+    check(y.shape() == std::vector<int64_t>({2, 1}), b + ": one output row per point");
     check(test::close(y, std::vector<double>{1.5, 7.5}), b + ": the outputs of two points");
     check(nn.input_dim() == 2 && nn.output_dim() == 1 && nn.num_layers() == 2, b + ": the sizes");
 }
@@ -61,7 +61,7 @@ void an_affine_network_maps_the_set_exactly(const std::string &b) {
     const NeuralNetwork nn = random_network(rng, {3, 2});
     const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 4);
     const Zonotope Y = nn.evaluate(X);
-    const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b.squeeze(-1);
+    const Zonotope want = X.linear_map(nn.layers()[0].W) + nn.layers()[0].b;
     check(test::close(Y.center(), want.center()) && test::close(Y.generators(), want.generators()),
           b + ": W X + b");
 }
@@ -99,7 +99,7 @@ void the_enclosure_contains_the_outputs(const std::string &b) {
     int violations = 0;
     for (const std::string type : {"standard", "extreme"}) {
         const std::vector<double> y =
-            nn.evaluate(X.rand_point(200, rng, type).matrix_transpose()).data(); // rows 0, 1
+            nn.evaluate(X.rand_point(200, rng, type)).matrix_transpose().data(); // rows 0, 1
         for (int k = 0; k < 10; ++k) {
             const std::vector<double> d = test::random_direction(rng, 2);
             const double bound = test::support(Y, d);
@@ -113,10 +113,10 @@ void the_enclosure_contains_the_outputs(const std::string &b) {
 /// A network of the four activations: the points follow the layers, the enclosure holds them.
 NeuralNetwork mixed_network(cora::Rng &rng) {
     return NeuralNetwork(
-        {{random_matrix(rng, 4, 3, 1.0), random_matrix(rng, 4, 1, 0.5)},
-         {random_matrix(rng, 4, 4, 1.0), random_matrix(rng, 4, 1, 0.5)},
-         {random_matrix(rng, 3, 4, 1.0), random_matrix(rng, 3, 1, 0.5)},
-         {random_matrix(rng, 2, 3, 1.0), random_matrix(rng, 2, 1, 0.5)}},
+        {{random_matrix(rng, 4, 3, 1.0), random_matrix(rng, 4, 1, 0.5).squeeze(-1)},
+         {random_matrix(rng, 4, 4, 1.0), random_matrix(rng, 4, 1, 0.5).squeeze(-1)},
+         {random_matrix(rng, 3, 4, 1.0), random_matrix(rng, 3, 1, 0.5).squeeze(-1)},
+         {random_matrix(rng, 2, 3, 1.0), random_matrix(rng, 2, 1, 0.5).squeeze(-1)}},
         {Activation::tanh, Activation::sigmoid, Activation::relu, Activation::identity});
 }
 
@@ -142,7 +142,7 @@ void s_shaped_enclosures_hold_the_outputs(const std::string &b) {
     int violations = 0;
     for (const std::string type : {"standard", "extreme"}) {
         const std::vector<double> y =
-            nn.evaluate(X.rand_point(200, rng, type).matrix_transpose()).data();
+            nn.evaluate(X.rand_point(200, rng, type)).matrix_transpose().data();
         for (int k = 0; k < 10; ++k) {
             const std::vector<double> d = test::random_direction(rng, 2);
             const double bound = test::support(Y, d);
@@ -152,9 +152,9 @@ void s_shaped_enclosures_hold_the_outputs(const std::string &b) {
     }
     check(violations == 0, b + ": " + std::to_string(violations) + " outputs left the enclosure");
     // a set of one point is mapped to the output of the point
-    const Tensor p({{0.3}, {-0.2}, {0.1}});
-    const Zonotope point = nn.evaluate(Zonotope(p.squeeze(-1), p.zeros_like({1, 3})));
-    check(test::close(point.center().expand_dims(-1), nn.evaluate(p)),
+    const Tensor p({0.3, -0.2, 0.1});
+    const Zonotope point = nn.evaluate(Zonotope(p, p.zeros_like({1, 3})));
+    check(test::close(point.center(), nn.evaluate(p.expand_dims(0)).squeeze(0)),
           b + ": a point set gives the point");
 }
 
@@ -177,7 +177,7 @@ void the_joint_set_holds_the_pairs(const std::string &b) {
     // a pair (x, N(x)) of a point x of X lies in the set: the support along random directions
     int violations = 0;
     const Tensor x = X.rand_point(300, rng, "extreme").matrix_transpose(); // columns (n, N)
-    const Tensor y = nn.evaluate(x);
+    const Tensor y = nn.evaluate(x.matrix_transpose()).matrix_transpose(); // columns (out, N)
     const std::vector<double> xs = x.data(), ys = y.data();
     for (int k = 0; k < 20; ++k) {
         const std::vector<double> d = test::random_direction(rng, 5);
@@ -228,6 +228,8 @@ void wrong_arguments_are_described(const std::string &b) {
           b + ": no layers");
     check(test::throws([&] { NeuralNetwork({{W, Tensor({0.0, 0.0, 0.0})}}); }),
           b + ": a bias of another size");
+    check(test::throws([&] { NeuralNetwork({{W, Tensor({{0.0}, {0.0}})}}); }),
+          b + ": CORA's column (out, 1) is no bias (#163)");
     check(test::throws([&] { NeuralNetwork({{W, bias}, {Tensor({{1, 2, 3}}), Tensor({0.0})}}); }),
           b + ": layers that do not fit");
     check(test::throws([&] { NeuralNetwork({{W, bias}}, {Activation::relu, Activation::tanh}); }),
@@ -242,11 +244,11 @@ void wrong_arguments_are_described(const std::string &b) {
 
 /// Points of the wrong dimension are refused; with the checks off the outputs are the same.
 void checks_and_their_switch() {
-    const NeuralNetwork net({{Tensor({{1.0, -1.0}, {0.5, 2.0}}), Tensor({{0.0}, {1.0}})}});
+    const NeuralNetwork net({{Tensor({{1.0, -1.0}, {0.5, 2.0}}), Tensor({0.0, 1.0})}});
     check(test::raises([&] { net.evaluate(Tensor({{1.0}, {0.0}, {0.0}})); },
                        Error::dimension_mismatch),
           "evaluate: a point of three dimensions");
-    const Tensor x({{1.0}, {2.0}});
+    const Tensor x({{1.0, 2.0}});
     const Tensor on = net.evaluate(x);
     ChecksScope off(false);
     check(test::close(net.evaluate(x), on, 0), "evaluate: the same with the checks off");
