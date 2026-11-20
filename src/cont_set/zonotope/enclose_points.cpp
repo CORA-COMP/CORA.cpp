@@ -7,7 +7,7 @@
 // Syntax:   Z = Zonotope::enclose_points(points);   Z = Zonotope::enclose_points(points,
 // "stursberg");
 //           Z = Zonotope::enclose_points(points, U);
-// Inputs:   points - the points as columns (n, N)
+// Inputs:   points - the points as rows (N, n)
 //           method - "maiga" (default) or "stursberg"
 //           U - an orthogonal frame (n, n), which gives the "stursberg" zonotope for any U
 // Outputs:  Z - a zonotope with every point in it
@@ -77,12 +77,24 @@ Zonotope aux_cloud_to_zonotope(Tensor X, double ratio) {
 
 // Checks ------------------------------------------------------------------------------------------
 
-/// Why the points are refused, if they are: they must be a nonempty matrix of columns.
+/// Why the points are refused, if they are: they must be a nonempty matrix of rows.
 Refusal aux_refusal(const Tensor &points) {
     if (points.ndim() == 2 && points.shape()[0] >= 1 && points.shape()[1] >= 1) return std::nullopt;
     return std::pair{Error::wrong_value,
-                     "the points must be a nonempty matrix (n, N) of columns, got the shape " +
+                     "the points must be a nonempty matrix (N, n) of rows, got the shape " +
                          shape_text(points.shape())};
+}
+
+/// The box around the points, CORA's columns (n, N), in the frame U, as a zonotope.
+Zonotope aux_in_frame(const Tensor &points, const Tensor &U) {
+    const int64_t N = points.shape()[1];
+    // the box around the points in the frame U, as a zonotope
+    const Tensor mean = points.sum(-1, true) / double(N);
+    const Tensor sample = points - mean;
+    const Tensor oriented = U.matrix_transpose().matmul(sample);
+    const Tensor top = oriented.max(-1, true), bottom = oriented.min(-1, true);
+    return Zonotope((mean + U.matmul((top + bottom) / 2.0)).squeeze(-1),
+                    (U.multiply(((top - bottom) * 0.5).matrix_transpose())).matrix_transpose());
 }
 
 } // namespace
@@ -94,20 +106,14 @@ Zonotope Zonotope::enclose_points(const Tensor &points, const Tensor &U) {
     detail::Entry entry;
     const Refusal refusal = aux_refusal(points);
     CORA_CHECK(!refusal, refusal->first, [&] { return "enclose_points: " + refusal->second; });
-    const int64_t n = points.shape()[0], N = points.shape()[1];
+    const int64_t n = points.shape()[1];
     // the frame must be square
     CORA_CHECK(U.ndim() == 2 && U.shape()[0] == n && U.shape()[1] == n, Error::dimension_mismatch,
                [&] {
                    return "enclose_points: the frame must be a matrix (" + std::to_string(n) +
                           ", " + std::to_string(n) + "), got the shape " + shape_text(U.shape());
                });
-    // the box around the points in the frame U, as a zonotope
-    const Tensor mean = points.sum(-1, true) / double(N);
-    const Tensor sample = points - mean;
-    const Tensor oriented = U.matrix_transpose().matmul(sample);
-    const Tensor top = oriented.max(-1, true), bottom = oriented.min(-1, true);
-    return Zonotope((mean + U.matmul((top + bottom) / 2.0)).squeeze(-1),
-                    (U.multiply(((top - bottom) * 0.5).matrix_transpose())).matrix_transpose());
+    return aux_in_frame(points.matrix_transpose(), U);
 }
 
 Zonotope Zonotope::enclose_points(const Tensor &points, const std::string &method) {
@@ -118,19 +124,21 @@ Zonotope Zonotope::enclose_points(const Tensor &points, const std::string &metho
     CORA_CHECK(method == "maiga" || method == "stursberg", Error::wrong_value, [&] {
         return "enclose_points: the method must be 'maiga' or 'stursberg', got '" + method + "'";
     });
+    // the algorithms run on CORA's columns (n, N)
+    const Tensor columns = points.matrix_transpose();
     if (method == "stursberg") {
         // the principal axes of the covariance of the cloud
-        const int64_t N = points.shape()[1];
-        const Tensor sample = points - points.mean(-1, true);
+        const int64_t N = columns.shape()[1];
+        const Tensor sample = columns - columns.mean(-1, true);
         const Tensor covariance =
             sample.matmul(sample.matrix_transpose()) / double(std::max<int64_t>(N - 1, 1));
-        return enclose_points(points, covariance.svd()[0]);
+        return aux_in_frame(columns, covariance.svd()[0]);
     }
     // "maiga": of the compressions at 100 ratios, the one with the least trace of G'G
     std::optional<Zonotope> best;
     double least = std::numeric_limits<double>::infinity();
     for (int i = 1; i <= 100; ++i) {
-        const Zonotope Z = aux_cloud_to_zonotope(points, i / 100.0);
+        const Zonotope Z = aux_cloud_to_zonotope(columns, i / 100.0);
         const Tensor &G = Z.generators().matrix_transpose();
         const double trace = G.matrix_transpose().matmul(G).trace().detach().item();
         if (trace < least) {

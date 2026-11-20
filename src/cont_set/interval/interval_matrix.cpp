@@ -27,7 +27,7 @@ namespace cora {
 Interval Interval::interval_matrix() const {
     detail::Entry entry;
     // a box is the matrix of one column
-    const Tensor c = center_impl(),
+    const Tensor c = elem_rank_ == 1 ? center().expand_dims(-1) : center(),
                  r = elem_rank_ == 1 ? half_width().expand_dims(-1) : half_width();
     return {c - r, c + r, 2, empty_};
 }

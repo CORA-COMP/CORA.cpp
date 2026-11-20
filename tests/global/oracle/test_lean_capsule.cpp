@@ -63,7 +63,7 @@ Tensor aux_point(oracle::Random &rnd, const Capsule &C, double offset) {
     std::vector<double> p(c.size());
     for (std::size_t i = 0; i < p.size(); ++i)
         p[i] = c[i] + t * g[i] + offset * r * d[i] / std::sqrt(length);
-    return Tensor::from_data(p, {int64_t(p.size()), 1});
+    return Tensor::from_data(p, {int64_t(p.size())});
 }
 
 } // namespace
@@ -101,8 +101,9 @@ int main() {
         oracle::check(Capsule::origin(3), lean::Capsule::origin(3));
     });
     oracle::run("capsule.enclosePoints", [](oracle::Random &rnd) {
-        const Tensor points = rnd.matrix(3, 12);
-        oracle::check(Capsule::enclose_points(points), lean::Capsule::enclose_points(points));
+        const Tensor points = rnd.matrix(3, 12); // CORA's columns (3, 12) for the oracle
+        oracle::check(Capsule::enclose_points(points.matrix_transpose()),
+                      lean::Capsule::enclose_points(points));
     });
     // the box, and the predicates on it
     oracle::run("capsule.interval", [](oracle::Random &rnd) {

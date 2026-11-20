@@ -80,7 +80,9 @@ ZonoBundle ConZonotope::zono_bundle() const {
         slabs.push_back(aux_slab(c_.expand_dims(-1),
                                  std::vector<double>(a.begin() + i * p, a.begin() + (i + 1) * p),
                                  u[std::size_t(m + i)], u[std::size_t(i)], std::sqrt(double(m))));
-    return ZonoBundle(std::move(slabs)).linear_map(G_.matrix_transpose().matmul(T)).plus(shift);
+    return ZonoBundle(std::move(slabs))
+        .linear_map(G_.matrix_transpose().matmul(T))
+        .plus(shift.squeeze(-1));
 }
 
 } // namespace cora

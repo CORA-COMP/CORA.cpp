@@ -4,15 +4,15 @@
 // absolute values of d' times the generators of the enclosing zonotope.
 //
 // Syntax:   v = pZ.support_function(d);
-// Inputs:   d - direction (n, 1)
-// Outputs:  v - the bound (1, 1)
+// Inputs:   d - direction (n)
+// Outputs:  v - the bound, a number ()
 // See also: zonotope, interval
 //
 // CORA: contSet/@polyZonotope/supportFunc_.m
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"

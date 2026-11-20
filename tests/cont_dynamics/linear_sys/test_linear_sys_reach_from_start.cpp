@@ -109,10 +109,10 @@ void simulations_stay_inside(const std::string &b) {
                                 alg::Exact{.time_step = dt / 2}, 40, rng);
         for (std::size_t k = 0; k < x.size(); ++k) {
             if (k % 2 == 0)
-                check(R.time_point[k / 2].contains(x[k]),
+                check(R.time_point[k / 2].contains(x[k].matrix_transpose()),
                       b + ": time point " + std::to_string(k / 2));
             else
-                check(R.time_interval[k / 2].contains(x[k]),
+                check(R.time_interval[k / 2].contains(x[k].matrix_transpose()),
                       b + ": inside step " + std::to_string(k / 2));
         }
     }
@@ -128,7 +128,7 @@ void a_constant_input_accumulates(const std::string &b) {
           alg::LinearReach(
               alg::Decomposition{.time_step = 0.5, .taylor_terms = 8, .partition = {{0, 0}}})}) {
         const ReachSet R = sys.reach(problem, a);
-        check(R.time_point.back().contains(test::column({1.0 - std::exp(-5.0)})),
+        check(R.time_point.back().contains(test::vec({1.0 - std::exp(-5.0)})),
               b + ": the state at 5 is 1 - e^-5");
     }
 }

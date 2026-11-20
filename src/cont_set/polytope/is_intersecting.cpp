@@ -196,7 +196,7 @@ bool aux_meets_vertices(const HostH &H, const Rows &V) {
 double aux_lowest(const ContSet &S, const Row &a, const Tensor &like) {
     Row negated = a;
     for (double &x : negated) x = -x;
-    return -S.support_function(priv_vector_tensor(like, negated).expand_dims(-1)).item();
+    return -S.support_function(priv_vector_tensor(like, negated)).item();
 }
 
 /// Whether two polytopes meet, by the forms they hold.
@@ -229,8 +229,7 @@ bool aux_not_beyond(const Polytope &P, const ContSet &S, double tol) {
     // an equality row needs its offset inside the range of S
     for (std::size_t i = 0; i < H.Ae.size(); ++i) {
         const double low = aux_lowest(S, H.Ae[i], C.A);
-        const double high =
-            S.support_function(priv_vector_tensor(C.A, H.Ae[i]).expand_dims(-1)).item();
+        const double high = S.support_function(priv_vector_tensor(C.A, H.Ae[i])).item();
         if (!(low <= H.be[i] && H.be[i] <= high) && !within_tol(H.be[i], low, tol) &&
             !within_tol(H.be[i], high, tol))
             return false;

@@ -89,7 +89,7 @@ class ZonoBundle : public ContSet {
     /// intersection (decided on its constrained zonotope). Not a batch; tol: the repository one.
     bool is_full_dim(Tol tol = std::nullopt) const;
 
-    /// Whether the bundle contains points (n, N) (all), a zonotope, a box or a bundle, up to tol.
+    /// Whether the bundle contains points (..., n) (all), a zonotope, a box or a bundle, up to tol.
     /// method "exact", "exact:zonotope", "exact:polytope" (the polytope of the bundle) or
     /// "approx" (as "exact" for points only); not a batch.
     bool contains(const Tensor &p, const std::string &method = "exact",
@@ -101,7 +101,7 @@ class ZonoBundle : public ContSet {
     bool contains(const ZonoBundle &S, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
 
-    /// Whether the bundle meets a bundle, a zonotope, a box or points (n, N) (all inside). Type
+    /// Whether the bundle meets a bundle, a zonotope, a box or points (..., n) (all inside). Type
     /// "exact" asks whether the bundle of both is empty; "approx" tests the boxes, S's enlarged by
     /// tol. Not a batch; tol is used for points and "approx" only (as CORA).
     bool is_intersecting(const ZonoBundle &S, const std::string &type = "exact",
@@ -126,13 +126,13 @@ class ZonoBundle : public ContSet {
     ZonoBundle intersect(const Interval &I) const;
 
     /// The Cartesian product with a bundle (every pair of members), a zonotope, a box or a point
-    /// (n2, 1), member by member: exact.
+    /// (n2), member by member: exact.
     ZonoBundle cart_prod(const ZonoBundle &S) const;
     ZonoBundle cart_prod(const Zonotope &Z) const;
     ZonoBundle cart_prod(const Interval &I) const;
     ZonoBundle cart_prod(const Tensor &p) const;
 
-    /// The Cartesian product of a point p (n1, 1) with a bundle.
+    /// The Cartesian product of a point p (n1) with a bundle.
     static ZonoBundle cart_prod(const Tensor &p, const ZonoBundle &bundle);
 
     /// A bundle that encloses this one and S, member by member (S needs as many members).
@@ -153,7 +153,7 @@ class ZonoBundle : public ContSet {
     /// M * bundle for a matrix M (..., k, n) (CORA's mtimes): every member mapped, an enclosure.
     ZonoBundle linear_map(const Tensor &M) const;
 
-    /// The Minkowski sum with a column v (n, 1), a zonotope, a box or a bundle: every member plus
+    /// The Minkowski sum with a point v (..., n), a zonotope, a box or a bundle: every member plus
     /// every member of S (k1 k2 members, Althoff and Krogh, CDC 2011, Prop. 2: an enclosure; CORA
     /// adds the box of a bundle S, docs/cora-differences.md).
     ZonoBundle plus(const Tensor &v) const;
@@ -188,7 +188,7 @@ class ZonoBundle : public ContSet {
 
     using ContSet::rand_point;
 
-    /// N random points as columns (n, N): type "standard" or "extreme", as ConZonotope::rand_point
+    /// N random points as rows (N, n): type "standard" or "extreme", as ConZonotope::rand_point
     /// of the constrained zonotope. Not a batch.
     Tensor rand_point(int64_t N, Rng &rng, const std::string &type) const;
 

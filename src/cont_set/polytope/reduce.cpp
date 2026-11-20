@@ -44,8 +44,7 @@ Polytope Polytope::reduce(int order, Rng &rng, const std::string &method) const 
     std::vector<double> offsets;
     for (int64_t i = 0; i < rows; ++i) {
         const Row direction(directions.begin() + i * n, directions.begin() + (i + 1) * n);
-        offsets.push_back(
-            P.support_function(priv_vector_tensor(like, direction).expand_dims(-1)).item());
+        offsets.push_back(P.support_function(priv_vector_tensor(like, direction)).item());
     }
     return {Tensor::like(like, directions, {rows, n}), Tensor::like(like, offsets, {rows})};
 }

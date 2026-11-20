@@ -44,12 +44,12 @@ def capsule(c, g, r):
 
 
 def sample(C, rng, count):
-    """Points of a capsule as columns (n, count): a point of the axis plus a point of the ball."""
+    """Points of a capsule as rows (count, n): a point of the axis plus a point of the ball."""
     n = C.c.shape[0]
     t = rng.uniform(-1, 1, count)
     direction = rng.standard_normal((n, count))
     direction /= np.linalg.norm(direction, axis=0)
-    return C.c[:, None] + C.generator[:, None] * t + C.r * rng.uniform(0, 1, count) * direction
+    return (C.c[:, None] + C.generator[:, None] * t + C.r * rng.uniform(0, 1, count) * direction).T
 
 
 # ===========================================  MAIN  =========================================== #
@@ -110,7 +110,7 @@ class Operations(unittest.TestCase):
         points = self.C.rand_point(30, rng)
         self.assertTrue(self.C.contains(points))
         extreme = self.C.rand_point(10, rng, type="extreme")
-        self.assertEqual(extreme.shape, (2, 10))
+        self.assertEqual(extreme.shape, (10, 2))
         self.assertTrue(self.C.contains(extreme))
         with self.assertRaises(cora.errors.NoSpecificAlg):
             self.C.rand_point(3, rng, type="gaussian")
@@ -143,8 +143,7 @@ class Operations(unittest.TestCase):
         segment = capsule([1.0, 1.0], [1.0, 1.0], 0.0)
         self.assertTrue(segment.polytope().contains(np.array([1.5, 1.5])))
         self.assertFalse(segment.polytope().contains(np.array([1.0, 1.5])))
-        # the polytope takes one point per row
-        self.assertTrue(self.C.polytope("outer").contains(sample(self.C, rng, 10).T))
+        self.assertTrue(self.C.polytope("outer").contains(sample(self.C, rng, 10)))
         # the capsules of a box and of a zonotope
         box = cora.Interval(np.array([0.0, 0.0, 0.0]), np.array([4.0, 2.0, 1.0]))
         from_box = cora.Capsule(box)

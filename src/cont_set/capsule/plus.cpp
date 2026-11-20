@@ -7,7 +7,7 @@
 //
 // Syntax:   Cres = C.plus(S);   Cres = C.plus(v);   Cres = C.plus(I);   Cres = C.plus(Z);
 // Inputs:   S - capsule of the dimension of C
-//           v - column (..., n, 1)
+//           v - point (..., n)
 //           I - box
 //           Z - zonotope
 // Outputs:  Cres - a capsule that contains C + S
@@ -51,11 +51,11 @@ Capsule Capsule::plus(const Capsule &S) const {
 
 Capsule Capsule::plus(const Tensor &v) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(v, dim()), Error::dimension_mismatch, [&] {
-        return "plus: the vector must be a column of the dimension " + std::to_string(dim()) +
+    CORA_CHECK(is_vector(v, dim()), Error::dimension_mismatch, [&] {
+        return "plus: the point must be a vector of the dimension " + std::to_string(dim()) +
                ", got the shape " + shape_text(v.shape());
     });
-    return {Unchecked{}, cc().add(v), gc(), r_};
+    return {Unchecked{}, cc().add(v.expand_dims(-1)), gc(), r_};
 }
 
 Capsule Capsule::plus(const Interval &I) const {

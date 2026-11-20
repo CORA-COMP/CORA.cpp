@@ -8,7 +8,7 @@
 // Not a batch.
 //
 // Syntax:   cZu = cz.unite(S);   cZu = cz.unite({S2, S3}, "linprog");   cZu = cz.unite(p);
-// Inputs:   S - a constrained zonotope, a zonotope, a box, a point (n, 1), or a list of them
+// Inputs:   S - a constrained zonotope, a zonotope, a box, a point (n), or a list of them
 //           method - "linprog" (default)
 // Outputs:  cZu - a set without constraints that contains the union
 // See also: rescale, Zonotope::unite
@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -140,7 +140,7 @@ ConZonotope ConZonotope::unite(const Interval &I, const std::string &method,
 ConZonotope ConZonotope::unite(const Tensor &p, const std::string &method,
                                std::optional<int> order) const {
     detail::Entry entry;
-    const ConZonotope S(p, zeros_block(p, 0, p.shape()[p.ndim() - 2]));
+    const ConZonotope S(p, zeros_block(p.expand_dims(-1), 0, p.size(-1)));
     const detail::Refusal refusal = aux_refusal(*this, {S}, method, order);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_unite(*this, {S});

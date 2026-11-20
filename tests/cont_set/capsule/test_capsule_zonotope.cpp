@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,7 +31,7 @@ void zonotope_known(const std::string &b) {
               Z.generators().matrix_transpose().shape() == Shape({2, 3}),
           b + ": c and 1 + n generators");
     check(close(Z.generators().matrix_transpose(), {3, 0.5, 0, 4, 0, 0.5}, 0), b + ": g, r I");
-    check(C.plus(column({0.0, 0.0})).zonotope().dim() == 2, b + ": after plus");
+    check(C.plus(vec({0.0, 0.0})).zonotope().dim() == 2, b + ": after plus");
     check((Capsule(column({1.0, 2.0}), column({3.0, 4.0}), 0.0).zonotope())
                   .generators()
                   .matrix_transpose()

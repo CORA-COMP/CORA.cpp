@@ -26,7 +26,7 @@ void rand_point_property(const std::string &b) {
         const ZonoBundle zono_bundle = test::random_zono_bundle(rng, 3, 2, 4);
         for (const char *type : {"standard", "extreme"}) {
             const Tensor points = zono_bundle.rand_point(6, rng, type);
-            check(points.shape() == Shape{3, 6} && zono_bundle.contains(points),
+            check(points.shape() == Shape{6, 3} && zono_bundle.contains(points),
                   b + ": " + type + " points are inside");
         }
         check(zono_bundle.contains(Set(zono_bundle)->rand_point(4, rng)),

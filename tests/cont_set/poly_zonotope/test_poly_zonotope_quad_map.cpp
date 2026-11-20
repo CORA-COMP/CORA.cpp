@@ -39,7 +39,7 @@ void quad_property(const std::string &b) {
         const Tensor x = test::sample(P, rng, 25);
         // x' Q x of every sampled point, one row per matrix
         std::vector<double> img;
-        const std::vector<double> d = x.data();
+        const std::vector<double> d = x.matrix_transpose().data(); // columns (3, 25)
         for (const Tensor &Qi : Q) {
             const std::vector<double> q = Qi.data();
             for (int j = 0; j < 25; ++j) {
@@ -49,7 +49,8 @@ void quad_property(const std::string &b) {
                 img.push_back(s);
             }
         }
-        check(test::inside(P.quad_map(Q).zonotope(), Tensor::from_data(img, {2, 25})),
+        check(test::inside(P.quad_map(Q).zonotope(),
+                           Tensor::from_data(img, {2, 25}).matrix_transpose()),
               b + ": the images are inside");
     }
 }

@@ -91,7 +91,7 @@ int escapes(const NonlinDASys &sys, const Zonotope &X0, const Tensor &y_guess, c
     int outside = 0;
     cora::Rng rng(3);
     for (const std::string type : {"standard", "extreme"}) {
-        const Tensor x0 = X0.rand_point(N, rng, type);
+        const Tensor x0 = X0.rand_point(N, rng, type).matrix_transpose(); // columns (n, N)
         for (int j = 0; j < N; ++j) {
             // sampled at half steps: the even samples are the time points
             const DaeTrajectory T = sys.simulate(x0.slice(-1, j, j + 1), y_guess, u, t_final,

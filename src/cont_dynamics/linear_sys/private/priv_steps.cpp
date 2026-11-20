@@ -21,8 +21,7 @@ namespace {
 /// conv(0, Ptp) for every block.
 BlockSets aux_hull_with_origin(const BlockSets &Ptp) {
     BlockSets out;
-    for (const Zonotope &P : Ptp)
-        out.push_back(P.convex_hull(P.center().zeros_like().expand_dims(-1)));
+    for (const Zonotope &P : Ptp) out.push_back(P.convex_hull(P.center().zeros_like()));
     return out;
 }
 

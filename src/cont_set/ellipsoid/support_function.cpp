@@ -4,8 +4,8 @@
 // d'q, and the empty ellipsoid -Inf.
 //
 // Syntax:   val = E.support_function(d);
-// Inputs:   d - direction (..., n, 1)
-// Outputs:  val - the maximum, (..., 1, 1)
+// Inputs:   d - direction (..., n)
+// Outputs:  val - the maximum, (...)
 // See also: interval
 //
 // CORA: contSet/@ellipsoid/supportFunc_.m
@@ -29,9 +29,11 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor Ellipsoid::support_function_impl(const Tensor &d) const {
-    Shape shape = d.shape();
-    shape[shape.size() - 2] = 1;
+Tensor Ellipsoid::support_function_impl(const Tensor &direction) const {
+    // the products of CORA's column of the direction, (..., 1, 1), then (...)
+    const Tensor d = direction.expand_dims(-1);
+    Shape shape = direction.shape();
+    shape.pop_back();
     if (priv_is_empty(*this)) return d.full_like(shape, -std::numeric_limits<double>::infinity());
     const Tensor dt = d.matrix_transpose();
     const Tensor shift = dt.matmul(q_.expand_dims(-1)), quadratic = dt.matmul(Q_).matmul(d);
@@ -40,7 +42,7 @@ Tensor Ellipsoid::support_function_impl(const Tensor &d) const {
         within_tol(Q_, Q_.zeros_like(), machine_eps(Q_.dtype())).all(-1, true).all(-2, true);
     const Tensor spread =
         Tensor::where(point, quadratic.zeros_like(), quadratic.maximum(0.0).sqrt());
-    return shift.add(spread);
+    return shift.add(spread).squeeze(-1).squeeze(-1);
 }
 
 } // namespace cora

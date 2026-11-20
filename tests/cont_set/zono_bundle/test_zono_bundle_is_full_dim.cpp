@@ -43,7 +43,7 @@ void ball_around_the_center(const std::string &b) {
     Rng rng(25);
     for (int trial = 0; trial < 4; ++trial) {
         const ZonoBundle bundle = test::random_zono_bundle(rng, 2, 2, 4);
-        const Tensor c = bundle.center().squeeze(-1);
+        const Tensor c = bundle.center();
         const Tensor r = c.full_like({2}, 1e-4);
         const bool ball = bundle.contains(Interval(c - r, c + r));
         check(!ball || bundle.is_full_dim(), b + ": a ball inside means full-dimensional");

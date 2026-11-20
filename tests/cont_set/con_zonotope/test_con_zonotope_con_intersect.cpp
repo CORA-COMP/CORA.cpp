@@ -57,7 +57,8 @@ void con_intersect_property(const std::string &b) {
         const Tensor points = test::sample_points(A, rng, 60);
         for (int64_t j = 0; j < 60; ++j) {
             const Tensor x = points.slice(1, j, j + 1);
-            check(R.contains(x, "exact", 1e-7) == B.contains(M.matmul(x), "exact", 1e-7),
+            check(R.contains(x.squeeze(-1), "exact", 1e-7) ==
+                      B.contains(M.matmul(x).squeeze(-1), "exact", 1e-7),
                   b + ": x is in the result iff M x is in the second set");
         }
     }

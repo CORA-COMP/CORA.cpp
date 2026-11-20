@@ -75,8 +75,8 @@ class LeanStepper {
         if (!closed_form_) return lean_->step(xs_, V, R_, order_);
         // the constant input is the center of V, the time-varying one V without it
         const ClosedFormStep S =
-            closed_->step(R_ - xs_, V - V.center().expand_dims(-1), V.center().expand_dims(-1));
-        return FloatStep{S.time_interval + xs_, S.time_point + xs_};
+            closed_->step(R_ - xs_.squeeze(-1), V - V.center(), V.center().expand_dims(-1));
+        return FloatStep{S.time_interval + xs_.squeeze(-1), S.time_point + xs_.squeeze(-1)};
     }
 
   private:
@@ -272,7 +272,8 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
     const int eta = alg.taylor_terms;
     // the affine system and its step from R - x*
     const Linearized lin = sys.linearize(R, U, dt);
-    AffineStep step = priv_affine_step(lin.sys, R - lin.x_star, lin.U, lin.u_const, dt, eta);
+    AffineStep step =
+        priv_affine_step(lin.sys, R - lin.x_star.squeeze(-1), lin.U, lin.u_const, dt, eta);
     const Zonotope &R_ti = step.time_interval;
     // the centered input set (CORA's params.U); without one, the input 0
     const std::optional<Zonotope> U0 =
@@ -286,7 +287,8 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
     // the solution of the error moves both sets, which return to the coordinates of the state
     const Zonotope R_error =
         priv_particular_time_varying(lin.sys, step.taylor, step.blocks, err.set, dt, eta)[0];
-    return {(R_ti + lin.x_star) + R_error, (step.time_point + lin.x_star) + R_error, err.bound};
+    return {(R_ti + lin.x_star.squeeze(-1)) + R_error,
+            (step.time_point + lin.x_star.squeeze(-1)) + R_error, err.bound};
 }
 
 } // namespace cora

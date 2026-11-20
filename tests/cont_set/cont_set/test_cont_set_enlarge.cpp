@@ -30,7 +30,7 @@ void enlarge_scales_about_the_center(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0}));
     const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     const ContSet &A = I, &B = Z;
-    const Set RI = A.enlarge(2.0), RJ = A.enlarge(column({2.0, 0.5}));
+    const Set RI = A.enlarge(2.0), RJ = A.enlarge(vec({2.0, 0.5}));
     check(test::close(RI.as<Interval>().inf(), {-2.0, -1.0}) &&
               test::close(RI.as<Interval>().sup(), {2.0, 3.0}),
           b + ": a box doubles");
@@ -38,7 +38,7 @@ void enlarge_scales_about_the_center(const std::string &b) {
               test::close(RJ.as<Interval>().sup(), {2.0, 1.5}),
           b + ": a factor per coordinate");
     // a zonotope: the generators scale, one per row
-    const Set RZ = B.enlarge(2.0), RW = B.enlarge(column({2.0, 3.0}));
+    const Set RZ = B.enlarge(2.0), RW = B.enlarge(vec({2.0, 3.0}));
     check(RZ.is<Zonotope>() &&
               test::close(RZ.as<Zonotope>().center().expand_dims(-1), {1.0, 0.0}) &&
               test::close(RZ.as<Zonotope>().generators().matrix_transpose(), {1.0, 0.0, 0.0, 1.0}),
@@ -54,11 +54,11 @@ void enlarge_scales_about_the_center(const std::string &b) {
 void errors_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const ContSet &S = Z;
-    check(test::raises([&] { S.enlarge(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { S.enlarge(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "three factors");
     check(test::raises([] { test::UnregisteredSet().enlarge(2.0); }, Error::noops), "noops");
     ChecksScope off(false);
-    check(S.enlarge(column({1.0, 2.0})).is<Zonotope>(), "the checks off");
+    check(S.enlarge(vec({1.0, 2.0})).is<Zonotope>(), "the checks off");
 }
 
 } // namespace

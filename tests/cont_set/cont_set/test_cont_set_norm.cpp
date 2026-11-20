@@ -47,9 +47,9 @@ void norms_of_a_box_and_a_zonotope(const std::string &b) {
     check(test::close(T.norm(), {std::sqrt(20.0)}) && test::close(T.norm(N::one), {6.0}) &&
               test::close(T.norm(N::inf), {4.0}) && test::close(T.norm(N::fro), {std::sqrt(20.0)}),
           b + ": a zonotope, the norm of its box");
-    const Zonotope batch = Zonotope::stack({Z, Z + column({10.0, 0.0})});
+    const Zonotope batch = Zonotope::stack({Z, Z + vec({10.0, 0.0})});
     const Tensor n = static_cast<const ContSet &>(batch).norm(N::inf);
-    check(n.shape() == Shape({2, 1, 1}) && test::close(n, {4.0, 12.0}), b + ": a batch");
+    check(n.shape() == Shape({2}) && test::close(n, {4.0, 12.0}), b + ": a batch");
 }
 
 /// Stated property: no random point of a zonotope has a larger norm than the bound.
@@ -57,7 +57,8 @@ void the_bound_holds_for_random_points(const std::string &b) {
     cora::Rng rng(21);
     for (int trial = 0; trial < 10; ++trial) {
         const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
-        const std::vector<double> x = Z.rand_point(25, rng).data(); // (3, 25), row-major
+        // the points as CORA's columns (3, 25), row-major
+        const std::vector<double> x = Z.rand_point(25, rng).matrix_transpose().data();
         for (const N type : {N::one, N::two, N::inf}) {
             const double bound = static_cast<const ContSet &>(Z).norm(type).data()[0];
             for (int k = 0; k < 25; ++k) {

@@ -8,7 +8,7 @@
 //
 // Syntax:   cZres = cz.enclose(cz2);   cZres = cz.enclose(M, S);   cZres = cz.enclose(M, t);
 // Inputs:   cz2 - the second set, a linear image of cz: its constraints are those of cz
-//           M, S - the second set is M cz + S, or M cz + t for a point t (n2, 1)
+//           M, S - the second set is M cz + S, or M cz + t for a point t (n2)
 // Outputs:  cZres - encloses the union: center (c+c2)/2
 // See also: convex_hull, Zonotope::enclose
 //
@@ -16,7 +16,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -110,10 +110,10 @@ ConZonotope ConZonotope::enclose(const Tensor &M, const ConZonotope &S) const {
 
 ConZonotope ConZonotope::enclose(const Tensor &M, const Tensor &t) const {
     detail::Entry entry;
-    CORA_CHECK(M.ndim() >= 2 && M.shape().back() == dim() && is_column(t, M.shape()[M.ndim() - 2]),
+    CORA_CHECK(M.ndim() >= 2 && M.shape().back() == dim() && is_vector(t, M.shape()[M.ndim() - 2]),
                Error::dimension_mismatch, [&] {
                    return "enclose: M must be (k, " + std::to_string(dim()) +
-                          ") and t a column (k, 1), got the shapes " + shape_text(M.shape()) +
+                          ") and t a vector (k), got the shapes " + shape_text(M.shape()) +
                           " and " + shape_text(t.shape());
                });
     const ConZonotope image = priv_affine_image(*this, M, t);

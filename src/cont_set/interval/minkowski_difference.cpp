@@ -89,10 +89,10 @@ Interval Interval::minkowski_difference(const ContSet &S,
     const Tensor axes = inf_.eye_like(dim());
     std::vector<Tensor> up, down;
     for (int64_t i = 0; i < dim(); ++i) {
-        const Tensor e = axes.slice(-1, i, i + 1);
-        // a direction is a column, its support (..., 1, 1) one coordinate
-        up.push_back(S.support_function(e).squeeze(-1));
-        down.push_back(S.support_function(-e).squeeze(-1));
+        const Tensor e = axes.slice(-2, i, i + 1).squeeze(-2);
+        // a direction is a vector (n), its support (...) one coordinate
+        up.push_back(S.support_function(e).expand_dims(-1));
+        down.push_back(S.support_function(-e).expand_dims(-1));
     }
     return aux_box_or_empty(*this, inf_ + Tensor::concat(down, -1), sup_ - Tensor::concat(up, -1));
 }

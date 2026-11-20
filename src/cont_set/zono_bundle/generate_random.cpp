@@ -48,15 +48,17 @@ CORA_FROM_NUMBERS ZonoBundle ZonoBundle::generate_random(Rng &rng, std::optional
     rng.normal(p.data(), p.size(), 1.0);
     std::vector<Zonotope> members;
     for (int64_t i = 0; i < k; ++i) {
-        const Tensor center = Tensor::from_data(p, {n, 1});
+        const Tensor center = Tensor::from_data(p, {n});
         const Zonotope Z = Zonotope::generate_random(rng, n, center);
         // a vertex of Z in a random direction, and a random part of the way to it
         std::vector<double> d(static_cast<std::size_t>(n)), s(1);
         rng.uniform(d.data(), d.size(), 0.0, 1.0);
         rng.uniform(s.data(), 1, 0.0, 1.0);
         const Tensor direction = Tensor::like(center, d, {n, 1});
-        const Tensor v = Z.center().expand_dims(-1) + Z.generators().matrix_transpose().matmul(
-                                                          Z.generators().matmul(direction).sign());
+        const Tensor v = Z.center() + Z.generators()
+                                          .matrix_transpose()
+                                          .matmul(Z.generators().matmul(direction).sign())
+                                          .squeeze(-1);
         members.push_back(Z + (v - center) * s[0]);
     }
     return ZonoBundle(std::move(members));

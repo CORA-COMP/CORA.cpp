@@ -21,7 +21,8 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(43);
-    const torch::Tensor points = torch::randn({3, 12}, torch::kDouble);
+    const torch::Tensor points =
+        torch::randn({3, 12}, torch::kDouble).t().contiguous(); // rows (12, 3)
     const torch::Tensor U =
         std::get<0>(torch::linalg_qr(torch::randn({3, 3}, torch::kDouble))).contiguous();
     test::gradcheck(

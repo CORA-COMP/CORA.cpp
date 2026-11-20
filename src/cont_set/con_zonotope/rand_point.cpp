@@ -8,14 +8,14 @@
 // Inputs:   N - number of points
 //           rng - random numbers
 //           type - "standard" or "extreme"
-// Outputs:  P - points as columns (n, N); none for an empty set
+// Outputs:  P - points as rows (N, n); none, (0, n), for an empty set
 // See also: support_function, vertices
 //
 // CORA: contSet/@conZonotope/randPoint_.m
 // CORA authors: Niklas Kochdumper, Severin Prenitzer, Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -85,11 +85,12 @@ Tensor ConZonotope::rand_point_impl(int64_t N, Rng &rng) const {
 
 Tensor ConZonotope::rand_point_impl(int64_t N, Rng &rng, const std::string &type) const {
     if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_, G_).rand_point(N, rng, type);
-    if (type == "extreme") return aux_extreme(*this, N, rng);
+    // the sampling runs on CORA's columns (n, N); the points are their rows
+    if (type == "extreme") return aux_extreme(*this, N, rng).matrix_transpose();
     // the candidates are points of the set, and so are their convex combinations
     const Tensor V = priv_vertex_candidates(*this);
-    if (V.shape().back() == 0) return V;
-    return aux_mixed(V, N, rng);
+    if (V.shape().back() == 0) return V.matrix_transpose();
+    return aux_mixed(V, N, rng).matrix_transpose();
 }
 
 } // namespace cora

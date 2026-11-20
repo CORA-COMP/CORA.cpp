@@ -41,10 +41,10 @@ std::vector<Tensor> NonlinearSys::simulate_random(const RandomSimulationProblem 
                    return "simulate_random: the input_set must be a set of the " +
                           std::to_string(m_) + " inputs";
                });
-    // the start points, then one constant input per trajectory
-    const Tensor x0 = (*problem.initial_set)->rand_point(points, rng);
+    // the start points, then one constant input per trajectory, as columns (n, N)
+    const Tensor x0 = (*problem.initial_set)->rand_point(points, rng).matrix_transpose();
     std::optional<Tensor> u;
-    if (m_ > 0) u = (*problem.input_set)->rand_point(points, rng);
+    if (m_ > 0) u = (*problem.input_set)->rand_point(points, rng).matrix_transpose();
     return simulate({.initial_state = x0, .input = u, .t_final = problem.t_final}, alg);
 }
 

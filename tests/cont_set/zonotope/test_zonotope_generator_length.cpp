@@ -16,6 +16,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -31,7 +32,7 @@ void lengths_known(const std::string &b) {
     check(close(len, std::vector<double>{5, 2, 1}, 1e-14), b + ": (3,4), (0,2), (-1,0)");
     const Zonotope point(column({1.0, 2.0}), Tensor::zeros({0, 2}));
     check(point.generator_length().shape() == std::vector<int64_t>({1, 0}), b + ": no generators");
-    const Zonotope batch = Zonotope::stack({Z, Z + column({1.0, 1.0})});
+    const Zonotope batch = Zonotope::stack({Z, Z + vec({1.0, 1.0})});
     check(batch.generator_length().shape() == std::vector<int64_t>({2, 1, 3}), b + ": a batch");
 }
 

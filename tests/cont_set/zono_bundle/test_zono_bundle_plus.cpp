@@ -26,7 +26,7 @@ namespace {
 /// member, a bundle gives the sum of every pair (the first bundle's index slowest).
 void plus_known(const std::string &b) {
     const ZonoBundle zono_bundle = test::two_zonotopes();
-    const ZonoBundle moved = zono_bundle.plus(column({1.0, 2.0}));
+    const ZonoBundle moved = zono_bundle.plus(vec({1.0, 2.0}));
     check(close((moved.zonotopes()[0]).center().expand_dims(-1), {1, 2}, 0) &&
               close((moved.zonotopes()[1]).center().expand_dims(-1), {2, 2}, 0),
           b + ": a point moves the centers");
@@ -49,7 +49,7 @@ void plus_known(const std::string &b) {
           b + ": a bundle gives the pairs");
     check(zono_bundle.plus(Interval::empty(2)).representsa("emptySet"),
           b + ": the empty box gives the empty set");
-    check(Set(zono_bundle)->minus(column({-1.0, -2.0})).as<ZonoBundle>().parallel_sets() == 2,
+    check(Set(zono_bundle)->minus(vec({-1.0, -2.0})).as<ZonoBundle>().parallel_sets() == 2,
           b + ": through the interface");
 }
 
@@ -78,14 +78,14 @@ int main() {
         plus_property(b);
     });
     const ZonoBundle zono_bundle = test::two_zonotopes();
-    check(test::raises([&] { zono_bundle.plus(column({1.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { zono_bundle.plus(vec({1.0})); }, Error::dimension_mismatch),
           "plus: a point of another dimension");
     check(test::raises(
               [&] { zono_bundle.plus(Zonotope(column({0.0, 0.0, 0.0}), Tensor::zeros({0, 3}))); },
               Error::dimension_mismatch),
           "plus: a zonotope of another dimension");
     ChecksScope off(false);
-    check(zono_bundle.plus(column({1.0, 2.0})).parallel_sets() == 2,
+    check(zono_bundle.plus(vec({1.0, 2.0})).parallel_sets() == 2,
           "plus: the same with the checks off");
     return test::finish("zono_bundle plus");
 }

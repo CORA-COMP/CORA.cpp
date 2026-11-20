@@ -19,6 +19,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,9 +38,8 @@ void norm_known(const std::string &b) {
     check(close(Z.norm(2, "ub"), Z.norm(), 0), b + ": 'ub' is the default mode");
     check(close(Z.norm(1), std::vector<double>{5}, 0), b + ": the 1-norm");
     check(close(Z.norm(kInf), std::vector<double>{3}, 0), b + ": the inf-norm");
-    const Zonotope batch = Zonotope::stack({Z, Z + column({10.0, 0.0})});
-    check(batch.norm(1).shape() == std::vector<int64_t>({2, 1, 1}),
-          b + ": a batch gives one per member");
+    const Zonotope batch = Zonotope::stack({Z, Z + vec({10.0, 0.0})});
+    check(batch.norm(1).shape() == std::vector<int64_t>({2}), b + ": a batch gives one per member");
     check(close(batch.norm(1).slice(0, 1, 2).squeeze(0), std::vector<double>{15}, 0),
           b + ": member 2: the box [10, 12] x [-3, 1]");
 }
@@ -49,7 +49,7 @@ void norm_known(const std::string &b) {
 void norm_bounds_the_points(const std::string &b) {
     cora::Rng rng(15);
     const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 4);
-    const Tensor points = Z.rand_point(200, rng, "extreme");
+    const Tensor points = Z.rand_point(200, rng, "extreme").matrix_transpose(); // columns (3, 200)
     const std::vector<double> x = points.data();
     for (const double type : {1.0, 2.0, kInf}) {
         const double bound = Z.norm(type).item();

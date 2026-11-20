@@ -48,7 +48,7 @@ void methods(const std::string &b) {
 void special(const std::string &b) {
     check(close(Polytope::inf(2).center(), {0, 0}, 0), b + ": R^n: the origin");
     // the empty set has no center: NaN, as the empty box's
-    check(Polytope::empty(2).center().shape() == Shape{2, 1} &&
+    check(Polytope::empty(2).center().shape() == Shape{2} &&
               std::isnan(Polytope::empty(2).center().data()[0]),
           b + ": the empty set: no center");
     check(std::isnan(Polytope::empty(2).center("avg").data()[1]), b + ": avg: no center");
@@ -86,10 +86,11 @@ void properties(const std::string &b) {
     for (const int n : {2, 3}) {
         const Polytope Q = test::random_polytope(rng, n, 2 * n);
         const Tensor c = Q.center("chebyshev");
-        check(Q.contains(c.squeeze(-1)), b + ": the center is inside, " + std::to_string(n) + "D");
+        check(Q.contains(c), b + ": the center is inside, " + std::to_string(n) + "D");
         // the ball about the center against the balls about the samples
         const Tensor norms = Q.A().square().sum(-1, true).sqrt();
-        const double radius = (Q.b().expand_dims(-1) - Q.A().matmul(c)).divide(norms).min().item();
+        const double radius =
+            (Q.b().expand_dims(-1) - Q.A().matmul(c.expand_dims(-1))).divide(norms).min().item();
         const Tensor samples = test::sample_points(Q, rng, 40);
         const double sampled = (Q.b().expand_dims(-1) - Q.A().matmul(samples.matrix_transpose()))
                                    .divide(norms)
@@ -99,9 +100,8 @@ void properties(const std::string &b) {
         check(radius >= sampled - 1e-9,
               b + ": no sample has a larger ball, " + std::to_string(n) + "D");
         const Tensor points = test::sphere_points(rng, n, n + 3);
-        check(
-            close(Polytope(points).center("avg"), points.mean(-2, true).matrix_transpose(), 1e-12),
-            b + ": avg: the mean of the vertices, " + std::to_string(n) + "D");
+        check(close(Polytope(points).center("avg"), points.mean(-2), 1e-12),
+              b + ": avg: the mean of the vertices, " + std::to_string(n) + "D");
     }
 }
 

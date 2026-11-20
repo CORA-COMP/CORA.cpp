@@ -28,22 +28,21 @@ namespace {
 
 /// Hand-computed values in both forms, and the special sets.
 void values(const std::string &b) {
-    const Tensor d = column({1.0, 2.0});
+    const Tensor d = vec({1.0, 2.0});
     check(close(test::square_h().support_function(d), {3.0}), b + ": halfspaces: the square");
     check(close(test::square_v().support_function(d), {3.0}), b + ": vertices: the square");
-    check(close(test::triangle_h().support_function(column({1.0, 1.0})), {2.0}),
+    check(close(test::triangle_h().support_function(vec({1.0, 1.0})), {2.0}),
           b + ": the triangle along (1, 1)");
     constexpr double inf = std::numeric_limits<double>::infinity();
     check(Polytope::inf(2).support_function(d).item() == inf, b + ": R^n: Inf");
-    check(Polytope::inf(2).support_function(column({0.0, 0.0})).item() == 0.0,
-          b + ": R^n along 0: 0");
+    check(Polytope::inf(2).support_function(vec({0.0, 0.0})).item() == 0.0, b + ": R^n along 0: 0");
     check(Polytope::empty(2).support_function(d).item() == -inf, b + ": the empty set: -Inf");
     check(Polytope(Tensor::zeros({0, 2})).support_function(d).item() == -inf,
           b + ": no vertices: -Inf");
     // unbounded along the direction of a halfspace, finite against it
     const Polytope halfspace(Tensor({{1.0, 0.0}}), vec({1.0}));
-    check(halfspace.support_function(column({0.0, 1.0})).item() == inf &&
-              close(halfspace.support_function(column({1.0, 0.0})), {1.0}),
+    check(halfspace.support_function(vec({0.0, 1.0})).item() == inf &&
+              close(halfspace.support_function(vec({1.0, 0.0})), {1.0}),
           b + ": a halfspace");
     // a batch of vertex sets
     const Tensor V({{0.0, 0.0}, {1.0, 1.0}});
@@ -80,11 +79,11 @@ int main() {
         properties(b);
     });
     // a linear program per direction: halfspaces take a single direction
-    check(test::raises([] { test::square_h().support_function(Tensor::ones({2, 2, 1})); },
+    check(test::raises([] { test::square_h().support_function(Tensor::ones({2, 2})); },
                        Error::not_supported),
           "support_function: halfspaces and several directions");
     ChecksScope off(false);
-    check(close(test::square_v().support_function(column({1.0, 1.0})), {2.0}),
+    check(close(test::square_v().support_function(vec({1.0, 1.0})), {2.0}),
           "support_function: the same with the checks off");
     return test::finish("polytope support_function");
 }

@@ -73,7 +73,7 @@ void boundary_point_is_the_exit_of_the_ray(const std::string &b) {
     cora::Rng rng(21);
     for (int trial = 0; trial < 30; ++trial) {
         const Interval I = Interval::generate_random(rng, 4);
-        const Tensor start = I.rand_point(1, rng).squeeze(-1),
+        const Tensor start = I.rand_point(1, rng).squeeze(0),
                      dir = vec(test::random_direction(rng, 4));
         const Tensor x = I.boundary_point(dir, start);
         check(I.contains(x), b + ": the exit point is in the box");

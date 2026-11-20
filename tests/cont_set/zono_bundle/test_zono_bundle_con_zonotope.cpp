@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,7 +33,7 @@ void two_squares(const std::string &b) {
     check(cz.A().shape() == Shape{2, 4}, b + ": one equality per dimension");
     const Interval box = cz.interval();
     check(close(box.inf(), {1.0, 1.0}) && close(box.sup(), {2.0, 2.0}), b + ": the box [1, 2]^2");
-    check(cz.contains(column({1.5, 1.5})) && !cz.contains(column({0.5, 1.5})),
+    check(cz.contains(vec({1.5, 1.5})) && !cz.contains(vec({0.5, 1.5})),
           b + ": a point inside and one outside");
 }
 
@@ -55,9 +56,8 @@ void same_points(const std::string &b) {
     const Tensor inside = test::bundle_points(bundle, rng, 12, common);
     check(cz.contains(inside), b + ": every point of the bundle is in the constrained zonotope");
     // a point of the first member only: the others cut it off
-    const Tensor far =
-        (bundle.zonotopes()[0]).center().expand_dims(-1) +
-        (bundle.zonotopes()[0]).generators().matrix_transpose().slice(-1, 0, 1) * 1.0;
+    const Tensor far = (bundle.zonotopes()[0]).center() +
+                       (bundle.zonotopes()[0]).generators().slice(-2, 0, 1).squeeze(-2) * 1.0;
     check(cz.contains(far) == test::in_every_member(bundle, far), b + ": a boundary point agrees");
     check(!cz.contains(common + common.ones_like() * 100.0), b + ": a far point is outside");
 }

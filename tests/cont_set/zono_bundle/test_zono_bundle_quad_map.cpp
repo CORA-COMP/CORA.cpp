@@ -43,8 +43,11 @@ void quad_map_property(const std::string &b) {
     const std::vector<Tensor> Q{Tensor({{1.0, 0.5, 0.0}, {-1.0, 2.0, 0.0}, {0.0, 0.0, 1.0}}),
                                 Tensor({{0.0, 1.0, 0.0}, {1.0, 0.0, 1.0}, {0.0, 0.0, 0.0}})};
     const Tensor x = test::bundle_points(zono_bundle, rng, 12, common);
+    // the images of CORA's columns, as rows
+    const Tensor columns = x.matrix_transpose();
     check(zono_bundle.quad_map(Q).contains(
-              Tensor::concat({aux_image(Q[0], x), aux_image(Q[1], x)}, 0)),
+              Tensor::concat({aux_image(Q[0], columns), aux_image(Q[1], columns)}, 0)
+                  .matrix_transpose()),
           b + ": the images are inside");
 }
 

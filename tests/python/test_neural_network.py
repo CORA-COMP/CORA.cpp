@@ -70,7 +70,7 @@ class Evaluate(unittest.TestCase):
         X = cora.Zonotope(torch.tensor([0.3, -0.2], dtype=torch.float64),
                           0.2 * torch.eye(2, dtype=torch.float64))
         box = net.evaluate(X).interval()
-        y = net.evaluate(X.rand_point(500, cora.Rng(1)))
+        y = net.evaluate(X.rand_point(500, cora.Rng(1)).T)
         self.assertTrue(bool((y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()))
 
     def test_the_regression_line_contains_the_outputs_and_sensitivity_is_the_jacobian(self):
@@ -80,7 +80,7 @@ class Evaluate(unittest.TestCase):
                           0.2 * torch.eye(2, dtype=torch.float64))
         # the regression line encloses the outputs of sampled points
         box = net.evaluate(X, poly_method="regression").interval()
-        y = net.evaluate(X.rand_point(500, cora.Rng(1)))
+        y = net.evaluate(X.rand_point(500, cora.Rng(1)).T)
         self.assertTrue(bool((y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()))
         # the Jacobian at a point, against autograd
         x = torch.tensor([0.1, 0.4], dtype=torch.float64)
@@ -94,7 +94,7 @@ class Evaluate(unittest.TestCase):
         net = cora.NeuralNetwork(layers([2, 10, 10, 3]), ["tanh", "sigmoid", "identity"])
         X = cora.Zonotope(torch.tensor([0.3, -0.2], dtype=torch.float64),
                           0.2 * torch.eye(2, dtype=torch.float64))
-        y = net.evaluate(X.rand_point(500, cora.Rng(1)))
+        y = net.evaluate(X.rand_point(500, cora.Rng(1)).T)
         for error in ("extremum", "bracket"):
             box = net.evaluate(X, poly_method="regression", regression_error=error).interval()
             inside = (y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()

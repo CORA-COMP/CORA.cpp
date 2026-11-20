@@ -114,7 +114,7 @@ void plot(Figure &fig, const Specification &spec, const std::vector<int64_t> &di
 void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> &dims = {0, 1},
           const PlotOptions &options = {});
 
-/// Points as columns (n, N), as `rand_point` returns them.
+/// Points as rows (N, n), as `rand_point` returns them.
 void plot(Figure &fig, const Tensor &points, const std::vector<int64_t> &dims = {0, 1},
           const PlotOptions &options = {});
 

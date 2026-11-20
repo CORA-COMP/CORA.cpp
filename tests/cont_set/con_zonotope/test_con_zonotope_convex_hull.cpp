@@ -40,7 +40,7 @@ void convex_hull_known(const std::string &b) {
     check(R.A().shape() == Shape{4, 7} && R.b().shape() == Shape{4, 1},
           b + ": 2 (m1 + m2) slack rows");
     check(close(R.b(), {-0.5, -0.5, -0.5, -0.5}, 0), b + ": the offsets -1/2");
-    check(close(A.convex_hull(test::column({5.0})).interval().sup(), {5}, 1e-9), b + ": a point");
+    check(close(A.convex_hull(test::vec({5.0})).interval().sup(), {5}, 1e-9), b + ": a point");
     check(close(A.convex_hull(Interval(vec({-2.0}), vec({-1.0}))).interval().inf(), {-2}, 1e-9),
           b + ": a box");
     // hull with a zonotope
@@ -50,11 +50,10 @@ void convex_hull_known(const std::string &b) {
     // constraints of both sets are kept: the segment x1 + x2 = 1 and the origin give a triangle
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), column({1.0}));
-    const ConZonotope T = segment.convex_hull(column({0.0, 0.0}));
+    const ConZonotope T = segment.convex_hull(vec({0.0, 0.0}));
     check(close(T.interval().inf(), {0, 0}, 1e-9) && close(T.interval().sup(), {1, 1}, 1e-9),
           b + ": the triangle (0,0), (0,1), (1,0)");
-    check(T.contains(column({0.3, 0.3})) && !T.contains(column({0.7, 0.7})),
-          b + ": inside and outside");
+    check(T.contains(vec({0.3, 0.3})) && !T.contains(vec({0.7, 0.7})), b + ": inside and outside");
     const Set via_set = convex_hull(A, Set(B));
     check(via_set.is<ConZonotope>(), b + ": through the registry");
 }
@@ -66,7 +65,7 @@ void convex_hull_of_a_list(const std::string &b) {
     const ConZonotope H = A.convex_hull(std::vector<ConZonotope>{B, C});
     check(close(H.interval().inf(), {-4.5}, 1e-9) && close(H.interval().sup(), {3.5}, 1e-9),
           b + ": the list: all three sets, the first included");
-    check(A.convex_hull(std::vector<ConZonotope>{B}).contains(column({1.5})),
+    check(A.convex_hull(std::vector<ConZonotope>{B}).contains(vec({1.5})),
           b + ": one other: the segment");
 }
 
@@ -78,12 +77,13 @@ void convex_hull_property(const std::string &b) {
                           B = test::random_con_zonotope(rng, 2, 3, 1);
         const ConZonotope R = A.convex_hull(B), K = A.convex_hull(B, "exact:Kochdumper");
         const Tensor pa = test::sample_points(A, rng, 15), pb = test::sample_points(B, rng, 15);
-        check(R.contains(pa, "exact", 1e-7) && R.contains(pb, "exact", 1e-7),
+        const Tensor ra = pa.matrix_transpose(), rb = pb.matrix_transpose();
+        check(R.contains(ra, "exact", 1e-7) && R.contains(rb, "exact", 1e-7),
               b + ": Raghuraman holds both");
-        check(K.contains(pa, "exact", 1e-7) && K.contains(pb, "exact", 1e-7),
+        check(K.contains(ra, "exact", 1e-7) && K.contains(rb, "exact", 1e-7),
               b + ": Kochdumper holds both");
         // a midpoint of two points is in the hull, and the two methods have the same box
-        check(R.contains((pa + pb) * 0.5, "exact", 1e-7), b + ": midpoints are in the hull");
+        check(R.contains((ra + rb) * 0.5, "exact", 1e-7), b + ": midpoints are in the hull");
         check(close(R.interval().inf(), K.interval().inf(), 1e-7) &&
                   close(R.interval().sup(), K.interval().sup(), 1e-7),
               b + ": the same box by both methods");
@@ -99,7 +99,7 @@ void checks_and_their_switch() {
         "convex_hull: different dimensions");
     check(test::raises([&] { A.convex_hull(A, "outer"); }, Error::wrong_value),
           "convex_hull: a method");
-    check(test::raises([&] { A.convex_hull(Tensor({{1.0, 2.0}})); }, Error::dimension_mismatch),
+    check(test::raises([&] { A.convex_hull(vec({1.0, 2.0})); }, Error::dimension_mismatch),
           "convex_hull: a point is a column");
     check(test::raises(
               [&] {

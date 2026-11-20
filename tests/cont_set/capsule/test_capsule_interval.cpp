@@ -44,10 +44,10 @@ void interval_property(const std::string &b) {
     for (int k = 0; k < 8; ++k) {
         const Capsule C = test::random_capsule(rng, 3);
         const Interval I = C.interval();
-        check(I.contains(C.center().squeeze(-1)), b + ": the center is in the box");
+        check(I.contains(C.center()), b + ": the center is in the box");
         const Tensor points = test::sample_points(C, rng, 20);
         for (int j = 0; j < 20; ++j)
-            check(I.contains(points.slice(-1, j, j + 1).squeeze(-1)),
+            check(I.contains(points.slice(-2, j, j + 1).squeeze(-2)),
                   b + ": a sampled point is in the box");
         // the point of the capsule furthest in direction i touches the box
         const std::vector<double> c = C.c().data(), g = C.generator().data();

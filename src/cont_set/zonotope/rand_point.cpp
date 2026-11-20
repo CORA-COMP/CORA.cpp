@@ -4,14 +4,14 @@
 // Inputs:   N - number of points
 //           rng - random numbers (a seed makes them repeatable)
 //           type - "standard": c + G b, b ~ U[-1, 1]^m;  "extreme": b in {-1, 1}^m
-// Outputs:  P - points as columns (..., n, N)
+// Outputs:  P - points as rows (..., N, n)
 // See also: Interval::rand_point, LinearSys::simulate_random
 //
 // CORA: contSet/@zonotope/randPoint_.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg, Severin Prenitzer
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_rand_point.h"
@@ -60,10 +60,13 @@ Tensor Zonotope::rand_point_impl(int64_t N, Rng &rng) const {
 }
 
 Tensor Zonotope::rand_point_impl(int64_t N, Rng &rng, const std::string &type) const {
-    // the points are columns (..., n, N), as every set returns them
+    // CORA's columns c + G b (..., n, N), drawn in CORA's order, as rows (..., N, n)
     const Tensor c = c_.expand_dims(-1), G = G_.matrix_transpose();
-    if (type == "standard") return c + G.matmul(aux_factors(c, G, N, rng, false));
-    if (type == "extreme") return c + G.matmul(aux_factors(c, G, N, rng, true));
+    if (type == "standard")
+        return (c + G.matmul(aux_factors(c, G, N, rng, false))).matrix_transpose();
+    if (type == "extreme")
+        return (c + G.matmul(aux_factors(c, G, N, rng, true))).matrix_transpose();
+
 
     CORA_FAIL(Error::wrong_value,
               "rand_point: unknown type '" + type + "'; use \"standard\" or \"extreme\"");

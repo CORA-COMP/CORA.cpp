@@ -38,9 +38,10 @@ void map_property(const std::string &b) {
         const Tensor M = test::normal(rng, 3, 3),
                      R = Tensor::from_data(std::vector<double>(9, 0.1), {3, 3});
         const Tensor x = test::sample(P, rng, 20);
-        check(test::inside(P.linear_map(M).zonotope(), M.matmul(x)), b + ": M x is inside");
+        check(test::inside(P.linear_map(M).zonotope(), x.matmul(M.matrix_transpose())),
+              b + ": M x is inside");
         check(test::inside(P.linear_map(Interval::matrix(M - R, M + R)).zonotope(),
-                           (M + R * 0.5).matmul(x)),
+                           x.matmul((M + R * 0.5).matrix_transpose())),
               b + ": a matrix of the interval maps inside");
     }
 }

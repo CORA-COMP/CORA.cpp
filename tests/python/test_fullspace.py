@@ -80,7 +80,7 @@ class Construction(unittest.TestCase):
             cora.Fullspace(0).interval()
 
     def test_enclose_points_and_lift(self):
-        self.assertEqual(cora.Fullspace.enclose_points(np.zeros((3, 4))).dim, 3)
+        self.assertEqual(cora.Fullspace.enclose_points(np.zeros((4, 3))).dim, 3)
         self.assertEqual(cora.Fullspace(2).lift(5, [4, 0]).dim, 5)
         with self.assertRaises(cora.errors.WrongValue):
             cora.Fullspace(2).lift(3, [0, 3])
@@ -193,7 +193,7 @@ class ContSetInterface(unittest.TestCase):
         self.assertEqual(float(F.support_function(np.array([1.0, 0.0, 0.0]))), INF)
         self.assertEqual(float(F.support_function(np.zeros(3))), 0.0)
         self.assertEqual(F.project([0, 2]).dim, 2)
-        self.assertEqual(F.rand_point(4, cora.Rng(1)).shape, (3, 4))
+        self.assertEqual(F.rand_point(4, cora.Rng(1)).shape, (4, 3))
         with self.assertRaises(cora.errors.NotSupported):
             cora.Fullspace(0).rand_point(1, cora.Rng(1))
         self.assertEqual(len(cora.Fullspace(2).vertices()[0]), 4)

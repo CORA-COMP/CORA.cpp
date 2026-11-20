@@ -46,7 +46,7 @@ void the_image_of_the_set_is_enclosed(const std::string &b) {
     const Zonotope R = Z.tensor_multiplication(M, list);
     const int64_t columns = list.comb.size();
     check(R.nr_generators() == columns, b + ": one column per sorted triple");
-    const Tensor points = Z.rand_point(30, rng);
+    const Tensor points = Z.rand_point(30, rng).matrix_transpose(); // as columns (n, 30)
     const std::vector<double> tensor = M.data(),
                               H = R.generators().matrix_transpose().data(); // as columns
     for (int s = 0; s < 30; ++s) {

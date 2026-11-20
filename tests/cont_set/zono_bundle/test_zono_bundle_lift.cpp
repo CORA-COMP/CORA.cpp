@@ -48,10 +48,10 @@ void permuted_points(const std::string &b) {
     const ZonoBundle R = bundle.lift(3, {1, 2, 0});
     const Tensor points = test::bundle_points(bundle, rng, 6, x0);
     for (int k = 0; k < 6; ++k) {
-        const Tensor p = points.slice(-1, k, k + 1);
+        const Tensor p = points.slice(-2, k, k + 1);
         // state i at position dims[i]: the new coordinates are (p1', p2', p0')... in position order
         const Tensor q =
-            Tensor::concat({p.slice(-2, 2, 3), p.slice(-2, 0, 1), p.slice(-2, 1, 2)}, -2);
+            Tensor::concat({p.slice(-1, 2, 3), p.slice(-1, 0, 1), p.slice(-1, 1, 2)}, -1);
         check(test::in_every_member(R, q), b + ": a permuted point");
     }
 }

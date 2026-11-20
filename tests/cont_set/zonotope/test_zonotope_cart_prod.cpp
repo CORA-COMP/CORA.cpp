@@ -35,10 +35,10 @@ void cart_prod_of_known_sets(const std::string &b) {
         close(P.generators(), std::vector<double>{1, 3, 0, 2, 4, 0, 0, 0, 6, 0, 0, 7, 0, 0, 8}, 0),
         b + ": block diagonal generators");
 
-    const Zonotope with_point = Z.cart_prod(column({9.0}));
+    const Zonotope with_point = Z.cart_prod(vec({9.0}));
     check(close(with_point.generators(), std::vector<double>{1, 3, 0, 2, 4, 0}, 0),
           b + ": a point adds a zero row");
-    const Zonotope point_first = Zonotope::cart_prod(column({9.0}), Z);
+    const Zonotope point_first = Zonotope::cart_prod(vec({9.0}), Z);
     check(close(point_first.center(), std::vector<double>{9, 1, 2}, 0), b + ": a point first");
     check(close(point_first.generators(), std::vector<double>{0, 1, 3, 0, 2, 4}, 0),
           b + ": a point first: zero row on top");

@@ -59,7 +59,7 @@ ReachSet LinParamSys::reach(const ReachProblem &problem, const alg::LinParamReac
         for (double v : U.center().data()) shifted = shifted || v != 0;
         if (shifted) {
             u_trans = U.center().expand_dims(-1);
-            U = U - u_trans;
+            U = U - u_trans.squeeze(-1);
         }
     }
     // the steps of 0:dt:t_final

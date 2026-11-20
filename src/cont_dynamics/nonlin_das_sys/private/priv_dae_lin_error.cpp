@@ -216,7 +216,7 @@ DaeError priv_dae_lin_error(const NonlinDASys &sys, const DaeLinearized &lin, co
                             const alg::DaeLinearization &alg) {
     // the algebraic set: the part that depends on R, and the rest
     const Tensor minus_F_inv = lin.F_inv * -1.0;
-    const Zonotope R_y_cor = (R.linear_map(lin.D) + lin.g0).linear_map(minus_F_inv);
+    const Zonotope R_y_cor = (R.linear_map(lin.D) + lin.g0.squeeze(-1)).linear_map(minus_F_inv);
     Zonotope uncorrelated = V_y;
     if (U0) uncorrelated = uncorrelated + (*U0).linear_map(lin.E);
     const Zonotope R_y_add = uncorrelated.linear_map(minus_F_inv);
@@ -225,10 +225,10 @@ DaeError priv_dae_lin_error(const NonlinDASys &sys, const DaeLinearized &lin, co
                             ? aux_composed(lin, R, R_y_cor, R_y_add, U0, *decomposition, alg)
                             : aux_whole(sys, lin, R, R_y_cor, R_y_add, U0, alg);
     // the algebraic variables over the step, and the bounds
-    Zonotope u_part = R.linear_map(lin.D) + lin.g0;
+    Zonotope u_part = R.linear_map(lin.D) + lin.g0.squeeze(-1);
     if (U0) u_part = u_part + (*U0).linear_map(lin.E);
-    const Zonotope algebraic =
-        ((u_part + error.y).linear_map(minus_F_inv) + lin.y_star).reduce(alg.zonotope_order);
+    const Zonotope algebraic = ((u_part + error.y).linear_map(minus_F_inv) + lin.y_star.squeeze(-1))
+                                   .reduce(alg.zonotope_order);
     return {error.set, aux_bound(error.set), aux_bound(error.x), aux_bound(error.y), algebraic};
 }
 

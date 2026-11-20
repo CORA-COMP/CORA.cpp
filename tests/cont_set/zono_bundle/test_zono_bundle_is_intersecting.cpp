@@ -44,8 +44,7 @@ void exact_test(const std::string &b) {
     check(!bundle.is_intersecting(Interval::empty(2)), b + ": the empty box meets nothing");
     check(bundle.is_intersecting(ZonoBundle({inside, inside})), b + ": a bundle");
     check(!bundle.is_intersecting(ZonoBundle({in_one})), b + ": a bundle that misses");
-    check(bundle.is_intersecting(column({0.5, 0.5})) &&
-              !bundle.is_intersecting(column({-0.5, -0.5})),
+    check(bundle.is_intersecting(vec({0.5, 0.5})) && !bundle.is_intersecting(vec({-0.5, -0.5})),
           b + ": a point");
     check(!ZonoBundle::empty(2).is_intersecting(bundle), b + ": the empty bundle meets nothing");
     // the empty bundle and the registry

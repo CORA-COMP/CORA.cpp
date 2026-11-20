@@ -78,7 +78,7 @@ class ZonoBundle(unittest.TestCase):
         self.assertEqual(E.dim, 3)
         self.assertEqual(E.parallel_sets, 2)
         self.assertTrue(E.interval().is_empty())
-        self.assertEqual(E.center.shape[-1], 0)
+        self.assertTrue(np.isnan(E.center).all())
         self.assertFalse(E.is_full_dim())
         with self.assertRaises(cora.errors.WrongValue):
             cora.ZonoBundle.empty(0)
@@ -136,7 +136,7 @@ class ZonoBundle(unittest.TestCase):
         self.assertTrue(zB.contains(np.array([0.5, 0.5])))
         self.assertFalse(zB.contains(np.array([-0.5, -0.5])))
         self.assertTrue(np.array([0.5, 0.5]) in zB)
-        self.assertTrue(zB.contains(np.array([[0.5, 0.25], [0.5, 0.75]])))
+        self.assertTrue(zB.contains(np.array([[0.5, 0.5], [0.25, 0.75]])))
         self.assertTrue(zB.contains(zonotope([0.5, 0.5], 0.25 * np.eye(2))))
         self.assertTrue(zB.contains(cora.Interval(np.array([0.25, 0.25]), np.array([0.75, 0.75]))))
         # containment and intersection of a bundle

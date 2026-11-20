@@ -5,7 +5,7 @@
 // that checks its input once (detail::Entry, CORA_CHECK) and calls the class's protected
 // `<operation>_impl`, which checks nothing: CORA's supportFunc and supportFunc_. Sets are
 // immutable values: an operation returns a new set. They run on every Tensor backend and
-// batch wherever the backend does; a vector is a column (..., n, 1).
+// batch wherever the backend does; a point is (..., n), N points are (..., N, n) (#163).
 //
 // Syntax:     Tensor v = S.support_function(d);   Interval I = S.interval();
 //             Set P = S.project(d);
@@ -117,16 +117,16 @@ class ContSet {
     /// this mask; the other classes have none yet and encode the empty set in their data.
     const EmptyMask &empty_mask() const noexcept { return empty_; }
 
-    /// The center, a column (..., n, 1).
+    /// The center (..., n); NaN for an empty member.
     Tensor center() const;
 
-    /// max_{x in S} d'x for a direction d (..., n, 1); returns (..., 1, 1).
+    /// max_{x in S} d'x for a direction d (..., n); returns (...).
     Tensor support_function(const Tensor &d) const;
 
     /// The smallest axis-aligned box containing the set.
     Interval interval() const;
 
-    /// N random points of the set as columns (..., n, N), drawn on the host with rng.
+    /// N random points of the set as rows (..., N, n), drawn on the host with rng.
     Tensor rand_point(int64_t N, Rng &rng) const;
 
     /// The projection onto the dimensions `dims` (0-based), in that order.
@@ -157,12 +157,12 @@ class ContSet {
     /// The image under the matrix M (..., m, n) (CORA's mtimes(M, S)), in the class of the set.
     Set linear_map(const Tensor &M) const;
 
-    /// The set scaled about its center by factor, a number or a column (..., n, 1): the center
+    /// The set scaled about its center by factor, a number or a vector (..., n): the center
     /// is subtracted, the set scaled coordinate by coordinate and the center added back.
     Set enlarge(const Tensor &factor) const;
     Set enlarge(double factor) const;
 
-    /// The set shifted by -p for a column p (..., n, 1), and for the static form -S + p (CORA's
+    /// The set shifted by -p for a point p (..., n), and for the static form -S + p (CORA's
     /// minus with a vector); the Minkowski difference is minkowski_difference.
     Set minus(const Tensor &p) const;
     static Set minus(const Tensor &p, const ContSet &S);
@@ -174,7 +174,7 @@ class ContSet {
     Set uplus() const;
 
     /// The set scaled coordinate by coordinate, diag(factor) * S (CORA's times, S .* factor):
-    /// factor is a number or a column (..., n, 1).
+    /// factor is a number or a vector (..., n).
     Set times(const Tensor &factor) const;
     Set times(double factor) const;
 
@@ -196,8 +196,8 @@ class ContSet {
     /// and 0 elsewhere (CORA's projectHighDim_: I(:, proj) * S).
     Set project_high_dim(int64_t N, const std::vector<int64_t> &proj) const;
 
-    /// The orthogonal projection onto the hyperplane {x | c'x = d} for a normal c (..., n, 1) of
-    /// any length and an offset d (..., 1, 1): (I - c c') S + d c with c normalized.
+    /// The orthogonal projection onto the hyperplane {x | c'x = d} for a normal c (..., n) of
+    /// any length and an offset d, a number (...): (I - c c') S + d c with c normalized.
     Set project_on_hyperplane(const Tensor &c, const Tensor &d) const;
 
     /// The set in N >= n dimensions with its coordinate j at position proj[j] (0-based, default
@@ -205,7 +205,7 @@ class ContSet {
     /// box, absent for a zonotope, which therefore needs N = n and a permutation.
     Set lift(int64_t N, const std::optional<std::vector<int64_t>> &proj = std::nullopt) const;
 
-    /// An upper bound (..., 1, 1) of the norm of the points (CORA's norm): type one, two, inf or
+    /// An upper bound (...) of the norm of the points (CORA's norm): type one, two, inf or
     /// fro; mode "ub" (default), "exact" or "ub_convex", of which a class offers what its norm_
     /// has. The empty set has norm -Inf.
     Tensor norm(Tensor::Norm type = Tensor::Norm::two, const std::string &mode = "ub") const;
@@ -247,13 +247,14 @@ class ContSet {
     virtual bool is_full_dim_impl(Tol tol) const;
     virtual Set reduce_impl(int order) const;
     virtual Set linear_map_impl(const Tensor &M) const;
-    /// The set translated by v (..., n, 1): the plus of a set and a vector.
+    /// The set translated by v (..., n): the plus of a set and a vector.
     virtual Set translate_impl(const Tensor &v) const;
     /// CORA's uminus: -1 * S, which a class with its own negation overrides.
     virtual Set uminus_impl() const;
     /// CORA's uplus: S translated by -0, which leaves every number as it is.
     virtual Set uplus_impl() const;
-    /// CORA's times: diag(factor) * S for factor (..., n, 1), which a class with its own
+    /// CORA's times: diag(factor) * S for factor (..., n), which a class with its own
+
     /// product overrides.
     virtual Set times_impl(const Tensor &factor) const;
     /// The methods of the class's compact, which the entry checks together with tol; none: the

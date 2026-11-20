@@ -23,7 +23,7 @@ int main() {
     const std::vector<torch::Tensor> A = test::random_con_zonotope_parts(2, 3, 1);
     std::vector<torch::Tensor> x = A;
     x.push_back(torch::randn({2, 2}, torch::kDouble));
-    x.push_back(torch::randn({2, 1}, torch::kDouble));
+    x.push_back(torch::randn({2}, torch::kDouble));
     test::gradcheck(
         "enclose", [](const Inputs &x) { return test::parts(test::set(x, 0).enclose(x[4], x[5])); },
         x);

@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +26,7 @@ namespace {
 /// result.
 void enclose_known(const std::string &b) {
     const ConZonotope A(column({0.0}), Tensor({{1.0}}));
-    const ConZonotope image = A.enclose(Tensor({{2.0}}), column({4.0}));
+    const ConZonotope image = A.enclose(Tensor({{2.0}}), vec({4.0}));
     check(close(image.c().expand_dims(-1), {2}, 0), b + ": the center is the mean");
     check(close(image.generators().matrix_transpose(), {1.5, -2, -0.5}, 0),
           b + ": (G+G2)/2, (c-c2)/2, (G-G2)/2");
@@ -39,7 +40,7 @@ void enclose_known(const std::string &b) {
     // the same constraints on the common factors: they stay, the new factors are free
     const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         column({1.0}));
-    const ConZonotope R = C.enclose(Tensor({{1.0, 0.0}, {0.0, 2.0}}), column({1.0, 1.0}));
+    const ConZonotope R = C.enclose(Tensor({{1.0, 0.0}, {0.0, 2.0}}), vec({1.0, 1.0}));
     check(R.A().shape() == Shape{1, 5} && close(R.A(), {1, 1, 0, 0, 0}, 0),
           b + ": A padded with zeros");
     check(close(R.b(), {1}, 0), b + ": b is the first set's");
@@ -54,10 +55,11 @@ void enclose_property(const std::string &b) {
     for (int k = 0; k < 4; ++k) {
         const ConZonotope A = test::random_con_zonotope(rng, 2, 4, 1);
         const Tensor M({{1.0, 0.5}, {-0.3, 2.0}}), t = column({1.0, -2.0});
-        const ConZonotope R = A.enclose(M, t);
+        const ConZonotope R = A.enclose(M, t.squeeze(-1));
         const Tensor points = test::sample_points(A, rng, 30);
-        check(R.contains(points, "exact", 1e-7), b + ": the first set");
-        check(R.contains(M.matmul(points) + t, "exact", 1e-7), b + ": the image");
+        check(R.contains(points.matrix_transpose(), "exact", 1e-7), b + ": the first set");
+        check(R.contains((M.matmul(points) + t).matrix_transpose(), "exact", 1e-7),
+              b + ": the image");
     }
 }
 
@@ -75,7 +77,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { C.enclose(ConZonotope(column({0.0, 0.0}), Tensor({{1.0, 1.0}}))); },
                        Error::dimension_mismatch),
           "enclose: different dimensions");
-    check(test::raises([&] { C.enclose(Tensor({{1.0, 2.0}}), column({1.0})); },
+    check(test::raises([&] { C.enclose(Tensor({{1.0, 2.0}}), vec({1.0})); },
                        Error::dimension_mismatch),
           "enclose: M must have n columns");
     // the longer set's constraints use a factor that the other lacks: CORA drops them
@@ -86,9 +88,9 @@ void checks_and_their_switch() {
     check(test::raises([&] { longer.enclose(shorter); }, Error::special_error),
           "enclose: constraints on factors only one set has");
     const ConZonotope A(column({0.0}), Tensor({{1.0}}));
-    const Tensor on = A.enclose(Tensor({{2.0}}), column({4.0})).generators().matrix_transpose();
+    const Tensor on = A.enclose(Tensor({{2.0}}), vec({4.0})).generators().matrix_transpose();
     ChecksScope off(false);
-    check(close(A.enclose(Tensor({{2.0}}), column({4.0})).generators().matrix_transpose(), on, 0),
+    check(close(A.enclose(Tensor({{2.0}}), vec({4.0})).generators().matrix_transpose(), on, 0),
           "enclose: the same with the checks off");
 }
 

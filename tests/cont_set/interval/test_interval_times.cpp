@@ -62,8 +62,7 @@ void times_encloses_the_products(const std::string &b) {
         const Interval A = Interval::generate_random(rng, 3), B = Interval::generate_random(rng, 3);
         const Interval R = A.times(B);
         // the points as rows (20, 3)
-        const Tensor x = A.rand_point(20, rng).matrix_transpose(),
-                     y = B.rand_point(20, rng).matrix_transpose();
+        const Tensor x = A.rand_point(20, rng), y = B.rand_point(20, rng);
         bool inside = true;
         for (int k = 0; k < 20; ++k)
             inside = inside && R.contains(x.slice(0, k, k + 1).multiply(y.slice(0, k, k + 1)));

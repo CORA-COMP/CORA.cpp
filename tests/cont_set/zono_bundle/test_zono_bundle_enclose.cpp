@@ -70,7 +70,7 @@ void convex_combinations(const std::string &b) {
     for (int k = 0; k < 5; ++k)
         for (const double lambda : {0.0, 0.3, 0.5, 1.0}) {
             const Tensor p =
-                xs.slice(-1, k, k + 1) * lambda + ys.slice(-1, k, k + 1) * (1 - lambda);
+                xs.slice(-2, k, k + 1) * lambda + ys.slice(-2, k, k + 1) * (1 - lambda);
             check(R.contains(p, "exact:zonotope", 1e-9), b + ": a point of the hull");
         }
 }

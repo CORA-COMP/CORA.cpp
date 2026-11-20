@@ -17,6 +17,7 @@ using test::close;
 using test::column;
 using test::random_direction;
 using test::support;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -40,15 +41,15 @@ void interval_is_the_hull(const std::string &b) {
         std::vector<double> e(4, 0.0), f(4, 0.0);
         e[i] = 1.0;
         f[i] = -1.0;
-        check(close(I.support_function(column(e)).data()[0], support(Z, e), 1e-12),
+        check(close(I.support_function(vec(e)).data()[0], support(Z, e), 1e-12),
               b + ": hull, upper");
         // the hull bounds
-        check(close(I.support_function(column(f)).data()[0], support(Z, f), 1e-12),
+        check(close(I.support_function(vec(f)).data()[0], support(Z, f), 1e-12),
               b + ": hull, lower");
     }
     for (int k = 0; k < 10; ++k) {
         const std::vector<double> d = random_direction(rng, 4);
-        check(I.support_function(column(d)).data()[0] >= support(Z, d) - 1e-10,
+        check(I.support_function(vec(d)).data()[0] >= support(Z, d) - 1e-10,
               b + ": the hull contains Z");
     }
 }

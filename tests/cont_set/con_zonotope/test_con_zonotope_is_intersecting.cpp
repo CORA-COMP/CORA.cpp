@@ -37,9 +37,9 @@ void is_intersecting_known(const std::string &b) {
     check(seg.is_intersecting(Z) &&
               !seg.is_intersecting(Zonotope(column({3.0, 3.0}).squeeze(-1), Z.generators())),
           b + ": a zonotope");
-    check(seg.is_intersecting(seg) && !seg.is_intersecting(seg.plus(column({2.0, 0.0}))),
+    check(seg.is_intersecting(seg) && !seg.is_intersecting(seg.plus(vec({2.0, 0.0}))),
           b + ": a constrained zonotope");
-    check(seg.is_intersecting(column({0.5, 0.5})) && !seg.is_intersecting(column({1.0, 1.0})),
+    check(seg.is_intersecting(vec({0.5, 0.5})) && !seg.is_intersecting(vec({1.0, 1.0})),
           b + ": a point");
     check(!seg.is_intersecting(ConZonotope::empty(2)), b + ": the empty set");
     check(Set(seg)->dim() == 2 && cora::is_intersecting(seg, meets), b + ": through the registry");

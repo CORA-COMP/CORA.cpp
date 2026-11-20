@@ -48,7 +48,7 @@ int main() {
             for (const Tensor &p : {Z.center().expand_dims(-1), near, inside, outside}) {
                 const bool theirs_proved = theirs.contains(p);
                 proved += theirs_proved;
-                test::check(!theirs_proved || cz.contains(p),
+                test::check(!theirs_proved || cz.contains(p.squeeze(-1)),
                             "conZonotope.contains: a proved point is inside");
             }
         }

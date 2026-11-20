@@ -43,8 +43,7 @@ Polytope aux_exact(const Polytope &P, const ContSet &S) {
     HostH H = priv_host_h(C);
     const int64_t n = P.dim();
     for (std::size_t i = 0; i < H.A.size(); ++i) {
-        const double upper =
-            S.support_function(priv_vector_tensor(C.A, H.A[i]).expand_dims(-1)).item();
+        const double upper = S.support_function(priv_vector_tensor(C.A, H.A[i])).item();
         if (std::isinf(upper)) return Polytope::empty(n);
         H.b[i] -= upper;
     }
@@ -52,10 +51,8 @@ Polytope aux_exact(const Polytope &P, const ContSet &S) {
         // an equality needs S flat along it: the least and the largest value agree
         Row negated = H.Ae[i];
         for (double &x : negated) x = -x;
-        const double upper =
-            S.support_function(priv_vector_tensor(C.A, H.Ae[i]).expand_dims(-1)).item();
-        const double lower =
-            -S.support_function(priv_vector_tensor(C.A, negated).expand_dims(-1)).item();
+        const double upper = S.support_function(priv_vector_tensor(C.A, H.Ae[i])).item();
+        const double lower = -S.support_function(priv_vector_tensor(C.A, negated)).item();
         if (!within_tol(lower, upper)) return Polytope::empty(n);
         H.be[i] -= lower;
     }

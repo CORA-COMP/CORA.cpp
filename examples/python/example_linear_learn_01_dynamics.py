@@ -49,7 +49,7 @@ A_true = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
 
 # Twenty noisy trajectories from the initial set: measurements[k] are the points at time k.
 torch.manual_seed(0)
-x0 = X0.rand_point(20, cora.Rng(0))
+x0 = X0.rand_point(20, cora.Rng(0)).T  # the simulation takes the points as columns
 truth = cora.LinearSys(A_true).simulate(x0, time_step=time_step, t_final=t_final)
 measurements = truth + 0.01 * torch.randn_like(truth)
 

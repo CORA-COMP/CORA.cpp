@@ -68,7 +68,7 @@ void halves_cover_the_set(const std::string &b) {
     // the pieces cover the points
     const Tensor points = Z.rand_point(40, rng);
     for (int k = 0; k < 40; ++k) {
-        const Tensor p = points.slice(-1, k, k + 1);
+        const Tensor p = points.slice(-2, k, k + 1);
         check(lower.contains(p, "exact", 1e-9) || upper.contains(p, "exact", 1e-9),
               b + ": a point of Z is in neither half");
     }

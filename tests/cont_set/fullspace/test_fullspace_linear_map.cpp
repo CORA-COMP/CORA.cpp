@@ -61,7 +61,8 @@ void the_result_encloses_the_image(const std::string &b) {
         if (trial % 3 == 0) data[2] = data[3] = 0.0; // a zero row
         const Tensor M = matrix(data, 3, 2);
         const Interval hull = Fullspace(2).linear_map(M)->interval();
-        const std::vector<double> y = M.matmul(Fullspace(2).rand_point(5, rng)).data();
+        const std::vector<double> y =
+            M.matmul(Fullspace(2).rand_point(5, rng).matrix_transpose()).data();
         const std::vector<double> lo = hull.inf().data(), hi = hull.sup().data();
         for (int64_t i = 0; i < 3; ++i)
             for (int64_t j = 0; j < 5; ++j)

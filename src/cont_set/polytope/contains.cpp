@@ -99,7 +99,7 @@ double aux_support(const ContSet &S, const Tensor &like, const Row &direction) {
         const Polytope &Q = static_cast<const Polytope &>(S);
         return priv_support(priv_host_h(Q.constraints()), direction, true).value;
     }
-    const Tensor value = S.support_function(priv_vector_tensor(like, direction).expand_dims(-1));
+    const Tensor value = S.support_function(priv_vector_tensor(like, direction));
     if (value.numel() != 1)
         CORA_FAIL(Error::not_supported, "contains: the set must be a single set, not a batch");
     return value.item();

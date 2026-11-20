@@ -42,7 +42,7 @@ R = sys.reach(R0, time_step=time_step, t_final=t_final, taylor_terms=8)
 traj = sys.simulate_random(R0, points=20, time_step=time_step / 2, t_final=t_final, rng=rng)
 
 # The corners of the generator cube as start points, and their trajectories.
-corners = R0.rand_point(20, rng, type="extreme")
+corners = R0.rand_point(20, rng, type="extreme").T  # as the columns of the simulation
 traj_extreme = sys.simulate(corners, time_step=time_step / 2, t_final=t_final)
 
 # Verification ------------------------------------------------------------------------------

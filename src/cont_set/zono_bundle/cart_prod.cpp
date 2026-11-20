@@ -3,7 +3,7 @@
 // Exact: for a bundle every pair of members, this bundle's the outer index; else member by member.
 //
 // Syntax:   ZonoBundle R = bundle.cart_prod(S);   ZonoBundle R = ZonoBundle::cart_prod(p, bundle);
-// Inputs:   S - a bundle, a zonotope, a nonempty box or a point (n2, 1); the point is first in the
+// Inputs:   S - a bundle, a zonotope, a nonempty box or a point (n2); the point is first in the
 // static form Outputs:  R - the bundle of the products (Zonotope::cart_prod) See also:
 // Zonotope::cart_prod, intersect
 //
@@ -25,11 +25,11 @@ namespace cora {
 
 namespace {
 
-/// Why the point is refused, if it is: it is no column.
+/// Why the point is refused, if it is: it has no coordinates.
 detail::Refusal aux_point_refusal(const Tensor &p) {
-    if (p.ndim() >= 2 && p.shape().back() == 1) return std::nullopt;
+    if (p.ndim() >= 1) return std::nullopt;
     return std::pair{Error::dimension_mismatch,
-                     "cart_prod: the point must be a column (n, 1), got the shape " +
+                     "cart_prod: the point must be a vector (n), got the shape " +
                          shape_text(p.shape())};
 }
 

@@ -96,10 +96,10 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
             const ReachSet R =
                 sys.reach({.initial_set = in.X0, .input_set = in.U, .t_final = in.t_final()},
                           test::lin::algorithm(algorithm, s.time_step, 6, zonotope_order));
-            Tensor x = in.X0.rand_point(N, rng, "extreme");
+            Tensor x = in.X0.rand_point(N, rng, "extreme").matrix_transpose(); // columns (n, N)
             double worst = -1e9;
             for (int k = 0; k < s.steps; ++k) {
-                const Tensor u = in.U.rand_point(N, rng, "extreme");
+                const Tensor u = in.U.rand_point(N, rng, "extreme").matrix_transpose();
                 for (int r = 1; r <= refine; ++r) {
                     // a point inside the step: the same input from the step's start
                     const double t = s.time_step * r / refine;

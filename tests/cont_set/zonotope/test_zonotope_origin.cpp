@@ -29,8 +29,8 @@ void origin_is_the_point_zero(const std::string &b) {
         check(close(Z.center(), std::vector<double>(n, 0.0), 0), b + ": the center is 0");
     }
     const Zonotope Z = Zonotope::origin(2);
-    check(Z.contains(test::column({0.0, 0.0}), "exact", 0.0), b + ": it contains the origin");
-    check(!Z.contains(test::column({0.0, 1e-3}), "exact", 0.0), b + ": and nothing else");
+    check(Z.contains(test::vec({0.0, 0.0}), "exact", 0.0), b + ": it contains the origin");
+    check(!Z.contains(test::vec({0.0, 1e-3}), "exact", 0.0), b + ": and nothing else");
 }
 
 /// A dimension below 1 is refused; with the checks off the set is the same.

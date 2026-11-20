@@ -116,10 +116,8 @@ Polytope Polytope::plus(const Tensor &v) const {
     return Polytope(std::move(parts));
 }
 
-// the generic entry passes a column until #163's point sweep
-Set Polytope::translate_impl(const Tensor &v) const {
-    return plus(is_column(v, dim()) ? v.squeeze(-1) : v);
-}
+Set Polytope::translate_impl(const Tensor &v) const { return plus(v); }
+
 
 } // namespace cora
 

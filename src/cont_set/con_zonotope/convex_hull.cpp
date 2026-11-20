@@ -6,7 +6,7 @@
 //
 // Syntax:   cZres = cz.convex_hull(S);   cZres = cz.convex_hull(S, "exact:Kochdumper");
 //           cZres = cz.convex_hull({cz2, cz3});
-// Inputs:   S - a constrained zonotope, a zonotope, a box or a point (n, 1) of the same dimension
+// Inputs:   S - a constrained zonotope, a zonotope, a box or a point (n) of the same dimension
 //           method - "exact" and "exact:Raghuraman" (default) or "exact:Kochdumper"
 // Outputs:  cZres - exact: the convex hull as a constrained zonotope
 // See also: enclose, Zonotope::convex_hull
@@ -15,7 +15,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -197,14 +197,14 @@ ConZonotope ConZonotope::convex_hull(const Interval &I, const std::string &metho
 ConZonotope ConZonotope::convex_hull(const Tensor &p, const std::string &method) const {
     detail::Entry entry;
     // the hull of the set and a point
-    CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
+    CORA_CHECK(is_vector(p, dim()), Error::dimension_mismatch, [&] {
         // a point is a set without generators
-        return "convex_hull: the point must be a column (" + std::to_string(dim()) +
-               ", 1), got the shape " + shape_text(p.shape());
+        return "convex_hull: the point must be a vector (" + std::to_string(dim()) +
+               "), got the shape " + shape_text(p.shape());
     });
     const detail::Refusal refusal = aux_refusal(*this, dim(), method);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    return aux_hull(*this, ConZonotope(p, (zeros_block(p, dim(), 0)).matrix_transpose()), method);
+    return aux_hull(*this, ConZonotope(p, zeros_block(p.expand_dims(-1), 0, dim())), method);
 }
 
 ConZonotope ConZonotope::convex_hull(const std::vector<ConZonotope> &others) const {

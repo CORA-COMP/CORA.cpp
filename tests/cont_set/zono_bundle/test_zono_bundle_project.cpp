@@ -41,7 +41,7 @@ void project_property(const std::string &b) {
     Tensor common;
     const ZonoBundle zono_bundle = test::random_zono_bundle(rng, 4, 2, 5, &common);
     const Tensor points = test::bundle_points(zono_bundle, rng, 12, common);
-    check(Set(zono_bundle)->project({3, 1}).as<ZonoBundle>().contains(points.take({3, 1}, 0)),
+    check(Set(zono_bundle)->project({3, 1}).as<ZonoBundle>().contains(points.take({3, 1}, -1)),
           b + ": the projected points are inside");
 }
 

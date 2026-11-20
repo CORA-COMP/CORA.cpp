@@ -50,8 +50,7 @@ void polytope_property(const std::string &b) {
     for (int k = 0; k < 4; ++k) {
         const Capsule C = k == 3 ? Capsule(column({0.5, 1.0, 2.0}), column({0.0, 0.0, 0.0}), 0.7)
                                  : test::random_capsule(rng, 3);
-        check(C.polytope("outer").contains(test::sample_points(C, rng, 20).matrix_transpose(),
-                                           "exact", 1e-9),
+        check(C.polytope("outer").contains(test::sample_points(C, rng, 20), "exact", 1e-9),
               b + ": the points are inside");
     }
 }

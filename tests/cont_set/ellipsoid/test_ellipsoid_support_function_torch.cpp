@@ -20,7 +20,7 @@ int main() {
     torch::manual_seed(223);
     // the support function, the maps and the sum against central differences
     std::vector<torch::Tensor> d = test::random_ellipsoid_factors(3);
-    d.push_back(torch::randn({3, 1}, torch::kDouble));
+    d.push_back(torch::randn({3}, torch::kDouble));
     test::gradcheck(
         "support_function",
         [](const Inputs &x) { return Inputs{test::ellipsoid_of(x).support_function(x[2])}; }, d);

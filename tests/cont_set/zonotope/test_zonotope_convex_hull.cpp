@@ -32,7 +32,7 @@ void convex_hull_with_each_kind_of_set(const std::string &b) {
     const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 4),
                    Z2 = Zonotope::generate_random(rng, n, std::nullopt, 4);
     const Interval I = Interval::generate_random(rng, n);
-    const Tensor p = Z2.center().expand_dims(-1); // a point (n, 1)
+    const Tensor &p = Z2.center(); // a point (n)
     check(close(Z.convex_hull(Z2).generators(), Z.enclose(Z2).generators(), 0),
           b + ": zonotope: enclose");
     const Zonotope with_box = Z.convex_hull(I), with_point = Z.convex_hull(p);
@@ -64,7 +64,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { Z.convex_hull(Interval(vec({0.0}), vec({1.0}))); },
                        Error::dimension_mismatch),
           "convex_hull: a box of dimension 1");
-    check(test::raises([&] { Z.convex_hull(column({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { Z.convex_hull(vec({1.0, 2.0, 3.0})); }, Error::dimension_mismatch),
           "convex_hull: a point of dimension 3");
     const Tensor on = Z.convex_hull(Z).generators();
     ChecksScope off(false);

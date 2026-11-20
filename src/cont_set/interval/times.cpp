@@ -49,12 +49,8 @@ Interval Interval::times(const Tensor &factor) const {
     return with(lo, hi);
 }
 
-Set Interval::times_impl(const Tensor &factor) const {
-    // ContSet's factor is a column (..., n, 1); a box takes it as (..., n)
-    if (elem_rank_ == 1 && factor.ndim() >= 2 && factor.size(-1) == 1)
-        return times(factor.squeeze(-1));
-    return times(factor);
-}
+Set Interval::times_impl(const Tensor &factor) const { return times(factor); }
+
 
 } // namespace cora
 

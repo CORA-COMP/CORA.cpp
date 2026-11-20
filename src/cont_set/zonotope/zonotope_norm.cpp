@@ -4,16 +4,16 @@
 // valid minimizer and a warning says so. Not a batch.
 //
 // Syntax:   s = Z.zonotope_norm(p);   [s, beta] = Z.zonotope_norm_minimizer(p);
-// Inputs:   p - a point (n, 1)
+// Inputs:   p - a point (n)
 // Outputs:  s - (1, 1): min s with G beta = p, |beta|_inf <= s; infinity if p is outside the span
-//           beta - the minimizer (m, 1), an empty (0, 1) if s is infinite
+//           beta - the minimizer (m), an empty (0) if s is infinite
 // See also: contains, minnorm
 //
 // CORA: contSet/@zonotope/zonotopeNorm.m
 // CORA authors: Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -35,12 +35,10 @@ Refusal aux_refusal(const Zonotope &Z, const Tensor &p) {
         return std::pair{Error::not_supported,
                          std::string("a linear program per zonotope: it supports a single "
                                      "zonotope, not a batch")};
-    if (p.shape() != Shape{Z.dim(), 1})
-        return std::pair{Error::dimension_mismatch, "the point must be a column (" +
-                                                        std::to_string(Z.dim()) +
-                                                        ", 1), got "
-                                                        "the shape " +
-                                                        shape_text(p.shape())};
+    if (p.shape() != Shape{Z.dim()})
+        return std::pair{Error::dimension_mismatch,
+                         "the point must be a vector (" + std::to_string(Z.dim()) +
+                             "), got the shape " + shape_text(p.shape())};
     return std::nullopt;
 }
 
@@ -76,8 +74,7 @@ std::pair<Tensor, Tensor> Zonotope::zonotope_norm_minimizer(const Tensor &p) con
                              "zonotope is not zero-centered");
     // the norm and the minimizing factors
     const int64_t m = int64_t(solution.minimizer.size());
-    return {Tensor::like(G_, {solution.value}, {1, 1}),
-            Tensor::like(G_, solution.minimizer, {m, 1})};
+    return {Tensor::like(G_, {solution.value}, {1, 1}), Tensor::like(G_, solution.minimizer, {m})};
 }
 
 } // namespace cora

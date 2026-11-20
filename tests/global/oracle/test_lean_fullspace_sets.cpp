@@ -67,8 +67,8 @@ int main() {
                             lean::Fullspace(4).convex_hull(lean::Fullspace(4)));
     });
     test::oracle::run("fullspace.enclosePoints", [](test::oracle::Random &rnd) {
-        const Tensor points = rnd.matrix(4, 7);
-        test::oracle::check(Fullspace::enclose_points(points),
+        const Tensor points = rnd.matrix(4, 7); // CORA's columns (4, 7) for the oracle
+        test::oracle::check(Fullspace::enclose_points(points.matrix_transpose()),
                             lean::Fullspace::enclose_points(points));
     });
     test::oracle::run("fullspace.lift", [](test::oracle::Random &) {

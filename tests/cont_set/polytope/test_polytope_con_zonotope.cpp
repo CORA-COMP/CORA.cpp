@@ -17,7 +17,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -32,8 +31,7 @@ bool same_set(const ConZonotope &cz, const Polytope &P, Rng &rng) {
         std::vector<double> x(static_cast<std::size_t>(P.dim()));
         rng.uniform(x.data(), x.size(), -1.5, 2.5);
         const Tensor p = vec(x);
-        // the constrained zonotope takes CORA's column
-        if (cz.contains(p.expand_dims(-1)) != P.contains(p, "exact", 1e-9)) return false;
+        if (cz.contains(p) != P.contains(p, "exact", 1e-9)) return false;
     }
     return true;
 }
@@ -61,7 +59,7 @@ void methods(const std::string &b) {
 
 /// The special sets: empty, R^n, unbounded, a point.
 void special(const std::string &b) {
-    check(!Polytope::empty(2).con_zonotope().contains(column({0.0, 0.0})), b + ": the empty set");
+    check(!Polytope::empty(2).con_zonotope().contains(vec({0.0, 0.0})), b + ": the empty set");
     check(close(Polytope(Tensor({{1.0, 2.0}})).con_zonotope().c().expand_dims(-1), {1, 2}, 1e-9),
           b + ": a point");
 }
@@ -102,8 +100,7 @@ void properties(const std::string &b) {
                 std::vector<double> x(static_cast<std::size_t>(n));
                 rng.uniform(x.data(), x.size(), -3.5, 3.5);
                 const Tensor p = vec(x);
-                same = same && cz.contains(p.expand_dims(-1), "exact", 1e-9) ==
-                                   Q.contains(p, "exact", 1e-9);
+                same = same && cz.contains(p, "exact", 1e-9) == Q.contains(p, "exact", 1e-9);
             }
             check(same, b + ": " + method + ": the same probes, " + std::to_string(n) + "D");
         }

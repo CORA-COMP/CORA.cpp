@@ -17,6 +17,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -50,7 +51,7 @@ void lift_is_a_permutation(const std::string &b) {
         check(test::close(test::support(L, d), test::support(Z, pulled), 1e-12),
               b + ": the support function along the pulled-back direction");
     }
-    const Zonotope batch = Zonotope::stack({Z, Z + column({1.0, 1.0, 1.0, 1.0})}).lift(4, dims);
+    const Zonotope batch = Zonotope::stack({Z, Z + vec({1.0, 1.0, 1.0, 1.0})}).lift(4, dims);
     check(close(batch.center().slice(0, 0, 1).squeeze(0), L.center(), 0),
           b + ": a batch, member 1");
 }

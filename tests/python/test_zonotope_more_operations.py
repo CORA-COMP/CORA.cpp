@@ -171,7 +171,7 @@ class Intersecting(unittest.TestCase):
         self.assertTrue(diamond.is_intersecting(corner, "approx"))
         # intersection with points and sets
         self.assertTrue(diamond.is_intersecting(np.array([0.5, 0.5])))
-        self.assertFalse(diamond.is_intersecting(np.array([[0.0, 0.6], [0.0, 0.6]])))
+        self.assertFalse(diamond.is_intersecting(np.array([[0.0, 0.0], [0.6, 0.6]])))
         self.assertTrue(cora.is_intersecting(Z, square(1.5)))
 
     def test_errors(self):
@@ -244,7 +244,7 @@ class IntersectStrip(unittest.TestCase):
 
 class Enclosing(unittest.TestCase):
     def test_enclose_points_by_hand(self):
-        points = np.array([[0.0, 2.0, 2.0], [0.0, 2.0, 0.0]])
+        points = np.array([[0.0, 0.0], [2.0, 2.0], [2.0, 0.0]])
         Z = cora.Zonotope.enclose_points(points, np.eye(2))
         np.testing.assert_allclose(Z.center, [1, 1])
         np.testing.assert_allclose(Z.generators, np.eye(2))
@@ -252,9 +252,9 @@ class Enclosing(unittest.TestCase):
     # invalid methods
     def test_enclose_points_errors(self):
         with self.assertRaises(cora.errors.WrongValue):
-            cora.Zonotope.enclose_points(np.zeros((2, 3)), "other")
+            cora.Zonotope.enclose_points(np.zeros((3, 2)), "other")
         with self.assertRaises(cora.errors.WrongValue):
-            cora.Zonotope.enclose_points(np.zeros((2, 0)))
+            cora.Zonotope.enclose_points(np.zeros((0, 2)))
 
     def test_enclose_many(self):
         A, B = zonotope([0.5, 0.5], 0.5 * np.eye(2)), zonotope([2.5, 0.5], 0.5 * np.eye(2))

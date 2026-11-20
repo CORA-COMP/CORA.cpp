@@ -16,6 +16,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,14 +29,14 @@ namespace {
 void enclose_many_known(const std::string &b) {
     const Zonotope A(column({0.5, 0.5}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     const Zonotope B(column({2.5, 0.5}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
-    const auto [E, inverse] = Zonotope::enclose_many({A, B}, column({1.0, 0.0}));
+    const auto [E, inverse] = Zonotope::enclose_many({A, B}, vec({1.0, 0.0}));
     check(close(E.center(), std::vector<double>{1.5, 0.5}, 1e-14),
           b + ": the box [0, 3] x [0, 1]: center");
     check(close(E.generators(), std::vector<double>{1.5, 0, 0, 0.5}, 1e-14),
           b + ": the box: generators");
     check(close(inverse, std::vector<double>{1, 0, 0, 1}, 0), b + ": the frame is the identity");
 
-    const auto [D, rot_inv] = Zonotope::enclose_many({A, B}, column({3.0, 3.0}));
+    const auto [D, rot_inv] = Zonotope::enclose_many({A, B}, vec({3.0, 3.0}));
     const double a = std::sqrt(0.5);
     // the frame [d, e_0] with d = (1, 1) / sqrt(2): its inverse is [[0, 1 / a], [1, -1]]
     check(close(rot_inv, std::vector<double>{0, 1 / a, 1, -1}, 1e-12),
@@ -54,8 +55,8 @@ void enclose_many_encloses(const std::string &b) {
     Zs.reserve(4);
     for (int k = 0; k < 4; ++k)
         Zs.push_back(Zonotope::generate_random(rng, 3, std::nullopt, 5) +
-                     column({1.0 * k, -2.0 * k, 0.5}));
-    const Tensor direction = column({1.0, -2.0, 0.5});
+                     vec({1.0 * k, -2.0 * k, 0.5}));
+    const Tensor direction = vec({1.0, -2.0, 0.5});
     const auto [E, inverse] = Zonotope::enclose_many(Zs, direction);
     for (const Zonotope &Z : Zs) {
         for (int j = 0; j < 40; ++j) {
@@ -80,29 +81,27 @@ void enclose_many_encloses(const std::string &b) {
 /// Wrong inputs are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
-    check(test::raises([&] { Zonotope::enclose_many({}, column({1.0, 0.0})); }, Error::wrong_value),
+    check(test::raises([&] { Zonotope::enclose_many({}, vec({1.0, 0.0})); }, Error::wrong_value),
           "enclose_many: none");
-    check(
-        test::raises([&] { Zonotope::enclose_many({Z}, column({0.0, 0.0})); }, Error::wrong_value),
-        "enclose_many: zero direction");
-    check(test::raises([&] { Zonotope::enclose_many({Z}, column({1.0, 0.0, 0.0})); },
+    check(test::raises([&] { Zonotope::enclose_many({Z}, vec({0.0, 0.0})); }, Error::wrong_value),
+          "enclose_many: zero direction");
+    check(test::raises([&] { Zonotope::enclose_many({Z}, vec({1.0, 0.0, 0.0})); },
                        Error::dimension_mismatch),
           "enclose_many: direction");
     check(test::raises(
               [&] {
                   Zonotope::enclose_many({Z, Zonotope(column({0.0}), Tensor({{1.0}}))},
-                                         column({1.0, 0.0}));
+                                         vec({1.0, 0.0}));
               },
               Error::dimension_mismatch),
           "enclose_many: dimensions");
     // a batch is refused
-    check(
-        test::raises([&] { Zonotope::enclose_many({Zonotope::stack({Z, Z})}, column({1.0, 0.0})); },
-                     Error::dimension_mismatch),
-        "enclose_many: a batch");
-    const Tensor on = Zonotope::enclose_many({Z}, column({1.0, 0.0})).first.generators();
+    check(test::raises([&] { Zonotope::enclose_many({Zonotope::stack({Z, Z})}, vec({1.0, 0.0})); },
+                       Error::dimension_mismatch),
+          "enclose_many: a batch");
+    const Tensor on = Zonotope::enclose_many({Z}, vec({1.0, 0.0})).first.generators();
     ChecksScope off(false);
-    check(close(Zonotope::enclose_many({Z}, column({1.0, 0.0})).first.generators(), on, 0),
+    check(close(Zonotope::enclose_many({Z}, vec({1.0, 0.0})).first.generators(), on, 0),
           "enclose_many: checks off");
 }
 

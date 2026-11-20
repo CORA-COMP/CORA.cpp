@@ -18,7 +18,7 @@
 
 namespace test {
 
-/// A bundle of k zonotopes of n dimensions and m generators, all containing `common` (n, 1).
+/// A bundle of k zonotopes of n dimensions and m generators, all containing `common` (n).
 inline cora::ZonoBundle random_zono_bundle(cora::Rng &rng, int n, int k, int m,
                                            cora::Tensor *common = nullptr) {
     std::vector<double> x0(n);
@@ -33,7 +33,7 @@ inline cora::ZonoBundle random_zono_bundle(cora::Rng &rng, int n, int k, int m,
         // the center is chosen so that x0 = c + G b with |b| <= 1
         members.emplace_back(point - Gt.matmul(column(b)), Gt.matrix_transpose());
     }
-    if (common) *common = point;
+    if (common) *common = point.squeeze(-1);
     return cora::ZonoBundle(std::move(members));
 }
 
@@ -45,25 +45,26 @@ inline cora::ZonoBundle two_zonotopes() {
          cora::Zonotope(column({1.0, 0.0}), cora::Tensor({{1.0, 0.0}, {1.0, 1.0}}))});
 }
 
-/// Whether the point p (n, 1) lies in every member of the bundle.
+/// Whether the points p (..., n) lie in every member of the bundle.
 inline bool in_every_member(const cora::ZonoBundle &bundle, const cora::Tensor &p) {
     for (const cora::Zonotope &Z : bundle.zonotopes())
         if (!Z.contains(p)) return false;
     return true;
 }
 
-/// N points (n, N) of the bundle: the common point first, then by rejection from the first member.
+/// N points (N, n) of the bundle: the common point (n) first, then by rejection from the first
+/// member.
 inline cora::Tensor bundle_points(const cora::ZonoBundle &bundle, cora::Rng &rng, int N,
                                   const cora::Tensor &common) {
-    std::vector<cora::Tensor> kept{common};
+    std::vector<cora::Tensor> kept{common.expand_dims(0)};
     for (int round = 0; round < 200 && int(kept.size()) < N; ++round) {
         const cora::Tensor draw = bundle.zonotopes().front().rand_point(8, rng);
         for (int k = 0; k < 8 && int(kept.size()) < N; ++k) {
-            const cora::Tensor p = draw.slice(-1, k, k + 1);
+            const cora::Tensor p = draw.slice(-2, k, k + 1);
             if (in_every_member(bundle, p)) kept.push_back(p);
         }
     }
-    return cora::Tensor::concat(kept, -1);
+    return cora::Tensor::concat(kept, -2);
 }
 
 } // namespace test

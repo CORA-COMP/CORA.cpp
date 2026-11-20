@@ -44,7 +44,7 @@ void is_intersecting_known(const std::string &b) {
           b + ": skew segments, radii 1.0");
     check(!C1.is_intersecting(Capsule::empty(2)) && !Capsule::empty(2).is_intersecting(C1),
           b + ": the empty capsule meets nothing");
-    check(C1.is_intersecting(column({0.5, 0.05})) && !C1.is_intersecting(column({0.5, 0.5})),
+    check(C1.is_intersecting(test::vec({0.5, 0.05})) && !C1.is_intersecting(test::vec({0.5, 0.5})),
           b + ": points are contains");
     // the registry and the empty set and the whole space
     check(is_intersecting(C1, cross) && !is_intersecting(C1, EmptySet(2)) &&
@@ -82,7 +82,7 @@ void checks_and_their_switch() {
           "is_intersecting: the dimensions agree");
     check(test::raises([&] { C1.is_intersecting(C1, -1.0); }, Error::wrong_value),
           "is_intersecting: tol is nonnegative");
-    check(test::raises([&] { C1.is_intersecting(column({0.0, 0.0, 0.0})); },
+    check(test::raises([&] { C1.is_intersecting(test::vec({0.0, 0.0, 0.0})); },
                        Error::dimension_mismatch),
           "is_intersecting: points of another dimension");
     ChecksScope off(false);

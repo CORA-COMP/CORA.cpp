@@ -90,7 +90,7 @@ std::vector<std::pair<S, Tensor>> aux_normals(F make) {
                                          {0, 0, -1, 0},
                                          {0.5, 0.5, 0.5, 0.5},
                                          {-0.5, 0.5, -0.5, 0.5}})
-        pairs.emplace_back(make(4), Tensor::from_data(c, {4, 1}));
+        pairs.emplace_back(make(4), Tensor::from_data(c, {4}));
     return pairs;
 }
 
@@ -182,7 +182,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             // a vector is the point box, and I - [p, p] is I + (-p) in every bound
             const Interval I = rnd.box(n);
-            const Tensor p = rnd.vector(n);
+            const Tensor p = rnd.point(n);
             oracle::check(aux_set(I).minus(p).as<Interval>(),
                           lean::Interval(I).minus(lean::Interval(Interval(p, p))));
         }
@@ -195,16 +195,16 @@ int main() {
                 oracle::check(aux_set(Z).enlarge(factor).as<Zonotope>(),
                               lean::Zonotope(Z).enlarge(factor));
             // a factor per coordinate
-            const Tensor column = rnd.vector(n).abs();
-            oracle::check(aux_set(Z).enlarge(column).as<Zonotope>(),
-                          lean::Zonotope(Z).enlarge(column));
+            const Tensor factors = rnd.point(n).abs();
+            oracle::check(aux_set(Z).enlarge(factors).as<Zonotope>(),
+                          lean::Zonotope(Z).enlarge(factors));
         }
     });
 
     oracle::run("zonotope.minus", [](oracle::Random &rnd) {
         for (const auto &[n, m] : {std::pair{2, 3}, {5, 30}, {20, 50}}) {
             const Zonotope Z = rnd.zonotope(n, m);
-            const Tensor p = rnd.vector(n);
+            const Tensor p = rnd.point(n);
             oracle::check(aux_set(Z).minus(p).as<Zonotope>(), lean::Zonotope(Z).minus(p));
         }
     });
@@ -212,7 +212,7 @@ int main() {
     // the normals are of length 1 exactly: an axis, and (1/2, 1/2, 1/2, 1/2)
     oracle::run("interval.projectOnHyperplane", [](oracle::Random &rnd) {
         for (const auto &[I, c] : aux_normals<Interval>([&](int n) { return rnd.box(n); })) {
-            const Tensor d = rnd.vector(1);
+            const Tensor d = rnd.point(1).squeeze(-1);
             aux_check_projected(aux_set(I).project_on_hyperplane(c, d).as<Interval>(),
                                 lean::Interval(I).project_on_hyperplane(c, d.item()));
         }
@@ -220,7 +220,7 @@ int main() {
     oracle::run("zonotope.projectOnHyperplane", [](oracle::Random &rnd) {
         for (const auto &[Z, c] :
              aux_normals<Zonotope>([&](int n) { return rnd.zonotope(n, 8); })) {
-            const Tensor d = rnd.vector(1);
+            const Tensor d = rnd.point(1).squeeze(-1);
             aux_check_projected(aux_set(Z).project_on_hyperplane(c, d).as<Zonotope>(),
                                 lean::Zonotope(Z).project_on_hyperplane(c, d.item()));
         }
@@ -383,14 +383,14 @@ int main() {
 
     oracle::run("times", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
-            const Tensor f = rnd.vector(n);
+            const Tensor f = rnd.point(n);
             const Interval I = rnd.box(n);
             // times with a factor
             oracle::check(aux_set(I).times(f).as<Interval>(),
                           lean::Interval(I).times(lean::Interval(Interval(f, f))));
             const Zonotope Z = rnd.zonotope(n, m);
             oracle::check(aux_set(Z).times(f).as<Zonotope>(),
-                          lean::Zonotope(Z).linear_map(f.diag()));
+                          lean::Zonotope(Z).linear_map(f.expand_dims(-1).diag()));
         }
     });
 

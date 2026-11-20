@@ -22,6 +22,23 @@
 namespace cora {
 
 
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+/// Whether v is a point (..., elem...) of Z: its last axes are the shape of Z's elements.
+bool aux_is_point(const Tensor &v, const Zonotope &Z) {
+    if (v.numel() == 1) return true; // one number for every entry
+    const Shape elem = Z.elem_shape();
+    if (v.ndim() < elem.size()) return false;
+    for (int64_t i = 0; i < elem.size(); ++i)
+        if (v.size(int(v.ndim() - elem.size() + i)) != elem[i]) return false;
+    return true;
+}
+
+} // namespace
+
+
 // ===========================================  MAIN  =========================================== //
 
 Zonotope Zonotope::plus(const Zonotope &Z2) const {
@@ -62,11 +79,21 @@ Zonotope Zonotope::plus(const Interval &I) const {
 Set Zonotope::translate_impl(const Tensor &v) const { return *this + v; }
 
 Zonotope operator+(const Zonotope &Z, const Tensor &v) {
-    return {Z.c_ + priv_point_row(v, Z), Z.G_, Z.elem_rank_};
+    detail::Entry entry;
+    CORA_CHECK(aux_is_point(v, Z), Error::dimension_mismatch, [&] {
+        return std::string("plus: the point must be (..., ") +
+               shape_text(Z.elem_shape()).substr(1) + ", got the shape " + shape_text(v.shape());
+    });
+    return {Z.c_ + v, Z.G_, Z.elem_rank_};
 }
 
 Zonotope operator-(const Zonotope &Z, const Tensor &v) {
-    return {Z.c_ - priv_point_row(v, Z), Z.G_, Z.elem_rank_};
+    detail::Entry entry;
+    CORA_CHECK(aux_is_point(v, Z), Error::dimension_mismatch, [&] {
+        return std::string("minus: the point must be (..., ") +
+               shape_text(Z.elem_shape()).substr(1) + ", got the shape " + shape_text(v.shape());
+    });
+    return {Z.c_ - v, Z.G_, Z.elem_rank_};
 }
 
 Zonotope operator-(const Zonotope &Z) { return {Z.c_ * -1.0, Z.G_ * -1.0, Z.elem_rank_}; }

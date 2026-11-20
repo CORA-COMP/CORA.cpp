@@ -16,6 +16,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,11 +27,11 @@ namespace {
 /// Hand-computed along the axes; the empty capsule has -Inf.
 void support_known(const std::string &b) {
     const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
-    check(close(C.support_function(column({1.0, 0.0})), {4.5}, 1e-14), b + ": d = (1, 0)");
-    check(close(C.support_function(column({0.0, 2.0})), {13.0}, 1e-14), b + ": d = (0, 2)");
-    check(close(C.support_function(column({-1.0, 0.0})), {2.5}, 1e-14), b + ": d = (-1, 0)");
-    check(C.support_function(column({1.0, 0.0})).item() == 4.5, b + ": a number");
-    check(Capsule::empty(2).support_function(column({1.0, 0.0})).item() ==
+    check(close(C.support_function(vec({1.0, 0.0})), {4.5}, 1e-14), b + ": d = (1, 0)");
+    check(close(C.support_function(vec({0.0, 2.0})), {13.0}, 1e-14), b + ": d = (0, 2)");
+    check(close(C.support_function(vec({-1.0, 0.0})), {2.5}, 1e-14), b + ": d = (-1, 0)");
+    check(C.support_function(vec({1.0, 0.0})).item() == 4.5, b + ": a number");
+    check(Capsule::empty(2).support_function(vec({1.0, 0.0})).item() ==
               -std::numeric_limits<double>::infinity(),
           b + ": empty");
 }
@@ -44,8 +45,7 @@ void support_property(const std::string &b) {
         const std::vector<double> d = test::random_direction(rng, 3);
         const double value = test::support(C, d);
         const Tensor P = test::sample_points(C, rng, 40);
-        check(column(d).matrix_transpose().matmul(P).max().item() <= value + 1e-12,
-              b + ": the points stay below");
+        check(P.matmul(column(d)).max().item() <= value + 1e-12, b + ": the points stay below");
         double norm = 0;
         for (const double x : d) norm += x * x;
         const double along = d[0] * C.generator().data()[0] + d[1] * C.generator().data()[1] +
@@ -61,10 +61,10 @@ void support_property(const std::string &b) {
 /// A direction of the wrong size is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
     const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
-    check(test::raises([&] { C.support_function(column({1.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { C.support_function(vec({1.0})); }, Error::dimension_mismatch),
           "support_function: dimension");
     ChecksScope off(false);
-    check(close(C.support_function(column({1.0, 0.0})), {4.5}, 1e-14),
+    check(close(C.support_function(vec({1.0, 0.0})), {4.5}, 1e-14),
           "support_function: same with the checks off");
 }
 

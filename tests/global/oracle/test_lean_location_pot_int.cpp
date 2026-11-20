@@ -32,7 +32,7 @@ Polytope aux_guard(test::oracle::Random &rnd, const std::vector<Zonotope> &sets,
     std::vector<double> b(static_cast<std::size_t>(p));
     for (int64_t i = 0; i < p; ++i) {
         const Zonotope &S = sets[std::size_t(i) % sets.size()];
-        const Tensor row = A.slice(-2, i, i + 1).matrix_transpose();
+        const Tensor row = A.slice(-2, i, i + 1).squeeze(-2);
         b[std::size_t(i)] = -S.support_function(-row).item() + rnd.uniform(-1, 1);
     }
     if (!equality) return {A, Tensor::from_data(b, {p})};

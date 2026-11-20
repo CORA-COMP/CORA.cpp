@@ -46,7 +46,7 @@ inline Zonotope set_of(const System &s) {
 inline Tensor system_matrix(const System &s) { return Tensor::from_data(s.A, {s.n, s.n}); }
 
 inline double support(const Zonotope &Z, const Eigen::VectorXd &d) {
-    return Z.support_function(Tensor::from_data({d.data(), d.data() + d.size()}, {d.size(), 1}))
+    return Z.support_function(Tensor::from_data({d.data(), d.data() + d.size()}, {d.size()}))
         .data()[0];
 }
 

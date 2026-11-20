@@ -109,7 +109,7 @@ inline std::vector<double> random_direction(cora::Rng &rng, int n) {
 
 /// The support function of any set along the host direction d, as a number.
 inline double support(const cora::ContSet &S, const std::vector<double> &d) {
-    return S.support_function(column(d)).data()[0];
+    return S.support_function(vec(d)).data()[0];
 }
 
 /// Whether calling f throws.

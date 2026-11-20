@@ -46,7 +46,8 @@ void linear_map_property(const std::string &b) {
         const ZonoBundle zono_bundle = test::random_zono_bundle(rng, 3, 2, 4, &common);
         const Tensor M = Tensor::from_data({1.0, -2.0, 0.5, 0.0, 1.0, 3.0}, {2, 3});
         const Tensor points = test::bundle_points(zono_bundle, rng, 15, common);
-        check(zono_bundle.linear_map(M).contains(M.matmul(points)), b + ": the images are inside");
+        check(zono_bundle.linear_map(M).contains(points.matmul(M.matrix_transpose())),
+              b + ": the images are inside");
     }
 }
 

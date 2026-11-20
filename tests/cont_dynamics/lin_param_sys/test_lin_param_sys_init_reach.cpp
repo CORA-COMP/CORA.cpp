@@ -40,8 +40,7 @@ void first_step() {
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const ReachSet R = sys.reach({R0, U, 0.1}, a);
-    const LinParamStep first =
-        sys.init_reach(R0, U - U.center().expand_dims(-1), U.center().expand_dims(-1), a);
+    const LinParamStep first = sys.init_reach(R0, U - U.center(), U.center().expand_dims(-1), a);
     check(close(R.time_interval[0].center(), first.time_interval.center(), 0) &&
               close(R.time_interval[0].generators(), first.time_interval.generators(), 0) &&
               close(R.time_point[1].center().expand_dims(-1),

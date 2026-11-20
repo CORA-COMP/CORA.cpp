@@ -11,7 +11,7 @@
 // Inputs:   N - the number of points, a positive integer
 //           rng - the random numbers
 //           type - "standard" (default), "extreme", "uniform:hitAndRun"
-// Outputs:  p - N points, the columns of (n, N)
+// Outputs:  p - N points, the rows of (N, n)
 // See also: Polytope::support_function, Polytope::is_full_dim
 //
 // CORA: contSet/@polytope/randPoint_.m
@@ -22,7 +22,6 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
-#include "global/blocks.h"
 
 #include <algorithm>
 #include <cmath>
@@ -124,10 +123,9 @@ Rows aux_hit_and_run(const Host &host, int64_t N, Rng &rng) {
     return points;
 }
 
-/// The (n, N) tensor of the points, on the backend of `like` (the generic columns until #163's
-/// point sweep).
+/// The (N, n) tensor of the points, on the backend of `like`.
 Tensor aux_matrix(const Tensor &like, int64_t n, const Rows &points) {
-    return priv_points_tensor(like, n, points).matrix_transpose();
+    return priv_points_tensor(like, n, points);
 }
 
 } // namespace
@@ -164,9 +162,9 @@ Tensor Polytope::rand_point(int64_t N, Rng &rng, const std::string &type) const 
     if (priv_is_fullspace(*this)) {
         std::vector<double> flat(std::size_t(n * N));
         rng.normal(flat.data(), flat.size(), 1.0);
-        return Tensor::like(like, flat, {n, N});
+        return Tensor::like(like, flat, {n, N}).matrix_transpose();
     }
-    if (priv_polytope_is_empty(*this)) return zeros_block(like, n, 0);
+    if (priv_polytope_is_empty(*this)) return like.zeros_like({0, n});
     // the host form of the set, then the sampler of the type
     Host host;
     host.H = priv_host_h(constraints());

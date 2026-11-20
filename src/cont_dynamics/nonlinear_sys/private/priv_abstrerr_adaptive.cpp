@@ -188,7 +188,7 @@ AdaptiveLinearization priv_linearize_adaptive(const NonlinearSys &sys,
     Jacobians J =
         sys.jacobian(xs_t, m > 0 ? std::optional<Tensor>(priv_column(like, us)) : std::nullopt);
     Zonotope Vbase = priv_box_zonotope(like, priv_enclosure(sys, like, Box{xs, xs}, point_u(us)));
-    if (m > 0) Vbase = Vbase + (*U - U->center().expand_dims(-1)).linear_map(J.B);
+    if (m > 0) Vbase = Vbase + (*U - U->center()).linear_map(J.B);
     return {xs, std::move(xs_t), std::move(J), std::move(Vbase)};
 }
 
@@ -234,8 +234,9 @@ Zonotope priv_abstr_err_adaptive(const NonlinearSys &sys, int kappa, const Tenso
     const Box point_x{xs, xs};
     const std::optional<Box> point_u = m > 0 ? std::optional<Box>(Box{us, us}) : std::nullopt;
     const Hessian Hp = priv_hessian(sys, like, point_x, point_u);
-    const Zonotope Rred = (Rmax - priv_column(like, xs)).reduce_adaptive(std::sqrt(red_factor));
-    const Zonotope Z = m > 0 ? Rred.cart_prod(*U - U->center().expand_dims(-1)) : Rred;
+    const Zonotope Rred =
+        (Rmax - priv_column(like, xs).squeeze(-1)).reduce_adaptive(std::sqrt(red_factor));
+    const Zonotope Z = m > 0 ? Rred.cart_prod(*U - U->center()) : Rred;
     const std::vector<Tensor> Q = priv_half_hessians(like, Hp, n, n + m);
     const Zonotope second = Z.quad_map(Q);
     const Zonotope rest =

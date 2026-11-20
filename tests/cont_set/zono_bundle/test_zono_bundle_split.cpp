@@ -44,8 +44,8 @@ void split_property(const std::string &b) {
     const auto [low, high] = zono_bundle.split(1);
     const Tensor points = test::bundle_points(zono_bundle, rng, 12, common);
     bool covered = true;
-    for (int64_t k = 0; k < points.shape().back(); ++k) {
-        const Tensor p = points.slice(-1, k, k + 1);
+    for (int64_t k = 0; k < points.shape()[0]; ++k) {
+        const Tensor p = points.slice(-2, k, k + 1);
         covered = covered && (low.contains(p) || high.contains(p));
     }
     check(covered, b + ": the pieces cover the bundle");

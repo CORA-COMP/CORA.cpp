@@ -67,7 +67,7 @@ void strip_encloses_the_intersection(const std::string &b) {
     const Tensor C = Tensor({{1.0, 0.5, 0.0}, {0.0, -1.0, 2.0}});
     const Tensor phi = column({0.8, 1.5}),
                  y = C.matmul(Z.center().expand_dims(-1)) + column({0.3, -0.2});
-    const Tensor points = Z.rand_point(3000, rng);
+    const Tensor points = Z.rand_point(3000, rng).matrix_transpose(); // as columns (n, N)
     // the points of Z inside all strips of (C, phi, y)
     const auto inside = [&](const Tensor &C_, const Tensor &phi_, const Tensor &y_) {
         const Tensor excess = (C_.matmul(points) - y_).abs() - phi_;
@@ -79,7 +79,7 @@ void strip_encloses_the_intersection(const std::string &b) {
         for (int k = 0; k < 3000; ++k) {
             if (keep[k] == 0) continue;
             ++count;
-            check(result.contains(points.slice(-1, k, k + 1), "exact", 1e-9),
+            check(result.contains(points.slice(-1, k, k + 1).matrix_transpose(), "exact", 1e-9),
                   b + ": " + what + ": a point of the intersection leaves the result");
         }
         check(count > 100, b + ": " + what + ": the strips keep part of the zonotope");

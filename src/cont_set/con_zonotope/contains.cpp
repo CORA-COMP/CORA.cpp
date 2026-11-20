@@ -8,7 +8,7 @@
 // outputs (the certificate and the scaling) are not returned.
 //
 // Syntax:   res = cz.contains(p);   res = cz.contains(S, "exact", tol);
-// Inputs:   p, S, I - points (n, N), a zonotope or a box of the dimension of cz
+// Inputs:   p, S, I - points (..., n), one per row, a zonotope or a box of the dimension of cz
 //           method - "exact" (default) or "exact:venum"
 //           tol - relaxes the norm of the points; default: the repository tolerance
 // Outputs:  res - true if all points are in the set
@@ -54,10 +54,10 @@ detail::Refusal aux_method_refusal(const std::string &method) {
 /// a method.
 detail::Refusal aux_points_refusal(const ConZonotope &cz, const Tensor &p,
                                    const std::string &method) {
-    if (p.ndim() != 2 || p.shape()[0] != cz.dim())
+    if (!is_vector(p, cz.dim()))
         return std::pair{Error::dimension_mismatch,
-                         "the points must be a matrix (" + std::to_string(cz.dim()) +
-                             ", N) of columns, got the shape " + shape_text(p.shape())};
+                         "the points must be (..., " + std::to_string(cz.dim()) +
+                             "), one per row, got the shape " + shape_text(p.shape())};
     if (cz.c().ndim() != 1)
         return std::pair{Error::not_supported,
                          std::string("a linear program per set: it supports a single set, "
@@ -98,7 +98,7 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
     // a set that is a point: every point lies within tol of it
     const Interval box = compacted.interval();
     if (within_tol(box.inf(), box.sup(), tol).min().item() == 1.0) {
-        const Tensor point = compacted.center();
+        const Tensor point = compacted.center().expand_dims(-1);
         return within_tol(P, point.broadcast_to(P.shape()), tol).min().item() == 1.0;
     }
     const Tensor extended_center = Tensor::concat(
@@ -107,7 +107,7 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
         Tensor::concat({compacted.generators().matrix_transpose(), compacted.A()}, -2);
     const Tensor offsets = compacted.b().broadcast_to({p, N});
     return Zonotope(extended_center.squeeze(-1), extended_generators.matrix_transpose())
-        .contains(Tensor::concat({P, offsets}, -2), "exact", tol);
+        .contains(Tensor::concat({P, offsets}, -2).matrix_transpose(), "exact", tol);
 }
 
 } // namespace
@@ -120,7 +120,9 @@ bool ConZonotope::contains(const Tensor &p, const std::string &method, Tol tol_a
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
     const detail::Refusal refusal = aux_points_refusal(*this, p, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_contains_points(*this, p, tol);
+    // the test runs on CORA's columns (n, N)
+    const int64_t n = dim();
+    return aux_contains_points(*this, p.reshape({p.numel() / n, n}).matrix_transpose(), tol);
 }
 
 bool ConZonotope::contains(const Zonotope &S, const std::string &method, Tol tol_arg) const {
@@ -129,7 +131,7 @@ bool ConZonotope::contains(const Zonotope &S, const std::string &method, Tol tol
     const detail::Refusal refusal = aux_zonotope_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a convex set holds a zonotope exactly if it holds its corners
-    return aux_contains_points(*this, S.compact().corners(), tol);
+    return aux_contains_points(*this, S.compact().corners().matrix_transpose(), tol);
 }
 
 bool ConZonotope::contains(const Interval &I, const std::string &method, Tol tol_arg) const {
@@ -143,7 +145,7 @@ bool ConZonotope::contains(const Interval &I, const std::string &method, Tol tol
     const Zonotope Z = I.zonotope();
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_contains_points(*this, Z.compact().corners(), tol);
+    return aux_contains_points(*this, Z.compact().corners().matrix_transpose(), tol);
 }
 
 } // namespace cora

@@ -58,8 +58,8 @@ void trajectories_stay_inside(const std::string &b) {
         for (const std::vector<double> &x : {std::vector<double>{2, 2.5}, {0, 1.5}}) {
             const Tensor x_end = flow(A, kStep, test::column(x)) +
                                  A.inv().matmul((A * kStep).expm() - Tensor::eye(2)).matmul(w);
-            check(s.time_point.contains(x_end), b + ": the end of a trajectory");
-            check(s.time_interval.contains(x_end), b + ": inside the step's enclosure");
+            check(s.time_point.contains(x_end.squeeze(-1)), b + ": the end of a trajectory");
+            check(s.time_interval.contains(x_end.squeeze(-1)), b + ": inside the step's enclosure");
         }
     }
 }

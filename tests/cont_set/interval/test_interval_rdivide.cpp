@@ -77,7 +77,8 @@ void rdivide_encloses_the_image(const std::string &b) {
         const Interval I = Interval::generate_random(rng, 2);
         const Interval D(vec({0.5 + trial % 3, -3.0 - trial % 2}), vec({1.5 + trial % 3, -0.5}));
         const Interval R = I.rdivide(D);
-        const Tensor x = I.rand_point(20, rng), y = D.rand_point(20, rng);
+        const Tensor x = I.rand_point(20, rng).matrix_transpose(),
+                     y = D.rand_point(20, rng).matrix_transpose();
         bool inside = true;
         for (int k = 0; k < 20; ++k)
             inside =

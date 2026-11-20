@@ -5,14 +5,14 @@
 // Syntax:   P = F.rand_point(N, rng);
 // Inputs:   N - number of points
 //           rng - random numbers
-// Outputs:  P - N standard normal points as columns (n, N), CORA's type 'standard'
+// Outputs:  P - N standard normal points as rows (N, n), drawn as CORA's columns (n, N)
 // See also: center, Interval::rand_point
 //
 // CORA: contSet/@fullspace/randPoint_.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/fullspace/fullspace.h"
@@ -30,7 +30,7 @@ CORA_FROM_NUMBERS Tensor Fullspace::rand_point_impl(int64_t N, Rng &rng) const {
     if (n_ == 0) CORA_FAIL(Error::not_supported, "rand_point: sampling of R^0 is not supported");
     std::vector<double> points(n_ * N);
     rng.normal(points.data(), points.size(), 1.0);
-    return Tensor::from_data(points, {n_, N});
+    return Tensor::from_data(points, {n_, N}).matrix_transpose();
 }
 
 } // namespace cora

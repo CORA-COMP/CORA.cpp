@@ -52,8 +52,8 @@ inline cora::ConZonotope hexagon() {
             cora::Tensor::from_data({0.0}, {1, 1})};
 }
 
-/// N points of the set (n, N): the free factors are uniform in the box, the others follow from
-/// the constraints [I B] x = b (the set must be of the form of random_con_zonotope), by rejection.
+/// N points of the set as CORA's columns (n, N), the sets take their transpose (N, n) (#163); the
+/// free factors uniform in the box, the others from [I B] x = b, by rejection.
 inline cora::Tensor sample_points(const cora::ConZonotope &cz, cora::Rng &rng, int N) {
     const int64_t n = cz.dim(), m = cz.nr_generators(), p = cz.A().shape()[0];
     const std::vector<double> c = cz.c().data(), G = cz.generators().matrix_transpose().data(),

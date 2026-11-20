@@ -23,7 +23,7 @@ namespace {
 /// The four corners of a parallelogram, sign j of corner k the bit j of k; a point is its corner.
 void corners_of_small_sets(const std::string &b) {
     const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
-    check(close(Z.corners(), std::vector<double>{-0.5, 1.5, 0.5, 2.5, 1, 1, 3, 3}, 0),
+    check(close(Z.corners(), std::vector<double>{-0.5, 1, 1.5, 1, 0.5, 3, 2.5, 3}, 0),
           b + ": the parallelogram");
     const Zonotope point(column({3.0, -1.0}), Tensor::from_data({}, {0, 2}));
     check(close(point.corners(), std::vector<double>{3, -1}, 0), b + ": a point");

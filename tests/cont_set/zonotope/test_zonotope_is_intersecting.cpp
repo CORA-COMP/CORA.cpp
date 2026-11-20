@@ -48,10 +48,10 @@ void intersecting_known(const std::string &b) {
     check(!diamond.is_intersecting(Zonotope(column({0.9, 0.9}), Tensor({{0.1, 0.1}}))),
           b + ": a segment beyond the corner");
 
-    check(diamond.is_intersecting(column({0.5, 0.5})), b + ": a point on the boundary");
+    check(diamond.is_intersecting(vec({0.5, 0.5})), b + ": a point on the boundary");
     // points and registry
-    check(!diamond.is_intersecting(column({0.6, 0.6})), b + ": a point outside");
-    check(!diamond.is_intersecting(Tensor({{0.0, 0.6}, {0.0, 0.6}})),
+    check(!diamond.is_intersecting(vec({0.6, 0.6})), b + ": a point outside");
+    check(!diamond.is_intersecting(Tensor({{0.0, 0.0}, {0.6, 0.6}})),
           b + ": points: all must be in");
     check(is_intersecting(Z, square_at(1.5)), b + ": through the registry");
     check(!is_intersecting(Z, Interval(vec({3.0, 0.0}), vec({4.0, 1.0}))),
@@ -66,7 +66,7 @@ void intersecting_property(const std::string &b) {
         const Zonotope Z1 = Zonotope::generate_random(rng, 3, std::nullopt, 4);
         std::vector<double> shift(3);
         rng.uniform(shift.data(), 3, -15.0, 15.0);
-        const Zonotope Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 3) + column(shift);
+        const Zonotope Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 3) + vec(shift);
         const bool res = Z1.is_intersecting(Z2);
         check(res == Z2.is_intersecting(Z1), b + ": symmetric");
         if (Z1.contains(Z2.rand_point(5, rng), "exact", 0.0))
@@ -88,7 +88,7 @@ void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(column({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Z.is_intersecting(Z1); }, Error::dimension_mismatch),
           "is_intersecting: dimensions");
-    check(test::raises([&] { Z.is_intersecting(column({1.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { Z.is_intersecting(vec({1.0})); }, Error::dimension_mismatch),
           "is_intersecting: points");
     check(test::raises([&] { Z.is_intersecting(Z, "other"); }, Error::wrong_value),
           "is_intersecting: type");

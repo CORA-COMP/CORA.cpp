@@ -76,7 +76,8 @@ void intersect_strip_property(const std::string &b) {
                 const Tensor d = (C.matmul(x) - y).abs() - phi;
                 if (d.max().item() > 0) continue;
                 ++inside;
-                check(R.contains(x, "exact", 1e-6), b + ": a point in the strip is in the result");
+                check(R.contains(x.squeeze(-1), "exact", 1e-6),
+                      b + ": a point in the strip is in the result");
             }
             check(inside > 0, b + ": the strips meet the set");
         }

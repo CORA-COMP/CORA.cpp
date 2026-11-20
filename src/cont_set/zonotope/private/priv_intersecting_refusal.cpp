@@ -12,7 +12,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -36,12 +36,14 @@ Refusal priv_intersecting_refusal(const std::string &type, const Tensor &c, cons
 
 Refusal priv_intersecting_points_refusal(const std::string &type, const Tensor &c,
                                          const Tensor &p) {
-    // points are columns (n, N) of the dimension n of the set
-    if (p.ndim() != 2 || p.shape()[0] != c.shape()[c.ndim() - 2])
+    // points are rows (..., n) of the dimension n of the set, whose center c is (..., n)
+    const int64_t n = c.size(-1);
+    if (!is_vector(p, n))
         return std::pair{Error::dimension_mismatch,
-                         "the points must be a matrix (" + std::to_string(c.shape()[c.ndim() - 2]) +
-                             ", N) of columns, got the shape " + shape_text(p.shape())};
-    return priv_intersecting_refusal(type, c, p);
+                         "the points must be (..., " + std::to_string(n) +
+                             "), one per row, got the shape " + shape_text(p.shape())};
+    // any number of points: only the set must be single
+    return priv_intersecting_refusal(type, c.expand_dims(-1), c.expand_dims(-1));
 }
 
 } // namespace cora

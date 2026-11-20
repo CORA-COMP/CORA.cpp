@@ -35,11 +35,8 @@ Interval Interval::plus(const Interval &I2) const {
             empty_.either(I2.empty_)};
 }
 
-// the generic translation takes a column (..., n, 1); a box adds it as a vector
-Set Interval::translate_impl(const Tensor &v) const {
-    const Tensor t = elem_rank_ == 1 && is_column(v, dim()) ? v.squeeze(-1) : v;
-    return with(inf_ + t, sup_ + t);
-}
+Set Interval::translate_impl(const Tensor &v) const { return with(inf_ + v, sup_ + v); }
+
 
 } // namespace cora
 

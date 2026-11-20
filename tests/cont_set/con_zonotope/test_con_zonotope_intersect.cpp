@@ -60,8 +60,9 @@ void intersect_property(const std::string &b) {
         const Tensor points = test::sample_points(A, rng, 60);
         for (int64_t j = 0; j < points.shape()[1]; ++j) {
             const Tensor p = points.slice(1, j, j + 1);
-            const bool in_both = B.contains(p, "exact", 1e-7);
-            check(R.contains(p, "exact", 1e-7) == in_both, b + ": in the intersection iff in both");
+            const bool in_both = B.contains(p.squeeze(-1), "exact", 1e-7);
+            check(R.contains(p.squeeze(-1), "exact", 1e-7) == in_both,
+                  b + ": in the intersection iff in both");
         }
     }
 }

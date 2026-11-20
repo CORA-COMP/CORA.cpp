@@ -25,9 +25,10 @@ void empty_known(const std::string &b) {
     const Capsule C = Capsule::empty(3);
     check(C.dim() == 3 && C.is_empty(), b + ": dimension and emptiness");
     check(close(C.r(), {-1}, 0) && close(C.c(), {0, 0, 0}, 0), b + ": the radius -1 at the origin");
-    check(C.center().shape() == Shape{3, 0}, b + ": the center has no column");
+    check(C.center().shape() == Shape{3} && std::isnan(C.center().data()[0]),
+          b + ": the center is NaN, as the empty box's");
     check(Capsule::empty().dim() == 0, b + ": the dimension defaults to 0");
-    check(!C.contains(column({0.0, 0.0, 0.0})), b + ": it contains no point");
+    check(!C.contains(test::vec({0.0, 0.0, 0.0})), b + ": it contains no point");
     check(!Capsule(column({0.0, 0.0, 0.0})).is_empty(), b + ": a point is not empty");
     check(C.interval().is_empty(), b + ": its box is empty");
 }

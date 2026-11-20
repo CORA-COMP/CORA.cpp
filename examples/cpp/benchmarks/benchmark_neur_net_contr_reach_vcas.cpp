@@ -164,14 +164,14 @@ ClosedLoopVerdict aux_reach(bool middle, double hdot0, const std::vector<NeuralN
         const bool same = script_rule || next == adv;
         R = R.linear_map(aux_step_matrix());
         if (same && contained) {
-            R = R.plus(Tensor::from_data({0.0, 0.0, -1.0}, {3, 1}));
+            R = R.plus(Tensor::from_data({0.0, 0.0, -1.0}, {3}));
         } else if (same && meets) {
             // the hull of the accelerations 0 and the choice: a segment along (-1/2, 1, 0)
             const double mid = choice / 2, half = std::abs(choice) / 2;
             R = R.plus(Zonotope(Tensor::from_data({-0.5 * mid, mid, -1.0}, {3, 1}),
                                 Tensor::from_data({-0.5 * half, half, 0.0}, {1, 3})));
         } else {
-            R = R.plus(Tensor::from_data({-0.5 * choice, choice, -1.0}, {3, 1}));
+            R = R.plus(Tensor::from_data({-0.5 * choice, choice, -1.0}, {3}));
         }
         adv = next;
         // the unsafe set after step k (the script: the last step only)

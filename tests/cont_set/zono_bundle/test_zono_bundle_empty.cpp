@@ -11,7 +11,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,8 +30,9 @@ void empty_set_data(const std::string &b) {
     check((E.zonotopes()[0]).generators().matrix_transpose().shape() == Shape{3, 0},
           b + ": no generators");
     check(E.interval().is_empty(), b + ": its box is empty");
-    check(E.center().shape() == Shape{3, 0}, b + ": its center has no column");
-    check(!E.contains(column({0.0, 0.0, 0.0})) && !E.contains(column({1.0, 0.0, 0.0})),
+    check(E.center().shape() == Shape{3} && std::isnan(E.center().data()[0]),
+          b + ": its center is NaN");
+    check(!E.contains(vec({0.0, 0.0, 0.0})) && !E.contains(vec({1.0, 0.0, 0.0})),
           b + ": it contains no point");
     check(!E.is_full_dim(), b + ": it has no interior");
 }

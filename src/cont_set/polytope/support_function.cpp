@@ -6,8 +6,8 @@
 // direction must be a single column for halfspaces.
 //
 // Syntax:   rho = P.support_function(d);
-// Inputs:   d - direction, a column (..., n, 1)
-// Outputs:  rho - max_{x in P} d'x, shape (..., 1, 1)
+// Inputs:   d - direction (..., n)
+// Outputs:  rho - max_{x in P} d'x, shape (...)
 // See also: Polytope::interval, Polytope::contains
 //
 // CORA: contSet/@polytope/supportFunc_.m
@@ -19,7 +19,6 @@
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
-#include "global/blocks.h"
 
 #include <limits>
 
@@ -35,21 +34,23 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 /// The supremum over R^n: Inf unless the direction is zero.
 Tensor aux_fullspace(const Tensor &d) {
-    const Tensor value = d.abs().max(-2, true);
+    const Tensor value = d.abs().max(-1);
     return Tensor::where(value.greater(value.zeros_like()), value.ones_like() * kInf,
                          value.zeros_like());
 }
 
-/// The largest dot product of the direction (a column) with the vertices, the rows of V.
+/// The largest dot product of the direction (..., n) with the vertices, the rows of V.
 Tensor aux_vertices(const Tensor &V, const Tensor &d) {
-    if (V.size(-2) == 0) return full_block(d, 1, 1, -kInf);
+    Shape shape = d.shape();
+    shape.pop_back();
+    if (V.size(-2) == 0) return d.full_like(shape, -kInf);
     // d' V' on CORA's columns, the order of CORALean's product
-    return d.matrix_transpose().matmul(V.matrix_transpose()).max(-1, true);
+    return d.expand_dims(-2).matmul(V.matrix_transpose()).max(-1).squeeze(-1);
 }
 
 /// The value of the linear program along a single direction.
 Tensor aux_program(const Polytope &P, const Tensor &d) {
-    if (d.ndim() != 2)
+    if (d.ndim() != 1)
         CORA_FAIL(Error::not_supported, "support_function: a linear program per direction: it "
                                         "supports a single direction for halfspaces");
     const HostH H = priv_host_h(P.constraints());
@@ -65,7 +66,7 @@ Tensor Polytope::support_function_impl(const Tensor &d) const {
     // R^n answers without a program, the vertices by their dot products
     if (priv_is_fullspace(*this) && !is_v_rep()) return aux_fullspace(d);
     if (is_v_rep()) return aux_vertices(V_, d);
-    return aux_program(*this, d).reshape({1, 1});
+    return aux_program(*this, d).reshape(Shape{});
 }
 
 } // namespace cora

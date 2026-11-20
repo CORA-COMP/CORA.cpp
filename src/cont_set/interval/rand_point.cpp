@@ -3,7 +3,7 @@
 // Syntax:   P = I.rand_point(N, rng);
 // Inputs:   N - number of points
 //           rng - random numbers (a seed makes them repeatable)
-// Outputs:  P - points uniform in the box, columns (..., n, N)
+// Outputs:  P - points uniform in the box, rows (..., N, n)
 // See also: Zonotope::rand_point
 //
 // CORA: contSet/@interval/randPoint_.m
@@ -44,7 +44,8 @@ Tensor aux_fractions(const Tensor &like, int64_t N, Rng &rng) {
 Tensor Interval::rand_point_impl(int64_t N, Rng &rng) const {
     // inf + diag(sup - inf) * u scales row i of the fractions u by the width of side i.
     const Tensor lo = inf_matrix();
-    return lo + (sup_matrix() - lo).diag().matmul(aux_fractions(lo, N, rng));
+    // CORA's columns (..., n, N), as rows
+    return (lo + (sup_matrix() - lo).diag().matmul(aux_fractions(lo, N, rng))).matrix_transpose();
 }
 
 } // namespace cora

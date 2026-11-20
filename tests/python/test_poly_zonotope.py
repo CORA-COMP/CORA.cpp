@@ -147,7 +147,7 @@ class Operations(unittest.TestCase):
         P = known()
         rng = cora.Rng(1)
         points = P.rand_point(30, rng)
-        self.assertEqual(points.shape, (2, 30))
+        self.assertEqual(points.shape, (30, 2))
         self.assertTrue(P.zonotope().contains(points))
         miss = cora.Polytope(np.array([[1.0, 0.0]]), np.array([-1.0]))
         hit = cora.Polytope(np.array([[1.0, 0.0]]), np.array([1.0]))

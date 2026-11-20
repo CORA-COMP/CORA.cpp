@@ -12,7 +12,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,7 +26,7 @@ void origin_known(const std::string &b) {
     check(C.dim() == 3 && close(C.c(), {0, 0, 0}, 0) && close(C.generator(), {0, 0, 0}, 0) &&
               close(C.r(), {0}, 0),
           b + ": center, generator and radius are 0");
-    check(C.contains(column({0.0, 0.0, 0.0})) && !C.contains(column({0.0, 0.0, 1e-3})),
+    check(C.contains(vec({0.0, 0.0, 0.0})) && !C.contains(vec({0.0, 0.0, 1e-3})),
           b + ": it contains only the origin");
     check(!C.is_empty(), b + ": it is not empty");
 }

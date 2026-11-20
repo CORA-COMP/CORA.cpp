@@ -153,7 +153,7 @@ bool aux_plan() {
     a.zonotope_order = 800;
     const Zonotope U = aux_U();
     const Tensor u = U.center().expand_dims(-1); // the input center as a column
-    LinParamStep step = sys.init_reach(R0, U - u, u, a);
+    LinParamStep step = sys.init_reach(R0, U - U.center(), u, a);
     constexpr int kMaxSteps = 1000000; // the script has no bound
     for (int k = 0; k < kMaxSteps; ++k) {
         low = std::min(low, aux_lowest({step.time_interval}));

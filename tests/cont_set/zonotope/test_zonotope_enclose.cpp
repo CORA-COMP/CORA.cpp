@@ -16,6 +16,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -52,7 +53,7 @@ void enclose_contains_both(const std::string &b) {
         }
     }
     const Zonotope batch =
-        Zonotope::stack({Z, Z + column({1.0, 1.0, 1.0})}).enclose(Zonotope::stack({Z2, Z2}));
+        Zonotope::stack({Z, Z + vec({1.0, 1.0, 1.0})}).enclose(Zonotope::stack({Z2, Z2}));
     check(close(batch.center().slice(0, 0, 1).squeeze(0), Z.enclose(Z2).center(), 0),
           b + ": a batch, member 1");
 }

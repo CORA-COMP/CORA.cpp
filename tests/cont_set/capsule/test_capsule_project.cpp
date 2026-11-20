@@ -37,7 +37,7 @@ void project_property(const std::string &b) {
         const Capsule C = test::random_capsule(rng, 4);
         const Tensor P = test::sample_points(C, rng, 30);
         const Capsule R = C.project({3, 1}).as<Capsule>();
-        check(R.contains(P.take({3, 1}, 0)), b + ": the projected points are inside");
+        check(R.contains(P.take({3, 1}, -1)), b + ": the projected points are inside");
     }
 }
 

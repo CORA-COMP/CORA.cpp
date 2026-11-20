@@ -49,11 +49,14 @@ Linearized NonlinearSys::linearize_impl(const Tensor &center, const std::optiona
     const Jacobians J = jacobian(x_star, u_star);
     // the input of the affine system: B (U - u*) around its center, and the constant part
     Zonotope BU = Zonotope(c.zeros_like({n_}), c.zeros_like({0, n_}));
-    if (m_ > 0 && U) BU = (*U - *u_star).linear_map(J.B);
+    if (m_ > 0 && U) BU = (*U - u_star->squeeze(-1)).linear_map(J.B);
     const Tensor u_center = BU.center().expand_dims(-1);
-    return {
-        x_star,       u_star ? *u_star : c.zeros_like({0, 1}), f0, LinearSys(J.A), BU - u_center,
-        f0 + u_center};
+    return {x_star,
+            u_star ? *u_star : c.zeros_like({0, 1}),
+            f0,
+            LinearSys(J.A),
+            BU - u_center.squeeze(-1),
+            f0 + u_center};
 }
 
 } // namespace cora

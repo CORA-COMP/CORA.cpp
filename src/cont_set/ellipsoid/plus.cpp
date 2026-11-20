@@ -93,10 +93,8 @@ Ellipsoid Ellipsoid::plus(const Ellipsoid &S, const std::string &mode) const {
     return {q_ + S.q_, Q_ * (1.0 + 1.0 / next) + S.Q_ * (1.0 + next), tol};
 }
 
-// the generic translation takes a column (..., n, 1), the center is a vector
-Set Ellipsoid::translate_impl(const Tensor &v) const {
-    return plus(is_column(v, dim()) ? v.squeeze(-1) : v);
-}
+Set Ellipsoid::translate_impl(const Tensor &v) const { return plus(v); }
+
 
 } // namespace cora
 

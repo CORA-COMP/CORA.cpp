@@ -38,7 +38,7 @@ void reduce_property(const std::string &b) {
         for (int d = 0; d < 10; ++d) {
             std::vector<double> v(3);
             rng.normal(v.data(), 3, 1.0);
-            const Tensor dir = Tensor::from_data(v, {3, 1});
+            const Tensor dir = Tensor::from_data(v, {3});
             check(R.support_function(dir).item() >= Z.support_function(dir).item() - 1e-9,
                   b + ": the result holds the zonotope");
         }

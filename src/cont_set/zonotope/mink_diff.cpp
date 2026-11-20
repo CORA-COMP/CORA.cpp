@@ -179,7 +179,7 @@ Refusal aux_refusal(const std::string &method) {
 /// CORA's minkDiff of two zonotopes, after the checks.
 Zonotope aux_mink_diff(const Zonotope &minuend, const Zonotope &subtrahend,
                        const std::string &method) {
-    if (subtrahend.nr_generators() == 0) return minuend - subtrahend.center().expand_dims(-1);
+    if (subtrahend.nr_generators() == 0) return minuend - subtrahend.center();
     if (!minuend.is_full_dim()) {
         if (subtrahend.is_full_dim())
             aux_empty("the difference of a flat set and a full-dimensional one is empty");
@@ -256,11 +256,10 @@ Zonotope Zonotope::mink_diff(const Interval &subtrahend, const std::string &meth
 Zonotope Zonotope::mink_diff(const Tensor &p, const std::string &method) const {
     detail::Entry entry;
     // a point shifts the center whatever the method
-    CORA_CHECK(p.ndim() == 2 && p.shape()[0] == dim() && p.shape()[1] == 1,
-               Error::dimension_mismatch, [&] {
-                   return "mink_diff: the point must be a column (" + std::to_string(dim()) +
-                          ", 1), got the shape " + shape_text(p.shape());
-               });
+    CORA_CHECK(p.ndim() == 1 && p.shape()[0] == dim(), Error::dimension_mismatch, [&] {
+        return "mink_diff: the point must be a vector (" + std::to_string(dim()) +
+               "), got the shape " + shape_text(p.shape());
+    });
     const Refusal refusal = aux_refusal(method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "mink_diff: " + refusal->second; });
     return *this - p;

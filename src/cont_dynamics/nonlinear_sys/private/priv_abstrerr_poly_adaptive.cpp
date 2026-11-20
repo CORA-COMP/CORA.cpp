@@ -51,8 +51,8 @@ PolyStatic priv_precomp_stat_error_adaptive(const NonlinearSys &sys, const Vec &
                                     m > 0 ? std::optional<Box>(Box{us, us}) : std::nullopt);
     const std::vector<Tensor> Q = priv_half_hessians(like, Hp, n, n + m);
     // 1/2 quadMap(cartProd(Rred, U), H), reduced
-    const Zonotope Urec = m > 0 ? *U - U->center().expand_dims(-1)
-                                : Zonotope(like.zeros_like().squeeze(-1), like.zeros_like({0, n}));
+    const Zonotope Urec =
+        m > 0 ? *U - U->center() : Zonotope(like.zeros_like().squeeze(-1), like.zeros_like({0, n}));
     const PolyZonotope Z = m > 0 ? Rred.cart_prod(Urec) : Rred;
     const PolyZonotope second = priv_poly_quad_map(Z, Q);
     return {priv_reduce_adaptive_poly(second, rf), m > 0 ? Rdz.cart_prod(Urec) : Rdz};
@@ -71,7 +71,7 @@ Zonotope priv_abstr_err_poly_adaptive(const NonlinearSys &sys, const Vec &xs, co
         m > 0 ? std::optional<Box>(priv_hull(priv_zonotope_box(*U), us)) : std::nullopt;
     // the differences, reduced, with the input
     const Zonotope Rred = Rdiff.zonotope().reduce_adaptive(rf);
-    const Zonotope Zdiff = m > 0 ? Rred.cart_prod(*U - U->center().expand_dims(-1)) : Rred;
+    const Zonotope Zdiff = m > 0 ? Rred.cart_prod(*U - U->center()) : Rred;
     // the three products with a difference
     const Hessian Hp = priv_hessian(sys, like, Box{xs, xs},
                                     m > 0 ? std::optional<Box>(Box{us, us}) : std::nullopt);

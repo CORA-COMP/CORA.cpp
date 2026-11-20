@@ -16,7 +16,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -35,7 +34,7 @@ void support_function_matches_the_corners(const std::string &b) {
             rng.normal(d.data(), d.size(), 1.0);
             double want = 0.0;
             for (int i = 0; i < n; ++i) want += std::max(d[i] * lo[i], d[i] * hi[i]);
-            check(close(I.support_function(column(d)).data()[0], want, 1e-12),
+            check(close(I.support_function(test::vec(d)).data()[0], want, 1e-12),
                   b + ": support_function in " + std::to_string(n) + "d");
         }
     }
@@ -44,9 +43,9 @@ void support_function_matches_the_corners(const std::string &b) {
 /// A direction of the wrong dimension is refused; with the checks off the value is the same.
 void checks_and_their_switch() {
     const Interval Z = Interval(test::vec({0, -1}), test::vec({1, 1}));
-    check(test::raises([&] { Z.support_function(test::column({1, 0, 0})); },
-                       Error::dimension_mismatch),
-          "support_function: a direction of the wrong dimension");
+    check(
+        test::raises([&] { Z.support_function(test::vec({1, 0, 0})); }, Error::dimension_mismatch),
+        "support_function: a direction of the wrong dimension");
     const double on = test::support(Z, {1, 0});
     ChecksScope off(false);
     check(test::close(test::support(Z, {1, 0}), on, 0),

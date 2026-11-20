@@ -49,7 +49,7 @@ void abs_encloses_the_image_exactly(const std::string &b) {
     for (const int n : {1, 3, 6}) {
         const Interval I = Interval::generate_random(rng, n);
         const Interval A = I.abs();
-        const Tensor x = I.rand_point(40, rng); // (n, 40)
+        const Tensor x = I.rand_point(40, rng).matrix_transpose(); // (n, 40)
         bool inside = true;
         for (int k = 0; k < 40; ++k)
             inside = inside && A.contains(x.abs().slice(-1, k, k + 1).squeeze(-1));

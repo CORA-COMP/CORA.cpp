@@ -10,6 +10,10 @@
 
 #include "cont_set/empty_set/private/priv_is_empty_set.h"
 
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
@@ -18,8 +22,14 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 bool priv_is_empty_set(const ContSet &S) {
-    // a set with an empty mask says so; the others still have a center without columns
-    return S.empty_mask().all() || S.center().shape().back() == 0;
+    // a set with an empty mask says so, as does the empty set
+    if (S.empty_mask().all() || S.class_id() == ClassId::empty_set) return true;
+    // the classes that encode the empty set in their data have the center NaN then
+    const ClassId id = S.class_id();
+    if (id != ClassId::capsule && id != ClassId::con_zonotope && id != ClassId::zono_bundle)
+        return false;
+    const std::vector<double> c = S.center().data();
+    return std::all_of(c.begin(), c.end(), [](double x) { return std::isnan(x); });
 }
 
 } // namespace cora

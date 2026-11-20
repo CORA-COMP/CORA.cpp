@@ -1,10 +1,10 @@
 // cart_prod - the Cartesian product of a constrained zonotope with a set or a point
 //
 // The centers stack, the generators and the constraints sit on the block diagonal. As the first
-// operand the point p is (n1, 1); one batch shape.
+// operand the point p is (n1); one batch shape.
 //
 // Syntax:   cZres = cz.cart_prod(S);   cZres = ConZonotope::cart_prod(p, cz);
-// Inputs:   S - a constrained zonotope, a zonotope, a box or a point (n2, 1), of any dimension
+// Inputs:   S - a constrained zonotope, a zonotope, a box or a point (n2), of any dimension
 // Outputs:  cZres - exact, of dimension n + n2, in the order of the operands
 // See also: intersect, Zonotope::cart_prod
 //
@@ -12,7 +12,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -44,16 +44,16 @@ detail::Refusal aux_refusal(const ConZonotope &cz1, const ConZonotope &cz2) {
                          shape_text(cz1.c().shape()) + " and " + shape_text(cz2.c().shape())};
 }
 
-/// The point p as a set without generators; it must be a column.
+/// The point p (n) as a set without generators.
 ConZonotope aux_point(const Tensor &p) {
-    return {p, (zeros_block(p, p.shape()[p.ndim() - 2], 0)).matrix_transpose()};
+    return {p, zeros_block(p.expand_dims(-1), 0, p.size(-1))};
 }
 
 /// Why the point is refused, if it is.
 detail::Refusal aux_point_refusal(const Tensor &p) {
-    if (p.ndim() >= 2 && p.shape().back() == 1) return std::nullopt;
+    if (p.ndim() >= 1) return std::nullopt;
     return std::pair{Error::dimension_mismatch,
-                     "cart_prod: the point must be a column (n, 1), got the shape " +
+                     "cart_prod: the point must be a vector (n), got the shape " +
                          shape_text(p.shape())};
 }
 

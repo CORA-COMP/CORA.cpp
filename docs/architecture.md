@@ -146,14 +146,15 @@ dimensions first:
   first in `Ellipsoid(q, Q)`, and its `generators()` are rows, as a zonotope's;
 - a polytope has the offsets b and be (batch..., m) and the vertices V (batch..., p, n), one
   vertex per row; `ConZonotope::b()` keeps CORA's column;
-- the point arguments of `Interval`, `Ellipsoid` and `Polytope` (`contains`, `distance`, `plus`,
-  ...) are (..., n), one point per row;
+- every point argument and result of a set (`contains`, `plus`, `center()`, the direction of
+  `support_function`, the points of `rand_point`, `corners`, ...) is a point (..., n) or a batch
+  of points (..., N, n), one point per row; the center of an empty set is NaN (n);
 - operations broadcast over the batch and the element dimensions as NumPy does, and the generator
   axis never broadcasts;
-- the scalar results of `Interval`, `Ellipsoid` and `Polytope` (volume, norms, `ball_radius`,
-  distances) have the batch shape (...);
-- the generic entries of `ContSet` (`center()`, the direction of `support_function`, the points
-  of `rand_point`) still take and give columns;
+- the scalar results (volume, norms, `ball_radius`, distances, support values) have the batch
+  shape (...);
+- the dynamics (`simulate`, the inputs u of a reach step, a network's `evaluate` on points) still
+  take and give CORA's columns (n, N); they move in a later PR of #163;
 - CORA's n x h columns appear only where data crosses to CORA: the private MATLAB-data loader and
   the oracle client. An algorithm that is written on CORA's columns (the linear programs of
   `ConZonotope`, the adaptive linear reach) transposes once, explicitly. There is no public

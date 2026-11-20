@@ -9,6 +9,7 @@
 // Reviewed:      ---
 
 #include "cora/global/oracle/empty_set.h"
+#include "cont_set/empty_set/private/priv_is_empty_set.h"
 
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/request.h"
@@ -24,8 +25,8 @@ namespace {
 // The other operand on the wire: its dimension, and whether it is empty (a center without columns).
 Wire aux_other(const cora::ContSet &S) {
     Json j = Json::object();
-    // a set with an empty mask, or one whose center has no columns (CORA's empty sets)
-    const bool empty = S.empty_mask().all() || S.center().shape().back() == 0;
+    // a set with an empty mask, or one that encodes the empty set in its data
+    const bool empty = priv_is_empty_set(S);
     j.set("n", Json(S.dim())).set("empty", Json(empty));
     return Wire(j, "");
 }

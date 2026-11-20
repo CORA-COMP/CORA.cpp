@@ -150,10 +150,14 @@ class Random {
         for (double &x : data) x = scalar();
         return cora::Tensor::from_data(data, {rows, cols});
     }
+    /// CORA's column (n, 1) of n numbers, for the dynamics and the internal arithmetic.
     cora::Tensor vector(int64_t n) { return matrix(n, 1); }
 
-    /// A direction (n, 1) of unit length up to rounding.
-    cora::Tensor direction(int64_t n) { return vector(n); }
+    /// A point (n) of n numbers, the column's numbers.
+    cora::Tensor point(int64_t n) { return vector(n).squeeze(-1); }
+
+    /// A direction (n), drawn as point(n).
+    cora::Tensor direction(int64_t n) { return point(n); }
 
     /// A zonotope of the numbers of CORA's columns c (n, 1) and G (n, m): the center (n) and the
     /// generators (m, n), one per row.

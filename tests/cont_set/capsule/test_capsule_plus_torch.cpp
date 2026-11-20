@@ -28,7 +28,7 @@ int main() {
         "plus vector", [](const Inputs &x) { return test::parts(test::capsule(x).plus(x[3])); },
         [] {
             std::vector<torch::Tensor> with_vector = test::random_capsule_parts(3);
-            with_vector.push_back(torch::randn({3, 1}, torch::kDouble));
+            with_vector.push_back(torch::randn({3}, torch::kDouble));
             return with_vector;
         }());
     return test::finish("capsule plus (torch)");

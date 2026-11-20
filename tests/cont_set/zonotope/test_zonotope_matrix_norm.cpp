@@ -51,7 +51,7 @@ void norm_bounds_the_members(const std::string &b) {
         check(below, b + ": the members' norms are below the norm");
     }
     const Zonotope batch = test::batch_of(A, A);
-    check(close(set_norm(batch, Tensor::Norm::fro).slice(0, 1, 2).reshape({1, 1}),
+    check(close(set_norm(batch, Tensor::Norm::fro).slice(0, 1, 2).squeeze(0),
                 set_norm(A, Tensor::Norm::fro)),
           b + ": a batch");
 }

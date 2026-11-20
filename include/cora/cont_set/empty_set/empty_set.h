@@ -1,8 +1,8 @@
 // empty_set - the class of the empty set of n dimensions, as CORA's emptySet
 //
 // A set without points: its only data is the dimension n. Immutable: every operation returns a
-// new set. It has no batch (it holds no tensor) and, as in CORA, its center and its random
-// points have no columns: shape (n, 0).
+// new set. It has no batch (it holds no tensor); its center is NaN (n), as the empty box's, and
+// it has no random points: shape (0, n) (CORA's have no columns, (n, 0)).
 //
 // Syntax:     EmptySet E(n);   EmptySet E = EmptySet::empty(n);   EmptySet F = M * E;
 // Operators:  M * E (linear_map), s * E, as in CORA
@@ -75,23 +75,23 @@ class EmptySet : public detail::DimensionSet {
     /// The intersection with any set of the dimension (CORA's and_): the empty set.
     EmptySet intersect(const ContSet &S) const;
 
-    /// The Minkowski sum with a set, or a translation by a column v (..., n, 1): the empty set.
+    /// The Minkowski sum with a set, or a translation by a point v (..., n): the empty set.
     EmptySet plus(const ContSet &S) const;
     EmptySet plus(const Tensor &v) const;
 
     /// The convex hull with S (CORA's convHull_): S itself.
     Set convex_hull(const Set &S) const;
 
-    /// Whether the set contains S: true exactly if S is empty (a set without center columns), up
-    /// to tol as CORA passes it on. A point matrix p (n, N) is contained if it has no columns.
+    /// Whether the set contains S: true exactly if S is empty, up to tol as CORA passes it on.
+    /// Points p (..., N, n) are contained if there are none (N = 0).
     bool contains(const ContSet &S, Tol tol = std::nullopt) const;
     bool contains(const Tensor &p, Tol tol = std::nullopt) const;
 
     /// Whether S meets the set (CORA's isIntersecting_): never.
     bool is_intersecting(const ContSet &S, Tol tol = std::nullopt) const;
 
-    /// Whether S is the empty set of this dimension (a set without center columns); tol is CORA's
-    /// argument (default: the repository tolerance) and relaxes nothing here.
+    /// Whether S is the empty set of this dimension; tol is CORA's argument (default: the
+    /// repository tolerance) and relaxes nothing here.
     bool isequal(const ContSet &S, Tol tol = std::nullopt) const;
 
     // Maps and embeddings -------------------------------------------------------------------------

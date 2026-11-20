@@ -3,8 +3,8 @@
 // A capsule is the set of points within the radius r of the segment c - g to c + g: C = {x |
 // min_{t in [-1, 1]} |x - (c + t g)|_2 <= r}. Stored batch first as Zonotope (#163): the center c
 // and the generator g are (..., n), the radius r is (..., 1, 1) and nonnegative; r = 0 is a
-// segment, g = 0 a ball. Points and directions are columns (..., n, N), as the other sets take
-// them. Immutable: every operation returns a new set. A negative radius (-1) marks the empty set,
+// segment, g = 0 a ball. Points and directions are (..., n), N points (..., N, n), as for every
+// set. Immutable: every operation returns a new set. A negative radius (-1) marks the empty set,
 // as in CORALean; empty(n) is such a set.
 //
 // Syntax:     Capsule C(c, g, r);   Capsule C(c);   Capsule C(I);   Capsule C(Z);
@@ -81,9 +81,9 @@ class Capsule : public ContSet {
     /// Whether the capsule is empty (a negative radius); for a batch, whether every member is.
     bool is_empty() const;
 
-    /// A capsule that contains the points (..., n, N) (CORA's enclosePoints): the mean as center,
+    /// A capsule that contains the points (..., N, n) (CORA's enclosePoints): the mean as center,
     /// the generator to the farthest point, the largest distance from the segment as radius.
-    static Capsule enclose_points(const Tensor &points);
+    static Capsule enclose_points(const Tensor &rows);
 
     /// A random capsule, as CORA's generateRandom: dimension (default that of center, else 1..10),
     /// center (default 5 N(0, 1)), radius (default U[0, 5]); the generator is U[0, 1]^n.
@@ -93,7 +93,7 @@ class Capsule : public ContSet {
 
     using ContSet::rand_point;
 
-    /// N random points (..., n, N): type "standard" (default of rand_point) draws a point of the
+    /// N random points (..., N, n): type "standard" (default of rand_point) draws a point of the
     /// axis plus a point of the ball; "extreme" the point of the boundary in a random direction.
     Tensor rand_point(int64_t N, Rng &rng, const std::string &type) const;
 
@@ -119,7 +119,7 @@ class Capsule : public ContSet {
     /// tol default: the repository tolerance.
     bool isequal(const Capsule &S, Tol tol = std::nullopt) const;
 
-    /// Whether the capsule contains the points p (..., n, N), a capsule, a zonotope or a box, up
+    /// Whether the capsule contains the points p (..., N, n), a capsule, a zonotope or a box, up
     /// to tol in the distance to the axis; for a batch, every member.
     bool contains(const Tensor &p, Tol tol = std::nullopt) const;
     bool contains(const Capsule &S, Tol tol = std::nullopt) const;

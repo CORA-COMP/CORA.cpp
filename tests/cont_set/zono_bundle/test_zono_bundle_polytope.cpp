@@ -38,8 +38,7 @@ void polytope_property(const std::string &b) {
     Rng rng(67);
     Tensor common;
     const ZonoBundle zono_bundle = test::random_zono_bundle(rng, 3, 2, 4, &common);
-    check(zono_bundle.polytope().contains(
-              test::bundle_points(zono_bundle, rng, 12, common).matrix_transpose()),
+    check(zono_bundle.polytope().contains(test::bundle_points(zono_bundle, rng, 12, common)),
           b + ": the points are inside");
 }
 

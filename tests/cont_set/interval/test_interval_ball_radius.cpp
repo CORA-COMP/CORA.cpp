@@ -43,14 +43,13 @@ void radius_bounds_the_distance(const std::string &b) {
     for (int trial = 0; trial < 20; ++trial) {
         const Interval I = Interval::generate_random(rng, 4);
         const double r = I.ball_radius().data()[0];
-        const Tensor x = I.rand_point(30, rng), c = I.center().expand_dims(-1);
-        const std::vector<double> distances = (x - c).square().sum(-2).sqrt().data();
+        const Tensor x = I.rand_point(30, rng), c = I.center();
+        const std::vector<double> distances = (x - c).square().sum(-1).sqrt().data();
         double farthest = 0;
         for (const double d : distances) farthest = std::max(farthest, d);
         check(farthest <= r * (1 + 1e-12), b + ": the sampled points are within the radius");
         const Tensor &corner = I.sup();
-        check(close((corner.expand_dims(-1) - c).square().sum().sqrt().data()[0], r),
-              b + ": a corner attains it");
+        check(close((corner - c).square().sum().sqrt().data()[0], r), b + ": a corner attains it");
     }
 }
 

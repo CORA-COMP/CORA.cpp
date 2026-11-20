@@ -15,6 +15,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -33,7 +34,7 @@ void strict_inequality_on_a_box(const std::string &b) {
     const Tensor C2({{1.0, 1.0}, {1.0, -1.0}});
     check(Z.constraints_satisfied(C2, column({2.5, 2.5})), b + ": two constraints");
     check(!Z.constraints_satisfied(C2, column({2.5, 1.0})), b + ": the second fails");
-    const Zonotope batch = Zonotope::stack({Z, Z + column({2.0, 0.0})});
+    const Zonotope batch = Zonotope::stack({Z, Z + vec({2.0, 0.0})});
     check(!batch.constraints_satisfied(C, column({3.0})), b + ": a batch needs every member");
     check(batch.constraints_satisfied(C, column({5.0})), b + ": a batch, every member");
 }
@@ -50,7 +51,7 @@ void true_is_sound(const std::string &b) {
         const Tensor C = Tensor::from_data(data, {2, 3}), d = column(rhs);
         if (!Z.constraints_satisfied(C, d)) continue;
         ++accepted;
-        const Tensor values = C.matmul(Z.rand_point(100, rng)) - d;
+        const Tensor values = C.matmul(Z.rand_point(100, rng).matrix_transpose()) - d;
         check(values.max().item() < 0, b + ": a certified constraint holds for all samples");
     }
     check(accepted > 3, b + ": the property was exercised");

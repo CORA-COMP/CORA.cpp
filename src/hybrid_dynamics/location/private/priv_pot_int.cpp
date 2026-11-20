@@ -80,7 +80,7 @@ bool priv_may_meet(const Polytope::Constraints &C, const Set &S) {
     const auto add = [&](const Tensor &M, const Tensor &offsets, double sign) {
         const std::vector<double> b = offsets.data();
         for (std::size_t i = 0; i < b.size(); ++i)
-            rows.emplace_back(sign * M.slice(-2, int64_t(i), int64_t(i) + 1).matrix_transpose(),
+            rows.emplace_back(sign * M.slice(-2, int64_t(i), int64_t(i) + 1).squeeze(-2),
                               sign * b[i]);
     };
     add(C.A, C.b, 1.0);

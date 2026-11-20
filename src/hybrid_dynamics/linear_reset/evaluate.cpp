@@ -36,7 +36,7 @@ namespace {
 Zonotope aux_image(const LinearReset &reset, const Zonotope &X, const std::optional<Zonotope> &U) {
     Zonotope Y = X.linear_map(reset.A());
     if (reset.B() && U) Y = Y.plus(U->linear_map(*reset.B()));
-    if (reset.c()) Y = Y + *reset.c();
+    if (reset.c()) Y = Y + reset.c()->squeeze(-1);
     return Y;
 }
 
@@ -45,7 +45,7 @@ PolyZonotope aux_image(const LinearReset &reset, const PolyZonotope &X,
                        const std::optional<Zonotope> &U) {
     PolyZonotope Y = X.linear_map(reset.A());
     if (reset.B() && U) Y = Y.plus(U->linear_map(*reset.B()));
-    if (reset.c()) Y = Y.plus(*reset.c());
+    if (reset.c()) Y = Y.plus(reset.c()->squeeze(-1));
     return Y;
 }
 

@@ -7,14 +7,14 @@
 // Inputs:   N - the number of points
 //           rng - the generator of the random numbers
 //           type - "standard" (default) or "extreme"
-// Outputs:  p - the points as columns (..., n, N)
+// Outputs:  p - the points as rows (..., N, n)
 // See also: Zonotope::rand_point
 //
 // CORA: contSet/@capsule/randPoint_.m
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -61,11 +61,11 @@ Tensor Capsule::rand_point_impl(int64_t N, Rng &rng, const std::string &type) co
     const Tensor direction = d.divide(priv_norm(d));
     if (type == "standard") {
         const Tensor axis = gc().multiply(draw(1, -1.0)), ball = r_.multiply(draw(1, 0.0));
-        return cc().add(axis).add(direction.multiply(ball));
+        return cc().add(axis).add(direction.multiply(ball)).matrix_transpose();
     }
     if (type == "extreme") {
         const Tensor along = gc().matrix_transpose().matmul(direction).sign();
-        return cc().add(gc().multiply(along)).add(direction.multiply(r_));
+        return cc().add(gc().multiply(along)).add(direction.multiply(r_)).matrix_transpose();
     }
     CORA_FAIL(Error::no_specific_alg, "rand_point: unknown type '" + type + "'");
 }

@@ -38,14 +38,12 @@ bool aux_contains_vertices(const ContSet &S, const Polytope &P, double tol) {
         return static_cast<const Polytope &>(S).contains(points, "exact", tol);
     case ClassId::interval:
         return static_cast<const Interval &>(S).contains(points, tol);
-    // the zonotopes take the points as columns until #163 turns them into rows
     case ClassId::zonotope:
-        return static_cast<const Zonotope &>(S).contains(points.matrix_transpose(), "exact", tol);
+        return static_cast<const Zonotope &>(S).contains(points, "exact", tol);
     case ClassId::con_zonotope:
-        return static_cast<const ConZonotope &>(S).contains(points.matrix_transpose(), "exact",
-                                                            tol);
+        return static_cast<const ConZonotope &>(S).contains(points, "exact", tol);
     case ClassId::zono_bundle:
-        return static_cast<const ZonoBundle &>(S).contains(points.matrix_transpose(), "exact", tol);
+        return static_cast<const ZonoBundle &>(S).contains(points, "exact", tol);
     default:
         CORA_FAIL(Error::not_supported,
                   "less_equal: no containment of a polytope in a " + S.class_name() + " yet");

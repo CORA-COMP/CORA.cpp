@@ -28,17 +28,18 @@ void rand_point_property(const std::string &b) {
         const Capsule C = test::random_capsule(rng, 3);
         check(C.contains(C.rand_point(30, rng)), b + ": standard points are inside");
         const Tensor P = C.rand_point(20, rng, "extreme");
-        check(P.shape() == Shape({3, 20}) && C.contains(P), b + ": extreme points are inside");
+        check(P.shape() == Shape({20, 3}) && C.contains(P), b + ": extreme points are inside");
         bool boundary = true;
         const std::vector<double> x = P.data();
         for (int j = 0; j < 20; ++j)
-            boundary = boundary && close(test::axis_distance(C, {x[j], x[20 + j], x[40 + j]}),
-                                         C.r().item(), 1e-5);
+            boundary =
+                boundary && close(test::axis_distance(C, {x[3 * j], x[3 * j + 1], x[3 * j + 2]}),
+                                  C.r().item(), 1e-5);
         check(boundary, b + ": extreme points are at the radius from the axis");
     }
     const Capsule batch(Tensor::zeros({2, 3, 1}), Tensor::ones({2, 3, 1}),
                         Tensor::from_data({0.5, 1.0}, {2, 1, 1}));
-    check(batch.rand_point(5, rng).shape() == Shape({2, 3, 5}), b + ": a batch");
+    check(batch.rand_point(5, rng).shape() == Shape({2, 5, 3}), b + ": a batch");
 }
 
 /// An unknown type, a negative number and the empty capsule are refused; checks off works.

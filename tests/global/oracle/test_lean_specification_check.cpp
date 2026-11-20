@@ -44,8 +44,8 @@ std::pair<Tensor, Tensor> aux_polytope(oracle::Random &rnd, const ContSet &S, in
     const Tensor A = rnd.matrix(p, n);
     std::vector<double> b(p);
     for (int64_t i = 0; i < p; ++i)
-        b[i] = S.support_function(A.slice(-2, i, i + 1).matrix_transpose()).item() +
-               rnd.uniform(-1.0, 1.0);
+        b[i] =
+            S.support_function(A.slice(-2, i, i + 1).squeeze(-2)).item() + rnd.uniform(-1.0, 1.0);
     return {A, Tensor::from_data(b, {p})};
 }
 

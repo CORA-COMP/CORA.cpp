@@ -53,7 +53,8 @@ void atan2_across_the_branch_cut_is_an_enclosure(const std::string &b) {
     cora::Rng rng(43);
     bool inside = true;
     for (int k = 0; k < 50; ++k) {
-        const Tensor y = Y.rand_point(1, rng), x = X.rand_point(1, rng);
+        const Tensor y = Y.rand_point(1, rng).matrix_transpose(),
+                     x = X.rand_point(1, rng).matrix_transpose();
         inside = inside && R.contains(y.atan2(x));
     }
     check(inside, b + ": a sample across the cut is inside");
@@ -71,7 +72,8 @@ void atan2_encloses_the_image_off_the_cut(const std::string &b) {
         const Interval X(vec({lo[0], lo[1]}), vec({hi[0], hi[1]}));
         const Interval Y = Interval::generate_random(rng, 2);
         const Interval R = Y.atan2(X);
-        const Tensor y = Y.rand_point(15, rng), x = X.rand_point(15, rng);
+        const Tensor y = Y.rand_point(15, rng).matrix_transpose(),
+                     x = X.rand_point(15, rng).matrix_transpose();
         bool inside = true;
         for (int k = 0; k < 15; ++k)
             inside =

@@ -201,8 +201,8 @@ class Containment(unittest.TestCase):
         Z = diamond()
         self.assertTrue(Z.contains(np.array([0.0, 0.0])))
         self.assertTrue(np.array([1.0, 1.0]) in Z)
-        self.assertTrue(Z.contains(np.array([[0.5, 2.0, -1.0], [0.5, 0.0, 0.5]])))
-        self.assertFalse(Z.contains(np.array([[0.5, 1.5], [0.5, 1.5]])))
+        self.assertTrue(Z.contains(np.array([[0.5, 0.5], [2.0, 0.0], [-1.0, 0.5]])))
+        self.assertFalse(Z.contains(np.array([[0.5, 0.5], [1.5, 1.5]])))
         self.assertFalse(Z.contains(np.array([1.0 + 1e-10, 1.0])))
         self.assertTrue(Z.contains(np.array([1.0 + 1e-10, 1.0]), tol=1e-6))
 

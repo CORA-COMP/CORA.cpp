@@ -26,9 +26,9 @@ int main() {
         check(lifted.is<LevelSet>() && lifted->dim() == 3, b + ": three states");
         const LevelSet &L = lifted.as<LevelSet>();
         // the point (x0, x1, x2) = (0.6, 7, 0.8) is on it for any x1
-        check(close(L.fun_han(Tensor::from_data({0.6, 7.0, 0.8}, {3, 1})), {0.0}, 1e-12),
+        check(close(L.fun_han(Tensor::from_data({0.6, 7.0, 0.8}, {1, 3})), {0.0}, 1e-12),
               b + ": the new state is free");
-        check(close(L.fun_han(Tensor::from_data({1.0, -3.0, 0.0}, {3, 1})), {0.0}, 1e-12),
+        check(close(L.fun_han(Tensor::from_data({1.0, -3.0, 0.0}, {1, 3})), {0.0}, 1e-12),
               b + ": a second point");
     });
     const LevelSet ls(test::circle(0, 0, 1), 2, CompOp::eq);

@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -39,7 +40,7 @@ void bound_property(const std::string &b) {
         const double value = test::support(P, d);
         const std::vector<double> x = test::sample(P, rng, 30).data();
         for (std::size_t j = 0; j < 30; ++j)
-            check(d[0] * x[j] + d[1] * x[30 + j] + d[2] * x[60 + j] <= value + 1e-9,
+            check(d[0] * x[3 * j] + d[1] * x[3 * j + 1] + d[2] * x[3 * j + 2] <= value + 1e-9,
                   b + ": the bound holds");
     }
 }
@@ -56,7 +57,7 @@ int main() {
         bound_property(b);
     });
 
-    check(test::raises([] { known().support_function(column({1.0})); }, Error::dimension_mismatch),
+    check(test::raises([] { known().support_function(vec({1.0})); }, Error::dimension_mismatch),
           "support_function: the direction");
     ChecksScope off(false);
     check(test::support(known(), {1.0, 0.0}) > 0, "support_function: valid with the checks off");

@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -41,8 +42,7 @@ void rotation_known(const std::string &b) {
     const std::vector<double> expected{std::sin(a) * 5 + std::cos(a), 0,
                                        std::cos(a) * 5 - std::sin(a)};
     check(close(S.center(), expected, 1e-14), b + ": the order of dims is the order of the axes");
-    const Zonotope batch =
-        Zonotope::stack({Z, Z + column({1.0, 1.0, 1.0})}).rotate({0, 1}, kPi / 2);
+    const Zonotope batch = Zonotope::stack({Z, Z + vec({1.0, 1.0, 1.0})}).rotate({0, 1}, kPi / 2);
     check(close(batch.center().slice(0, 0, 1).squeeze(0), R.center(), 1e-15), b + ": a batch");
 }
 

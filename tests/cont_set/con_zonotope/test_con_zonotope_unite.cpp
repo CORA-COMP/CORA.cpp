@@ -30,10 +30,10 @@ void unite_known(const std::string &b) {
     check(u.A().numel() == 0, b + ": no constraints");
     check(u.contains(left.interval()) && u.contains(right.interval()),
           b + ": both boxes are inside");
-    check(u.contains(column({0.0, 0.0})), b + ": and the gap, the set is convex");
+    check(u.contains(vec({0.0, 0.0})), b + ": and the gap, the set is convex");
     check(left.unite(Interval(vec({1.0, -1.0}), vec({3.0, 1.0}))).contains(right.interval()),
           b + ": with a box");
-    check(left.unite(column({5.0, 5.0})).contains(column({5.0, 5.0})), b + ": with a point");
+    check(left.unite(vec({5.0, 5.0})).contains(vec({5.0, 5.0})), b + ": with a point");
     check(left.unite({right, left}).contains(right.interval()), b + ": with a list");
     check((Set(left) | Set(right))->dim() == 2, b + ": the operator");
 }
@@ -45,8 +45,8 @@ void unite_property(const std::string &b) {
         const ConZonotope p = test::random_con_zonotope(rng, 2, 4, 1);
         const ConZonotope q = test::random_con_zonotope(rng, 2, 3, 1);
         const ConZonotope u = p.unite(q);
-        check(u.contains(test::sample_points(p, rng, 15)) &&
-                  u.contains(test::sample_points(q, rng, 15)),
+        check(u.contains(test::sample_points(p, rng, 15).matrix_transpose()) &&
+                  u.contains(test::sample_points(q, rng, 15).matrix_transpose()),
               b + ": both sets are inside");
     }
 }

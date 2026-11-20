@@ -42,11 +42,11 @@ void cart_prod_known(const std::string &b) {
           b + ": a zonotope");
     const Interval I(vec({0.0, -1.0}), vec({2.0, 1.0}));
     check(close(cz1.cart_prod(I).c().expand_dims(-1), {1, 1, 0}, 0), b + ": a box");
-    const ConZonotope with_point = cz1.cart_prod(column({9.0}));
+    const ConZonotope with_point = cz1.cart_prod(vec({9.0}));
     check(close(with_point.c().expand_dims(-1), {1, 9}, 0) &&
               with_point.generators().matrix_transpose().shape() == Shape{2, 1},
           b + ": a point adds a zero row");
-    const ConZonotope point_first = ConZonotope::cart_prod(column({9.0}), cz1);
+    const ConZonotope point_first = ConZonotope::cart_prod(vec({9.0}), cz1);
     check(close(point_first.c().expand_dims(-1), {9, 1}, 0) &&
               close(point_first.generators().matrix_transpose(), {0, 2}, 0),
           b + ": a point first");
@@ -63,7 +63,7 @@ void cart_prod_property(const std::string &b) {
                       B = test::random_con_zonotope(rng, 3, 5, 2);
     const ConZonotope P = A.cart_prod(B);
     const Tensor pa = test::sample_points(A, rng, 20), pb = test::sample_points(B, rng, 20);
-    check(P.contains(Tensor::concat({pa, pb}, 0), "exact", 1e-7),
+    check(P.contains(Tensor::concat({pa, pb}, 0).matrix_transpose(), "exact", 1e-7),
           b + ": the points of both are in the product");
     const Interval ia = A.interval(), ib = B.interval(), ip = P.interval();
     check(close(ip.inf(), Tensor::concat({ia.inf(), ib.inf()}, 0), 1e-9) &&
@@ -86,9 +86,9 @@ void cart_prod_of_batches(const std::string &b) {
 /// Wrong operands are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const ConZonotope cz(column({1.0}), Tensor({{2.0}}));
-    check(test::raises([&] { cz.cart_prod(Tensor({{1.0, 2.0}})); }, Error::dimension_mismatch),
+    check(test::raises([&] { cz.cart_prod(Tensor::zeros(Shape{})); }, Error::dimension_mismatch),
           "cart_prod: a point must be a column");
-    check(test::raises([&] { ConZonotope::cart_prod(Tensor({{1.0, 2.0}}), cz); },
+    check(test::raises([&] { ConZonotope::cart_prod(Tensor::zeros(Shape{}), cz); },
                        Error::dimension_mismatch),
           "cart_prod: a point first must be a column");
     check(test::raises(

@@ -50,18 +50,18 @@ int main() {
         {.initial_set = R0, .t_final = t_final}, alg::Exact{.time_step = time_step / 2}, 20, rng);
 
     // The corners of the generator cube as start points, and their trajectories.
-    const Tensor corners = R0.rand_point(20, rng, "extreme");
+    const Tensor corners = R0.rand_point(20, rng, "extreme").matrix_transpose(); // columns
     const std::vector<Tensor> traj_extreme = sys.simulate(
         {.initial_state = corners, .t_final = t_final}, alg::Exact{.time_step = time_step / 2});
 
     // Verification ----------------------------------------------------------------------------
 
     // A point is in the reachable set of its step if d'x is at most the support function there.
-    const Tensor d({-1.0, 0.5});
+    const Tensor d = Tensor::from_data({-1.0, 0.5}, {2});
     bool inside = true;
     for (std::size_t j = 0; j < traj_extreme.size(); ++j) {
         const std::size_t step = std::min(j / 2, R.time_interval.size() - 1); // two points per step
-        const std::vector<double> along = d.matrix_transpose().matmul(traj_extreme[j]).data();
+        const std::vector<double> along = d.expand_dims(0).matmul(traj_extreme[j]).data();
         inside &= *std::max_element(along.begin(), along.end()) <=
                   R.time_interval[step].support_function(d).data()[0] + 1e-9;
     }

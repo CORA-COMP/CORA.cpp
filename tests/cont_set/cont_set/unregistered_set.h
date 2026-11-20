@@ -27,15 +27,15 @@ class UnregisteredSet : public cora::ContSet {
   protected:
     std::string custom_class_name() const override { return "UnregisteredSet"; }
     int64_t dim_impl() const override { return 2; }
-    cora::Tensor center_impl() const override { return cora::Tensor({0.0, 0.0}); }
+    cora::Tensor center_impl() const override { return cora::Tensor::zeros({2}); }
     cora::Tensor support_function_impl(const cora::Tensor &d) const override {
-        return d.zeros_like({1, 1});
+        return d.zeros_like(cora::Shape{});
     }
     cora::Interval interval_impl() const override {
         return {cora::Tensor::zeros({2}), cora::Tensor::zeros({2})};
     }
     cora::Tensor rand_point_impl(int64_t, cora::Rng &) const override {
-        return cora::Tensor({0.0, 0.0});
+        return cora::Tensor::zeros({1, 2});
     }
     cora::Set project_impl(const std::vector<int64_t> &) const override { return *this; }
     std::vector<cora::Polygon> vertices_impl() const override { return {{{0.0, 0.0}}}; }

@@ -43,7 +43,7 @@ def system(n=3, m=4, seed=0):
 class Simulate(unittest.TestCase):
     def test_follows_the_matrix_exponential(self):
         A, c, G = system()
-        x0 = cora.Zonotope(c, G).rand_point(5, cora.Rng(1))
+        x0 = cora.Zonotope(c, G).rand_point(5, cora.Rng(1)).T
         x = cora.LinearSys(A).simulate(x0, time_step=0.1, t_final=1.0)
         self.assertEqual(tuple(x.shape), (11, 3, 5))
         for k in range(11):
@@ -51,7 +51,7 @@ class Simulate(unittest.TestCase):
 
     def test_numpy_agrees_with_torch(self):
         A, c, G = system()
-        x0 = cora.Zonotope(c, G).rand_point(5, cora.Rng(1))
+        x0 = cora.Zonotope(c, G).rand_point(5, cora.Rng(1)).T
         on_eigen = cora.LinearSys(A.numpy()).simulate(x0.numpy(), time_step=0.1, t_final=1.0)
         self.assertIsInstance(on_eigen, np.ndarray)
         np.testing.assert_allclose(on_eigen, cora.LinearSys(A).simulate(x0, time_step=0.1,
@@ -60,7 +60,7 @@ class Simulate(unittest.TestCase):
     def test_a_batch_of_systems(self):
         A, c, G = system()
         As = torch.stack([A, 0.5 * A, A - 0.1 * torch.eye(3, **F64)])
-        x0 = cora.Zonotope(c, G).rand_point(4, cora.Rng(2))
+        x0 = cora.Zonotope(c, G).rand_point(4, cora.Rng(2)).T
         x = cora.LinearSys(As).simulate(x0, time_step=0.1, t_final=0.5)
         # a batch of systems
         self.assertEqual(tuple(x.shape), (6, 3, 3, 4))
@@ -72,12 +72,12 @@ class Simulate(unittest.TestCase):
         A, _, _ = system()
         c, G = torch.randn(4, 3, **F64), torch.randn(4, 2, 3, **F64)
         Z = cora.Zonotope(c, G)
-        x = cora.LinearSys(A).simulate(Z.rand_point(6, cora.Rng(0)), time_step=0.1, t_final=0.5)
+        x = cora.LinearSys(A).simulate(Z.rand_point(6, cora.Rng(0)).T, time_step=0.1, t_final=0.5)
         self.assertEqual(tuple(x.shape), (6, 4, 3, 6))
 
     def test_gradient(self):
         A, c, G = system(n=2, m=2)
-        x0 = cora.Zonotope(c, G).rand_point(3, cora.Rng(1))
+        x0 = cora.Zonotope(c, G).rand_point(3, cora.Rng(1)).T
         self.assertTrue(torch.autograd.gradcheck(
             lambda M: cora.LinearSys(M).simulate(x0, time_step=0.2,
                                                  t_final=0.6).pow(2).sum(), (A.clone().requires_grad_(),)))
@@ -90,7 +90,8 @@ class Simulate(unittest.TestCase):
         for lin_alg in ("standard", "wrapping_free"):
             R = sys.reach(Z, time_step=dt, t_final=2.0, taylor_terms=8, alg=lin_alg)
             for kind in ("standard", "extreme"):
-                x = sys.simulate(Z.rand_point(50, cora.Rng(7), type=kind), time_step=dt / refine, t_final=2.0)
+                x0 = Z.rand_point(50, cora.Rng(7), type=kind).T
+                x = sys.simulate(x0, time_step=dt / refine, t_final=2.0)
                 d = torch.randn(30, 3, **F64)
                 for j in range(x.shape[0]):
                     step = min(j // refine, len(R.time_interval) - 1)
@@ -121,7 +122,7 @@ class SimulateRandom(unittest.TestCase):
     def test_gpu(self):
         A, c, G = system()
         # simulation on the GPU
-        x0 = cora.Zonotope(c.cuda(), G.cuda()).rand_point(5, cora.Rng(1))
+        x0 = cora.Zonotope(c.cuda(), G.cuda()).rand_point(5, cora.Rng(1)).T
         x = cora.LinearSys(A.cuda()).simulate(x0, time_step=0.1, t_final=1.0)
         self.assertEqual(x.device.type, "cuda")
         torch.testing.assert_close(x.cpu(), cora.LinearSys(A).simulate(x0.cpu(), time_step=0.1, t_final=1.0))

@@ -1,7 +1,6 @@
 // center - the center of a box, as CORA's interval.center
 //
-// The whole space gives the origin, an empty member NaN (CORA: zeros(n, 0)). ContSet::center()
-// gives a box as a column (..., n, 1).
+// The whole space gives the origin, an empty member NaN (CORA: zeros(n, 0)).
 //
 // Syntax:   Tensor c = I.center();
 // Inputs:   -
@@ -39,10 +38,8 @@ Tensor Interval::center() const {
     return Tensor::where(all_below.multiply(all_above), c.zeros_like(), finite_or_nan);
 }
 
-// the generic center is a column, as every other set's
-Tensor Interval::center_impl() const {
-    return elem_rank_ == 1 ? center().expand_dims(-1) : center();
-}
+Tensor Interval::center_impl() const { return center(); }
+
 
 } // namespace cora
 

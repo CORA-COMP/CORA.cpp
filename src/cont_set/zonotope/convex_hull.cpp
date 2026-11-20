@@ -1,7 +1,7 @@
 // convex_hull - a zonotope that encloses the convex hull of a zonotope and another set
 //
 // Syntax:   Zres = Z.convex_hull(Z2);   Zres = Z.convex_hull(I);   Zres = Z.convex_hull(p);
-// Inputs:   Z2, I, p - a zonotope, a box or a point (n, 1) of the dimension of Z
+// Inputs:   Z2, I, p - a zonotope, a box or a point (n) of the dimension of Z
 // Outputs:  Zres - Z.enclose(zonotope(S)): an outer enclosure, coarser than the hull
 // See also: enclose, linear_combination
 //
@@ -46,8 +46,8 @@ Zonotope Zonotope::convex_hull(const Interval &I) const {
 
 Zonotope Zonotope::convex_hull(const Tensor &p) const {
     detail::Entry entry;
-    CORA_CHECK(is_column(p, dim()), Error::dimension_mismatch, [&] {
-        return "convex_hull: the point must be a column of the dimension " + std::to_string(dim()) +
+    CORA_CHECK(is_vector(p, dim()), Error::dimension_mismatch, [&] {
+        return "convex_hull: the point must be a vector of the dimension " + std::to_string(dim()) +
                " of the zonotope, got the shape " + shape_text(p.shape());
     });
     // a point is the zonotope without generators

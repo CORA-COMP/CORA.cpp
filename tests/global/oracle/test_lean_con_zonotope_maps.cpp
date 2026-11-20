@@ -62,10 +62,8 @@ int main() {
     });
     oracle::run("conZonotope.isIntersecting", [](oracle::Random &rnd) {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
-        const ConZonotope near =
-            a.plus(Tensor::like(a.c().expand_dims(-1), {0.1, 0.0, 0.0}, {3, 1}));
-        const ConZonotope far =
-            a.plus(Tensor::like(a.c().expand_dims(-1), {1000.0, 0.0, 0.0}, {3, 1}));
+        const ConZonotope near = a.plus(Tensor::like(a.c(), {0.1, 0.0, 0.0}, {3}));
+        const ConZonotope far = a.plus(Tensor::like(a.c(), {1000.0, 0.0, 0.0}, {3}));
         oracle::check(a.is_intersecting(near), lean::ConZonotope(a).is_intersecting(near));
         oracle::check(a.is_intersecting(far), lean::ConZonotope(a).is_intersecting(far));
     });

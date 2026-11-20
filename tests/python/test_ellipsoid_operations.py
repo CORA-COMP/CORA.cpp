@@ -155,14 +155,13 @@ class Operations(unittest.TestCase):
         np.testing.assert_allclose(Z.generators, [[2, 0], [0, 1]], atol=1e-12)
         rng = np.random.default_rng(19)
         F = random_ellipsoid(rng, 3)
-        # the zonotope takes the points as columns until #163 turns them into rows
-        self.assertTrue(F.zonotope().contains(boundary_points(F, rng, 10).T, tol=1e-8))
+        self.assertTrue(F.zonotope().contains(boundary_points(F, rng, 10), tol=1e-8))
         with self.assertRaises(cora.errors.NotSupported):
             F.zonotope("outer:norm")
-        # random points (rand_point gives columns until #163 turns them into rows), conversions
+        # random points, conversions
         points = F.rand_point(20, cora.Rng(7))
-        self.assertTrue(F.contains(points.T, tol=1e-6))
-        self.assertTrue(F.contains(F.rand_point(20, cora.Rng(8), type="extreme").T, tol=1e-6))
+        self.assertTrue(F.contains(points, tol=1e-6))
+        self.assertTrue(F.contains(F.rand_point(20, cora.Rng(8), type="extreme"), tol=1e-6))
         # the ellipsoids of a box and of a zonotope
         box = cora.Interval(np.array([0.0, 0.0]), np.array([2.0, 1.0]))
         np.testing.assert_allclose(cora.Ellipsoid(box).Q, 2 * np.diag([1.0, 0.25]), atol=1e-12)

@@ -6,7 +6,7 @@
 // Syntax:   val = Z.norm();   val = Z.norm(type, "ub");
 // Inputs:   type - 1, 2 (default) or infinity (ContSet::norm also takes fro)
 //           mode - "ub" (default)
-// Outputs:  val - the bound, (..., 1, 1)
+// Outputs:  val - the bound, (...)
 // See also: interval, minnorm
 //
 // CORA: contSet/@zonotope/norm_.m
@@ -26,16 +26,6 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
-
-
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-/// A norm per member (...) as the zonotope's scalar results (..., 1, 1).
-Tensor aux_as_matrix(const Tensor &t) { return t.expand_dims(-1).expand_dims(-1); }
-
-} // namespace
 
 
 // ===========================================  MAIN  =========================================== //
@@ -65,16 +55,16 @@ Tensor Zonotope::norm_impl(Tensor::Norm type, const std::string &mode) const {
         if (type == Tensor::Norm::two)
             CORA_FAIL(Error::wrong_value,
                       "norm: the 2-norm of a matrix zonotope is not supported, use 1 or Inf");
-        return aux_as_matrix(interval_impl().norm(type));
+        return interval_impl().norm(type);
     }
     // the Frobenius norm of the box, as CORA's norm_ of the interval
-    if (type == Tensor::Norm::fro) return aux_as_matrix(interval_impl().norm(type));
+    if (type == Tensor::Norm::fro) return interval_impl().norm(type);
     // the largest magnitude of each coordinate
     const Interval box = interval_impl();
     const Tensor largest = box.inf().abs().maximum(box.sup().abs());
-    if (type == Tensor::Norm::one) return aux_as_matrix(largest.sum(-1));
-    if (type == Tensor::Norm::two) return aux_as_matrix(largest.square().sum(-1).sqrt());
-    return aux_as_matrix(largest.max(-1));
+    if (type == Tensor::Norm::one) return largest.sum(-1);
+    if (type == Tensor::Norm::two) return largest.square().sum(-1).sqrt();
+    return largest.max(-1);
 }
 
 } // namespace cora

@@ -7,14 +7,14 @@
 // Inputs:   N - number of points
 //           rng - random numbers
 //           type - "standard" or "extreme"
-// Outputs:  P - points as columns (n, N)
+// Outputs:  P - points as rows (N, n)
 // See also: con_zonotope, ConZonotope::rand_point
 //
 // CORA: contSet/@zonoBundle/randPoint_.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cont_set/cont_set/private/priv_rand_point.h"

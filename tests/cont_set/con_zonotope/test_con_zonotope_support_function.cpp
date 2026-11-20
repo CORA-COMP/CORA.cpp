@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -43,12 +44,12 @@ void support_function_known(const std::string &b) {
 void support_function_range(const std::string &b) {
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), column({0.0}));
-    const Interval r = segment.support_function_range(column({0.0, 1.0}));
+    const Interval r = segment.support_function_range(vec({0.0, 1.0}));
     check(close(r.inf().item(), -1.0) && close(r.sup().item(), 1.0), b + ": the segment's range");
-    const Interval h = test::hexagon().support_function_range(column({1.0, -1.0}));
+    const Interval h = test::hexagon().support_function_range(vec({1.0, -1.0}));
     check(h.sup().item() == test::support(test::hexagon(), {1, -1}),
           b + ": the upper end is the support value");
-    check(ConZonotope::empty(2).support_function_range(column({1.0, 0.0})).is_empty(),
+    check(ConZonotope::empty(2).support_function_range(vec({1.0, 0.0})).is_empty(),
           b + ": the empty set has no range");
 }
 
@@ -76,7 +77,7 @@ int main() {
         support_function_range(b);
         support_function_property(b);
     });
-    check(test::raises([] { test::hexagon().support_function(column({1.0})); },
+    check(test::raises([] { test::hexagon().support_function(vec({1.0})); },
                        Error::dimension_mismatch),
           "support_function: a direction of another dimension");
     ChecksScope off(false);

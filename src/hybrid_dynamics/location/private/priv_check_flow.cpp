@@ -54,7 +54,7 @@ std::pair<Tensor, double> aux_outward(const Location &loc, const Polytope &guard
     const Tensor c = first->center();
     const bool inside = priv_region_contains(loc.invariant(), c);
     // CORA flips when the center is inside the invariant xor below the hyperplane
-    if (inside != aux_below(a, d, c)) return {-a, -d};
+    if (inside != aux_below(a, d, c.expand_dims(-1))) return {-a, -d};
     return {a, d};
 }
 
@@ -132,10 +132,10 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
     if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow())) {
         // the fast test at the projected center, then the bound over the reduced projection
         const Tensor P = a.eye_like(a.shape()[0]) - a.matmul(a.matrix_transpose());
-        const Tensor c = P.matmul(S->center()) + a * d;
+        const Tensor c = P.matmul(S->center().expand_dims(-1)) + a * d;
         if (a.matrix_transpose().matmul(priv_flow_at(loc, c, U_state, "checkFlow")).item() > 0)
             return true;
-        const Zonotope Z = priv_zonotopes(S).front().linear_map(P) + a * d;
+        const Zonotope Z = priv_zonotopes(S).front().linear_map(P) + (a * d).squeeze(-1);
         const Tensor B = priv_basis_of(a);
         const Zonotope R = Z.linear_map(B.matrix_transpose()).reduce_pca().linear_map(B);
         return aux_nonlinear_flow_bound(*sys, a, R, U_state) > 0;
@@ -147,7 +147,7 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
     const std::vector<double> flow = A.data(), uc = U_state.center().data(), nv = a.data();
     for (const Zonotope &Z : priv_zonotopes(S)) {
         // the set projected onto the hyperplane
-        const Zonotope proj = Z.linear_map(P) + a * d;
+        const Zonotope proj = Z.linear_map(P) + (a * d).squeeze(-1);
         // the fast test: the flow at the center, summed from the last term as sumUp
         const std::vector<double> m = proj.center().data();
         double outward = 0;
@@ -159,7 +159,7 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
         }
         if (!(outward <= 0)) continue;
         // the flow set A proj + V, bounded from above along the normal
-        const double up = proj.linear_map(A).plus(U_state).support_function(a).item();
+        const double up = proj.linear_map(A).plus(U_state).support_function(a.squeeze(-1)).item();
         if (strict ? up < 0 : up <= 0) return false;
     }
     return true;
@@ -179,8 +179,11 @@ double aux_outside(const Location &loc, const LevelSet &guard, const Set &first)
 double aux_level_flow_at(const NonlinearSys &sys, const LevelSet &guard, double outside,
                          const Tensor &c, const Zonotope &U_state) {
     const std::vector<double> x = c.data();
+    // the dynamics take CORA's columns
+    const Tensor column = c.expand_dims(-1);
     const std::vector<double> f =
-        (sys.input_dim() == 0 ? sys.dynamics(c) : sys.dynamics(c, U_state.center().expand_dims(-1)))
+        (sys.input_dim() == 0 ? sys.dynamics(column)
+                              : sys.dynamics(column, U_state.center().expand_dims(-1)))
             .data();
     double flow = 0;
     // sum_j dg/dx_j f_j

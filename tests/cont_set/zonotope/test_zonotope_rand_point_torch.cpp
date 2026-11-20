@@ -37,14 +37,13 @@ void batched_rand_point(const torch::TensorOptions &opts, const std::string &whe
     const Zonotope Z(from_torch(c), from_torch(G));
     for (const bool extreme : {false, true}) {
         const torch::Tensor P = to_torch(Z.rand_point(N, rng, extreme ? "extreme" : "standard"));
-        check(P.sizes().vec() == std::vector<int64_t>({S, n, N}),
+        check(P.sizes().vec() == std::vector<int64_t>({S, N, n}),
               where + ": batched rand_point shape");
         bool inside = true;
         for (int k = 0; k < 20; ++k) {
-            const torch::Tensor d = torch::randn({n, 1}, opts);
+            const torch::Tensor d = torch::randn({n}, opts);
             const torch::Tensor rho = to_torch(Z.support_function(from_torch(d))).reshape({S});
-            const torch::Tensor best =
-                std::get<0>(d.transpose(0, 1).matmul(P).reshape({S, N}).max(-1));
+            const torch::Tensor best = std::get<0>(P.matmul(d).reshape({S, N}).max(-1));
             inside &= (best - rho).max().item<double>() <= 1e-9;
         }
         check(inside, where + ": batched points stay in their own set");

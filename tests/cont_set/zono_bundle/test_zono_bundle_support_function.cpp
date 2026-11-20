@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -45,7 +46,7 @@ void support_function_property(const std::string &b) {
         const std::vector<double> d = test::random_direction(rng, 3);
         const double value = test::support(zono_bundle, d);
         const Tensor points = test::bundle_points(zono_bundle, rng, 30, common);
-        const double best = column(d).matrix_transpose().matmul(points).max().item();
+        const double best = points.matmul(column(d)).max().item();
         check(best <= value + 1e-9, b + ": no point is above the value");
         check(value <= test::support(zono_bundle.zonotopes()[0], d) + 1e-9,
               b + ": below a member's value");
@@ -63,9 +64,9 @@ int main() {
         support_function_property(b);
     });
     const ZonoBundle zono_bundle = test::two_zonotopes();
-    check(test::raises([&] { zono_bundle.support_function(column({1.0})); },
-                       Error::dimension_mismatch),
-          "support_function: a direction of another dimension");
+    check(
+        test::raises([&] { zono_bundle.support_function(vec({1.0})); }, Error::dimension_mismatch),
+        "support_function: a direction of another dimension");
     ChecksScope off(false);
     check(close(test::support(zono_bundle, {1, 0}),
                 test::support(zono_bundle.con_zonotope(), {1, 0})),

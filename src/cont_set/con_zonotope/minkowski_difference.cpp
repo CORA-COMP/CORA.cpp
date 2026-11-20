@@ -9,7 +9,7 @@
 //
 // Syntax:   cZres = cz.minkowski_difference(S);   cZres = cz.minkowski_difference(S, type);
 //           cZres = cz.minkowski_difference(p);
-// Inputs:   S - a zonotope or a box, or a point p (n, 1)
+// Inputs:   S - a zonotope or a box, or a point p (n)
 //           type - "exact" (default), "inner:vertices" or "inner:Vinod"
 // Outputs:  cZres - {x | x + S in cz}
 // See also: plus, intersect, Zonotope::mink_diff
@@ -54,19 +54,19 @@ std::vector<Tensor> aux_distinct_columns(const Tensor &V) {
 /// Intersect the translates cz - v of every vertex v of S (CORA's 'exact').
 ConZonotope aux_exact(const ConZonotope &cz, const Zonotope &S) {
     // the corners of S are its vertices (CORA lists the vertices; the same translates result)
-    const std::vector<Tensor> vertices = aux_distinct_columns(S.corners());
-    ConZonotope result = cz.plus(vertices[0] * -1.0);
+    const std::vector<Tensor> vertices = aux_distinct_columns(S.corners().matrix_transpose());
+    ConZonotope result = cz.plus(vertices[0].squeeze(-1) * -1.0);
     for (std::size_t i = 1; i < vertices.size(); ++i)
-        result = result.intersect(cz.plus(vertices[i] * -1.0));
+        result = result.intersect(cz.plus(vertices[i].squeeze(-1) * -1.0));
     return result;
 }
 
 /// Translate by the center of S and, for each generator g, intersect cz + g with cz - g.
 ConZonotope aux_inner_vertices(const ConZonotope &cz, const Zonotope &S) {
-    ConZonotope result = cz.plus(S.center().expand_dims(-1) * -1.0);
-    const Tensor &G = S.generators().matrix_transpose();
-    for (int64_t i = 0; i < G.shape().back(); ++i) {
-        const Tensor g = G.slice(-1, i, i + 1);
+    ConZonotope result = cz.plus(S.center() * -1.0);
+    const Tensor &G = S.generators();
+    for (int64_t i = 0; i < G.shape()[G.ndim() - 2]; ++i) {
+        const Tensor g = G.slice(-2, i, i + 1).squeeze(-2);
         result = result.plus(g).intersect(result.plus(g * -1.0));
     }
     return result;

@@ -51,9 +51,9 @@ void isequal_other_sets(const std::string &b) {
     check(box.isequal(I), b + ": a box");
     check(!box.isequal(Interval(vec({0.0, 1.0}), vec({2.0, 2.0}))), b + ": another box");
     const Zonotope point(column({1.0, 2.0}), Tensor::zeros({0, 2}));
-    check(point.isequal(column({1.0, 2.0})), b + ": a point");
-    check(!point.isequal(column({1.0, 2.5})), b + ": another point");
-    check(!box.isequal(column({1.0, 1.25})), b + ": a box is not a point");
+    check(point.isequal(vec({1.0, 2.0})), b + ": a point");
+    check(!point.isequal(vec({1.0, 2.5})), b + ": another point");
+    check(!box.isequal(vec({1.0, 1.25})), b + ": a box is not a point");
 }
 
 /// Stated property: isequal is reflexive and symmetric, and a permuted copy of random

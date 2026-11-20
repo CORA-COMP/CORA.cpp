@@ -403,7 +403,13 @@ void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> 
 void plot(Figure &fig, const Tensor &points, const std::vector<int64_t> &dims,
           const PlotOptions &options) {
     aux_check_dims(fig, dims);
-    fig.add_points(aux_points(points, dims), options.color.value_or(cora_color("CORA:simulations")),
+    if (points.ndim() != 2)
+        CORA_FAIL(Error::wrong_value, "plot: points must be a matrix (N, n) without batch "
+                                      "dimensions, but have " +
+                                          std::to_string(points.ndim()) + " dimensions");
+    // the rows are the points; the trajectories' helper reads columns
+    fig.add_points(aux_points(points.matrix_transpose(), dims),
+                   options.color.value_or(cora_color("CORA:simulations")),
                    options.line_width.value_or(2.0), options.label);
 }
 

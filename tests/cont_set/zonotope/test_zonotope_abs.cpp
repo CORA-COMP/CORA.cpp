@@ -41,7 +41,7 @@ void abs_corner_bounds_the_set(const std::string &b) {
     const int n = 4;
     const Zonotope Z = Zonotope::generate_random(rng, n, std::nullopt, 6);
     const Zonotope A = Z.abs();
-    const Tensor corner = (A.center() + A.generators().abs().sum(-2)).expand_dims(-1);
+    const Tensor corner = A.center() + A.generators().abs().sum(-2);
     const Tensor x = Z.rand_point(200, rng);
     check((x.abs() - corner).max().item() <= 1e-12, b + ": |x| <= |c| + sum |g_j|");
     check(close(A.abs().generators(), A.generators(), 0), b + ": idempotent");

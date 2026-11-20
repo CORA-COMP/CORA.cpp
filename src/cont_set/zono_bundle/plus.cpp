@@ -7,7 +7,7 @@
 //
 // Syntax:   R = bundle.plus(S);   R = bundle.plus(v);
 // Inputs:   S - a bundle, a zonotope or a box of the dimension of the bundle
-//           v - a column (..., n, 1)
+//           v - a point (..., n)
 // Outputs:  R - an enclosure of the sum: the intersection of the pairwise sums
 // See also: linear_map, Zonotope::plus
 //
@@ -78,11 +78,11 @@ ZonoBundle ZonoBundle::plus(const ZonoBundle &S) const {
 
 ZonoBundle ZonoBundle::plus(const Tensor &v) const {
     detail::Entry entry;
-    CORA_CHECK(v.ndim() >= 2 && v.shape().back() == 1 && v.shape()[v.ndim() - 2] == dim(),
-               Error::dimension_mismatch, [&] {
-                   return "plus: the point must be a column of " + std::to_string(dim()) +
-                          " entries, got the shape " + shape_text(v.shape());
-               });
+    CORA_CHECK(is_vector(v, dim()), Error::dimension_mismatch, [&] {
+        return "plus: the point must be a vector of " + std::to_string(dim()) +
+               " entries, got the shape " + shape_text(v.shape());
+    });
+
     std::vector<Zonotope> moved;
     moved.reserve(Z_.size());
     for (const Zonotope &Z : Z_) moved.push_back(Z + v);

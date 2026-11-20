@@ -4,7 +4,7 @@
 // sign).
 //
 // Syntax:   res = Z.isequal(S);   res = Z.isequal(S, tol);
-// Inputs:   S - a zonotope, a box or a point (n, 1)
+// Inputs:   S - a zonotope, a box or a point (n)
 //           tol - the tolerance of the comparison; default: the repository tolerance
 // Outputs:  res - true if the two sets are the same; a different dimension gives false. Not a batch
 // See also: compact, contains
@@ -90,12 +90,11 @@ bool Zonotope::isequal(const Interval &I, Tol tol_arg) const {
 bool Zonotope::isequal(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "isequal");
-    CORA_CHECK(p.ndim() == 2, Error::dimension_mismatch,
-               [] { return std::string("isequal: a point must be a column (n, 1)"); });
-    const Refusal refusal = aux_refusal(c_.expand_dims(-1), p);
+    CORA_CHECK(p.ndim() == 1, Error::dimension_mismatch,
+               [] { return std::string("isequal: a point must be a vector (n)"); });
+    const Refusal refusal = aux_refusal(c_.expand_dims(-1), p.expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return "isequal: " + refusal->second; });
-    return p.shape()[0] == dim() && p.shape().back() == 1 &&
-           aux_isequal(*this, priv_zonotope_of_point(p), tol);
+    return p.shape()[0] == dim() && aux_isequal(*this, priv_zonotope_of_point(p), tol);
 }
 
 } // namespace cora

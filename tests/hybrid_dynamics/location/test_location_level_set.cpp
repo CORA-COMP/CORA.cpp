@@ -77,8 +77,8 @@ void the_circle_is_hit_by_the_crossing_sets(const std::string &b) {
     for (const double x : {-0.5, 0.97, 1.5}) R.time_interval.emplace_back(box_at(x, 0.0));
     const GuardHits hits = priv_pot_int(loc, R, {});
     check(hits.transitions.size() == 1 && hits.sets.at(0) == 1, b + ": only the crossing set");
-    check(priv_region_contains(loc.invariant(), column({0.0, 0.0})) &&
-              !priv_region_contains(loc.invariant(), column({2.0, 0.0})),
+    check(priv_region_contains(loc.invariant(), test::vec({0.0, 0.0})) &&
+              !priv_region_contains(loc.invariant(), test::vec({2.0, 0.0})),
           b + ": the invariant contains the center and not a far point");
     check(!priv_region_empty(loc.invariant()), b + ": the disc is not empty");
     check(priv_region_empty(LevelSet::empty(2)), b + ": the empty level set is");

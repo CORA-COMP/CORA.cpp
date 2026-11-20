@@ -37,9 +37,12 @@ void center_known(const std::string &b) {
     const ConZonotope shifted(column({2.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
                               column({0.0}));
     check(close(shifted.center(), {2}, 1e-9), b + ": xi1 = xi2: the points 2 + 2 xi, center 2");
-    check(ConZonotope::empty(2).center().shape() == Shape{2, 0}, b + ": empty: no column");
+    check(ConZonotope::empty(2).center().shape() == Shape{2} &&
+              std::isnan(ConZonotope::empty(2).center().data()[0]),
+          b + ": empty: NaN, as the empty box");
     const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), column({3.0}));
-    check(none.center().shape() == Shape{1, 0}, b + ": infeasible constraints: no column");
+    check(none.center().shape() == Shape{1} && std::isnan(none.center().item()),
+          b + ": infeasible constraints: NaN");
 }
 
 /// Stated property: the center lies in the set, and the set is not larger than the box around it.
@@ -48,9 +51,10 @@ void center_property(const std::string &b) {
     for (int k = 0; k < 8; ++k) {
         const ConZonotope cz = test::random_con_zonotope(rng, 3, 5, 2);
         const Tensor center = cz.center();
-        check(center.shape() == Shape{3, 1}, b + ": a column");
+        check(center.shape() == Shape{3}, b + ": a point");
         check(cz.contains(center, "exact", 1e-7), b + ": the center is in the set");
-        check(test::inside_box(center, cz.interval()), b + ": the center is in the box of the set");
+        check(test::inside_box(center.expand_dims(-1), cz.interval()),
+              b + ": the center is in the box of the set");
     }
 }
 
@@ -63,7 +67,7 @@ void checks_and_their_switch() {
     check(test::close(
               ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose())
                   .center(),
-              Tensor::zeros({2, 1, 1}), 0),
+              Tensor::zeros({2, 1}), 0),
           "center: a batch without constraints is its offset");
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), column({1.0}));

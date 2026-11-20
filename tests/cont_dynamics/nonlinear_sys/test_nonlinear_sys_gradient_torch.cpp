@@ -46,7 +46,7 @@ torch::Tensor reach_loss(const torch::Tensor &c, const torch::Tensor &G, const t
     const ReachSet R = van_der_pol().reach(
         {.initial_set = Zonotope(from_torch(c), from_torch(G.transpose(-1, -2))), .t_final = 0.2},
         algorithm);
-    const Tensor direction = from_torch(d.unsqueeze(-1));
+    const Tensor direction = from_torch(d);
     torch::Tensor total = torch::zeros({}, c.options());
     for (const Zonotope &Z : R.time_point)
         total = total + to_torch(Z.support_function(direction)).sum();

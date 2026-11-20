@@ -34,7 +34,7 @@ void plus_known(const std::string &b) {
           b + ": the generators join");
     check(close(r.A(), {1, 1, 0, 0, 0, 4}, 0) && close(r.b(), {0.5, 1}, 0),
           b + ": the constraints on the block diagonal");
-    check(close(a.plus(column({1.0, 1.0})).c().expand_dims(-1), {2, 3}, 0),
+    check(close(a.plus(vec({1.0, 1.0})).c().expand_dims(-1), {2, 3}, 0),
           b + ": a point moves the center");
     const Zonotope Z(column({1.0, 1.0}), Tensor({{1.0, 0.0}}));
     check(close(a.plus(Z).generators().matrix_transpose(), {1, 0, 1, 0, 1, 0}, 0) &&
@@ -43,9 +43,9 @@ void plus_known(const std::string &b) {
     // a box is a set without constraints whose generators are its radius
     const Interval I(vec({0.0, 0.0}), vec({2.0, 4.0}));
     check(close(a.plus(I).c().expand_dims(-1), {2, 4}, 0), b + ": a box adds its center");
-    check(close((a + column({1.0, 1.0})).c().expand_dims(-1), {2, 3}, 0) &&
-              close((column({1.0, 1.0}) + a).c().expand_dims(-1), {2, 3}, 0) &&
-              close((a - column({1.0, 1.0})).c().expand_dims(-1), {0, 1}, 0),
+    check(close((a + vec({1.0, 1.0})).c().expand_dims(-1), {2, 3}, 0) &&
+              close((vec({1.0, 1.0}) + a).c().expand_dims(-1), {2, 3}, 0) &&
+              close((a - vec({1.0, 1.0})).c().expand_dims(-1), {0, 1}, 0),
           b + ": the operators");
     const ConZonotope negated = Set(a)->uminus().as<ConZonotope>();
     check(close(negated.c().expand_dims(-1), {-1, -2}, 0) &&
@@ -63,7 +63,7 @@ void plus_property(const std::string &b) {
         const ConZonotope q = test::random_con_zonotope(rng, 3, 5, 2);
         const ConZonotope r = p.plus(q);
         const Tensor sums = test::sample_points(p, rng, 20) + test::sample_points(q, rng, 20);
-        check(r.contains(sums), b + ": every sum of points is in the sum");
+        check(r.contains(sums.matrix_transpose()), b + ": every sum of points is in the sum");
         check(close(r.interval().sup(), p.interval().sup() + q.interval().sup(), 1e-8),
               b + ": the box of the sum is the sum of the boxes");
     }
@@ -74,7 +74,7 @@ void checks_and_batches() {
     const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope one(column({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { a.plus(one); }, Error::dimension_mismatch), "plus: dimensions");
-    check(test::raises([&] { a.plus(column({1.0})); }, Error::dimension_mismatch),
+    check(test::raises([&] { a.plus(vec({1.0})); }, Error::dimension_mismatch),
           "plus: a point of another dimension");
     const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 1, 2}));
     check(test::raises([&] { a.plus(batch); }, Error::dimension_mismatch), "plus: batch shapes");
