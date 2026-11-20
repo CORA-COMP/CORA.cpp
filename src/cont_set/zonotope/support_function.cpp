@@ -25,7 +25,11 @@ Tensor Zonotope::support_function_impl(const Tensor &d) const {
     // c'd and sum_j |g_j' d| on CORA's column of the direction: (..., 1, 1)
     const Tensor column = d.expand_dims(-1);
     const Tensor spread = G_.matmul(column).abs_sum_rows();
-    return (c_.expand_dims(-2).matmul(column) + spread).squeeze(-1).squeeze(-1);
+    const Tensor value = c_.expand_dims(-2).matmul(column) + spread;
+    Shape batch = value.shape();
+    batch.pop_back();
+    batch.pop_back();
+    return value.reshape(batch); // one reshape: the hot path of the halfspace checks
 }
 
 } // namespace cora
