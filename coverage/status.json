@@ -1585,7 +1585,7 @@
   "others/matPolytope/size": "todo",
   "others/matPolytope/vertices": "todo",
   "others/matZonotope/center": "oracle",
-  "others/matZonotope/contains": "oracle",
+  "others/matZonotope/contains": "property",
   "others/matZonotope/dependentTerms": "property",
   "others/matZonotope/dim": "todo",
   "others/matZonotope/display": "todo",

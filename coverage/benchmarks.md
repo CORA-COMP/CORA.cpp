@@ -11,7 +11,7 @@ column of its own and is left out of the bit-exact numerator and denominator, as
 rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 
-Over the 86 instances, 2256 of 2387 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2255 of 2387 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 
 ## Per instance
 
@@ -94,7 +94,7 @@ Over the 86 instances, 2256 of 2387 rows (94.5%) that they execute and that can 
 | TORA-reach-tanh | 64 | 45 | 2 | 16 | 1 | 0 | 0 | 13 | 10 | 40/41 |
 | TORA-remain | 82 | 59 | 3 | 19 | 1 | 0 | 0 | 15 | 11 | 54/56 |
 | TRAF22 | 42 | 29 | 2 | 11 | 0 | 0 | 0 | 9 | 5 | 28/28 |
-| TSPS25 | 49 | 29 | 6 | 14 | 0 | 0 | 0 | 8 | 6 | 29/35 |
+| TSPS25 | 49 | 28 | 7 | 14 | 0 | 0 | 0 | 8 | 6 | 28/35 |
 | Unicycle-reach | 56 | 37 | 2 | 16 | 1 | 0 | 0 | 13 | 10 | 32/33 |
 | Unicycle-reach-disturbance | 56 | 37 | 2 | 16 | 1 | 0 | 0 | 13 | 10 | 32/33 |
 | VCAS-middle-19.5 | 33 | 23 | 2 | 8 | 0 | 0 | 0 | 6 | 6 | 21/21 |
@@ -163,6 +163,7 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contSet/polyZonotope/isIntersecting_` | ported | float | 1 | CVDP23 |
 | `contSet/taylm/mpower` | ported | float | 1 | LOVO25-script |
 | `contSet/taylm/power` | ported | float | 1 | LOVO25-script |
+| `others/matZonotope/contains` | property | bound | 1 | TSPS25 |
 
 ## Files with no CORA counterpart
 
@@ -759,9 +760,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>TSPS25: 29/35</summary>
+<details><summary>TSPS25: 28/35</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinDASys/consistentInitialState` (ported), `contDynamics/nonlinDASys/initReach` (property), `contDynamics/nonlinDASys/linReach` (property), `contDynamics/nonlinDASys/nonlinDASys` (ported), `contDynamics/nonlinDASys/post` (property), `contDynamics/nonlinDASys/steadyState` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinDASys/consistentInitialState` (ported), `contDynamics/nonlinDASys/initReach` (property), `contDynamics/nonlinDASys/linReach` (property), `contDynamics/nonlinDASys/nonlinDASys` (ported), `contDynamics/nonlinDASys/post` (property), `contDynamics/nonlinDASys/steadyState` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/contains` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 

@@ -9,7 +9,7 @@
 | AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 16.8 / 11.7 | 27 / 22 (23 instances) |
 
 <!-- BEGIN overall -->
-Over the 86 instances, 2256 of 2387 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2255 of 2387 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 <!-- END overall -->
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
@@ -370,7 +370,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | LALO20 W001 | 1 | 1 | 1.68 | 18/18 bit-exact, 0 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 5.54 |
 | LALO20 W005 | 1 | 1 | 10.8 | 18/18 bit-exact, 0 property | 21.9 | 17 | 17 (CORA) [c] | 1.57 |
 | LALO20 W01 | 1 | 1 | 249 | 19/22 bit-exact, 1 property | 208 | 248 | 248 (CORA) [c] | 0.997 |
-| TSPS25 | 1 | 1 | 62.1 | 29/35 bit-exact, 4 property | 312 | 299 | 299 (CORA) | 4.82 |
+| TSPS25 | 1 | 1 | 62.1 | 28/35 bit-exact, 5 property | 312 | 299 | 299 (CORA) | 4.82 |
 | LOVO25 | 1 | 1 [e] | 4.28 | 51/67 bit-exact, 4 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.25 |
 
 [a] TRAF22: JuliaReach's ARCH-COMP 2026 repeatability code (32 s, `vehicle.jl`) holds the disturbances w constant (w' = 0), where the problem lets them vary arbitrarily over time, as the report states (p. 58).
@@ -886,7 +886,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | TORA-reach-tanh | 40/41 | 1 | 23 |
 | TORA-remain | 54/56 | 2 | 26 |
 | TRAF22 | 28/28 | 0 | 14 |
-| TSPS25 | 29/35 | 6 | 14 |
+| TSPS25 | 28/35 | 7 | 14 |
 | Unicycle-reach | 32/33 | 1 | 23 |
 | Unicycle-reach-disturbance | 32/33 | 1 | 23 |
 | VCAS-middle-19.5 | 21/21 | 0 | 12 |
