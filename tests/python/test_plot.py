@@ -237,8 +237,8 @@ class Dimensions(unittest.TestCase):
         _, ax = plt.subplots()
         cora.plot(self.X0, ax=ax)
         cora.plot(net.evaluate(self.X0), ax=ax)
-        net_points = net.evaluate(self.X0.rand_point(5, cora.Rng(2)).T)
-        cora.plot(net_points, ax=ax)
+        net_points = net.evaluate(self.X0.rand_point(5, cora.Rng(2)))  # one row per point
+        cora.plot(net_points.T, ax=ax)  # plot takes the points as columns (n, N)
         self.assertEqual(len(paths(ax)), 2)
         self.assertEqual(len(ax.lines), 1)
 
