@@ -85,7 +85,8 @@ int main() {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
         const Tensor C = rnd.matrix(2, 3), y = rnd.vector(2), L = rnd.matrix(3, 2);
         const Tensor phi = rnd.matrix(2, 1).abs();
-        aux_check_hull(a.intersect_strip(C, phi, y, L),
+        // phi and y (k); the oracle takes CORA's columns
+        aux_check_hull(a.intersect_strip(C, phi.squeeze(-1), y.squeeze(-1), L),
                        lean::ConZonotope(a).intersect_strip(C, phi, y, L));
     });
     oracle::run("conZonotope.cubMap", [](oracle::Random &rnd) {

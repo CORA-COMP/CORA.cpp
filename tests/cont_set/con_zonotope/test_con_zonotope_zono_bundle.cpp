@@ -15,6 +15,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,7 +31,7 @@ void zono_bundle_known(const std::string &b) {
                     {1, 0, 0, 2}, 0),
           b + ": without constraints");
     const ConZonotope point(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                            Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({0.5, 0.25}));
+                            Tensor({{1.0, 0.0}, {0.0, 1.0}}), vec({0.5, 0.25}));
     check(
         point.zono_bundle().parallel_sets() == 1 &&
             close((point.zono_bundle().zonotopes()[0]).center().expand_dims(-1), {1.5, 1.25}, 1e-9),
@@ -70,7 +71,7 @@ int main() {
     check(test::raises(
               [&] {
                   ConZonotope(c, Tensor::zeros({2, 1, 2}), Tensor::zeros({2, 1, 1}),
-                              Tensor::zeros({2, 1, 1}))
+                              Tensor::zeros({2, 1}))
                       .zono_bundle();
               },
               Error::not_supported),

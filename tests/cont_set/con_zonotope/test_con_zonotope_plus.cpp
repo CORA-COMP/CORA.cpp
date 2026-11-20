@@ -26,8 +26,8 @@ namespace {
 /// the center; a zonotope and a box are sets without constraints.
 void plus_known(const std::string &b) {
     const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
-                        column({0.5}));
-    const ConZonotope s(column({10.0, 20.0}), Tensor({{2.0, 3.0}}), Tensor({{4.0}}), column({1.0}));
+                        vec({0.5}));
+    const ConZonotope s(column({10.0, 20.0}), Tensor({{2.0, 3.0}}), Tensor({{4.0}}), vec({1.0}));
     const ConZonotope r = a.plus(s);
     check(close(r.c().expand_dims(-1), {11, 22}, 0), b + ": the centers add");
     check(close(r.generators().matrix_transpose(), {1, 0, 2, 0, 1, 3}, 0),

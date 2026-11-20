@@ -10,7 +10,7 @@
 //           Zres = Z.intersect_strip(C, phi, y, method);
 //           Zres = Z.intersect_strip(C, phi, y, lambda);
 //           Zres = Z.intersect_strip(C, phi, y, aux);
-// Inputs:   C (k, n), phi (k, 1), y (k, 1) - the k strips
+// Inputs:   C (k, n), phi (k), y (k) - the k strips
 //           method - the gain lambda: "normGen" (default), "alamo-FRad", "bravo" or "wang-FRad"
 //           lambda - a given gain, used as it is
 //           aux - the matrices E, F, A, C of an observer, for "wang-FRad"
@@ -21,7 +21,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -156,11 +156,13 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
     if (method == "bravo") {
         if (C.shape()[0] > 1)
             warn("CORA:contSet", "intersect_strip: 'bravo' only uses the first strip");
-        return aux_bravo(*this, C, phi, y);
+        return aux_bravo(*this, C, phi.expand_dims(-1), y.expand_dims(-1));
     }
-    return aux_from_lambda(*this, phi, C, y,
-                           method == "normGen" ? aux_gain_norm_gen(*this, C, phi)
-                                               : aux_gain_alamo_frad(*this, C, phi));
+    // the gains run on CORA's columns (k, 1)
+    const Tensor phi_c = phi.expand_dims(-1);
+    return aux_from_lambda(*this, phi_c, C, y.expand_dims(-1),
+                           method == "normGen" ? aux_gain_norm_gen(*this, C, phi_c)
+                                               : aux_gain_alamo_frad(*this, C, phi_c));
 }
 
 Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
@@ -170,7 +172,7 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
     Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     if (!refusal) refusal = priv_gain_refusal(dim(), C, lambda);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
-    return aux_from_lambda(*this, phi, C, y, lambda);
+    return aux_from_lambda(*this, phi.expand_dims(-1), C, y.expand_dims(-1), lambda);
 }
 
 Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
@@ -183,7 +185,7 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
     const Tensor lambda = aux_gain_wang_frad(*this, aux);
     const Refusal gain = priv_gain_refusal(dim(), C, lambda);
     CORA_CHECK(!gain, gain->first, [&] { return "intersect_strip: " + gain->second; });
-    return aux_from_lambda(*this, phi, C, y, lambda);
+    return aux_from_lambda(*this, phi.expand_dims(-1), C, y.expand_dims(-1), lambda);
 }
 
 } // namespace cora

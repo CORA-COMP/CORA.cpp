@@ -65,7 +65,7 @@ ConZonotope aux_product(const ConZonotope &cz1, const ConZonotope &cz2) {
             (Tensor::block_diag(
                  {cz1.generators().matrix_transpose(), cz2.generators().matrix_transpose()}))
                 .matrix_transpose(),
-            Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -2)};
+            Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -1)};
 }
 
 } // namespace

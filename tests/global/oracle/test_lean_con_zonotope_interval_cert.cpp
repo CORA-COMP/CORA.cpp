@@ -45,12 +45,8 @@ int main() {
         // a constrained zonotope at the multipliers of CORA.cpp's programs, which are sent
         const ConZonotope cz = rnd.con_zonotope(3, 5, 2);
         const std::optional<ConZonotope::Certificate> w =
-            ConZonotope::Cut{cz.c().expand_dims(-1),
-                             cz.generators().matrix_transpose(),
-                             cz.A(),
-                             cz.b(),
-                             Tensor::zeros({0, 5}),
-                             Tensor::zeros({0, 1})}
+            ConZonotope::Cut{cz.c(), cz.generators(),       cz.A(),
+                             cz.b(), Tensor::zeros({0, 5}), Tensor::zeros({0})}
                 .certificate();
         test::check(w.has_value(), "intervalCert: the programs have a solution");
         if (!w) return;

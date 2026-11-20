@@ -26,7 +26,7 @@ namespace {
 /// Hand-computed: the blocks of the generators and of the constraints; a zonotope, a box and a
 /// point.
 void cart_prod_known(const std::string &b) {
-    const ConZonotope cz1(column({1.0}), Tensor({{2.0}}), Tensor({{1.0}}), column({0.5}));
+    const ConZonotope cz1(column({1.0}), Tensor({{2.0}}), Tensor({{1.0}}), vec({0.5}));
     const ConZonotope cz2(column({3.0, 4.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope P = cz1.cart_prod(cz2);
     check(close(P.c().expand_dims(-1), {1, 3, 4}, 0), b + ": the centers stack");
@@ -74,7 +74,7 @@ void cart_prod_property(const std::string &b) {
 /// A batch of products, member by member.
 void cart_prod_of_batches(const std::string &b) {
     const ConZonotope A(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
-                        Tensor::ones({2, 1, 2}), Tensor::zeros({2, 1, 1}));
+                        Tensor::ones({2, 1, 2}), Tensor::zeros({2, 1}));
     const ConZonotope B(Tensor::ones({2, 2, 1}), Tensor::ones({2, 2, 1}).matrix_transpose());
     const ConZonotope P = A.cart_prod(B);
     check(P.generators().matrix_transpose().shape() == Shape{2, 3, 3} &&

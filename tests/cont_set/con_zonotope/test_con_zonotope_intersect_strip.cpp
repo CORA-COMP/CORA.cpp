@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,8 +26,7 @@ namespace {
 /// center, generators and the strip row C G x - phi x_new = y - C c.
 void intersect_strip_known(const std::string &b) {
     const ConZonotope cz(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const Tensor C({{1.0, 0.0}}), phi = column({0.1}), y = column({0.5}),
-                                  lambda = column({1.0, 0.0});
+    const Tensor C({{1.0, 0.0}}), phi = vec({0.1}), y = vec({0.5}), lambda = column({1.0, 0.0});
     const ConZonotope R = cz.intersect_strip(C, phi, y, lambda);
     check(close(R.c().expand_dims(-1), {0.5, 0}, 1e-15), b + ": center c + L (y - C c)");
     check(close(R.generators().matrix_transpose(), {0, 0, 0.1, 0, 1, 0}, 1e-15),
@@ -36,7 +36,7 @@ void intersect_strip_known(const std::string &b) {
           b + ": the strip [0.4, 0.6] in the box");
     // a constrained set keeps its rows, the strip rows come last, the new factors are zero in them
     const ConZonotope constrained(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                                  Tensor({{0.0, 1.0}}), column({0.5}));
+                                  Tensor({{0.0, 1.0}}), vec({0.5}));
     const ConZonotope S = constrained.intersect_strip(C, phi, y, lambda);
     check(close(S.A(), {0, 1, 0, 1, 0, -0.1}, 1e-15) && close(S.b(), {0.5, 0.5}, 1e-15),
           b + ": the rows of the set, then the strip");
@@ -65,15 +65,15 @@ void intersect_strip_property(const std::string &b) {
     cora::Rng rng(31);
     for (int k = 0; k < 4; ++k) {
         const ConZonotope A = test::random_con_zonotope(rng, 3, 5, 2);
-        const Tensor C({{1.0, 0.5, -0.5}, {0.0, 1.0, 1.0}}), phi = column({1.0, 1.5});
-        const Tensor y = C.matmul(A.c().expand_dims(-1)) + column({0.2, -0.1});
+        const Tensor C({{1.0, 0.5, -0.5}, {0.0, 1.0, 1.0}}), phi = vec({1.0, 1.5});
+        const Tensor y = C.matmul(A.c().expand_dims(-1)).squeeze(-1) + vec({0.2, -0.1});
         const Tensor points = test::sample_points(A, rng, 120);
         for (const char *method : {"normGen"}) {
             const ConZonotope R = A.intersect_strip(C, phi, y, method);
             int inside = 0;
             for (int64_t j = 0; j < 120; ++j) {
                 const Tensor x = points.slice(1, j, j + 1);
-                const Tensor d = (C.matmul(x) - y).abs() - phi;
+                const Tensor d = (C.matmul(x) - y.expand_dims(-1)).abs() - phi.expand_dims(-1);
                 if (d.max().item() > 0) continue;
                 ++inside;
                 check(R.contains(x.squeeze(-1), "exact", 1e-6),
@@ -91,13 +91,13 @@ void intersect_strip_property(const std::string &b) {
 /// Wrong strips, gains and methods are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const ConZonotope cz(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const Tensor C({{1.0, 0.0}}), phi = column({0.1}), y = column({0.5});
+    const Tensor C({{1.0, 0.0}}), phi = vec({0.1}), y = vec({0.5});
     check(test::raises([&] { cz.intersect_strip(Tensor({{1.0}}), phi, y); },
                        Error::dimension_mismatch),
           "intersect_strip: C has n columns");
-    check(test::raises([&] { cz.intersect_strip(C, column({0.1, 0.2}), y); },
-                       Error::dimension_mismatch),
-          "intersect_strip: phi has a row per strip");
+    check(
+        test::raises([&] { cz.intersect_strip(C, vec({0.1, 0.2}), y); }, Error::dimension_mismatch),
+        "intersect_strip: phi has a row per strip");
     check(test::raises([&] { cz.intersect_strip(C, phi, y, Tensor({{1.0}})); },
                        Error::dimension_mismatch),
           "intersect_strip: the gain is (n, k)");
@@ -110,8 +110,8 @@ void checks_and_their_switch() {
     check(test::raises(
               [&] {
                   // an unknown method
-                  cz.intersect_strip(Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({0.1, 0.1}),
-                                     column({0.0, 0.0}), "alamo-FRad");
+                  cz.intersect_strip(Tensor({{1.0, 0.0}, {0.0, 1.0}}), vec({0.1, 0.1}),
+                                     vec({0.0, 0.0}), "alamo-FRad");
               },
               Error::special_error),
           "intersect_strip: alamo-FRad is for one strip");

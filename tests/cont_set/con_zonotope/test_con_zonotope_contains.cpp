@@ -25,7 +25,7 @@ namespace {
 /// Hand-computed: the segment x = xi, xi1 + xi2 = 1 holds its points and nothing else.
 void contains_known(const std::string &b) {
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                              Tensor({{1.0, 1.0}}), column({1.0}));
+                              Tensor({{1.0, 1.0}}), vec({1.0}));
     check(segment.contains(vec({0.5, 0.5})) && segment.contains(vec({0.0, 1.0})),
           b + ": points of the segment");
     check(!segment.contains(vec({0.5, 0.6})) && !segment.contains(vec({1.5, -0.5})),
@@ -43,7 +43,7 @@ void contains_known(const std::string &b) {
           b + ": a box is not in a segment");
     // the box [-1, 1]^2 as a constrained zonotope with a trivial constraint
     const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
-                             Tensor({{0.0, 0.0, 1.0}}), column({0.0}));
+                             Tensor({{0.0, 0.0, 1.0}}), vec({0.0}));
     check(square.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.0}))), b + ": a box in a square");
     check(!square.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.5}))),
           b + ": a box sticking out");

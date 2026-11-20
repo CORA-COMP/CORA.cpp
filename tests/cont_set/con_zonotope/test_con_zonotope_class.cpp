@@ -26,11 +26,11 @@ namespace {
 /// The forms of CORA's constructor and the conversions from a zonotope and a box.
 void constructor_forms(const std::string &b) {
     const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
-    check(plain.dim() == 2 && plain.A().shape() == Shape{0, 2} && plain.b().shape() == Shape{0, 1},
+    check(plain.dim() == 2 && plain.A().shape() == Shape{0, 2} && plain.b().shape() == Shape{0},
           b + ": without constraints, A has no rows");
     check(plain.class_name() == "ConZonotope", b + ": the class name");
     const ConZonotope constrained(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}),
-                                  Tensor({{1.0, 1.0}}), column({0.5}));
+                                  Tensor({{1.0, 1.0}}), vec({0.5}));
     check(close(constrained.A(), {1, 1}, 0) && close(constrained.b(), {0.5}, 0), b + ": A and b");
     // the legacy form [c G]
     const ConZonotope legacy = ConZonotope::from_matrix(Tensor({{1.0, 1.0, 0.0}, {2.0, 0.0, 3.0}}),
@@ -60,11 +60,11 @@ void refusals() {
     check(test::raises([&] { ConZonotope(column({1.0}), G); }, Error::wrong_input_in_constructor),
           "ConZonotope: the rows of G are the dimension");
     // the constraints must fit the generators
-    check(test::raises([&] { ConZonotope(column({1.0, 2.0}), G, Tensor({{1.0}}), column({1.0})); },
+    check(test::raises([&] { ConZonotope(column({1.0, 2.0}), G, Tensor({{1.0}}), vec({1.0})); },
                        Error::wrong_input_in_constructor),
           "ConZonotope: A has a column per generator");
     check(test::raises(
-              [&] { ConZonotope(column({1.0, 2.0}), G, Tensor({{1.0, 1.0}}), column({1.0, 2.0})); },
+              [&] { ConZonotope(column({1.0, 2.0}), G, Tensor({{1.0, 1.0}}), vec({1.0, 2.0})); },
               Error::wrong_input_in_constructor),
           "ConZonotope: b has a row per row of A");
     check(test::raises([&] { ConZonotope(column({1.0, std::nan("")}), G); },
@@ -78,17 +78,16 @@ void refusals() {
                        Error::wrong_input_in_constructor),
           "from_matrix: at least the center");
     // with the checks off the same valid call builds the same set
-    const ConZonotope on(column({1.0, 2.0}), G, Tensor({{1.0, 1.0}}), column({0.5}));
+    const ConZonotope on(column({1.0, 2.0}), G, Tensor({{1.0, 1.0}}), vec({0.5}));
     ChecksScope off(false);
-    const ConZonotope same(column({1.0, 2.0}), G, Tensor({{1.0, 1.0}}), column({0.5}));
+    const ConZonotope same(column({1.0, 2.0}), G, Tensor({{1.0, 1.0}}), vec({0.5}));
     check(close(same.A(), on.A(), 0), "ConZonotope: the same with the checks off");
 }
 
 /// The batch: sets with a leading axis share one batch shape.
 void batches(const std::string &b) {
     const Tensor c = Tensor::zeros({3, 2, 1}), G = Tensor::ones({3, 2, 4});
-    const ConZonotope cz(c, G.matrix_transpose(), Tensor::zeros({3, 1, 4}),
-                         Tensor::zeros({3, 1, 1}));
+    const ConZonotope cz(c, G.matrix_transpose(), Tensor::zeros({3, 1, 4}), Tensor::zeros({3, 1}));
     check(cz.dim() == 2 && cz.A().shape() == Shape{3, 1, 4}, b + ": a batch of three sets");
     check(test::raises([&] { ConZonotope(c, Tensor::ones({2, 2, 4}).matrix_transpose()); },
                        Error::wrong_input_in_constructor),

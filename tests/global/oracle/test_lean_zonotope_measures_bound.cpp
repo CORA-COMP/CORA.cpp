@@ -100,7 +100,8 @@ int main() {
             const Tensor C = rnd.matrix(2, n), Lambda = rnd.matrix(n, 2), y = rnd.vector(2);
             const Tensor phi = Tensor::from_data({0.5, 1.5}, {2, 1});
             const lean::Zonotope theirs = lean::Zonotope(Z).intersect_strip(C, phi, y, Lambda);
-            aux_hull_agrees(Z.intersect_strip(C, phi, y, Lambda), theirs);
+            // phi and y (k); the oracle takes CORA's columns
+            aux_hull_agrees(Z.intersect_strip(C, phi.squeeze(-1), y.squeeze(-1), Lambda), theirs);
         }
     });
 

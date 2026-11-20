@@ -64,7 +64,7 @@ ZonoBundle ConZonotope::zono_bundle() const {
     if (A().shape()[A().ndim() - 2] == 0) return ZonoBundle::from(Zonotope(c_, G_));
     if (priv_is_empty(priv_host_con_zonotope(*this))) return ZonoBundle::empty(dim());
     const int64_t m = A().shape()[1];
-    const Tensor p0 = A().pinv().matmul(b()), T = null_space(A());
+    const Tensor p0 = A().pinv().matmul(priv_b_column(*this)), T = null_space(A());
     const Tensor shift = c_.expand_dims(-1) + G_.matrix_transpose().matmul(p0);
     const int64_t p = T.shape()[1];
     // no free direction: the constraints fix the factors, and the set is a point

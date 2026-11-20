@@ -24,8 +24,8 @@ int main() {
     const std::vector<torch::Tensor> A = test::random_con_zonotope_parts(3, 4, 1);
     std::vector<torch::Tensor> x = A;
     x.push_back(torch::randn({2, 3}, torch::kDouble));
-    x.push_back(torch::rand({2, 1}, torch::kDouble) + 0.5);
-    x.push_back(torch::randn({2, 1}, torch::kDouble));
+    x.push_back(torch::rand({2}, torch::kDouble) + 0.5);
+    x.push_back(torch::randn({2}, torch::kDouble));
     x.push_back(torch::randn({3, 2}, torch::kDouble));
     test::gradcheck(
         "intersect_strip",

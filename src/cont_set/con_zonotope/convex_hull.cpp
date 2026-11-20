@@ -59,12 +59,15 @@ ConZonotope aux_raghuraman(const ConZonotope &cz1, const ConZonotope &cz2) {
     const Tensor A30 =
         Tensor::concat({full_block(G1, 2 * m1, 1, -0.5), full_block(G1, 2 * m2, 1, 0.5)}, -2);
     const Tensor row1 = Tensor::concat(
-        {cz1.A(), zeros_block(G1, p1, m2), cz1.b() * -0.5, zeros_block(G1, p1, s)}, -1);
+        {cz1.A(), zeros_block(G1, p1, m2), priv_b_column(cz1) * -0.5, zeros_block(G1, p1, s)}, -1);
     const Tensor row2 = Tensor::concat(
-        {zeros_block(G1, p2, m1), cz2.A(), cz2.b() * 0.5, zeros_block(G1, p2, s)}, -1);
+        {zeros_block(G1, p2, m1), cz2.A(), priv_b_column(cz2) * 0.5, zeros_block(G1, p2, s)}, -1);
     const Tensor row3 = Tensor::concat({A31, A32, A30, identity_block(G1, s)}, -1);
-    return {c, G.matrix_transpose(), Tensor::concat({row1, row2, row3}, -2),
-            Tensor::concat({cz1.b() * 0.5, cz2.b() * 0.5, full_block(G1, s, 1, -0.5)}, -2)};
+    return {
+        c, G.matrix_transpose(), Tensor::concat({row1, row2, row3}, -2),
+        Tensor::concat(
+            {priv_b_column(cz1) * 0.5, priv_b_column(cz2) * 0.5, full_block(G1, s, 1, -0.5)}, -2)
+            .squeeze(-1)};
 }
 
 /// The hull by Kochdumper: three copies of the weight and the factors of each set.
@@ -76,9 +79,9 @@ ConZonotope aux_kochdumper(const ConZonotope &cz1, const ConZonotope &cz2) {
     const bool none1 = cz1.A().shape()[cz1.A().ndim() - 2] == 0;
     const bool none2 = cz2.A().shape()[cz2.A().ndim() - 2] == 0;
     const Tensor A1 = none1 ? zeros_block(G1, 1, m1) : cz1.A(),
-                 b1 = none1 ? zeros_block(G1, 1, 1) : cz1.b();
+                 b1 = none1 ? zeros_block(G1, 1, 1) : priv_b_column(cz1);
     const Tensor A2 = none2 ? zeros_block(G1, 1, m2) : cz2.A(),
-                 b2 = none2 ? zeros_block(G1, 1, 1) : cz2.b();
+                 b2 = none2 ? zeros_block(G1, 1, 1) : priv_b_column(cz2);
     const int64_t p = A1.shape()[A1.ndim() - 2] + A2.shape()[A2.ndim() - 2];
     const Tensor G =
         Tensor::concat({G1, G2, (c1 - c2) * 0.5, zeros_block(G1, n, 3 * (m1 + m2))}, -1);
@@ -112,7 +115,7 @@ ConZonotope aux_kochdumper(const ConZonotope &cz1, const ConZonotope &cz2) {
         Tensor::concat({b1 * 0.5, b2 * 0.5, full_block(G1, 2 * (m1 + m2), 1, 3.0)}, -2);
     // the rows that are zero are dropped
     const std::vector<int64_t> rows = priv_nonzero_rows(A, b);
-    return {(c1 + c2) * 0.5, G.matrix_transpose(), A.take(rows, -2), b.take(rows, -2)};
+    return {(c1 + c2) * 0.5, G.matrix_transpose(), A.take(rows, -2), b.take(rows, -2).squeeze(-1)};
 }
 
 // Hull of many sets -------------------------------------------------------------------------------
@@ -133,9 +136,9 @@ ConZonotope aux_many(const std::vector<ConZonotope> &sets) {
         // the rows of the set (if it has constraints), then the two bounds of its factors
         const Tensor bounds = Tensor::concat({o, I * -2.0, I * -2.0, O, I * -2.0}, -1);
         const Tensor bounds2 = Tensor::concat({o, I * 2.0, O, I * -2.0, I * -2.0}, -1);
-        const Tensor own = Tensor::concat({S.b() * -0.5, S.A(), O_, O_, O_}, -1);
+        const Tensor own = Tensor::concat({priv_b_column(S) * -0.5, S.A(), O_, O_, O_}, -1);
         A = Tensor::block_diag({A, Tensor::concat({own, bounds, bounds2}, -2)});
-        b = Tensor::concat({b, S.b() * 0.5, full_block(like, 2 * m, 1, 3.0)}, -2);
+        b = Tensor::concat({b, priv_b_column(S) * 0.5, full_block(like, 2 * m, 1, 3.0)}, -2);
         weights =
             Tensor::concat({weights, full_block(like, 1, 1, 0.5), zeros_block(like, 1, 4 * m)}, -1);
         Gs.push_back(Tensor::concat({S.c().expand_dims(-1) * 0.5, S.generators().matrix_transpose(),
@@ -144,7 +147,7 @@ ConZonotope aux_many(const std::vector<ConZonotope> &sets) {
         c = c + S.c().expand_dims(-1) * 0.5;
     }
     return {c, Tensor::concat(Gs, -1).matrix_transpose(), Tensor::concat({A, weights}, -2),
-            Tensor::concat({b, full_block(like, 1, 1, 1.0 - 0.5 * double(N))}, -2)};
+            Tensor::concat({b, full_block(like, 1, 1, 1.0 - 0.5 * double(N))}, -2).squeeze(-1)};
 }
 
 /// Why the hull is refused, if it is: the sets must have one dimension, and the method must be one.

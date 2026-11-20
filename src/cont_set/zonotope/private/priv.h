@@ -80,7 +80,7 @@ std::string priv_quad_map_problem(const std::vector<Tensor> &Q, int64_t n);
 std::string priv_cubic_map_problem(const std::vector<std::vector<Tensor>> &T,
                                    const std::vector<std::vector<int64_t>> &ind, int64_t n);
 
-/// Why the strips |C x - y| <= phi (C (k, n), phi and y (k, 1)) of a set of dimension n, a gain
+/// Why the strips |C x - y| <= phi (C (k, n), phi and y (k)) of a set of dimension n, a gain
 /// (n, k) or the matrices of an observer are refused by intersect_strip, if they are.
 Refusal priv_strip_refusal(int64_t n, const Tensor &C, const Tensor &phi, const Tensor &y);
 Refusal priv_gain_refusal(int64_t n, const Tensor &C, const Tensor &lambda);

@@ -1,7 +1,7 @@
 // con_zonotope - the class of constrained zonotopes, as CORA's conZonotope
 //
 // Batch first (#163): the center c is (..., n), the generators G (..., m, n), one per row, the
-// constraint matrix A (..., p, m) and its offset b a column (..., p, 1); p = 0 is a zonotope.
+// constraint matrix A (..., p, m) and its offset b (..., p); p = 0 is a zonotope.
 // Points are (..., n), N points (..., N, n). Immutable: every operation returns a new set.
 // center() is CORA's center (a point inside the set), c() the stored offset. The set is empty if
 // the constraints have no solution in the box; empty(n) is such a set.
@@ -22,7 +22,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -50,7 +50,7 @@ class ConZonotope : public ContSet {
     static constexpr ClassId kClassId = ClassId::con_zonotope;
 
     /// The constrained zonotope of the center c (..., n), the generators G (..., m, n), one per
-    /// row (#163), and the constraints A x = b (A (..., p, m), b (..., p, 1)); without A and b no
+    /// row (#163), and the constraints A x = b (A (..., p, m), b (..., p)); without A and b no
     /// constraint. A center given as a column (..., n, 1) is the vector.
     ConZonotope(const Tensor &c, const Tensor &G);
     ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b);
@@ -63,18 +63,18 @@ class ConZonotope : public ContSet {
     explicit ConZonotope(const Zonotope &Z);
     explicit ConZonotope(const Interval &I);
 
-    /// CORA's legacy forms conZonotope(Z) and conZonotope(Z, A, b): Z = [c G] (..., n, 1 + m); no
-    /// constraints if A and b are not given.
+    /// CORA's legacy forms conZonotope(Z) and conZonotope(Z, A, b): Z = [c G] (..., n, 1 + m), b
+    /// (..., p); no constraints if A and b are not given.
     static ConZonotope from_matrix(const Tensor &Z, const std::optional<Tensor> &A = std::nullopt,
                                    const std::optional<Tensor> &b = std::nullopt);
 
-    /// The stored center c (..., n), generator rows G (..., m, n), constraint matrix A and offset
-    /// b, a column (..., p, 1) as CORA's; A and b are the equalities of the factor polytope.
+    /// The stored center c (..., n), generator rows G (..., m, n), constraint matrix A (..., p, m)
+    /// and offset b (..., p); A and b are the equalities of the factor polytope.
     const Tensor &c() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
     int64_t nr_generators() const { return G_.size(-2); }
     const Tensor &A() const { return F_.Ae(); }
-    Tensor b() const { return F_.be().expand_dims(-1); }
+    const Tensor &b() const { return F_.be(); }
 
     /// The factor polytope {x | A x = b} (without the unit box, which every factor keeps).
     const Polytope &factor_polytope() const noexcept { return F_; }
@@ -177,9 +177,9 @@ class ConZonotope : public ContSet {
         std::vector<CertWeights> up, lo;
     };
 
-    /// A constrained zonotope in floating point: c + G x with A x = b and the halfspace rows
-    /// C x <= d on the factors x in [-1, 1]. What a polytope cuts from a set without CORA's slack
-    /// factors (CORALean's ConZonotope with its halfspace polytope). A single set.
+    /// c + G x with A x = b and C x <= d on the factors x in [-1, 1] (CORALean's ConZonotope with
+    /// its halfspace polytope), a single set: c (n), G (h, n) one generator per row, A (p, h), b
+    /// (p), C (q, h), d (q). What a polytope cuts from a set without CORA's slack factors.
     struct Cut {
         Tensor c, G, A, b, C, d;
 
@@ -370,15 +370,15 @@ class ConZonotope : public ContSet {
         bool batch_union = true;                ///< the union constraints become batch members
     };
 
-    /// The bounds of a batch of constrained zonotopes: the box (l, u) (..., n, 1) and the bounds
-    /// (bl, bu) (..., q, 1) of the factors; NaN and 0 for an empty member.
+    /// The bounds of a batch of constrained zonotopes: the box (l, u) (..., n) and the bounds
+    /// (bl, bu) (..., q) of the factors; NaN and 0 for an empty member.
     struct Bounds {
         Tensor l, u, bl, bu;
     };
 
-    /// Bounds of the set c + G x + [-dr, dr], |x|_inf <= 1, A x <= b, for a batch; the first
-    /// num_union_const rows of A x <= b are a union, the rest an intersection (method "fourier-
-    /// motzkin").
+    /// Bounds of the set c + G x + [-dr, dr], |x|_inf <= 1, A x <= b, for a batch (c (..., n), G
+    /// (..., m, n), A (..., p, q), b (..., p), dr (..., n)); the first num_union_const rows of A x
+    /// <= b are a union, the rest an intersection (method "fourier-motzkin").
     static Bounds approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &A,
                                      const Tensor &b,
                                      const std::optional<Tensor> &dr = std::nullopt,

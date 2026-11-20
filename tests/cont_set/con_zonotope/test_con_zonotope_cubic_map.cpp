@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -51,7 +52,7 @@ void cubic_map_known(const std::string &b) {
     check(R.A().shape() == Shape{0, expected.nr_generators()}, b + ": and no constraints");
     // with a constraint: the same generators, the constraint on the linear monomials
     const ConZonotope constrained(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                                  Tensor({{1.0, 1.0}}), column({0.5}));
+                                  Tensor({{1.0, 1.0}}), vec({0.5}));
     const ConZonotope C = constrained.cubic_map(T);
     check(close(C.generators().matrix_transpose(), expected.generators().matrix_transpose(), 0),
           b + ": the same generators");

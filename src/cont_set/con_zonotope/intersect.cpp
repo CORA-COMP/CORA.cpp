@@ -67,8 +67,8 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
         const Tensor A =
             Tensor::concat({cz.A(), H.Ae.matmul(cz.generators().matrix_transpose())}, -2);
         const Tensor b = Tensor::concat(
-            {cz.b(), H.be.expand_dims(-1) - H.Ae.matmul(cz.c().expand_dims(-1))}, -2);
-        out = ConZonotope(cz.c(), cz.generators(), A, b);
+            {priv_b_column(cz), H.be.expand_dims(-1) - H.Ae.matmul(cz.c().expand_dims(-1))}, -2);
+        out = ConZonotope(cz.c(), cz.generators(), A, b.squeeze(-1));
     }
     // a constrained hyperplane takes the bounds from the set so far, else from the set after Ae
     const HostConZonotope base = priv_host_con_zonotope(out);
@@ -89,14 +89,14 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
             {Tensor::concat({out.A(), zeros_block(out.c().expand_dims(-1), p, 1)}, -1),
              Tensor::concat({a_row.matmul(out.generators().matrix_transpose()), slack}, -1)},
             -2);
-        const Tensor b =
-            Tensor::concat({out.b(), out.c().expand_dims(-1).full_like({1, 1}, 0.5 * (ub + lb)) -
-                                         a_row.matmul(out.c().expand_dims(-1))},
-                           -2);
+        const Tensor b = Tensor::concat(
+            {priv_b_column(out), out.c().expand_dims(-1).full_like({1, 1}, 0.5 * (ub + lb)) -
+                                     a_row.matmul(out.c().expand_dims(-1))},
+            -2);
         // the new factor s scales no generator
         const Tensor G =
             Tensor::concat({out.generators(), zeros_block(out.generators(), 1, n)}, -2);
-        out = ConZonotope(out.c(), G, A, b);
+        out = ConZonotope(out.c(), G, A, b.squeeze(-1));
     }
     return out;
 }

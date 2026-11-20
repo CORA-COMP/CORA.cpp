@@ -38,7 +38,7 @@ void intersect_known(const std::string &b) {
           b + ": the intersection [1, 2]");
     // the constraints of both sets stay; zero columns and rows go
     const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
-                        column({1.0}));
+                        vec({1.0}));
     const ConZonotope D = C.intersect(Zonotope(column({0.5, 0.5}), Tensor({{0.0, 0.0}})));
     check(close(D.interval().inf(), {0.5, 0.5}, 1e-9), b + ": a point of the segment");
     const ConZonotope E = A.intersect(Interval(vec({1.5}), vec({4.0})));

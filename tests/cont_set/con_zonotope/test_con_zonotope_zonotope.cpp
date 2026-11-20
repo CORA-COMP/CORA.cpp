@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,7 +30,7 @@ void zonotope_known(const std::string &b) {
           b + ": without constraints");
     // a point: the constraints fix both factors
     const ConZonotope point(column({1.0, 1.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                            Tensor({{1.0, 0.0}, {0.0, 1.0}}), column({0.5, 0.25}));
+                            Tensor({{1.0, 0.0}, {0.0, 1.0}}), vec({0.5, 0.25}));
     check(close(point.zonotope().center().expand_dims(-1), {1.5, 1.25}, 1e-9) &&
               point.zonotope().nr_generators() <= 2,
           b + ": a point");

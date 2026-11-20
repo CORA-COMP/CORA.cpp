@@ -12,6 +12,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,9 +24,9 @@ namespace {
 void representsa_known(const std::string &b) {
     const ConZonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                              Tensor({{1.0, 1.0}}), column({1.0}));
+                              Tensor({{1.0, 1.0}}), vec({1.0}));
     const ConZonotope point(column({1.0, 2.0}), Tensor({{0.0, 0.0}}));
-    const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), column({3.0}));
+    const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
     check(box.representsa("zonotope") && box.representsa("interval"), b + ": a box");
     check(!segment.representsa("zonotope") && !segment.representsa("interval"),
           b + ": a segment with a constraint is neither");

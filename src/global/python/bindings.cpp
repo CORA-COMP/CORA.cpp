@@ -1507,7 +1507,7 @@ void bind_zonotope(py::module_ &m) {
         .def(
             "constraints_satisfied",
             [](const Zonotope &Z, const py::object &C, const py::object &d) {
-                return Z.constraints_satisfied(tensor_of(C, "C"), vector_of(d, "d"));
+                return Z.constraints_satisfied(tensor_of(C, "C"), point_of(d, "d"));
             },
             py::arg("C"), py::arg("d"), "True if C x < d is certain for the whole zonotope")
         .def(
@@ -1671,8 +1671,8 @@ void bind_zonotope(py::module_ &m) {
             "intersect_strip",
             [](const Zonotope &Z, const py::object &C, const py::object &phi, const py::object &y,
                const py::object &method) {
-                const Tensor Ct = tensor_of(C, "C"), pt = vector_of(phi, "phi"),
-                             yt = vector_of(y, "y");
+                const Tensor Ct = tensor_of(C, "C"), pt = point_of(phi, "phi"),
+                             yt = point_of(y, "y");
                 if (py::isinstance<py::str>(method))
                     return Z.intersect_strip(Ct, pt, yt, py::cast<std::string>(method));
                 if (py::isinstance<py::dict>(method)) {
@@ -1829,7 +1829,7 @@ void bind_con_zonotope(py::module_ &m) {
                 if (A.is_none()) return ConZonotope(point_of(c, "the center"), tensor_of(G, "G"));
                 // the set with its constraints
                 return ConZonotope(point_of(c, "the center"), tensor_of(G, "G"), tensor_of(A, "A"),
-                                   vector_of(b, "b"));
+                                   point_of(b, "b"));
             }),
             py::arg("c"), py::arg("G"), py::arg("A") = py::none(), py::arg("b") = py::none(),
             "center c (..., n), generators G (..., m, n), one per row, and the constraints A x = b")
@@ -1845,7 +1845,7 @@ void bind_con_zonotope(py::module_ &m) {
                 return ConZonotope::from_matrix(
                     tensor_of(Z, "Z"),
                     A.is_none() ? std::nullopt : std::optional<Tensor>(tensor_of(A, "A")),
-                    b.is_none() ? std::nullopt : std::optional<Tensor>(vector_of(b, "b")));
+                    b.is_none() ? std::nullopt : std::optional<Tensor>(point_of(b, "b")));
             },
             py::arg("Z"), py::arg("A") = py::none(), py::arg("b") = py::none(),
             "CORA's legacy form: Z = [c G] (..., n, 1 + m)")
@@ -1862,7 +1862,7 @@ void bind_con_zonotope(py::module_ &m) {
             "A", [](const ConZonotope &Z) { return matrix(Z.A()); },
             "The constraint matrix (..., p, m)")
         .def_property_readonly(
-            "b", [](const ConZonotope &Z) { return vector(Z.b()); },
+            "b", [](const ConZonotope &Z) { return values(Z.b()); },
             "The constraint offset (..., p)")
         // properties
         .def("is_bounded", &ConZonotope::is_bounded, "Always true")
@@ -2064,8 +2064,8 @@ void bind_con_zonotope(py::module_ &m) {
             [](const ConZonotope &Z, const py::object &C, const py::object &phi,
                const py::object &y, const py::object &method) {
                 // the strip intersection
-                const Tensor Ct = tensor_of(C, "C"), pt = vector_of(phi, "phi"),
-                             yt = vector_of(y, "y");
+                const Tensor Ct = tensor_of(C, "C"), pt = point_of(phi, "phi"),
+                             yt = point_of(y, "y");
                 if (py::isinstance<py::str>(method))
                     return Z.intersect_strip(Ct, pt, yt, py::cast<std::string>(method));
                 if (py::isinstance<py::dict>(method)) {
@@ -2096,17 +2096,17 @@ void bind_con_zonotope(py::module_ &m) {
                 options.max_iter = max_iter;
                 options.batch_union = batch_union;
                 const ConZonotope::Bounds r = ConZonotope::approximate_bounds(
-                    vector_of(c, "c"), tensor_of(G, "G"), tensor_of(A, "A"), vector_of(b, "b"),
-                    dr.is_none() ? std::nullopt : std::optional<Tensor>(vector_of(dr, "dr")),
+                    point_of(c, "c"), tensor_of(G, "G"), tensor_of(A, "A"), point_of(b, "b"),
+                    dr.is_none() ? std::nullopt : std::optional<Tensor>(point_of(dr, "dr")),
                     num_union_const, options);
                 // the bounds of a constrained zonotope
-                return py::make_tuple(vector(r.l), vector(r.u), vector(r.bl), vector(r.bu));
+                return py::make_tuple(values(r.l), values(r.u), values(r.bl), values(r.bu));
             },
             py::arg("c"), py::arg("G"), py::arg("A"), py::arg("b"), py::arg("dr") = py::none(),
             py::arg("num_union_const") = 1, py::arg("method") = "fourier-motzkin",
             py::arg("max_iter") = 4, py::arg("batch_union") = true,
-            "(l, u, bl, bu): bounds of c + G x + [-dr, dr], |x|_inf <= 1, A x <= b for a batch; "
-            "the first num_union_const rows of A are a union");
+            "(l, u, bl, bu): bounds of c + G x + [-dr, dr], |x|_inf <= 1, A x <= b for a batch (c "
+            "(..., n), G (..., m, n), b (..., p)); the first num_union_const rows are a union");
 }
 
 // ZonoBundle --------------------------------------------------------------------------------------

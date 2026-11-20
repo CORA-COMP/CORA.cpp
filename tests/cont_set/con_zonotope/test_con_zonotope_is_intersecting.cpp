@@ -25,7 +25,7 @@ namespace {
 /// whose box around it still overlaps ('approx').
 void is_intersecting_known(const std::string &b) {
     const ConZonotope seg(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                          Tensor({{1.0, 1.0}}), column({1.0}));
+                          Tensor({{1.0, 1.0}}), vec({1.0}));
     const Interval meets(vec({0.4, 0.4}), vec({2.0, 2.0}));
     const Interval misses(vec({0.6, 0.6}), vec({2.0, 2.0}));
     check(seg.is_intersecting(meets) && !seg.is_intersecting(misses), b + ": a box");

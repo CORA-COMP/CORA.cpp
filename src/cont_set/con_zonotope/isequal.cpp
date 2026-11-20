@@ -68,8 +68,8 @@ bool aux_equal(const ConZonotope &cz, const ConZonotope &S, double tol) {
     if (within_tol(cz.c().expand_dims(-1), S.c().expand_dims(-1), tol).min().item() == 1.0 &&
         aux_same_columns(Tensor::concat({cz.generators().matrix_transpose(), cz.A()}, -2),
                          Tensor::concat({S.generators().matrix_transpose(), S.A()}, -2), tol) &&
-        aux_same_columns(Tensor::concat({cz.A(), cz.b()}, -1), Tensor::concat({S.A(), S.b()}, -1),
-                         tol))
+        aux_same_columns(Tensor::concat({cz.A(), priv_b_column(cz)}, -1),
+                         Tensor::concat({S.A(), priv_b_column(S)}, -1), tol))
         return true;
     return aux_holds(S, priv_vertex_candidates(cz), tol) &&
            aux_holds(cz, priv_vertex_candidates(S), tol);

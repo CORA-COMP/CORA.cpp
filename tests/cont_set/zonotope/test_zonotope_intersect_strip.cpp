@@ -18,6 +18,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,7 +29,7 @@ namespace {
 /// The unit square cut by the strip |x1 - 0.25| <= 0.5.
 struct Strip {
     Zonotope Z{column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})};
-    Tensor C = Tensor({{1.0, 0.0}}), phi = column({0.5}), y = column({0.25});
+    Tensor C = Tensor({{1.0, 0.0}}), phi = vec({0.5}), y = vec({0.25});
 };
 
 /// Hand-computed for the gain (1, 0), by "normGen" (0.8, 0) and "alamo-FRad" (the same for one
@@ -65,12 +66,12 @@ void strip_encloses_the_intersection(const std::string &b) {
     cora::Rng rng(33);
     const Zonotope Z = Zonotope::generate_random(rng, 3, std::nullopt, 5);
     const Tensor C = Tensor({{1.0, 0.5, 0.0}, {0.0, -1.0, 2.0}});
-    const Tensor phi = column({0.8, 1.5}),
-                 y = C.matmul(Z.center().expand_dims(-1)) + column({0.3, -0.2});
+    const Tensor phi = vec({0.8, 1.5}),
+                 y = C.matmul(Z.center().expand_dims(-1)).squeeze(-1) + vec({0.3, -0.2});
     const Tensor points = Z.rand_point(3000, rng).matrix_transpose(); // as columns (n, N)
     // the points of Z inside all strips of (C, phi, y)
     const auto inside = [&](const Tensor &C_, const Tensor &phi_, const Tensor &y_) {
-        const Tensor excess = (C_.matmul(points) - y_).abs() - phi_;
+        const Tensor excess = (C_.matmul(points) - y_.expand_dims(-1)).abs() - phi_.expand_dims(-1);
         return excess.max(0, true).less_equal(excess.max(0, true).zeros_like()).data();
     };
     const auto check_all = [&](const Zonotope &result, const std::vector<double> &keep,
@@ -109,10 +110,10 @@ void strip_refuses() {
     check(test::raises([&] { s.Z.intersect_strip(Tensor({{1.0, 0.0, 0.0}}), s.phi, s.y); },
                        Error::dimension_mismatch),
           "intersect_strip: C columns");
-    check(test::raises([&] { s.Z.intersect_strip(s.C, column({0.5, 0.5}), s.y); },
+    check(test::raises([&] { s.Z.intersect_strip(s.C, vec({0.5, 0.5}), s.y); },
                        Error::dimension_mismatch),
           "intersect_strip: phi rows");
-    check(test::raises([&] { s.Z.intersect_strip(s.C, s.phi, column({0.5, 0.5})); },
+    check(test::raises([&] { s.Z.intersect_strip(s.C, s.phi, vec({0.5, 0.5})); },
                        Error::dimension_mismatch),
           "intersect_strip: y rows");
     // gain columns
@@ -120,11 +121,10 @@ void strip_refuses() {
                        Error::dimension_mismatch),
           "intersect_strip: gain columns");
     const Tensor C2 = Tensor({{1.0, 0.0}, {0.0, 1.0}});
-    check(
-        test::raises(
-            [&] { s.Z.intersect_strip(C2, column({1.0, 1.0}), column({0.0, 0.0}), "alamo-FRad"); },
-            Error::special_error),
-        "intersect_strip: alamo-FRad with two strips");
+    check(test::raises(
+              [&] { s.Z.intersect_strip(C2, vec({1.0, 1.0}), vec({0.0, 0.0}), "alamo-FRad"); },
+              Error::special_error),
+          "intersect_strip: alamo-FRad with two strips");
     check(
         test::raises([&] { Zonotope::stack({s.Z, s.Z}).intersect_strip(s.C, s.phi, s.y, "bravo"); },
                      Error::not_supported),

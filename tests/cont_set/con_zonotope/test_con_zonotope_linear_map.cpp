@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,7 +25,7 @@ namespace {
 /// Hand-computed: center and generators map, the constraints stay; M may change the dimension.
 void linear_map_known(const std::string &b) {
     const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
-                        column({0.5}));
+                        vec({0.5}));
     const ConZonotope r = a.linear_map(Tensor({{2.0, 0.0}, {0.0, 3.0}, {1.0, 1.0}}));
     check(r.dim() == 3 && close(r.c().expand_dims(-1), {2, 6, 3}, 0), b + ": the center maps");
     check(close(r.generators().matrix_transpose(), {2, 0, 0, 3, 1, 1}, 0),

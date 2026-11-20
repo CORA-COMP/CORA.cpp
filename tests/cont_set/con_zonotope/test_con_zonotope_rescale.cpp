@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +26,7 @@ namespace {
 /// 0.75 moves into the center and the offset, the radius 0.25 scales generators and constraint.
 void rescale_known(const std::string &b) {
     const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
-                        column({1.5}));
+                        vec({1.5}));
     for (const char *method : {"exact", "iter"}) {
         const ConZonotope r = a.rescale(method);
         check(close(r.c().expand_dims(-1), {0.75, 0.75}, 1e-9) &&
@@ -64,13 +65,13 @@ int main() {
         rescale_property(b);
     });
     const ConZonotope plain(column({0.0}), Tensor({{1.0}}));
-    const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), column({3.0}));
+    const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
     check(test::raises([&] { plain.rescale(); }, Error::special_error), "rescale: no constraints");
     check(test::raises([&] { none.rescale(); }, Error::empty_set), "rescale: an empty set");
     check(test::raises([&] { plain.rescale("fast"); }, Error::wrong_value), "rescale: a method");
     ChecksScope off(false);
     const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
-                        column({1.5}));
+                        vec({1.5}));
     check(close(a.rescale().b(), {0}, 1e-9), "rescale: the same with the checks off");
     return test::finish("con_zonotope rescale");
 }

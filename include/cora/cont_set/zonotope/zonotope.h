@@ -173,7 +173,7 @@ class Zonotope : public ContSet {
     Zonotope intersect(const Interval &I, const std::string &method = "conZonotope") const;
 
     /// Whether C x < d for every x in the zonotope (sufficient: false says nothing); C (k, n)
-    /// and d (k, 1). For a batch, whether it holds for every member.
+    /// and d (..., k). For a batch, whether it holds for every member.
     bool constraints_satisfied(const Tensor &C, const Tensor &d) const;
 
     /// An enclosure of {(x' T_i x) x | x in Z}: T[i][k] are the (n, n) matrices of output i,
@@ -295,8 +295,8 @@ class Zonotope : public ContSet {
         Tensor E, F, A, C;
     };
 
-    /// A zonotope that encloses the intersection with the strips |C x - y| <= phi: center c + L
-    /// (y - C c), generators [(I - L C) G, L diag(phi)] for a given or chosen gain L.
+    /// A zonotope that encloses the intersection with the strips |C x - y| <= phi (C (k, n), phi
+    /// and y (k)): center c + L (y - C c), generators [(I - L C) G, L diag(phi)] for a gain L.
     Zonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
                              const std::string &method = "normGen") const;
     Zonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,

@@ -47,7 +47,7 @@ struct Rows {
 /// The right-hand side is d + 0 (the slack and the error box of a float set are zero).
 Rows aux_rows(const ConZonotope::Cut &cut) {
     Rows rows;
-    rows.h = cut.G.shape()[1];
+    rows.h = cut.G.shape()[0];
     const Vec C = priv_host_rows(cut.C), d = priv_host_rows(cut.d), A = priv_host_rows(cut.A),
               b = priv_host_rows(cut.b);
     rows.a = C;
@@ -107,7 +107,7 @@ bool aux_same(const Vec &a, const Vec &b) {
 
 Interval ConZonotope::Cut::interval_tight(int passes) const {
     detail::Entry entry;
-    const int64_t n = c.shape()[0], h = G.shape()[1];
+    const int64_t n = c.shape()[0], h = G.shape()[0];
     const Rows rows = aux_rows(*this);
     // the passes from the unit box; a pass that changes nothing is the last
     Vec lo(std::size_t(h), -1.0), hi(std::size_t(h), 1.0);
@@ -124,7 +124,7 @@ Interval ConZonotope::Cut::interval_tight(int passes) const {
     if (h > 0) {
         const Interval GJ = Interval(Tensor::like(c, lo, {h}), Tensor::like(c, hi, {h}))
                                 .zonotope()
-                                .linear_map(G)
+                                .linear_map(G.matrix_transpose())
                                 .interval();
         inf = GJ.inf().data();
         sup = GJ.sup().data();
@@ -145,13 +145,9 @@ Interval ConZonotope::interval_tight(int passes) const {
     CORA_CHECK(passes >= 0, Error::wrong_value, [&] {
         return "interval_tight: passes must be nonnegative, got " + std::to_string(passes);
     });
-    // the set as a cut without rows of its own, in CORA's columns
-    return Cut{c_.expand_dims(-1),
-               G_.matrix_transpose(),
-               A(),
-               b(),
-               zeros_block(c_.expand_dims(-1), 0, G_.size(-2)),
-               zeros_block(c_.expand_dims(-1), 0, 1)}
+    // the set as a cut without rows of its own
+    return Cut{
+        c_, G_, A(), b(), zeros_block(c_.expand_dims(-1), 0, G_.size(-2)), c_.zeros_like({0})}
         .interval_tight(passes);
 }
 

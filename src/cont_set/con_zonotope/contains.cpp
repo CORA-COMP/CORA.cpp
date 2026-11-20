@@ -105,7 +105,7 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
         {compacted.c().expand_dims(-1), zeros_block(compacted.c().expand_dims(-1), p, 1)}, -2);
     const Tensor extended_generators =
         Tensor::concat({compacted.generators().matrix_transpose(), compacted.A()}, -2);
-    const Tensor offsets = compacted.b().broadcast_to({p, N});
+    const Tensor offsets = priv_b_column(compacted).broadcast_to({p, N});
     return Zonotope(extended_center.squeeze(-1), extended_generators.matrix_transpose())
         .contains(Tensor::concat({P, offsets}, -2).matrix_transpose(), "exact", tol);
 }

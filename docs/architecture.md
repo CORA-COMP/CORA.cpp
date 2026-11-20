@@ -145,7 +145,9 @@ dimensions first:
 - an ellipsoid has the center q (batch..., n) and the shape matrix Q (batch..., n, n), the center
   first in `Ellipsoid(q, Q)`, and its `generators()` are rows, as a zonotope's;
 - a polytope has the offsets b and be (batch..., m) and the vertices V (batch..., p, n), one
-  vertex per row; `ConZonotope::b()` keeps CORA's column;
+  vertex per row; every other constraint offset is a vector too (`ConZonotope::b()`, the d of
+  `constraints_satisfied`, the phi and y of `intersect_strip`, the parts of
+  `ConZonotope::approximate_bounds` and of `ConZonotope::Cut`);
 - every point argument and result of a set (`contains`, `plus`, `center()`, the direction of
   `support_function`, the points of `rand_point`, `corners`, ...) is a point (..., n) or a batch
   of points (..., N, n), one point per row; the center of an empty set is NaN (n);

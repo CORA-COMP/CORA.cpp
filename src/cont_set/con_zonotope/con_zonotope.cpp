@@ -5,10 +5,10 @@
 // Syntax:   ConZonotope cz(c, G);   ConZonotope cz(c, G, A, b);   ConZonotope cz(c, G, F);
 //           ConZonotope cz(Z);   Polytope::LinearPrograms lp = cz.factor_programs();
 //           ConZonotope cz = ConZonotope::from_matrix(Zfull, A, b);
-// Inputs:   c - center (..., n, 1)
-//           G - generators (..., n, m)
+// Inputs:   c - center (..., n)
+//           G - generators (..., m, n), one per row
 //           A - constraint matrix (..., p, m)
-//           b - constraint offset (..., p, 1)
+//           b - constraint offset (..., p)
 //           F - factor polytope {x | A x = b}
 // Outputs:  cz - the set {c + G x | |x|_inf <= 1, A x = b}; no constraints give p = 0
 // See also: empty, Zonotope::Zonotope
@@ -19,7 +19,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -69,11 +69,11 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, c
         return fail("the dimensions of the generator matrix and the constraint matrix do not "
                     "match: " +
                     shape_text(G.shape()) + " and " + shape_text(A.shape()));
-    if (b.ndim() < 2 || b.shape().back() != 1)
-        return fail("the constraint offset must be a column (..., p, 1), got the shape " +
+    if (b.ndim() < 1)
+        return fail("the constraint offset must be a vector (..., p), got the shape " +
                     shape_text(b.shape()));
     // the constraint matrix and offset agree in rows
-    if (b.shape()[b.ndim() - 2] != A.shape()[A.ndim() - 2])
+    if (b.shape().back() != A.shape()[A.ndim() - 2])
         return fail("the dimensions of the constraint matrix and the constraint offset do not "
                     "match: " +
                     shape_text(A.shape()) + " and " + shape_text(b.shape()));
@@ -81,7 +81,7 @@ detail::Refusal aux_refusal(const Tensor &c, const Tensor &G, const Tensor &A, c
         // all four parts carry one batch shape
         return std::vector<int64_t>(t.shape().begin(), t.shape().end() - rank);
     };
-    if (batch(c, 1) != batch(G, 2) || batch(G, 2) != batch(A, 2) || batch(G, 2) != batch(b, 2))
+    if (batch(c, 1) != batch(G, 2) || batch(G, 2) != batch(A, 2) || batch(G, 2) != batch(b, 1))
         return fail("the center, generators and constraints must have one batch shape");
     if (!aux_finite(c) || !aux_finite(G) || !aux_finite(A) || !aux_finite(b))
         return fail("the entries must be finite");
@@ -96,7 +96,7 @@ detail::Refusal aux_polytope_refusal(const Tensor &c, const Tensor &G, const Pol
     };
     if (!F.is_h_rep() || F.A().shape()[F.A().ndim() - 2] != 0)
         return fail("the factor polytope must be equalities A x = b only");
-    return aux_refusal(c, G, F.Ae(), F.be().expand_dims(-1));
+    return aux_refusal(c, G, F.Ae(), F.be());
 }
 
 } // namespace
@@ -111,9 +111,7 @@ Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, Tenso
     detail::Entry entry;
     const detail::Refusal refusal = aux_refusal(c, G, A, b);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    // the polytope's offsets are vectors (..., p)
-    const Tensor offsets = std::move(b);
-    return Polytope::equalities(std::move(A), offsets.squeeze(-1));
+    return Polytope::equalities(std::move(A), std::move(b));
 }
 
 ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
@@ -138,7 +136,8 @@ Polytope::LinearPrograms ConZonotope::factor_programs() const {
 // From other sets --------------------------------------------------------------------------------
 
 ConZonotope::ConZonotope(const Tensor &c, const Tensor &G)
-    : ConZonotope(c, G, zeros_block(G, 0, G.shape()[G.ndim() - 2]), zeros_block(G, 0, 1)) {}
+    : ConZonotope(c, G, zeros_block(G, 0, G.shape()[G.ndim() - 2]),
+                  zeros_block(G, 0, 1).squeeze(-1)) {}
 
 ConZonotope::ConZonotope(const Zonotope &Z) : ConZonotope(Z.center(), Z.generators()) {}
 

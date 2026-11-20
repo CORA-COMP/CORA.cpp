@@ -11,18 +11,18 @@
 //
 // Syntax:   Bounds r = ConZonotope::approximate_bounds(c, G, A, b);
 //           Bounds r = ConZonotope::approximate_bounds(c, G, A, b, dr, num_union_const, options);
-// Inputs:   c (B, n, 1), G (B, n, m), A (B, p, q), b (B, p, 1) - the batch of the sets
-//           dr (B, n, 1) - the interval error (default: 0)
+// Inputs:   c (..., n), G (..., m, n) rows, A (..., p, q), b (..., p) - the batch of the sets
+//           dr (..., n) - the interval error (default: 0)
 //           num_union_const - the first rows of A are a union, the others an intersection
 //           options - the method: "fourier-motzkin" (default) or "exact"
-// Outputs:  r - the box (l, u) (B, n, 1) and the bounds (bl, bu) (B, q, 1) of the factors
+// Outputs:  r - the box (l, u) (..., n) and the bounds (bl, bu) (..., q) of the factors
 // See also: interval, Koller, ICLR 2026, Prop. 3
 //
 // CORA: contSet/@conZonotope/approximateBoundsWithGPU.m
 // CORA authors: Lukas Koller
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -213,32 +213,32 @@ ConZonotope::approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &
                                 const std::optional<BoundsOptions> &options_arg) {
     detail::Entry entry;
     const BoundsOptions options = options_arg.value_or(BoundsOptions{});
-    const auto batch = [](const Tensor &t) {
-        return std::vector<int64_t>(t.shape().begin(), t.shape().end() - 2);
+    // the leading axes before the `rank` element axes
+    const auto batch = [](const Tensor &t, std::size_t rank) {
+        return std::vector<int64_t>(t.shape().begin(), t.shape().end() - std::ptrdiff_t(rank));
     };
-    CORA_CHECK(c.ndim() >= 2 && c.shape().back() == 1 && G.ndim() >= 2 && A.ndim() >= 2 &&
-                   b.ndim() >= 2 && b.shape().back() == 1,
+    CORA_CHECK(c.ndim() >= 1 && G.ndim() >= 2 && A.ndim() >= 2 && b.ndim() >= 1,
                Error::dimension_mismatch, [&] {
-                   return "approximate_bounds: c (..., n, 1), G (..., n, m), A (..., p, q) and b "
-                          "(..., p, 1) are needed, got the shapes " +
+                   return "approximate_bounds: c (..., n), G (..., m, n), A (..., p, q) and b "
+                          "(..., p) are needed, got the shapes " +
                           shape_text(c.shape()) + ", " + shape_text(G.shape()) + ", " +
                           shape_text(A.shape()) + " and " + shape_text(b.shape());
                });
     // the sets share one batch shape
-    CORA_CHECK(batch(c) == batch(G) && batch(c) == batch(A) && batch(c) == batch(b) &&
-                   (!dr_arg ||
-                    (batch(*dr_arg) == batch(c) && is_column(*dr_arg, c.shape()[c.ndim() - 2]))),
-               Error::dimension_mismatch, [] {
-                   return std::string("approximate_bounds: the sets need one batch shape and dr a "
-                                      "column of the dimension");
-               });
+    CORA_CHECK(
+        batch(c, 1) == batch(G, 2) && batch(c, 1) == batch(A, 2) && batch(c, 1) == batch(b, 1) &&
+            (!dr_arg || (batch(*dr_arg, 1) == batch(c, 1) && is_vector(*dr_arg, c.shape().back()))),
+        Error::dimension_mismatch, [] {
+            return std::string("approximate_bounds: the sets need one batch shape and dr a "
+                               "vector of the dimension");
+        });
     // the shapes of the parts fit each other
-    CORA_CHECK(G.shape()[G.ndim() - 2] == c.shape()[c.ndim() - 2] &&
-                   A.shape().back() >= G.shape().back() &&
-                   b.shape()[b.ndim() - 2] == A.shape()[A.ndim() - 2],
+    CORA_CHECK(G.shape().back() == c.shape().back() &&
+                   A.shape().back() >= G.shape()[G.ndim() - 2] &&
+                   b.shape().back() == A.shape()[A.ndim() - 2],
                Error::dimension_mismatch, [&] {
-                   return "approximate_bounds: G needs the rows of c, A at least the columns of G, "
-                          "b the rows of A; got " +
+                   return "approximate_bounds: G needs the dimension of c, A at least the rows of "
+                          "G, b the rows of A; got " +
                           shape_text(G.shape()) + ", " + shape_text(A.shape()) + " and " +
                           shape_text(b.shape());
                });
@@ -262,14 +262,15 @@ ConZonotope::approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &
                [] { return std::string("approximate_bounds: max_iter must be nonnegative"); });
 
     // the batch as one axis
-    const std::vector<int64_t> lead = batch(c);
+    const std::vector<int64_t> lead = batch(c, 1);
     int64_t B = 1;
     for (const int64_t d : lead) B *= d;
-    const int64_t n = c.shape()[c.ndim() - 2], m = G.shape().back(), q = A.shape().back();
+    const int64_t n = c.shape().back(), m = G.shape()[G.ndim() - 2], q = A.shape().back();
     const auto shaped = [&](const Tensor &t, int64_t rows, int64_t cols) {
         return t.reshape({B, rows, cols});
     };
-    const Tensor c3 = shaped(c, n, 1), G3 = shaped(G, n, m);
+    // the algorithm runs on CORA's columns: c (B, n, 1), G (B, n, m)
+    const Tensor c3 = shaped(c, n, 1), G3 = shaped(G, m, n).matrix_transpose();
     const Tensor dr3 = dr_arg ? shaped(*dr_arg, n, 1) : c3.zeros_like();
     Bounds r;
     if (p == 0) {
@@ -287,11 +288,10 @@ ConZonotope::approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &
              Tensor::where(missing, r.bl.zeros_like(), r.bl),
              Tensor::where(missing, r.bu.zeros_like(), r.bu)};
     }
-    // back to the batch shape of the sets
+    // back to the batch shape of the sets, as vectors
     const auto back = [&](const Tensor &t) {
         Shape shape = lead;
         shape.push_back(t.shape()[1]);
-        shape.push_back(1);
         return t.reshape(shape);
     };
     return {back(r.l), back(r.u), back(r.bl), back(r.bu)};

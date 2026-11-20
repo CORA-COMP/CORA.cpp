@@ -39,7 +39,7 @@ void enclose_known(const std::string &b) {
           b + ": extra generators last");
     // the same constraints on the common factors: they stay, the new factors are free
     const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
-                        column({1.0}));
+                        vec({1.0}));
     const ConZonotope R = C.enclose(Tensor({{1.0, 0.0}, {0.0, 2.0}}), vec({1.0, 1.0}));
     check(R.A().shape() == Shape{1, 5} && close(R.A(), {1, 1, 0, 0, 0}, 0),
           b + ": A padded with zeros");
@@ -66,9 +66,9 @@ void enclose_property(const std::string &b) {
 /// A set that is no image, other dimensions and a matrix of the wrong size are refused; the same
 /// valid call with the checks off.
 void checks_and_their_switch() {
-    const ConZonotope C(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), column({1.0}));
+    const ConZonotope C(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), vec({1.0}));
     const ConZonotope other(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
-                            column({1.0}));
+                            vec({1.0}));
     check(test::raises([&] { C.enclose(other); }, Error::special_error),
           "enclose: the constraints differ");
     check(test::raises([&] { C.enclose(ConZonotope(column({0.0}), Tensor({{1.0}, {1.0}}))); },
@@ -82,9 +82,9 @@ void checks_and_their_switch() {
           "enclose: M must have n columns");
     // the longer set's constraints use a factor that the other lacks: CORA drops them
     const ConZonotope longer(column({0.0}), Tensor({{1.0}, {1.0}, {1.0}}),
-                             Tensor({{1.0, 1.0, 1.0}}), column({1.0}));
+                             Tensor({{1.0, 1.0, 1.0}}), vec({1.0}));
     const ConZonotope shorter(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}),
-                              column({1.0}));
+                              vec({1.0}));
     check(test::raises([&] { longer.enclose(shorter); }, Error::special_error),
           "enclose: constraints on factors only one set has");
     const ConZonotope A(column({0.0}), Tensor({{1.0}}));

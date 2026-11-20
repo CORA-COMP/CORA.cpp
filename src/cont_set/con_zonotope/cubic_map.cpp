@@ -97,7 +97,7 @@ ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz
         A.push_back(aux_scatter(sets[s]->A(), aux_linear_positions(sizes, s), total));
         b.push_back(sets[s]->b());
     }
-    return {Z.center(), Z.generators(), Tensor::concat(A, -2), Tensor::concat(b, -2)};
+    return {Z.center(), Z.generators(), Tensor::concat(A, -2), Tensor::concat(b, -1)};
 }
 
 } // namespace cora

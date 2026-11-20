@@ -57,9 +57,10 @@ int main() {
         oracle::check("and.Ae", aux_rows(mine.A(), 0, pe), their.A());
         oracle::check("and.be", aux_rows(mine.b(), 0, pe), their.b());
         oracle::check("and.A", aux_rows(mine.A(), pe, pe + n), aux_rows(A, 0, n));
-        oracle::check("and.b", aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, 0, n));
+        oracle::check("and.b", aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, 0, n).squeeze(-1));
         oracle::check("and.-A", -aux_rows(mine.A(), pe, pe + n), aux_rows(A, n, 2 * n));
-        oracle::check("and.-b", -aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, n, 2 * n));
+        oracle::check("and.-b", -aux_rows(mine.b(), pe, pe + n),
+                      aux_rows(b_ineq, n, 2 * n).squeeze(-1));
     });
     // the product stacks both sets
     oracle::run("conZonotope.cartProd", [](oracle::Random &rnd) {

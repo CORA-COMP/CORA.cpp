@@ -48,8 +48,9 @@ Tensor aux_center_full(const ConZonotope &cz) {
     const Tensor N = null_space(A);
     // no free direction: the factors are the solution of A x = b
     if (N.shape().back() == 0)
-        return cz.c().expand_dims(-1) + cz.generators().matrix_transpose().matmul(A.lstsq(cz.b()));
-    const Tensor x0 = A.pinv().matmul(cz.b());
+        return cz.c().expand_dims(-1) +
+               cz.generators().matrix_transpose().matmul(A.lstsq(priv_b_column(cz)));
+    const Tensor x0 = A.pinv().matmul(priv_b_column(cz));
     const int64_t k = N.shape().back();
     // |x| <= 1 for x = N y + x0 is [N; -N] y <= [1 - x0; 1 + x0], a polytope of the y
     const Polytope Y(Tensor::concat({N, -N}, -2),

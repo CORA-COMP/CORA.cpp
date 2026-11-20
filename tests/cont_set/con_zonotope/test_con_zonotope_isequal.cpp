@@ -24,18 +24,18 @@ namespace {
 /// same set (the vertex test); a different set; empty sets; points; a zonotope and a box.
 void isequal_known(const std::string &b) {
     const ConZonotope seg(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                          Tensor({{1.0, 2.0}}), column({0.5}));
+                          Tensor({{1.0, 2.0}}), vec({0.5}));
     const ConZonotope swapped(column({0.0, 0.0}), Tensor({{0.0, 1.0}, {1.0, 0.0}}),
-                              Tensor({{2.0, 1.0}}), column({0.5}));
+                              Tensor({{2.0, 1.0}}), vec({0.5}));
     check(seg.isequal(seg) && seg.isequal(swapped) && swapped.isequal(seg),
           b + ": equal up to the order of the factors");
     const ConZonotope other(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                            Tensor({{1.0, 2.0}}), column({0.25}));
+                            Tensor({{1.0, 2.0}}), vec({0.25}));
     check(!seg.isequal(other), b + ": another offset");
     // the unit square, with and without a pinned extra factor
     const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope pinned(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {5.0, 5.0}}),
-                             Tensor({{0.0, 0.0, 1.0}}), column({0.0}));
+                             Tensor({{0.0, 0.0, 1.0}}), vec({0.0}));
     check(square.isequal(pinned) && pinned.isequal(square), b + ": another representation");
     check(!square.isequal(ConZonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}))),
           b + ": another box");

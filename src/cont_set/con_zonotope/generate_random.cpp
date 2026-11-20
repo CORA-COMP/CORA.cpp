@@ -69,7 +69,7 @@ CORA_FROM_NUMBERS ConZonotope ConZonotope::generate_random(Rng &rng,
     rng.uniform(A.data(), A.size(), -5.0, 5.0);
     const Tensor Ae = Tensor::like(Z.center().expand_dims(-1), A, {p, m});
     return {Z.center(), Z.generators(), Ae,
-            Ae.matmul(Tensor::like(Z.center().expand_dims(-1), x0, {m, 1}))};
+            Ae.matmul(Tensor::like(Z.center().expand_dims(-1), x0, {m, 1})).squeeze(-1)};
 }
 
 } // namespace cora
