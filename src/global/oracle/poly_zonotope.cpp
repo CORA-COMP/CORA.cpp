@@ -146,6 +146,17 @@ bool PolyZonotope::is_intersecting(const cora::Polytope &S, double tol) const {
         .get<bool>("value");
 }
 
+// the two halves of a split, the factor [0, 1] first
+std::pair<PolyZonotope, PolyZonotope> PolyZonotope::split_dep_factor(int64_t id) const {
+    const Reply r = ask("polyZonotope.splitDepFactor", {{"P", *this}, {"factor", id}});
+    return {r.get<PolyZonotope>("P1"), r.get<PolyZonotope>("P2")};
+}
+
+std::pair<PolyZonotope, PolyZonotope> PolyZonotope::split_longest_gen() const {
+    const Reply r = ask("polyZonotope.splitLongestGen", {{"P", *this}});
+    return {r.get<PolyZonotope>("P1"), r.get<PolyZonotope>("P2")};
+}
+
 // the conversions and the dimension
 Zonotope PolyZonotope::zonotope() const {
     return ask("polyZonotope.zonotope", {{"P", *this}}).get<Zonotope>("Z");

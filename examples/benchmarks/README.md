@@ -9,7 +9,7 @@
 | AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 16.8 / 11.7 | 27 / 22 (23 instances) |
 
 <!-- BEGIN overall -->
-Over the 86 instances, 2273 of 2382 rows (95.4%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2277 of 2382 rows (95.6%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 <!-- END overall -->
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
@@ -586,7 +586,7 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | VCAS worst-28.5 | F | F | 0.00117 | 9/9 bit-exact, 0 property | 0.047 | 0.032 | 0.032 (CORA) | 27.2 |
 | Attitude Control avoid | V | V | 0.436 | 40/42 bit-exact, 1 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12 |
 | QUAD reach | V | V | 1.98 | 45/47 bit-exact, 1 property | 34.7 | 33.415 | 33.415 (CORA) | 16.8 |
-| Docking constraint | U | U | 5.16 | 35/37 bit-exact, 1 property | 594 [m] | 95.038 | - [f] | - |
+| Docking constraint | U | U | 5.16 | 37/37 bit-exact, 0 property | 594 [m] | 95.038 | - [f] | - |
 | Docking constraint, polytope and splitting | U (script) | V | 154 | 27/60 bit-exact, 8 property | - | 95.038 (U) | - [f] | - |
 | NAV standard | V | V | 4.62 | 42/45 bit-exact, 2 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 29.2 |
 | NAV robust | V | V | 0.314 | 37/39 bit-exact, 1 property | 8.71 | 2.271 | 2.271 (CORA) | 7.24 |
@@ -830,7 +830,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | DTN04 | 29/30 | 1 | 18 |
 | DTN05 | 29/30 | 1 | 18 |
 | DTN06 | 29/30 | 1 | 18 |
-| Docking-constraint | 35/37 | 2 | 19 |
+| Docking-constraint | 37/37 | 0 | 19 |
 | Docking-constraint-polygon | - | not measured | - |
 | Double_Pendulum-less-robust | 37/39 | 2 | 23 |
 | Double_Pendulum-less-robust-script | 32/33 | 1 | 23 |
@@ -849,7 +849,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W005 | 18/18 | 0 | 13 |
 | LALO20_W01 | 20/22 | 2 | 13 |
 | LOVO25 | 59/67 | 8 | 31 |
-| LOVO25-script | 66/77 | 11 | 32 |
+| LOVO25-script | 68/77 | 9 | 32 |
 | NAV-robust | 37/39 | 2 | 28 |
 | NAV-standard | 42/45 | 3 | 28 |
 | PLAA01_BND42 | 26/29 | 3 | 14 |

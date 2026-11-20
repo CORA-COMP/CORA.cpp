@@ -12,6 +12,8 @@
 // ORACLE: contSet/@polyZonotope/cartProd_.m
 // ORACLE: contSet/@polyZonotope/exactPlus.m
 // ORACLE: contSet/@polyZonotope/isIntersecting_.m
+// ORACLE: contSet/@polyZonotope/splitDepFactor.m
+// ORACLE: contSet/@polyZonotope/splitLongestGen.m
 // ORACLE: contSet/@interval/polyZonotope.m
 // ORACLE: contSet/@zonotope/polyZonotope.m
 //
@@ -227,6 +229,23 @@ int main() {
                 other.id[std::size_t(i)] = r.id[std::size_t(i)] + i % 2;
             oracle::check("other factors", aux_set(r).exact_plus(aux_set(other)),
                           aux_lean(r).exact_plus(aux_lean(other)));
+        }
+    });
+
+    // the halves along each factor, and along the factor of the longest generator
+    oracle::run("polyZonotope.splitDepFactor", [](oracle::Random &rnd) {
+        for (const Dims &s : kDims) {
+            const Raw r = aux_raw(rnd, s, true);
+            for (const int64_t id : r.id) {
+                const auto [P1, P2] = aux_set(r).split_dep_factor(id);
+                const auto [L1, L2] = aux_lean(r).split_dep_factor(id);
+                oracle::check("first half", P1, L1);
+                oracle::check("second half", P2, L2);
+            }
+            const auto [P1, P2] = aux_set(r).split_longest_gen();
+            const auto [L1, L2] = aux_lean(r).split_longest_gen();
+            oracle::check("longest, first half", P1, L1);
+            oracle::check("longest, second half", P2, L2);
         }
     });
 

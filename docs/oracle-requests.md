@@ -231,9 +231,10 @@ The ops `polyZonotope.constructor`, `plus` (`Q`, `Z`, `I` or `v`), `mtimes`, `zo
 `reduce` (`girard`), `enclose`, `dim`, and `zonotope.polyZonotope`, `interval.polyZonotope` follow CORA's
 algorithm, and so do `center`, `cartProd` (a zonotope `Z`), `exactPlus` (the sorted union of the
 identifiers, then the constructor) and `isIntersecting` (a polytope `S` and `tol`, CORA's `'approx'`
-box test; batch "polyTaylm"). `quadMap`, `splitDepFactor` and `splitLongestGen` are not served:
-CORALean's float `quadMap` (all `(h + 1)^2` products, the independent part absorbed) and
-`getSubset` (every power column) are not CORA's steps, so they stay debt. Their request is
+box test; batch "polyTaylm"), `splitDepFactor` (`factor`, an identifier) and `splitLongestGen` (CORA.cpp's columns
+of `getSubset`, the constant ones into the center, then the constructor; replies `P1`, `P2`).
+`quadMap` is not served: CORALean's float `quadMap` (all `(h + 1)^2` products, the independent
+part absorbed) is not CORA's steps, so it stays debt. Their request is
 `{"c", "G", "GI", "Exp", "E", "id"}` (`Exp` the p x h exponent matrix). They are
 tested bit for bit by `test_lean_poly_zonotope` (random sets with repeated and zero columns, and the sets of
 the ACC network). Equal exponent columns are ordered as CORA's `removeRedundantExponents` does (the hash of
@@ -299,15 +300,13 @@ The coverage rows `consistentInitialState` and `steadyState` are oracle debt unt
 CORALean states the unsolvable-case enclosure of a level set and a polynomial zonotope as a real
 definition with its subset theorem (`LevelSet/Real/Operations/GuardIntersectUnsolvable.lean`,
 `Theorems/GuardIntersectUnsolvableSubset.lean`; the counterexample file shows that the printed sign of
-`v(x)` in eq. (11) is wrong and CORA's `-` is right); there is no float layer, no `splitDepFactor` /
-`splitLongestGen` for a polynomial zonotope, and no PCA reduction on the float layer
+`v(x)` in eq. (11) is wrong and CORA's `-` is right); there is no float layer and no PCA reduction on the float layer
 (`ReducePCA*` is a cost model on the real layer). CORA.cpp follows CORA's arithmetic (doubles,
 nearest), so these ops are oracle debt; the requests that would close it:
 
 | op (proposed) | CORALean definition | request fields | reply |
 |---|---|---|---|
 | `levelSet.intersectPolyZonotope` | `LevelSet.guardIntersectUnsolvable` (real) needs a float layer | `f` (expression tree), `pZ` (box as a polynomial zonotope) | `pZ` |
-| `polyZonotope.splitDepFactor`, `polyZonotope.splitLongestGen` | none | `pZ`, `id` | the two halves |
 | `zonotope.reducePCA` | `Zonotope.pcaBasis` (`PCABasis.lean`, real) | `Z` | `Z` |
 
 ## Neural networks and neural network controlled systems (PR "port/ainncs-a")
