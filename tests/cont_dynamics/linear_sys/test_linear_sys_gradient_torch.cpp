@@ -35,7 +35,7 @@ double max_diff(const torch::Tensor &a, const torch::Tensor &b) {
 /// A scalar of the reachable tube: the support of every step's enclosure along `d`.
 torch::Tensor loss(const torch::Tensor &A, const torch::Tensor &c, const torch::Tensor &G,
                    const std::string &algorithm, bool custom_backward, const torch::Tensor &d) {
-    const Zonotope X0(from_torch(c.unsqueeze(-1), custom_backward), from_torch(G, custom_backward));
+    const Zonotope X0(from_torch(c, custom_backward), from_torch(G, custom_backward));
     const ReachSet r =
         LinearSys(from_torch(A, custom_backward))
             .reach({.initial_set = X0, .t_final = 1.0}, test::lin::algorithm(algorithm, 0.1, 6));
@@ -95,7 +95,7 @@ void the_margin_to_a_wall_has_a_gradient(const torch::TensorOptions &opts,
     const Tensor wall_a = from_torch(torch::tensor({1.0, 0.0}, opts));
     const double wall_b = 2.0;
     auto margin = [&](const torch::Tensor &A) {
-        const Zonotope X0(from_torch(torch::tensor({{1.0}, {0.5}}, opts)),
+        const Zonotope X0(from_torch(torch::tensor({1.0, 0.5}, opts)),
                           from_torch(torch::tensor({{0.1, 0.0}, {0.0, 0.2}}, opts)));
         const ReachSet r = LinearSys(from_torch(A))
                                .reach({.initial_set = X0, .t_final = 0.5},

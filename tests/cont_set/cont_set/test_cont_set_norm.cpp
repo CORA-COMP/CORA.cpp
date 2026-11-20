@@ -22,7 +22,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 using N = Tensor::Norm;
 

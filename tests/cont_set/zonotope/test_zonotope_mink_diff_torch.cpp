@@ -22,7 +22,7 @@ int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(44);
     const std::vector<torch::Tensor> M = test::random_zonotope_rows(3, 3);
-    const torch::Tensor c = torch::zeros({3, 1}, torch::kDouble);
+    const torch::Tensor c = torch::zeros({3}, torch::kDouble);
     const torch::Tensor G = torch::diag(torch::rand({3}, torch::kDouble) + 0.1);
     test::gradcheck("mink_diff approx",
                     [](const Inputs &x) {

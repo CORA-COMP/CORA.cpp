@@ -18,7 +18,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::random_direction;
 using test::support;
 using test::vec;
