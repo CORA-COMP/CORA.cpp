@@ -94,14 +94,14 @@ class Evaluate(unittest.TestCase):
         net = cora.NeuralNetwork(layers([2, 10, 10, 3]), ["tanh", "sigmoid", "identity"])
         X = cora.Zonotope(torch.tensor([0.3, -0.2], dtype=torch.float64),
                           0.2 * torch.eye(2, dtype=torch.float64))
-        y = net.evaluate(X.rand_point(500, cora.Rng(1)).T)
+        y = net.evaluate(X.rand_point(500, cora.Rng(1)))
         for error in ("extremum", "bracket"):
             box = net.evaluate(X, poly_method="regression", regression_error=error).interval()
-            inside = (y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()
+            inside = (y >= box.inf - 1e-9).all() and (y <= box.sup + 1e-9).all()
             self.assertTrue(bool(inside))
         # and Singh's line of the S-shaped layers
         box = net.evaluate(X, poly_method="singh").interval()
-        self.assertTrue(bool((y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()))
+        self.assertTrue(bool((y >= box.inf - 1e-9).all() and (y <= box.sup + 1e-9).all()))
         with self.assertRaises(ValueError):
             net.evaluate(X, poly_method="regression", regression_error="exact")
         # the polynomial zonotope keeps its factors and is enclosed by the zonotope's pairs
