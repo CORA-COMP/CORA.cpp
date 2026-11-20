@@ -11,9 +11,9 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ namespace {
 
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
-    return {column({1.0, 0.0}),
+    return {vec({1.0, 0.0}),
             Tensor::from_data({1, 1, 0, 2}, {2, 2}),
             Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
@@ -52,9 +52,7 @@ int main() {
         check(P.exact_plus(Q).num_factors() == 3, b + ": the union of the identifiers");
     });
     check(test::raises(
-              [] {
-                  known().exact_plus(PolyZonotope(Zonotope(vec({1.0}), Tensor::zeros({0, 1}))));
-              },
+              [] { known().exact_plus(PolyZonotope(Zonotope(vec({1.0}), Tensor::zeros({0, 1})))); },
               Error::dimension_mismatch),
           "exact_plus: dimension");
     ChecksScope off(false);

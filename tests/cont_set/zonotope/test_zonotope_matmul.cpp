@@ -90,7 +90,7 @@ void matrices_and_numbers(const std::string &b) {
 /// A (C, G1) times Z (c, g): the center C c, the generators C g, G1 c and G1 g.
 void product_with_a_zonotope(const std::string &b) {
     const Zonotope A = test::set_of({1, 2, 3, 4}, {1, 0, 0, 1}, 2, 2);
-    const Zonotope Z(test::column({1, 1}), test::matrix({1, 0}, 1, 2));
+    const Zonotope Z(test::vec({1, 1}), test::matrix({1, 0}, 1, 2));
     const Zonotope P = A.matmul(Z);
     check(close(P.center().expand_dims(-1), {3, 7}), b + ": the center C c");
     check(P.generators().matrix_transpose().shape() == std::vector<int64_t>({2, 3}),
@@ -100,7 +100,7 @@ void product_with_a_zonotope(const std::string &b) {
           b + ": the generators C g, G1 c, G1 g");
     Rng rng(23);
     const Zonotope Q = test::random_set(rng, 3, 2, 0.5);
-    const Zonotope W(test::column({1, -1, 2}), test::matrix({1, 0, 2, 0.5, 1, -1}, 2, 3));
+    const Zonotope W(test::vec({1, -1, 2}), test::matrix({1, 0, 2, 0.5, 1, -1}, 2, 3));
     const std::vector<double> cq = test::coefficients(rng, 2), cw = test::coefficients(rng, 2);
     // the point of the product for the coefficients cq of Q, cw of W: Gi g_j weigh cq_i cw_j
     const Zonotope R = Q.matmul(W);
@@ -137,7 +137,7 @@ void checks_and_their_switch() {
                        Error::dimension_mismatch),
           "matmul: a matrix with another number of columns");
     check(test::raises(
-              [&] { A.matmul(Zonotope(test::column({1, 2, 3}), test::matrix({1, 1, 1}, 1, 3))); },
+              [&] { A.matmul(Zonotope(test::vec({1, 2, 3}), test::matrix({1, 1, 1}, 1, 3))); },
               Error::dimension_mismatch),
           "matmul: a zonotope of another dimension");
     check(test::raises([&] { A.matmul(test::batch_of(A, A)); }, Error::dimension_mismatch),
@@ -148,7 +148,7 @@ void checks_and_their_switch() {
           "matmul: a 1 x 1 set on the right");
     // a 1 x 1 set times a zonotope
     check(test::raises(
-              [&] { scalar.matmul(Zonotope(test::column({1, 2}), test::matrix({1, 1}, 1, 2))); },
+              [&] { scalar.matmul(Zonotope(test::vec({1, 2}), test::matrix({1, 1}, 1, 2))); },
               Error::not_supported),
           "matmul: a 1 x 1 set times a zonotope");
     const Tensor on = A.matmul(A).center();

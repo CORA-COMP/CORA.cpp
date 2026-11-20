@@ -82,7 +82,7 @@ void aux_verify(const std::string &name, const Tensor &A, const std::optional<Te
     // CORA.cpp's verify, and the oracle's run on the same rows
     const auto S = static_cast<int64_t>(rows.size());
     const LinearSys sys(A, B ? *B : A.zeros_like({n, 1}), C);
-    const Zonotope none(A.zeros_like({1, 1}), A.zeros_like({0, 1}));
+    const Zonotope none(A.zeros_like({1}), A.zeros_like({0, 1}));
     const VerifyResult mine =
         sys.verify({R0, B ? *U : none, t_final}, specs, alg::ReachAvoidSupportFunction{});
     const lean::VerifySupportRun theirs = lean::LinearSys(A, B, C).verify_support_func(
@@ -156,7 +156,7 @@ Zonotope aux_box(const std::vector<double> &c, double r) {
     const auto n = static_cast<int64_t>(c.size());
     std::vector<double> G(std::size_t(n) * n, 0.0);
     for (int64_t i = 0; i < n; ++i) G[std::size_t(i) * n + i] = r;
-    return {Tensor::from_data(c, {n, 1}), Tensor::from_data(G, {n, n})};
+    return {Tensor::from_data(c, {n}), Tensor::from_data(G, {n, n})};
 }
 
 } // namespace
@@ -215,7 +215,7 @@ int main() {
         c[6] = 1.0;
         std::vector<double> G(7, 0.0);
         G[0] = 0.01;
-        const Zonotope R0(Tensor::from_data(c, {7, 1}), Tensor::from_data(G, {1, 7}));
+        const Zonotope R0(Tensor::from_data(c, {7}), Tensor::from_data(G, {1, 7}));
         const std::vector<double> mid{0, 0, 1, 0, 0, 0, 0};
         aux_verify("beam verified", A, std::nullopt, R0, {{mid, 0.2, true}}, 1.0);
         aux_verify("beam falsified", A, std::nullopt, R0, {{mid, 0.005, true}}, 1.0);
@@ -227,8 +227,8 @@ int main() {
                         {-2.0, 1.0, -0.1, 0.0},
                         {1.0, -2.0, 0.0, -0.1}});
         const Tensor I = Tensor::eye(4);
-        const Zonotope R0(Tensor::from_data({0, 0, 0, 0}, {4, 1}), A.zeros_like({0, 4}));
-        const Zonotope U(Tensor::from_data({0, 0, 0, 0.5}, {4, 1}),
+        const Zonotope R0(Tensor::from_data({0, 0, 0, 0}, {4}), A.zeros_like({0, 4}));
+        const Zonotope U(Tensor::from_data({0, 0, 0, 0.5}, {4}),
                          Tensor::from_data({0, 0, 0, 0.3}, {1, 4}));
         const std::vector<double> first{1, 0, 0, 0};
         aux_verify("forced verified", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, U);
@@ -238,12 +238,11 @@ int main() {
         // a constant force only, a varying one only
         const Zonotope Uc(U.center(), A.zeros_like({0, 4}));
         aux_verify("constant force", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, Uc);
-        const Zonotope Uv(A.zeros_like({4, 1}), U.generators());
+        const Zonotope Uv(A.zeros_like({4}), U.generators());
         aux_verify("varying force", A, std::nullopt, R0, {{first, 0.05, true}}, 1.0, I, Uv);
         // two inputs through a dense B, an initial box, a safe band of an output (ISS's form)
         const Tensor B({{0.0, 0.0}, {0.0, 0.0}, {0.5, -0.25}, {0.125, 0.75}});
-        const Zonotope U2(Tensor::from_data({0.1, -0.1}, {2, 1}),
-                          Tensor({{0.05, 0.0}, {0.0, 0.05}}));
+        const Zonotope U2(Tensor::from_data({0.1, -0.1}, {2}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
         const Zonotope X0 = aux_box({0.01, 0, 0, 0}, 0.01);
         const Tensor C({{0.0, 1.0, 0.0, 0.0}});
         aux_verify("band verified", A, C, X0, {{{1}, 0.2, true}, {{-1}, 0.2, true}}, 1.0, B, U2);
@@ -254,8 +253,8 @@ int main() {
         const Tensor Ab = aux_beam(3, 100.0, {1.0, 2.0, 1.0}, 0.1, 0.01, 0);
         std::vector<double> b(6, 0.0);
         b[5] = 1.0;
-        const Zonotope Ub(Tensor::from_data({0.4}, {1, 1}), Tensor::from_data({0.2}, {1, 1}));
-        const Zonotope Rb(A.zeros_like({6, 1}), A.zeros_like({0, 6}));
+        const Zonotope Ub(Tensor::from_data({0.4}, {1}), Tensor::from_data({0.2}, {1, 1}));
+        const Zonotope Rb(A.zeros_like({6}), A.zeros_like({0, 6}));
         const std::vector<double> mid{0, 1, 0, 0, 0, 0};
         aux_verify("beam forced verified", Ab, std::nullopt, Rb, {{mid, 0.02, true}}, 1.0,
                    Tensor::from_data(b, {6, 1}), Ub);

@@ -144,9 +144,9 @@ inline HybridAutomaton automaton(const std::string &name, const Variant &v) {
 inline std::pair<HybridReachProblem, alg::HybridStandard> options(const std::string &name) {
     const Variant v = variant(name);
     HybridReachProblem problem;
-    problem.initial_set = Zonotope(column({-900, -400, 0, 0, 0}),
-                                   matrix(5, 5, {25, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0,
-                                                 0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0}));
+    problem.initial_set =
+        Zonotope(vec({-900, -400, 0, 0, 0}), matrix(5, 5, {25, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0,
+                                                           0,  0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0}));
     problem.t_final = 300;
     alg::HybridStandard a;
     a.time_step = v.timed ? std::vector<double>{2e-1, 2e-2, 2e-1} : std::vector<double>{2e-1, 2e-2};

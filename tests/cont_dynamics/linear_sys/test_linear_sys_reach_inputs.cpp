@@ -36,8 +36,8 @@ struct Setup {
     explicit Setup(const InputSystem &s)
         : s(s), A(Tensor::from_data(s.A, {3, 3})), B(Tensor::from_data(s.B, {3, 2})),
           C(Tensor::from_data(s.C, {2, 3})),
-          X0(Tensor::from_data(s.c0, {3, 1}), Tensor::from_data(s.G0, {3, 3}).matrix_transpose()),
-          U(Tensor::from_data(s.c_u, {2, 1}), Tensor::from_data(s.GU, {2, 3}).matrix_transpose()) {}
+          X0(Tensor::from_data(s.c0, {3}), Tensor::from_data(s.G0, {3, 3}).matrix_transpose()),
+          U(Tensor::from_data(s.c_u, {2}), Tensor::from_data(s.GU, {2, 3}).matrix_transpose()) {}
     double t_final() const { return s.time_step * s.steps; }
 };
 
@@ -131,7 +131,7 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
 /// With U = {0} the input adds nothing: wrapping-free gives the sets of the system without input.
 void a_zero_input_changes_nothing(const std::string &b) {
     const Setup in(matlab_reference::standard_inputs());
-    const Zonotope U0(Tensor::zeros({2, 1}), Tensor::zeros({1, 2}));
+    const Zonotope U0(Tensor::zeros({2}), Tensor::zeros({1, 2}));
     const ReachSet with = LinearSys(in.A, in.B)
                               .reach({.initial_set = in.X0, .input_set = U0, .t_final = 1.0},
                                      alg::WrappingFree{.time_step = 0.2, .taylor_terms = 6});
@@ -149,7 +149,7 @@ void a_zero_input_changes_nothing(const std::string &b) {
 
 void reports_errors(const std::string &b) {
     const Setup in(matlab_reference::standard_inputs());
-    const Zonotope wrong(Tensor::zeros({3, 1}), Tensor::eye(3));
+    const Zonotope wrong(Tensor::zeros({3}), Tensor::eye(3));
     // an input set without B is refused
     check(throws([&] {
               LinearSys(in.A).reach({.initial_set = in.X0, .input_set = in.U, .t_final = 1.0},

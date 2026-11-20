@@ -12,8 +12,8 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,11 +37,10 @@ int main() {
     // wrong input is refused; the same call works with the checks off
     check(test::raises([] { Zonotope::filter_out({}); }, Error::wrong_value),
           "filter_out: no cell");
-    check(
-        test::raises(
-            [&] { Zonotope::filter_out({Z, Zonotope(vec({0.0, 0.0}), Tensor::zeros({0, 2}))}); },
-            Error::wrong_value),
-        "filter_out: cells of another dimension");
+    check(test::raises(
+              [&] { Zonotope::filter_out({Z, Zonotope(vec({0.0, 0.0}), Tensor::zeros({0, 2}))}); },
+              Error::wrong_value),
+          "filter_out: cells of another dimension");
     ChecksScope off(false);
     check(Zonotope::filter_out({Z}).size() == 1, "filter_out: the same with the checks off");
     return test::finish("zonotope filter_out");

@@ -61,15 +61,15 @@ void center_property(const std::string &b) {
 
 /// A batch with constraints is refused; with the checks off a valid call gives the same center.
 void checks_and_their_switch() {
-    const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
+    const ConZonotope batch(Tensor::zeros({2, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
                             Tensor::ones({2, 1, 2}), Tensor::zeros({2, 1}));
     check(test::raises([&] { batch.center(); }, Error::not_supported),
           "center: a batch with constraints");
-    check(test::close(
-              ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose())
-                  .center(),
-              Tensor::zeros({2, 1}), 0),
-          "center: a batch without constraints is its offset");
+    check(
+        test::close(
+            ConZonotope(Tensor::zeros({2, 1}), Tensor::ones({2, 1, 2}).matrix_transpose()).center(),
+            Tensor::zeros({2, 1}), 0),
+        "center: a batch without constraints is its offset");
     const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));
     const Tensor on = segment.center();

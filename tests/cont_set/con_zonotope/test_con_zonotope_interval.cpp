@@ -53,7 +53,7 @@ void interval_property(const std::string &b) {
         const Tensor points = test::sample_points(cz, rng, 200);
         check(test::inside_box(points, I), b + ": every sampled point is in the box");
         // never larger than the box of the zonotope that forgets the constraints
-        const Interval loose = ConZonotope(cz.c().expand_dims(-1), cz.generators()).interval();
+        const Interval loose = ConZonotope(cz.c(), cz.generators()).interval();
         check(test::inside_box(I.inf(), loose) && test::inside_box(I.sup(), loose),
               b + ": inside the box of the zonotope");
     }
@@ -61,11 +61,11 @@ void interval_property(const std::string &b) {
 
 /// A batch with constraints is refused; with the checks off a valid call gives the same box.
 void checks_and_their_switch() {
-    const ConZonotope batch(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
+    const ConZonotope batch(Tensor::zeros({2, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
                             Tensor::ones({2, 1, 2}), Tensor::zeros({2, 1}));
     check(test::raises([&] { batch.interval(); }, Error::not_supported),
           "interval: a batch with constraints");
-    const ConZonotope plain(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose());
+    const ConZonotope plain(Tensor::zeros({2, 1}), Tensor::ones({2, 1, 2}).matrix_transpose());
     check(plain.interval().sup().shape() == Shape{2, 1}, "interval: a batch without constraints");
     const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));

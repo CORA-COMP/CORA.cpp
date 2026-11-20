@@ -43,7 +43,7 @@ Tensor mat(int rows, int cols, const std::vector<double> &row_major) {
 
 Zonotope zono(const std::vector<double> &c, const std::vector<double> &G, int m) {
     const int n = static_cast<int>(c.size());
-    return {Tensor::from_data(c, {n, 1}),
+    return {Tensor::from_data(c, {n}),
             Tensor::from_data(G, {n, m}).matrix_transpose()}; // G: CORA's columns
 }
 

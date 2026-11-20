@@ -15,7 +15,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ using test::column;
 
 namespace {
 
-Zonotope zonotope(const std::vector<double> &c, const Tensor &G) { return {column(c), G}; }
+Zonotope zonotope(const std::vector<double> &c, const Tensor &G) { return {vec(c), G}; }
 
 void points_and_the_origin(const std::string &b) {
     const Zonotope origin = Zonotope::origin(2), point = zonotope({1, 2}, Tensor::zeros({0, 2}));

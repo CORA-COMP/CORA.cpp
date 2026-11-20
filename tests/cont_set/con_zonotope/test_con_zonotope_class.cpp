@@ -57,6 +57,9 @@ void refusals() {
     check(test::raises([&] { ConZonotope(Tensor({{1.0, 2.0}}), G); },
                        Error::wrong_input_in_constructor),
           "ConZonotope: the center is a column");
+    check(test::raises([&] { ConZonotope(Tensor({{1.0}, {2.0}}), G); },
+                       Error::wrong_input_in_constructor),
+          "ConZonotope: CORA's column (n, 1) is no center (#163)");
     check(test::raises([&] { ConZonotope(vec({1.0}), G); }, Error::wrong_input_in_constructor),
           "ConZonotope: the rows of G are the dimension");
     // the constraints must fit the generators
@@ -86,7 +89,7 @@ void refusals() {
 
 /// The batch: sets with a leading axis share one batch shape.
 void batches(const std::string &b) {
-    const Tensor c = Tensor::zeros({3, 2, 1}), G = Tensor::ones({3, 2, 4});
+    const Tensor c = Tensor::zeros({3, 2}), G = Tensor::ones({3, 2, 4});
     const ConZonotope cz(c, G.matrix_transpose(), Tensor::zeros({3, 1, 4}), Tensor::zeros({3, 1}));
     check(cz.dim() == 2 && cz.A().shape() == Shape{3, 1, 4}, b + ": a batch of three sets");
     check(test::raises([&] { ConZonotope(c, Tensor::ones({2, 2, 4}).matrix_transpose()); },

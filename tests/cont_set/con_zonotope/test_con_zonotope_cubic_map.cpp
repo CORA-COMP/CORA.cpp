@@ -110,9 +110,8 @@ void checks_and_their_switch() {
           "cubic_map: the matrices are (n, n)");
     check(test::raises([&] { A.cubic_map(aux_map(), {{5}}); }, Error::wrong_value),
           "cubic_map: an index out of range");
-    check(test::raises(
-              [&] { A.cubic_map(ConZonotope(vec({1.0}), Tensor({{1.0}})), A, aux_map()); },
-              Error::dimension_mismatch),
+    check(test::raises([&] { A.cubic_map(ConZonotope(vec({1.0}), Tensor({{1.0}})), A, aux_map()); },
+                       Error::dimension_mismatch),
           "cubic_map: the sets differ in dimension");
     const Tensor on = A.cubic_map(aux_map()).generators().matrix_transpose();
     ChecksScope off(false);

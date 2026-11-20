@@ -100,7 +100,7 @@ int main() {
                 g[i] *= i % 9 < 3 ? 1.0 : (i % 9 < 6 ? 0.01 : 0.001);
             const Tensor G =
                 Tensor::from_data(g, {3, 9}).matrix_transpose(); // CORA's columns, as rows
-            const Zonotope Z(rnd.vector(3), G);
+            const Zonotope Z(rnd.point(3), G);
             const double share = k % 2 == 0 ? 0.05 : 0.5;
             test::check(test::oracle::agree("reduce", Z.reduce_adaptive(share),
                                             lean::Zonotope(Z).reduce_adaptive(share)),

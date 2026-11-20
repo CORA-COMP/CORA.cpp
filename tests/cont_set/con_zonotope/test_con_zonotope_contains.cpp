@@ -99,7 +99,7 @@ void checks_and_their_switch() {
     check(test::raises(
               [&] {
                   // a batch of sets is not supported
-                  ConZonotope(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 1}).matrix_transpose())
+                  ConZonotope(Tensor::zeros({2, 1}), Tensor::ones({2, 1, 1}).matrix_transpose())
                       .contains(vec({0.0}));
               },
               Error::not_supported),

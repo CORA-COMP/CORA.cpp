@@ -12,8 +12,8 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -40,8 +40,7 @@ void known_bundles(const std::string &b) {
 /// The members are compared up to tol.
 void tolerance(const std::string &b) {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-    const Zonotope A(vec({0.0, 0.0}), I2), near(vec({1e-15, 0.0}), I2),
-        apart(vec({1e-3, 0.0}), I2);
+    const Zonotope A(vec({0.0, 0.0}), I2), near(vec({1e-15, 0.0}), I2), apart(vec({1e-3, 0.0}), I2);
     check(ZonoBundle({A}).isequal(ZonoBundle({near})), b + ": equal up to the default tolerance");
     check(!ZonoBundle({A}).isequal(ZonoBundle({apart})), b + ": not equal at 1e-3");
     check(ZonoBundle({A}).isequal(ZonoBundle({apart}), 1e-2), b + ": equal with tol 1e-2");

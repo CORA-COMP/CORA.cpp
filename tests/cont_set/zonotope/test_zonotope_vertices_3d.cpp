@@ -44,14 +44,13 @@ void corners_attain_the_support(const std::string &b) {
 /// A cube with a diagonal bar has twelve corners, and a flat or thin zonotope gives its polygon,
 /// segment or point.
 void degenerate_zonotopes(const std::string &b) {
-    const Zonotope cube(test::column({0, 0, 0}),
-                        Tensor({{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}}));
+    const Zonotope cube(test::vec({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}}));
     check(cube.vertices_3d()[0].size() == 12, b + ": a cube with a diagonal bar has 12 corners");
-    const Zonotope flat(test::column({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}}));
+    const Zonotope flat(test::vec({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}}));
     check(flat.vertices_3d()[0].size() == 4, b + ": two generators make a square");
-    const Zonotope segment(test::column({0, 0, 0}), Tensor({{1, 1, 0}, {2, 2, 0}}));
+    const Zonotope segment(test::vec({0, 0, 0}), Tensor({{1, 1, 0}, {2, 2, 0}}));
     check(segment.vertices_3d()[0].size() == 2, b + ": parallel generators make a segment");
-    const Zonotope point(test::column({1, 2, 3}), Tensor::zeros({1, 3}));
+    const Zonotope point(test::vec({1, 2, 3}), Tensor::zeros({1, 3}));
     check(point.vertices_3d()[0].size() == 1, b + ": no generator, one point");
 }
 

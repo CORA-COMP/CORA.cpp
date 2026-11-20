@@ -284,7 +284,7 @@ int main() {
                     T[size_t(i * k + j)] = s.state.H[size_t(j)][size_t(i)];
             e1[0] = 1.0;
             const LinearSys small(Tensor::from_data(T, {k, k}));
-            const Zonotope X0(Tensor::from_data(e1, {k, 1}), Tensor::zeros({0, k}));
+            const Zonotope X0(Tensor::from_data(e1, {k}), Tensor::zeros({0, k}));
             const ReachSet R = small.reach(
                 {.initial_set = X0, .t_final = tf},
                 alg::Standard{.time_step = dt, .taylor_terms = 16, .zonotope_order = 4});

@@ -85,8 +85,7 @@ bool ConZonotope::exact() const {
            zero_valued(P->at("b_error")) && P->at("A").at("rows").text == "0";
 }
 
-// The equalities of an oracle result are P.Ae x = P.be; a set made of {c, G, A, b} has A, b. CORA's
-// column c (n, 1) is the center (n).
+// The set of the result, its center (n) from CORA's column; equalities P.Ae x = P.be, or A, b
 cora::ConZonotope ConZonotope::nominal() const {
     const Json *P = json_.find("P");
     const Tensor c = Tensor::from_json(dtype_, json_.at("c"));

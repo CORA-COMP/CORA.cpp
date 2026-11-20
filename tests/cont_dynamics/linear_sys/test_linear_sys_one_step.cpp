@@ -24,7 +24,7 @@ namespace {
 /// The end of the step is e^{A dt} X plus the constant input plus the time-varying input solution.
 void the_end_is_the_sum_of_its_parts(const std::string &b) {
     const Tensor A = diagonal(), u = test::column({1.0, -1.0});
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5, 0.25}}));
+    const Zonotope U(test::vec({0.0, 0.0}), Tensor({{0.5, 0.25}}));
     // the parts of the step are those of the single solutions
     const LinearSys sys(A);
     const OneStep s = sys.one_step(initial_set(), U, u, kStep, kTerms);
@@ -49,7 +49,7 @@ void the_end_is_the_sum_of_its_parts(const std::string &b) {
 /// Every trajectory under an input of U and the constant input stays in the sets of the step.
 void trajectories_stay_inside(const std::string &b) {
     const Tensor A = diagonal();
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.5, 0.25}}));
+    const Zonotope U(test::vec({0.0, 0.0}), Tensor({{0.5, 0.25}}));
     const Tensor u = test::column({0.5, 0.0});
     const OneStep s = LinearSys(A).one_step(initial_set(), U, u, kStep, kTerms);
     // the end of a trajectory under a held input w = u + factor * generator

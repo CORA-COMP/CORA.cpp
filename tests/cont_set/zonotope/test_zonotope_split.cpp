@@ -26,9 +26,7 @@ namespace {
 
 /// CORA's unit test: the zonotope [-4 -3 -2 -1; 1 2 3 4] (center (-4, 1)), cut along the box
 /// coordinates, a direction and a halfspace.
-Zonotope example() {
-    return {column({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}, {-1.0, 4.0}})};
-}
+Zonotope example() { return {vec({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}, {-1.0, 4.0}})}; }
 
 void split_by_coordinates(const std::string &b) {
     const auto all = example().split();

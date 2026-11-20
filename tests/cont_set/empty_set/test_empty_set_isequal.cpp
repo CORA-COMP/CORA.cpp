@@ -27,7 +27,7 @@ void equal_means_empty_in_the_same_dimension(const std::string &b) {
     check(E.isequal(Interval::empty(2)), b + ": the empty interval");
     check(!E.isequal(Interval::empty(3)), b + ": the empty interval of another dimension");
     check(!E.isequal(Interval(test::vec({0.0, 0.0}), test::vec({1.0, 1.0}))), b + ": a box");
-    check(!E.isequal(Zonotope(test::column({0.0, 0.0}), Tensor::zeros({0, 2}))),
+    check(!E.isequal(Zonotope(test::vec({0.0, 0.0}), Tensor::zeros({0, 2}))),
           b + ": a point zonotope");
     check(E.isequal(EmptySet(2), 1e-3), b + ": with a tol");
 }

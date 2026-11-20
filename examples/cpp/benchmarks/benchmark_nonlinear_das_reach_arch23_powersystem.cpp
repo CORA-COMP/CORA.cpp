@@ -112,7 +112,7 @@ bool aux_run(const std::string &name) {
     std::vector<double> radius(15, 0.01);
     for (int i = 5; i < 15; ++i) radius[std::size_t(i)] = i < 10 ? 0.1 : 0.001;
     const Tensor G0 = column(radius).diag();
-    const Zonotope R0(x0, G0);
+    const Zonotope R0(x0.squeeze(-1), G0); // the steady state is a column (n, 1)
     // the four runs
     double total = 0;
     Zonotope R = R0;

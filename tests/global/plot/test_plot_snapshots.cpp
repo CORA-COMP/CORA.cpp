@@ -22,7 +22,7 @@ using test::dump_layers;
 
 namespace {
 
-Zonotope initial_set() { return Zonotope(test::column({1, 0}), Tensor({{0.1, 0}, {0, 0.1}})); }
+Zonotope initial_set() { return Zonotope(test::vec({1, 0}), Tensor({{0.1, 0}, {0, 0.1}})); }
 
 ReachSet oscillator() {
     return LinearSys(Tensor({{-0.1, 1}, {-1, -0.1}}))
@@ -33,7 +33,7 @@ ReachSet oscillator() {
 Figure zonotope_figure() {
     use_cora_colors("CORA:default");
     Figure fig;
-    const Zonotope Z(test::column({1, 0.5}), Tensor({{1, 0}, {0.3, 0.5}, {0, 0.2}}));
+    const Zonotope Z(test::vec({1, 0.5}), Tensor({{1, 0}, {0.3, 0.5}, {0, 0.2}}));
     plot(fig, Z, {0, 1}, {.label = "$\\mathcal{Z}$"});
     fig.xlabel = "$x_1$";
     fig.ylabel = "$x_2$";
@@ -83,7 +83,7 @@ FigureGrid group_figure() {
 Figure three_dimensional_figure() {
     use_cora_colors("CORA:default");
     Figure fig;
-    const Zonotope Z(test::column({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}, {0.5, 0.5, 1}}));
+    const Zonotope Z(test::vec({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}, {0.5, 0.5, 1}}));
     plot(fig, Z, {0, 1, 2}, {.label = "Z"});
     fig.xlabel = "$x_1$";
     fig.ylabel = "$x_2$";

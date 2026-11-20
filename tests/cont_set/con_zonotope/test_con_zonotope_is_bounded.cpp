@@ -26,8 +26,7 @@ int main() {
         check(cz.is_bounded(), b + ": a constrained zonotope is bounded");
         check(ConZonotope::empty(2).is_bounded(), b + ": the empty set is bounded");
         check(Set(cz)->is_bounded(), b + ": through the set interface");
-        const ConZonotope batch(Tensor::zeros({2, 2, 1}),
-                                Tensor::ones({2, 2, 3}).matrix_transpose());
+        const ConZonotope batch(Tensor::zeros({2, 2}), Tensor::ones({2, 2, 3}).matrix_transpose());
         check(batch.is_bounded(), b + ": a batch is bounded");
     });
     // the question takes no input to get wrong; with the checks off the answer is the same

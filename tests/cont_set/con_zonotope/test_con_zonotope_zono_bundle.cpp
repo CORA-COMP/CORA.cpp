@@ -67,7 +67,7 @@ int main() {
         zono_bundle_known(b);
         zono_bundle_property(b);
     });
-    const Tensor c = Tensor::from_data({0.0, 0.0, 1.0, 1.0}, {2, 2, 1});
+    const Tensor c = Tensor::from_data({0.0, 0.0, 1.0, 1.0}, {2, 2});
     check(test::raises(
               [&] {
                   ConZonotope(c, Tensor::zeros({2, 1, 2}), Tensor::zeros({2, 1, 1}),

@@ -118,7 +118,7 @@ int main() {
         const Tensor H = Tensor({{0.0, 0.0, 0.0}, {0.0, 2e-5, 0.0}, {0.0, 0.0, 3e-5}});
         for (const int eta : {2, 4})
             aux_compare("sparse eta" + std::to_string(eta), A, Zonotope(Tensor({1.0, 0.0, 0.0}), G),
-                        Zonotope(rnd.vector(3), H), rnd.vector(3), 0.01, eta);
+                        Zonotope(rnd.point(3), H), rnd.vector(3), 0.01, eta);
     });
     // the halvings s: norms up to 40, beyond which the oracle's powers overflow (file docstring)
     test::oracle::run("linearSys.oneStepClosedForm", [](test::oracle::Random &rnd) {

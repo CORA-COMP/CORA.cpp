@@ -44,13 +44,13 @@ int main() {
 
     // every value is a dyadic number, so it is exact in binary64 and in binary32
     const Tensor A({{0.0, 1.0}, {-1.0, -0.25}});
-    const Tensor c({{1.0}, {0.0}}), G({{0.25, 0.0}, {0.0, 0.25}});
+    const Zonotope X0(Tensor({1.0, 0.0}), Tensor({{0.25, 0.0}, {0.0, 0.25}}));
     const double time_step = 0.125, t_final = 2.0; // a power of two: exact in every dtype
     const int taylor_terms = 8, zonotope_order = 10;
 
     // CORA.cpp's own result, in double without a rounding-error account
     const ReachSet ref =
-        LinearSys(A).reach({.initial_set = Zonotope(c, G), .t_final = t_final},
+        LinearSys(A).reach({.initial_set = X0, .t_final = t_final},
                            alg::Standard{.time_step = time_step, .taylor_terms = taylor_terms});
     const Interval last = ref.time_point.back().interval();
     std::cout << "CORA.cpp:  x1 in [" << last.inf().data()[0] << ", " << last.sup().data()[0]
@@ -61,7 +61,7 @@ int main() {
     for (const std::string dtype : {"binary64", "ieee:binary32"}) {
         const lean::DTypeScope scope(dtype); // the lean objects below are created in this dtype
         const lean::ReachSet R =
-            lean::LinearSys(A).reach(lean::Zonotope(c, G), t_final,
+            lean::LinearSys(A).reach(lean::Zonotope(X0), t_final,
                                      alg::Standard{.time_step = time_step,
                                                    .taylor_terms = taylor_terms,
                                                    .zonotope_order = zonotope_order});

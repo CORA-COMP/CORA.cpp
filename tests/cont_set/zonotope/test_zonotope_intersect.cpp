@@ -96,11 +96,10 @@ void refusals_and_their_switch() {
     check(test::raises([&] { Z.intersect(Z); }, Error::not_supported), "intersect: conZonotope");
     check(test::raises([&] { Z.intersect(Z, "exact"); }, Error::wrong_value),
           "intersect: unknown method");
-    check(
-        test::raises(
-            [&] { box.intersect(Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))); },
-            Error::empty_set),
-        "intersect: disjoint boxes");
+    check(test::raises(
+              [&] { box.intersect(Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))); },
+              Error::empty_set),
+          "intersect: disjoint boxes");
     check(test::raises([&] { Z.intersect(Zonotope(vec({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "intersect: dimensions 2 and 1");

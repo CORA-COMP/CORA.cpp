@@ -188,8 +188,9 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
     // the new factors are (x - middle) / radius: shift the center and offset, scale the columns
     const Tensor m_col = aux_vector(c_.expand_dims(-1), middle, true),
                  r_row = aux_vector(c_.expand_dims(-1), radius, false);
-    return {(c_.expand_dims(-1) + G.matmul(m_col)).squeeze(-1), G.multiply(r_row).matrix_transpose(),
-            A.multiply(r_row), (b - A.matmul(m_col)).squeeze(-1)};
+    return {(c_.expand_dims(-1) + G.matmul(m_col)).squeeze(-1),
+            G.multiply(r_row).matrix_transpose(), A.multiply(r_row),
+            (b - A.matmul(m_col)).squeeze(-1)};
 }
 
 } // namespace cora

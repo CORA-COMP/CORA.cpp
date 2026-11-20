@@ -14,9 +14,9 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -26,8 +26,7 @@ namespace {
 
 /// "zeros" drops the generators of norm <= tol: exactly zero ones, tiny ones by tol.
 void zeros_drops_small_generators(const std::string &b) {
-    const Zonotope Z(vec({1.0, 2.0}),
-                     Tensor({{1.0, 0.0}, {0.0, 0.0}, {1e-20, 0.0}, {0.5, 0.5}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}, {1e-20, 0.0}, {0.5, 0.5}}));
     check(close(Z.compact().generators(), std::vector<double>{1, 0, 0.5, 0.5}, 0),
           b + ": zeros drops the zero and the tiny generator (norm <= eps)");
     check(Z.compact("zeros", 0.0).nr_generators() == 3, b + ": tol 0 keeps the tiny one");

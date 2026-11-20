@@ -67,8 +67,7 @@ void enclose_property(const std::string &b) {
 /// valid call with the checks off.
 void checks_and_their_switch() {
     const ConZonotope C(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), vec({1.0}));
-    const ConZonotope other(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
-                            vec({1.0}));
+    const ConZonotope other(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}), vec({1.0}));
     check(test::raises([&] { C.enclose(other); }, Error::special_error),
           "enclose: the constraints differ");
     check(test::raises([&] { C.enclose(ConZonotope(vec({0.0}), Tensor({{1.0}, {1.0}}))); },
@@ -81,10 +80,9 @@ void checks_and_their_switch() {
                        Error::dimension_mismatch),
           "enclose: M must have n columns");
     // the longer set's constraints use a factor that the other lacks: CORA drops them
-    const ConZonotope longer(vec({0.0}), Tensor({{1.0}, {1.0}, {1.0}}),
-                             Tensor({{1.0, 1.0, 1.0}}), vec({1.0}));
-    const ConZonotope shorter(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}),
-                              vec({1.0}));
+    const ConZonotope longer(vec({0.0}), Tensor({{1.0}, {1.0}, {1.0}}), Tensor({{1.0, 1.0, 1.0}}),
+                             vec({1.0}));
+    const ConZonotope shorter(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), vec({1.0}));
     check(test::raises([&] { longer.enclose(shorter); }, Error::special_error),
           "enclose: constraints on factors only one set has");
     const ConZonotope A(vec({0.0}), Tensor({{1.0}}));

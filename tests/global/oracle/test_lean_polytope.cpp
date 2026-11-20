@@ -105,9 +105,8 @@ int main() {
     // a box and a zonotope inside and outside
     oracle::run("polytope.contains", [](oracle::Random &rnd) {
         const Polytope P = aux_halfspaces(rnd, 3, 2);
-        const Tensor c = rnd.vector(3) * 0.0;
-        const Interval inside(c.squeeze(-1) - 0.1, c.squeeze(-1) + 0.1),
-            outside(c.squeeze(-1) - 5.0, c.squeeze(-1) + 5.0);
+        const Tensor c = rnd.point(3) * 0.0;
+        const Interval inside(c - 0.1, c + 0.1), outside(c - 5.0, c + 5.0);
         oracle::check(P.contains(inside), lean::Polytope(P).contains(inside));
         oracle::check(P.contains(outside), lean::Polytope(P).contains(outside));
         const Zonotope near(c, rnd.matrix(3, 4).matrix_transpose() * 0.05),

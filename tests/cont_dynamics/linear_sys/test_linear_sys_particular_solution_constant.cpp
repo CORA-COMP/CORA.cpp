@@ -57,7 +57,7 @@ void the_origin_and_a_set(const std::string &b) {
     check(zero.time_point.representsa("origin") && zero.input_curvature.representsa("origin") &&
               zero.time_interval.representsa("origin"),
           b + ": the origin stays");
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope U(test::vec({0.0, 0.0}), Tensor({{1.0, 0.0}}));
     const ConstantSolution P = sys.particular_solution_constant(U, kStep, kTerms);
     check(test::close(support(P.time_point, {1, 0}), 1 - std::exp(-kStep), 1e-14),
           b + ": a set is mapped by the integral");

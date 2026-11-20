@@ -71,8 +71,7 @@ Tensor aux_nonzero_rows(const Tensor &GI) {
 // The constructors --------------------------------------------------------------------------------
 
 PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id)
-    : ContSet(kClassId), c_(std::move(c)), GI_(std::move(GI)),
-      id_(std::move(id)) {
+    : ContSet(kClassId), c_(std::move(c)), GI_(std::move(GI)), id_(std::move(id)) {
     detail::Entry entry;
     // the tensors, then the shapes of the center and of both generator matrices
     CORA_CHECK(c_.defined() && G.defined() && GI_.defined(), Error::wrong_input_in_constructor, [] {
@@ -113,8 +112,8 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vect
 
 PolyZonotope::PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E,
                            std::vector<int64_t> id, detail::Normalized)
-    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)),
-      GI_(aux_nonzero_rows(GI)), E_(std::move(E)), id_(std::move(id)) {
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), GI_(aux_nonzero_rows(GI)),
+      E_(std::move(E)), id_(std::move(id)) {
     // zero dependent generators go with their exponents
     const int64_t h = G_.shape()[0], n = G_.shape()[1];
     if (h == 0) return;
@@ -135,8 +134,8 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E,
 
 PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id,
                            detail::Verbatim)
-    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), GI_(std::move(GI)),
-      E_(std::move(E)), id_(std::move(id)) {}
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), GI_(std::move(GI)), E_(std::move(E)),
+      id_(std::move(id)) {}
 
 // The conversions ---------------------------------------------------------------------------------
 

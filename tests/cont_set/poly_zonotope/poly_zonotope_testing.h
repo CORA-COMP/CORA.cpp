@@ -32,7 +32,7 @@ inline cora::PolyZonotope random_poly(cora::Rng &rng, int64_t n) {
     const cora::Exponents E = {{1, 0}, {0, 1}, {2, 1}, {1, 2}};
     // the draws of CORA's columns, as rows
     const cora::Tensor c = normal(rng, n, 1), G = normal(rng, n, 4), GI = normal(rng, n, 2);
-    return {c, G.matrix_transpose(), GI.matrix_transpose(), E, {1, 2}};
+    return {c.squeeze(-1), G.matrix_transpose(), GI.matrix_transpose(), E, {1, 2}};
 }
 
 /// Whether every row of the points lies in the zonotope up to a small tolerance.

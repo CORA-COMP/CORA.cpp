@@ -33,9 +33,9 @@ void isequal_known(const std::string &b) {
     check(!Z.isequal(Zonotope(vec({1.0, 2.5}), Z.generators())), b + ": another center");
     check(!Z.isequal(Zonotope(Z.center(), Tensor({{1.0, 0.0}, {0.0, 2.0}}))),
           b + ": another generator");
-    check(Zonotope(vec({0.0}), Tensor({{1.0}, {1.0}}))
-              .isequal(Zonotope(vec({0.0}), Tensor({{2.0}}))),
-          b + ": [1, 1] and [2] generate the same interval");
+    check(
+        Zonotope(vec({0.0}), Tensor({{1.0}, {1.0}})).isequal(Zonotope(vec({0.0}), Tensor({{2.0}}))),
+        b + ": [1, 1] and [2] generate the same interval");
     check(Z.isequal(
               Zonotope(Z.center(), Tensor::concat({Z.generators(), Tensor::zeros({1, 2})}, -2))),
           b + ": a zero generator does not matter");

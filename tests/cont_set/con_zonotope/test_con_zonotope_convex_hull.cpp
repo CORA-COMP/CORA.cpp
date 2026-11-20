@@ -93,18 +93,17 @@ void convex_hull_property(const std::string &b) {
 /// Wrong operands and methods are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const ConZonotope A(vec({0.5}), Tensor({{0.5}}));
-    check(
-        test::raises([&] { A.convex_hull(ConZonotope(vec({1.0, 2.0}), Tensor({{1.0, 1.0}}))); },
-                     Error::dimension_mismatch),
-        "convex_hull: different dimensions");
+    check(test::raises([&] { A.convex_hull(ConZonotope(vec({1.0, 2.0}), Tensor({{1.0, 1.0}}))); },
+                       Error::dimension_mismatch),
+          "convex_hull: different dimensions");
     check(test::raises([&] { A.convex_hull(A, "outer"); }, Error::wrong_value),
           "convex_hull: a method");
     check(test::raises([&] { A.convex_hull(vec({1.0, 2.0})); }, Error::dimension_mismatch),
           "convex_hull: a point is a column");
     check(test::raises(
               [&] {
-                  A.convex_hull(std::vector<ConZonotope>{
-                      ConZonotope(vec({1.0, 2.0}), Tensor({{1.0, 1.0}}))});
+                  A.convex_hull(
+                      std::vector<ConZonotope>{ConZonotope(vec({1.0, 2.0}), Tensor({{1.0, 1.0}}))});
               },
               Error::dimension_mismatch),
           "convex_hull: a list of other dimensions");

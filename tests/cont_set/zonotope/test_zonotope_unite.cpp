@@ -28,7 +28,7 @@ using test::vec;
 namespace {
 
 Zonotope box(double lo, double hi, double lo2, double hi2) {
-    return {column({(lo + hi) / 2, (lo2 + hi2) / 2}),
+    return {vec({(lo + hi) / 2, (lo2 + hi2) / 2}),
             Tensor({{(hi - lo) / 2, 0.0}, {0.0, (hi2 - lo2) / 2}})};
 }
 

@@ -14,9 +14,9 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -42,8 +42,8 @@ int main() {
           "split_longest_gen: no dependent generator");
     // with the checks off, a valid call still works
     ChecksScope off(false);
-    const PolyZonotope P(vec({0.0}), Tensor::from_data({1}, {1, 1}), Tensor::zeros({0, 1}),
-                         {{1}}, {1});
+    const PolyZonotope P(vec({0.0}), Tensor::from_data({1}, {1, 1}), Tensor::zeros({0, 1}), {{1}},
+                         {1});
     check(P.split_longest_gen().first.dim() == 1, "split_longest_gen: valid, checks off");
     return test::finish("poly_zonotope split_longest_gen");
 }

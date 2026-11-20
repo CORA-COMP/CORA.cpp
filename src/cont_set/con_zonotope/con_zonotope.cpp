@@ -112,8 +112,7 @@ ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
 
 // the factor polytope as it is, checked against the center and the generators
 ConZonotope::ConZonotope(Tensor c, Tensor G, Polytope F)
-    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)),
-      F_(std::move(F)) {
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), F_(std::move(F)) {
     detail::Entry entry;
     const detail::Refusal refusal = aux_polytope_refusal(c_, G_, F_);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });

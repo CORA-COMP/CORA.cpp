@@ -16,9 +16,9 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -62,11 +62,10 @@ void checks_and_their_switch() {
     check(test::raises([&] { sys.init_reach(R0, U, column({0.0, 0.0}), a); },
                        Error::dimension_mismatch),
           "init_reach: u_trans of the columns of B");
-    check(
-        test::raises(
-            [&] { sys.init_reach(Zonotope(vec({1.0}), Tensor({{1.0}})), U, column({0.0}), a); },
-            Error::dimension_mismatch),
-        "init_reach: R_init of the dimension of the system");
+    check(test::raises(
+              [&] { sys.init_reach(Zonotope(vec({1.0}), Tensor({{1.0}})), U, column({0.0}), a); },
+              Error::dimension_mismatch),
+          "init_reach: R_init of the dimension of the system");
     const Tensor on = (sys.init_reach(R0, U, column({0.0}), a).time_interval).center();
     ChecksScope off(false);
     check(close((sys.init_reach(R0, U, column({0.0}), a).time_interval).center(), on, 0),

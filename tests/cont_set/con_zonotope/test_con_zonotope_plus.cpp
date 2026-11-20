@@ -76,7 +76,7 @@ void checks_and_batches() {
     check(test::raises([&] { a.plus(one); }, Error::dimension_mismatch), "plus: dimensions");
     check(test::raises([&] { a.plus(vec({1.0})); }, Error::dimension_mismatch),
           "plus: a point of another dimension");
-    const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 1, 2}));
+    const ConZonotope batch(Tensor::zeros({2, 2}), Tensor::zeros({2, 1, 2}));
     check(test::raises([&] { a.plus(batch); }, Error::dimension_mismatch), "plus: batch shapes");
     check(batch.plus(batch).c().expand_dims(-1).shape() == Shape{2, 2, 1},
           "plus: a batch adds member by member");

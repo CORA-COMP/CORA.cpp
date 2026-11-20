@@ -54,7 +54,7 @@ void compact_property(const std::string &b) {
         const ConZonotope base = test::random_con_zonotope(rng, 3, 4, 2);
         // append a zero generator (a zero column of G and of A) and a zero row
         const ConZonotope padded(
-            base.c().expand_dims(-1),
+            base.c(),
             (Tensor::concat({base.generators().matrix_transpose(), Tensor::zeros({3, 1})}, -1))
                 .matrix_transpose(),
             Tensor::concat(
@@ -77,7 +77,7 @@ void checks_and_batches() {
     check(test::raises([&] { cz.compact("zeros", -1.0); }, Error::wrong_value), "compact: tol < 0");
     const Tensor G = Tensor::concat(
         {Tensor({{1.0, 0.0, 0.0}}).expand_dims(0), Tensor({{1.0, 0.0, 2.0}}).expand_dims(0)}, 0);
-    const ConZonotope batch(Tensor::zeros({2, 1, 1}), G.matrix_transpose());
+    const ConZonotope batch(Tensor::zeros({2, 1}), G.matrix_transpose());
     check(batch.compact().generators().matrix_transpose().shape() == Shape{2, 1, 2},
           "compact: a batch keeps what some member keeps");
     ChecksScope off(false);

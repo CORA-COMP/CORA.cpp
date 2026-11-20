@@ -30,7 +30,7 @@
 namespace {
 
 using namespace cora;
-using cora::bench::column;
+using cora::bench::vec;
 
 /// laubLoomis.m: the right-hand side as the model file writes it; the input u is not used.
 NonlinearSys aux_laub_loomis() {
@@ -45,7 +45,7 @@ NonlinearSys aux_laub_loomis() {
 }
 
 /// The center of the initial sets and the zonotope of half-width W.
-Tensor aux_x0() { return column({1.2, 1.05, 1.5, 2.4, 1, 0.1, 0.45}); }
+Tensor aux_x0() { return vec({1.2, 1.05, 1.5, 2.4, 1, 0.1, 0.45}); }
 Zonotope aux_start(double W) { return Zonotope(aux_x0(), Tensor::eye(7) * W); }
 
 /// The bound of x4 (the fourth state) over the time-interval sets, and its width at the end.
@@ -65,7 +65,7 @@ X4 aux_x4(const Reach &R) {
 /// Reaches one instance, prints the line of the script and the width of x4.
 bool aux_run(const std::string &name) {
     const NonlinearSys sys = aux_laub_loomis();
-    const Zonotope U(column({0}), Tensor::zeros({0, 1}));
+    const Zonotope U(vec({0}), Tensor::zeros({0, 1}));
     const auto start = std::chrono::steady_clock::now();
     X4 x4;
     double limit = 4.5;

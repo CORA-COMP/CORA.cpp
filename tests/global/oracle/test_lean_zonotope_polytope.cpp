@@ -37,7 +37,7 @@ int main() {
                           lean::Polytope::from_zonotope(lean::Zonotope(Z)));
         }
         // no generators: the box of a point; the oracle prints -0 as 0, so CORA.cpp's -0 rows too
-        const Zonotope point(rnd.vector(3), Tensor::zeros({0, 3}));
+        const Zonotope point(rnd.point(3), Tensor::zeros({0, 3}));
         const Polytope box = point.polytope();
         oracle::check("a point", Polytope(box.A() + 0.0, box.b() + 0.0),
                       lean::Polytope::from_zonotope(lean::Zonotope(point)));

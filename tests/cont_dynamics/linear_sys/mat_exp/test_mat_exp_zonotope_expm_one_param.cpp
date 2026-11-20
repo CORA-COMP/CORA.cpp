@@ -108,7 +108,7 @@ void series_with_an_input(const std::string &bname) {
     const double r = 0.5;
     const int64_t N = 6;
     const Tensor c = test::matrix({1, -2, 0.5}, 3, 1), g = test::matrix({0.3, 0.1, -0.4}, 3, 1);
-    const auto R = mat_exp::expm_one_param(A, r, N, Zonotope(c, g.matrix_transpose()));
+    const auto R = mat_exp::expm_one_param(A, r, N, Zonotope(c.squeeze(-1), g.matrix_transpose()));
     check(R.constant_input.has_value() &&
               R.constant_input->generators().matrix_transpose().shape() ==
                   std::vector<int64_t>({3, N}),
@@ -134,9 +134,10 @@ void series_with_an_input(const std::string &bname) {
     }
     check(exact, bname + ": the input terms for every parameter");
     // an input without generators gives the same sets as one with a zero generator
-    const auto fixed = mat_exp::expm_one_param(A, r, N, Zonotope(c, c.zeros_like({1, 3})));
+    const auto fixed =
+        mat_exp::expm_one_param(A, r, N, Zonotope(c.squeeze(-1), c.zeros_like({1, 3})));
     const auto zero_generators =
-        mat_exp::expm_one_param(A, r, N, Zonotope(c, Tensor::zeros({0, 3})));
+        mat_exp::expm_one_param(A, r, N, Zonotope(c.squeeze(-1), Tensor::zeros({0, 3})));
     check(close(zero_generators.constant_input->center().expand_dims(-1),
                 fixed.constant_input->center().expand_dims(-1), 0) &&
               close(zero_generators.constant_input->generators().matrix_transpose(),
@@ -166,8 +167,8 @@ void checks_and_their_switch() {
           "expm_one_param: a non-square set");
     check(test::raises([&] { mat_exp::expm_one_param(A, 1.0, 0); }, Error::wrong_value),
           "expm_one_param: the order 0");
-    const Zonotope too_long(test::matrix({1, 2, 3}, 3, 1), test::matrix({0, 0, 0}, 1, 3));
-    const Zonotope two(test::matrix({1, 2}, 2, 1), test::matrix({1, 0, 0, 1}, 2, 2));
+    const Zonotope too_long(test::vec({1, 2, 3}), test::matrix({0, 0, 0}, 1, 3));
+    const Zonotope two(test::vec({1, 2}), test::matrix({1, 0, 0, 1}, 2, 2));
     check(test::raises([&] { mat_exp::expm_one_param(A, 1.0, 2, too_long); },
                        Error::dimension_mismatch),
           "expm_one_param: an input of another dimension");

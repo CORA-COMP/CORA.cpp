@@ -24,8 +24,8 @@ namespace {
 /// Hand-computed: the segment from (0, 1) to (1, 0) meets the box [0.4, 2]^2 and misses [0.6, 2]^2,
 /// whose box around it still overlaps ('approx').
 void is_intersecting_known(const std::string &b) {
-    const ConZonotope seg(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                          Tensor({{1.0, 1.0}}), vec({1.0}));
+    const ConZonotope seg(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
+                          vec({1.0}));
     const Interval meets(vec({0.4, 0.4}), vec({2.0, 2.0}));
     const Interval misses(vec({0.6, 0.6}), vec({2.0, 2.0}));
     check(seg.is_intersecting(meets) && !seg.is_intersecting(misses), b + ": a box");
@@ -34,8 +34,7 @@ void is_intersecting_known(const std::string &b) {
           b + ": the boxes are apart");
     // a zonotope and a constrained zonotope, then a point and the empty set
     const Zonotope Z(vec({1.0, 1.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
-    check(seg.is_intersecting(Z) &&
-              !seg.is_intersecting(Zonotope(vec({3.0, 3.0}), Z.generators())),
+    check(seg.is_intersecting(Z) && !seg.is_intersecting(Zonotope(vec({3.0, 3.0}), Z.generators())),
           b + ": a zonotope");
     check(seg.is_intersecting(seg) && !seg.is_intersecting(seg.plus(vec({2.0, 0.0}))),
           b + ": a constrained zonotope");

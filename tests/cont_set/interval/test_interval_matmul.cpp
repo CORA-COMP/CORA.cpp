@@ -63,7 +63,7 @@ void product_of_two_sets(const std::string &b) {
 /// A set times a zonotope encloses the products; the empty set maps to the empty set.
 void product_with_other_sets(const std::string &b) {
     const Interval A = test::example();
-    const Zonotope Z(test::matrix({1, 1}, 2, 1), test::matrix({1, 0, 0, 1}, 2, 2));
+    const Zonotope Z(test::vec({1, 1}), test::matrix({1, 0, 0, 1}, 2, 2));
     const Zonotope R = A * Z;
     check(close(R.center().expand_dims(-1), std::vector<double>{1.5, 3.5}), b + ": the center T c");
     check(

@@ -147,7 +147,8 @@ ConZonotope aux_many(const std::vector<ConZonotope> &sets) {
                                     -1));
         c = c + S.c().expand_dims(-1) * 0.5;
     }
-    return {c.squeeze(-1), Tensor::concat(Gs, -1).matrix_transpose(), Tensor::concat({A, weights}, -2),
+    return {c.squeeze(-1), Tensor::concat(Gs, -1).matrix_transpose(),
+            Tensor::concat({A, weights}, -2),
             Tensor::concat({b, full_block(like, 1, 1, 1.0 - 0.5 * double(N))}, -2).squeeze(-1)};
 }
 

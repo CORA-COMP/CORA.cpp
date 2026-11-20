@@ -11,9 +11,9 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 

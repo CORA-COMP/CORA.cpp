@@ -18,9 +18,9 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -30,14 +30,14 @@ namespace {
 
 /// CORA's unit test: eight generators in two dimensions reduced to order 1.
 Zonotope example() {
-    return {column({1.0, 0.0}), Tensor({{1.0, 2.0},
-                                        {3.0, -1.0},
-                                        {-2.0, 1.0},
-                                        {3.0, 0.0},
-                                        {-1.0, 3.0},
-                                        {0.0, -2.0},
-                                        {2.0, 1.0},
-                                        {3.0, 2.0}})};
+    return {vec({1.0, 0.0}), Tensor({{1.0, 2.0},
+                                     {3.0, -1.0},
+                                     {-2.0, 1.0},
+                                     {3.0, 0.0},
+                                     {-1.0, 3.0},
+                                     {0.0, -2.0},
+                                     {2.0, 1.0},
+                                     {3.0, 2.0}})};
 }
 
 /// kochdumper by hand: the longest generator (3, 2) stays, the others (signed by their first

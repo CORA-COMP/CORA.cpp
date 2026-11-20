@@ -30,9 +30,7 @@ inline Tensor diagonal() { return Tensor({{-1.0, 0.0}, {0.0, -2.0}}); }
 inline Tensor integrator() { return Tensor({{0.0, 1.0}, {0.0, 0.0}}); }
 
 /// The initial set of the examples: center (1, 2), generators diag(1, 0.5).
-inline Zonotope initial_set() {
-    return {test::vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}})};
-}
+inline Zonotope initial_set() { return {test::vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}})}; }
 
 /// The point u as a set.
 inline Zonotope point(const std::vector<double> &u) {

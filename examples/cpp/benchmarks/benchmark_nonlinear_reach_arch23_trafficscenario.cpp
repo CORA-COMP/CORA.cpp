@@ -204,11 +204,11 @@ bool aux_run(const std::string &name) {
     std::vector<double> G0(50, 0.0), x0 = c.x0;
     for (std::size_t i = 0; i < 5; ++i) G0[i * 5 + i] = v[i];
     x0.insert(x0.end(), c.x0.begin(), c.x0.end());
-    Zonotope X(column(x0), matrix(10, 5, G0).matrix_transpose());
+    Zonotope X(vec(x0), matrix(10, 5, G0).matrix_transpose());
     const std::vector<double> u_rad = {0.02, 0.3, 0.0004, 0.0004, 0.006, 0.002, 0.002};
     std::vector<double> GU(49, 0.0);
     for (std::size_t i = 0; i < 7; ++i) GU[i * 7 + i] = u_rad[i];
-    const Zonotope U(column(std::vector<double>(7, 0.0)), matrix(7, 7, GU));
+    const Zonotope U(vec(std::vector<double>(7, 0.0)), matrix(7, 7, GU));
     // each segment from the end of the one before
     std::vector<std::vector<Zonotope>> R;
     for (std::size_t i = 0; i < c.u.size(); ++i) {

@@ -41,7 +41,7 @@ int main() {
     oracle::run("zonotope.underapproximate", [](oracle::Random &rnd) {
         int compared = 0;
         for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}, {5, 12}}) {
-            const Zonotope Z(aux_eighths(rnd.vector(n)),
+            const Zonotope Z(aux_eighths(rnd.point(n)),
                              aux_eighths(rnd.matrix(n, m)).matrix_transpose());
             // random directions, the same for both
             const int directions = 4;

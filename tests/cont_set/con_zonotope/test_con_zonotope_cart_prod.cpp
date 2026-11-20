@@ -73,9 +73,9 @@ void cart_prod_property(const std::string &b) {
 
 /// A batch of products, member by member.
 void cart_prod_of_batches(const std::string &b) {
-    const ConZonotope A(Tensor::zeros({2, 1, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
+    const ConZonotope A(Tensor::zeros({2, 1}), Tensor::ones({2, 1, 2}).matrix_transpose(),
                         Tensor::ones({2, 1, 2}), Tensor::zeros({2, 1}));
-    const ConZonotope B(Tensor::ones({2, 2, 1}), Tensor::ones({2, 2, 1}).matrix_transpose());
+    const ConZonotope B(Tensor::ones({2, 2}), Tensor::ones({2, 2, 1}).matrix_transpose());
     const ConZonotope P = A.cart_prod(B);
     check(P.generators().matrix_transpose().shape() == Shape{2, 3, 3} &&
               P.A().shape() == Shape{2, 1, 3},
@@ -93,7 +93,7 @@ void checks_and_their_switch() {
           "cart_prod: a point first must be a column");
     check(test::raises(
               [&] {
-                  cz.cart_prod(ConZonotope(Tensor::zeros({2, 1, 1}),
+                  cz.cart_prod(ConZonotope(Tensor::zeros({2, 1}),
                                            Tensor::ones({2, 1, 1}).matrix_transpose()));
               },
               Error::dimension_mismatch),

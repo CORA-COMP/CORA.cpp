@@ -16,9 +16,9 @@
 
 using namespace cora;
 using test::check;
-using test::vec;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -78,8 +78,7 @@ void the_volume_is_the_area(const std::string &b) {
 void a_batch(const std::string &b) {
     cora::Rng rng(62);
     const Zonotope A = Zonotope::generate_random(rng, 2, std::nullopt, 4);
-    const Zonotope flat(vec({0.0, 0.0}),
-                        Tensor({{1.0, 2.0}, {2.0, 4.0}, {3.0, 6.0}, {1.0, 2.0}}));
+    const Zonotope flat(vec({0.0, 0.0}), Tensor({{1.0, 2.0}, {2.0, 4.0}, {3.0, 6.0}, {1.0, 2.0}}));
     const Zonotope batch = Zonotope::stack({A, flat});
     for (const std::string method : {"exact", "alamo"}) {
         const Tensor v = batch.volume(method);

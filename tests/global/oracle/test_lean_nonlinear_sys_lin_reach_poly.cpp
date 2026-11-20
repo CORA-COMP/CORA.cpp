@@ -79,8 +79,8 @@ NonlinearSys lotka() {
         3, 0);
 }
 
-/// The column of the values.
-Tensor col(const std::vector<double> &v) { return Tensor::from_data(v, {int64_t(v.size()), 1}); }
+/// The vector (n) of the values: a center.
+Tensor vec(const std::vector<double> &v) { return Tensor::from_data(v, {int64_t(v.size())}); }
 
 /// The matrix of the rows, (rows, cols).
 Tensor mat(int64_t rows, int64_t cols, const std::vector<double> &v) {
@@ -134,23 +134,23 @@ int main() {
     oracle::run("nonlinearSys.linReachPoly", [&](oracle::Random &) {
         const double s5 = 0x1p-5, s6 = 0x1p-6, s7 = 0x1p-7;
         // van der Pol, a cubic start set with a generator on two factors
-        const PolyZonotope vdp(col({1.75, 1.25}), mat(3, 2, {s5, 0, s6, s6, 0, s5}),
+        const PolyZonotope vdp(vec({1.75, 1.25}), mat(3, 2, {s5, 0, s6, s6, 0, s5}),
                                mat(1, 2, {s7, 0}), {{1, 0}, {0, 1}, {2, 1}}, {1, 2});
         const Zonotope vdp_U(Tensor({0.0}), Tensor({{s6}}));
         aux_chain("van der Pol", van_der_pol(), vdp, vdp_U, s5, 4, 3);
-        const PolyZonotope pend(col({1.0, 0.0}), mat(2, 2, {s5, 0, 0, s6}), Tensor::zeros({0, 2}),
+        const PolyZonotope pend(vec({1.0, 0.0}), mat(2, 2, {s5, 0, 0, s6}), Tensor::zeros({0, 2}),
                                 {{1, 0}, {0, 1}}, {1, 2});
         aux_chain("pendulum", pendulum(), pend, std::nullopt, s5, 4, 2);
         const PolyZonotope tor(
-            col({0.375, -0.375, -0.5, 0.5}),
+            vec({0.375, -0.375, -0.5, 0.5}),
             mat(4, 4, {s6, 0, 0, 0, 0, s6, 0, 0, 0, 0, s6, 0, 0, 0, 0, s6}), Tensor::zeros({0, 4}),
             {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}, {1, 2, 3, 4});
         aux_chain("TORA", tora(), tor, Zonotope(Tensor({0.0}), Tensor({{0.125}})), s5, 4, 2);
-        const PolyZonotope lv(col({0.75, 1.0, 0.5}), mat(3, 3, {s6, 0, 0, 0, s6, s7, s7, 0, s6}),
+        const PolyZonotope lv(vec({0.75, 1.0, 0.5}), mat(3, 3, {s6, 0, 0, 0, s6, s7, s7, 0, s6}),
                               mat(1, 3, {s7 / 2, 0, 0}), {{1, 0}, {0, 1}, {1, 1}}, {1, 2});
         aux_chain("Lotka", lotka(), lv, std::nullopt, s6, 5, 3);
         const PolyZonotope ac(
-            col({90, 32, 0, 10, 30, 0}),
+            vec({90, 32, 0, 10, 30, 0}),
             mat(3, 6, {0.5, 0, 0, 0.25, 0, 0, 0, 0, 0, 0, 0, 0.125, 0, 0, 0, 0, 0, 0}),
             Tensor::zeros({0, 6}), {{1, 0}, {0, 1}, {1, 1}}, {1, 2});
         aux_chain("ACC", acc(), ac, Zonotope(Tensor({1.0}), Tensor({{0.25}})), 0x1p-4, 4, 2);

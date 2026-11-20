@@ -33,7 +33,7 @@ int main() {
     std::ostringstream out;
     out << cz;
     check(out.str() == text, "display: operator<< prints the same text");
-    const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::ones({2, 2, 3}).matrix_transpose());
+    const ConZonotope batch(Tensor::zeros({2, 2}), Tensor::ones({2, 2, 3}).matrix_transpose());
     check(batch.display().find("batch of shape") != std::string::npos, "display: a batch: shapes");
     // display takes no input; with the checks off the text is the same
     ChecksScope off(false);
