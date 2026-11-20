@@ -178,6 +178,9 @@ class Zonotope {
 
     Certified contains(const Zonotope &Z2, double tol = 0) const;
     Certified is_intersecting(const Zonotope &Z2, double tol = 0) const;
+    /// CORA's isIntersecting_(Z, S, 'approx', tol): false (certain) if the boxes are apart.
+    bool is_intersecting_approx(const Zonotope &Z2, double tol) const;
+    bool is_intersecting_approx(const Interval &I, double tol) const;
 
     // Numbers ----------------------------------------------------------------------------------
 
