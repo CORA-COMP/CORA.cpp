@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/interval_matrix.h"
@@ -94,6 +94,10 @@ Interval IntervalMatrix::matmul(const Interval &B) const {
 // The matrix exponential.
 Interval IntervalMatrix::expm_independent(int64_t max_order) const {
     return aux_matrix("intervalMatrix.expmInd", {{"IM", bounds_}, {"maxOrder", max_order}});
+}
+std::optional<Interval> IntervalMatrix::exponential_remainder(int64_t max_order) const {
+    return ask("intervalMatrix.exponentialRemainder", {{"IM", bounds_}, {"maxOrder", max_order}})
+        .get<std::optional<Interval>>("IM");
 }
 
 // Norms.

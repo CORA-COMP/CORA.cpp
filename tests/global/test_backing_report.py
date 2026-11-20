@@ -3,13 +3,15 @@
 Syntax:   python tests/global/test_backing_report.py
 Checks:   on a fixture of gcov JSON and a small fake tree: the files with an executed line are read
           (relative, only src/ and include/); a file's CORA tags give its rows and a `CORA.cpp only`
-          file is listed apart; the counts per status come from the committed statuses; the report
+          file is listed apart; the counts per status come from the committed statuses; a row out of
+          scope in CORALean, or not comparable with it, is in neither the numerator nor the
+          denominator; the report
           and the README table are rendered, spliced between their markers and stable on a second run.
 Exit code: 0 if all pass.
 
-Authors:       Claude Sonnet 5.5
+Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       09-November-2026
-Last update:   ---
+Last update:   19-November-2026
 Reviewed:      ---
 """
 import json
@@ -97,6 +99,29 @@ class BackingReport(unittest.TestCase):
         s = bench.summarize(measured, STATUS, GROUPS, self.root, lean)["A"]
         self.assertEqual((s["oracle"], s["total"], s["lean_out"], s["eligible"]), (1, 2, 1, 1))
         self.assertIn("| A | 1/1 | 0 | 1 |", bench.render_table({"A": s}))
+
+    # a bit-exact row that CORALean marks out of scope is in neither the numerator nor the denominator
+    def test_a_bit_exact_row_out_of_scope_in_CORALean_leaves_the_numerator(self):
+        measured = {"A": {"files": ["src/plus.cpp", "src/center.cpp"]}}
+        lean = {"contSet/zonotope/plus": {"status": "out-of-scope"}}
+        s = bench.summarize(measured, STATUS, GROUPS, self.root, lean)["A"]
+        self.assertEqual((s["oracle"], s["lean_out"], s["eligible"]), (0, 1, 1))
+        # a plumbing row (dim) at oracle, out of scope in CORALean: counted once, apart, never bit-exact
+        status = {**STATUS, "contSet/zonotope/dim": "oracle"}
+        groups = {**GROUPS, "contSet": {"zonotope": ["center", "plus", "dim"]}}
+        (self.root / "src" / "dim.cpp").write_text(
+            "// dim - x\n//\n// CORA: contSet/@zonotope/dim.m\n\nint x;\n", encoding="utf-8")
+        lean = {"contSet/zonotope/dim": {"status": "out-of-scope"}}
+        s = bench.summarize({"A": {"files": ["src/center.cpp", "src/dim.cpp"]}}, status, groups,
+                            self.root, lean)["A"]
+        self.assertEqual((s["oracle"], s["plumbing"], s["lean_out"], s["eligible"]), (0, 0, 1, 1))
+
+    # a row of CORA.cpp's ledger that is not comparable with CORALean counts as one out of scope there
+    def test_rows_not_comparable_with_CORALean_leave_the_denominator(self):
+        measured = {"A": {"files": ["src/plus.cpp", "src/center.cpp"]}}
+        apart = {"contSet/zonotope/plus": "no solver"}
+        s = bench.summarize(measured, STATUS, GROUPS, self.root, {}, apart)["A"]
+        self.assertEqual((s["oracle"], s["lean_out"], s["eligible"], s["property"]), (0, 1, 1, 1))
 
     # constructors and accessors have nothing to compare bit for bit
     def test_plumbing_rows_leave_the_denominator(self):

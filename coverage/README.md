@@ -27,4 +27,6 @@ against the rows that can be: a row with no operation to compare is left out of 
 of the numerator, as the rows that CORALean marks out of scope are. The rule is `is_plumbing` in the
 script: the constructor of a class (the method is named as the class), and `dim`, `generators`,
 `numgens`, `isemptyobject`, `representsa_emptyObject`, `reorder`. They have a column of their own
-in `benchmarks.md`; the status of the row in `status.json` does not change.
+in `benchmarks.md`; the status of the row in `status.json` does not change. A row that CORA.cpp
+implements but CORALean will not formalize is listed under "Not comparable with CORALean" in
+[out-of-scope.md](out-of-scope.md), with its reason, and is left out the same way.

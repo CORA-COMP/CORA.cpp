@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/mat_zonotope.h"
@@ -104,6 +104,13 @@ double MatZonotope::norm(const std::string &type, int64_t steps) const {
 bool MatZonotope::representsa(const std::string &type, double tol) const {
     return ask("matZonotope.representsa", {{"mZ", *this}, {"type", type}, {"tol", number(tol)}})
         .get<bool>("value");
+}
+// The reduction of the stacked set, and the certificate of membership.
+MatZonotope MatZonotope::reduce(int64_t order) const {
+    return aux_set("matZonotope.reduce", {{"mZ", *this}, {"order", order}, {"method", "girard"}});
+}
+bool MatZonotope::contains(const std::vector<Tensor> &M) const {
+    return ask("matZonotope.contains", {{"mZ", *this}, {"M", M}}).get<bool>("value");
 }
 Zonotope MatZonotope::zonotope() const {
     return ask("matZonotope.zonotope", {{"mZ", *this}}).get<Zonotope>("Z");

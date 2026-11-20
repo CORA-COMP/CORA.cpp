@@ -18,9 +18,9 @@
 // CORA: nn/@neuralNetwork/refine.m
 // CORA: nn/@neuralNetwork/getRefinableLayers.m
 // CORA authors: Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   19-November-2026
 // Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
@@ -57,6 +57,17 @@ struct Candidate {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// RefinableLayers ---------------------------------------------------------------------------------
+
+std::vector<int64_t> NeuralNetwork::refinable_layers() const {
+    detail::Entry entry;
+    // the layers with a nonlinear activation
+    std::vector<int64_t> out;
+    for (std::size_t k = 0; k < activations_.size(); ++k)
+        if (activations_[k] != Activation::identity) out.push_back(int64_t(k));
+    return out;
+}
 
 // Refine ------------------------------------------------------------------------------------------
 

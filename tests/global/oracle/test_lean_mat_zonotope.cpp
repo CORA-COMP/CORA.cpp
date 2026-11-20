@@ -11,12 +11,13 @@
 // ORACLE: matrixSet/@matZonotope/mtimes.m
 // ORACLE: matrixSet/@matZonotope/plus.m
 // ORACLE: matrixSet/@matZonotope/powers.m
+// ORACLE: matrixSet/@matZonotope/reduce.m
 // ORACLE: matrixSet/@matZonotope/representsa.m
 // ORACLE: matrixSet/@matZonotope/transpose.m
 // ORACLE: matrixSet/@matZonotope/zonotope.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
@@ -100,6 +101,15 @@ int main() {
                 for (const Zonotope &A : {random, point, origin})
                     check(A.representsa(type, 0.0), lean::MatZonotope(A).representsa(type));
         }
+    });
+    // Girard's reduction of the stacked set, unstacked: CORA's reduce as it is meant to run
+    test::oracle::run("matZonotope.reduce", [&](Random &rnd) {
+        for (const auto &[r, c, h, order] : std::vector<std::array<int64_t, 4>>{
+                 {2, 2, 9, 1}, {2, 3, 14, 2}, {3, 3, 20, 2}, {2, 2, 3, 1}})
+            for (int trial = 0; trial < 2; ++trial) {
+                const Zonotope A = rnd.mat_zonotope(r, c, h);
+                check(A.reduce(int(order)), lean::MatZonotope(A).reduce(order));
+            }
     });
     return test::finish("lean mat_zonotope");
 }

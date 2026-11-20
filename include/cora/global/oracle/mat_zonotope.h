@@ -12,7 +12,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -69,6 +69,12 @@ class MatZonotope {
     /// The corner matrices (2^h of them, with repeats) and the box that encloses their rounding.
     MatrixVertices vertices() const;
 
+    /// CORA's reduce(mZ, "girard", order) as it is meant to run: the stacked set reduced by
+    /// Girard's method to the order and unstacked (CORALean's Zonotope.reduceMat).
+    MatZonotope reduce(int64_t order) const;
+    /// Whether every matrix of M is in the set, as the oracle certifies it: true is certain,
+    /// false refutes nothing (a set that is not full-dimensional is never certified).
+    bool contains(const std::vector<Tensor> &M) const;
     /// The set of the stacked matrices (column by column) as a zonotope.
     Zonotope zonotope() const;
 
