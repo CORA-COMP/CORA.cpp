@@ -17,7 +17,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -34,7 +34,7 @@ Capsule Capsule::lift(int64_t N, const std::vector<int64_t> &dims) const {
     const detail::LiftPlan plan = detail::lift_plan(dim(), N, dims);
     // lift_impl comes here after the generic checks, which do not see the permutation: always fail
     if (plan.refusal) CORA_FAIL(plan.refusal->first, plan.refusal->second);
-    return {Unchecked{}, cc().take(plan.source, -2), gc().take(plan.source, -2), r_};
+    return {Unchecked{}, cc().take(plan.source, -2), gc().take(plan.source, -2), rc(), empty_};
 }
 
 Set Capsule::lift_impl(int64_t N, const std::vector<int64_t> &proj) const { return lift(N, proj); }

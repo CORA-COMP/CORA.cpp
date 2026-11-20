@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/capsule.h"
@@ -40,7 +40,8 @@ Capsule::Capsule(const cora::Capsule &C)
     // CORA's columns (n, 1) of the stored vectors
     json_.set("c", Tensor(C.c().expand_dims(-1)).to_json())
         .set("g", Tensor(C.generator().expand_dims(-1)).to_json());
-    json_.set("r", Json(Tensor::encode(C.r().item())));
+    // CORALean marks the empty capsule by the radius -1
+    json_.set("r", Json(Tensor::encode(C.is_empty() ? -1.0 : C.r().item())));
 }
 
 bool Capsule::exact() const {
@@ -50,12 +51,13 @@ bool Capsule::exact() const {
     return inf.abs().max().item() == 0 && sup.abs().max().item() == 0;
 }
 
-// the empty capsule has the radius -1, which the constructor of cora::Capsule refuses
+// the oracle's empty capsule has the radius -1, which cora::Capsule flags in its mask
 cora::Capsule Capsule::nominal() const {
-    const cora::Tensor c = Tensor::from_json(dtype_, json_.at("c")).gather();
+    // CORA's columns (n, 1) as the vectors (n)
+    const cora::Tensor c = Tensor::from_json(dtype_, json_.at("c")).gather().squeeze(-1);
     const double r = Tensor::decode(json_.at("r").text);
     if (r < 0) return cora::Capsule::empty(c.shape()[0]);
-    return {c, Tensor::from_json(dtype_, json_.at("g")).gather(), r};
+    return {c, Tensor::from_json(dtype_, json_.at("g")).gather().squeeze(-1), r};
 }
 
 cora::Capsule Capsule::gather() const {

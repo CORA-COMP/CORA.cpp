@@ -30,7 +30,7 @@ inline cora::Capsule random_capsule(cora::Rng &rng, int n) {
     rng.normal(c.data(), c.size(), 1.0);
     rng.normal(g.data(), g.size(), 1.0);
     rng.uniform(r.data(), 1, 0.2, 1.0);
-    return {column(c), column(g), r[0]};
+    return {vec(c), vec(g), r[0]};
 }
 
 /// The distance of the point p (host values) from the segment c - g .. c + g, found by a fine grid

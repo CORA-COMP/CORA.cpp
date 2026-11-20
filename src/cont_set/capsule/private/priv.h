@@ -7,7 +7,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -21,8 +21,8 @@ namespace cora {
 /// Why p is no matrix of points (..., n, N) of the dimension n of C, if it is none.
 detail::Refusal priv_points_refusal(const Capsule &C, const Tensor &p);
 
-/// 1 for the members whose radius r (..., 1, 1) is negative (the empty ones), else 0.
-Tensor priv_empty_mask(const Tensor &r);
+/// 1 for the empty members of C (its empty_mask()), else 0, as (..., 1, 1).
+Tensor priv_empty_mask(const Capsule &C);
 
 /// Whether every entry of a 0/1 mask is 1 (true for a mask without entries).
 bool priv_all(const Tensor &mask);

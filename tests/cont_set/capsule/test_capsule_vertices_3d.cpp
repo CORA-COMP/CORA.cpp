@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -40,7 +40,7 @@ void vertices_3d_property(const std::string &b) {
 
 /// With the checks off a valid call is the same.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0, 3.0}), column({3.0, 4.0, 5.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0, 3.0}), vec({3.0, 4.0, 5.0}), 0.5);
     ChecksScope off(false);
     check(C.vertices_3d()[0].size() == 400, "vertices_3d: works with the checks off");
 }

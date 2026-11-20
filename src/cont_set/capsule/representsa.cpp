@@ -48,7 +48,7 @@ bool Capsule::representsa(const std::string &type, Tol tol_arg) const {
     // the empty capsule is what representsa_emptyObject says
     if (is_empty()) return !priv_type_in(type, {"origin", "point", "fullspace"});
     const auto zero = [&](const Tensor &x) { return priv_all(within_tol(x, x.zeros_like(), tol)); };
-    const bool segment_is_point = zero(gc()), no_radius = zero(r_);
+    const bool segment_is_point = zero(gc()), no_radius = zero(rc());
     const bool is_point = segment_is_point && no_radius;
     if (type == "origin") return is_point && zero(cc());
     if (type == "point") return is_point;

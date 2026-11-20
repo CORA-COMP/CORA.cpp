@@ -13,7 +13,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -35,14 +35,15 @@ Capsule Capsule::convex_hull(const Capsule &S) const {
     });
     // g is half the difference of the centers, as CORALean computes it, not c - (c + S.c) / 2
     const Tensor c = cc().add(S.cc()) / 2.0, g = cc().subtract(S.cc()) / 2.0;
-    const Tensor reach = priv_norm(gc()).add(r_), reach2 = priv_norm(S.gc()).add(S.r_);
+    const Tensor reach = priv_norm(gc()).add(rc()), reach2 = priv_norm(S.gc()).add(S.rc());
     const Tensor r = reach.maximum(reach2);
     // an empty operand adds nothing: the hull is the other capsule
-    const Tensor mine = priv_empty_mask(r_), theirs = priv_empty_mask(S.r_);
+    const Tensor mine = priv_empty_mask(*this), theirs = priv_empty_mask(S);
     const auto pick = [&](const Tensor &hull, const Tensor &own, const Tensor &other) {
         return Tensor::where(theirs, own, Tensor::where(mine, other, hull));
     };
-    return {Unchecked{}, pick(c, cc(), S.cc()), pick(g, gc(), S.gc()), pick(r, r_, S.r_)};
+    return {Unchecked{}, pick(c, cc(), S.cc()), pick(g, gc(), S.gc()), pick(r, rc(), S.rc()),
+            empty_.both(S.empty_)};
 }
 
 } // namespace cora

@@ -60,12 +60,12 @@ Tensor Capsule::rand_point_impl(int64_t N, Rng &rng, const std::string &type) co
     const Tensor d = draw(dim(), -1.0);
     const Tensor direction = d.divide(priv_norm(d));
     if (type == "standard") {
-        const Tensor axis = gc().multiply(draw(1, -1.0)), ball = r_.multiply(draw(1, 0.0));
+        const Tensor axis = gc().multiply(draw(1, -1.0)), ball = rc().multiply(draw(1, 0.0));
         return cc().add(axis).add(direction.multiply(ball)).matrix_transpose();
     }
     if (type == "extreme") {
         const Tensor along = gc().matrix_transpose().matmul(direction).sign();
-        return cc().add(gc().multiply(along)).add(direction.multiply(r_)).matrix_transpose();
+        return cc().add(gc().multiply(along)).add(direction.multiply(rc())).matrix_transpose();
     }
     CORA_FAIL(Error::no_specific_alg, "rand_point: unknown type '" + type + "'");
 }

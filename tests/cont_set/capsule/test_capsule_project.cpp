@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ namespace {
 
 /// Hand-computed: dimensions in the order given, the radius kept.
 void project_known(const std::string &b) {
-    const Capsule C(column({1.0, 2.0, 3.0}), column({4.0, 5.0, 6.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0, 3.0}), vec({4.0, 5.0, 6.0}), 0.5);
     const Capsule P = C.project({2, 0}).as<Capsule>();
     check(close(P.c(), {3, 1}, 0) && close(P.generator(), {6, 4}, 0) && close(P.r(), {0.5}, 0),
           b + ": {2, 0}");
@@ -43,7 +43,7 @@ void project_property(const std::string &b) {
 
 /// A dimension outside the set is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0, 3.0}), column({4.0, 5.0, 6.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0, 3.0}), vec({4.0, 5.0, 6.0}), 0.5);
     check(test::raises([&] { C.project({3}); }, Error::wrong_value), "project: out of range");
     ChecksScope off(false);
     check(C.project({0, 1})->dim() == 2, "project: works with the checks off");

@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -37,15 +37,15 @@ void rand_point_property(const std::string &b) {
                                   C.r().item(), 1e-5);
         check(boundary, b + ": extreme points are at the radius from the axis");
     }
-    const Capsule batch(Tensor::zeros({2, 3, 1}), Tensor::ones({2, 3, 1}),
-                        Tensor::from_data({0.5, 1.0}, {2, 1, 1}));
+    const Capsule batch(Tensor::zeros({2, 3}), Tensor::ones({2, 3}),
+                        Tensor::from_data({0.5, 1.0}, {2}));
     check(batch.rand_point(5, rng).shape() == Shape({2, 5, 3}), b + ": a batch");
 }
 
 /// An unknown type, a negative number and the empty capsule are refused; checks off works.
 void checks_and_their_switch() {
     Rng rng(3);
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     check(test::raises([&] { C.rand_point(3, rng, "gaussian"); }, Error::no_specific_alg),
           "rand_point: type");
     check(test::raises([&] { C.rand_point(-1, rng); }, Error::wrong_value), "rand_point: N");

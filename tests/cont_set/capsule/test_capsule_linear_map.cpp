@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ namespace {
 
 /// Hand-computed: the center and generator map by M, the radius scales by the Frobenius norm.
 void linear_map_known(const std::string &b) {
-    const Capsule C(column({1.0, 2.0}), column({1.0, -1.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({1.0, -1.0}), 0.5);
     const Tensor M({{2.0, 0.0}, {0.0, 3.0}});
     const Capsule R = C.linear_map(M);
     check(close(R.c(), {2, 6}, 0) && close(R.generator(), {2, -3}, 0), b + ": c and g map by M");
@@ -58,7 +58,7 @@ void linear_map_property(const std::string &b) {
 
 /// A matrix with the wrong number of columns is refused; with the checks off the same call works.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0}), column({1.0, -1.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({1.0, -1.0}), 0.5);
     check(test::raises([&] { C.linear_map(Tensor({{1.0, 2.0, 3.0}})); }, Error::dimension_mismatch),
           "linear_map: M needs dim(C) columns");
     const Tensor M({{2.0, 0.0}, {0.0, 3.0}});

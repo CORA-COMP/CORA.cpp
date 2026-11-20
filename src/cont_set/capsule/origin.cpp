@@ -9,7 +9,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/capsule/capsule.h"
@@ -26,7 +26,7 @@ CORA_FROM_NUMBERS Capsule Capsule::origin(int64_t n) {
     CORA_CHECK(n >= 1, Error::wrong_value, [&] {
         return "origin: the dimension must be a positive integer, got " + std::to_string(n);
     });
-    return {Tensor::zeros({n, 1}), Tensor::zeros({n, 1}), 0.0};
+    return {Tensor::zeros({n}), Tensor::zeros({n}), 0.0};
 }
 
 } // namespace cora

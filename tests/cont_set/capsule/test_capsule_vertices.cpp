@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,7 +24,7 @@ namespace {
 /// A point gives one vertex; the outline of a planar capsule is closed and at the radius from the
 /// axis.
 void vertices_property(const std::string &b) {
-    const std::vector<Polygon> point = Capsule(column({1.0, 2.0})).vertices();
+    const std::vector<Polygon> point = Capsule(vec({1.0, 2.0})).vertices();
     check(point.size() == 1 && point[0].size() == 1, b + ": a point");
     Rng rng(73);
     for (int k = 0; k < 3; ++k) {
@@ -41,9 +41,9 @@ void vertices_property(const std::string &b) {
 
 /// A set of another dimension is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0, 3.0}), column({3.0, 4.0, 5.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0, 3.0}), vec({3.0, 4.0, 5.0}), 0.5);
     check(test::raises([&] { C.vertices(); }, Error::not_supported), "vertices: 2D only");
-    const Capsule D(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule D(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     ChecksScope off(false);
     check(D.vertices()[0].size() == 1001, "vertices: works with the checks off");
 }

@@ -12,7 +12,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -26,11 +26,11 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 bool Capsule::is_full_dim_impl(Tol) const {
-    const Tensor zero = r_.zeros_like();
-    const Tensor ball = r_.greater(zero);
+    const Tensor zero = rc().zeros_like(), present = 1.0 - priv_empty_mask(*this);
+    const Tensor ball = rc().greater(zero).multiply(present);
     if (dim() != 1) return priv_all(ball);
     // on the line a segment of positive length is an interval
-    const Tensor segment = r_.greater_equal(zero).multiply(gc().abs().greater(zero));
+    const Tensor segment = present.multiply(gc().abs().greater(zero));
     return priv_all(ball.maximum(segment));
 }
 

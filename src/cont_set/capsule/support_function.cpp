@@ -31,8 +31,8 @@ Tensor Capsule::support_function_impl(const Tensor &d) const {
     const Tensor column = d.expand_dims(-1), dt = column.matrix_transpose();
     // the points of the axis and of the ball add, in the order of CORA, on CORA's columns
     const Tensor val =
-        dt.matmul(cc()).add(dt.matmul(gc()).abs()).add(r_.multiply(priv_norm(column)));
-    return Tensor::where(priv_empty_mask(r_),
+        dt.matmul(cc()).add(dt.matmul(gc()).abs()).add(rc().multiply(priv_norm(column)));
+    return Tensor::where(priv_empty_mask(*this),
                          val.full_like(val.shape(), -std::numeric_limits<double>::infinity()), val)
         .squeeze(-1)
         .squeeze(-1);

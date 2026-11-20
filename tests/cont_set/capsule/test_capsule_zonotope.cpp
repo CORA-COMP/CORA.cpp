@@ -14,7 +14,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,14 +24,14 @@ namespace {
 
 /// Hand-computed: the generators are g and r I; no radius adds none.
 void zonotope_known(const std::string &b) {
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     const Zonotope Z = C.zonotope();
     check(close(Z.center().expand_dims(-1), {1, 2}, 0) &&
               Z.generators().matrix_transpose().shape() == Shape({2, 3}),
           b + ": c and 1 + n generators");
     check(close(Z.generators().matrix_transpose(), {3, 0.5, 0, 4, 0, 0.5}, 0), b + ": g, r I");
     check(C.plus(vec({0.0, 0.0})).zonotope().dim() == 2, b + ": after plus");
-    check((Capsule(column({1.0, 2.0}), column({3.0, 4.0}), 0.0).zonotope())
+    check((Capsule(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.0).zonotope())
                   .generators()
                   .matrix_transpose()
                   .shape() == Shape({2, 1}),
@@ -52,7 +51,7 @@ void zonotope_property(const std::string &b) {
 /// The empty capsule is refused; with the checks off a valid call is the same.
 void checks_and_their_switch() {
     check(test::raises([] { Capsule::empty(2).zonotope(); }, Error::empty_set), "zonotope: empty");
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     ChecksScope off(false);
     check(C.zonotope().generators().matrix_transpose().shape() == Shape({2, 3}),
           "zonotope: works with the checks off");

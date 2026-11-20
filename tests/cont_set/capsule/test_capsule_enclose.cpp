@@ -12,7 +12,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,19 +22,19 @@ namespace {
 
 /// The one-capsule form is the convex hull, also through the set interface.
 void enclose_known(const std::string &b) {
-    const Capsule C1(column({0.0, 0.0}), column({1.0, 0.0}), 0.5);
-    const Capsule C2(column({4.0, 0.0}), column({0.0, 1.0}), 0.25);
+    const Capsule C1(vec({0.0, 0.0}), vec({1.0, 0.0}), 0.5);
+    const Capsule C2(vec({4.0, 0.0}), vec({0.0, 1.0}), 0.25);
     check(C1.enclose(C2).isequal(C1.convex_hull(C2), 0.0), b + ": the hull of the two");
     const Set S = C1;
     check(S->enclose(C2).as<Capsule>().isequal(C1.convex_hull(C2), 0.0), b + ": ContSet::enclose");
-    check(test::raises([&] { S->enclose(Zonotope(column({0.0, 0.0}), Tensor({{1.0, 0.0}}))); },
+    check(test::raises([&] { S->enclose(Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 0.0}}))); },
                        Error::noops),
           b + ": another class has no pair");
 }
 
 /// The form with a matrix is CORA's wrong one, refused with a reason; its input is checked.
 void enclose_matrix_form(const std::string &b) {
-    const Capsule C1(column({0.0, 0.0}), column({1.0, 0.0}), 0.5);
+    const Capsule C1(vec({0.0, 0.0}), vec({1.0, 0.0}), 0.5);
     const Tensor M({{1.0, 0.0}, {0.0, 1.0}});
     check(test::raises([&] { C1.enclose(M, C1); }, Error::not_supported),
           b + ": enclose(M, Cplus) is not supported");
@@ -45,8 +45,8 @@ void enclose_matrix_form(const std::string &b) {
 
 /// Capsules of different dimensions are refused; with the checks off the same call works.
 void checks_and_their_switch() {
-    const Capsule C1(column({0.0, 0.0}), column({1.0, 0.0}), 0.5);
-    check(test::raises([&] { C1.enclose(Capsule(column({1.0}))); }, Error::dimension_mismatch),
+    const Capsule C1(vec({0.0, 0.0}), vec({1.0, 0.0}), 0.5);
+    check(test::raises([&] { C1.enclose(Capsule(vec({1.0}))); }, Error::dimension_mismatch),
           "enclose: the dimensions agree");
     const Capsule on = C1.enclose(C1);
     ChecksScope off(false);

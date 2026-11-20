@@ -208,7 +208,7 @@ class Random {
 
     /// A capsule of n dimensions: a center, a generator and a radius in [0.1, 1].
     cora::Capsule capsule(int64_t n) {
-        const cora::Tensor c = vector(n), g = vector(n);
+        const cora::Tensor c = point(n), g = point(n);
         return {c, g, uniform(0.1, 1.0)};
     }
 

@@ -18,7 +18,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -29,13 +28,13 @@ namespace {
 
 /// Hand-computed: one dimension, a point, a segment and the empty capsule.
 void polytope_known(const std::string &b) {
-    const Capsule line(column({1.0}), column({2.0}), 0.5);
+    const Capsule line(vec({1.0}), vec({2.0}), 0.5);
     const Polytope P1 = line.polytope();
     check(P1.contains(vec({-1.4})) && P1.contains(vec({3.4})) && !P1.contains(vec({3.6})) &&
               !P1.contains(vec({-1.6})),
           b + ": 1D is [-1.5, 3.5]");
-    check(Capsule(column({1.0, 2.0})).polytope().contains(vec({1.0, 2.0})), b + ": a point");
-    const Capsule segment(column({1.0, 1.0}), column({1.0, 1.0}), 0.0);
+    check(Capsule(vec({1.0, 2.0})).polytope().contains(vec({1.0, 2.0})), b + ": a point");
+    const Capsule segment(vec({1.0, 1.0}), vec({1.0, 1.0}), 0.0);
     const Polytope S = segment.polytope();
     check(S.contains(vec({1.0, 1.0})) && S.contains(vec({1.9, 1.9})) &&
               !S.contains(vec({1.0, 1.5})) && !S.contains(vec({2.2, 2.2})),
@@ -48,7 +47,7 @@ void polytope_known(const std::string &b) {
 void polytope_property(const std::string &b) {
     Rng rng(71);
     for (int k = 0; k < 4; ++k) {
-        const Capsule C = k == 3 ? Capsule(column({0.5, 1.0, 2.0}), column({0.0, 0.0, 0.0}), 0.7)
+        const Capsule C = k == 3 ? Capsule(vec({0.5, 1.0, 2.0}), vec({0.0, 0.0, 0.0}), 0.7)
                                  : test::random_capsule(rng, 3);
         check(C.polytope("outer").contains(test::sample_points(C, rng, 20), "exact", 1e-9),
               b + ": the points are inside");
@@ -57,7 +56,7 @@ void polytope_property(const std::string &b) {
 
 /// Exact has no polytope for a proper capsule, inner is not supported, a bad method, a batch.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     check(test::raises([&] { C.polytope(); }, Error::no_exact_alg), "polytope: exact");
     check(test::raises([&] { C.polytope("inner"); }, Error::not_supported), "polytope: inner");
     check(test::raises([&] { C.polytope("middle"); }, Error::wrong_value), "polytope: method");

@@ -18,7 +18,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -28,7 +28,7 @@ namespace {
 
 /// Hand-computed: the ball, the empty capsule; a generator has no exact ellipsoid.
 void ellipsoid_known(const std::string &b) {
-    const Capsule ball(column({1.0, 2.0}), column({0.0, 0.0}), 3.0);
+    const Capsule ball(vec({1.0, 2.0}), vec({0.0, 0.0}), 3.0);
     const Ellipsoid E = ball.ellipsoid();
     check(close(E.Q(), {9, 0, 0, 9}, 0) && close(E.q(), {1, 2}, 0), b + ": r^2 I at c");
     check(close(ball.ellipsoid("outer").Q(), E.Q(), 0), b + ": a ball ignores the method");
@@ -38,12 +38,12 @@ void ellipsoid_known(const std::string &b) {
 
 /// Refusals: a generator is no exact ellipsoid, the unions need an SDP, a bad method, a batch.
 void checks_and_their_switch() {
-    const Capsule C(column({1.0, 2.0}), column({3.0, 4.0}), 0.5);
+    const Capsule C(vec({1.0, 2.0}), vec({3.0, 4.0}), 0.5);
     check(test::raises([&] { C.ellipsoid(); }, Error::no_exact_alg),
           "ellipsoid: exact with a generator");
     check(test::raises([&] { C.ellipsoid("outer"); }, Error::not_supported), "ellipsoid: outer");
     check(test::raises([&] { C.ellipsoid("middle"); }, Error::wrong_value), "ellipsoid: method");
-    const Capsule ball(column({1.0, 2.0}), column({0.0, 0.0}), 3.0);
+    const Capsule ball(vec({1.0, 2.0}), vec({0.0, 0.0}), 3.0);
     ChecksScope off(false);
     check(ball.ellipsoid().dim() == 2, "ellipsoid: works with the checks off");
 }

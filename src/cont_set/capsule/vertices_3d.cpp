@@ -12,7 +12,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       06-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/capsule/private/priv.h"
@@ -29,9 +29,11 @@ namespace cora {
 
 std::vector<std::vector<Point3>> Capsule::vertices_3d_impl() const {
     const std::vector<double> cs = cc().data(), gs = gc().data(), rs = r_.data();
+    const std::vector<uint8_t> empty = empty_.flags(r_.shape());
     const std::vector<Point3> sphere = unit_sphere_points(200);
     std::vector<std::vector<Point3>> out;
     for (std::size_t b = 0; b < rs.size(); ++b) {
+        if (empty[b]) continue;
         std::vector<Point3> points;
         for (const double sign : {1.0, -1.0})
             for (const Point3 &u : sphere)
