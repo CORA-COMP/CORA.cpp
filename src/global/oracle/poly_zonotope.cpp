@@ -5,12 +5,13 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/poly_zonotope.h"
 
 #include "cora/global/error.h"
+#include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/request.h"
 
 #include <algorithm>
@@ -125,6 +126,24 @@ PolyZonotope PolyZonotope::reduce(int order) const {
 
 PolyZonotope PolyZonotope::enclose(const PolyZonotope &Q) const {
     return aux_set("polyZonotope.enclose", {{"P", *this}, {"Q", Q}});
+}
+
+// the center, the exact sum and the Cartesian product
+Tensor PolyZonotope::center_of() const {
+    return ask("polyZonotope.center", {{"P", *this}}).get<Tensor>("c");
+}
+
+PolyZonotope PolyZonotope::exact_plus(const PolyZonotope &Q) const {
+    return aux_set("polyZonotope.exactPlus", {{"P", *this}, {"Q", Q}});
+}
+
+PolyZonotope PolyZonotope::cart_prod(const cora::Zonotope &Z) const {
+    return aux_set("polyZonotope.cartProd", {{"P", *this}, {"Z", Zonotope(Z)}});
+}
+
+bool PolyZonotope::is_intersecting(const cora::Polytope &S, double tol) const {
+    return ask("polyZonotope.isIntersecting", {{"P", *this}, {"S", Polytope(S)}, {"tol", tol}})
+        .get<bool>("value");
 }
 
 // the conversions and the dimension
