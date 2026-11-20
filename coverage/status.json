@@ -537,7 +537,7 @@
   "contSet/polyZonotope/polytope": "todo",
   "contSet/polyZonotope/print": "todo",
   "contSet/polyZonotope/project": "ported",
-  "contSet/polyZonotope/quadMap": "property",
+  "contSet/polyZonotope/quadMap": "oracle",
   "contSet/polyZonotope/randPoint_": "property",
   "contSet/polyZonotope/reduce": "oracle",
   "contSet/polyZonotope/relaxExponents": "todo",

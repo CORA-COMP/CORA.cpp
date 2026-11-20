@@ -141,6 +141,10 @@ PolyZonotope PolyZonotope::cart_prod(const cora::Zonotope &Z) const {
     return aux_set("polyZonotope.cartProd", {{"P", *this}, {"Z", Zonotope(Z)}});
 }
 
+PolyZonotope PolyZonotope::quad_map(const std::vector<Tensor> &Q) const {
+    return aux_set("polyZonotope.quadMap", {{"P", *this}, {"Q", Q}});
+}
+
 bool PolyZonotope::is_intersecting(const cora::Polytope &S, double tol) const {
     return ask("polyZonotope.isIntersecting", {{"P", *this}, {"S", Polytope(S)}, {"tol", tol}})
         .get<bool>("value");

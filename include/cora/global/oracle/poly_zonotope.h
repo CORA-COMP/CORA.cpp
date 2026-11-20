@@ -82,6 +82,10 @@ class PolyZonotope {
     std::pair<PolyZonotope, PolyZonotope> split_dep_factor(int64_t id) const;
     std::pair<PolyZonotope, PolyZonotope> split_longest_gen() const;
 
+    /// CORA's quadMap(P, Q) as CORA.cpp computes it (PolyZonotope.quadMapCora): the products of
+    /// [c G], CORA's three zonotope maps of the independent part, the constructor.
+    PolyZonotope quad_map(const std::vector<Tensor> &Q) const;
+
     /// CORA's reduce(P, 'girard', order) and enclose(P, Q).
     PolyZonotope reduce(int order) const;
     PolyZonotope enclose(const PolyZonotope &Q) const;
