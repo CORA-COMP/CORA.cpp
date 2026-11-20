@@ -80,6 +80,9 @@ void refusals() {
     check(test::raises([] { Zonotope(test::vec({1.0, 0.0}), Tensor({{1.0, 0.0, 0.0}})); },
                        Error::wrong_input_in_constructor),
           "the generator rows must have n entries");
+    check(test::raises([] { Zonotope(test::column({1.0, 0.0}), Tensor({{1.0, 0.0}})); },
+                       Error::wrong_input_in_constructor),
+          "CORA's column (n, 1) is no center (#163)");
     check(test::raises([] { Zonotope::matrix(Tensor({{1.0, 0.0}}), Tensor({{1.0, 0.0}})); },
                        Error::wrong_input_in_constructor),
           "a matrix zonotope needs (h, r, c) generators");

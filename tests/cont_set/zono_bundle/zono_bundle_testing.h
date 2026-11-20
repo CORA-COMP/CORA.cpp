@@ -31,7 +31,7 @@ inline cora::ZonoBundle random_zono_bundle(cora::Rng &rng, int n, int k, int m,
         rng.uniform(b.data(), b.size(), -1.0, 1.0);
         const cora::Tensor Gt = cora::Tensor::from_data(G, {n, m});
         // the center is chosen so that x0 = c + G b with |b| <= 1
-        members.emplace_back(point - Gt.matmul(column(b)), Gt.matrix_transpose());
+        members.emplace_back((point - Gt.matmul(column(b))).squeeze(-1), Gt.matrix_transpose());
     }
     if (common) *common = point.squeeze(-1);
     return cora::ZonoBundle(std::move(members));
@@ -41,8 +41,8 @@ inline cora::ZonoBundle random_zono_bundle(cora::Rng &rng, int n, int k, int m,
 /// both contain the origin, and their boxes meet in [-1, 2] x [-1, 1].
 inline cora::ZonoBundle two_zonotopes() {
     return cora::ZonoBundle(
-        {cora::Zonotope(column({0.0, 0.0}), cora::Tensor({{2.0, 0.0}, {0.0, 1.0}})),
-         cora::Zonotope(column({1.0, 0.0}), cora::Tensor({{1.0, 0.0}, {1.0, 1.0}}))});
+        {cora::Zonotope(vec({0.0, 0.0}), cora::Tensor({{2.0, 0.0}, {0.0, 1.0}})),
+         cora::Zonotope(vec({1.0, 0.0}), cora::Tensor({{1.0, 0.0}, {1.0, 1.0}}))});
 }
 
 /// Whether the points p (..., n) lie in every member of the bundle.

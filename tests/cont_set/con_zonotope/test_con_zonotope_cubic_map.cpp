@@ -13,7 +13,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -43,7 +42,7 @@ Tensor aux_image(const std::vector<std::vector<Tensor>> &T, const Tensor &x) {
 /// constraints on the first columns, the linear monomials.
 void cubic_map_known(const std::string &b) {
     const auto T = aux_map();
-    const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope plain(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope R = plain.cubic_map(T);
     const Zonotope expected = Zonotope(plain.c(), plain.generators()).cubic_map(T);
     check(close(R.c().expand_dims(-1), expected.center().expand_dims(-1), 0) &&
@@ -51,7 +50,7 @@ void cubic_map_known(const std::string &b) {
           b + ": without constraints: the zonotope's map");
     check(R.A().shape() == Shape{0, expected.nr_generators()}, b + ": and no constraints");
     // with a constraint: the same generators, the constraint on the linear monomials
-    const ConZonotope constrained(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope constrained(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                                   Tensor({{1.0, 1.0}}), vec({0.5}));
     const ConZonotope C = constrained.cubic_map(T);
     check(close(C.generators().matrix_transpose(), expected.generators().matrix_transpose(), 0),
@@ -105,14 +104,13 @@ void cubic_map_property(const std::string &b) {
 /// A map of the wrong size and other dimensions are refused; with the checks off the result is the
 /// same.
 void checks_and_their_switch() {
-    const ConZonotope A(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope A(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { A.cubic_map({{Tensor({{1.0}})}}); }, Error::wrong_value),
           "cubic_map: the matrices are (n, n)");
     check(test::raises([&] { A.cubic_map(aux_map(), {{5}}); }, Error::wrong_value),
           "cubic_map: an index out of range");
-    check(test::raises(
-              [&] { A.cubic_map(ConZonotope(column({1.0}), Tensor({{1.0}})), A, aux_map()); },
-              Error::dimension_mismatch),
+    check(test::raises([&] { A.cubic_map(ConZonotope(vec({1.0}), Tensor({{1.0}})), A, aux_map()); },
+                       Error::dimension_mismatch),
           "cubic_map: the sets differ in dimension");
     const Tensor on = A.cubic_map(aux_map()).generators().matrix_transpose();
     ChecksScope off(false);

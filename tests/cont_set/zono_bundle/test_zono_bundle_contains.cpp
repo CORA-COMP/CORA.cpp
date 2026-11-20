@@ -13,7 +13,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,7 +24,7 @@ namespace {
 /// The squares [-1, 1]^2 and [0, 2]^2 meet in [0, 1]^2.
 ZonoBundle squares() {
     const Tensor I2({{1.0, 0.0}, {0.0, 1.0}});
-    return ZonoBundle({Zonotope(column({0.0, 0.0}), I2), Zonotope(column({1.0, 1.0}), I2)});
+    return ZonoBundle({Zonotope(vec({0.0, 0.0}), I2), Zonotope(vec({1.0, 1.0}), I2)});
 }
 
 /// Points: inside, in one member only and outside, by both exact methods ("approx" is "exact").
@@ -48,8 +47,8 @@ void points(const std::string &b) {
 /// holds it.
 void sets(const std::string &b) {
     const ZonoBundle bundle = squares();
-    const Zonotope small(column({0.5, 0.5}), Tensor({{0.25, 0.0}, {0.0, 0.25}})),
-        shifted(column({0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    const Zonotope small(vec({0.5, 0.5}), Tensor({{0.25, 0.0}, {0.0, 0.25}})),
+        shifted(vec({0.0, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
     check(bundle.contains(small), b + ": a small zonotope");
     check(!bundle.contains(shifted), b + ": a zonotope that leaves the second member");
     check(bundle.contains(Interval(vec({0.25, 0.25}), vec({0.75, 0.75}))), b + ": a box inside");
@@ -90,7 +89,7 @@ void sampled_points(const std::string &b) {
 /// with the checks off.
 void checks_and_their_switch() {
     const ZonoBundle bundle = squares();
-    const Zonotope Z(column({0.5, 0.5}), Tensor({{0.25, 0.0}}));
+    const Zonotope Z(vec({0.5, 0.5}), Tensor({{0.25, 0.0}}));
     check(test::raises([&] { bundle.contains(Z, "approx"); }, Error::not_supported),
           "contains: approx for a set");
     check(

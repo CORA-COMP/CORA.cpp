@@ -13,7 +13,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -24,7 +23,7 @@ namespace {
 
 /// Hand-computed: the selected rows in the given order, repeats allowed, constraints unchanged.
 void project_known(const std::string &b) {
-    const ConZonotope a(column({1.0, 2.0, 3.0}), Tensor({{1.0, 0.0, 2.0}, {0.0, 1.0, 2.0}}),
+    const ConZonotope a(vec({1.0, 2.0, 3.0}), Tensor({{1.0, 0.0, 2.0}, {0.0, 1.0, 2.0}}),
                         Tensor({{1.0, 1.0}}), vec({0.5}));
     const Set s = a.project({2, 0});
     const ConZonotope &r = s.as<ConZonotope>();
@@ -58,7 +57,7 @@ int main() {
         project_known(b);
         project_property(b);
     });
-    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const ConZonotope a(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(test::raises([&] { a.project({2}); }, Error::wrong_value),
           "project: a dimension too big");
     ChecksScope off(false);

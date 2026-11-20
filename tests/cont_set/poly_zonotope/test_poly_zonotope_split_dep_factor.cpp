@@ -19,7 +19,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -44,8 +44,7 @@ std::vector<double> aux_point(const PolyZonotope &P, const std::vector<double> &
 /// c = 1, 2 a + 3 a^2: the halves are 2.75 + 2.5 b + 0.75 b^2 and 0.75 - 0.5 b + 0.75 b^2, the
 /// merged b^2 first (CORA's order of the hash).
 PolyZonotope aux_known() {
-    return {
-        column({1.0}), Tensor::from_data({2, 3}, {2, 1}), Tensor::zeros({0, 1}), {{1}, {2}}, {1}};
+    return {vec({1.0}), Tensor::from_data({2, 3}, {2, 1}), Tensor::zeros({0, 1}), {{1}, {2}}, {1}};
 }
 
 /// Stated property: the halves are the set on [0, 1] and [-1, 0] of the factor.

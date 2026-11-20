@@ -16,7 +16,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -41,17 +40,17 @@ void sets(const std::string &b) {
     check(sq.is_intersecting(Interval(vec({0.5, 0.5}), vec({2.0, 2.0}))) &&
               !sq.is_intersecting(Interval(vec({2.0, 2.0}), vec({3.0, 3.0}))),
           b + ": a box");
-    check(sq.is_intersecting(Zonotope(column({1.0, 1.0}), Tensor::eye(2) * 0.6)) &&
-              !sq.is_intersecting(Zonotope(column({3.0, 3.0}), Tensor::eye(2) * 0.6)),
+    check(sq.is_intersecting(Zonotope(vec({1.0, 1.0}), Tensor::eye(2) * 0.6)) &&
+              !sq.is_intersecting(Zonotope(vec({3.0, 3.0}), Tensor::eye(2) * 0.6)),
           b + ": a zonotope");
-    check(sq.is_intersecting(ConZonotope(column({1.0, 1.0}), Tensor::eye(2) * 0.6)) &&
-              !sq.is_intersecting(ConZonotope(column({3.0, 3.0}), Tensor::eye(2) * 0.6)),
+    check(sq.is_intersecting(ConZonotope(vec({1.0, 1.0}), Tensor::eye(2) * 0.6)) &&
+              !sq.is_intersecting(ConZonotope(vec({3.0, 3.0}), Tensor::eye(2) * 0.6)),
           b + ": a constrained zonotope");
     // a bundle meets if all its zonotopes meet at one point
-    const ZonoBundle meets({Zonotope(column({1.0, 1.0}), Tensor::eye(2) * 0.6),
-                            Zonotope(column({0.8, 1.0}), Tensor::eye(2))});
-    const ZonoBundle misses({Zonotope(column({3.0, 3.0}), Tensor::eye(2) * 0.6),
-                             Zonotope(column({3.2, 3.0}), Tensor::eye(2))});
+    const ZonoBundle meets({Zonotope(vec({1.0, 1.0}), Tensor::eye(2) * 0.6),
+                            Zonotope(vec({0.8, 1.0}), Tensor::eye(2))});
+    const ZonoBundle misses({Zonotope(vec({3.0, 3.0}), Tensor::eye(2) * 0.6),
+                             Zonotope(vec({3.2, 3.0}), Tensor::eye(2))});
     check(sq.is_intersecting(meets) && !sq.is_intersecting(misses), b + ": a bundle");
     // points: all must be inside
     check(sq.is_intersecting(Tensor({{0.5, 0.5}, {0.2, 0.9}})) &&
@@ -62,13 +61,13 @@ void sets(const std::string &b) {
 /// Approximations, halfspaces, R^n, empty sets and one dimension.
 void special(const std::string &b) {
     const Polytope sq = test::square_h();
-    const Zonotope Z(column({1.0, 1.0}), Tensor::eye(2) * 0.6),
-        Zfar(column({3.0, 3.0}), Tensor::eye(2) * 0.6);
+    const Zonotope Z(vec({1.0, 1.0}), Tensor::eye(2) * 0.6),
+        Zfar(vec({3.0, 3.0}), Tensor::eye(2) * 0.6);
     check(sq.is_intersecting(Z, "approx") && !sq.is_intersecting(Zfar, "approx"), b + ": approx");
     // a halfspace x <= 1 is met by a set that reaches into it
     const Polytope halfspace(Tensor({{1.0, 0.0}}), vec({1.0}));
     check(halfspace.is_intersecting(Z) &&
-              !halfspace.is_intersecting(Zonotope(column({3.0, 0.0}), Tensor::eye(2) * 0.5)) &&
+              !halfspace.is_intersecting(Zonotope(vec({3.0, 0.0}), Tensor::eye(2) * 0.5)) &&
               halfspace.is_intersecting(halfspace) && halfspace.is_intersecting(sq),
           b + ": a halfspace");
     check(Polytope(Tensor({{1.0, 0.0}}), vec({1.0}))
@@ -88,8 +87,8 @@ void special(const std::string &b) {
 /// in both orders of the operands, and agrees with the members (exact by a linear program).
 void table(const std::string &b) {
     const Polytope sq = test::square_h();
-    const Zonotope Z(column({1.0, 1.0}), Tensor::eye(2) * 0.6),
-        Zfar(column({3.0, 3.0}), Tensor::eye(2) * 0.6);
+    const Zonotope Z(vec({1.0, 1.0}), Tensor::eye(2) * 0.6),
+        Zfar(vec({3.0, 3.0}), Tensor::eye(2) * 0.6);
     check(is_intersecting(sq, Z) && is_intersecting(Z, sq) && !is_intersecting(sq, Zfar) &&
               !is_intersecting(Zfar, sq),
           b + ": a zonotope");
@@ -132,7 +131,7 @@ int main() {
           "is_intersecting: dimensions");
     check(test::raises(
               [] {
-                  test::square_h().is_intersecting(Zonotope(column({0.0, 0.0}), Tensor::eye(2)),
+                  test::square_h().is_intersecting(Zonotope(vec({0.0, 0.0}), Tensor::eye(2)),
                                                    "inner");
               },
               Error::wrong_value),

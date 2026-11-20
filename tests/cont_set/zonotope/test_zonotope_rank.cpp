@@ -16,7 +16,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,12 +27,12 @@ namespace {
 /// CORA's unit test (a dependent and a zero column: rank 2), the identity, no generator, and the
 /// tolerance: a singular value of 1e-9 counts for tol 1e-12 and not for tol 1e-8.
 void rank_known(const std::string &b) {
-    const Zonotope Z(column({1.0, 5.0, -1.0}),
+    const Zonotope Z(vec({1.0, 5.0, -1.0}),
                      Tensor({{2.0, 6.0, 4.0}, {0.0, 0.0, 0.0}, {4.0, 0.0, 8.0}}));
     check(Z.rank() == 2, b + ": CORA's example has rank 2");
-    check(Zonotope(column({0.0, 0.0, 0.0}), Tensor::eye(3)).rank() == 3, b + ": the identity");
+    check(Zonotope(vec({0.0, 0.0, 0.0}), Tensor::eye(3)).rank() == 3, b + ": the identity");
     check(Zonotope::origin(2).rank() == 0, b + ": no generators");
-    const Zonotope thin(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1e-9}}));
+    const Zonotope thin(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1e-9}}));
     check(thin.rank(1e-12) == 2 && thin.rank(1e-8) == 1, b + ": the tolerance");
     check(thin.rank(0.0) == 2, b + ": tol 0 counts every nonzero singular value");
 }
@@ -54,7 +54,7 @@ void rank_of_products(const std::string &b) {
 
 /// A batch and a negative tolerance are refused; with the checks off the rank is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { Zonotope::stack({Z, Z}).rank(); }, Error::not_supported),
           "rank: a batch");
     check(test::raises([&] { Z.rank(-1.0); }, Error::wrong_value), "rank: a negative tol");

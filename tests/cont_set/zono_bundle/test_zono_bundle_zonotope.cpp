@@ -12,7 +12,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -21,8 +21,8 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const Zonotope big(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
-        const Zonotope small(column({0.5, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.25}}));
+        const Zonotope big(vec({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
+        const Zonotope small(vec({0.5, 0.0}), Tensor({{0.5, 0.0}, {0.0, 0.25}}));
         check(close((ZonoBundle({big, small}).zonotope()).generators(), small.generators(), 0),
               b + ": the member of volume 0.125 (before 2)");
         check(close((ZonoBundle({small, big}).zonotope()).center(), small.center(), 0),
@@ -33,7 +33,7 @@ int main() {
                   Shape{2, 0},
               b + ": a point is its own member");
     });
-    const Zonotope Z(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(vec({0.0}), Tensor({{1.0}}));
     // wrong input is refused; the same call works with the checks off
     check(test::raises([&] { ZonoBundle({Zonotope::stack({Z, Z})}).zonotope(); },
                        Error::not_supported),

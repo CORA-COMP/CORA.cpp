@@ -20,7 +20,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -32,7 +31,7 @@ namespace {
 /// The square [-1, 1]^2 projects onto x + y = 2 as the segment from (0, 2) to (2, 0); the normal
 /// is normalized, so (3, 3) and d = 6 describe the same line; the box hull contains the segment.
 void the_projection_of_a_square(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const ContSet &S = Z;
     for (const double scale : {1.0, 3.0}) {
         const Set R =

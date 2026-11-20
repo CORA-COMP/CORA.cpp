@@ -14,7 +14,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,7 +24,7 @@ namespace {
 
 /// The box [-1,1]^2 against x1 + x2 < d: true above 2, false at and below it.
 void strict_inequality_on_a_box(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const Tensor C({{1.0, 1.0}});
     check(Z.constraints_satisfied(C, vec({3.0})), b + ": x1 + x2 < 3");
     check(!Z.constraints_satisfied(C, vec({2.0})), b + ": x1 + x2 < 2 is not certain (equality)");
@@ -59,7 +58,7 @@ void true_is_sound(const std::string &b) {
 
 /// Wrong shapes are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { Z.constraints_satisfied(Tensor({{1.0, 1.0, 1.0}}), vec({1.0})); },
                        Error::dimension_mismatch),
           "constraints_satisfied: C with 3 columns");

@@ -42,7 +42,7 @@ std::string read(const std::string &path) {
     return text.str();
 }
 
-Zonotope shifted(double x) { return Zonotope(test::column({x, 0}), Tensor({{1, 0}, {0, 1}})); }
+Zonotope shifted(double x) { return Zonotope(test::vec({x, 0}), Tensor({{1, 0}, {0, 1}})); }
 
 // A figure with every kind of layer: a set, a specification, lines and points.
 Figure every_layer() {
@@ -175,8 +175,8 @@ void size_and_labels_and_sharing() {
 void a_three_dimensional_figure() {
     use_cora_colors("CORA:default");
     Figure fig;
-    plot(fig, Zonotope(test::column({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}, {0, 0, 1}})),
-         {0, 1, 2}, {.label = "cube"});
+    plot(fig, Zonotope(test::vec({0, 0, 0}), Tensor({{1, 0, 0}, {0, 1, 0}, {0, 0, 1}})), {0, 1, 2},
+         {.label = "cube"});
     fig.azimuth = -60;
     fig.elevation = 20;
     const std::string text = fig.tikz();

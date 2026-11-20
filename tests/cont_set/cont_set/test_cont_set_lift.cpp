@@ -20,7 +20,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -44,7 +43,7 @@ void lift_by_class(const std::string &b) {
     check(D.is<Interval>() && D.as<Interval>().inf().data() == std::vector<double>{0.0, 2.0, -kInf},
           b + ": the default positions 0..n-1");
 
-    const Zonotope Z(column({1.0, 2.0, 3.0}),
+    const Zonotope Z(vec({1.0, 2.0, 3.0}),
                      Tensor::from_data({1.0, 0.0, 0.0, 0.0, 2.0, 0.0}, {2, 3}));
     const Set P = static_cast<const ContSet &>(Z).lift(3, std::vector<int64_t>{1, 2, 0});
     check(P.is<Zonotope>() &&
@@ -82,7 +81,7 @@ void errors_and_their_switch() {
     check(test::raises([&] { S.lift(3, std::vector<int64_t>{-1, 0}); }, Error::wrong_value),
           "a negative position");
     check(test::raises([] { test::UnregisteredSet().lift(3); }, Error::noops), "noops");
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1.0, 0.0}, {1, 2}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::from_data({1.0, 0.0}, {1, 2}));
     check(test::raises([&] { static_cast<const ContSet &>(Z).lift(3); }, Error::not_defined),
           "a zonotope cannot have unbounded dimensions");
     check(test::raises([&] { static_cast<const ContSet &>(Z).lift(2, std::vector<int64_t>{1, 1}); },

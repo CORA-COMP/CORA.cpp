@@ -64,7 +64,7 @@ ConZonotope aux_raghuraman(const ConZonotope &cz1, const ConZonotope &cz2) {
         {zeros_block(G1, p2, m1), cz2.A(), priv_b_column(cz2) * 0.5, zeros_block(G1, p2, s)}, -1);
     const Tensor row3 = Tensor::concat({A31, A32, A30, identity_block(G1, s)}, -1);
     return {
-        c, G.matrix_transpose(), Tensor::concat({row1, row2, row3}, -2),
+        c.squeeze(-1), G.matrix_transpose(), Tensor::concat({row1, row2, row3}, -2),
         Tensor::concat(
             {priv_b_column(cz1) * 0.5, priv_b_column(cz2) * 0.5, full_block(G1, s, 1, -0.5)}, -2)
             .squeeze(-1)};
@@ -115,7 +115,8 @@ ConZonotope aux_kochdumper(const ConZonotope &cz1, const ConZonotope &cz2) {
         Tensor::concat({b1 * 0.5, b2 * 0.5, full_block(G1, 2 * (m1 + m2), 1, 3.0)}, -2);
     // the rows that are zero are dropped
     const std::vector<int64_t> rows = priv_nonzero_rows(A, b);
-    return {(c1 + c2) * 0.5, G.matrix_transpose(), A.take(rows, -2), b.take(rows, -2).squeeze(-1)};
+    return {((c1 + c2) * 0.5).squeeze(-1), G.matrix_transpose(), A.take(rows, -2),
+            b.take(rows, -2).squeeze(-1)};
 }
 
 // Hull of many sets -------------------------------------------------------------------------------
@@ -146,7 +147,8 @@ ConZonotope aux_many(const std::vector<ConZonotope> &sets) {
                                     -1));
         c = c + S.c().expand_dims(-1) * 0.5;
     }
-    return {c, Tensor::concat(Gs, -1).matrix_transpose(), Tensor::concat({A, weights}, -2),
+    return {c.squeeze(-1), Tensor::concat(Gs, -1).matrix_transpose(),
+            Tensor::concat({A, weights}, -2),
             Tensor::concat({b, full_block(like, 1, 1, 1.0 - 0.5 * double(N))}, -2).squeeze(-1)};
 }
 

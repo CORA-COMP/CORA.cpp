@@ -15,7 +15,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,15 +25,15 @@ namespace {
 
 /// Hand-computed: full rank, rank deficient, the tolerance, no generators.
 void full_dim_known(const std::string &b) {
-    const Zonotope full(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 1.0}, {2.0, 2.0}}));
+    const Zonotope full(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope flat(vec({0.0, 0.0}), Tensor({{1.0, 1.0}, {2.0, 2.0}}));
     check(full.is_full_dim(), b + ": the unit square is full-dimensional");
     check(!flat.is_full_dim(), b + ": parallel generators span a line");
-    const Zonotope thin(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1e-7}}));
+    const Zonotope thin(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1e-7}}));
     check(!thin.is_full_dim(1e-6), b + ": a singular value 1e-7 is zero at CORA's tol 1e-6");
     check(thin.is_full_dim(), b + ": and nonzero at the repository tolerance");
     check(thin.is_full_dim(1e-8), b + ": and nonzero at tol 1e-8");
-    check(!Zonotope(column({1.0}), Tensor::zeros({0, 1})).is_full_dim(), b + ": a point is not");
+    check(!Zonotope(vec({1.0}), Tensor::zeros({0, 1})).is_full_dim(), b + ": a point is not");
 
     const auto [res, basis] = flat.is_full_dim_subspace();
     check(!res, b + ": subspace: not full");
@@ -43,7 +43,7 @@ void full_dim_known(const std::string &b) {
     const auto [res2, identity] = full.is_full_dim_subspace();
     check(res2 && close(identity, std::vector<double>{1, 0, 0, 1}, 0), b + ": full: the identity");
     // a point has an empty basis
-    check(Zonotope(column({1.0}), Tensor::zeros({0, 1})).is_full_dim_subspace().second.shape() ==
+    check(Zonotope(vec({1.0}), Tensor::zeros({0, 1})).is_full_dim_subspace().second.shape() ==
               std::vector<int64_t>({1, 0}),
           b + ": a point has an empty basis");
 }
@@ -67,7 +67,7 @@ void full_dim_property(const std::string &b) {
 
 /// A batch and a negative tol are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope full(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope full(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(test::raises([&] { Zonotope::stack({full, full}).is_full_dim(); }, Error::not_supported),
           "is_full_dim: a batch");
     check(test::raises([&] { full.is_full_dim(-1.0); }, Error::wrong_value),

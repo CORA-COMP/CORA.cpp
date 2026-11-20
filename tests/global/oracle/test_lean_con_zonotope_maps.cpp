@@ -71,7 +71,7 @@ int main() {
         const ConZonotope a = rnd.con_zonotope(3, 5, 2);
         // the offset of the first row is out of the box: no factor vector
         const Tensor b = a.b() + Tensor::like(a.b(), {5.0, 0.0}, {2});
-        const ConZonotope none(a.c().expand_dims(-1), a.generators(), a.A(), b);
+        const ConZonotope none(a.c(), a.generators(), a.A(), b);
         oracle::check(a.representsa("emptySet"), lean::ConZonotope(a).representsa_empty());
         oracle::check(none.representsa("emptySet"), lean::ConZonotope(none).representsa_empty());
     });

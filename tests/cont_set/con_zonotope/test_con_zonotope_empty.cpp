@@ -12,7 +12,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -40,7 +39,7 @@ void empty_set_data() {
 /// The empty set stays empty through the operations that CORA's own empty mishandles.
 void empty_stays_empty() {
     const ConZonotope E = ConZonotope::empty(1);
-    const ConZonotope box(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope box(vec({0.0}), Tensor({{1.0}}));
     check(E.intersect(box).interval().is_empty(), "empty: its intersection with a box is empty");
     check(E.cart_prod(box).interval().is_empty(), "empty: its product with a box is empty");
     check(E.convex_hull(box).interval().is_empty() == false, "empty: the hull with a box is not");

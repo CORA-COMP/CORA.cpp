@@ -31,18 +31,18 @@ Polytope aux_guard(test::oracle::Random &rnd, const Tensor &x0, int64_t n, bool 
     std::vector<double> b(2);
     for (std::size_t i = 0; i < 2; ++i) {
         const Tensor row = A.slice(-2, int64_t(i), int64_t(i) + 1);
-        b[i] = row.matmul(x0).item() + rnd.uniform(0.0, 0.3);
+        b[i] = row.matmul(x0.expand_dims(-1)).item() + rnd.uniform(0.0, 0.3);
     }
     if (!hyperplane) return {A, Tensor::from_data(b, {2})};
     const Tensor Ae = A.slice(-2, 0, 1);
-    return {A, Tensor::from_data(b, {2}), Ae, Ae.matmul(x0).squeeze(-1)};
+    return {A, Tensor::from_data(b, {2}), Ae, Ae.matmul(x0.expand_dims(-1)).squeeze(-1)};
 }
 
 /// Sets of n dimensions with centers near x0 and generators wide enough to cross the guard.
 void aux_sets(test::oracle::Random &rnd, const Tensor &x0, int64_t n, std::vector<Zonotope> &sets,
               std::vector<Set> &reach) {
     for (int k = 0; k < 4; ++k) {
-        sets.emplace_back(x0 + 0.1 * rnd.vector(n), rnd.matrix(n, n + 2).matrix_transpose());
+        sets.emplace_back(x0 + 0.1 * rnd.point(n), rnd.matrix(n, n + 2).matrix_transpose());
         reach.emplace_back(sets.back());
     }
 }
@@ -69,7 +69,7 @@ int main() {
     test::oracle::run("location.guardIntersect_nondetGuard", [](test::oracle::Random &rnd) {
         // random sets cut by a hyperplane with a halfspace, in two bases
         const int64_t n = 3;
-        const Tensor x0 = rnd.vector(n);
+        const Tensor x0 = rnd.point(n);
         std::vector<Zonotope> sets;
         std::vector<Set> reach;
         aux_sets(rnd, x0, n, sets, reach);
@@ -83,7 +83,7 @@ int main() {
     test::oracle::run("location.guardIntersect_conZonotope", [](test::oracle::Random &rnd) {
         // the same sets, each cut and boxed on its own
         const int64_t n = 3;
-        const Tensor x0 = rnd.vector(n);
+        const Tensor x0 = rnd.point(n);
         std::vector<Zonotope> sets;
         std::vector<Set> reach;
         aux_sets(rnd, x0, n, sets, reach);

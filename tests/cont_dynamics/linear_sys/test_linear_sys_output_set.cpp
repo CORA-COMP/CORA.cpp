@@ -31,9 +31,9 @@ struct Setup {
         : A(Tensor::from_data(matlab_reference::standard_inputs().A, {3, 3})),
           B(Tensor::from_data(matlab_reference::standard_inputs().B, {3, 2})),
           C(Tensor::from_data(matlab_reference::standard_inputs().C, {2, 3})),
-          X0(Tensor::from_data(matlab_reference::standard_inputs().c0, {3, 1}),
+          X0(Tensor::from_data(matlab_reference::standard_inputs().c0, {3}),
              Tensor::from_data(matlab_reference::standard_inputs().G0, {3, 3}).matrix_transpose()),
-          U(Tensor::from_data(matlab_reference::standard_inputs().c_u, {2, 1}),
+          U(Tensor::from_data(matlab_reference::standard_inputs().c_u, {2}),
             Tensor::from_data(matlab_reference::standard_inputs().GU, {2, 3}).matrix_transpose()) {}
 };
 

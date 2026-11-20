@@ -12,7 +12,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -23,8 +22,8 @@ namespace {
 
 /// A number scales the generators, a column scales the rows; the centers stay.
 void scaling(const std::string &b) {
-    const Zonotope Z1(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-        Z2(column({0.0, 1.0}), Tensor({{1.0, 2.0}}));
+    const Zonotope Z1(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
+        Z2(vec({0.0, 1.0}), Tensor({{1.0, 2.0}}));
     const ZonoBundle bundle({Z1, Z2});
     const ZonoBundle twice = Set(bundle)->enlarge(2.0).as<ZonoBundle>();
     check(close((twice.zonotopes()[0]).generators().matrix_transpose(), {2.0, 0.0, 0.0, 2.0}, 0) &&
@@ -51,7 +50,7 @@ void members_about_their_centers(const std::string &b) {
 
 /// A factor of the wrong size is refused; the same call with the checks off.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({Z, Z});
     check(test::raises([&] { Set(bundle)->enlarge(vec({1.0, 2.0, 3.0})); },
                        Error::dimension_mismatch),

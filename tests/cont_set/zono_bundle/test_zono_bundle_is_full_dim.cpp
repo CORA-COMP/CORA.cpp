@@ -12,7 +12,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,7 +22,7 @@ namespace {
 
 /// The unit square with center (c1, c2).
 Zonotope square(double c1, double c2) {
-    return Zonotope(column({c1, c2}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
+    return Zonotope(vec({c1, c2}), Tensor({{0.5, 0.0}, {0.0, 0.5}}));
 }
 
 /// Overlapping squares have an interior; squares that touch share a segment, disjoint ones
@@ -31,7 +31,7 @@ void known_bundles(const std::string &b) {
     check(ZonoBundle({square(0.0, 0.0), square(0.25, 0.25)}).is_full_dim(), b + ": overlapping");
     check(!ZonoBundle({square(0.0, 0.0), square(1.0, 0.0)}).is_full_dim(), b + ": touching");
     check(!ZonoBundle({square(0.0, 0.0), square(3.0, 0.0)}).is_full_dim(), b + ": disjoint");
-    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope flat(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(!ZonoBundle({square(0.0, 0.0), flat}).is_full_dim(), b + ": a flat member");
     check(ZonoBundle({square(0.0, 0.0)}).is_full_dim(), b + ": one full-dimensional member");
     check(Set(ZonoBundle({square(0.0, 0.0), square(0.25, 0.0)}))->is_full_dim(),

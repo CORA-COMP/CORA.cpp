@@ -23,6 +23,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -51,7 +52,7 @@ Location particle(bool with_guard, int64_t target = 0) {
 }
 
 Zonotope box_at(double x, double y) {
-    return Zonotope(column({x, y}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
+    return Zonotope(vec({x, y}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
 }
 
 /// The invariant stops the reach when the sets are out of the disc.
@@ -88,7 +89,7 @@ void the_circle_is_hit_by_the_crossing_sets(const std::string &b) {
 void the_flow_decides(const std::string &b) {
     const Location loc = particle(true);
     const LevelSet guard(circle(), 2, CompOp::eq);
-    const Zonotope U(column({0.0}), Tensor({{0.1}}));
+    const Zonotope U(vec({0.0}), Tensor({{0.1}}));
     // the first set, inside the disc, orients the guard; (1, 0) flows out, (-1, 0) flows in
     const std::vector<Set> sets{box_at(0.5, 0.0), box_at(1.0, 0.0), box_at(-1.0, 0.0)};
     const std::vector<Set> kept = priv_check_flow(loc, guard, sets, U);
@@ -104,7 +105,7 @@ void the_flow_decides(const std::string &b) {
 /// the projected set decides. The flow (1 + u, 0) with |u| <= 0.1 crosses x = 1 only rightward.
 void the_flow_bound_on_a_hyperplane(const std::string &b) {
     const Location loc = particle(false);
-    const Zonotope U(column({0.0}), Tensor({{0.1}}));
+    const Zonotope U(vec({0.0}), Tensor({{0.1}}));
     const std::vector<Set> sets{box_at(0.95, 0.0)};
     check(priv_check_flow_outward(loc, column({1.0, 0.0}), 1.0, sets, U, false).size() == 1,
           b + ": the set moving out through x = 1 is kept");

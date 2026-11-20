@@ -16,7 +16,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -27,8 +26,8 @@ namespace {
 
 /// Centers stack, generators sit on the block diagonal; a point and a box are zonotopes first.
 void cart_prod_of_known_sets(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 3.0}, {2.0, 4.0}}));
-    const Zonotope Z2(column({5.0}), Tensor({{6.0}, {7.0}, {8.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 3.0}, {2.0, 4.0}}));
+    const Zonotope Z2(vec({5.0}), Tensor({{6.0}, {7.0}, {8.0}}));
     const Zonotope P = Z.cart_prod(Z2);
     check(close(P.center(), std::vector<double>{1, 2, 5}, 0), b + ": centers stack");
     check(
@@ -83,7 +82,7 @@ void support_function_adds(const std::string &b) {
 
 /// Wrong operands are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 3.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 3.0}}));
     check(test::raises([&] { Z.cart_prod(Tensor({{1.0, 2.0}})); }, Error::dimension_mismatch),
           "cart_prod: a point must be a column");
     check(test::raises([&] { Z.cart_prod(Zonotope::stack({Z, Z})); }, Error::dimension_mismatch),

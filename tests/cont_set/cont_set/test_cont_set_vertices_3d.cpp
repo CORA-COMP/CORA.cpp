@@ -34,8 +34,7 @@ void only_three_dimensions() {
 /// Through the abstract class, a zonotope gives its corners too, and the projection of a
 /// four-dimensional set onto three dimensions is what the plot uses.
 void through_a_projection() {
-    const Zonotope Z(test::column({0, 0, 0, 0}),
-                     Tensor({{1, 0, 0, 1}, {0, 1, 0, 1}, {0, 0, 1, 1}}));
+    const Zonotope Z(test::vec({0, 0, 0, 0}), Tensor({{1, 0, 0, 1}, {0, 1, 0, 1}, {0, 0, 1, 1}}));
     const Set P = Z.project({0, 1, 2});
     check(P->vertices_3d()[0].size() == 8, "a projected cube has eight corners");
 }

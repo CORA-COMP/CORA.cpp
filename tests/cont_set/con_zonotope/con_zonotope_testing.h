@@ -41,14 +41,14 @@ inline cora::ConZonotope random_con_zonotope(cora::Rng &rng, int n, int m, int p
     const auto tensor = [](const std::vector<double> &v, int64_t r, int64_t k) {
         return cora::Tensor::from_data(v, {r, k});
     };
-    return {tensor(c, n, 1), tensor(G, n, m).matrix_transpose(), tensor(A, p, m),
+    return {tensor(c, n, 1).squeeze(-1), tensor(G, n, m).matrix_transpose(), tensor(A, p, m),
             cora::Tensor::from_data(b, {p})};
 }
 
 /// The hexagon {(a, b) | |a| <= 1, |b| <= 1, |a + b| <= 1} as x = G xi with xi_1 + xi_2 + xi_3 = 0
 /// (a = -xi_2, b = -xi_1): the vertices are (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1).
 inline cora::ConZonotope hexagon() {
-    return {cora::Tensor::from_data({0.0, 0.0}, {2, 1}),
+    return {cora::Tensor::from_data({0.0, 0.0}, {2}),
             cora::Tensor::from_data({1.0, 0.0, 0.0, 1.0, 1.0, 1.0}, {3, 2}),
             cora::Tensor::from_data({1.0, 1.0, 1.0}, {1, 3}), cora::Tensor::from_data({0.0}, {1})};
 }

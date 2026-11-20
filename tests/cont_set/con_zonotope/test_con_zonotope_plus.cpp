@@ -13,7 +13,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,9 +24,9 @@ namespace {
 /// Hand-computed: centers add, generators join, constraints on the block diagonal; a point moves
 /// the center; a zonotope and a box are sets without constraints.
 void plus_known(const std::string &b) {
-    const ConZonotope a(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope a(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         vec({0.5}));
-    const ConZonotope s(column({10.0, 20.0}), Tensor({{2.0, 3.0}}), Tensor({{4.0}}), vec({1.0}));
+    const ConZonotope s(vec({10.0, 20.0}), Tensor({{2.0, 3.0}}), Tensor({{4.0}}), vec({1.0}));
     const ConZonotope r = a.plus(s);
     check(close(r.c().expand_dims(-1), {11, 22}, 0), b + ": the centers add");
     check(close(r.generators().matrix_transpose(), {1, 0, 2, 0, 1, 3}, 0),
@@ -36,7 +35,7 @@ void plus_known(const std::string &b) {
           b + ": the constraints on the block diagonal");
     check(close(a.plus(vec({1.0, 1.0})).c().expand_dims(-1), {2, 3}, 0),
           b + ": a point moves the center");
-    const Zonotope Z(column({1.0, 1.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope Z(vec({1.0, 1.0}), Tensor({{1.0, 0.0}}));
     check(close(a.plus(Z).generators().matrix_transpose(), {1, 0, 1, 0, 1, 0}, 0) &&
               a.plus(Z).A().shape()[1] == 3,
           b + ": a zonotope joins as a set without constraints");
@@ -71,12 +70,12 @@ void plus_property(const std::string &b) {
 
 /// A different dimension and a point that is no column are refused; a batch adds member by member.
 void checks_and_batches() {
-    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    const ConZonotope one(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope a(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope one(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { a.plus(one); }, Error::dimension_mismatch), "plus: dimensions");
     check(test::raises([&] { a.plus(vec({1.0})); }, Error::dimension_mismatch),
           "plus: a point of another dimension");
-    const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::zeros({2, 1, 2}));
+    const ConZonotope batch(Tensor::zeros({2, 2}), Tensor::zeros({2, 1, 2}));
     check(test::raises([&] { a.plus(batch); }, Error::dimension_mismatch), "plus: batch shapes");
     check(batch.plus(batch).c().expand_dims(-1).shape() == Shape{2, 2, 1},
           "plus: a batch adds member by member");

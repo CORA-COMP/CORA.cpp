@@ -15,7 +15,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -27,7 +26,7 @@ namespace {
 /// S - p shifts by -p and p - S is -S + p, for a box and a zonotope.
 void minus_shifts_the_set(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0}));
-    const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     const Tensor p = vec({1.0, 1.0});
     const Set A = static_cast<const ContSet &>(I).minus(p),
               B = static_cast<const ContSet &>(Z).minus(p);

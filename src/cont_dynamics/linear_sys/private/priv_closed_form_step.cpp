@@ -389,8 +389,8 @@ Zonotope ClosedFormStepper::input_solution(const Zonotope &V) const {
 ClosedFormStep ClosedFormStepper::step(const Zonotope &X, const Zonotope &U,
                                        const Tensor &u) const {
     const Matrices &m = *m_;
-    // the constant input is a point set
-    const Zonotope point(u, u.zeros_like({0, u.size(0)}));
+    // the constant input, CORA's column (n, 1), is the point set of the vector (n)
+    const Zonotope point(u.squeeze(-1), u.zeros_like({0, u.size(0)}));
     const Zonotope Pu = aux_input_solution(m.terms, m.remainder, point);
     const Zonotope PU = aux_input_solution(m.terms, m.remainder, U);
     // Htp = [e^{A dt}] X + Pu, Hti = hull(X, Htp) + [F] X

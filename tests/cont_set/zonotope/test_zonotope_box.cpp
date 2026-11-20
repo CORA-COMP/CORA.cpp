@@ -15,7 +15,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -26,7 +25,7 @@ namespace {
 
 /// The center stays, the generators become diag(sum |G|).
 void box_of_a_known_zonotope(const std::string &b) {
-    const Zonotope Z(column({1.0, -2.0}), Tensor({{1.0, -2.0}, {-3.0, 0.5}, {0.5, 0.0}}));
+    const Zonotope Z(vec({1.0, -2.0}), Tensor({{1.0, -2.0}, {-3.0, 0.5}, {0.5, 0.0}}));
     const Zonotope B = Z.box();
     check(close(B.center(), Z.center(), 0), b + ": the center stays");
     check(close(B.generators(), std::vector<double>{4.5, 0, 0, 2.5}, 0), b + ": diag(sum |G|)");
@@ -60,7 +59,7 @@ int main() {
         box_has_the_interval_hull(b);
     });
     ChecksScope off(false);
-    const Zonotope Z(column({0.0}), Tensor({{1.0}, {-2.0}}));
+    const Zonotope Z(vec({0.0}), Tensor({{1.0}, {-2.0}}));
     check(close(Z.box().generators(), std::vector<double>{3}, 0),
           "box: the same with the checks off");
     return test::finish("zonotope box");

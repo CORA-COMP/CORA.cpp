@@ -48,9 +48,9 @@ void vertices_attain_the_support(const std::string &b) {
 
 /// Without generators the zonotope is a point; parallel generators add no corners.
 void vertices_of_degenerate_zonotopes(const std::string &b) {
-    const Zonotope point(test::column({1, 2}), Tensor::zeros({1, 2}));
+    const Zonotope point(test::vec({1, 2}), Tensor::zeros({1, 2}));
     check(point.vertices()[0].size() == 1, b + ": a point has one vertex");
-    const Zonotope segment(test::column({0, 0}), Tensor({{1, 0}, {2, 0}}));
+    const Zonotope segment(test::vec({0, 0}), Tensor({{1, 0}, {2, 0}}));
     check(segment.vertices()[0].size() == 2, b + ": parallel generators make a segment");
 }
 

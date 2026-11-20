@@ -25,8 +25,8 @@ namespace {
 
 /// The members [-2, 2] x [-1, 1] and [-1, 3] x [-1, 1] meet in [-1, 2] x [-1, 1].
 void support_function_known(const std::string &b) {
-    const Zonotope A(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
-    const Zonotope B(column({1.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope A(vec({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope B(vec({1.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
     const ZonoBundle zono_bundle({A, B});
     check(close(test::support(zono_bundle, {1, 0}), 2.0) &&
               close(test::support(zono_bundle, {-1, 0}), 1.0) &&

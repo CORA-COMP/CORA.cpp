@@ -175,7 +175,7 @@ int main() {
         // small random automata: three locations, two guards of the first, a step size 1/8 and 1/16
         for (const double dt : {0.125, 0.0625}) {
             const HybridAutomaton HA = aux_build(aux_specs(rnd, dt));
-            const Zonotope R0(Tensor::from_data({0.0, 0.0}, {2, 1}),
+            const Zonotope R0(Tensor::from_data({0.0, 0.0}, {2}),
                               rnd.matrix(2, 2).matrix_transpose() * 0.05);
             alg::HybridStandard alg{{dt}, 6, 8};
             const auto [n, m] = aux_compare(HA, {.initial_set = R0, .t_final = 6.0}, alg);
@@ -191,7 +191,7 @@ int main() {
              {std::tuple{-1.0, false, 0.25, 2}, std::tuple{1.0, false, 0.0625, 1},
               std::tuple{0.0, false, 0.0625, 2}, std::tuple{1.0, true, 0.0625, 2}}) {
             const HybridAutomaton HA = aux_build(aux_flow_specs(flow, bounded));
-            const Zonotope R0(Tensor::from_data({centre, 0.0}, {2, 1}),
+            const Zonotope R0(Tensor::from_data({centre, 0.0}, {2}),
                               Tensor::from_data({0.0625, 0.0, 0.0, 0.0}, {2, 2}));
             alg::HybridStandard alg{{0.25}, 3, 10};
             const auto [n, m] = aux_compare(HA, {.initial_set = R0, .t_final = 1.0}, alg, true);
@@ -204,7 +204,7 @@ int main() {
                 auto [problem, alg] = cora::bench::rendezvous::options(name);
                 // a start near the docking guard x = -100 and a short horizon
                 problem.initial_set =
-                    Zonotope(Tensor::from_data({-120, -30, 0, 0, 0}, {5, 1}),
+                    Zonotope(Tensor::from_data({-120, -30, 0, 0, 0}, {5}),
                              Tensor::from_data({1, 0, 0, 1, 0, 0, 0, 0, 0, 0}, {2, 5}));
                 problem.t_final = 10;
                 alg.time_step = std::vector<double>(alg.time_step.size() == 3 ? 3 : 2, 0.25);

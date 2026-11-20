@@ -36,7 +36,7 @@ std::size_t count(const std::string &text, const std::string &what) {
     return n;
 }
 
-Zonotope shifted(double x) { return Zonotope(test::column({x, 0}), Tensor({{1, 0}, {0, 1}})); }
+Zonotope shifted(double x) { return Zonotope(test::vec({x, 0}), Tensor({{1, 0}, {0, 1}})); }
 
 void cells_are_figures_of_their_own(const std::string &b) {
     use_cora_colors("CORA:default");

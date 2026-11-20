@@ -47,8 +47,8 @@ ConZonotope ConZonotope::reduce(int order, const std::string &method) const {
     // the Girard reduction takes one generator per row
     const Tensor reduced =
         priv_girard_generators(lifted.matrix_transpose(), (order - 1) * n).matrix_transpose();
-    return {cz.c().expand_dims(-1), reduced.slice(-2, 0, n).matrix_transpose(),
-            reduced.slice(-2, n, n + p), cz.b()};
+    return {cz.c(), reduced.slice(-2, 0, n).matrix_transpose(), reduced.slice(-2, n, n + p),
+            cz.b()};
 }
 
 Set ConZonotope::reduce_impl(int order) const { return reduce(order); }

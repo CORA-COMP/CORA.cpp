@@ -16,7 +16,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -30,7 +29,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 /// Boxes and zonotopes through the base class, and a batch.
 void bounded_or_not(const std::string &b) {
     const Interval box(vec({-1.0, 0.0}), vec({1.0, 2.0})), ray(vec({-1.0, 0.0}), vec({kInf, 2.0}));
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const ContSet &A = box, &C = ray, &D = Z;
     check(A.is_bounded() && !C.is_bounded() && D.is_bounded(), b + ": bounded or not");
     check(Interval::stack({box, box}).is_bounded() && !Interval::stack({box, ray}).is_bounded(),

@@ -15,7 +15,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -29,7 +28,7 @@ namespace {
 void the_image_of_any_set(const std::string &b) {
     const Tensor M = Tensor::from_data({1.0, 1.0, 0.0, 1.0}, {2, 2});
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0}));
-    const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     const Set RI = static_cast<const ContSet &>(I).linear_map(M);
     // center (0, 1) -> (1, 1); radius (1, 1) -> (2, 1)
     check(RI.is<Interval>() && test::close(RI.as<Interval>().inf(), {-1.0, 0.0}) &&

@@ -1,7 +1,7 @@
 // zonotope - the constructors of a zonotope, checked, as CORA's zonotope constructor
 //
 // Syntax:   Zonotope Z(c, G);   Zonotope A = Zonotope::matrix(C, G);
-// Inputs:   c - center (batch..., n) or a column (batch..., n, 1); C (batch..., r, c) of matrices
+// Inputs:   c - center (batch..., n); C (batch..., r, c) of matrices
 //           G - generators (batch..., h, n), one per row; (batch..., h, r, c), of the backend of c
 // Outputs:  Z - the zonotope {c + sum_i b_i G_i | |b|_inf <= 1}
 // See also: generate_random, Interval::Interval
@@ -57,11 +57,6 @@ Zonotope::Zonotope(Tensor c, Tensor G, int64_t elem_rank)
     CORA_CHECK(c_.defined() && G_.defined(), Error::wrong_input_in_constructor, [] {
         return std::string("Zonotope: the center and the generators must be tensors");
     });
-    // a center given as a column (batch..., n, 1) is the vector (n)
-    if (elem_rank_ == 1 && c_.ndim() >= 2 && c_.ndim() == G_.ndim() && c_.size(-1) == 1 &&
-        c_.size(-2) == G_.size(-1))
-        c_ = c_.squeeze(-1);
-
     CORA_CHECK(c_.ndim() >= elem_rank_, Error::wrong_input_in_constructor, [&] {
         return "Zonotope: the center must be (batch..., elem...) with " +
                std::to_string(elem_rank_) + " element dims, got the shape " +

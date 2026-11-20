@@ -51,7 +51,7 @@ class ConZonotope : public ContSet {
 
     /// The constrained zonotope of the center c (..., n), the generators G (..., m, n), one per
     /// row (#163), and the constraints A x = b (A (..., p, m), b (..., p)); without A and b no
-    /// constraint. A center given as a column (..., n, 1) is the vector.
+    /// constraint.
     ConZonotope(const Tensor &c, const Tensor &G);
     ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b);
 

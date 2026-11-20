@@ -15,7 +15,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -28,7 +27,7 @@ namespace {
 void contains_impl_agrees_with_the_entry(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0})), J(vec({0.5, 1.0}), vec({3.0, 3.0})),
         K(vec({-0.25, 0.75}), vec({0.25, 1.25}));
-    const Zonotope Z(column({0.0, 1.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({0.0, 1.0}), Tensor::from_data({0.5, 0.0, 0.0, 0.5}, {2, 2}));
     check(cora::detail::contains_impl(Z, K, std::nullopt) &&
               !cora::detail::contains_impl(Z, J, std::nullopt),
           b + ": a zonotope contains a box");
@@ -41,8 +40,8 @@ void contains_impl_agrees_with_the_entry(const std::string &b) {
 /// A pair without an entry is noops; the entry checks the dimensions.
 void a_pair_without_an_entry() {
     const Interval I(vec({0.0, 0.0}), vec({1.0, 1.0}));
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
-        Z1(column({0.0}), Tensor::from_data({1.0}, {1, 1}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
+        Z1(vec({0.0}), Tensor::from_data({1.0}, {1, 1}));
     check(
         test::raises([&] { cora::detail::contains_impl(test::UnregisteredSet(), I, std::nullopt); },
                      Error::noops),

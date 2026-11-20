@@ -153,7 +153,7 @@ void s_shaped_enclosures_hold_the_outputs(const std::string &b) {
     check(violations == 0, b + ": " + std::to_string(violations) + " outputs left the enclosure");
     // a set of one point is mapped to the output of the point
     const Tensor p({{0.3}, {-0.2}, {0.1}});
-    const Zonotope point = nn.evaluate(Zonotope(p, p.zeros_like({1, 3})));
+    const Zonotope point = nn.evaluate(Zonotope(p.squeeze(-1), p.zeros_like({1, 3})));
     check(test::close(point.center().expand_dims(-1), nn.evaluate(p)),
           b + ": a point set gives the point");
 }

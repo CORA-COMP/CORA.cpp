@@ -29,7 +29,7 @@
 namespace {
 
 using namespace cora;
-using cora::bench::column;
+using cora::bench::vec;
 
 /// One case: beta, gamma of the model and the tuning of the algorithm (zeta_z: the share of the
 /// width a reduction may add), the script's and the one of linear_step = closed_form (README).
@@ -88,8 +88,8 @@ bool aux_run(const std::string &name) {
 
     // the start set, the (unused) input set, and reach until t = 40
     const NonlinearSys sys = aux_robertson(c->beta, c->gamma);
-    const Zonotope X0(column({1, 0, 0}), Tensor::zeros({0, 3}));
-    const Zonotope U(column({0}), Tensor::zeros({0, 1}));
+    const Zonotope X0(vec({1, 0, 0}), Tensor::zeros({0, 3}));
+    const Zonotope U(vec({0}), Tensor::zeros({0, 1}));
     const auto start = std::chrono::steady_clock::now();
     alg::LinearizationAdaptive alg = c->alg;
     alg.linear_step = cora::bench::linear_step();

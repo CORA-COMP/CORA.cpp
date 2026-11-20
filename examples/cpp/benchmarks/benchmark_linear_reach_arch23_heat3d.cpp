@@ -128,7 +128,7 @@ bool aux_heat03(const std::string &name) {
     const std::string label = mesh ? name : meta["label"].string;
     // the transposed system and its initial point C' (CORA's sysTrans and params.R0)
     const LinearSys sys(At, Tensor::zeros({n, 1}), Tensor::concat({c, G}, -1).matrix_transpose());
-    const ReachProblem problem{.initial_set = Zonotope(C.matrix_transpose(), Tensor::zeros({0, n})),
+    const ReachProblem problem{.initial_set = Zonotope(C.squeeze(-2), Tensor::zeros({0, n})),
                                .t_final = t_final};
     const alg::Krylov krylov{.time_step = mesh ? 0.001 : 0.005,
                              .taylor_terms = 10,

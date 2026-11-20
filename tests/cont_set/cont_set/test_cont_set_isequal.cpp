@@ -15,7 +15,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -27,8 +26,8 @@ namespace {
 /// The same box as an interval and as a zonotope is equal in either order; a different one is not.
 void equality_across_classes(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0})), J(vec({-1.0, 0.0}), vec({1.0, 2.001}));
-    const Zonotope Z(column({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
-        W(column({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 2.0}, {2, 2}));
+    const Zonotope Z(vec({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
+        W(vec({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 2.0}, {2, 2}));
     check(isequal(I, I) && isequal(Z, I) && isequal(I, Z) && isequal(Z, Z),
           b + ": equal sets of every class pair");
     check(!isequal(I, J) && !isequal(Z, W) && !isequal(W, I) && !isequal(I, W),

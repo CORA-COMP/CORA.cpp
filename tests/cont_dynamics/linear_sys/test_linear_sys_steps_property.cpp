@@ -78,7 +78,7 @@ void the_solutions_enclose_the_flow(const std::string &b) {
         const AffineSolution affine = c.sys.affine_solution(c.X, c.u, kStep, kTerms);
         const Zonotope PU = c.sys.particular_solution_time_varying(c.U, kStep, kTerms);
         const ConstantSolution Pu = c.sys.particular_solution_constant(
-            Zonotope(c.u, c.u.zeros_like({0, 3})), kStep, kTerms);
+            Zonotope(c.u.squeeze(-1), c.u.zeros_like({0, 3})), kStep, kTerms);
         // the first step of both algorithms, and the step after the first
         const ReachStep first = c.sys.init_reach(
             c.X, c.U, c.u, alg::Standard{.time_step = kStep, .taylor_terms = kTerms});

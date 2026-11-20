@@ -14,7 +14,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,9 +24,9 @@ namespace {
 
 /// Two bundles give every pair of members, the first bundle's index outer.
 void pairs_of_members(const std::string &b) {
-    const Zonotope A1(column({1.0, 2.0}), Tensor({{1.0, 3.0}})),
-        A2(column({0.0, 1.0}), Tensor({{2.0, 1.0}})), B1(column({5.0}), Tensor({{6.0}, {7.0}})),
-        B2(column({9.0}), Tensor({{1.0}, {1.0}}));
+    const Zonotope A1(vec({1.0, 2.0}), Tensor({{1.0, 3.0}})),
+        A2(vec({0.0, 1.0}), Tensor({{2.0, 1.0}})), B1(vec({5.0}), Tensor({{6.0}, {7.0}})),
+        B2(vec({9.0}), Tensor({{1.0}, {1.0}}));
     const ZonoBundle P = ZonoBundle({A1, A2}).cart_prod(ZonoBundle({B1, B2}));
     check(P.parallel_sets() == 4 && P.dim() == 3, b + ": four members of dimension 3");
     const std::vector<Zonotope> expected{A1.cart_prod(B1), A1.cart_prod(B2), A2.cart_prod(B1),
@@ -40,7 +39,7 @@ void pairs_of_members(const std::string &b) {
 
 /// A zonotope, a box and a point multiply every member; a point may come first.
 void one_set_against_every_member(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 3.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 3.0}}));
     const ZonoBundle bundle({Z, Z});
     const Interval I(vec({0.0}), vec({2.0}));
     check(bundle.cart_prod(I).parallel_sets() == 2 && bundle.cart_prod(I).dim() == 3,
@@ -73,7 +72,7 @@ void points_of_the_product(const std::string &b) {
 /// A point that is no column, another batch shape and an empty box are refused; the same call with
 /// the checks off.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({Z});
     check(
         test::raises([&] { bundle.cart_prod(Tensor::zeros(Shape{})); }, Error::dimension_mismatch),

@@ -60,7 +60,7 @@ lean::Zonotope::TensorLists aux_lists(const Zonotope::TensorLists &list) {
 
 /// A zonotope of n dimensions and m generators centered at the origin.
 Zonotope aux_origin_centered(oracle::Random &rnd, int n, int m) {
-    return {Tensor::zeros({n, 1}), rnd.matrix(n, m).matrix_transpose()};
+    return {Tensor::zeros({n}), rnd.matrix(n, m).matrix_transpose()};
 }
 
 } // namespace

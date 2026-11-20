@@ -89,7 +89,7 @@ Raw aux_raw(oracle::Random &rnd, const Dims &s, bool repeats) {
 
 /// The set of the raw columns, as rows.
 PolyZonotope aux_set(const Raw &r) {
-    return {r.c, r.G.matrix_transpose(), r.GI.matrix_transpose(), r.E, r.id};
+    return {r.c.squeeze(-1), r.G.matrix_transpose(), r.GI.matrix_transpose(), r.E, r.id};
 }
 
 /// A set from the oracle's constructor: what the other ops take as their operand.
@@ -131,7 +131,7 @@ int main() {
             const PolyZonotope P = aux_set(r), Q = aux_set(q);
             oracle::check("plus pZ", P.plus(Q), aux_lean(r).plus(aux_lean(q)));
             // a zonotope, a box and a point join the independent part
-            const Zonotope Z(rnd.vector(s.n), rnd.matrix(s.n, 3).matrix_transpose());
+            const Zonotope Z(rnd.point(s.n), rnd.matrix(s.n, 3).matrix_transpose());
             oracle::check("plus Z", P.plus(Z), aux_lean(r).plus(Z));
             // the point after the box, as the oracle's op takes them
             const Interval I = rnd.box(s.n);
@@ -211,7 +211,7 @@ int main() {
             Tensor G = rnd.matrix(3, 4);
             std::vector<double> g = G.data();
             for (int64_t i = 0; i < 3; ++i) g[std::size_t(i * 4 + 2)] = 0.0;
-            const Zonotope Z(rnd.vector(3), Tensor::from_data(g, {3, 4}).matrix_transpose());
+            const Zonotope Z(rnd.point(3), Tensor::from_data(g, {3, 4}).matrix_transpose());
             oracle::check(aux_set(r).cart_prod(Z), aux_lean(r).cart_prod(Z));
         }
     });

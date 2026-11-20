@@ -53,7 +53,7 @@ NonlinearSys aux_unicycle() {
 std::vector<AinncsInstance> aux_instances() {
     std::vector<AinncsInstance> v;
     // Unicycle: the disturbance input is the script's default zonotope(0)
-    const Zonotope no_disturbance(Tensor::from_data({0.0}, {1, 1}), Tensor::zeros({0, 1}));
+    const Zonotope no_disturbance(Tensor::from_data({0.0}, {1}), Tensor::zeros({0, 1}));
     v.push_back({"Unicycle", "reach", Verdict::verified, 8.015,
                  make_verify(aux_unicycle(), "unicycle", 0.2,
                              box_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}),
@@ -62,7 +62,7 @@ std::vector<AinncsInstance> aux_instances() {
                                   box_polytope({-0.6, -0.2, -0.06, -0.3}, {0.6, 0.2, 0.06, 0.3})),
                               std::make_pair(10.0, 10.0)})});
     // the same with the report's disturbance w in 1e-4 [-1, 1] on the speed, which the script drops
-    const Zonotope disturbance(Tensor::from_data({0.0}, {1, 1}), Tensor::from_data({1e-4}, {1, 1}));
+    const Zonotope disturbance(Tensor::from_data({0.0}, {1}), Tensor::from_data({1e-4}, {1, 1}));
     v.push_back({"Unicycle", "reach-disturbance", Verdict::verified, 8.015,
                  make_verify(aux_unicycle(), "unicycle", 0.2,
                              box_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}),

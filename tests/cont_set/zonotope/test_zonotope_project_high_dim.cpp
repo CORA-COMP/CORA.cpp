@@ -15,7 +15,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -27,7 +26,7 @@ namespace {
 /// State i goes to position dims[i], the others are 0; the identity keeps the set; a repeated
 /// position keeps the last state; a batch embeds member by member.
 void embedding_known(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}));
     const Zonotope R = Z.project_high_dim(4, {3, 1});
     check(close(R.center(), std::vector<double>{0, 2, 0, 1}, 0), b + ": the center");
     check(close(R.generators(), std::vector<double>{0, 0, 0, 1, 0, 3, 0, 0}, 0),
@@ -40,7 +39,7 @@ void embedding_known(const std::string &b) {
     check(batch.center().shape() == std::vector<int64_t>({2, 3}) &&
               close(batch.center().slice(0, 1, 2).squeeze(0), std::vector<double>{3, 0, 2}, 0),
           b + ": a batch");
-    const Zonotope P(column({1.0}), Tensor::zeros({0, 1}));
+    const Zonotope P(vec({1.0}), Tensor::zeros({0, 1}));
     check(P.project_high_dim(2, {1}).generators().shape() == std::vector<int64_t>({0, 2}),
           b + ": no generators");
 }
@@ -60,7 +59,7 @@ void embedding_keeps_the_support(const std::string &b) {
 
 /// Too small a space, a wrong number of positions and a position outside are refused.
 void checks_and_their_switch() {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}}));
     check(test::raises([&] { Z.project_high_dim(1, {0, 0}); }, Error::wrong_value), "N below dim");
     check(test::raises([&] { Z.project_high_dim(3, {0}); }, Error::wrong_value),
           "one position short");

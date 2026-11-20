@@ -18,7 +18,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -28,7 +27,7 @@ using test::vec;
 namespace {
 
 Zonotope box(double lo, double hi, double lo2, double hi2) {
-    return {column({(lo + hi) / 2, (lo2 + hi2) / 2}),
+    return {vec({(lo + hi) / 2, (lo2 + hi2) / 2}),
             Tensor({{(hi - lo) / 2, 0.0}, {0.0, (hi2 - lo2) / 2}})};
 }
 
@@ -45,8 +44,8 @@ void unions_by_hand(const std::string &b) {
         check(U.contains(A, "exact", 1e-9) && U.contains(B, "exact", 1e-9),
               std::string(b) + ": " + method + ": it contains both");
     }
-    const Zonotope p(column({0.0, 0.0}), Tensor::zeros({0, 2})),
-        q(column({2.0, 0.0}), Tensor::zeros({0, 2}));
+    const Zonotope p(vec({0.0, 0.0}), Tensor::zeros({0, 2})),
+        q(vec({2.0, 0.0}), Tensor::zeros({0, 2}));
     const Zonotope S = p.unite(q);
     check(close(S.center(), std::vector<double>{1, 0}, 1e-9) &&
               S.generators().shape() == std::vector<int64_t>({1, 2}) &&
@@ -94,8 +93,8 @@ void union_contains_the_sets(const std::string &b) {
         }
     }
     // flat sets: a segment and a point in the plane
-    const Zonotope seg(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
-    const Zonotope pt(column({3.0, 0.0}), Tensor::zeros({0, 2}));
+    const Zonotope seg(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope pt(vec({3.0, 0.0}), Tensor::zeros({0, 2}));
     const Zonotope U = seg.unite(pt);
     check(U.contains(seg, "exact", 1e-8) && U.contains(pt, "exact", 1e-8), b + ": flat sets");
 }

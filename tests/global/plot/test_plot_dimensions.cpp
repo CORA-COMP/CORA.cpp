@@ -27,12 +27,12 @@ bool has(const std::string &text, const std::string &what) {
 }
 
 Zonotope box_set() {
-    return Zonotope(test::column({1, 0, 2}), Tensor({{1, 0, 0}, {0, 2, 0}, {0, 0, 3}}));
+    return Zonotope(test::vec({1, 0, 2}), Tensor({{1, 0, 0}, {0, 2, 0}, {0, 0, 3}}));
 }
 
 ReachSet oscillator() {
     return LinearSys(Tensor({{-0.1, 1}, {-1, -0.1}}))
-        .reach({.initial_set = Zonotope(test::column({1, 0}), Tensor({{0.1, 0}, {0, 0.1}})),
+        .reach({.initial_set = Zonotope(test::vec({1, 0}), Tensor({{0.1, 0}, {0, 0.1}})),
                 .t_final = 1.0},
                alg::Standard{.time_step = 0.25, .taylor_terms = 6});
 }
@@ -51,7 +51,7 @@ void one_dimension_is_a_bar(const std::string &b) {
     check(fig.xlabel == "x[1]" && fig.ylabel.empty(),
           b + ": the x axis is named, the y axis is not");
     Figure point;
-    plot(point, Zonotope(test::column({1, 2}), Tensor::zeros({1, 2})), {0});
+    plot(point, Zonotope(test::vec({1, 2}), Tensor::zeros({1, 2})), {0});
     check(point.layers()[0].polygons[0].size() == 1, b + ": a point is one point");
     check(has(fig.svg(), "<path"), b + ": drawn as SVG");
 }
@@ -125,7 +125,7 @@ void a_reach_set_over_time(const std::string &b) {
 void simulations_over_time(const std::string &b) {
     const LinearSys sys(Tensor({{-0.1, 1}, {-1, -0.1}}));
     cora::Rng rng(2);
-    const Zonotope X0(test::column({1, 0}), Tensor({{0.1, 0}, {0, 0.1}}));
+    const Zonotope X0(test::vec({1, 0}), Tensor({{0.1, 0}, {0, 0.1}}));
     const std::vector<Tensor> x = sys.simulate_random({.initial_set = X0, .t_final = 1.0},
                                                       alg::Exact{.time_step = 0.25}, 3, rng);
     Figure fig;

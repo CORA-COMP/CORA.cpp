@@ -21,7 +21,7 @@ using test::check;
 
 namespace {
 
-Zonotope dynamic_part() { return {test::column({0.0, 0.0}), Tensor({{1.0, 0.5}})}; }
+Zonotope dynamic_part() { return {test::vec({0.0, 0.0}), Tensor({{1.0, 0.5}})}; }
 
 /// At a given order the set is the series of the time-varying input solution up to that order.
 void a_given_order_is_the_series(const std::string &b) {
