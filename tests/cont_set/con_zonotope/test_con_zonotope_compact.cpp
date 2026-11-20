@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -25,7 +26,7 @@ namespace {
 /// row 0 = 1 and a generator that is in a constraint stay.
 void compact_known(const std::string &b) {
     const ConZonotope cz(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}, {2.0, 3.0}}),
-                         Tensor({{0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}}), column({0.0, 1.0}));
+                         Tensor({{0.0, 0.0, 0.0}, {1.0, 0.0, 1.0}}), vec({0.0, 1.0}));
     for (const char *method : {"zeros", "all"}) {
         const ConZonotope c = cz.compact(method);
         check(close(c.generators().matrix_transpose(), {1, 2, 0, 3}, 0),
@@ -35,7 +36,7 @@ void compact_known(const std::string &b) {
     }
     // a generator that is zero but in a constraint stays; so does the row 0 = 1
     const ConZonotope kept(column({0.0}), Tensor({{0.0}, {1.0}}), Tensor({{1.0, 0.0}, {0.0, 0.0}}),
-                           column({0.5, 1.0}));
+                           vec({0.5, 1.0}));
     check(kept.compact().generators().matrix_transpose().shape() == Shape{1, 2},
           b + ": a constrained generator stays");
     check(close(kept.compact().b(), {0.5, 1}, 0), b + ": the infeasible row stays");
@@ -58,7 +59,7 @@ void compact_property(const std::string &b) {
                 .matrix_transpose(),
             Tensor::concat(
                 {Tensor::concat({base.A(), Tensor::zeros({2, 1})}, -1), Tensor::zeros({1, 5})}, -2),
-            Tensor::concat({base.b(), Tensor::zeros({1, 1})}, -2));
+            Tensor::concat({base.b(), Tensor::zeros({1})}, -1));
         const ConZonotope once = padded.compact();
         check(once.generators().matrix_transpose().shape() ==
                   base.generators().matrix_transpose().shape(),

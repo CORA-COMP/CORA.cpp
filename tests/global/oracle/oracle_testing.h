@@ -180,7 +180,7 @@ class Random {
             }
         }
         return {vector(n), matrix(n, m).matrix_transpose(), cora::Tensor::from_data(A, {p, m}),
-                cora::Tensor::from_data(b, {p, 1})};
+                cora::Tensor::from_data(b, {p})};
     }
 
     /// A matrix zonotope of rows x cols matrices with h generators.

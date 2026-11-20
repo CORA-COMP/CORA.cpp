@@ -14,6 +14,7 @@
 using namespace cora;
 using test::check;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,7 +23,7 @@ using test::column;
 
 int main() {
     const ConZonotope cz(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}), Tensor({{1.0, 1.0}}),
-                         column({0.5}));
+                         vec({0.5}));
     const std::string text = cz.display();
     check(text.find("constrained zonotope") != std::string::npos, "display: the class");
     check(text.find("dimension: 2") != std::string::npos, "display: the dimension");

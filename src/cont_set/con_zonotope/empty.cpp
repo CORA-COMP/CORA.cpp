@@ -29,8 +29,7 @@ CORA_FROM_NUMBERS ConZonotope ConZonotope::empty(int64_t n) {
     CORA_CHECK(n >= 0, Error::wrong_value, [&] {
         return "empty: the dimension must be nonnegative, got " + std::to_string(n);
     });
-    return {Tensor::zeros({n, 1}), Tensor::zeros({0, n}), Tensor::ones({1, 0}),
-            Tensor::ones({1, 1})};
+    return {Tensor::zeros({n, 1}), Tensor::zeros({0, n}), Tensor::ones({1, 0}), Tensor::ones({1})};
 }
 
 } // namespace cora

@@ -3,7 +3,7 @@
 // Syntax:   Refusal r = priv_strip_refusal(n, C, phi, y);   priv_gain_refusal(n, C, lambda);
 //           priv_observer_refusal(n, aux);
 // Inputs:   n - dimension of the set
-//           C (k, n), phi and y (k, 1) - the strips
+//           C (k, n), phi and y (k) - the strips
 //           lambda (n, k) - the gain
 //           aux - the matrices E, F, A, C of an observer
 // Outputs:  r - the identifier and the text of what is wrong, or nothing
@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -32,14 +32,14 @@ Refusal priv_strip_refusal(int64_t n, const Tensor &C, const Tensor &phi, const 
                                                         "), got the shape " +
                                                         shape_text(C.shape())};
     const int64_t k = C.shape()[0];
-    if (phi.ndim() != 2 || !is_column(phi, k))
-        return std::pair{Error::dimension_mismatch,
-                         "phi must be a column (" + std::to_string(k) +
-                             ", 1), one width per strip, got the shape " + shape_text(phi.shape())};
-    if (y.ndim() != 2 || !is_column(y, k))
-        return std::pair{Error::dimension_mismatch,
-                         "y must be a column (" + std::to_string(k) +
-                             ", 1), one center per strip, got the shape " + shape_text(y.shape())};
+    if (phi.ndim() != 1 || !is_vector(phi, k))
+        return std::pair{Error::dimension_mismatch, "phi must be a vector (" + std::to_string(k) +
+                                                        "), one width per strip, got the shape " +
+                                                        shape_text(phi.shape())};
+    if (y.ndim() != 1 || !is_vector(y, k))
+        return std::pair{Error::dimension_mismatch, "y must be a vector (" + std::to_string(k) +
+                                                        "), one center per strip, got the shape " +
+                                                        shape_text(y.shape())};
     return std::nullopt;
 }
 

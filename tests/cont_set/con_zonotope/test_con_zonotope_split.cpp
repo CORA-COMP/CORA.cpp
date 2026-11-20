@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,7 +25,7 @@ namespace {
 /// Hand-computed: the segment from (0, 1) to (1, 0) cut at x1 = 0.5 gives two halves.
 void split_known(const std::string &b) {
     const ConZonotope seg(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                          Tensor({{1.0, 1.0}}), column({1.0}));
+                          Tensor({{1.0, 1.0}}), vec({1.0}));
     const auto [low, high] = seg.split(0);
     check(close(low.interval().sup(), {0.5, 1.0}, 1e-9) &&
               close(low.interval().inf(), {0, 0.5}, 1e-9),

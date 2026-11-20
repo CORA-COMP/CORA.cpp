@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,13 +25,12 @@ namespace {
 /// Hand-computed: few enough generators stay; otherwise the long ones stay and a box per row of
 /// [G; A] replaces the rest, so that the constraint rows get free factors.
 void reduce_known(const std::string &b) {
-    const ConZonotope few(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 1.0}}),
-                          column({0.5}));
+    const ConZonotope few(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 1.0}}), vec({0.5}));
     check(close(few.reduce(2).generators().matrix_transpose(), {1, 2}, 0),
           b + ": few generators stay");
     // n = 1, p = 1: more than 1 * 1 + 1 generators are reduced; (order - 1) n = 0 stay
     const ConZonotope many(column({3.0}), Tensor({{1.0}, {-2.0}, {0.5}}), Tensor({{1.0, 1.0, 1.0}}),
-                           column({0.5}));
+                           vec({0.5}));
     const ConZonotope r = many.reduce(1);
     check(close(r.generators().matrix_transpose(), {3.5, 0}, 0),
           b + ": a box generator for the row of G");

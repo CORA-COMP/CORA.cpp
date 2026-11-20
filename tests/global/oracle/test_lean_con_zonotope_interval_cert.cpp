@@ -48,7 +48,7 @@ int main() {
             ConZonotope::Cut{cz.c().expand_dims(-1),
                              cz.generators().matrix_transpose(),
                              cz.A(),
-                             cz.b(),
+                             cz.b().expand_dims(-1),
                              Tensor::zeros({0, 5}),
                              Tensor::zeros({0, 1})}
                 .certificate();

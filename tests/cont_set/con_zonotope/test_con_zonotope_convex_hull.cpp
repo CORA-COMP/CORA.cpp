@@ -37,7 +37,7 @@ void convex_hull_known(const std::string &b) {
     check(close(R.c().expand_dims(-1), {1.5}, 0) &&
               close(R.generators().matrix_transpose(), {0.5, 0.5, -1, 0, 0, 0, 0}, 0),
           b + ": the center is the mean, the generators of both, (c-c2)/2, and the slacks");
-    check(R.A().shape() == Shape{4, 7} && R.b().shape() == Shape{4, 1},
+    check(R.A().shape() == Shape{4, 7} && R.b().shape() == Shape{4},
           b + ": 2 (m1 + m2) slack rows");
     check(close(R.b(), {-0.5, -0.5, -0.5, -0.5}, 0), b + ": the offsets -1/2");
     check(close(A.convex_hull(test::vec({5.0})).interval().sup(), {5}, 1e-9), b + ": a point");
@@ -49,7 +49,7 @@ void convex_hull_known(const std::string &b) {
           b + ": a zonotope");
     // constraints of both sets are kept: the segment x1 + x2 = 1 and the origin give a triangle
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                              Tensor({{1.0, 1.0}}), column({1.0}));
+                              Tensor({{1.0, 1.0}}), vec({1.0}));
     const ConZonotope T = segment.convex_hull(vec({0.0, 0.0}));
     check(close(T.interval().inf(), {0, 0}, 1e-9) && close(T.interval().sup(), {1, 1}, 1e-9),
           b + ": the triangle (0,0), (0,1), (1,0)");

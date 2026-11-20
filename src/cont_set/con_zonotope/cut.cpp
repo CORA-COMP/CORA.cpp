@@ -84,7 +84,7 @@ ConZonotope::Cut ConZonotope::cut(const Polytope &P) const {
     return {c_.expand_dims(-1),
             G_.matrix_transpose(),
             A(),
-            b(),
+            priv_b_column(*this),
             q == 0 ? zeros_block(c_.expand_dims(-1), 0, h)
                    : Tensor::like(c_.expand_dims(-1), C, {q, h}),
             q == 0 ? zeros_block(c_.expand_dims(-1), 0, 1)

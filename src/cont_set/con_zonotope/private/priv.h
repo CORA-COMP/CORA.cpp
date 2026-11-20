@@ -36,6 +36,12 @@ inline std::vector<double> priv_host_rows(const Tensor &T) {
     return T.shape()[0] == 0 ? std::vector<double>{} : T.data();
 }
 
+// Columns -----------------------------------------------------------------------------------------
+
+/// The constraint offset b (..., p) as CORA's column (..., p, 1), on which the algorithms of the
+/// class run (a view of the stored vector, the bits unchanged).
+inline Tensor priv_b_column(const ConZonotope &cz) { return cz.b().expand_dims(-1); }
+
 // Pairs and compaction ---------------------------------------------------------------------------
 
 /// Why a binary operation of two constrained zonotopes is refused, if it is: the sets must have

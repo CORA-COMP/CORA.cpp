@@ -109,7 +109,7 @@ ConZonotope ConZonotope::quad_map(const ConZonotope &cz2, const std::vector<Tens
                                         zeros_block(first.A(), p1, width - N2 - N1)},
                                        -1)},
                        -2);
-    return aux_outputs(rows, A, Tensor::concat({second.b(), first.b()}, -2));
+    return aux_outputs(rows, A, Tensor::concat({second.b(), first.b()}, -1));
 }
 
 } // namespace cora

@@ -23,8 +23,8 @@ int main() {
     torch::manual_seed(42);
     const std::vector<torch::Tensor> Z = test::random_zonotope_rows(3, 4);
     const torch::Tensor C = torch::randn({2, 3}, torch::kDouble),
-                        phi = torch::rand({2, 1}, torch::kDouble) + 0.5,
-                        y = torch::randn({2, 1}, torch::kDouble),
+                        phi = torch::rand({2}, torch::kDouble) + 0.5,
+                        y = torch::randn({2}, torch::kDouble),
                         lambda = torch::randn({3, 2}, torch::kDouble);
     test::gradcheck("intersect_strip normGen",
                     [](const Inputs &x) {

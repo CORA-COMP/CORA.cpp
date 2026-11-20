@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,22 +30,21 @@ void full_dim_known(const std::string &b) {
           b + ": parallel generators span a line");
     // the third factor is fixed to zero: the square stays full-dimensional
     const ConZonotope square(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}}),
-                             Tensor({{0.0, 0.0, 1.0}}), column({0.0}));
+                             Tensor({{0.0, 0.0, 1.0}}), vec({0.0}));
     check(square.is_full_dim(), b + ": a fixed factor does not matter");
     // the segment x = xi on xi1 + xi2 = 1 in the plane
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                              Tensor({{1.0, 1.0}}), column({1.0}));
+                              Tensor({{1.0, 1.0}}), vec({1.0}));
     check(!segment.is_full_dim(), b + ": a segment in the plane");
     // a segment on a line: x = xi1 + 2 xi2 with xi1 = xi2 has the interval [-3, 3]
     const ConZonotope line(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, -1.0}}),
-                           column({0.0}));
+                           vec({0.0}));
     check(line.is_full_dim(), b + ": a segment in a line is full-dimensional");
     // CORA's rank test says true: x = xi1 + 2 xi2 with xi1 + xi2 = 2 is the point 3
     const ConZonotope pinned(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 1.0}}),
-                             column({2.0}));
+                             vec({2.0}));
     check(!pinned.is_full_dim(), b + ": the box pins it to the point 3 (CORA: true)");
-    const ConZonotope none(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 0.0}}),
-                           column({5.0}));
+    const ConZonotope none(column({0.0}), Tensor({{1.0}, {2.0}}), Tensor({{1.0, 0.0}}), vec({5.0}));
     check(!none.is_full_dim(), b + ": a set without a point has no interior (CORA: true)");
 
     const auto [res, basis] = segment.is_full_dim_subspace();
@@ -77,7 +77,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { batch.is_full_dim(-1.0); }, Error::wrong_value),
           "is_full_dim: tol < 0");
     const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
-                              Tensor({{1.0, 1.0}}), column({1.0}));
+                              Tensor({{1.0, 1.0}}), vec({1.0}));
     ChecksScope off(false);
     check(!segment.is_full_dim(), "is_full_dim: the same with the checks off");
 }

@@ -30,12 +30,12 @@ inline cora::ConZonotope set(const Inputs &x, std::size_t first = 0) {
     return {x[first], x[first + 1], x[first + 2], x[first + 3]};
 }
 
-/// c (n), G (m, n) one generator per row, A (p, m), b (p, 1) away from zero.
+/// c (n), G (m, n) one generator per row, A (p, m), b (p) away from zero.
 inline std::vector<torch::Tensor> random_con_zonotope_parts(int64_t n, int64_t m, int64_t p) {
     std::vector<torch::Tensor> out = random_zonotope_rows(n, m);
     const std::vector<torch::Tensor> rest = random_zonotope(p, m);
     out.push_back(rest[1]);
-    out.push_back(rest[0]);
+    out.push_back(rest[0].squeeze(-1));
     return out;
 }
 

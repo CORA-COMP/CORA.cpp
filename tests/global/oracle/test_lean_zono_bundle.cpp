@@ -58,9 +58,11 @@ void aux_check_con_zonotope(const ConZonotope &mine, const lean::ConZonotope &th
     oracle::check("conZonotope.G", mine.generators().matrix_transpose(),
                   their.generators().matrix_transpose());
     oracle::check("conZonotope.A", aux_rows(mine.A(), pe, pe + n), aux_rows(A, 0, n));
-    oracle::check("conZonotope.b", aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, 0, n));
+    oracle::check("conZonotope.b", aux_rows(mine.b(), pe, pe + n),
+                  aux_rows(b_ineq, 0, n).squeeze(-1));
     oracle::check("conZonotope.-A", -aux_rows(mine.A(), pe, pe + n), aux_rows(A, n, 2 * n));
-    oracle::check("conZonotope.-b", -aux_rows(mine.b(), pe, pe + n), aux_rows(b_ineq, n, 2 * n));
+    oracle::check("conZonotope.-b", -aux_rows(mine.b(), pe, pe + n),
+                  aux_rows(b_ineq, n, 2 * n).squeeze(-1));
 }
 
 } // namespace

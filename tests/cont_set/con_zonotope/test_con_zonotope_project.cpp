@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -24,7 +25,7 @@ namespace {
 /// Hand-computed: the selected rows in the given order, repeats allowed, constraints unchanged.
 void project_known(const std::string &b) {
     const ConZonotope a(column({1.0, 2.0, 3.0}), Tensor({{1.0, 0.0, 2.0}, {0.0, 1.0, 2.0}}),
-                        Tensor({{1.0, 1.0}}), column({0.5}));
+                        Tensor({{1.0, 1.0}}), vec({0.5}));
     const Set s = a.project({2, 0});
     const ConZonotope &r = s.as<ConZonotope>();
     check(close(r.c().expand_dims(-1), {3, 1}, 0) &&

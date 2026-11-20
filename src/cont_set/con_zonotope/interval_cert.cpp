@@ -143,7 +143,7 @@ ConZonotope::Cut aux_cut(const ConZonotope &cz) {
     return {cz.c().expand_dims(-1),
             cz.generators().matrix_transpose(),
             cz.A(),
-            cz.b(),
+            priv_b_column(cz),
             zeros_block(cz.c().expand_dims(-1), 0, cz.nr_generators()),
             zeros_block(cz.c().expand_dims(-1), 0, 1)};
 }

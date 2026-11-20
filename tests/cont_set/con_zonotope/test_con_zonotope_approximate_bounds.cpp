@@ -25,15 +25,14 @@ namespace {
 /// Hand-computed: x1 + x2 <= -3/2 on [-1, 1]^2 bounds both factors above by -1/2, so the box of
 /// the identity generators is [-1, -1/2]^2; no constraint gives the zonotope's box.
 void bounds_known(const std::string &b) {
-    const Tensor c = Tensor::zeros({1, 2, 1}), G = Tensor::from_data({1, 0, 0, 1}, {1, 2, 2});
-    const Tensor A = Tensor::from_data({1, 1}, {1, 1, 2}),
-                 rhs = Tensor::from_data({-1.5}, {1, 1, 1});
+    const Tensor c = Tensor::zeros({1, 2}), G = Tensor::from_data({1, 0, 0, 1}, {1, 2, 2});
+    const Tensor A = Tensor::from_data({1, 1}, {1, 1, 2}), rhs = Tensor::from_data({-1.5}, {1, 1});
     const ConZonotope::Bounds r = ConZonotope::approximate_bounds(c, G, A, rhs);
     check(close(r.l, {-1, -1}, 1e-12) && close(r.u, {-0.5, -0.5}, 1e-12),
           b + ": the box [-1, -1/2]^2");
     check(close(r.bl, {-1, -1}, 0) && close(r.bu, {-0.5, -0.5}, 0), b + ": the factor bounds");
     const ConZonotope::Bounds none =
-        ConZonotope::approximate_bounds(c, G, Tensor::zeros({1, 0, 2}), Tensor::zeros({1, 0, 1}));
+        ConZonotope::approximate_bounds(c, G, Tensor::zeros({1, 0, 2}), Tensor::zeros({1, 0}));
     check(close(none.l, {-1, -1}, 0) && close(none.u, {1, 1}, 0) && close(none.bu, {1, 1}, 0),
           b + ": without constraints the box of the zonotope");
     // the interval error widens the box
@@ -49,7 +48,7 @@ void bounds_known(const std::string &b) {
           b + ": exact: the same box");
     // no point: x1 >= 1/2 and x1 <= -1/2 gives crossing bounds, NaN and 0
     const Tensor A2 = Tensor::from_data({-1, 0, 1, 0}, {1, 2, 2}),
-                 rhs2 = Tensor::from_data({-0.5, -0.5}, {1, 2, 1});
+                 rhs2 = Tensor::from_data({-0.5, -0.5}, {1, 2});
     const ConZonotope::Bounds empty = ConZonotope::approximate_bounds(c, G, A2, rhs2);
     check(std::isnan(empty.l.data()[0]) && close(empty.bl, {0, 0}, 0), b + ": no point: NaN and 0");
     // a union of two rows: x1 >= 1/2 or x1 <= -1/2 gives the whole box in x1
@@ -71,8 +70,10 @@ void bounds_property(const std::string &b) {
         rng.normal(extra.data(), extra.size(), 1.0);
         // offsets that keep the origin inside, so no member is empty
         for (int i = 0; i < B * p; ++i) rhs[i] = 0.5 + std::abs(extra[i]);
-        const Tensor ct = Tensor::from_data(c, {B, n, 1}), Gt = Tensor::from_data(G, {B, n, m}),
-                     At = Tensor::from_data(A, {B, p, m}), bt = Tensor::from_data(rhs, {B, p, 1});
+        // the generators drawn as CORA's columns (B, n, m), one per row for the call
+        const Tensor ct = Tensor::from_data(c, {B, n}),
+                     Gt = Tensor::from_data(G, {B, n, m}).matrix_transpose(),
+                     At = Tensor::from_data(A, {B, p, m}), bt = Tensor::from_data(rhs, {B, p});
         Options batched, looped, exact;
         looped.batch_union = false;
         exact.method = "exact";
@@ -95,14 +96,13 @@ void bounds_property(const std::string &b) {
 
 /// Wrong shapes, rows and methods are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Tensor c = Tensor::zeros({1, 2, 1}), G = Tensor::from_data({1, 0, 0, 1}, {1, 2, 2});
-    const Tensor A = Tensor::from_data({1, 1}, {1, 1, 2}),
-                 rhs = Tensor::from_data({-1.5}, {1, 1, 1});
+    const Tensor c = Tensor::zeros({1, 2}), G = Tensor::from_data({1, 0, 0, 1}, {1, 2, 2});
+    const Tensor A = Tensor::from_data({1, 1}, {1, 1, 2}), rhs = Tensor::from_data({-1.5}, {1, 1});
     check(
         test::raises([&] { ConZonotope::approximate_bounds(c, G, Tensor::zeros({1, 1, 1}), rhs); },
                      Error::dimension_mismatch),
         "approximate_bounds: A has the columns of G");
-    check(test::raises([&] { ConZonotope::approximate_bounds(c, G, A, Tensor::zeros({1, 2, 1})); },
+    check(test::raises([&] { ConZonotope::approximate_bounds(c, G, A, Tensor::zeros({1, 2})); },
                        Error::dimension_mismatch),
           "approximate_bounds: b has the rows of A");
     check(test::raises([&] { ConZonotope::approximate_bounds(c, G, A, rhs, std::nullopt, 2); },

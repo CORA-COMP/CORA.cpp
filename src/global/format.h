@@ -31,12 +31,6 @@ inline std::string shape_text(const std::vector<int64_t> &shape) {
     return text + ")";
 }
 
-/// Whether t is a column (..., n, 1) of n rows.
-inline bool is_column(const Tensor &t, int64_t n) {
-    const std::vector<int64_t> shape = t.shape();
-    return shape.size() >= 2 && shape.back() == 1 && shape[shape.size() - 2] == n;
-}
-
 /// Whether t is a point (..., n) of n coordinates, the layout of a set's points (#163).
 inline bool is_vector(const Tensor &t, int64_t n) { return t.ndim() >= 1 && t.shape().back() == n; }
 

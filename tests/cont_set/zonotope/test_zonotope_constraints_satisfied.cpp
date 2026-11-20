@@ -27,16 +27,15 @@ namespace {
 void strict_inequality_on_a_box(const std::string &b) {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const Tensor C({{1.0, 1.0}});
-    check(Z.constraints_satisfied(C, column({3.0})), b + ": x1 + x2 < 3");
-    check(!Z.constraints_satisfied(C, column({2.0})),
-          b + ": x1 + x2 < 2 is not certain (equality)");
-    check(!Z.constraints_satisfied(C, column({1.9})), b + ": x1 + x2 < 1.9 fails");
+    check(Z.constraints_satisfied(C, vec({3.0})), b + ": x1 + x2 < 3");
+    check(!Z.constraints_satisfied(C, vec({2.0})), b + ": x1 + x2 < 2 is not certain (equality)");
+    check(!Z.constraints_satisfied(C, vec({1.9})), b + ": x1 + x2 < 1.9 fails");
     const Tensor C2({{1.0, 1.0}, {1.0, -1.0}});
-    check(Z.constraints_satisfied(C2, column({2.5, 2.5})), b + ": two constraints");
-    check(!Z.constraints_satisfied(C2, column({2.5, 1.0})), b + ": the second fails");
+    check(Z.constraints_satisfied(C2, vec({2.5, 2.5})), b + ": two constraints");
+    check(!Z.constraints_satisfied(C2, vec({2.5, 1.0})), b + ": the second fails");
     const Zonotope batch = Zonotope::stack({Z, Z + vec({2.0, 0.0})});
-    check(!batch.constraints_satisfied(C, column({3.0})), b + ": a batch needs every member");
-    check(batch.constraints_satisfied(C, column({5.0})), b + ": a batch, every member");
+    check(!batch.constraints_satisfied(C, vec({3.0})), b + ": a batch needs every member");
+    check(batch.constraints_satisfied(C, vec({5.0})), b + ": a batch, every member");
 }
 
 /// Stated property: "true" implies C x < d for every sampled point of the zonotope.
@@ -48,10 +47,11 @@ void true_is_sound(const std::string &b) {
         std::vector<double> data(6), rhs(2);
         rng.normal(data.data(), data.size(), 1.0);
         rng.normal(rhs.data(), rhs.size(), 8.0);
-        const Tensor C = Tensor::from_data(data, {2, 3}), d = column(rhs);
+        const Tensor C = Tensor::from_data(data, {2, 3}), d = vec(rhs);
         if (!Z.constraints_satisfied(C, d)) continue;
         ++accepted;
-        const Tensor values = C.matmul(Z.rand_point(100, rng).matrix_transpose()) - d;
+        const Tensor values =
+            C.matmul(Z.rand_point(100, rng).matrix_transpose()) - d.expand_dims(-1);
         check(values.max().item() < 0, b + ": a certified constraint holds for all samples");
     }
     check(accepted > 3, b + ": the property was exercised");
@@ -60,15 +60,15 @@ void true_is_sound(const std::string &b) {
 /// Wrong shapes are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    check(test::raises([&] { Z.constraints_satisfied(Tensor({{1.0, 1.0, 1.0}}), column({1.0})); },
+    check(test::raises([&] { Z.constraints_satisfied(Tensor({{1.0, 1.0, 1.0}}), vec({1.0})); },
                        Error::dimension_mismatch),
           "constraints_satisfied: C with 3 columns");
-    check(test::raises([&] { Z.constraints_satisfied(Tensor({{1.0, 1.0}}), column({1.0, 2.0})); },
+    check(test::raises([&] { Z.constraints_satisfied(Tensor({{1.0, 1.0}}), vec({1.0, 2.0})); },
                        Error::dimension_mismatch),
           "constraints_satisfied: d with 2 rows");
-    const bool on = Z.constraints_satisfied(Tensor({{1.0, 1.0}}), column({3.0}));
+    const bool on = Z.constraints_satisfied(Tensor({{1.0, 1.0}}), vec({3.0}));
     ChecksScope off(false);
-    check(Z.constraints_satisfied(Tensor({{1.0, 1.0}}), column({3.0})) == on,
+    check(Z.constraints_satisfied(Tensor({{1.0, 1.0}}), vec({3.0})) == on,
           "constraints_satisfied: the same with the checks off");
 }
 

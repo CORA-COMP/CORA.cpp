@@ -12,6 +12,7 @@
 // Last update:   18-November-2026
 // Reviewed:      ---
 
+#include "cont_set/con_zonotope/private/priv.h"
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "global/format.h"
 
@@ -30,7 +31,7 @@ std::string ConZonotope::display_impl() const {
             format_matrix(G_.matrix_transpose(), "    ");
     text += "- constraint matrix A (" + std::to_string(A().shape()[A().ndim() - 2]) + " rows):\n";
     text += format_matrix(A(), "    ");
-    return text + "- constraint offset b:\n" + format_matrix(b(), "    ");
+    return text + "- constraint offset b:\n" + format_matrix(priv_b_column(*this), "    ");
 }
 
 } // namespace cora

@@ -149,7 +149,7 @@ Interval ConZonotope::interval_tight(int passes) const {
     return Cut{c_.expand_dims(-1),
                G_.matrix_transpose(),
                A(),
-               b(),
+               priv_b_column(*this),
                zeros_block(c_.expand_dims(-1), 0, G_.size(-2)),
                zeros_block(c_.expand_dims(-1), 0, 1)}
         .interval_tight(passes);

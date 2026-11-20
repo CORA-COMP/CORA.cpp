@@ -68,7 +68,8 @@ std::pair<std::vector<int64_t>, std::vector<int64_t>> priv_nonzero_parts(const C
     // a column is kept if [G; A] has a nonzero entry
     const Tensor cols = Tensor::concat({cz.generators().matrix_transpose(), cz.A()}, -2);
     const Tensor col_used = cols.not_equal(cols.zeros_like()).any(-2);
-    return {priv_nonzero_rows(cz.A(), cz.b()), aux_positions(col_used, cz.A().shape().back())};
+    return {priv_nonzero_rows(cz.A(), priv_b_column(cz)),
+            aux_positions(col_used, cz.A().shape().back())};
 }
 
 ConZonotope priv_compact(const ConZonotope &cz) {
@@ -76,7 +77,7 @@ ConZonotope priv_compact(const ConZonotope &cz) {
     const Tensor A = select_columns(cz.A(), cols);
     // the constraint rows 0 = 0 go, an infeasible zero row 0 = b stays
     const Tensor kept_A = rows.empty() ? zeros_block(A, 0, A.shape().back()) : A.take(rows, -2);
-    const Tensor kept_b = rows.empty() ? zeros_block(cz.b(), 0, 1) : cz.b().take(rows, -2);
+    const Tensor kept_b = rows.empty() ? cz.b().slice(-1, 0, 0) : cz.b().take(rows, -1);
     return {cz.c().expand_dims(-1),
             (select_columns(cz.generators().matrix_transpose(), cols)).matrix_transpose(), kept_A,
             kept_b};
@@ -93,7 +94,7 @@ ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
 
 ConZonotope priv_minkowski_sum(const ConZonotope &cz1, const ConZonotope &cz2) {
     return {cz1.c() + cz2.c(), Tensor::concat({cz1.generators(), cz2.generators()}, -2),
-            Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -2)};
+            Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -1)};
 }
 
 ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const Tensor &Mc,
@@ -104,7 +105,7 @@ ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const
     // each set keeps its constraints; one row per dimension makes the images agree
     const Tensor agree = Tensor::concat({MG, -cz2.generators()}, -2).matrix_transpose();
     const Tensor rows = Tensor::concat({Tensor::block_diag({cz1.A(), cz2.A()}), agree}, -2);
-    const Tensor b = Tensor::concat({cz1.b(), cz2.b(), (cz2.c() - Mc).expand_dims(-1)}, -2);
+    const Tensor b = Tensor::concat({cz1.b(), cz2.b(), cz2.c() - Mc}, -1);
     return {cz1.c(), G, rows, b};
 }
 

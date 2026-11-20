@@ -5,7 +5,7 @@
 //
 // Syntax:   res = Z.constraints_satisfied(C, d);
 // Inputs:   C - matrix (k, n)
-//           d - column (k, 1)
+//           d - offsets (..., k)
 // Outputs:  res - true if C x < d holds for every x in Z, by a bound; false says nothing
 // See also: interval, linear_map
 //
@@ -13,7 +13,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -32,13 +32,13 @@ bool Zonotope::constraints_satisfied(const Tensor &C, const Tensor &d) const {
         return "constraints_satisfied: C must have " + std::to_string(dim()) +
                " columns (the dimension of the zonotope), got the shape " + shape_text(C.shape());
     });
-    CORA_CHECK(is_column(d, C.shape()[C.ndim() - 2]), Error::dimension_mismatch, [&] {
-        return "constraints_satisfied: d must be a column with one entry per row of C, got the "
-               "shape " +
+    CORA_CHECK(is_vector(d, C.shape()[C.ndim() - 2]), Error::dimension_mismatch, [&] {
+        return "constraints_satisfied: d must be a vector (..., k) with one entry per row of C, "
+               "got the shape " +
                shape_text(d.shape());
     });
-    // the upper bounds (..., k) of C x against the column d (..., k, 1)
-    const Tensor below = linear_map(C).interval().sup().detach().less(d.detach().squeeze(-1));
+    // the upper bounds (..., k) of C x against d (..., k)
+    const Tensor below = linear_map(C).interval().sup().detach().less(d.detach());
     return below.min().item() != 0;
 }
 

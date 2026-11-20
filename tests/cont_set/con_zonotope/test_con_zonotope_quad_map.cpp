@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,7 +33,7 @@ void quad_map_known(const std::string &b) {
     check(close(r.c().expand_dims(-1), {0.5}, 0) &&
               close(r.generators().matrix_transpose(), {0.5, 0}, 0),
           b + ": x^2");
-    const ConZonotope a(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), column({0.0}));
+    const ConZonotope a(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), vec({0.0}));
     const ConZonotope q = a.quad_map({Tensor({{1.0}})});
     check(close(q.A(), {0, 0, 1, 1, 0}, 0) && close(q.b(), {0}, 0),
           b + ": the constraint on the linear block");

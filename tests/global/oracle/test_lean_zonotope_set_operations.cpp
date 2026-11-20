@@ -103,10 +103,12 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             // constraints just above and just below the support of Z
             const Tensor C = rnd.matrix(3, n);
-            const Tensor sup = Z.linear_map(C).interval().sup().expand_dims(-1); // d is a column
+            const Tensor sup = Z.linear_map(C).interval().sup();
             for (const double margin : {1e-3, -1e-3}) {
+                // d (k); the oracle takes CORA's column
                 const Tensor d = sup + margin;
-                oracle::check(Z.constraints_satisfied(C, d), lean::Zonotope(Z).constr_sat(C, d));
+                oracle::check(Z.constraints_satisfied(C, d),
+                              lean::Zonotope(Z).constr_sat(C, d.expand_dims(-1)));
             }
         }
     });

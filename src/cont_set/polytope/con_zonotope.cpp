@@ -49,7 +49,7 @@ ConZonotope aux_around_box(const Tensor &lo, const Tensor &hi, const Tensor &A_a
     const Tensor c = (lo + hi) * 0.5, G = ((hi - lo) * 0.5).diag();
     return {c, (Tensor::concat({G, G.zeros_like({n, rows})}, -1)).matrix_transpose(),
             Tensor::concat({A_all.matmul(G), ((sigma - b_all) * 0.5).diag()}, -1),
-            (b_all + sigma) * 0.5 - A_all.matmul(c)};
+            ((b_all + sigma) * 0.5 - A_all.matmul(c)).squeeze(-1)};
 }
 
 } // namespace

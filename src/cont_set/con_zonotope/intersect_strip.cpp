@@ -9,7 +9,7 @@
 //           cZres = cz.intersect_strip(C, phi, y, method);
 //           cZres = cz.intersect_strip(C, phi, y, lambda);
 //           cZres = cz.intersect_strip(C, phi, y, aux);
-// Inputs:   C (k, n), phi (k, 1), y (k, 1) - the k strips
+// Inputs:   C (k, n), phi (k), y (k) - the k strips
 //           method - the gain: "normGen" (default), "alamo-FRad", "wang-FRad" or "bravo"
 // Outputs:  cZres - exact for every lambda: center c + lambda (y - C c), generators
 //           [(I - lambda C) G, lambda diag(phi)], the constraints of cz and one equality per strip
@@ -20,7 +20,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -46,13 +46,14 @@ ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tens
     const Tensor CG = C.matmul(cz.generators().matrix_transpose());
     Shape widths = CG.shape();
     widths.back() = k;
-    const Tensor rows = Tensor::concat({CG, -phi.diag().broadcast_to(widths)}, -1);
+    const Tensor rows = Tensor::concat({CG, -phi.expand_dims(-1).diag().broadcast_to(widths)}, -1);
     const Tensor A = Tensor::concat(
         {Tensor::concat({cz.A(), zeros_block(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
          rows},
         -2);
     return {Z.center(), Z.generators(), A,
-            Tensor::concat({cz.b(), y - C.matmul(cz.c().expand_dims(-1))}, -2)};
+            Tensor::concat(
+                {cz.b(), (y.expand_dims(-1) - C.matmul(cz.c().expand_dims(-1))).squeeze(-1)}, -1)};
 }
 
 // Refusals ----------------------------------------------------------------------------------------

@@ -14,6 +14,7 @@ using namespace cora;
 using test::check;
 using test::close;
 using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -35,9 +36,8 @@ void con_intersect_known(const std::string &b) {
           b + ": the points [0.5, 1.5]");
     // the constraints of both sets stay, first set's rows first
     const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
-                        column({1.0}));
-    const ConZonotope D(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}),
-                        column({0.0}));
+                        vec({1.0}));
+    const ConZonotope D(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}), vec({0.0}));
     const ConZonotope R2 = C.con_intersect(D, Tensor({{1.0, 0.0}}));
     check(close(R2.A(), {1, 1, 0, 0, 0, 0, 1, -1, 1, 0, -1, -1}, 0),
           b + ": the rows: C, D, agreement");

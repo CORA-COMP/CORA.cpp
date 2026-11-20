@@ -37,10 +37,12 @@ inline cora::ConZonotope random_con_zonotope(cora::Rng &rng, int n, int m, int p
             b[i] += B[i * (m - p) + j] * xi[p + j];
         }
     }
+    // the center as a column, transposed generators, the offsets a vector
     const auto tensor = [](const std::vector<double> &v, int64_t r, int64_t k) {
         return cora::Tensor::from_data(v, {r, k});
     };
-    return {tensor(c, n, 1), tensor(G, n, m).matrix_transpose(), tensor(A, p, m), tensor(b, p, 1)};
+    return {tensor(c, n, 1), tensor(G, n, m).matrix_transpose(), tensor(A, p, m),
+            cora::Tensor::from_data(b, {p})};
 }
 
 /// The hexagon {(a, b) | |a| <= 1, |b| <= 1, |a + b| <= 1} as x = G xi with xi_1 + xi_2 + xi_3 = 0
@@ -48,8 +50,7 @@ inline cora::ConZonotope random_con_zonotope(cora::Rng &rng, int n, int m, int p
 inline cora::ConZonotope hexagon() {
     return {cora::Tensor::from_data({0.0, 0.0}, {2, 1}),
             cora::Tensor::from_data({1.0, 0.0, 0.0, 1.0, 1.0, 1.0}, {3, 2}),
-            cora::Tensor::from_data({1.0, 1.0, 1.0}, {1, 3}),
-            cora::Tensor::from_data({0.0}, {1, 1})};
+            cora::Tensor::from_data({1.0, 1.0, 1.0}, {1, 3}), cora::Tensor::from_data({0.0}, {1})};
 }
 
 /// N points of the set as CORA's columns (n, N), the sets take their transpose (N, n) (#163); the

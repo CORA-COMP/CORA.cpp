@@ -62,7 +62,7 @@ ConZonotope::ConZonotope(const cora::ConZonotope &cz)
     : dtype_(Tensor(cz.c().expand_dims(-1)).dtype()), json_(Json::object()) {
     json_.set("c", Tensor(cz.c().expand_dims(-1)).to_json())
         .set("G", Tensor(cz.generators().matrix_transpose()).to_json());
-    json_.set("A", Tensor(cz.A()).to_json()).set("b", Tensor(cz.b()).to_json());
+    json_.set("A", Tensor(cz.A()).to_json()).set("b", Tensor(cz.b().expand_dims(-1)).to_json());
 }
 
 // the wire form of a cut: the factor rows C x <= d are the polytope's inequalities
@@ -91,10 +91,10 @@ cora::ConZonotope ConZonotope::nominal() const {
     if (!P)
         return {c.gather(), G.gather().matrix_transpose(),
                 Tensor::from_json(dtype_, json_.at("A")).gather(),
-                Tensor::from_json(dtype_, json_.at("b")).gather()};
+                Tensor::from_json(dtype_, json_.at("b")).gather().squeeze(-1)};
     return {c.gather(), G.gather().matrix_transpose(),
             Tensor::from_json(dtype_, P->at("Ae")).gather(),
-            Tensor::from_json(dtype_, P->at("be")).gather()};
+            Tensor::from_json(dtype_, P->at("be")).gather().squeeze(-1)};
 }
 
 CORA_FROM_NUMBERS std::pair<cora::Tensor, cora::Tensor> ConZonotope::inequalities() const {
