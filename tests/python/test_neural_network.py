@@ -58,10 +58,10 @@ class Evaluate(unittest.TestCase):
     def test_points_agree_with_torch(self):
         # the same network in torch, on 50 points and on one
         parameters = layers([3, 8, 8, 2])
-        x = torch.randn(3, 50, dtype=torch.float64)
+        x = torch.randn(50, 3, dtype=torch.float64)
         y = cora.NeuralNetwork(parameters).evaluate(x)
-        self.assertTrue(torch.allclose(y, torch_forward(parameters, x), atol=1e-12))
-        one = cora.NeuralNetwork(parameters).evaluate(x[:, 0])
+        self.assertTrue(torch.allclose(y, torch_forward(parameters, x.T).T, atol=1e-12))
+        one = cora.NeuralNetwork(parameters).evaluate(x[0])
         self.assertEqual(one.shape, (2,))
 
     def test_the_output_set_contains_the_outputs(self):
@@ -70,8 +70,8 @@ class Evaluate(unittest.TestCase):
         X = cora.Zonotope(torch.tensor([0.3, -0.2], dtype=torch.float64),
                           0.2 * torch.eye(2, dtype=torch.float64))
         box = net.evaluate(X).interval()
-        y = net.evaluate(X.rand_point(500, cora.Rng(1)).T)
-        self.assertTrue(bool((y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()))
+        y = net.evaluate(X.rand_point(500, cora.Rng(1)))
+        self.assertTrue(bool((y >= box.inf - 1e-9).all() and (y <= box.sup + 1e-9).all()))
 
     def test_the_regression_line_contains_the_outputs_and_sensitivity_is_the_jacobian(self):
         parameters = layers([2, 10, 10, 3])
@@ -80,8 +80,8 @@ class Evaluate(unittest.TestCase):
                           0.2 * torch.eye(2, dtype=torch.float64))
         # the regression line encloses the outputs of sampled points
         box = net.evaluate(X, poly_method="regression").interval()
-        y = net.evaluate(X.rand_point(500, cora.Rng(1)).T)
-        self.assertTrue(bool((y >= box.inf[:, None] - 1e-9).all() and (y <= box.sup[:, None] + 1e-9).all()))
+        y = net.evaluate(X.rand_point(500, cora.Rng(1)))
+        self.assertTrue(bool((y >= box.inf - 1e-9).all() and (y <= box.sup + 1e-9).all()))
         # the Jacobian at a point, against autograd
         x = torch.tensor([0.1, 0.4], dtype=torch.float64)
         reference = torch.autograd.functional.jacobian(

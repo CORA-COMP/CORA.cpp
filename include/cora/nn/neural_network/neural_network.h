@@ -105,8 +105,7 @@ struct RefineOptions {
 
 class NeuralNetwork {
   public:
-    /// One layer: the weights W (out, in) and the bias b (out), stored as the column (out, 1) on
-    /// which the evaluation runs (#163 moves it to the vector).
+    /// One layer: the weights W (out, in) and the bias b (out).
     struct Layer {
         Tensor W, b;
     };
@@ -124,7 +123,7 @@ class NeuralNetwork {
     const std::vector<Layer> &layers() const { return layers_; }
     const std::vector<Activation> &activations() const { return activations_; }
 
-    /// The outputs at the points, the columns of x (in, N): (out, N).
+    /// The outputs at the points, the rows of x (N, in): (N, out).
     Tensor evaluate(const Tensor &x) const;
 
     /// A zonotope that contains the outputs of every point of X (which may be a batch). Only the
@@ -160,7 +159,7 @@ class NeuralNetwork {
                                          const std::vector<std::vector<double>> &heuristic,
                                          const RefineOptions &options = {}) const;
 
-    /// The Jacobian (out, in) of the network at the point x (in, 1), by the chain rule (CORA's
+    /// The Jacobian (out, in) of the network at the point x (in), by the chain rule (CORA's
     /// calcSensitivity of one point, whose mean(abs(S), 1) is the sensitivity of each input).
     Tensor sensitivity(const Tensor &x) const;
 

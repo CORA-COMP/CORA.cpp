@@ -13,9 +13,9 @@
 // once by tensor operations; a layer of order above 1 goes neuron by neuron (priv_poly_layer.cpp).
 //
 // Syntax:   y = nn.evaluate(x);   Y = nn.evaluate(X);   XY = nn.evaluate_with_input(X);
-// Inputs:   x - points, columns (in, N)
+// Inputs:   x - points, one per row (N, in)
 //           X - a zonotope or polynomial zonotope of dimension in (a zonotope may be a batch)
-// Outputs:  y - the outputs (out, N)
+// Outputs:  y - the outputs, one per row (N, out)
 //           Y - a zonotope that contains the outputs of all points of X
 //           XY - the set of the pairs (x, N(x)), dimension in + out
 // See also: cora/nn/neural_network/neural_network.h, Zonotope::interval
@@ -323,7 +323,7 @@ Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
                 bool keep_zero, const NnOptions &options,
                 std::vector<std::vector<double>> *errors = nullptr) {
     for (std::size_t k = 0; k < layers.size(); ++k) {
-        r.c = layers[k].W.matmul(r.c) + layers[k].b;
+        r.c = layers[k].W.matmul(r.c) + layers[k].b.expand_dims(-1);
         r.G = layers[k].W.matmul(r.G);
         r.GI = layers[k].W.matmul(r.GI);
         // a layer of order k goes neuron by neuron on tracked rows
@@ -561,16 +561,16 @@ Tensor priv_even_mask(const Tensor &like, const Exponents &E) {
 
 Tensor NeuralNetwork::evaluate(const Tensor &x) const {
     detail::Entry entry;
-    CORA_CHECK(x.shape().size() == 2 && x.shape()[0] == input_dim(), Error::dimension_mismatch,
+    CORA_CHECK(x.shape().size() == 2 && x.shape()[1] == input_dim(), Error::dimension_mismatch,
                [&] {
-                   return "evaluate: the points must be columns (" + std::to_string(input_dim()) +
-                          ", N), got the shape " + shape_text(x.shape());
+                   return "evaluate: the points must be rows (N, " + std::to_string(input_dim()) +
+                          "), got the shape " + shape_text(x.shape());
                });
-    // an affine map per layer, then its activation
-    Tensor h = x;
+    // an affine map per layer on the columns of the points, then its activation
+    Tensor h = x.matrix_transpose();
     for (std::size_t k = 0; k < layers_.size(); ++k)
-        h = aux_apply(activations_[k], layers_[k].W.matmul(h) + layers_[k].b);
-    return h;
+        h = aux_apply(activations_[k], layers_[k].W.matmul(h) + layers_[k].b.expand_dims(-1));
+    return h.matrix_transpose();
 }
 
 // Sets --------------------------------------------------------------------------------------------

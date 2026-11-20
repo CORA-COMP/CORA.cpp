@@ -7,7 +7,7 @@
 // column of this matrix (CORA's mean(abs(calcSensitivity(x)), 1)).
 //
 // Syntax:   J = nn.sensitivity(x);
-// Inputs:   x - the point, a column (in, 1)
+// Inputs:   x - the point (in)
 // Outputs:  J - the Jacobian (out, in)
 // See also: cora/nn/neural_network/neural_network.h, evaluate.cpp
 //
@@ -30,15 +30,15 @@ namespace cora {
 
 Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
     detail::Entry entry;
-    CORA_CHECK(x.shape() == std::vector<int64_t>({input_dim(), 1}), Error::dimension_mismatch, [&] {
-        return "sensitivity: the point must be a column (" + std::to_string(input_dim()) +
-               ", 1), got the shape " + shape_text(x.shape());
+    CORA_CHECK(x.shape() == std::vector<int64_t>({input_dim()}), Error::dimension_mismatch, [&] {
+        return "sensitivity: the point must be a vector (" + std::to_string(input_dim()) +
+               "), got the shape " + shape_text(x.shape());
     });
-    // the Jacobian of the layers so far, from the identity, and the value after them
-    Tensor h = x, J = x.eye_like(input_dim());
+    // the Jacobian of the layers so far, from the identity, and the value after them (a column)
+    Tensor h = x.expand_dims(-1), J = x.eye_like(input_dim());
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         // the pre-activation of the layer
-        const Tensor z = layers_[k].W.matmul(h) + layers_[k].b;
+        const Tensor z = layers_[k].W.matmul(h) + layers_[k].b.expand_dims(-1);
         // the value after the activation and its derivative
         const Tensor one = z.ones_like(), zero = z.zeros_like();
         Tensor derivative = one;

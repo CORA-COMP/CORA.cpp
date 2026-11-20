@@ -74,7 +74,7 @@ ClosedLoopTrajectories NeurNetContrSys::simulate(const Tensor &x0, const std::op
     const std::vector<double> periods = aux_grid(0.0, t_final, dt_);
     for (std::size_t p = 0; p + 1 < periods.size(); ++p) {
         // the network output of the start of the period, held, and the external input
-        Tensor input = nn_.evaluate(x);
+        Tensor input = nn_.evaluate(x.matrix_transpose()).matrix_transpose(); // states (n, N)
         if (u) input = Tensor::concat({input, u->broadcast_to({n_ext, N})}, 0);
         const std::vector<double> inner = aux_grid(periods[p], periods[p + 1], time_step);
         for (std::size_t i = 0; i + 1 < inner.size(); ++i) {

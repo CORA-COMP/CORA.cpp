@@ -107,10 +107,10 @@ void the_regression_enclosure_holds_the_outputs(const std::string &b) {
         return Tensor::from_data(data, {rows, cols});
     };
     const NeuralNetwork nn(
-        {{random(4, 3, 1.0), random(4, 1, 0.5)},
-         {random(4, 4, 1.0), random(4, 1, 0.5)},
-         {random(3, 4, 1.0), random(3, 1, 0.5)},
-         {random(2, 3, 1.0), random(2, 1, 0.5)}},
+        {{random(4, 3, 1.0), random(4, 1, 0.5).squeeze(-1)},
+         {random(4, 4, 1.0), random(4, 1, 0.5).squeeze(-1)},
+         {random(3, 4, 1.0), random(3, 1, 0.5).squeeze(-1)},
+         {random(2, 3, 1.0), random(2, 1, 0.5).squeeze(-1)}},
         {Activation::tanh, Activation::sigmoid, Activation::relu, Activation::identity});
     const Zonotope X = Zonotope::generate_random(rng, 3, std::nullopt, 3);
     // the enclosures by the regression line, as a zonotope and as a polynomial zonotope
@@ -121,7 +121,7 @@ void the_regression_enclosure_holds_the_outputs(const std::string &b) {
     int violations = 0;
     for (const std::string type : {"standard", "extreme"}) {
         const std::vector<double> y =
-            nn.evaluate(X.rand_point(200, rng, type).matrix_transpose()).data();
+            nn.evaluate(X.rand_point(200, rng, type)).matrix_transpose().data();
         for (int k = 0; k < 10; ++k) {
             const std::vector<double> d = test::random_direction(rng, 2);
             const double bound = test::support(Y, d), bound_poly = test::support(Q.zonotope(), d);

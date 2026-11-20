@@ -40,15 +40,16 @@ NeuralNetwork::NeuralNetwork(std::vector<Layer> layers, std::vector<Activation> 
                " layers";
     });
     for (std::size_t k = 0; k < layers_.size(); ++k) {
-        // a bias vector (out) is stored as the column the evaluation runs on
-        Tensor &bias = layers_[k].b;
-        if (bias.defined() && bias.ndim() == 1) bias = bias.expand_dims(-1);
+        // the weights a matrix (out, in), the bias a vector (out)
+        const Tensor &bias = layers_[k].b;
+        CORA_CHECK(bias.defined(), Error::wrong_input_in_constructor,
+                   [&] { return "NeuralNetwork: layer " + std::to_string(k) + " needs a bias"; });
         const std::vector<int64_t> w = layers_[k].W.shape(), b = bias.shape();
         CORA_CHECK(w.size() == 2, Error::wrong_input_in_constructor, [&] {
             return "NeuralNetwork: the weights of layer " + std::to_string(k) +
                    " must be a matrix (out, in), got the shape " + shape_text(w);
         });
-        CORA_CHECK(b == std::vector<int64_t>({w[0], 1}), Error::wrong_input_in_constructor, [&] {
+        CORA_CHECK(b == std::vector<int64_t>({w[0]}), Error::wrong_input_in_constructor, [&] {
             return "NeuralNetwork: the bias of layer " + std::to_string(k) + " must be a vector (" +
                    std::to_string(w[0]) + "), one entry per output, got " + shape_text(b);
         });

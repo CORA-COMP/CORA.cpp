@@ -141,8 +141,8 @@ void order_1_is_the_line_bit_for_bit(const std::string &b) {
 
 /// The outputs of the points of a network enclosed by the zonotope of the output set.
 int aux_outside(const NeuralNetwork &nn, const PolyZonotope &X, const PolyZonotope &Y, Rng &rng) {
-    const Tensor x = X.rand_point(400, rng).matrix_transpose(); // columns (n, N)
-    const std::vector<double> y = nn.evaluate(x).data();
+    const Tensor x = X.rand_point(400, rng);                                // rows (N, n)
+    const std::vector<double> y = nn.evaluate(x).matrix_transpose().data(); // columns (out, N)
     const Interval I = Y.zonotope().interval();
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
     const std::size_t m = lo.size();
@@ -215,9 +215,10 @@ void networks_of_order_k_enclose_the_outputs(const std::string &b) {
         rng.normal(data.data(), data.size(), 0.8);
         return Tensor::from_data(data, {r, c});
     };
-    const NeuralNetwork nn(
-        {{matrix(5, 3), matrix(5, 1)}, {matrix(4, 5), matrix(4, 1)}, {matrix(2, 4), matrix(2, 1)}},
-        {Activation::tanh, Activation::sigmoid, Activation::identity});
+    const NeuralNetwork nn({{matrix(5, 3), matrix(5, 1).squeeze(-1)},
+                            {matrix(4, 5), matrix(4, 1).squeeze(-1)},
+                            {matrix(2, 4), matrix(2, 1).squeeze(-1)}},
+                           {Activation::tanh, Activation::sigmoid, Activation::identity});
     // dependent generators with a shared factor, and independent ones
     const PolyZonotope X(Tensor({0.1, -0.3, 0.2}),
                          Tensor({{0.4, 0.0, 0.2}, {0.1, 0.3, 0.0}, {0.0, 0.2, 0.3}}),
