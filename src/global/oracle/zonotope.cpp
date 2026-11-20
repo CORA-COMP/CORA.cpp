@@ -312,6 +312,17 @@ Certified Zonotope::is_intersecting(const Zonotope &Z2, double tol) const {
                         {{"Z", *this}, {"Z2", Z2}, {"tol", number(tol)}});
 }
 
+// the box test of the approx mode, against a zonotope or a box
+bool Zonotope::is_intersecting_approx(const Zonotope &Z2, double tol) const {
+    return ask("zonotope.isIntersectingApprox", {{"Z", *this}, {"Z2", Z2}, {"tol", tol}})
+        .get<bool>("value");
+}
+
+bool Zonotope::is_intersecting_approx(const Interval &I, double tol) const {
+    return ask("zonotope.isIntersectingApprox", {{"Z", *this}, {"I", I}, {"tol", tol}})
+        .get<bool>("value");
+}
+
 // Numbers ------------------------------------------------------------------------------------
 
 double Zonotope::norm(int type, const std::string &mode) const {

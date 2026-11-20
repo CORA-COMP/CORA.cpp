@@ -1,18 +1,19 @@
 // test_lean_zonotope_measures - exact_plus, is_bounded, is_full_dim, isequal, norm, enclose_points,
 //
-// enclose_many and lift of Zonotope against the CORALean oracle
+// enclose_many, lift and the approx is_intersecting of Zonotope against the CORALean oracle
 //
 // ORACLE: contSet/@zonotope/exactPlus.m
 // ORACLE: contSet/@zonotope/isBounded.m
 // ORACLE: contSet/@zonotope/isFullDim.m
+// ORACLE: contSet/@zonotope/isIntersecting_.m
 // ORACLE: contSet/@zonotope/isequal.m
 // ORACLE: contSet/@zonotope/norm_.m
 // ORACLE: contSet/@zonotope/enclosePoints.m
 // ORACLE: contSet/@zonotope/encloseMany.m
 // ORACLE: contSet/@zonotope/lift_.m
-// Authors:       Tobias Ladner
+// Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -20,6 +21,7 @@
 #include "oracle_testing.h"
 
 #include <cmath>
+#include <vector>
 
 using namespace cora;
 
@@ -47,6 +49,33 @@ int main() {
     oracle::run("zonotope.isBounded", [&](oracle::Random &rnd) {
         const Zonotope Z = rnd.zonotope(3, 5);
         oracle::check(Z.is_bounded(), lean::Zonotope(Z).is_bounded());
+    });
+
+    // the box test: a zonotope or a box below the set's box in the first coordinate, apart by gap
+    oracle::run("zonotope.isIntersectingApprox", [&](oracle::Random &rnd) {
+        for (const auto &[n, m] : {std::pair{2, 3}, {3, 5}, {5, 8}}) {
+            const Zonotope Z = rnd.zonotope(n, m), Z2 = rnd.zonotope(n, m);
+            const std::vector<double> lo = Z.interval().inf().data();
+            // the gaps at the end of the range only on lean, where both boxes are the same
+            std::vector<double> gaps = {0.5, -0.5, 2.0};
+            if (oracle::pass() == "lean") gaps.insert(gaps.end(), {0.0, 0.25});
+            for (const double gap : gaps)
+                for (const double tol : {0.0, 0.25}) {
+                    std::vector<double> inf(std::size_t(n), -1e3), sup(std::size_t(n), 1e3);
+                    sup[0] = lo[0] - gap;
+                    inf[0] = sup[0] - 1.0;
+                    const Interval I(Tensor::from_data(inf, {n}), Tensor::from_data(sup, {n}));
+                    test::check(Z.is_intersecting(I, "approx", tol) ==
+                                    lean::Zonotope(Z).is_intersecting_approx(I, tol),
+                                "isIntersecting: the box's answer");
+                }
+            // a zonotope near the set and one far from it
+            const Zonotope far((Z2.center() * 40.0), Z2.generators());
+            for (const Zonotope &S : {Z2, far})
+                test::check(Z.is_intersecting(S, "approx", 0.0) ==
+                                lean::Zonotope(Z).is_intersecting_approx(lean::Zonotope(S), 0.0),
+                            "isIntersecting: the zonotope's answer");
+        }
     });
 
     oracle::run("zonotope.isFullDim", [&](oracle::Random &rnd) {

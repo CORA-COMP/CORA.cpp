@@ -12,10 +12,10 @@
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-set(CORALEAN_VERSION "oracle-20261120-17cdf1575")
+set(CORALEAN_VERSION "oracle-20261120-08cadff32")
 set(CORALEAN_URL "https://github.com/TUMcps/CORALean/raw/${CORALEAN_VERSION}")
 set(CORALEAN_ARCHIVE "oracle-linux-x86_64.tar.xz")
-set(CORALEAN_ARCHIVE_SHA256 "dd7bab985687f52f496c55a8299bab7990dd903495a7a1bea926085d5bc5d46d")
+set(CORALEAN_ARCHIVE_SHA256 "21ddcfa2ab7c42d06cc34144b1481c6495d41146b69d9941835de318f191db7c")
 # the executable inside the archive that CORACPP_ORACLE runs
 set(CORALEAN_ORACLE_ASSET "oracle-unsound-linux-x86_64")
 

@@ -367,14 +367,15 @@ splitting of `verify` above. CORALean needs `NeurNetContrSys.verify` with a spli
 `zonotope.quadMapTri` (MR !921; `test_lean_zonotope_quad_map`: random zonotopes and the recorded calls of
 TRAF22 and ROBE25_1; the lean backend's matmul and sums already follow its evaluation order, the
 `nonzeroFilter` and the box of a single nonzero output are CORA.cpp's own). It needs an oracle tag that
-includes !921. The other float rows the benchmarks run were
+includes !921. `zonotope/isIntersecting_` is `oracle` in its `'approx'` mode against
+`zonotope.isIntersectingApprox` (the boxes, the one of `S` widened by `tol`; `test_lean_zonotope_measures`);
+the `'exact'` mode is a linear program and stays untested against the oracle. The other float rows the benchmarks run were
 read against the pinned oracle's op and kept out of `oracle`; each stays until the named change.
 
 | row | op | why it is not bit-exact | what would close it |
 |---|---|---|---|
 | `zonotope/polytope` | `zonotope.polytope` (`Zonotope.hPolytopeFacets`) | the same facets, in the reverse order of `nchoosek`; sorted, the rows still differ in the last bits on random zonotopes (tested for 2 to 4 dimensions): CORA.cpp projects each cross product onto the orthogonal complement of its generators (`priv_zonotope_facet_normals`, kept for the gradient), CORALean normalizes the cross product itself | an oracle variant, or CORA.cpp dropping the projection (it costs the torch gradient) |
 | `zonotope/vertices_` | `zonotope.vertices` | CORA's `aux_vertices2Dfast` walks `V(:,i+1) = V(:,i) + 2 g_i` and shifts by the box, CORALean's `Zonotope.polygon` evaluates each corner as `c - sum g + 2 sum_{j<k} g`: another evaluation order, and for more than two dimensions `2^h` corners instead of the hull | `Zonotope.polygon` as a cumulative walk |
-| `zonotope/isIntersecting_` | `zonotope.isIntersecting` | the answer is certified one way (disjointness), CORA solves a linear program | none: a one-sided test stays `property` |
 | `conZonotope/supportFunc_`, `zonoBundle/supportFunc_` | `conZonotope.supportFunc`, `zonoBundle.supportFunc` | an upper bound from a checked dual certificate, CORA's value is the optimum of the linear program | none |
 | `conZonotope/isFullDim`, `conZonotope/rescale` | `conZonotope.isFullDim` | certified one way; `ConZonotope.rescale` takes the ranges of the factors as arguments, CORA finds them by linear programs or Gauss-Jordan | an op `conZonotope.rescale` with the ranges, to test the scaling alone |
 | `polytope/constraints`, `polytope/polytope` | none | `VPolytope.hPolytope` encloses the vertices along given directions `Aq`; CORA computes the facets of the hull | a facet enumeration in CORALean |

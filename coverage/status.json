@@ -854,7 +854,7 @@
   "contSet/zonotope/interval": "oracle",
   "contSet/zonotope/isBounded": "oracle",
   "contSet/zonotope/isFullDim": "oracle",
-  "contSet/zonotope/isIntersecting_": "property",
+  "contSet/zonotope/isIntersecting_": "oracle",
   "contSet/zonotope/isemptyobject": "todo",
   "contSet/zonotope/isequal": "oracle",
   "contSet/zonotope/lift_": "oracle",
