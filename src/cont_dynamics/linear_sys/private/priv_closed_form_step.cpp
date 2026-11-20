@@ -15,7 +15,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
@@ -275,6 +275,16 @@ std::optional<EntrywiseCorrections> priv_squaring_corrections(const Tensor &A, d
     return aux_corrections(A, time_step, taylor_terms,
                            aux_squaring_remainder(A, time_step, taylor_terms, *halvings),
                            priv_float_corr_coeff_low_tight);
+}
+
+// The remainder alone --------------------------------------------------------------------------
+
+std::optional<Tensor> priv_squaring_remainder(const Tensor &A, double time_step, int taylor_terms) {
+    // the halvings of |A| dt, then the remainder by squaring
+    const std::optional<int> halvings = priv_closed_form_halvings(A.abs(), time_step);
+    if (!halvings) return std::nullopt;
+    return Tensor::like(A, aux_squaring_remainder(A, time_step, taylor_terms, *halvings),
+                        Shape{A.size(-1), A.size(-1)});
 }
 
 std::pair<std::vector<double>, std::vector<double>>

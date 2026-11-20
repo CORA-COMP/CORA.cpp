@@ -1,6 +1,10 @@
 // exponential_remainder - the remainder of the Taylor series of the matrix exponential, as CORA's
 //
-// It contains the remainder of every matrix of A; Inf everywhere where exp(|A|) is not a number.
+// It contains the remainder of every matrix of A. e^|A| is CORALean's enclosure by scaling and
+// squaring (MatExp.exponentialRemainder, LinearSys.expRemainderSquaringFloat at the step 1), the
+// remainder its upper end less the series' lower end, bit for bit at nearest; where no count below
+// 128 halves |A| to norm 1/2, Inf everywhere. CORA calls expm, which no float guarantees; a batch
+// or a gradient still does (Inf where exp(|A|) is not a number).
 //
 // Syntax:   Interval E = mat_exp::exponential_remainder(A, max_order);
 // Inputs:   max_order - the order of the series that is summed;  A is square
@@ -11,14 +15,18 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   17-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/mat_exp/private/priv_factorial.h"
+#include "cont_dynamics/linear_sys/private/priv_closed_form_step.h"
 #include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
 #include "global/format.h"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -38,6 +46,19 @@ Interval mat_exp::exponential_remainder(const Interval &A, int64_t max_order) {
                std::to_string(max_order);
     });
     const Tensor M = A.abs().sup();
+    // CORALean's float definition, e^M by scaling and squaring; no halvings is unbounded
+    if (M.ndim() == 2 && !M.requires_grad()) {
+        // a matrix with an entry that is not finite has CORA's unbounded remainder
+        const std::vector<double> m = M.data();
+        const bool finite =
+            std::all_of(m.begin(), m.end(), [](double x) { return std::isfinite(x); });
+        const std::optional<Tensor> W =
+            finite ? priv_squaring_remainder(M, 1.0, int(max_order)) : std::nullopt;
+        const Tensor delta =
+            W ? *W : M.full_like(M.shape(), std::numeric_limits<double>::infinity());
+        return Interval::from_center_delta(M.zeros_like(), delta);
+    }
+    // exception: a batch or a gradient keeps CORA's expm (the host matrices are one (n, n))
     const Tensor exp_M = M.expm();
     Tensor power = M.eye_like(A.inf().size(-2)), partial = power;
     for (int64_t i = 1; i <= max_order; ++i) {

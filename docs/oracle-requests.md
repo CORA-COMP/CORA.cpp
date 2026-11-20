@@ -372,7 +372,7 @@ read against the pinned oracle's op and kept out of `oracle`; each stays until t
 | `conZonotope/supportFunc_`, `zonoBundle/supportFunc_` | `conZonotope.supportFunc`, `zonoBundle.supportFunc` | an upper bound from a checked dual certificate, CORA's value is the optimum of the linear program | none |
 | `conZonotope/isFullDim`, `conZonotope/rescale` | `conZonotope.isFullDim` | certified one way; `ConZonotope.rescale` takes the ranges of the factors as arguments, CORA finds them by linear programs or Gauss-Jordan | an op `conZonotope.rescale` with the ranges, to test the scaling alone |
 | `polytope/constraints`, `polytope/polytope` | none | `VPolytope.hPolytope` encloses the vertices along given directions `Aq`; CORA computes the facets of the hull | a facet enumeration in CORALean |
-| `linearSys/errorSolution_adaptive`, `linearSys/reach` | `linearSys.errorSolution_adaptive`, `linearSys.reach` | CORALean's step is the interval-matrix one (`reachFloat`, `errorSolutionAdaptiveFloat`), tested by tolerance in `test_lean_linear_sys_steps_agreement` | the closed-form step |
+| `linearSys/reach` | `linearSys.reach` | CORALean's step is the interval-matrix one (`reachFloat`), tested by tolerance in `test_lean_linear_sys_steps_agreement` | the closed-form step |
 | `contSet/interval/polyZonotope`, `contSet/zonotope/polyZonotope`, `polyZonotope/*` | none | the oracle has no polynomial zonotope codec until the poly-adaptive branch merges; then the generator order of the constructor (see above) decides | the ops of the section above |
 
 ## Support-function verify (PRs "oracle/verify-1" to "oracle/verify-4", CORALean MRs !948 to !950 and "oracle/verify-4")
@@ -447,3 +447,13 @@ oracle's `leakyRelu` at alpha 0); sigmoid and tanh are `nnSShapeLayer`'s (`getDe
 bracket's derivative bracket, `computeApproxPolyCustom` Singh's line); `computeApproxPoly` at order 1
 is the regression line through 20 points. The output rows of `evaluate_with_input` (the closed loop's
 call) are checked against the oracle's set too. The order-k path stays as above.
+
+## Matrix sets (PR "oracle/matrixsets", CORALean branch "oracle/matrixsets")
+
+| row | op | status |
+|---|---|---|
+| `matZonotope/reduce` | `matZonotope.reduce` (`Zonotope.reduceMat`) | `oracle`: CORA's `reduce(matZ,'girard',order)` as it is meant to run (CORA's code crashes, see CORALean's ledger), the stacked set reduced and unstacked |
+| `matZonotope/contains` | `matZonotope.contains` (`Zonotope.containsMat`) | `oracle`: a decision; CORA.cpp's linear program and the oracle's certificate agree on members near the center and on matrices outside the box (the certificate refutes nothing, so a member far from the center is not tested) |
+| `intervalMatrix/exponentialRemainder` | `intervalMatrix.exponentialRemainder` (`MatExp.exponentialRemainder`) | `oracle`: CORA.cpp now takes `e^|A|` by CORALean's scaling and squaring instead of `expm` (a batch or a gradient keeps `expm`) |
+| `linearSys/errorSolution_adaptive` | `linearSys.errorSolution_adaptive` | `oracle`: the radius lin-adaptive tunes by (`priv_error_radius_float`) is the oracle's bit for bit; the public `LinearSys::error_solution_adaptive` still cuts by the gain with `expm` and agrees by tolerance |
+| `matZonotope/expmOneParam` | none | debt: CORA.cpp's `K(r)` uses `pow(r, k) / k!` and point products; a float `MatExp.expmOneParam` whose rounding CORA.cpp follows (coefficient brackets, products into the error box) is the missing piece |

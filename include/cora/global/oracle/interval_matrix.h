@@ -11,13 +11,14 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   04-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/global/oracle/interval.h"
 
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -87,6 +88,10 @@ class IntervalMatrix {
     /// The enclosure of exp(A) of a square set: the Taylor series to max_order and a remainder
     /// from a bound of the norm (coarser than CORA's exponentialRemainder).
     Interval expm_independent(int64_t max_order) const;
+
+    /// [-W, W] with W >= e^|A| - sum_{i <= max_order} |A|^i / i! (CORA's exponentialRemainder),
+    /// e^|A| by scaling and squaring; none where no halving count below 128 exists.
+    std::optional<Interval> exponential_remainder(int64_t max_order) const;
 
     // Norms --------------------------------------------------------------------------------------
 

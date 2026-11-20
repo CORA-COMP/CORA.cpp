@@ -3,20 +3,23 @@
 // `matZonotope.*` ops)
 //
 // At nearest the nominal part (the center and the generators, in their order) is the oracle's bit
-// for bit.
+// for bit. contains is a decision: CORA.cpp's linear program and the oracle's certificate (true is
+// a proof, false refutes nothing) agree on members near the center and on matrices outside the box.
 //
 // ORACLE: matrixSet/@matZonotope/center.m
+// ORACLE: matrixSet/@matZonotope/contains.m
 // ORACLE: matrixSet/@matZonotope/intervalMatrix.m
 // ORACLE: matrixSet/@matZonotope/mpower.m
 // ORACLE: matrixSet/@matZonotope/mtimes.m
 // ORACLE: matrixSet/@matZonotope/plus.m
 // ORACLE: matrixSet/@matZonotope/powers.m
+// ORACLE: matrixSet/@matZonotope/reduce.m
 // ORACLE: matrixSet/@matZonotope/representsa.m
 // ORACLE: matrixSet/@matZonotope/transpose.m
 // ORACLE: matrixSet/@matZonotope/zonotope.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
@@ -99,6 +102,29 @@ int main() {
             for (const char *type : {"point", "origin"})
                 for (const Zonotope &A : {random, point, origin})
                     check(A.representsa(type, 0.0), lean::MatZonotope(A).representsa(type));
+        }
+    });
+    // Girard's reduction of the stacked set, unstacked: CORA's reduce as it is meant to run
+    test::oracle::run("matZonotope.reduce", [&](Random &rnd) {
+        for (const auto &[r, c, h, order] : std::vector<std::array<int64_t, 4>>{
+                 {2, 2, 9, 1}, {2, 3, 14, 2}, {3, 3, 20, 2}, {2, 2, 3, 1}})
+            for (int trial = 0; trial < 2; ++trial) {
+                const Zonotope A = rnd.mat_zonotope(r, c, h);
+                check(A.reduce(int(order)), lean::MatZonotope(A).reduce(order));
+            }
+    });
+    // members near the center and matrices outside the box of the set (see the header)
+    test::oracle::run("matZonotope.contains", [&](Random &rnd) {
+        for (const auto &[r, c, h] : std::vector<std::array<int64_t, 3>>{{2, 2, 8}, {2, 3, 12}}) {
+            const Zonotope A = rnd.mat_zonotope(r, c, h);
+            const Tensor G0 = A.generators().slice(-3, 0, 1).squeeze(-3);
+            const Tensor G1 = A.generators().slice(-3, 1, 2).squeeze(-3);
+            const Tensor member = A.center() + G0 * 0.0009765625 - G1 * 0.00048828125;
+            const Tensor outside = A.interval().sup() + 1.0;
+            for (const Tensor &M : {A.center(), member, outside})
+                check(A.contains(M), lean::MatZonotope(A).contains({lean::Tensor::from(M)}));
+            test::check(lean::MatZonotope(A).contains({lean::Tensor::from(member)}),
+                        "matZonotope.contains: the member is certified");
         }
     });
     return test::finish("lean mat_zonotope");

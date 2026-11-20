@@ -78,6 +78,10 @@ std::optional<EntrywiseCorrections> priv_entrywise_corrections(const Tensor &A, 
 std::optional<EntrywiseCorrections> priv_squaring_corrections(const Tensor &A, double time_step,
                                                               int taylor_terms);
 
+/// The remainder W >= e^{|A| dt} - sum_{i <= taylor_terms} (|A| dt)^i / i! of the (n, n) matrix A
+/// alone (LinearSys.expRemainderSquaringFloat at the halvings of |A| dt); none without halvings.
+std::optional<Tensor> priv_squaring_remainder(const Tensor &A, double time_step, int taylor_terms);
+
 /// priv_squaring_corrections, or priv_entrywise_corrections where it is asked for
 /// (CORACPP_TAYLOR=entrywise), for an (n, n) matrix without gradient whose matrices are all
 /// finite; none otherwise (CORA's expm path computes them). The last results are kept.
