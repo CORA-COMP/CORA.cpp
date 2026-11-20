@@ -240,7 +240,13 @@ Two tiers (`.github/workflows/`); the one check to require in the ruleset is `ci
   with the CORALean oracle: on a pull request only the tests the change can affect, in the merge queue every test of
   the group on the `main` it lands on. `instructions` (pull requests only) fails when a micro-benchmark of
   `benchmarks/micro` runs more than 3% more instructions than at the base commit. A documentation-only change skips
-  the builds. A new push cancels the older run. `backend-torch` and `gradcheck` need a libtorch build and run nightly.
+  the builds. A new push cancels the older run. `backend-torch` and `gradcheck` (job `torch-tests`) and the Python tests on libtorch (job
+  `python-torch-tests`, preset `python-torch`) need a libtorch build of about an hour each. They run beside `ci-gate`
+  (not in it) on every pull request that changes anything but documentation, `benchmarks/`, `coverage/`, `scripts/ci/`,
+  `scripts/coverage/`, `tests/global/test_*.py`, the competition entry or the MATLAB examples (`python3 scripts/ci/affected_tests.py
+  --torch origin/main HEAD` prints `true` or `false`; a new or unknown file runs them): a change of the library, of the
+  Python layer or of a test helper can break them without any other job noticing (#196, #203). Look at both before you merge;
+  the nightly runs the same tests.
 - **Every night** (`nightly.yml`): the full matrix of three operating systems, ASan and UBSan, the
   competition binary, clang-format, ruff and clang-tidy over the whole tree; skipped when `main` has not moved since the last successful night. A failed
   night opens an issue labelled `nightly`. A breakage that only another platform or preset shows

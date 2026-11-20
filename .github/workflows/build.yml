@@ -50,6 +50,11 @@ on:
         type: string
         default: ""
 
+      build_targets:
+        description: build only these targets (and what they need), e.g. `python`; overrides build_labels
+        type: string
+        default: ""
+
 jobs:
   build:
     name: ${{ inputs.preset }} on ${{ inputs.os }}
@@ -92,8 +97,11 @@ jobs:
         id: build
         env:
           BUILD_LABELS: ${{ inputs.build_labels }}
+          BUILD_TARGETS: ${{ inputs.build_targets }}
         run: |
-          if [ -z "$BUILD_LABELS" ]; then
+          if [ -n "$BUILD_TARGETS" ]; then
+            cmake --build --preset ${{ inputs.preset }} --target $BUILD_TARGETS
+          elif [ -z "$BUILD_LABELS" ]; then
             cmake --build --preset ${{ inputs.preset }}
           else
             # the test programs of those labels only (a test is named folder/program[:backend]; examples and benchmarks are not built)

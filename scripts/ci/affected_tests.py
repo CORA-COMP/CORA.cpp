@@ -2,6 +2,8 @@
 
 Syntax:   python scripts/ci/affected_tests.py <base> <head>      the files changed between two commits
           python scripts/ci/affected_tests.py --files a.cpp b.h  the given files
+          python scripts/ci/affected_tests.py --torch <base> <head>   true or false: does the change need the
+                                                                 libtorch runs (torch-tests, python-torch-tests)?
 Output:   a regex such as ^(cont_set/zonotope/test_zonotope_plus|conventions)(:[a-z]+)?$, or ALL (run every
           test), or NONE (nothing to run: the change is documentation only).
 Method:   the #include graph of src/, include/, tests/ and examples/ gives, for every test and
@@ -12,7 +14,7 @@ Method:   the #include graph of src/, include/, tests/ and examples/ gives, for 
 
 Authors:       Tobias Ladner
 Written:       02-November-2026
-Last update:   07-November-2026
+Last update:   20-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -38,6 +40,9 @@ ALL_PATTERNS = (r"^src/global/(tensor|backend)/", r"^include/cora/global/", r"(^
 # Changes no test of the core presets can see: documentation, the competition entry, other languages' examples.
 NO_TEST_PATTERNS = (r"\.md$", r"^docs/", r"^LICENSE", r"^\.gitignore$", r"^scripts/competition/",
                     r"^tests/competition/", r"^examples/(matlab|benchmarks)/")
+# What the libtorch runs of CI cannot see; anything else, a new or unknown file included, runs them.
+NO_TORCH_PATTERNS = NO_TEST_PATTERNS + (r"^benchmarks/", r"^coverage/", r"^scripts/(ci|coverage)/",
+                                        r"^tests/global/test_[^/]+\.py$")
 CPP_SUFFIXES = (".cpp", ".h")
 BACKEND_COPY = "(:[a-z]+)?"  # the suffix of a test's run on another backend (CMakeLists.txt)
 
@@ -171,6 +176,11 @@ def select(changed, files, read):
     return "^(" + "|".join(sorted(re.escape(t) for t in chosen)) + ")" + BACKEND_COPY + "$"
 
 
+def needs_torch(changed):
+    """Does a change touch what the libtorch runs build or test (see NO_TORCH_PATTERNS)? Then CI runs them."""
+    return any(not matches(NO_TORCH_PATTERNS, c) for c in changed)
+
+
 def changed_files(base, head):
     """The files that differ between two commits (merge-base diff, as a pull request shows them)."""
     out = subprocess.run(["git", "diff", "--name-only", f"{base}...{head}"], cwd=ROOT, check=True,
@@ -184,7 +194,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("revisions", nargs="*", help="<base> <head>")
     parser.add_argument("--files", nargs="+", help="changed files instead of two commits")
+    parser.add_argument("--torch", action="store_true", help="print true or false: do the libtorch runs apply?")
     args = parser.parse_args()
+    # the changed files: given, or the diff of two commits
     if args.files:
         changed = args.files
     elif len(args.revisions) == 2:
@@ -192,10 +204,14 @@ def main():
     else:
         parser.error("give <base> <head> or --files")
 
+    # the file contents, for the #include graph
     def read(name):
         with open(os.path.join(ROOT, name), encoding="utf-8", errors="replace") as handle:
             return handle.read()
 
+    if args.torch:
+        print("true" if needs_torch(changed) else "false")
+        return
     print(select(changed, list_files(), read))
 
 
