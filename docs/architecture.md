@@ -129,11 +129,14 @@ struct, as CORA separates `params` from `options`.
 **Sets are immutable values.**
 - An operation returns a new set, and the members are private behind accessors (`center()`,
   `generators()`), so a set cannot be changed after its checks.
-- Python sees properties (`Z.center`, `Z.generators`, `Z.dim`), the operators `+ @ * & | in -`
-  and `__repr__`. In Python, `@` is the linear map on every set: `M @ S` maps the points x to
-  M x and `S @ M` to x M, as NumPy's `@` on the rows of a batch. `*` is the product with a number
-  only; `*` with an array or a set raises a `TypeError` that names `@`. C++ has `*` and
-  `matmul()`.
+- Python sees properties (`Z.center`, `Z.generators`, `Z.dim`), the operators `+ @ * & | in -` and
+  `__repr__`. In Python, `@` is the linear map on every set: `M @ S` maps the points x to M x and
+  `S @ M` to x M, as NumPy's `@` on the rows of a batch. A 1-D array v is the row (1, n) from either
+  side, so `v @ S` and `S @ v` are the one-dimensional set of v . x: NumPy's `v @ x` would give a
+  scalar (element shape ()), but a set's elements are vectors (n) or matrices (r, c), never rank 0,
+  so the result keeps one coordinate. This is a deliberate deviation from NumPy. `*` is the product
+  with a number only; `*` with an array or a set raises a `TypeError` that names `@`. C++ has `*`
+  and `matmul()`.
 - Files: `include/cora/cont_set/`, `src/global/python/bindings.cpp`.
 
 **Sets are stored batch first, as PyTorch.** (#163) A set is a tensor of points, with the batch
