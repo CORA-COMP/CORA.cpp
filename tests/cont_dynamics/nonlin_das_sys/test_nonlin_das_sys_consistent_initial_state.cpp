@@ -24,7 +24,7 @@ namespace {
 
 using Vars = std::vector<Expr>;
 
-Tensor col(double v) { return Tensor({v}); }
+Tensor col(double v) { return test::column({v}); }
 
 /// x' = y with the constraint g.
 NonlinDASys with_constraint(const std::function<Expr(const Expr &x, const Expr &y)> &g) {
@@ -53,7 +53,8 @@ void wrong_arguments_are_described(const std::string &b) {
     const NonlinDASys sys = with_constraint([](const Expr &x, const Expr &y) { return y - x; });
     check(test::raises(
               [&] {
-                  sys.consistent_initial_state(Tensor({1.0, 2.0}), col(0.0), Tensor::zeros({0, 1}));
+                  sys.consistent_initial_state(test::column({1.0, 2.0}), col(0.0),
+                                               Tensor::zeros({0, 1}));
               },
               Error::dimension_mismatch),
           b + ": a state of the wrong size");

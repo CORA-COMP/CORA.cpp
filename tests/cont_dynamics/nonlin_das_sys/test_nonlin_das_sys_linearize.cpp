@@ -25,7 +25,7 @@ namespace {
 
 using Vars = std::vector<Expr>;
 
-Tensor col(double v) { return Tensor({v}); }
+Tensor col(double v) { return test::column({v}); }
 
 /// The linear system x' = -x/2 + u after eliminating y.
 void the_linear_system_is_reduced(const std::string &b) {

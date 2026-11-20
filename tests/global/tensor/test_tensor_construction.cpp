@@ -20,9 +20,9 @@ using test::throws;
 namespace {
 
 void construction(const std::string &b) {
-    const Tensor column({1.0, 2.0, 3.0});
-    check(column.shape() == std::vector<int64_t>({3, 1}), b + ": a list is a column");
-    check(close(column, std::vector<double>{1, 2, 3}), b + ": the column's values");
+    const Tensor vector({1.0, 2.0, 3.0});
+    check(vector.shape() == std::vector<int64_t>({3}), b + ": a list is a vector (n), as NumPy's");
+    check(close(vector, std::vector<double>{1, 2, 3}), b + ": the vector's values");
 
     const Tensor matrix({{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}});
     check(matrix.shape() == std::vector<int64_t>({2, 3}), b + ": nested lists are rows");

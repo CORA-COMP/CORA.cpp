@@ -21,7 +21,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -324,7 +324,7 @@ class Tensor {
                          const std::string &device, DType dtype) const = 0;
     };
 
-    /// One number of a column. It makes `{{1}, {2}}` read as two rows, not two columns of one.
+    /// One number of a vector. It makes `{{1}, {2}}` read as two rows, not two vectors of one.
     struct Entry {
         double value;
         Entry(double v) : value(v) {}
@@ -335,8 +335,9 @@ class Tensor {
     Tensor() = default;
     explicit Tensor(Ptr impl) : impl_(std::move(impl)) {}
 
-    /// A column (n, 1); `device` is "cpu", "gpu", "cuda:1" (empty: the backend's default).
-    Tensor(std::initializer_list<Entry> column, const std::string &device = "");
+    /// A vector (n), as NumPy's and PyTorch's 1-D lists; `device` is "cpu", "gpu", "cuda:1"
+    /// (empty: the backend's default).
+    Tensor(std::initializer_list<Entry> vector, const std::string &device = "");
 
     /// A matrix from its rows.
     Tensor(std::initializer_list<std::initializer_list<double>> rows,

@@ -10,7 +10,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -57,7 +57,7 @@ Zonotope::Zonotope(Tensor c, Tensor G, int64_t elem_rank)
     CORA_CHECK(c_.defined() && G_.defined(), Error::wrong_input_in_constructor, [] {
         return std::string("Zonotope: the center and the generators must be tensors");
     });
-    // a center given as a column (batch..., n, 1), as Tensor({...}) makes one, is the vector (n)
+    // a center given as a column (batch..., n, 1) is the vector (n)
     if (elem_rank_ == 1 && c_.ndim() >= 2 && c_.ndim() == G_.ndim() && c_.size(-1) == 1 &&
         c_.size(-2) == G_.size(-1))
         c_ = c_.squeeze(-1);

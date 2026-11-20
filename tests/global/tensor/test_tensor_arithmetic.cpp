@@ -35,7 +35,7 @@ void arithmetic(const std::string &b) {
     check(close(rect.sum(-1, true), std::vector<double>{6, 15}), b + ": sum_last");
     check(rect.sum(-1, true).shape() == std::vector<int64_t>({2, 1}),
           b + ": sum_last keeps the axis");
-    check(close(Tensor({1.0, 2.0}).diag(), std::vector<double>{1, 0, 0, 2}), b + ": diag");
+    check(close(test::column({1.0, 2.0}).diag(), std::vector<double>{1, 0, 0, 2}), b + ": diag");
     check(close(A.eye_like(), Tensor::eye(2)), b + ": eye_like");
     check(close(rect.zeros_like(), Tensor::zeros({2, 3})), b + ": zeros_like");
     // zeros and concatenation

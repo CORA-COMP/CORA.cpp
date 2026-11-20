@@ -5,7 +5,7 @@
 //
 // Syntax:   s = Z.zonotope_norm(p);   [s, beta] = Z.zonotope_norm_minimizer(p);
 // Inputs:   p - a point (n)
-// Outputs:  s - (1, 1): min s with G beta = p, |beta|_inf <= s; infinity if p is outside the span
+// Outputs:  s - (): min s with G beta = p, |beta|_inf <= s; infinity if p is outside the span
 //           beta - the minimizer (m), an empty (0) if s is infinite
 // See also: contains, minnorm
 //
@@ -13,7 +13,7 @@
 // CORA authors: Adrian Kulmburg
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -56,7 +56,7 @@ Tensor Zonotope::zonotope_norm(const Tensor &p) const {
     detail::Entry entry;
     const Refusal refusal = aux_refusal(*this, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "zonotope_norm: " + refusal->second; });
-    return Tensor::like(G_, {aux_solve(*this, p).value}, {1, 1});
+    return Tensor::like(G_, {aux_solve(*this, p).value}, {});
 }
 
 std::pair<Tensor, Tensor> Zonotope::zonotope_norm_minimizer(const Tensor &p) const {
@@ -74,7 +74,7 @@ std::pair<Tensor, Tensor> Zonotope::zonotope_norm_minimizer(const Tensor &p) con
                              "zonotope is not zero-centered");
     // the norm and the minimizing factors
     const int64_t m = int64_t(solution.minimizer.size());
-    return {Tensor::like(G_, {solution.value}, {1, 1}), Tensor::like(G_, solution.minimizer, {m})};
+    return {Tensor::like(G_, {solution.value}, {}), Tensor::like(G_, solution.minimizer, {m})};
 }
 
 } // namespace cora

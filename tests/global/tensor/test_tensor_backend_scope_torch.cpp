@@ -27,9 +27,9 @@ void backend_specs() {
     check(throws([] { set_default_backend("torch,nonsense"); }), "an unknown option");
     check(throws([] { set_default_backend("torch:tpu"); }), "an unknown device");
     set_default_backend("eigen");
-    const Tensor on_eigen({1.0, 2.0});
+    const Tensor on_eigen({{1.0}, {2.0}});
     set_default_backend("torch");
-    const Tensor on_torch({1.0, 2.0});
+    const Tensor on_torch({{1.0}, {2.0}});
     check(throws([&] { (void)(on_eigen + on_torch); }), "tensors of two backends do not mix");
     check(throws([&] { on_eigen.matmul(on_torch.matrix_transpose()); }), "nor in a product");
     check(throws([&] { Tensor::concat({on_eigen, on_torch}, -1); }), "nor in a concatenation");

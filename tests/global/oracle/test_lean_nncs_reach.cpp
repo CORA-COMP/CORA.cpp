@@ -49,7 +49,8 @@ struct Net {
     Net &add(const Tensor &W, const Tensor &b, Activation a) {
         layers.push_back({W, b});
         activations.push_back(a);
-        lean_layers.push_back(lean::NnLayer::linear(W, b));
+        // the oracle's bias is CORA's column (out, 1)
+        lean_layers.push_back(lean::NnLayer::linear(W, b.ndim() == 1 ? b.expand_dims(-1) : b));
         if (a == Activation::sigmoid) lean_layers.push_back(lean::NnLayer::sigmoid());
         if (a == Activation::tanh) lean_layers.push_back(lean::NnLayer::tanh());
         if (a == Activation::relu) lean_layers.push_back(lean::NnLayer::relu());
