@@ -2,20 +2,21 @@
 //
 // Arrays: a torch tensor runs on the libtorch backend (when the package is built against torch,
 // CORACPP_PYTHON_TORCH), a numpy array on Eigen over the array's own memory, and results come
-// back as numpy arrays over the tensor's memory: no copy either way. A vector is 1-D in Python, a
-// column (..., n, 1) in C++. Sets: any cora set, a Python subclass of ContSet included, becomes a
-// cora::Set and comes back as the object of its class. Option structs: a problem and an algorithm
-// are filled from keyword arguments through their field lists; a keyword that fits none is refused
-// with the closest name. Only conversion lives here, no computation.
+// back as numpy arrays over the tensor's memory: no copy either way. A vector is 1-D in Python
+// and in C++ (#163); columns_of gives CORA's column where an entry still takes one. Sets: any
+// cora set, a Python subclass of ContSet included, becomes a cora::Set and comes back as the
+// object of its class. Option structs: a problem and an algorithm are filled from keyword
+// arguments through their field lists; a keyword that fits none is refused with the closest name.
+// Only conversion lives here, no computation.
 //
-// Syntax:   Tensor t = tensor_of(obj);   py::object o = vector(t);   Set S = set_of(obj);
+// Syntax:   Tensor t = tensor_of(obj);   py::object o = values(t);   Set S = set_of(obj);
 //           ReachProblem p = fill<ReachProblem>(kwargs);   auto alg =
 //           algorithm<alg::LinearReach>("standard", kwargs);
 // See also: bindings.cpp, cora/global/options.h
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -129,28 +130,6 @@ inline py::array host_array(const Tensor &t, const Shape &shape) {
     return out;
 }
 
-/// The shape of a column (..., n, 1) as a vector (..., n).
-inline Shape vector_shape(const Tensor &t) {
-    Shape s;
-    for (int64_t d = 0; d + 1 < t.ndim(); ++d) s.push_back(t.shape()[d]);
-    return s;
-}
-
-/// A Python vector (..., n) as a column (..., n, 1).
-#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
-inline Tensor column(const torch::Tensor &v) { return from_torch(v.unsqueeze(-1)); }
-#endif
-
-/// A column (..., n, 1) as a Python vector (..., n), in the array type of its backend.
-inline Array vector(const Tensor &t) {
-#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
-    if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1));
-#endif
-    if (is_host(t)) return host_array(t, vector_shape(t));
-    CORA_FAIL(Error::not_supported, "cora: a tensor of a backend Python cannot take; "
-                                    "use the eigen, torch or lean backend");
-}
-
 /// A matrix (or a batch) in the array type of its backend.
 inline Array matrix(const Tensor &t) {
 #ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
@@ -161,34 +140,29 @@ inline Array matrix(const Tensor &t) {
                                     "use the eigen, torch or lean backend");
 }
 
-/// The bounds of an interval: a column bound is a vector (..., n), a matrix bound stays.
-inline Array bounds(const Tensor &t) { return t.shape().back() == 1 ? vector(t) : matrix(t); }
-
-/// A (..., 1, 1) result as a scalar per batch element: a torch tensor (...), a float for one
-/// matrix, else an array (...).
+/// A (..., 1, 1) result (the zonotope family's and the capsule's numbers) as (...): a torch
+/// tensor, a float for one set, else an array.
 inline py::object scalar(const Tensor &t) {
 #ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
     if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1).squeeze(-1));
 #endif
     if (t.numel() == 1) return py::cast(t.item());
-    return host_array(t, vector_shape(t.squeeze(-1)));
+    const Shape shape = t.shape();
+    return host_array(t, Shape(std::vector<int64_t>(shape.begin(), shape.end() - 2)));
 }
 
-/// A torch tensor or numpy array (or a list of numbers) as a Tensor on its backend, 1-D as a
-/// column; nothing for anything else.
+/// A torch tensor or numpy array (or a list of numbers) as a Tensor on its backend, of its own
+/// shape: a 1-D array is a vector (n), as point_of reads it (#163); nothing for anything else.
 inline std::optional<Tensor> as_tensor(const py::handle &o) {
 #ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
     py::detail::make_caster<torch::Tensor> torch_caster;
-    if (torch_caster.load(o, /*convert=*/false)) {
-        const torch::Tensor t = py::cast<torch::Tensor>(o);
-        return t.dim() == 1 ? column(t) : from_torch(t);
-    }
+    if (torch_caster.load(o, /*convert=*/false)) return from_torch(py::cast<torch::Tensor>(o));
 #endif
     if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) ||
         py::isinstance<py::tuple>(o)) {
         const py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
         if (!a || a.ndim() == 0) return std::nullopt;
-        return host_tensor(o, true);
+        return host_tensor(o, false);
     }
     return std::nullopt;
 }
@@ -230,22 +204,11 @@ inline Tensor tensor_of(const py::handle &o, const char *what) {
               std::string("cora: ") + what + " must be a numpy array or a torch tensor");
 }
 
-/// A vector (..., n) from Python as a column (..., n, 1): a torch tensor of any batch, or a
-/// numpy array or list (1-D, or a batch (..., n)), or a number.
-inline Tensor vector_of(const py::handle &o, const char *what) {
-#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
-    py::detail::make_caster<torch::Tensor> torch_caster;
-    if (torch_caster.load(o, /*convert=*/false)) return column(py::cast<torch::Tensor>(o));
-#endif
-    if (py::isinstance<py::array>(o) || py::isinstance<py::list>(o) ||
-        py::isinstance<py::tuple>(o)) {
-        py::array a = py::array_t<double, py::array::forcecast>::ensure(o);
-        if (a && a.ndim() >= 1) return host_tensor(o, false).expand_dims(-1);
-        if (a && a.ndim() == 0) return host_tensor(a.reshape({1}), true);
-    }
-    CORA_FAIL(Error::wrong_value,
-              std::string("cora: ") + what +
-                  " must be a vector: a torch tensor (..., n) or a numpy array");
+/// CORA's columns for the C++ entries that still take them (the dynamics until #163 moves them,
+/// the oracle client): an array as it is, a 1-D array (n) or a number as the column (n, 1).
+inline Tensor columns_of(const py::handle &o, const char *what) {
+    const Tensor t = point_of(o, what);
+    return t.ndim() == 1 ? t.expand_dims(-1) : t;
 }
 
 // Sets --------------------------------------------------------------------------------------------
@@ -319,14 +282,15 @@ inline py::object object_of(const Set &S) {
 
 // Option structs ----------------------------------------------------------------------------------
 
-/// A value of a field from Python.
+/// A value of a field from Python; the tensors of the problems are CORA's columns until #163
+/// moves the dynamics.
 template <class T>
 T value_of(const py::handle &o, const char *name) {
     if constexpr (std::is_same_v<T, Tensor>) {
-        return tensor_of(o, name);
+        return columns_of(o, name);
     } else if constexpr (std::is_same_v<T, std::optional<Tensor>>) {
         if (o.is_none()) return std::nullopt;
-        return tensor_of(o, name);
+        return columns_of(o, name);
     } else if constexpr (std::is_same_v<T, std::optional<Set>>) {
         if (o.is_none()) return std::nullopt;
         return set_of(o);

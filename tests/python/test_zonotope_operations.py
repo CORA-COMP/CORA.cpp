@@ -138,6 +138,17 @@ class Combining(unittest.TestCase):
             Z.intersect(zonotope([5, 5], [[1, 0], [0, 1]]))
 
 
+class VectorProducts(unittest.TestCase):
+    def test_a_1d_array_is_a_row_from_either_side(self):
+        # v @ Z and Z @ v map x to v . x, as NumPy's v @ x (#163)
+        Z = zonotope([1, 2], [[1, 0], [0, 3]])
+        v = np.array([1.0, -1.0])
+        for R in (v @ Z, Z @ v):
+            self.assertEqual(R.dim, 1)
+            np.testing.assert_allclose(R.center, [-1.0])
+            np.testing.assert_allclose(R.interval().sup, [3.0])
+
+
 class Constraints(unittest.TestCase):
     def test_constraints_satisfied(self):
         Z = zonotope([0, 0], [[1, 0], [0, 1]])
