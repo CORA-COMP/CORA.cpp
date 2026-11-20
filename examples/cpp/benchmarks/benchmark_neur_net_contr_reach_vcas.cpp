@@ -102,7 +102,7 @@ bool aux_simulate(bool middle, double hdot0, const std::vector<NeuralNetwork> &n
             ++k;
             const std::vector<double> logits =
                 nets[std::size_t(adv - 1)]
-                    .evaluate(Tensor::from_data({x[0], x[1], x[2]}, {3, 1}))
+                    .evaluate(Tensor::from_data({x[0], x[1], x[2]}, {1, 3}))
                     .data();
             const int next =
                 int(std::max_element(logits.begin(), logits.end()) - logits.begin()) + 1;
