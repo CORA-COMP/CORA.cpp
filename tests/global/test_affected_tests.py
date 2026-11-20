@@ -4,7 +4,8 @@ Syntax:   python tests/global/test_affected_tests.py
 Checks:   a changed header selects the tests that include it, directly or through other headers; a
           changed library source selects the tests of the headers it implements and what reaches
           them through private headers; the shared code, the build and CI select ALL; documentation
-          selects NONE; unknown or deleted files select ALL.
+          selects NONE; unknown or deleted files select ALL; the libtorch runs apply to everything but
+          documentation, benchmarks and scripts (the files of #196 and #203 must trigger them).
 Exit code: 0 if all checks pass, else 1.
 
 Authors:       Tobias Ladner
@@ -109,6 +110,32 @@ class SelectionTest(unittest.TestCase):
 
     def test_documentation_does_not_hide_a_code_change(self):
         self.assertNotEqual(pick("README.md", "tests/cont_set/interval/test_interval_plus.cpp"), "NONE")
+
+    def test_torch_runs_follow_everything_they_build(self):
+        # the changed files of #196 (point layout) and #203 (Python conversion layer), which broke torch tests
+        pr196 = ["src/global/tensor/tensor.cpp", "include/cora/global/tensor/tensor.h",
+                 "src/cont_set/zonotope/plus.cpp", "tests/cont_set/zonotope/test_zonotope_plus.cpp",
+                 "tests/python/test_zonotope.py", "README.md"]
+        pr203 = ["src/global/python/bindings.cpp", "src/global/python/cora/__init__.py",
+                 "tests/python/test_cont_set_generic.py", "CONTRIBUTING.md"]
+        self.assertTrue(at.needs_torch(pr196))
+        self.assertTrue(at.needs_torch(pr203))
+        # every kind of file the libtorch runs build or run, alone
+        for path in ("src/global/python/bindings.cpp", "src/global/python/cora/_convert.py", "tests/python/test_x.py",
+                     "include/cora/cont_set/zonotope/zonotope.h", "src/cont_set/zonotope/plus.cpp",
+                     "tests/testing.h", "tests/global/oracle/oracle_testing.h", "CMakePresets.json",
+                     "scripts/cmake/torch.cmake", "scripts/requirements-python-torch.txt", "scripts/stubs.py",
+                     "scripts/run_example.py", "examples/python/example_zonotope.py", ".github/workflows/ci.yml",
+                     "scripts/new_unknown_tool.sh"):
+            self.assertTrue(at.needs_torch([path]), path)
+
+    def test_torch_runs_skip_what_they_cannot_see(self):
+        for changed in (["README.md", "docs/architecture.md"], ["CONTRIBUTING.md"], ["benchmarks/micro/b.cpp"],
+                        ["coverage/lines.json"], ["scripts/ci/check_format.py", "scripts/coverage/coverage.py"],
+                        ["tests/global/test_layout.py"], ["tests/competition/t.cpp", "scripts/competition/run.py"],
+                        ["examples/matlab/x.m"]):
+            self.assertFalse(at.needs_torch(changed), changed)
+        self.assertTrue(at.needs_torch(["README.md", "src/cont_set/zonotope/plus.cpp"]))
 
     def test_changes_are_resolved_against_the_real_tree(self):
         files = at.list_files()
