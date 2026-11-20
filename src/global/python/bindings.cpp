@@ -933,7 +933,7 @@ void bind_interval(py::module_ &m) {
             "kron",
             [](const Interval &I, const py::object &other, bool left) {
                 if (py::isinstance<Interval>(other)) return I.kron(py::cast<Interval>(other));
-                const Tensor A = tensor_of(other, "the factor");
+                const Tensor A = columns_of(other, "the factor");
                 return left ? Interval::kron(A, I) : I.kron(A);
             },
             py::arg("other"), py::arg("left") = false,
@@ -1096,7 +1096,7 @@ void bind_interval(py::module_ &m) {
             "matmul",
             [](const Interval &A, const py::object &B) {
                 if (py::isinstance<Interval>(B)) return A.matmul(py::cast<Interval>(B));
-                return A.matmul(tensor_of(B, "the matrix"));
+                return A.matmul(columns_of(B, "the matrix"));
             },
             py::arg("B"), "[A] [B] or [A] M: the product of interval matrices (CORA's mtimes)")
         .def("exact_square", &Interval::exact_square, "The entrywise range of M @ M")
@@ -1284,9 +1284,9 @@ void bind_mat_zonotope(py::module_ &parent) {
             if (u_trans.is_none()) return mat_exp::expm_one_param(A, r, max_order);
             if (py::isinstance<Zonotope>(u_trans))
                 return mat_exp::expm_one_param(A, r, max_order, py::cast<Zonotope>(u_trans));
-            const Tensor u = tensor_of(u_trans, "u_trans"); // a column is the zonotope (u, 0)
+            const Tensor u = point_of(u_trans, "u_trans"); // the zonotope (u, 0)
             return mat_exp::expm_one_param(A, r, max_order,
-                                           Zonotope(u, u.zeros_like().matrix_transpose()));
+                                           Zonotope(u, u.zeros_like({0, u.shape().back()})));
         },
         py::arg("A"), py::arg("r"), py::arg("max_order"), py::arg("u_trans") = py::none(),
         "The Taylor series of exp(M r) for the matrices C + b G of a set with one generator, "
@@ -2779,7 +2779,9 @@ void bind_ellipsoid(py::module_ &m) {
 // Capsule -----------------------------------------------------------------------------------------
 
 /// The radius of a capsule from Python: a number for every member, or an array of the batch.
-Tensor capsule_radius_of(const py::object &r) { return vector_of(r, "the radius").expand_dims(-1); }
+Tensor capsule_radius_of(const py::object &r) {
+    return point_of(r, "the radius").expand_dims(-1).expand_dims(-1);
+}
 
 void bind_capsule(py::module_ &m) {
     py::class_<Capsule, ContSet>(m, "Capsule",
@@ -2787,9 +2789,9 @@ void bind_capsule(py::module_ &m) {
         .def(py::init<const Interval &>(), py::arg("I"), "A capsule that holds a box")
         .def(py::init<const Zonotope &>(), py::arg("Z"), "A capsule that holds a zonotope")
         .def(py::init([](const py::object &c, const py::object &g, const py::object &r) {
-                 const Tensor center = vector_of(c, "the center");
+                 const Tensor center = point_of(c, "the center");
                  const Tensor generator =
-                     g.is_none() ? center.zeros_like() : vector_of(g, "the generator");
+                     g.is_none() ? center.zeros_like() : point_of(g, "the generator");
                  if (r.is_none()) return Capsule(center, generator);
                  if (is_number(r)) return Capsule(center, generator, py::cast<double>(r));
                  // the radius is absent, a number or a vector
@@ -2917,8 +2919,8 @@ Exponents exponents_from_python(const py::object &E, std::size_t generators) {
 
 /// The tensor of an optional generator matrix: none is a matrix without columns.
 Tensor generators_from_python(const py::object &G, const Tensor &c, const char *what) {
-    // a missing matrix has no row and the dimension of the center (a column (n, 1))
-    return G.is_none() ? c.zeros_like({0, c.shape()[0]}) : tensor_of(G, what);
+    // a missing matrix has no row and the dimension of the center (n)
+    return G.is_none() ? c.zeros_like({0, c.shape().back()}) : tensor_of(G, what);
 }
 
 void bind_poly_zonotope(py::module_ &m) {
@@ -2930,7 +2932,7 @@ void bind_poly_zonotope(py::module_ &m) {
         .def(py::init<const Interval &>(), py::arg("I"), "A box: a dependent generator per axis")
         .def(py::init([](const py::object &c, const py::object &G, const py::object &GI,
                          const py::object &E, const py::object &id) {
-                 const Tensor center = vector_of(c, "the center");
+                 const Tensor center = point_of(c, "the center");
                  const Tensor dependent = generators_from_python(G, center, "G");
                  const auto h = std::size_t(dependent.shape()[0]);
                  // the exponents, and the identifiers 1..p unless they are given
@@ -3054,18 +3056,21 @@ void bind_poly_zonotope(py::module_ &m) {
 }
 
 /// The products of a set class: M @ S maps (map(S, M)), S @ M maps the points x to x M (M' x),
-/// and * scales by a number from either side; * with an array or a set is refused, naming @.
+/// and * scales by a number from either side; * with an array or a set is refused, naming @. A
+/// 1-D array v is the row (1, n) from either side, as NumPy's v @ x and x @ v.
 template <class T, class Map, class Scale>
 void bind_products(const py::object &cls, const char *name, Map map, Scale scale) {
     const auto set = [&cls](const char *op, auto f) {
         cls.attr(op) = py::cpp_function(f, py::is_method(cls));
     };
     set("__rmatmul__", [map](const T &A, const py::object &o) -> py::object {
-        if (const std::optional<Tensor> M = as_tensor(o)) return map(A, *M);
+        if (const std::optional<Tensor> M = as_tensor(o))
+            return map(A, M->ndim() == 1 ? M->expand_dims(-2) : *M);
         return not_implemented();
     });
     set("__matmul__", [map](const T &A, const py::object &o) -> py::object {
-        if (const std::optional<Tensor> M = as_tensor(o)) return map(A, M->matrix_transpose());
+        if (const std::optional<Tensor> M = as_tensor(o))
+            return map(A, M->ndim() == 1 ? M->expand_dims(-2) : M->matrix_transpose());
         return not_implemented();
     });
     // a number from either side; an array or a set is a mistake for @
@@ -3176,7 +3181,9 @@ void bind_operators(py::module_ &m) {
     // a matrix zonotope times a matrix zonotope, a zonotope or a matrix
     method(Z, "__matmul__", [](const Zonotope &A, const py::object &o) -> py::object {
         if (py::isinstance<Zonotope>(o)) return py::cast(A.matmul(py::cast<Zonotope>(o)));
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.matmul_right(*M));
+        // a 1-D array is the column vector of the product
+        if (const std::optional<Tensor> M = as_tensor(o))
+            return py::cast(A.matmul_right(M->ndim() == 1 ? M->expand_dims(-1) : *M));
         return not_implemented();
     });
     method(Z, "__pow__", [](const Zonotope &A, int64_t k) { return mat_exp::matrix_power(A, k); });
@@ -3245,7 +3252,9 @@ void bind_operators(py::module_ &m) {
         // the products of an interval matrix
         if (py::isinstance<Interval>(o)) return py::cast(A.matmul(py::cast<Interval>(o)));
         if (py::isinstance<EmptySet>(o)) return py::cast(py::cast<EmptySet>(o).linear_map(A));
-        if (const std::optional<Tensor> M = as_tensor(o)) return py::cast(A.matmul(*M));
+        // a 1-D array is the column vector of the product
+        if (const std::optional<Tensor> M = as_tensor(o))
+            return py::cast(A.matmul(M->ndim() == 1 ? M->expand_dims(-1) : *M));
         return not_implemented();
     };
     method(I, "__matmul__", interval_map);
@@ -3422,7 +3431,8 @@ void bind_problems(py::module_ &m) {
 
     py::class_<Falsification>(m, "Falsification", "A trajectory that violates a specification.")
         .def_property_readonly(
-            "x0", [](const Falsification &f) { return vector(f.x0); }, "the state at time 0")
+            "x0", [](const Falsification &f) { return values(f.x0.squeeze(-1)); },
+            "the state at time 0")
         .def_readonly("time", &Falsification::time, "the time it is violated");
 
     py::class_<VerifyResult>(m, "VerifyResult", "The outcome of verify.")
@@ -3530,7 +3540,7 @@ void bind_linear_sys(py::module_ &m) {
 #endif
                      if (custom_backward)
                          CORA_FAIL(Error::install, "custom_backward needs the torch build");
-                     return tensor_of(o, what);
+                     return columns_of(o, what);
                  };
                  if (B.is_none()) return LinearSys(t(A, "A"));
                  // the output matrix is optional
@@ -3619,7 +3629,7 @@ void bind_linear_sys(py::module_ &m) {
             [](const LinearSys &sys, const Zonotope &U, const py::object &u_vec) {
                 return sys.canonical_form(
                     U, u_vec.is_none() ? std::nullopt
-                                       : std::optional<Tensor>(tensor_of(u_vec, "u_vec")));
+                                       : std::optional<Tensor>(columns_of(u_vec, "u_vec")));
             },
             py::arg("U"), py::arg("u_vec") = py::none(),
             "The system with B = I, the centered input set and the constant input per step")
@@ -3642,7 +3652,7 @@ void bind_linear_sys(py::module_ &m) {
             "affine_solution",
             [](const LinearSys &sys, const Zonotope &X, const py::object &u, double time_step,
                int taylor_terms) {
-                return sys.affine_solution(X, tensor_of(u, "u"), time_step, taylor_terms);
+                return sys.affine_solution(X, columns_of(u, "u"), time_step, taylor_terms);
             },
             py::arg("X"), py::arg("u"), py::arg("time_step"), py::arg("taylor_terms"),
             "The solution of one step of x' = A x + u for the constant input u (n,)")
@@ -3651,7 +3661,7 @@ void bind_linear_sys(py::module_ &m) {
             "one_step",
             [](const LinearSys &sys, const Zonotope &X, const Zonotope &U, const py::object &u,
                double time_step, int taylor_terms) {
-                return sys.one_step(X, U, tensor_of(u, "u"), time_step, taylor_terms);
+                return sys.one_step(X, U, columns_of(u, "u"), time_step, taylor_terms);
             },
             py::arg("X"), py::arg("U"), py::arg("u"), py::arg("time_step"), py::arg("taylor_terms"),
             "One step of reach from X with the input set U and the constant input u (n,)")
@@ -3665,7 +3675,7 @@ void bind_linear_sys(py::module_ &m) {
                 return sys.init_reach(R_init, U,
                                       u_trans.is_none()
                                           ? std::nullopt
-                                          : std::optional<Tensor>(tensor_of(u_trans, "u_trans")),
+                                          : std::optional<Tensor>(columns_of(u_trans, "u_trans")),
                                       linear_reach_algorithm(alg, options, "init_reach"));
             },
             py::arg("R_init"), py::arg("U") = py::none(), py::arg("u_trans") = py::none(),
@@ -3700,11 +3710,11 @@ void bind_linear_sys(py::module_ &m) {
                 // one flow value, or the values at the start and the end
                 std::vector<Tensor> flows;
                 if (py::isinstance<py::list>(f) || py::isinstance<py::tuple>(f))
-                    for (const py::handle &x : f) flows.push_back(tensor_of(x, "f"));
+                    for (const py::handle &x : f) flows.push_back(columns_of(x, "f"));
                 else
-                    flows.push_back(tensor_of(f, "f"));
-                return sys.trajectory_error(flows, tensor_of(u, "u"), R0, t_min, t_max, t_c, order,
-                                            tensor_of(n, "n"));
+                    flows.push_back(columns_of(f, "f"));
+                return sys.trajectory_error(flows, columns_of(u, "u"), R0, t_min, t_max, t_c, order,
+                                            columns_of(n, "n"));
             },
             py::arg("f"), py::arg("u"), py::arg("R0"), py::arg("t_min"), py::arg("t_max"),
             py::arg("t_c"), py::arg("order"), py::arg("n"),
@@ -3914,24 +3924,26 @@ void bind_nonlinear_sys(py::module_ &m) {
     // the results of the steps
     py::class_<Linearized>(m, "Linearized", "The affine system of a step (CORA's linearize).")
         .def_property_readonly(
-            "x_star", [](const Linearized &l) { return vector(l.x_star); },
+            "x_star", [](const Linearized &l) { return values(l.x_star.squeeze(-1)); },
             "The expansion point of the state")
         .def_property_readonly(
-            "u_star", [](const Linearized &l) { return vector(l.u_star); },
+            "u_star", [](const Linearized &l) { return values(l.u_star.squeeze(-1)); },
             "The expansion point of the input")
         .def_property_readonly(
-            "f0", [](const Linearized &l) { return vector(l.f0); }, "f at the expansion point")
+            "f0", [](const Linearized &l) { return values(l.f0.squeeze(-1)); },
+            "f at the expansion point")
         // the affine system and its input
         .def_readonly("sys", &Linearized::sys, "x' = A x + u")
         .def_readonly("U", &Linearized::U, "The centered input set in the state space")
         .def_property_readonly(
-            "u_const", [](const Linearized &l) { return vector(l.u_const); }, "The constant input");
+            "u_const", [](const Linearized &l) { return values(l.u_const.squeeze(-1)); },
+            "The constant input");
     // one step of reach
     py::class_<NonlinearStep>(m, "NonlinearStep", "One step of init_reach or post.")
         .def_readonly("time_interval", &NonlinearStep::time_interval, "The set over the step")
         .def_readonly("time_point", &NonlinearStep::time_point, "The set at the end")
         .def_property_readonly(
-            "error", [](const NonlinearStep &s) { return vector(s.error); },
+            "error", [](const NonlinearStep &s) { return values(s.error.squeeze(-1)); },
             "The linearization error of the step");
     py::class_<Expr>(m, "Expr",
                      "A symbolic expression of the states, differentiated by the system.")
@@ -4102,9 +4114,11 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "consistent_initial_state",
             [](const NonlinDASys &sys, const py::object &x0, const py::object &y0,
                const py::object &u0) {
-                // the vectors from Python are columns
-                return vector(sys.consistent_initial_state(vector_of(x0, "x0"), vector_of(y0, "y0"),
-                                                           vector_of(u0, "u0")));
+                // the system takes CORA's columns (#163 moves the dynamics later)
+                return values(sys.consistent_initial_state(columns_of(x0, "x0"),
+                                                           columns_of(y0, "y0"),
+                                                           columns_of(u0, "u0"))
+                                  .squeeze(-1));
             },
             py::arg("x0"), py::arg("y0"), py::arg("u0") = py::list(),
             "The algebraic variables with g(x0, y, u0) = 0 by Newton's method from y0")
@@ -4113,9 +4127,9 @@ void bind_nonlin_das_sys(py::module_ &m) {
             [](const NonlinDASys &sys, const py::object &x0, const py::object &y0,
                const py::object &u0) {
                 // the state and y as a pair of vectors
-                const auto [x, y] =
-                    sys.steady_state(vector_of(x0, "x0"), vector_of(y0, "y0"), vector_of(u0, "u0"));
-                return py::make_tuple(vector(x), vector(y));
+                const auto [x, y] = sys.steady_state(columns_of(x0, "x0"), columns_of(y0, "y0"),
+                                                     columns_of(u0, "u0"));
+                return py::make_tuple(values(x.squeeze(-1)), values(y.squeeze(-1)));
             },
             py::arg("x0"), py::arg("y0"), py::arg("u0") = py::list(),
             // the steady state returns the state and the algebraic variables
@@ -4141,8 +4155,8 @@ void bind_nonlin_das_sys(py::module_ &m) {
                double t_final, double time_step, const py::object &u, double max_step) {
                 // the Runge-Kutta samples of x and y
                 const DaeTrajectory T = sys.simulate(
-                    vector_of(x0, "x0"), vector_of(y_guess, "y_guess"), vector_of(u, "u"), t_final,
-                    alg::RungeKutta4{.time_step = time_step, .max_step = max_step});
+                    columns_of(x0, "x0"), columns_of(y_guess, "y_guess"), columns_of(u, "u"),
+                    t_final, alg::RungeKutta4{.time_step = time_step, .max_step = max_step});
                 return py::make_tuple(matrix(T.x), matrix(T.y));
             },
             py::arg("x0"), py::arg("y_guess"), py::arg("t_final"), py::arg("time_step"),
@@ -4281,7 +4295,7 @@ void bind_neural_network(py::module_ &m) {
                  std::vector<NeuralNetwork::Layer> out;
                  out.reserve(layers.size());
                  for (const auto &[W, b] : layers)
-                     out.push_back({tensor_of(W, "the weights"), tensor_of(b, "the bias")});
+                     out.push_back({tensor_of(W, "the weights"), columns_of(b, "the bias")});
                  if (!activations) return NeuralNetwork(out);
                  // one activation per layer
                  std::vector<Activation> acts;
@@ -4302,9 +4316,9 @@ void bind_neural_network(py::module_ &m) {
                     return py::cast(nn.evaluate(py::cast<Zonotope>(x), nn_options_of(kwargs)));
                 if (py::isinstance<PolyZonotope>(x))
                     return py::cast(nn.evaluate(py::cast<PolyZonotope>(x), nn_options_of(kwargs)));
-                const Tensor y = nn.evaluate(tensor_of(x, "the points"));
+                const Tensor y = nn.evaluate(columns_of(x, "the points"));
                 const bool one = py::hasattr(x, "ndim") && py::cast<int>(x.attr("ndim")) == 1;
-                return one ? vector(y) : matrix(y);
+                return one ? values(y.squeeze(-1)) : matrix(y);
             },
             py::arg("x"),
             "The outputs at a point (in,) or the columns of (in, N); for a zonotope or polynomial "
@@ -4410,8 +4424,8 @@ void bind_neural_network(py::module_ &m) {
             [](const NeurNetContrSys &sys, const py::object &x0, double t_final, double time_step,
                const py::object &u) {
                 const ClosedLoopTrajectories T = sys.simulate(
-                    tensor_of(x0, "x0"),
-                    u.is_none() ? std::nullopt : std::optional<Tensor>(tensor_of(u, "u")), t_final,
+                    columns_of(x0, "x0"),
+                    u.is_none() ? std::nullopt : std::optional<Tensor>(columns_of(u, "u")), t_final,
                     time_step);
                 return py::make_tuple(py::cast(T.time), stack_time(T.x));
             },
@@ -4819,7 +4833,7 @@ void bind_lin_param_sys(py::module_ &m) {
         .def(py::init([](const Zonotope &A, const py::object &B, const py::object &c,
                          const std::string &type) {
                  const auto opt = [](const py::object &o, const char *what) {
-                     return o.is_none() ? std::nullopt : std::optional<Tensor>(tensor_of(o, what));
+                     return o.is_none() ? std::nullopt : std::optional<Tensor>(columns_of(o, what));
                  };
                  // constant or varying parameters, as CORA's 'constParam' and 'varParam'
                  if (type != "constant" && type != "varying")
@@ -4863,7 +4877,7 @@ void bind_hybrid(py::module_ &m) {
                  const auto opt = [](const py::object &o,
                                      const char *what) -> std::optional<Tensor> {
                      if (o.is_none()) return std::nullopt;
-                     return tensor_of(o, what);
+                     return columns_of(o, what);
                  };
                  return LinearReset(tensor_of(A, "A"), opt(B, "B"), opt(c, "c"));
              }),
@@ -4876,7 +4890,7 @@ void bind_hybrid(py::module_ &m) {
             [](const LinearReset &r, const py::object &X, const std::optional<Zonotope> &U) {
                 // a set maps to a set, points (n, N) to points
                 if (py::isinstance<ContSet>(X)) return object_of(r.evaluate(*set_of(X), U));
-                return py::object(matrix(r.evaluate(tensor_of(X, "x"))));
+                return py::object(matrix(r.evaluate(columns_of(X, "x"))));
             },
             py::arg("X"), py::arg("U") = py::none(),
             "The image A X + B U + c of a zonotope or a bundle, or of points (n, N)");
@@ -4903,7 +4917,7 @@ void bind_hybrid(py::module_ &m) {
                          const py::object &c) {
                  return Location(name, region_of(inv), trans, flow,
                                  c.is_none() ? std::nullopt
-                                             : std::optional<Tensor>(tensor_of(c, "c")));
+                                             : std::optional<Tensor>(columns_of(c, "c")));
              }),
              py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
              py::arg("c") = py::none(), "x' = A x + B u + c of the flow inside the invariant")
@@ -5074,7 +5088,7 @@ void bind_lean(py::module_ &top) {
     using LZ = lean::Zonotope;
     using LT = lean::Tensor;
     // an array converts to a lean tensor in the current dtype
-    const auto tensor = [](const py::handle &x) { return LT::from(tensor_of(x, "x")); };
+    const auto tensor = [](const py::handle &x) { return LT::from(columns_of(x, "x")); };
 
     // an array (or list) is a lean tensor wherever an operation takes one, in the current dtype
     py::class_<LT>(m, "Tensor", "A matrix of exact values in a dtype")
@@ -5082,8 +5096,13 @@ void bind_lean(py::module_ &top) {
         .def_static(
             "from_array", [](const py::object &x) { return LT::from(host_tensor(x, true)); },
             py::arg("x"), "Exact, or an error if a value is not representable in the dtype")
+        // back to an array: a single column is a vector
         .def(
-            "gather", [](const LT &T) { return bounds(T.gather()); },
+            "gather",
+            [](const LT &T) {
+                const Tensor g = T.gather();
+                return values(g.shape().back() == 1 ? g.squeeze(-1) : g);
+            },
             "The values as an array (a vector if one column); an error if one is not a double")
         .def(
             "round_to",
