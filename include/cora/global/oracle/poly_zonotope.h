@@ -9,14 +9,15 @@
 //             part as a cora::PolyZonotope, with every column as the oracle returns it
 // See also:   lean/request.h, cora/cont_set/poly_zonotope/poly_zonotope.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/tensor.h"
 #include "cora/global/oracle/zonotope.h"
@@ -67,6 +68,15 @@ class PolyZonotope {
     /// The polynomial of each coordinate by the powers of its row (CORA's
     /// evaluatePolyZonotopeNeuron after the fit): coeffs is (n, k + 1), lowest degree first.
     PolyZonotope eval_powers(const cora::Tensor &coeffs) const;
+
+    /// CORA's center(P), exact_plus(P, Q) (over the sorted union of the identifiers, then the
+    /// constructor) and cart_prod(P, Z) (the zonotope's generators independent).
+    Tensor center_of() const;
+    PolyZonotope exact_plus(const PolyZonotope &Q) const;
+    PolyZonotope cart_prod(const cora::Zonotope &Z) const;
+    /// CORA's isIntersecting_(P, S, 'approx') with a polytope: false (certain) if a row of S is
+    /// violated by the box of its image of zonotope(P), the equalities within tol.
+    bool is_intersecting(const cora::Polytope &S, double tol) const;
 
     /// CORA's reduce(P, 'girard', order) and enclose(P, Q).
     PolyZonotope reduce(int order) const;

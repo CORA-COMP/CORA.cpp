@@ -11,7 +11,7 @@ column of its own and is left out of the bit-exact numerator and denominator, as
 rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 
-Over the 86 instances, 2250 of 2382 rows (94.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2273 of 2382 rows (95.4%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 
 ## Per instance
 
@@ -29,7 +29,7 @@ Over the 86 instances, 2250 of 2382 rows (94.5%) that they execute and that can 
 | CBF01 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | CBF02 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | CBF03 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
-| CVDP23 | 89 | 61 | 5 | 21 | 2 | 0 | 0 | 13 | 13 | 56/63 |
+| CVDP23 | 89 | 65 | 5 | 17 | 2 | 0 | 0 | 13 | 13 | 60/63 |
 | CartPole-reach | 64 | 45 | 2 | 16 | 1 | 0 | 0 | 13 | 10 | 40/41 |
 | CartPole-reach-report | 70 | 50 | 3 | 16 | 1 | 0 | 0 | 13 | 10 | 45/47 |
 | DTN01 | 48 | 30 | 3 | 14 | 1 | 0 | 0 | 8 | 10 | 29/30 |
@@ -55,9 +55,9 @@ Over the 86 instances, 2250 of 2382 rows (94.5%) that they execute and that can 
 | ISSF01_ISU01 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | LALO20_W001 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
 | LALO20_W005 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
-| LALO20_W01 | 35 | 22 | 3 | 9 | 1 | 0 | 0 | 7 | 6 | 19/22 |
-| LOVO25 | 98 | 55 | 6 | 35 | 2 | 0 | 0 | 15 | 16 | 51/67 |
-| LOVO25-script | 109 | 60 | 8 | 38 | 3 | 0 | 0 | 16 | 16 | 56/77 |
+| LALO20_W01 | 35 | 23 | 3 | 8 | 1 | 0 | 0 | 7 | 6 | 20/22 |
+| LOVO25 | 98 | 63 | 5 | 28 | 2 | 0 | 0 | 15 | 16 | 59/67 |
+| LOVO25-script | 109 | 70 | 7 | 29 | 3 | 0 | 0 | 16 | 16 | 66/77 |
 | NAV-robust | 67 | 42 | 3 | 20 | 2 | 0 | 0 | 17 | 11 | 37/39 |
 | NAV-standard | 73 | 47 | 4 | 20 | 2 | 0 | 0 | 17 | 11 | 42/45 |
 | PLAA01_BND42 | 43 | 27 | 5 | 11 | 0 | 0 | 0 | 8 | 6 | 26/29 |
@@ -130,7 +130,6 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `nn/neuralNetwork/calcSensitivity` | property | float | 4 | CartPole-reach-report, Double_Pendulum-less-robust, NAV-standard, QUAD-reach |
 | `contDynamics/linParamSys/initReach` | property | float | 3 | BRKNP01, PLAA01_BND42, PLAA01_BND50 |
 | `contDynamics/linParamSys/post` | property | float | 3 | BRKNP01, PLAA01_BND42, PLAA01_BND50 |
-| `contSet/polyZonotope/center` | ported | float | 3 | CVDP23, LOVO25, LOVO25-script |
 | `others/matZonotope/expmOneParam` | property | bound | 3 | BRKNP01, PLAA01_BND42, PLAA01_BND50 |
 | `contSet/conZonotope/rescale` | property | float | 2 | GRBX01, GRBX02 |
 | `contSet/levelSet/Inf` | ported | float | 2 | LOVO25, LOVO25-script |
@@ -139,17 +138,9 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contSet/levelSet/empty` | ported | float | 2 | LOVO25, LOVO25-script |
 | `contSet/levelSet/isIntersecting_` | ported | float | 2 | LOVO25, LOVO25-script |
 | `contSet/levelSet/tightenDomain` | property | proved | 2 | LOVO25, LOVO25-script |
-| `contSet/polyZonotope/cartProd_` | ported | float | 2 | CVDP23, LALO20_W01 |
 | `contSet/polyZonotope/quadMap` | property | float | 2 | CVDP23, LALO20_W01 |
 | `contSet/polyZonotope/splitDepFactor` | property | float | 2 | Docking-constraint, LOVO25-script |
 | `contSet/polyZonotope/splitLongestGen` | ported | float | 2 | Docking-constraint, LOVO25-script |
-| `contSet/taylm/interval` | ported | float | 2 | LOVO25, LOVO25-script |
-| `contSet/taylm/minus` | ported | float | 2 | LOVO25, LOVO25-script |
-| `contSet/taylm/mtimes` | ported | float | 2 | LOVO25, LOVO25-script |
-| `contSet/taylm/plus` | ported | float | 2 | LOVO25, LOVO25-script |
-| `contSet/taylm/times` | property | float | 2 | LOVO25, LOVO25-script |
-| `contSet/taylm/uminus` | ported | float | 2 | LOVO25, LOVO25-script |
-| `contSet/taylm/uplus` | ported | float | 2 | LOVO25, LOVO25-script |
 | `hybridDynamics/location/guardIntersect_levelSet` | untested | bound | 2 | LOVO25, LOVO25-script |
 | `contDynamics/linearSys/initReach_adaptive` | untested | float | 1 | LALO20_W01 |
 | `contDynamics/nonlinDASys/consistentInitialState` | ported | float | 1 | TSPS25 |
@@ -159,10 +150,6 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contDynamics/nonlinDASys/steadyState` | ported | float | 1 | TSPS25 |
 | `contSet/conZonotope/interval` | property | bound | 1 | LOVO25-script |
 | `contSet/contSet/vertices` | ported | out-of-scope | 1 | TRAF22 |
-| `contSet/polyZonotope/exactPlus` | ported | float | 1 | CVDP23 |
-| `contSet/polyZonotope/isIntersecting_` | ported | float | 1 | CVDP23 |
-| `contSet/taylm/mpower` | ported | float | 1 | LOVO25-script |
-| `contSet/taylm/power` | ported | float | 1 | LOVO25-script |
 | `others/matZonotope/contains` | property | bound | 1 | TSPS25 |
 
 ## Files with no CORA counterpart
@@ -382,9 +369,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>CVDP23: 56/63</summary>
+<details><summary>CVDP23: 60/63</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/cartProd_` (ported), `contSet/polyZonotope/center` (ported), `contSet/polyZonotope/exactPlus` (ported), `contSet/polyZonotope/isIntersecting_` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/isIntersecting_` (property), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -532,21 +519,21 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>LALO20_W01: 19/22</summary>
+<details><summary>LALO20_W01: 20/22</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/initReach_adaptive` (untested), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/cartProd_` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
-
-</details>
-
-<details><summary>LOVO25: 51/67</summary>
-
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polyZonotope/center` (ported), `contSet/polytope/dim` (ported), `contSet/taylm/dim` (ported), `contSet/taylm/interval` (ported), `contSet/taylm/minus` (ported), `contSet/taylm/mtimes` (ported), `contSet/taylm/plus` (ported), `contSet/taylm/taylm` (ported), `contSet/taylm/times` (property), `contSet/taylm/uminus` (ported), `contSet/taylm/uplus` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/syntaxTree` (untested)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/initReach_adaptive` (untested), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
-<details><summary>LOVO25-script: 56/77</summary>
+<details><summary>LOVO25: 59/67</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polyZonotope/center` (ported), `contSet/polyZonotope/splitDepFactor` (property), `contSet/polyZonotope/splitLongestGen` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/taylm/dim` (ported), `contSet/taylm/interval` (ported), `contSet/taylm/minus` (ported), `contSet/taylm/mpower` (ported), `contSet/taylm/mtimes` (ported), `contSet/taylm/plus` (ported), `contSet/taylm/power` (ported), `contSet/taylm/taylm` (ported), `contSet/taylm/times` (property), `contSet/taylm/uminus` (ported), `contSet/taylm/uplus` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/syntaxTree` (untested)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/syntaxTree` (untested)
+
+</details>
+
+<details><summary>LOVO25-script: 66/77</summary>
+
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polyZonotope/splitDepFactor` (property), `contSet/polyZonotope/splitLongestGen` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/syntaxTree` (untested)
 
 </details>
 

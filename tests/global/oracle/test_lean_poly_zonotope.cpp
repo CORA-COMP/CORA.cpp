@@ -8,6 +8,10 @@
 // ORACLE: contSet/@polyZonotope/reduce.m
 // ORACLE: contSet/@polyZonotope/enclose.m
 // ORACLE: contSet/@polyZonotope/dim.m
+// ORACLE: contSet/@polyZonotope/center.m
+// ORACLE: contSet/@polyZonotope/cartProd_.m
+// ORACLE: contSet/@polyZonotope/exactPlus.m
+// ORACLE: contSet/@polyZonotope/isIntersecting_.m
 // ORACLE: contSet/@interval/polyZonotope.m
 // ORACLE: contSet/@zonotope/polyZonotope.m
 //
@@ -19,13 +23,15 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/global/oracle/poly_zonotope.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "oracle_testing.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 
@@ -185,6 +191,71 @@ int main() {
                 other.id[std::size_t(i)] = r.id[std::size_t(i)] + i % 2;
             oracle::check("other factors", aux_set(r).enclose(aux_set(other)),
                           aux_lean(r).enclose(aux_lean(other)));
+        }
+    });
+
+    // the center, the field c
+    oracle::run("polyZonotope.center", [](oracle::Random &rnd) {
+        for (const Dims &s : kDims) {
+            const Raw r = aux_raw(rnd, s, true);
+            oracle::check(aux_set(r).center(), aux_lean(r).center_of());
+        }
+    });
+
+    // the Cartesian product with a zonotope: its generators independent, a zero one dropped
+    oracle::run("polyZonotope.cartProd", [](oracle::Random &rnd) {
+        for (const Dims &s : kDims) {
+            const Raw r = aux_raw(rnd, s, true);
+            Tensor G = rnd.matrix(3, 4);
+            std::vector<double> g = G.data();
+            for (int64_t i = 0; i < 3; ++i) g[std::size_t(i * 4 + 2)] = 0.0;
+            const Zonotope Z(rnd.vector(3), Tensor::from_data(g, {3, 4}).matrix_transpose());
+            oracle::check(aux_set(r).cart_prod(Z), aux_lean(r).cart_prod(Z));
+        }
+    });
+
+    // the exact sum: shared and new identifiers, equal exponent columns merged by the constructor
+    oracle::run("polyZonotope.exactPlus", [](oracle::Random &rnd) {
+        for (const Dims &s : kDims) {
+            const Raw r = aux_raw(rnd, s, true);
+            Raw same = aux_raw(rnd, s, true);
+            same.id = r.id;
+            oracle::check("same factors", aux_set(r).exact_plus(aux_set(same)),
+                          aux_lean(r).exact_plus(aux_lean(same)));
+            Raw other = aux_raw(rnd, s, false);
+            for (int64_t i = 0; i < s.p; ++i)
+                other.id[std::size_t(i)] = r.id[std::size_t(i)] + i % 2;
+            oracle::check("other factors", aux_set(r).exact_plus(aux_set(other)),
+                          aux_lean(r).exact_plus(aux_lean(other)));
+        }
+    });
+
+    // CORA's "approx" test: offsets around the end of a row's range, an equality in and out of it
+    oracle::run("polyZonotope.isIntersecting", [](oracle::Random &rnd) {
+        for (const Dims &s : kDims) {
+            const Raw r = aux_raw(rnd, s, true);
+            const PolyZonotope P = aux_set(r);
+            const Tensor a = rnd.matrix(1, s.n);
+            const double lo = P.zonotope().linear_map(a).interval().inf().data()[0];
+            const double hi = P.zonotope().linear_map(a).interval().sup().data()[0];
+            // the offsets at the end of the range only on lean, where both ranges are the same
+            const bool exact = oracle::pass() == "lean";
+            std::vector<double> offsets = {lo - 0.5, lo + 0.5};
+            if (exact) offsets.insert(offsets.end(), {lo, std::nextafter(lo, -1e300)});
+            for (const double b : offsets) {
+                const Polytope half(a, Tensor::from_data({b}, {1}));
+                test::check(P.is_intersecting(half, 0.0) == aux_lean(r).is_intersecting(half, 0.0),
+                            "isIntersecting: the halfspace's answer");
+            }
+            std::vector<double> levels = {0.5 * (lo + hi), hi + 1.0};
+            if (exact) levels.push_back(hi + 1e-3);
+            for (const double be : levels) {
+                const Polytope plane(a.zeros_like({0, s.n}), Tensor::zeros({0}), a,
+                                     Tensor::from_data({be}, {1}));
+                test::check(P.is_intersecting(plane, 1e-3) ==
+                                aux_lean(r).is_intersecting(plane, 1e-3),
+                            "isIntersecting: the hyperplane's answer");
+            }
         }
     });
 
