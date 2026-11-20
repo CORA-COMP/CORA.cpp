@@ -10,7 +10,7 @@
 // CORA.cpp only: Tensor replaces MATLAB's matrices.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
@@ -248,10 +248,10 @@ BackendScope::~BackendScope() { aux_scoped = previous_; }
 // Construction from Numbers -----------------------------------------------------------------------
 
 // A column from a list of numbers.
-Tensor::Tensor(std::initializer_list<Entry> column, const std::string &device) {
+Tensor::Tensor(std::initializer_list<Entry> vector, const std::string &device) {
     std::vector<double> data;
-    for (const Entry &e : column) data.push_back(e.value);
-    *this = from_data(data, {static_cast<int64_t>(data.size()), 1}, device);
+    for (const Entry &e : vector) data.push_back(e.value);
+    *this = from_data(data, {static_cast<int64_t>(data.size())}, device);
 }
 
 // A matrix from a list of rows, which must all be as long as the first.

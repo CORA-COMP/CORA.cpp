@@ -23,7 +23,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   13-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -105,7 +105,8 @@ struct RefineOptions {
 
 class NeuralNetwork {
   public:
-    /// One layer: the weights W (out, in) and the bias b, a column (out, 1).
+    /// One layer: the weights W (out, in) and the bias b (out), stored as the column (out, 1) on
+    /// which the evaluation runs (#163 moves it to the vector).
     struct Layer {
         Tensor W, b;
     };

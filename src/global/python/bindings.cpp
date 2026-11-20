@@ -1212,7 +1212,7 @@ void bind_mat_exp(py::module_ &parent) {
           "As expm_taylor_horner_scaling, and style 4: expm at the step 1");
     m.def(
         "expm_norm_infinity",
-        [](const Interval &A, double t) { return scalar(mat_exp::expm_norm_infinity(A, t)); },
+        [](const Interval &A, double t) { return values(mat_exp::expm_norm_infinity(A, t)); },
         py::arg("A"), py::arg("t"), "CORA's closed-form bound of the exponential's remainder norm");
     m.def(
         "expm_absolute_bound",
@@ -1529,7 +1529,7 @@ void bind_zonotope(py::module_ &m) {
         .def(
             "hausdorff_distance_to_box",
             [](const Zonotope &Z, const std::optional<std::string> &method) {
-                return scalar(Z.hausdorff_distance_to_box(method));
+                return values(Z.hausdorff_distance_to_box(method));
             },
             py::arg("method") = py::none(),
             "A bound on the Hausdorff distance to the box: 'exact' (n <= 3), 'naive', 'wgreedy', "
@@ -1577,21 +1577,21 @@ void bind_zonotope(py::module_ &m) {
         .def(
             "volume",
             [](const Zonotope &Z, const std::string &method, int order) {
-                return scalar(Z.volume(method, order));
+                return values(Z.volume(method, order));
             },
             py::arg("method") = "exact", py::arg("order") = 5,
             "The volume: 'exact' (sum over the n-subsets of generators) or 'alamo' (a lower bound)")
         .def(
             "zonotope_norm",
             [](const Zonotope &Z, const py::object &p) {
-                return scalar(Z.zonotope_norm(point_of(p, "p")));
+                return values(Z.zonotope_norm(point_of(p, "p")));
             },
             py::arg("p"), "The norm of p with the zonotope centered at 0 as unit ball")
         .def(
             "zonotope_norm_minimizer",
             [](const Zonotope &Z, const py::object &p) {
                 const auto [value, beta] = Z.zonotope_norm_minimizer(point_of(p, "p"));
-                return py::make_tuple(scalar(value), values(beta));
+                return py::make_tuple(values(value), values(beta));
             },
             py::arg("p"), "(norm, beta): the norm of p and the coefficients that reach it")
         // containment and norm minimizers
@@ -1664,7 +1664,7 @@ void bind_zonotope(py::module_ &m) {
             "minnorm",
             [](const Zonotope &Z) {
                 const auto [value, x] = Z.minnorm();
-                return py::make_tuple(scalar(value), values(x));
+                return py::make_tuple(values(value), values(x));
             },
             "(val, x): the distance from the center to the boundary and the nearest boundary point")
         .def(
@@ -1728,7 +1728,7 @@ void bind_zonotope(py::module_ &m) {
             "exact, outer, outer:coarse")
         .def_static("origin", &Zonotope::origin, py::arg("n"), "The zonotope {0} of n dimensions")
         .def(
-            "ball_radius", [](const Zonotope &Z) { return scalar(Z.ball_radius()); },
+            "ball_radius", [](const Zonotope &Z) { return values(Z.ball_radius()); },
             "A bound on the distance from the center: the norm of the radius of the box")
         .def("rank", &Zonotope::rank, py::arg("tol") = py::none(),
              "The rank of the generators; singular values up to tol count as zero")

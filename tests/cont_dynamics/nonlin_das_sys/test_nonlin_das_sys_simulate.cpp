@@ -24,7 +24,7 @@ namespace {
 
 using Vars = std::vector<Expr>;
 
-Tensor col(double v) { return Tensor({v}); }
+Tensor col(double v) { return test::column({v}); }
 
 NonlinDASys linear_system() {
     return NonlinDASys(
@@ -48,7 +48,7 @@ void the_trajectory_is_the_closed_form(const std::string &b) {
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinDASys sys = linear_system();
     const alg::RungeKutta4 rk{.time_step = 0.1};
-    check(test::raises([&] { sys.simulate(Tensor({1.0, 2.0}), col(0.0), col(0.2), 1.0, rk); },
+    check(test::raises([&] { sys.simulate(test::column({1.0, 2.0}), col(0.0), col(0.2), 1.0, rk); },
                        Error::dimension_mismatch),
           b + ": a state of the wrong size");
     check(test::raises([&] { sys.simulate(col(1.0), col(0.0), col(0.2), 0.0, rk); },

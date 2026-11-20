@@ -29,12 +29,12 @@ void radius_known(const std::string &b) {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 2.0}, {3.0, 1.0}}));
     check(close(Z.ball_radius(), std::vector<double>{5}, 1e-14),
           b + ": the box radius (4, 3) has norm 5");
-    check(Z.ball_radius().shape() == std::vector<int64_t>({1, 1}), b + ": a (1, 1) result");
+    check(Z.ball_radius().shape() == std::vector<int64_t>({}), b + ": a number ()");
     check(close(Zonotope::origin(3).ball_radius(), std::vector<double>{0}, 0), b + ": a point");
     const Zonotope axis(column({1.0, 1.0}), Tensor({{3.0, 4.0}}));
     check(close(axis.ball_radius(), std::vector<double>{5}, 1e-14), b + ": one generator (3, 4)");
     const Tensor batch = Zonotope::stack({Z, axis}).ball_radius();
-    check(batch.shape() == std::vector<int64_t>({2, 1, 1}) &&
+    check(batch.shape() == std::vector<int64_t>({2}) &&
               close(batch, std::vector<double>{5, 5}, 1e-14),
           b + ": a batch");
 }

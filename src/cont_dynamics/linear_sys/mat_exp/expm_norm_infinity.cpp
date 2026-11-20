@@ -6,14 +6,14 @@
 //
 // Syntax:   Tensor v = mat_exp::expm_norm_infinity(A, t);
 // Inputs:   t >= 0 - the time
-// Outputs:  v - (..., 1, 1): s2 + s1 with s2 = rS t / (1 - rAS t / 2)
+// Outputs:  v - (...): s2 + s1 with s2 = rS t / (1 - rAS t / 2)
 // See also: expm_absolute_bound, infinity_norm
 //
 // CORA: matrixSet/@intervalMatrix/expmNormInf.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/mat_exp/mat_exp.h"
@@ -41,7 +41,8 @@ Tensor mat_exp::expm_norm_infinity(const Interval &A, double t) {
         norm_c.multiply(norm_cs) * (t * t) / (j * j) - (norm_c + norm_cs) * t / j + 1.0;
     const Tensor summand1 = numerator.divide(denominator);
     const Tensor one_minus = (norm_cs * t / j).scalar_op(Tensor::Binary::subtract, 1.0, true);
-    return summand1 + (norm_s * t).divide(one_minus);
+    // the matrix norms are (..., 1, 1); the bound is one number per matrix (...)
+    return (summand1 + (norm_s * t).divide(one_minus)).squeeze(-1).squeeze(-1);
 }
 
 } // namespace cora

@@ -27,7 +27,7 @@ void devices() {
     const Tensor t = Tensor::zeros({2, 2});
     check(t.device() == "cpu", "the default device is the CPU");
     check(Tensor::zeros({2, 2}, "cpu").device() == "cpu", "an explicit cpu");
-    check(Tensor({1.0, 2.0}, "cpu").device() == "cpu", "a column on the cpu");
+    check(Tensor({1.0, 2.0}, "cpu").device() == "cpu", "a vector on the cpu");
     check(throws([] { Tensor::zeros({2, 2}, "tpu"); }), "an unknown device");
 
     if (torch::cuda::is_available()) {

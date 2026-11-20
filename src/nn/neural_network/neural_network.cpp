@@ -5,7 +5,7 @@
 // CORA.cpp only: the class's construction and checks (the header names the CORA file).
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
@@ -40,14 +40,17 @@ NeuralNetwork::NeuralNetwork(std::vector<Layer> layers, std::vector<Activation> 
                " layers";
     });
     for (std::size_t k = 0; k < layers_.size(); ++k) {
-        const std::vector<int64_t> w = layers_[k].W.shape(), b = layers_[k].b.shape();
+        // a bias vector (out) is stored as the column the evaluation runs on
+        Tensor &bias = layers_[k].b;
+        if (bias.defined() && bias.ndim() == 1) bias = bias.expand_dims(-1);
+        const std::vector<int64_t> w = layers_[k].W.shape(), b = bias.shape();
         CORA_CHECK(w.size() == 2, Error::wrong_input_in_constructor, [&] {
             return "NeuralNetwork: the weights of layer " + std::to_string(k) +
                    " must be a matrix (out, in), got the shape " + shape_text(w);
         });
         CORA_CHECK(b == std::vector<int64_t>({w[0], 1}), Error::wrong_input_in_constructor, [&] {
-            return "NeuralNetwork: the bias of layer " + std::to_string(k) + " must be a column (" +
-                   std::to_string(w[0]) + ", 1), one entry per output, got " + shape_text(b);
+            return "NeuralNetwork: the bias of layer " + std::to_string(k) + " must be a vector (" +
+                   std::to_string(w[0]) + "), one entry per output, got " + shape_text(b);
         });
         CORA_CHECK(k == 0 || w[1] == layers_[k - 1].W.shape()[0], Error::wrong_input_in_constructor,
                    [&] {

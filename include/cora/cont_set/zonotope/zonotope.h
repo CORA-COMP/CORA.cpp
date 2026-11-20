@@ -24,7 +24,7 @@
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -52,7 +52,7 @@ class Zonotope : public ContSet {
     static constexpr int64_t kMaxCornerGenerators = 12;
 
     /// The zonotope of the center c (batch..., n) and the generators G (batch..., h, n), one
-    /// generator per row; c may be a column (batch..., n, 1), as Tensor({...}) makes one.
+    /// generator per row; c may be a column (batch..., n, 1).
 
     Zonotope(Tensor c, Tensor G);
 
@@ -186,7 +186,7 @@ class Zonotope : public ContSet {
                        const std::vector<std::vector<Tensor>> &T,
                        const std::vector<std::vector<int64_t>> &ind = {}) const;
 
-    /// A bound on the Euclidean Hausdorff distance between the zonotope and its box, (..., 1, 1):
+    /// A bound on the Euclidean Hausdorff distance between the zonotope and its box, (...):
     /// method "exact" (sampled directions, CORA's default for n <= 3), "naive" (the norm of the
     /// radius, the default above), "wgreedy" or "wopt". "ell" is not supported.
     Tensor hausdorff_distance_to_box(const std::optional<std::string> &method = std::nullopt) const;
@@ -286,7 +286,7 @@ class Zonotope : public ContSet {
     /// (default) is the norm of the box around the set; "exact" and "ub_convex" are not supported.
     Tensor norm(double type = 2, const std::string &mode = "ub") const;
 
-    /// The distance from the center to the boundary (1, 1) (the largest ball about the center in
+    /// The distance from the center to the boundary () (the largest ball about the center in
     /// the set; 0 if the set is flat) and the nearest point of the boundary (n). Not a batch.
     std::pair<Tensor, Tensor> minnorm() const;
 
@@ -334,7 +334,7 @@ class Zonotope : public ContSet {
     /// the center and every generator turn by [cos -sin; sin cos] there. Exact in real numbers.
     Zonotope rotate(const std::vector<int64_t> &dims, double angle) const;
 
-    /// An upper bound (..., 1, 1) of the distance from the center: the smaller of the sum of the
+    /// An upper bound (...) of the distance from the center: the smaller of the sum of the
     /// generator lengths and the 2-norm of the radius of the box around the zonotope.
     Tensor ball_radius() const;
 
@@ -431,11 +431,11 @@ class Zonotope : public ContSet {
     Tensor underapproximate() const;
     Tensor underapproximate(const Tensor &S_rows) const;
 
-    /// The volume (..., 1, 1): method "exact" (default) is 2^n times the sum of |det| over the
+    /// The volume (...): method "exact" (default) is 2^n times the sum of |det| over the
     /// n-subsets of generators, "alamo" is a lower bound.
     Tensor volume(const std::string &method = "exact", int order = 5) const;
 
-    /// The norm (1, 1) of the point p (n) w.r.t. the zonotope centered at the origin (its
+    /// The norm () of the point p (n) w.r.t. the zonotope centered at the origin (its
     /// center is ignored): min s with G beta = p, |beta|_inf <= s, by a linear program; infinity if
     /// p is not in the span of the generators. Not a batch.
     Tensor zonotope_norm(const Tensor &p) const;

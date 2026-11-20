@@ -5,14 +5,14 @@
 //
 // Syntax:   r = Z.ball_radius();
 // Inputs:   -
-// Outputs:  r - (..., 1, 1): every point lies within r of the center
+// Outputs:  r - (...): every point lies within r of the center
 // See also: generator_length, interval, norm
 //
 // CORA: contSet/@zonotope/radius.m
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   19-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -26,10 +26,8 @@ namespace cora {
 
 Tensor Zonotope::ball_radius() const {
     detail::Entry entry;
-    const Tensor lengths = G_.vector_norm(Tensor::Norm::two, -1).sum(-1, true).expand_dims(-1);
-
-    const Tensor box =
-        interval().half_width().vector_norm(Tensor::Norm::two, -1).expand_dims(-1).expand_dims(-1);
+    const Tensor lengths = G_.vector_norm(Tensor::Norm::two, -1).sum(-1);
+    const Tensor box = interval().half_width().vector_norm(Tensor::Norm::two, -1);
     return lengths.minimum(box);
 }
 

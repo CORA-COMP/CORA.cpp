@@ -23,7 +23,7 @@ namespace {
 
 using Vars = std::vector<Expr>;
 
-Tensor col(double v) { return Tensor({v}); }
+Tensor col(double v) { return test::column({v}); }
 
 NonlinDASys linear_system() {
     return NonlinDASys(
@@ -50,7 +50,7 @@ void the_steady_state_has_f_and_g_zero(const std::string &b) {
 /// Wrong arguments are described, and the checks can be switched off.
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinDASys sys = linear_system();
-    check(test::raises([&] { sys.steady_state(Tensor({1.0, 2.0}), col(0.0), col(0.5)); },
+    check(test::raises([&] { sys.steady_state(test::column({1.0, 2.0}), col(0.0), col(0.5)); },
                        Error::dimension_mismatch),
           b + ": a state of the wrong size");
     const Tensor on = sys.steady_state(col(0.0), col(0.0), col(0.5)).first;

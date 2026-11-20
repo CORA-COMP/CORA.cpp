@@ -47,7 +47,7 @@ void bound_grows_with_the_radius(const std::string &b) {
     const Interval T = test::random_matrix(rng, 2, 0.05);
     const Interval batch = Interval::stack({wide, T});
     const Tensor v = mat_exp::expm_norm_infinity(batch, 1.0);
-    check(v.shape() == std::vector<int64_t>{2, 1, 1} &&
+    check(v.shape() == std::vector<int64_t>{2} &&
               close(v.slice(0, 0, 1).reshape({1}),
                     mat_exp::expm_norm_infinity(wide, 1.0).reshape({1}), 0),
           b + ": a batch");

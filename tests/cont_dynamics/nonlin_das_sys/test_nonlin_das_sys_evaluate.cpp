@@ -32,7 +32,7 @@ NonlinDASys square_system() {
         1);
 }
 
-Tensor col(double v) { return Tensor({v}); }
+Tensor col(double v) { return test::column({v}); }
 
 /// f and g at columns of points, and the blocks of the Jacobian at one.
 void the_values_and_the_jacobian(const std::string &b) {
@@ -64,10 +64,10 @@ void the_hessian_over_a_box(const std::string &b) {
 /// Wrong arguments are described: a mismatch of sizes, a wrong number of equations.
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinDASys sys = square_system();
-    check(
-        test::raises([&] { sys.constraints(Tensor({1.0, 2.0}), col(0.0), Tensor::zeros({0, 1})); },
-                     Error::dimension_mismatch),
-        b + ": a state of the wrong size");
+    check(test::raises(
+              [&] { sys.constraints(test::column({1.0, 2.0}), col(0.0), Tensor::zeros({0, 1})); },
+              Error::dimension_mismatch),
+          b + ": a state of the wrong size");
     check(test::raises(
               [&] {
                   NonlinDASys(

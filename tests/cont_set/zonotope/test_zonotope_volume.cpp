@@ -82,10 +82,10 @@ void a_batch(const std::string &b) {
     const Zonotope batch = Zonotope::stack({A, flat});
     for (const std::string method : {"exact", "alamo"}) {
         const Tensor v = batch.volume(method);
-        check(v.shape() == Shape{2, 1, 1}, b + ": batch shape");
-        check(close(v.slice(0, 0, 1).reshape({1, 1}), A.volume(method), 1e-12),
+        check(v.shape() == Shape{2}, b + ": batch shape");
+        check(close(v.slice(0, 0, 1).reshape({}), A.volume(method), 1e-12),
               b + ": member 1 (" + method + ")");
-        check(close(v.slice(0, 1, 2).reshape({1, 1}), std::vector<double>{0}, 0),
+        check(close(v.slice(0, 1, 2).reshape({}), std::vector<double>{0}, 0),
               b + ": the flat member has volume 0 (" + method + ")");
     }
 }

@@ -140,17 +140,6 @@ inline Array matrix(const Tensor &t) {
                                     "use the eigen, torch or lean backend");
 }
 
-/// A (..., 1, 1) result (the zonotope family's and the capsule's numbers) as (...): a torch
-/// tensor, a float for one set, else an array.
-inline py::object scalar(const Tensor &t) {
-#ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors
-    if (is_torch(t)) return py::cast(to_torch(t).squeeze(-1).squeeze(-1));
-#endif
-    if (t.numel() == 1) return py::cast(t.item());
-    const Shape shape = t.shape();
-    return host_array(t, Shape(std::vector<int64_t>(shape.begin(), shape.end() - 2)));
-}
-
 /// A torch tensor or numpy array (or a list of numbers) as a Tensor on its backend, of its own
 /// shape: a 1-D array is a vector (n), as point_of reads it (#163); nothing for anything else.
 inline std::optional<Tensor> as_tensor(const py::handle &o) {

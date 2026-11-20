@@ -48,7 +48,7 @@ void a_batch_gives_a_number_per_member(const std::string &b) {
     const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const Zonotope Z2(column({0.0, 0.0}), Tensor({{2.0, 0.0}}));
     const Tensor d = Zonotope::stack({Z, Z2}).hausdorff_distance_to_box("wopt");
-    check(d.shape() == std::vector<int64_t>({2, 1, 1}), b + ": shape (2, 1, 1)");
+    check(d.shape() == std::vector<int64_t>({2}), b + ": shape (2)");
     check(close(d.data()[1], 0.0, 1e-14), b + ": a segment along an axis is its box");
 }
 

@@ -6,7 +6,7 @@
 // Syntax:   v = Z.volume();   v = Z.volume(method);   v = Z.volume("reduce", order);
 // Inputs:   method - "exact" (default) or "alamo"; "reduce" is not supported
 //           order - the order of "reduce"
-// Outputs:  v - (..., 1, 1); 0 if the generators do not span the space (rank below n)
+// Outputs:  v - (...); 0 if the generators do not span the space (rank below n)
 // See also: is_full_dim, interval
 //
 // CORA: contSet/@zonotope/volume_.m
@@ -14,7 +14,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/zonotope/private/priv.h"
@@ -92,16 +92,17 @@ Tensor Zonotope::volume(const std::string &method, int order) const {
                            "reduce does not have");
     });
     const int64_t n = dim(), m = nr_generators();
+    // the volume of each member (...), computed as CORA's (..., 1, 1)
     Shape shape = c_.expand_dims(-1).shape();
     shape[shape.size() - 2] = 1;
     const Tensor zero = c_.expand_dims(-1).zeros_like(shape);
-    if (m < n) return zero;
+    if (m < n) return zero.squeeze(-1).squeeze(-1);
     const Tensor deficient = aux_rank_deficient(G_.matrix_transpose());
     // the exact or the Gram volume, zero if the generators are deficient
     const Tensor value = method == "exact" ? aux_sum_of_determinants(G_.matrix_transpose())
                                            : aux_gram_volume(G_.matrix_transpose(), deficient);
     // 2^n is a power of two: the scaling is exact
-    return Tensor::where(deficient, zero, value * std::ldexp(1.0, int(n)));
+    return Tensor::where(deficient, zero, value * std::ldexp(1.0, int(n))).squeeze(-1).squeeze(-1);
 }
 
 } // namespace cora

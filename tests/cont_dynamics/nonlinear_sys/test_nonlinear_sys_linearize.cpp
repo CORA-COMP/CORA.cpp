@@ -37,7 +37,7 @@ NonlinearSys aux_system() {
 /// The Jacobians and the Hessians at the point (1, 2), u = 0.5.
 void the_derivatives_at_a_point(const std::string &b) {
     const NonlinearSys sys = aux_system();
-    const Tensor x({1.0, 2.0}), u({0.5});
+    const Tensor x = test::column({1.0, 2.0}), u = test::column({0.5});
     check(test::close(sys.dynamics(x, u), {2.5, std::sin(1.0)}), b + ": f");
     const Jacobians J = sys.jacobian(x, u);
     check(test::close(J.A, {2.0, 1.0, std::cos(1.0), 0.0}) && test::close(J.B, {1.0, 0.0}),
@@ -53,7 +53,8 @@ void the_derivatives_at_a_point(const std::string &b) {
 /// d3f1/dx0^3 = -cos x0 in [-1, -cos 1], and no other third derivative.
 void the_derivatives_over_a_box(const std::string &b) {
     const NonlinearSys sys = aux_system();
-    const Range x(Tensor({0.0, 1.0}), Tensor({1.0, 2.0})), u(Tensor({0.0}), Tensor({1.0}));
+    const Range x(test::column({0.0, 1.0}), test::column({1.0, 2.0})),
+        u(test::column({0.0}), test::column({1.0}));
     const std::vector<std::optional<Range>> H = sys.hessian_enclosure(x, u);
     check(H.size() == 18 && H[1] && H[3] && H[9] && !H[0] && !H[10], b + ": the nonzero Hessians");
     check(test::close(H[9]->lo, {-std::sin(1.0)}) && test::close(H[9]->hi, {0.0}),
@@ -93,7 +94,8 @@ void checks_and_their_switch() {
     check(test::throws([&] { sys.linearize(R, R, 0.1); }), "an input set of another dimension");
     check(test::raises([&] { sys.linearize(R, std::nullopt, 0.0); }, Error::wrong_value),
           "time step 0");
-    check(test::throws([&] { sys.jacobian(Tensor({1.0, 2.0})); }), "a point without its input");
+    check(test::throws([&] { sys.jacobian(test::column({1.0, 2.0})); }),
+          "a point without its input");
     const Tensor on = sys.linearize(R, std::nullopt, 0.1).x_star;
     ChecksScope off(false);
     check(test::close(sys.linearize(R, std::nullopt, 0.1).x_star, on, 0), "the same, checks off");
