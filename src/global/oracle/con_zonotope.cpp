@@ -68,10 +68,12 @@ ConZonotope::ConZonotope(const cora::ConZonotope &cz)
 // the wire form of a cut: the factor rows C x <= d are the polytope's inequalities
 ConZonotope::ConZonotope(const cora::ConZonotope::Cut &cut)
     : dtype_(Tensor(cut.c).dtype()), json_(Json::object()) {
-    json_.set("c", Tensor(cut.c).to_json()).set("G", Tensor(cut.G).to_json());
+    // the wire form is CORA's columns
+    json_.set("c", Tensor(cut.c.expand_dims(-1)).to_json())
+        .set("G", Tensor(cut.G.matrix_transpose()).to_json());
     Json P = Json::object();
-    P.set("A", Tensor(cut.C).to_json()).set("b", Tensor(cut.d).to_json());
-    P.set("Ae", Tensor(cut.A).to_json()).set("be", Tensor(cut.b).to_json());
+    P.set("A", Tensor(cut.C).to_json()).set("b", Tensor(cut.d.expand_dims(-1)).to_json());
+    P.set("Ae", Tensor(cut.A).to_json()).set("be", Tensor(cut.b.expand_dims(-1)).to_json());
     json_.set("P", std::move(P));
 }
 

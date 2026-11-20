@@ -177,9 +177,9 @@ class ConZonotope : public ContSet {
         std::vector<CertWeights> up, lo;
     };
 
-    /// A constrained zonotope in floating point: c + G x with A x = b and the halfspace rows
-    /// C x <= d on the factors x in [-1, 1]. What a polytope cuts from a set without CORA's slack
-    /// factors (CORALean's ConZonotope with its halfspace polytope). A single set.
+    /// c + G x with A x = b and C x <= d on the factors x in [-1, 1] (CORALean's ConZonotope with
+    /// its halfspace polytope), a single set: c (n), G (h, n) one generator per row, A (p, h), b
+    /// (p), C (q, h), d (q). What a polytope cuts from a set without CORA's slack factors.
     struct Cut {
         Tensor c, G, A, b, C, d;
 

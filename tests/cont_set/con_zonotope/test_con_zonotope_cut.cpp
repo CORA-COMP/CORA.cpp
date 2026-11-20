@@ -37,7 +37,7 @@ void by_hand(const std::string &b) {
     const Polytope far(Tensor({{1.0, 0.0}}), vec({-3.0}));
     check(square.cut(far).interval_tight(3).is_empty(), b + ": beyond the set");
     // the rows are kept as rows: no factor is added
-    check(square.cut(line).G.shape()[1] == 2 && square.cut(line).C.shape()[0] == 3,
+    check(square.cut(line).G.shape()[0] == 2 && square.cut(line).C.shape()[0] == 3,
           b + ": the rows stay rows (an equality is two)");
 }
 

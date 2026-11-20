@@ -147,7 +147,7 @@ dimensions first:
 - a polytope has the offsets b and be (batch..., m) and the vertices V (batch..., p, n), one
   vertex per row; every other constraint offset is a vector too (`ConZonotope::b()`, the d of
   `constraints_satisfied`, the phi and y of `intersect_strip`, the parts of
-  `ConZonotope::approximate_bounds`);
+  `ConZonotope::approximate_bounds` and of `ConZonotope::Cut`);
 - every point argument and result of a set (`contains`, `plus`, `center()`, the direction of
   `support_function`, the points of `rand_point`, `corners`, ...) is a point (..., n) or a batch
   of points (..., N, n), one point per row; the center of an empty set is NaN (n);
@@ -160,8 +160,7 @@ dimensions first:
 - CORA's n x h columns appear only where data crosses to CORA: the private MATLAB-data loader and
   the oracle client. An algorithm that is written on CORA's columns (the linear programs of
   `ConZonotope`, the adaptive linear reach) transposes once, explicitly. There is no public
-  conversion from CORA's columns. `ConZonotope::Cut`, the floating-point form that the guard
-  intersections and `interval_cert` share with CORALean, still holds CORA's columns.
+  conversion from CORA's columns.
 
 **Matrix sets are sets of matrix-shaped points, as in CORALean.** CORALean has no
 interval-matrix type: an interval matrix is `Interval (Mat n m)`, a set whose points are matrices,

@@ -52,11 +52,11 @@ Host aux_host_cut(const ConZonotope::Cut &K) {
     // the sizes, then the values row-major
     Host H;
     H.n = K.c.shape()[0];
-    H.h = K.G.shape()[1];
+    H.h = K.G.shape()[0];
     H.m = K.C.shape()[0];
     H.p = K.A.shape()[0];
     H.c = K.c.data();
-    H.G = priv_host_rows(K.G);
+    H.G = priv_host_rows(K.G.matrix_transpose()); // CORA's columns (n, h), row-major
     H.C = priv_host_rows(K.C);
     H.d = priv_host_rows(K.d);
     H.A = priv_host_rows(K.A);
@@ -140,12 +140,12 @@ Interval aux_box(const Host &H, const ConZonotope::Certificate &w, const Tensor 
 
 /// The set as a cut without rows.
 ConZonotope::Cut aux_cut(const ConZonotope &cz) {
-    return {cz.c().expand_dims(-1),
-            cz.generators().matrix_transpose(),
+    return {cz.c(),
+            cz.generators(),
             cz.A(),
-            priv_b_column(cz),
+            cz.b(),
             zeros_block(cz.c().expand_dims(-1), 0, cz.nr_generators()),
-            zeros_block(cz.c().expand_dims(-1), 0, 1)};
+            cz.c().zeros_like({0})};
 }
 
 // The programs ------------------------------------------------------------------------------------
@@ -158,9 +158,7 @@ LinProg aux_program(const ConZonotope::Cut &K, const Host &H) {
         std::none_of(H.d.begin(), H.d.end(), [](double x) { return std::isinf(x) && x > 0; });
     if (all_finite) {
         const std::vector<double> lb(std::size_t(H.h), -1.0), ub(std::size_t(H.h), 1.0);
-        return Polytope::LinearPrograms(Polytope(K.C, K.d.squeeze(-1), K.A, K.b.squeeze(-1)), lb,
-                                        ub)
-            .program();
+        return Polytope::LinearPrograms(Polytope(K.C, K.d, K.A, K.b), lb, ub).program();
     }
     LinProg lp;
     lp.n = int(H.h);
@@ -210,7 +208,7 @@ std::optional<ConZonotope::CertWeights> aux_dual(const Host &H, const LinProgRes
 
 std::optional<ConZonotope::Certificate> ConZonotope::Cut::certificate() const {
     detail::Entry entry;
-    CORA_CHECK(c.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c.ndim() == 1, Error::not_supported,
                [] { return std::string("certificate: a single set, not a batch"); });
     const Host H = aux_host_cut(*this);
     // both ends of every coordinate, from a program each; the programs differ in their cost only
@@ -238,7 +236,7 @@ std::optional<ConZonotope::Certificate> ConZonotope::Cut::certificate() const {
 
 Interval ConZonotope::Cut::interval_cert(const Certificate &w) const {
     detail::Entry entry;
-    CORA_CHECK(c.ndim() == 2, Error::not_supported,
+    CORA_CHECK(c.ndim() == 1, Error::not_supported,
                [] { return std::string("interval_cert: a single set, not a batch"); });
     const Host H = aux_host_cut(*this);
     // a multiplier per end of each coordinate, of the sizes of the rows

@@ -16,7 +16,7 @@
 // CORA.cpp only: CORALean's float definition replaces CORA's slack factors
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       10-November-2026
-// Last update:   18-November-2026
+// Last update:   20-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -81,25 +81,24 @@ ConZonotope::Cut ConZonotope::cut(const Polytope &P) const {
     }
     // the set with its rows (none: the empty blocks)
     const int64_t q = int64_t(r.size());
-    return {c_.expand_dims(-1),
-            G_.matrix_transpose(),
+    return {c_,
+            G_,
             A(),
-            priv_b_column(*this),
+            b(),
             q == 0 ? zeros_block(c_.expand_dims(-1), 0, h)
                    : Tensor::like(c_.expand_dims(-1), C, {q, h}),
-            q == 0 ? zeros_block(c_.expand_dims(-1), 0, 1)
-                   : Tensor::like(c_.expand_dims(-1), d, {q, 1})};
+            q == 0 ? c_.zeros_like({0}) : Tensor::like(c_.expand_dims(-1), d, {q})};
 }
 
 ConZonotope::Cut ConZonotope::Cut::linear_map(const Tensor &M) const {
     detail::Entry entry;
-    CORA_CHECK(M.ndim() == 2 && M.shape()[1] == c.shape()[0], Error::dimension_mismatch, [&] {
-        return "linear_map: the matrix needs " + std::to_string(c.shape()[0]) +
+    CORA_CHECK(M.ndim() == 2 && M.shape()[1] == c.shape().back(), Error::dimension_mismatch, [&] {
+        return "linear_map: the matrix needs " + std::to_string(c.shape().back()) +
                " columns, got the shape " + shape_text(M.shape());
     });
-    // the cut keeps CORA's columns: c (n, 1) and G (n, h)
-    const auto [c2, G2] = Tensor::zonotope_linear_map(M, c.squeeze(-1), G.matrix_transpose());
-    return {c2.expand_dims(-1), G2.matrix_transpose(), A, b, C, d};
+    // the center and the generator rows map, the rows on the factors stay
+    const auto [c2, G2] = Tensor::zonotope_linear_map(M, c, G);
+    return {c2, G2, A, b, C, d};
 }
 
 } // namespace cora
