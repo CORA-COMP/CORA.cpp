@@ -217,7 +217,7 @@ generators).
 | `polyZonotope.plus` | `PolyZonotope.plus` (`Plus.lean`) | `pZ`, `S` (a polynomial zonotope) | `pZ` |
 | `polyZonotope.exactPlus` | `PolyZonotope.exactPlus` (`ExactPlus.lean`, same identifiers) | `pZ`, `S` | `pZ` |
 | `polyZonotope.mtimes` | `PolyZonotope.mtimes` (`Mtimes.lean`) | `M` (matrix), `pZ` | `pZ` |
-| `polyZonotope.quadMap` | `PolyZonotope.quadMap` (`QuadMap.lean`) | `Q` (matrices), `pZ` | `pZ` |
+| `polyZonotope.quadMap` | served: `PolyZonotope.quadMapCora` (`QuadMapCora.lean`, CORA.cpp's order; `test_lean_poly_zonotope` bit for bit) | `P`, `Q` (matrices) | `P` |
 | `polyZonotope.enclose` | `PolyZonotope.convHull` (`ConvHull.lean`) | `pZ`, `S` | `pZ` |
 | `polyZonotope.cartProd` | `PolyZonotope.cartProd` (`CartProd.lean`) | `pZ`, `S` | `pZ` |
 | `polyZonotope.reduce` | `PolyZonotope.reduce` (`Reduce.lean`) | `pZ`, `order` | `pZ` |

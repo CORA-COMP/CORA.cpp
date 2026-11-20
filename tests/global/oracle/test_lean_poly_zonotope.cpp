@@ -14,6 +14,7 @@
 // ORACLE: contSet/@polyZonotope/isIntersecting_.m
 // ORACLE: contSet/@polyZonotope/splitDepFactor.m
 // ORACLE: contSet/@polyZonotope/splitLongestGen.m
+// ORACLE: contSet/@polyZonotope/quadMap.m
 // ORACLE: contSet/@interval/polyZonotope.m
 // ORACLE: contSet/@zonotope/polyZonotope.m
 //
@@ -247,6 +248,24 @@ int main() {
             oracle::check("longest, first half", P1, L1);
             oracle::check("longest, second half", P2, L2);
         }
+    });
+
+    // CORA's quadMap: nonzeroFilter, the box of one output, no dependent generators
+    oracle::run("polyZonotope.quadMap", [](oracle::Random &rnd) {
+        const auto compare = [](const std::string &what, const Raw &r,
+                                const std::vector<Tensor> &Q) {
+            oracle::check(what, aux_set(r).quad_map(Q),
+                          aux_lean(r).quad_map(std::vector<lean::Tensor>(Q.begin(), Q.end())));
+        };
+        // the two smaller shapes: the oracle's constructor is slow on many products
+        for (const Dims &s : std::vector<Dims>(kDims.begin(), kDims.begin() + 2)) {
+            const Raw r = aux_raw(rnd, s, true);
+            const Tensor zero = Tensor::zeros({s.n, s.n});
+            compare("two outputs", r, {rnd.matrix(s.n, s.n), zero, rnd.matrix(s.n, s.n)});
+            compare("one output", r, {zero, rnd.matrix(s.n, s.n)});
+        }
+        const Raw r = aux_raw(rnd, {3, 0, 2, 3}, false);
+        compare("no dependent part", r, {rnd.matrix(3, 3), rnd.matrix(3, 3)});
     });
 
     // CORA's "approx" test: offsets around the end of a row's range, an equality in and out of it

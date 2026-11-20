@@ -11,7 +11,7 @@ column of its own and is left out of the bit-exact numerator and denominator, as
 rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 
-Over the 86 instances, 2302 of 2382 rows (96.6%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2304 of 2382 rows (96.7%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 
 ## Per instance
 
@@ -29,7 +29,7 @@ Over the 86 instances, 2302 of 2382 rows (96.6%) that they execute and that can 
 | CBF01 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | CBF02 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | CBF03 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
-| CVDP23 | 89 | 66 | 4 | 17 | 2 | 0 | 0 | 13 | 13 | 61/63 |
+| CVDP23 | 89 | 67 | 3 | 17 | 2 | 0 | 0 | 13 | 13 | 62/63 |
 | CartPole-reach | 64 | 45 | 2 | 16 | 1 | 0 | 0 | 13 | 10 | 40/41 |
 | CartPole-reach-report | 70 | 50 | 3 | 16 | 1 | 0 | 0 | 13 | 10 | 45/47 |
 | DTN01 | 48 | 31 | 2 | 14 | 1 | 0 | 0 | 8 | 10 | 30/30 |
@@ -55,7 +55,7 @@ Over the 86 instances, 2302 of 2382 rows (96.6%) that they execute and that can 
 | ISSF01_ISU01 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | LALO20_W001 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
 | LALO20_W005 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
-| LALO20_W01 | 35 | 23 | 3 | 8 | 1 | 0 | 0 | 7 | 6 | 20/22 |
+| LALO20_W01 | 35 | 24 | 2 | 8 | 1 | 0 | 0 | 7 | 6 | 21/22 |
 | LOVO25 | 98 | 63 | 5 | 28 | 2 | 0 | 0 | 15 | 16 | 59/67 |
 | LOVO25-script | 109 | 72 | 6 | 28 | 3 | 0 | 0 | 16 | 16 | 68/77 |
 | NAV-robust | 67 | 43 | 2 | 20 | 2 | 0 | 0 | 17 | 11 | 38/39 |
@@ -137,7 +137,6 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contSet/levelSet/empty` | ported | float | 2 | LOVO25, LOVO25-script |
 | `contSet/levelSet/isIntersecting_` | ported | float | 2 | LOVO25, LOVO25-script |
 | `contSet/levelSet/tightenDomain` | property | proved | 2 | LOVO25, LOVO25-script |
-| `contSet/polyZonotope/quadMap` | property | float | 2 | CVDP23, LALO20_W01 |
 | `hybridDynamics/location/guardIntersect_levelSet` | untested | bound | 2 | LOVO25, LOVO25-script |
 | `contDynamics/linearSys/initReach_adaptive` | untested | float | 1 | LALO20_W01 |
 | `contDynamics/nonlinDASys/consistentInitialState` | ported | float | 1 | TSPS25 |
@@ -366,9 +365,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>CVDP23: 61/63</summary>
+<details><summary>CVDP23: 62/63</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/intervalMatrix/norm` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -516,9 +515,9 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>LALO20_W01: 20/22</summary>
+<details><summary>LALO20_W01: 21/22</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/initReach_adaptive` (untested), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/polyZonotope/quadMap` (property), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/initReach_adaptive` (untested), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/interval/interval` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
