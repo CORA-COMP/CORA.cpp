@@ -80,7 +80,7 @@ class Interval : public ContSet {
     bool is_empty() const { return empty_.all(); }
 
     /// The center (inf + sup) / 2 of the shape of the bounds; NaN in an unbounded coordinate, the
-    /// origin for the whole space (CORA's center). ContSet::center() gives a box as a column.
+    /// origin for the whole space (CORA's center). ContSet::center() gives the same.
     Tensor center() const;
 
     /// (sup - inf) / 2, elementwise, of the shape of the bounds (CORA's rad).

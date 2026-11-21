@@ -255,7 +255,7 @@ int64_t NeurNetContrSys::split_dimension(const Interval &box) const {
                        "split_dimension: the box must be a single box of the system's dimension");
                });
     // the radius of each dimension times the mean absolute sensitivity of the outputs to it
-    const Tensor center = ((box.inf() + box.sup()) * 0.5).expand_dims(-1);
+    const Tensor center = (box.inf() + box.sup()) * 0.5;
     const Tensor S = nn_.sensitivity(center);
     const Tensor weight = S.abs().mean(0, true).squeeze(0);
     const std::vector<double> score = box.half_width().multiply(weight).data();

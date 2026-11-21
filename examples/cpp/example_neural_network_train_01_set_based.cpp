@@ -50,12 +50,12 @@ torch::nn::Sequential new_model() {
     return model;
 }
 
-/// The linear layers of the model as the network of CORA.cpp (a bias is a column there).
+/// The linear layers of the model as the network of CORA.cpp.
 NeuralNetwork as_network(const torch::nn::Sequential &model) {
     std::vector<NeuralNetwork::Layer> layers;
     for (const auto &module : model->children())
         if (auto linear = std::dynamic_pointer_cast<torch::nn::LinearImpl>(module))
-            layers.push_back({from_torch(linear->weight), from_torch(linear->bias.unsqueeze(-1))});
+            layers.push_back({from_torch(linear->weight), from_torch(linear->bias)});
     return NeuralNetwork(layers);
 }
 
@@ -63,8 +63,7 @@ NeuralNetwork as_network(const torch::nn::Sequential &model) {
 Zonotope output_set(const torch::nn::Sequential &model, const torch::Tensor &x, double eps) {
     const torch::Tensor generators =
         (eps * torch::eye(2, torch::kDouble)).expand({x.size(0), 2, 2}).contiguous();
-    return as_network(model).evaluate(
-        Zonotope(from_torch(x.unsqueeze(-1)), from_torch(generators)));
+    return as_network(model).evaluate(Zonotope(from_torch(x), from_torch(generators)));
 }
 
 /// Per point whether every input of the eps-box gets its class: the largest value of

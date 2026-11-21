@@ -4296,7 +4296,7 @@ void bind_neural_network(py::module_ &m) {
                  std::vector<NeuralNetwork::Layer> out;
                  out.reserve(layers.size());
                  for (const auto &[W, b] : layers)
-                     out.push_back({tensor_of(W, "the weights"), columns_of(b, "the bias")});
+                     out.push_back({tensor_of(W, "the weights"), point_of(b, "the bias")});
                  if (!activations) return NeuralNetwork(out);
                  // one activation per layer
                  std::vector<Activation> acts;
@@ -4317,12 +4317,14 @@ void bind_neural_network(py::module_ &m) {
                     return py::cast(nn.evaluate(py::cast<Zonotope>(x), nn_options_of(kwargs)));
                 if (py::isinstance<PolyZonotope>(x))
                     return py::cast(nn.evaluate(py::cast<PolyZonotope>(x), nn_options_of(kwargs)));
-                const Tensor y = nn.evaluate(columns_of(x, "the points"));
-                const bool one = py::hasattr(x, "ndim") && py::cast<int>(x.attr("ndim")) == 1;
-                return one ? values(y.squeeze(-1)) : matrix(y);
+                // the points one per row (N, in), or one point (in)
+                const Tensor points = point_of(x, "the points");
+                if (points.ndim() == 1)
+                    return values(nn.evaluate(points.expand_dims(0)).squeeze(0));
+                return matrix(nn.evaluate(points));
             },
             py::arg("x"),
-            "The outputs at a point (in,) or the columns of (in, N); for a zonotope or polynomial "
+            "The outputs at a point (in,) or at the rows of (N, in); for a zonotope or polynomial "
             "zonotope, a set that contains the outputs of every point. Keywords: poly_method "
             "('singh', 'regression', and for a polynomial zonotope 'ridgeregression', "
             "'bernstein', 'taylor', 'bounds', 'throw-catch'), regression_error ('extremum' or "
@@ -4334,7 +4336,7 @@ void bind_neural_network(py::module_ &m) {
             "sensitivity",
             [](const NeuralNetwork &nn, const py::object &x) {
                 const Tensor point = tensor_of(x, "the point");
-                return matrix(nn.sensitivity(point.reshape({point.numel(), 1})));
+                return matrix(nn.sensitivity(point.reshape({point.numel()})));
             },
             py::arg("x"), "The Jacobian (out, in) of the network at the point x (in,)")
         // the pairs (x, N(x)) of a set, the input rows kept

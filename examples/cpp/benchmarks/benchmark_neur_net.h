@@ -52,7 +52,7 @@ inline NeuralNetwork load_network(const std::string &name) {
         const int64_t rows = layer["out"].integer(), cols = layer["in"].integer();
         const double *W = numbers + layer["W"].integer(), *b = numbers + layer["b"].integer();
         layers.push_back({Tensor::from_data(std::vector<double>(W, W + rows * cols), {rows, cols}),
-                          Tensor::from_data(std::vector<double>(b, b + rows), {rows, 1})});
+                          Tensor::from_data(std::vector<double>(b, b + rows), {rows})});
         const std::string &act = layer["activation"].string;
         activations.push_back(act == "relu"      ? Activation::relu
                               : act == "tanh"    ? Activation::tanh
