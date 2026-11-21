@@ -4,3 +4,4 @@ torch
 numpy
 matplotlib
 mypy  # type-checks the examples against the stubs (tests/python/test_stubs.py)
+-r requirements-vnncomp.txt  # the VNN-COMP front end, tested with torch
