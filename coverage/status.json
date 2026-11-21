@@ -89,7 +89,7 @@
   "contSet/conPolyZono/vertices_": "todo",
   "contSet/conPolyZono/zonotope": "todo",
   "contSet/conZonotope/and_": "oracle",
-  "contSet/conZonotope/approximateBoundsWithGPU": "property",
+  "contSet/conZonotope/approximateBoundsWithGPU": "oracle",
   "contSet/conZonotope/cartProd_": "oracle",
   "contSet/conZonotope/center": "property",
   "contSet/conZonotope/compact_": "oracle",

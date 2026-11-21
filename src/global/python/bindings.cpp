@@ -19,7 +19,7 @@
 // CORA.cpp only: the Python package has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   20-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "global/python/convert.h"
@@ -2090,9 +2090,10 @@ void bind_con_zonotope(py::module_ &m) {
             "approximate_bounds",
             [](const py::object &c, const py::object &G, const py::object &A, const py::object &b,
                const py::object &dr, int num_union_const, const std::string &method, int max_iter,
-               bool batch_union) {
+               bool batch_union, const std::string &order) {
                 ConZonotope::BoundsOptions options;
                 options.method = method;
+                options.order = order;
                 options.max_iter = max_iter;
                 options.batch_union = batch_union;
                 const ConZonotope::Bounds r = ConZonotope::approximate_bounds(
@@ -2104,9 +2105,10 @@ void bind_con_zonotope(py::module_ &m) {
             },
             py::arg("c"), py::arg("G"), py::arg("A"), py::arg("b"), py::arg("dr") = py::none(),
             py::arg("num_union_const") = 1, py::arg("method") = "fourier-motzkin",
-            py::arg("max_iter") = 4, py::arg("batch_union") = true,
+            py::arg("max_iter") = 4, py::arg("batch_union") = true, py::arg("order") = "cora",
             "(l, u, bl, bu): bounds of c + G x + [-dr, dr], |x|_inf <= 1, A x <= b for a batch (c "
-            "(..., n), G (..., m, n), b (..., p)); the first num_union_const rows are a union");
+            "(..., n), G (..., m, n), b (..., p)); the first num_union_const rows are a union; "
+            "order 'cora' or 'coralean' (Fourier-Motzkin's sums in CORALean's order)");
 }
 
 // ZonoBundle --------------------------------------------------------------------------------------
@@ -5511,6 +5513,15 @@ void bind_lean(py::module_ &top) {
             },
             py::arg("initial_set"), py::arg("t_final"),
             "reach(initial_set=X0, t_final=T, time_step=dt, taylor_terms=10, zonotope_order=10)");
+    // the factor bounds of the constraints of NeuralNetwork.verify
+    m.def(
+        "fourier_motzkin_bounds",
+        [tensor](const py::object &C, const py::object &d, int64_t k) {
+            return lean::fourier_motzkin_bounds(tensor(C), tensor(d), k);
+        },
+        "C"_a, "d"_a, "k"_a,
+        "CORALean's conZonotope.fourierMotzkinBounds: the factor box of {x in [-1, 1]^q | C x <= "
+        "d} after k passes of Koller et al., ICLR 2026, Prop. 3");
 }
 
 } // namespace

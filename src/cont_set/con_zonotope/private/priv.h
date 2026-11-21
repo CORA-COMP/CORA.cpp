@@ -9,7 +9,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -24,6 +24,18 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+// Fourier-Motzkin ---------------------------------------------------------------------------------
+
+/// The order of the sum of a row's other terms: CORA's (the row's sum minus the term, fast) or
+/// CORALean's (contractHalfspace's sum of the others, bit-exact on lean).
+enum class FmOrder { cora, coralean };
+
+/// The factor bounds (M, q) of {x in [bl, bu] | A x <= b} (A (M, p, q), b (M, p)) after at most
+/// `passes` passes, which end when no bound moves by more than tighter (priv_fourier_motzkin.cpp).
+std::pair<Tensor, Tensor> priv_fourier_motzkin(const Tensor &A, const Tensor &b, Tensor bl,
+                                               Tensor bu, int64_t passes, FmOrder order,
+                                               double tighter);
 
 // Floats ------------------------------------------------------------------------------------------
 

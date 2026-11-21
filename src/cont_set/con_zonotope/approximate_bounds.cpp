@@ -2,8 +2,10 @@
 //
 // The sets are c + G x + [-dr, dr] with |x|_inf <= 1 and A x <= b (q >= m: the factors without
 // generators are padded). "fourier-motzkin" tightens the factor bounds row by row, at most
-// max_iter times, and the box follows from them; "exact" is a linear program per bound on the
-// host. batch_union treats each union row as a batch member (else a loop), as CORA's options.nn.
+// max_iter times (the sum of a row's other terms in CORA's order, or CORALean's with order
+// "coralean": priv_fourier_motzkin.cpp), and the box follows from them; "exact" is a linear program
+// per bound on the host. batch_union treats each union row as a batch member (else a loop), as
+// CORA's options.nn.
 //
 // NaN and 0 for a member without a point. A union takes the least and the largest bound of its
 // rows (CORA's loop over the union rows starts from -1 and 1, so it never tightens: docs/cora-
@@ -22,7 +24,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   20-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -47,37 +49,18 @@ constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
 using Bounds = ConZonotope::Bounds;
 
-/// Whether some entry of a 0/1 mask is set.
-bool aux_any(const Tensor &mask) { return mask.max().item() > 0; }
-
 // Fourier Motzkin ---------------------------------------------------------------------------------
 
-/// Bounds of the factors of {|x|_inf <= 1, A x <= b} (A (B, p, q), b (B, p, 1)) as rows (B, 1, q):
-/// every row gives each factor the bound that the least value of the other terms leaves.
-std::pair<Tensor, Tensor> aux_fourier_motzkin(const Tensor &A, const Tensor &b, int max_iter) {
+/// Bounds of the factors of {|x|_inf <= 1, A x <= b} (A (B, p, q), b (B, p, 1)) as columns
+/// (B, q, 1): every row gives each factor the bound that the least value of the other terms leaves.
+std::pair<Tensor, Tensor> aux_fourier_motzkin(const Tensor &A, const Tensor &b, int max_iter,
+                                              const std::string &order) {
     const int64_t B = A.shape()[0], q = A.shape()[2];
-    Tensor bl = A.full_like({B, 1, q}, -1.0), bu = A.full_like({B, 1, q}, 1.0);
-    const Tensor zero = A.zeros_like();
-    const Tensor positive = A.greater(zero), negative = A.less(zero);
-    // a row without a coefficient bounds nothing: divide by one, the quotient is not used
-    const Tensor safe = Tensor::where(A.equal(zero), A.ones_like(), A);
-    bool tighter = true;
-    for (int iter = 1; tighter && iter <= max_iter; ++iter) {
-        // the least value of each term a_ij x_j and of the others in its row
-        const Tensor terms =
-            A.multiply(Tensor::where(positive, bl, Tensor::where(negative, bu, zero)));
-        const Tensor others = terms.sum(-1, true) - terms;
-        const Tensor implied = (b - others).divide(safe).maximum(bl).minimum(bu);
-        // a negative coefficient gives a lower bound, a positive one an upper bound
-        const Tensor new_bl = Tensor::where(negative, implied, bl).max(-2, true);
-        const Tensor new_bu = Tensor::where(positive, implied, bu).min(-2, true);
-        const Tensor lower_moved = (bl + numerics::kBoundTighter).less(new_bl);
-        const Tensor upper_moved = new_bu.less(bu - numerics::kBoundTighter);
-        tighter = aux_any(lower_moved.maximum(upper_moved).multiply(new_bl.less_equal(new_bu)));
-        bl = new_bl;
-        bu = new_bu;
-    }
-    return {bl.matrix_transpose(), bu.matrix_transpose()};
+    const FmOrder fm = order == "coralean" ? FmOrder::coralean : FmOrder::cora;
+    const auto [bl, bu] =
+        priv_fourier_motzkin(A, b.squeeze(-1), A.full_like({B, q}, -1.0), A.full_like({B, q}, 1.0),
+                             max_iter, fm, numerics::kBoundTighter);
+    return {bl.expand_dims(-1), bu.expand_dims(-1)};
 }
 
 // Linear programs ---------------------------------------------------------------------------------
@@ -148,7 +131,7 @@ Bounds aux_bound(const Tensor &c, const Tensor &G, const Tensor &dr, const Tenso
     if (options.method != "fourier-motzkin")
         CORA_FAIL(Error::not_supported, "approximate_bounds: the method '" + options.method +
                                             "' is not supported; use 'fourier-motzkin' or 'exact'");
-    const auto [bl, bu] = aux_fourier_motzkin(A, b, options.max_iter);
+    const auto [bl, bu] = aux_fourier_motzkin(A, b, options.max_iter, options.order);
     // the box of the factors, mapped by G: center and radius
     const Tensor center = c + G.matmul((bu + bl) * 0.5);
     const Tensor radius = dr + G.abs().matmul((bu - bl) * 0.5);
@@ -258,6 +241,11 @@ ConZonotope::approximate_bounds(const Tensor &c, const Tensor &G, const Tensor &
         return std::string("approximate_bounds: the method 'dual-iter' (a quasi-Newton iteration "
                            "on the dual) is not ported");
     });
+    CORA_CHECK(options.order == "cora" || options.order == "coralean", Error::wrong_field_value,
+               [&] {
+                   return "approximate_bounds: the order '" + options.order +
+                          "' is unknown; use 'cora' or 'coralean'";
+               });
     CORA_CHECK(options.max_iter >= 0, Error::wrong_value,
                [] { return std::string("approximate_bounds: max_iter must be nonnegative"); });
 
