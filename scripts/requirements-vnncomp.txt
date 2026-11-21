@@ -1,0 +1,5 @@
+# The VNN-COMP front end of CORA.cpp (cora.onnx_network, cora.vnnlib, cora.counterexample): the
+# versions the VNN-COMP 2026 scoring checks counterexamples with (vnncomp2026_results/SCORING).
+onnx==1.21.0
+onnxruntime==1.26.0
+vnnlib==1.0.2
