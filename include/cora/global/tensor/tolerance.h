@@ -14,7 +14,7 @@
 // CORA.cpp only: CORA has a default per function; CORA.cpp has one policy
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   11-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -117,8 +117,12 @@ inline constexpr double kPowerIteration = 1e-15;    ///< relative change that en
 inline constexpr double kTiny = 1e-300;             ///< keeps a denominator or a range off zero
 inline constexpr double kOdeRelTol = 1e-3; ///< relative tolerance of the step control (ode45)
 inline constexpr double kOdeAbsTol = 1e-6; ///< absolute tolerance of the step control (ode45)
-inline constexpr double kActivationFitTol = 1e-4; ///< error of an activation's fit: grid slack
-inline constexpr double kRidgeLambda = 1e-3;      ///< ridge regression of an activation's fit
+inline constexpr double kActivationFitTol = 1e-4;  ///< error of an activation's fit: grid slack
+inline constexpr double kRidgeLambda = 1e-3;       ///< ridge regression of an activation's fit
+inline constexpr double kSensitivityFloor = 1e-6;  ///< verify: CORA's floor of a sensitivity
+inline constexpr double kFradSmoothing = 1e-12;    ///< verify: keeps the F-radius's root smooth
+inline constexpr double kHeuristicGradient = 1e-3; ///< verify: CORA's offset of a gradient score
+inline constexpr double kVerifiedMargin = 1e-4;    ///< verify: float32 network vs float64 enclosure
 
 // Powers and pieces -------------------------------------------------------------------------------
 

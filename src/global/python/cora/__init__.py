@@ -23,7 +23,7 @@ Syntax:   X0 = cora.Zonotope(c, G)             c (..., n), G (..., m, n): one se
 
 Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       01-October-2026
-Last update:   18-November-2026
+Last update:   21-November-2026
 Reviewed:      ---
 """
 try:
@@ -53,6 +53,7 @@ from ._cora import (
     LocationReachSet,
     NeuralNetwork,
     NeurNetContrSys,
+    NnVerifyOptions,
     NonlinDASys,
     NonlinearSys,
     Polytope,
@@ -95,6 +96,8 @@ from ._cora import (
     tolerance,
     unite,
     use_cora_colors,
+    verify_strategies,
+    vnncomp_options,
 )
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
@@ -117,7 +120,8 @@ __all__ = [
     "Falsification", "Figure", "Fullspace", "HybridAutomaton", "HybridReachSet", "Interval",
     "LevelSet", "LinParamSys", "LinearReset", "LinearSys", "Location",
     "LocationReachSet",
-    "NeuralNetwork", "NeurNetContrSys", "NonlinDASys", "NonlinearSys", "PolyZonotope", "Polytope",
+    "NeuralNetwork", "NeurNetContrSys", "NnVerifyOptions", "NonlinDASys", "NonlinearSys",
+    "PolyZonotope", "Polytope",
     "ReachProblem",
     "ReachSet", "Rng", "Specification", "Taylm", "Transition", "VerifyResult", "ZonoBundle",
     "Zonotope", "backend",
@@ -131,7 +135,7 @@ __all__ = [
     "set_default_backend", "set_default_tolerance", "set_num_threads", "strict_gradients",
     "subplots", "tensor_ops",
     "to_tikz", "tolerance", "unite",
-    "use_cora_colors", "Tensor", "cos",
+    "use_cora_colors", "verify_strategies", "vnncomp_options", "Tensor", "cos",
     "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
 ]
 

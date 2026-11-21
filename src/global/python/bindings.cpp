@@ -3318,6 +3318,7 @@ py::object stack_time(const std::vector<Tensor> &points) {
 #ifdef CORACPP_PYTHON_TORCH
     if (is_torch(points[0])) {
         std::vector<torch::Tensor> all;
+        all.reserve(points.size());
         for (const Tensor &x : points) all.push_back(to_torch(x));
         return py::cast(torch::stack(torch::broadcast_tensors(all), 0));
     }
@@ -4613,6 +4614,144 @@ std::vector<Tensor> trajectories(const py::object &o) {
     return x;
 }
 
+/// The verify options from keywords: each keyword one field of NnVerifyOptions.
+NnVerifyOptions verify_options_of(const NnVerifyOptions &o, const py::kwargs &kwargs) {
+    py::object holder = py::cast(o);
+    for (const auto &[key, value] : kwargs) {
+        const std::string name = py::cast<std::string>(key);
+        if (!py::hasattr(holder, name.c_str()))
+            CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: no option '" + name + "'");
+        py::setattr(holder, name.c_str(), value);
+    }
+    return py::cast<NnVerifyOptions>(holder);
+}
+
+void bind_verify(py::module_ &m) {
+    // the options of verify, CORA's names, as attributes and keywords
+    py::class_<NnVerifyOptions> options(m, "NnVerifyOptions",
+                                        "The options of NeuralNetwork.verify, named after CORA's "
+                                        "options.nn (docs/nn_verification.md)");
+    options
+        .def(py::init([](const py::kwargs &kwargs) {
+                 return verify_options_of(NnVerifyOptions{}, kwargs);
+             }),
+             "The defaults, with any field given as a keyword")
+        .def("validate", &NnVerifyOptions::validate,
+             "Raises for an unknown strategy name or option value")
+        .def_property(
+            "dtype", [](const NnVerifyOptions &o) { return std::string(dtype_name(o.dtype)); },
+            [](NnVerifyOptions &o, const std::string &name) {
+                if (name != "float32" && name != "float64")
+                    CORA_FAIL(Error::wrong_field_value,
+                              "NnVerifyOptions: dtype must be 'float32' or 'float64'");
+                o.dtype = name == "float32" ? DType::float32 : DType::float64;
+            },
+            "The dtype of the search: 'float32' or 'float64' (the bounds are float64)");
+#define CORA_VERIFY_FIELD(name, doc) options.def_readwrite(#name, &NnVerifyOptions::name, doc)
+    // the attacks and their order
+    CORA_VERIFY_FIELD(falsification_method, "The attack: 'pgd', 'fgsm', 'center', 'zonotack'");
+    CORA_VERIFY_FIELD(falsification_order, "'attack-first' or 'bound-first'");
+    CORA_VERIFY_FIELD(attack_time_share, "The share of the timeout of the first attack");
+    CORA_VERIFY_FIELD(attack_first_rounds, "The rounds of the first attack at most");
+    CORA_VERIFY_FIELD(pgd_steps, "PGD: the steps per round");
+    CORA_VERIFY_FIELD(pgd_restarts, "PGD: the restarts per box");
+    CORA_VERIFY_FIELD(pgd_step_size, "PGD: the step as a share of the box radius");
+    CORA_VERIFY_FIELD(pgd_decay, "PGD: the factor of the step at each decay point");
+    CORA_VERIFY_FIELD(pgd_decay_at, "PGD: the decay points as shares of the steps");
+    CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
+    CORA_VERIFY_FIELD(seed, "The seed of the restarts");
+    // the bounding and its splits
+    CORA_VERIFY_FIELD(bounding_method, "'zonotope' or 'conzonotope' (CORA's verify)");
+    CORA_VERIFY_FIELD(input_split_heuristic, "CORA's input_split_heuristic");
+    CORA_VERIFY_FIELD(neuron_split_heuristic, "CORA's neuron_split_heuristic, or 'none'");
+    CORA_VERIFY_FIELD(num_splits, "The pieces per split");
+    CORA_VERIFY_FIELD(num_dimensions, "The input dimensions split per set");
+    CORA_VERIFY_FIELD(verify_dequeue_type, "'front', 'back' (zonotope) or 'half-half'");
+    CORA_VERIFY_FIELD(verify_enqueue_type, "'prepend' or 'append'");
+    CORA_VERIFY_FIELD(max_verif_iter, "The batches of the branch and bound at most");
+    CORA_VERIFY_FIELD(verified_margin, "The margin of a verified row");
+    CORA_VERIFY_FIELD(memory_budget, "Bytes per batch; 0: 1 GiB");
+    CORA_VERIFY_FIELD(device, "Where the network goes ('cpu', 'cuda'); empty: its own");
+    // CORA's verify
+    CORA_VERIFY_FIELD(refinement_method, "'zonotack' or 'naive'");
+    CORA_VERIFY_FIELD(bab_falsification_method, "CORA's falsification_method in the search");
+    CORA_VERIFY_FIELD(num_init_gens, "The input generators (inf: all)");
+    CORA_VERIFY_FIELD(num_approx_err, "The error generators per layer (inf: all)");
+    CORA_VERIFY_FIELD(approx_error_order, "'sensitivity*length', 'length' or 'sequential'");
+    CORA_VERIFY_FIELD(poly_method, "'bounds' or 'singh'");
+    CORA_VERIFY_FIELD(conzonotope_bounding_method, "'fourier-motzkin' or 'dual-iter'");
+    CORA_VERIFY_FIELD(polytope_bound_approx_max_iter, "The Fourier-Motzkin passes");
+    CORA_VERIFY_FIELD(refinement_max_iter, "The propagations of Prop. 2 per set, plus one");
+    CORA_VERIFY_FIELD(num_neuron_splits, "The neurons split per set");
+    // the neuron splits, the ReLU rows, the batches and the repairs
+    CORA_VERIFY_FIELD(neuron_split_position, "'zero' or 'middle'");
+    CORA_VERIFY_FIELD(num_relu_constraints, "The ReLU rows per set (inf: all)");
+    CORA_VERIFY_FIELD(relu_constraint_heuristic, "CORA's relu_constraint_heuristic");
+    CORA_VERIFY_FIELD(input_generator_heuristic, "CORA's input_generator_heuristic");
+    CORA_VERIFY_FIELD(mini_batch_size, "The sets per batch at most");
+    CORA_VERIFY_FIELD(fourier_motzkin_order, "'cora' (fast) or 'coralean' (the oracle's)");
+    CORA_VERIFY_FIELD(project_stale_factors, "Repair: the split rows keep the input factors");
+    CORA_VERIFY_FIELD(drop_dummy_duplicates, "Repair: a dummy split drops its duplicate only");
+    CORA_VERIFY_FIELD(remember_point_splits_only, "Repair: split bounds at a point center only");
+// CORA's presets and the registered names
+#undef CORA_VERIFY_FIELD
+    m.def(
+        "vnncomp_options",
+        [](const std::string &category, const py::kwargs &kwargs) {
+            return verify_options_of(vnncomp_options(category), kwargs);
+        },
+        py::arg("category"),
+        "CORA's getDefaultVNNCOMPoptions of the benchmark, with any field given as a keyword");
+    m.def(
+        "verify_strategies",
+        [] {
+            py::dict out;
+            out["attacks"] = attack_names();
+            out["boundings"] = bounding_names();
+            out["heuristics"] = heuristic_names();
+            out["input_split_heuristics"] = input_split_heuristic_names();
+            return py::object(std::move(out)); // Any in the stubs, as reach
+        },
+        "The registered strategy names of verify, by kind");
+    // the verdict on a property, with the confirm check from Python
+    auto nn = py::reinterpret_borrow<py::class_<NeuralNetwork>>(m.attr("NeuralNetwork"));
+    nn.def(
+        "verify",
+        [](const NeuralNetwork &net, const py::object &lo, const py::object &hi,
+           const std::vector<int64_t> &poly_case, const py::object &A, const py::object &b,
+           double timeout, const std::optional<NnVerifyOptions> &options,
+           const py::object &confirm) {
+            NnProperty property{tensor_of(lo, "lo"), tensor_of(hi, "hi"), poly_case,
+                                tensor_of(A, "A"), tensor_of(b, "b")};
+            // the Python check, called back for each candidate
+            ConfirmFn check;
+            if (!confirm.is_none())
+                check =
+                    [confirm](const std::vector<double> &x) -> std::optional<std::vector<double>> {
+                    const py::object y =
+                        confirm(py::array_t<double>(py::ssize_t(x.size()), x.data()));
+                    if (y.is_none()) return std::nullopt;
+                    return py::cast<std::vector<double>>(y);
+                };
+            const NnVerifyResult r =
+                net.verify(property, timeout, options.value_or(NnVerifyOptions{}), check);
+            py::dict out;
+            // the verdict, the counterexample and the counts as a dict
+            out["status"] = r.status;
+            out["x"] = r.x;
+            out["y"] = r.y;
+            out["stats"] = r.stats;
+            out["note"] = r.note;
+            return py::object(std::move(out)); // Any in the stubs, as reach
+        },
+        py::arg("lo"), py::arg("hi"), py::arg("poly_case"), py::arg("A"), py::arg("b"),
+        py::arg("timeout"), py::arg("options") = py::none(), py::arg("confirm") = py::none(),
+        "CORA's verify of the property: the input boxes lo, hi (C, n), the unsafe polytopes "
+        "A (P, K, m) y <= b (P, K) of the cases poly_case (P); confirm(x) returns the output of a "
+        "counterexample or None (default: the network's float64 output). A dict: status ('sat', "
+        "'unsat', 'unknown'), x, y, stats, note");
+}
+
 void bind_plot(py::module_ &m) {
     // the figure holds the layers and the axes settings
     py::class_<Figure>(m, "Figure",
@@ -5571,6 +5710,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_nonlin_das_sys(m);
     bind_lin_param_sys(m);
     bind_neural_network(m);
+    bind_verify(m);
     bind_plot(m);
     bind_specification(m);
     bind_hybrid(m);

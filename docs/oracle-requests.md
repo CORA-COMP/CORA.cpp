@@ -464,3 +464,22 @@ call) are checked against the oracle's set too. The order-k path stays as above.
 | `intervalMatrix/exponentialRemainder` | `intervalMatrix.exponentialRemainder` (`MatExp.exponentialRemainder`) | `oracle`: CORA.cpp now takes `e^|A|` by CORALean's scaling and squaring instead of `expm` (a batch or a gradient keeps `expm`) |
 | `linearSys/errorSolution_adaptive` | `linearSys.errorSolution_adaptive` | `oracle`: the radius lin-adaptive tunes by (`priv_error_radius_float`) is the oracle's bit for bit; the public `LinearSys::error_solution_adaptive` still cuts by the gain with `expm` and agrees by tolerance |
 | `matZonotope/expmOneParam` | none | debt: CORA.cpp's `K(r)` uses `pow(r, k) / k!` and point products; a float `MatExp.expmOneParam` whose rounding CORA.cpp follows (coefficient brackets, products into the error box) is the missing piece |
+
+## Latent-space verify (PR "nn/verify-cpp", CORA.cpp#213)
+
+`NeuralNetwork::verify` (CORA's `neuralNetwork/verify`, ICLR 2026) is bit-exact on lean where the
+oracle serves the op: the batched zonotope with a slot per error at a point center
+(`neuralNetwork.evaluate`, `singh`) and Fourier-Motzkin in CORALean's order
+(`conZonotope.fourierMotzkinBounds`). Requested:
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `zonotope.zonotackFactors` | `Zonotope.zonotackFactors` (`ContSet/Zonotope/Real/Operations/ZonotackFactors.lean`; no float definition yet) | `Z`, `a` (row) | `beta` (vector) |
+| `neuralNetwork.encloseUnsafeInputs` | `SetBasedNet.encloseUnsafeInputs` (`NN/Operations/EncloseUnsafeInputs.lean`; no float definition yet) | `layers`, `Z` (input), `A`, `b` | `C`, `d` (the rows on the input's factors) |
+| `neuralNetwork.evaluateZonotopeBatch` | none: CORA's slots (`num_init_gens`, `num_approx_err`), the interval center and the clamps of split neurons | `layers`, `Z`, `dr`, `slots`, `order`, `splits` | `Z`, `dr` |
+| `nnLayer.evaluateZonotope` at `poly_method` `"bounds"` | none: CORA's secant line of sigmoid and tanh with the errors at the extreme points of `f(x) - m x` (CORALean has Singh's and the regression lines) | `layer`, `Z` | `Z` |
+| `neuralNetwork.verify` | `SetBasedNet.verify` (`NN/Operations/Verify.lean`) with a logged split sequence | `layers`, `X`, `A`, `b`, `splits` | the verdict and the queued sets |
+| `conZonotope.dualBound` | none: weak duality at given multipliers (the study's `dualCertificate`) | `C`, `d`, `G`, `lambda` | `h` |
+
+The ReLU rows and the iterated refinement are not formalized. The coverage rows `verify`,
+`computePGDAttack` and `computeFGSMAttack` are oracle debt until then.

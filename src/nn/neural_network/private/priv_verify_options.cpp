@@ -1,0 +1,178 @@
+// priv_verify_options - the check of verify's options, and CORA's VNN-COMP preset of each benchmark
+//
+// validate refuses an unknown strategy name (the registries' names) or option value, as CORA's
+// validateNNoptions. vnncomp_options is CORA's getDefaultVNNCOMPoptions (examples/nn/vnncomp):
+// the bounding "conzonotope" with zonotack falsification, input splits by zono-norm-gradient and
+// the refinement of Prop. 2, then the benchmark's own changes (generator slots, neuron splits,
+// ReLU rows, batch sizes). conzonotope_bounding_method "dual-iter" tightens the box of the inputs
+// only, which the refinement does not read, so the factor box of Fourier-Motzkin decides alone.
+//
+// Syntax:   NnVerifyOptions o = vnncomp_options("cora_2024");   o.validate();
+// See also: cora/nn/neural_network/verify.h, verify.cpp
+//
+// CORA: nn/@neuralNetwork/verify.m
+// CORA authors: Tobias Ladner, Lukas Koller
+// Authors:       Claude Opus 5.5
+// Written:       21-November-2026
+// Last update:   ---
+// Reviewed:      ---
+
+#include "cora/global/error.h"
+#include "nn/neural_network/private/priv_verify.h"
+
+#include <algorithm>
+#include <limits>
+#include <regex>
+
+// ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+namespace cora {
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+namespace {
+
+// Checks ------------------------------------------------------------------------------------------
+
+/// Fails unless value is one of the known ones.
+void aux_one_of(const std::string &field, const std::string &value,
+                const std::vector<std::string> &known) {
+    if (std::find(known.begin(), known.end(), value) != known.end()) return;
+    std::string list;
+    for (const std::string &k : known) list += (list.empty() ? "" : ", ") + k;
+    CORA_FAIL(Error::wrong_field_value,
+              "NnVerifyOptions: the " + field + " '" + value + "' is unknown; known: " + list);
+}
+
+/// Fails unless the count is at least `least`.
+void aux_at_least(const std::string &field, double value, double least) {
+    if (!(value >= least))
+        CORA_FAIL(Error::wrong_field_value,
+                  "NnVerifyOptions: " + field + " must be at least " + std::to_string(least));
+}
+
+} // namespace
+
+
+// ===========================================  MAIN  =========================================== //
+
+// The check of the options ------------------------------------------------------------------------
+
+void NnVerifyOptions::validate() const {
+    detail::Entry entry;
+    // the strategies by the registries' names
+    aux_one_of("falsification_method", falsification_method, attack_names());
+    aux_one_of("bounding_method", bounding_method, bounding_names());
+    const bool latent = bounding_method != "zonotope";
+    aux_one_of("input_split_heuristic", input_split_heuristic,
+               latent ? heuristic_names() : input_split_heuristic_names());
+    std::vector<std::string> neuron = heuristic_names();
+    neuron.emplace_back("none");
+    if (latent) {
+        aux_one_of("neuron_split_heuristic", neuron_split_heuristic, neuron);
+        aux_one_of("relu_constraint_heuristic", relu_constraint_heuristic, neuron);
+        aux_one_of("input_generator_heuristic", input_generator_heuristic, neuron);
+    } else {
+        if (neuron_split_heuristic != "none")
+            CORA_FAIL(Error::wrong_field_value,
+                      "NnVerifyOptions: neuron splits need the latent-space verifier "
+                      "(bounding_method 'conzonotope')");
+    }
+    // the values of the other switches
+    aux_one_of("falsification_order", falsification_order, {"attack-first", "bound-first"});
+    aux_one_of("verify_dequeue_type", verify_dequeue_type, {"front", "back", "half-half"});
+    aux_one_of("verify_enqueue_type", verify_enqueue_type, {"prepend", "append"});
+    aux_one_of("refinement_method", refinement_method, {"zonotack", "naive"});
+    aux_one_of("bab_falsification_method", bab_falsification_method,
+               {"zonotack", "center", "fgsm"});
+    aux_one_of("approx_error_order", approx_error_order,
+               {"sensitivity*length", "length", "sequential"});
+    aux_one_of("poly_method", poly_method, {"bounds", "singh"});
+    aux_one_of("conzonotope_bounding_method", conzonotope_bounding_method,
+               {"fourier-motzkin", "dual-iter"});
+    aux_one_of("neuron_split_position", neuron_split_position, {"zero", "middle"});
+    aux_one_of("fourier_motzkin_order", fourier_motzkin_order, {"cora", "coralean"});
+    // the counts
+    aux_at_least("num_splits", double(num_splits), 1);
+    aux_at_least("num_dimensions", double(num_dimensions), 0);
+    aux_at_least("num_neuron_splits", double(num_neuron_splits), 0);
+    aux_at_least("num_relu_constraints", num_relu_constraints, 0);
+    aux_at_least("num_init_gens", num_init_gens, 1);
+    aux_at_least("num_approx_err", num_approx_err, 0);
+    aux_at_least("mini_batch_size", double(mini_batch_size), 1);
+    aux_at_least("refinement_max_iter", double(refinement_max_iter), 1);
+    aux_at_least("polytope_bound_approx_max_iter", double(polytope_bound_approx_max_iter), 0);
+    aux_at_least("max_candidates", double(max_candidates), 1);
+    aux_at_least("pgd_steps", double(pgd_steps), 1);
+    aux_at_least("pgd_restarts", double(pgd_restarts), 1);
+    if (!(attack_time_share >= 0 && attack_time_share <= 1))
+        CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: attack_time_share must be in [0, 1]");
+}
+
+// CORA's presets ----------------------------------------------------------------------------------
+
+NnVerifyOptions vnncomp_options(const std::string &category) {
+    detail::Entry entry;
+    const std::string name = std::regex_replace(category, std::regex("[_-](20[0-9][0-9])$"), "");
+    const double inf = std::numeric_limits<double>::infinity();
+    NnVerifyOptions o;
+    // CORA's defaults of getDefaultVNNCOMPoptions
+    o.bounding_method = "conzonotope";
+    o.refinement_method = "zonotack";
+    o.bab_falsification_method = "zonotack";
+    o.approx_error_order = "sensitivity*length";
+    o.conzonotope_bounding_method = "dual-iter";
+    o.polytope_bound_approx_max_iter = 3;
+    o.input_generator_heuristic = o.input_split_heuristic = o.neuron_split_heuristic =
+        o.relu_constraint_heuristic = "zono-norm-gradient";
+    o.verify_dequeue_type = "half-half";
+    // the benchmark's own changes
+    if (name == "cgan") {
+        o.num_neuron_splits = 1;
+        o.mini_batch_size = 4;
+        o.max_verif_iter = 100;
+        o.neuron_split_heuristic = "least-unstable";
+    } else if (name == "cifar100") {
+        o.mini_batch_size = 8;
+        o.neuron_split_heuristic = "least-unstable";
+        o.bab_falsification_method = "fgsm";
+        o.num_neuron_splits = 1;
+        o.num_relu_constraints = 100;
+        o.num_init_gens = 250;
+        o.num_approx_err = 25;
+        o.max_verif_iter = 1000;
+        o.verify_enqueue_type = "append";
+        // the benchmarks with fewer error slots or more splits
+    } else if (name == "collins_rul_cnn") {
+        o.num_approx_err = 100;
+    } else if (name == "cora") {
+        o.num_relu_constraints = inf;
+        o.mini_batch_size = 32;
+        o.num_neuron_splits = 1;
+    } else if (name == "metaroom") {
+        o.num_init_gens = 500;
+        o.num_approx_err = 100;
+        o.mini_batch_size = 4;
+        o.max_verif_iter = 10;
+        // the image benchmarks: fewer input generators
+    } else if (name == "mnist_fc") {
+        o.num_init_gens = 500;
+        o.num_approx_err = 100;
+    } else if (name == "oval21") {
+        o.num_init_gens = 100;
+        o.num_approx_err = 10;
+    } else if (name == "safenlp") {
+        o.num_neuron_splits = 1;
+        o.num_relu_constraints = 100;
+    } else if (name == "tinyimagenet") {
+        o.num_init_gens = 500;
+        o.num_approx_err = 0;
+        o.num_neuron_splits = 1;
+        o.mini_batch_size = 32;
+    }
+    return o;
+}
+
+} // namespace cora
+
+// ---------------------------------------  END OF CODE  ---------------------------------------- //
