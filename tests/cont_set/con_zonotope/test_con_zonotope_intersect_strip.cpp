@@ -25,7 +25,7 @@ namespace {
 /// Hand-computed: the strip |x1 - 0.5| <= 0.1 through [-1, 1]^2 with the gain (1, 0)': the new
 /// center, generators and the strip row C G x - phi x_new = y - C c.
 void intersect_strip_known(const std::string &b) {
-    const ConZonotope cz(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope cz(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const Tensor C({{1.0, 0.0}}), phi = vec({0.1}), y = vec({0.5}), lambda = column({1.0, 0.0});
     const ConZonotope R = cz.intersect_strip(C, phi, y, lambda);
     check(close(R.c().expand_dims(-1), {0.5, 0}, 1e-15), b + ": center c + L (y - C c)");
@@ -35,7 +35,7 @@ void intersect_strip_known(const std::string &b) {
     check(close(R.interval().inf(), {0.4, -1}, 1e-9) && close(R.interval().sup(), {0.6, 1}, 1e-9),
           b + ": the strip [0.4, 0.6] in the box");
     // a constrained set keeps its rows, the strip rows come last, the new factors are zero in them
-    const ConZonotope constrained(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope constrained(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                                   Tensor({{0.0, 1.0}}), vec({0.5}));
     const ConZonotope S = constrained.intersect_strip(C, phi, y, lambda);
     check(close(S.A(), {0, 1, 0, 1, 0, -0.1}, 1e-15) && close(S.b(), {0.5, 0.5}, 1e-15),
@@ -90,7 +90,7 @@ void intersect_strip_property(const std::string &b) {
 
 /// Wrong strips, gains and methods are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const ConZonotope cz(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope cz(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const Tensor C({{1.0, 0.0}}), phi = vec({0.1}), y = vec({0.5});
     check(test::raises([&] { cz.intersect_strip(Tensor({{1.0}}), phi, y); },
                        Error::dimension_mismatch),

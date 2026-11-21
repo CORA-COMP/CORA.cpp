@@ -17,7 +17,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -28,8 +27,8 @@ namespace {
 
 /// Hand-computed: the first min(m, m2, k) generators add, the rest of both follow.
 void exact_plus_known(const std::string &b) {
-    const Zonotope Z(column({0.0, 1.0}), Tensor({{1.0, 0.0}, {2.0, 1.0}}));
-    const Zonotope Z2(column({1.0, 1.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 1.0}), Tensor({{1.0, 0.0}, {2.0, 1.0}}));
+    const Zonotope Z2(vec({1.0, 1.0}), Tensor({{1.0, 1.0}}));
     const Zonotope S = Z.exact_plus(Z2);
     check(close(S.center(), std::vector<double>{1, 2}, 0), b + ": the centers add");
     check(close(S.generators(), std::vector<double>{2, 1, 2, 1}, 0),
@@ -67,7 +66,7 @@ void exact_plus_is_inside_the_plus(const std::string &b) {
 /// A set of another dimension and a negative k are refused; with the checks off the result is the
 /// same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Z.exact_plus(Z1); }, Error::dimension_mismatch),
           "exact_plus: dimensions 2 and 1");
     check(test::raises([&] { Z.exact_plus(Z, -1); }, Error::wrong_value), "exact_plus: k = -1");

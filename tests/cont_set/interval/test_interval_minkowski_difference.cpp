@@ -14,7 +14,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -51,14 +50,14 @@ void minkowski_difference_can_be_empty(const std::string &b) {
 
 void minkowski_difference_of_another_set(const std::string &b) {
     const Interval I(vec({0.0, 0.0}), vec({4.0, 4.0}));
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
     const Interval R = I.minkowski_difference(Z);
     check(close(R.inf(), std::vector<double>{0.5, 0.5}) &&
               close(R.sup(), std::vector<double>{3.5, 3.5}),
           b + ": the support function bounds each coordinate");
     const Interval Q = I.minkowski_difference(Z, std::string("inner"));
     check(close(Q.inf(), R.inf()) && close(Q.sup(), R.sup()), b + ": type inner is the default");
-    const Zonotope W(column({0.0, 0.0}), Tensor::from_data({3, 0, 0, 3}, {2, 2}));
+    const Zonotope W(vec({0.0, 0.0}), Tensor::from_data({3, 0, 0, 3}, {2, 2}));
     check(I.minkowski_difference(W).is_empty(), b + ": a set that does not fit");
 }
 
@@ -66,7 +65,7 @@ void minkowski_difference_of_another_set(const std::string &b) {
 /// same.
 void checks_and_their_switch() {
     const Interval I(vec({0.0, 0.0}), vec({4.0, 4.0}));
-    const Zonotope Z(column({0.0, 0.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({0.5, 0, 0, 0.5}, {2, 2}));
     check(test::raises([&] { I.minkowski_difference(Interval(vec({0.0}), vec({1.0}))); },
                        Error::dimension_mismatch),
           "minkowski_difference: a box of dimension 1");

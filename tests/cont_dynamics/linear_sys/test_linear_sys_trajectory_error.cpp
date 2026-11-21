@@ -25,7 +25,7 @@ Tensor matrix() { return Tensor({{-1.0, 2.0}, {-2.0, -1.0}}); }
 constexpr double kTime = 0.3;
 constexpr int kOrder = 12;
 
-Zonotope start_set() { return {test::column({1.0, 0.5}), Tensor({{0.1, 0.0}, {0.0, 0.1}})}; }
+Zonotope start_set() { return {test::vec({1.0, 0.5}), Tensor({{0.1, 0.0}, {0.0, 0.1}})}; }
 
 /// For t_min = t_max = t_c = t and a point start set every term of the series cancels but the
 /// remainder: the error set is a few 1e-11, c_tilde is (e^{At} - I - At)' n and d_tilde is n'

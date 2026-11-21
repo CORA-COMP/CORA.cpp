@@ -57,8 +57,7 @@ class PolyZonotope : public ContSet {
     static constexpr ClassId kClassId = ClassId::poly_zonotope;
 
     /// The set of the center c (n), the dependent generator rows G (h, n) with the exponents E of
-    /// the factors id (p identifiers), and the independent generator rows GI (q, n). A center
-    /// given as a column (n, 1) is the vector.
+    /// the factors id (p identifiers), and the independent generator rows GI (q, n).
     PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id);
 
     /// As the constructor above for a set whose dependent generators have distinct exponents, which

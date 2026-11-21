@@ -90,7 +90,7 @@ inline Zonotope box_zonotope(const std::vector<double> &lo, const std::vector<do
         c.push_back((lo[i] + hi[i]) / 2);
         r.push_back((hi[i] - lo[i]) / 2);
     }
-    return {Tensor::from_data(c, {n, 1}), Tensor::from_data(r, {n, 1}).diag()};
+    return {Tensor::from_data(c, {n}), Tensor::from_data(r, {n, 1}).diag()};
 }
 
 /// The polynomial zonotope of the box (CORA's polyZonotope(interval(lo, hi))).

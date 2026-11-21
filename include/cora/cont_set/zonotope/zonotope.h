@@ -52,7 +52,7 @@ class Zonotope : public ContSet {
     static constexpr int64_t kMaxCornerGenerators = 12;
 
     /// The zonotope of the center c (batch..., n) and the generators G (batch..., h, n), one
-    /// generator per row; c may be a column (batch..., n, 1).
+    /// generator per row.
 
     Zonotope(Tensor c, Tensor G);
 

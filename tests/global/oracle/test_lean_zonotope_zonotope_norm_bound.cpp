@@ -57,17 +57,17 @@ int main() {
     oracle::run("zonotope.zonotopeNorm", [](oracle::Random &rnd) {
         for (const int n : {1, 2, 3}) {
             // n independent generators
-            const Zonotope square(Tensor::zeros({n, 1}), rnd.matrix(n, n).matrix_transpose());
+            const Zonotope square(Tensor::zeros({n}), rnd.matrix(n, n).matrix_transpose());
             for (int k = 0; k < 3; ++k) aux_check(square, rnd.vector(n), true);
             // more generators than dimensions: the oracle bounds the minimum from below
-            const Zonotope wide(Tensor::zeros({n, 1}), rnd.matrix(n, n + 2).matrix_transpose());
+            const Zonotope wide(Tensor::zeros({n}), rnd.matrix(n, n + 2).matrix_transpose());
             for (int k = 0; k < 3; ++k) aux_check(wide, rnd.vector(n), false);
         }
         // generators in a plane (the last coordinate 0): a point off the plane has no norm
         for (const int n : {2, 3}) {
             const Tensor G =
                 Tensor::concat({rnd.matrix(n - 1, n + 1), Tensor::zeros({1, n + 1})}, -2);
-            const Zonotope flat = Zonotope(Tensor::zeros({n, 1}).squeeze(-1), G.matrix_transpose());
+            const Zonotope flat = Zonotope(Tensor::zeros({n}), G.matrix_transpose());
             aux_check(flat, rnd.vector(n), false);
             aux_check(flat, Tensor::concat({rnd.vector(n - 1), Tensor::zeros({1, 1})}, -2), false);
         }

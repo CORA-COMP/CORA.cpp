@@ -179,7 +179,7 @@ class Random {
                 b[i] += A[i * m + j] * xi[j];
             }
         }
-        return {vector(n), matrix(n, m).matrix_transpose(), cora::Tensor::from_data(A, {p, m}),
+        return {point(n), matrix(n, m).matrix_transpose(), cora::Tensor::from_data(A, {p, m}),
                 cora::Tensor::from_data(b, {p})};
     }
 

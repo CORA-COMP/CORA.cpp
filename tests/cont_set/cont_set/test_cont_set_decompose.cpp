@@ -14,7 +14,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -27,7 +26,7 @@ namespace {
 /// is a projection too.
 void decompose_projects_each_block(const std::string &b) {
     const Interval I(vec({-1.0, 0.0, 2.0}), vec({1.0, 2.0, 5.0}));
-    const Zonotope Z(column({1.0, 2.0, 3.0}), Tensor::from_data({1, 0, 0, 0, 1, 1}, {2, 3}));
+    const Zonotope Z(vec({1.0, 2.0, 3.0}), Tensor::from_data({1, 0, 0, 0, 1, 1}, {2, 3}));
     const std::vector<Set> parts = static_cast<const ContSet &>(I).decompose({{0, 1}, {2, 2}});
     check(parts.size() == 2 && parts[0].as<Interval>().dim() == 2 &&
               test::close(parts[0].as<Interval>().sup(), {1.0, 2.0}) &&

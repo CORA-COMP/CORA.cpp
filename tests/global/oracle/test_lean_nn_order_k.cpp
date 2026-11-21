@@ -55,7 +55,7 @@ PolyZonotope aux_set(oracle::Random &rnd, const Dims &s) {
     std::vector<int64_t> id(std::size_t(s.p));
     for (int64_t i = 0; i < s.p; ++i) id[std::size_t(i)] = i + 1;
     // small generators, so that the powers stay in range; the draws of CORA's columns, as rows
-    const Tensor c = rnd.vector(s.n), G = rnd.matrix(s.n, s.h) * 0.5,
+    const Tensor c = rnd.point(s.n), G = rnd.matrix(s.n, s.h) * 0.5,
                  GI = rnd.matrix(s.n, s.q) * 0.25;
     return {c, G.matrix_transpose(), GI.matrix_transpose(), E, id, cora::detail::Verbatim{}};
 }
@@ -194,8 +194,8 @@ void aux_check_layer(const PolyZonotope &X, Activation activation, const std::ve
     }
     std::vector<double> d;
     priv_layer_poly(r, activation, orders, true, options, &d);
-    const PolyZonotope mine(r.c, r.G.matrix_transpose(), r.GI.matrix_transpose(), r.E, r.ids,
-                            cora::detail::Verbatim{});
+    const PolyZonotope mine(r.c.squeeze(-1), r.G.matrix_transpose(), r.GI.matrix_transpose(), r.E,
+                            r.ids, cora::detail::Verbatim{});
     // the oracle's layer on the same fits and errors
     const lean::NnLayer layer = lean::NnLayer::poly(aux_lowest_first(coeffs, degree),
                                                     Tensor::from_data(d, {int64_t(d.size()), 1}));

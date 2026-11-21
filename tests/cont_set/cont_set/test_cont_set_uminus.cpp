@@ -20,7 +20,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -31,7 +30,7 @@ namespace {
 
 /// -S has the center -c and the generators -G for a zonotope, the bounds [-sup, -inf] for a box.
 void uminus_negates(const std::string &b) {
-    const Zonotope Z(column({1.0, 0.0}), Tensor::from_data({0.5, 0.2, 0.0, 0.5}, {2, 2}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor::from_data({0.5, 0.2, 0.0, 0.5}, {2, 2}));
     const Interval I(vec({-1.0, 0.0}), vec({2.0, 3.0}));
     const Set A = static_cast<const ContSet &>(Z).uminus(),
               B = static_cast<const ContSet &>(I).uminus();

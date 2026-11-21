@@ -60,7 +60,8 @@ ConZonotope aux_outputs(const std::vector<QuadRow> &rows, const Tensor &A, const
         centers.push_back(row.first);
         generators.push_back(row.second);
     }
-    return {Tensor::concat(centers, -2), Tensor::concat(generators, -2).matrix_transpose(), A, b};
+    return {Tensor::concat(centers, -2).squeeze(-1),
+            Tensor::concat(generators, -2).matrix_transpose(), A, b};
 }
 
 } // namespace

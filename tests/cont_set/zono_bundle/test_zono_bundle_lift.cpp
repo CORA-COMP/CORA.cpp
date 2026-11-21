@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,8 +23,8 @@ namespace {
 
 /// State i goes to position dims[i]: member by member, as Zonotope::lift.
 void permutation(const std::string &b) {
-    const Zonotope Z1(column({1.0, 2.0, 3.0}), Tensor({{1.0, 2.0, 3.0}})),
-        Z2(column({4.0, 5.0, 6.0}), Tensor({{0.0, 1.0, 2.0}, {1.0, 0.0, 2.0}}));
+    const Zonotope Z1(vec({1.0, 2.0, 3.0}), Tensor({{1.0, 2.0, 3.0}})),
+        Z2(vec({4.0, 5.0, 6.0}), Tensor({{0.0, 1.0, 2.0}, {1.0, 0.0, 2.0}}));
     const ZonoBundle bundle({Z1, Z2});
     const std::vector<int64_t> dims{2, 0, 1};
     const ZonoBundle R = bundle.lift(3, dims);
@@ -59,7 +59,7 @@ void permuted_points(const std::string &b) {
 /// New dimensions are refused (they would be unbounded), so are bad positions; the same call with
 /// the checks off.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({Z, Z});
     check(test::raises([&] { bundle.lift(3, {0, 1}); }, Error::not_defined), "lift: N > dimension");
     check(test::raises([&] { bundle.lift(2, {0, 2}); }, Error::wrong_value),

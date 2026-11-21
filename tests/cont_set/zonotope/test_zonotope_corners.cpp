@@ -12,7 +12,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,18 +22,18 @@ namespace {
 
 /// The four corners of a parallelogram, sign j of corner k the bit j of k; a point is its corner.
 void corners_of_small_sets(const std::string &b) {
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     check(close(Z.corners(), std::vector<double>{-0.5, 1, 1.5, 1, 0.5, 3, 2.5, 3}, 0),
           b + ": the parallelogram");
-    const Zonotope point(column({3.0, -1.0}), Tensor::from_data({}, {0, 2}));
+    const Zonotope point(vec({3.0, -1.0}), Tensor::from_data({}, {0, 2}));
     check(close(point.corners(), std::vector<double>{3, -1}, 0), b + ": a point");
 }
 
 /// More than 30 generators are refused; the checks off give the same corners.
 void checks_and_their_switch() {
-    const Zonotope wide(column({0.0}), Tensor::from_data(std::vector<double>(31, 1.0), {31, 1}));
+    const Zonotope wide(vec({0.0}), Tensor::from_data(std::vector<double>(31, 1.0), {31, 1}));
     check(test::raises([&] { wide.corners(); }, Error::not_supported), "corners: 31 generators");
-    const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
     const Tensor on = Z.corners();
     ChecksScope off(false);
     check(close(Z.corners(), on, 0), "corners: the same with the checks off");

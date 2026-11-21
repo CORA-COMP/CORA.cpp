@@ -34,7 +34,7 @@ void tensor_multiplication_gradient() {
 void tensor_multiplication_of_a_batch() {
     const std::vector<torch::Tensor> Z = test::random_zonotope_rows(2, 2);
     const Tensor M = from_torch(torch::randn({2, 2, 2, 2}, torch::kDouble));
-    const torch::Tensor zero = torch::zeros({2, 1}, torch::kDouble);
+    const torch::Tensor zero = torch::zeros({2}, torch::kDouble);
     const Zonotope batch(from_torch(torch::stack({zero, zero})),
                          from_torch(torch::stack({Z[1], Z[1] * 0.5})));
     const torch::Tensor H = to_torch(batch.tensor_multiplication(M, test::triples(2)).generators());

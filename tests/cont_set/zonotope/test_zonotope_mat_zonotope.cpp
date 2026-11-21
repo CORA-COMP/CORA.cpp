@@ -14,7 +14,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ using test::column;
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        const Zonotope Z(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {3.0, 4.0}}));
+        const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}, {3.0, 4.0}}));
         const Zonotope M = Z.mat_zonotope();
         check(M.center().size(-2) == 2 && M.center().size(-1) == 1 && M.nr_generators() == 3,
               b + ": n x 1 matrices, one generator each");
@@ -34,7 +34,7 @@ int main() {
               b + ": the stacked zonotope is the zonotope");
     });
     ChecksScope off(false);
-    check(Zonotope(column({0.0}), Tensor({{1.0}})).mat_zonotope().center().size(-2) == 1,
+    check(Zonotope(vec({0.0}), Tensor({{1.0}})).mat_zonotope().center().size(-2) == 1,
           "mat_zonotope: the same with the checks off");
     return test::finish("zonotope mat_zonotope");
 }

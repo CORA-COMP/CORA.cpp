@@ -192,7 +192,7 @@ void every_method_encloses_the_activation(const std::string &b) {
 void powers_of_sets_with_even_exponents_and_independent_generators_hold(const std::string &b) {
     Rng rng(6);
     // x = 0.2 + alpha^2 + 0.8 b + 0.5 alpha beta, with alpha in two factors
-    const PolyZonotope X(Tensor({{0.2}}), Tensor({{1.0}, {0.5}, {-0.4}}), Tensor({{0.8}}),
+    const PolyZonotope X(Tensor({0.2}), Tensor({{1.0}, {0.5}, {-0.4}}), Tensor({{0.8}}),
                          {{2, 0}, {1, 1}, {0, 3}}, {1, 2});
     int outside = 0;
     for (const Activation a : {Activation::sigmoid, Activation::tanh, Activation::relu})
@@ -219,7 +219,7 @@ void networks_of_order_k_enclose_the_outputs(const std::string &b) {
         {{matrix(5, 3), matrix(5, 1)}, {matrix(4, 5), matrix(4, 1)}, {matrix(2, 4), matrix(2, 1)}},
         {Activation::tanh, Activation::sigmoid, Activation::identity});
     // dependent generators with a shared factor, and independent ones
-    const PolyZonotope X(Tensor({{0.1}, {-0.3}, {0.2}}),
+    const PolyZonotope X(Tensor({0.1, -0.3, 0.2}),
                          Tensor({{0.4, 0.0, 0.2}, {0.1, 0.3, 0.0}, {0.0, 0.2, 0.3}}),
                          Tensor({{0.05, 0.0, 0.1}}), {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {1, 2, 3});
     int outside = 0;
@@ -243,8 +243,8 @@ void networks_of_order_k_enclose_the_outputs(const std::string &b) {
               full.num_dependent() + full.independent_generators().shape()[0],
           b + ": the limit reduces the generators");
     // a generator with all exponents even in the reduction: alpha^2 + alpha^4 reaches 2
-    const PolyZonotope Z(Tensor({{-1.0}}), Tensor({{1.0}, {1.0}}), Tensor::zeros({0, 1}),
-                         {{2}, {4}}, {1});
+    const PolyZonotope Z(Tensor({-1.0}), Tensor({{1.0}, {1.0}}), Tensor::zeros({0, 1}), {{2}, {4}},
+                         {1});
     const NeuralNetwork one({{Tensor({{1.0}}), Tensor({0.0})}}, {Activation::tanh});
     const PolyZonotope R = one.evaluate(Z, {.num_generators = 1});
     check(aux_outside(one, Z, R, rng) == 0, b + ": the reduction of even exponents keeps 2");
@@ -254,7 +254,7 @@ void networks_of_order_k_enclose_the_outputs(const std::string &b) {
 void the_pairs_keep_the_input_rows(const std::string &b) {
     // one tanh layer on a set of two dependent factors
     const NeuralNetwork nn({{Tensor({{1.0, 0.5}}), Tensor({0.1})}}, {Activation::tanh});
-    const PolyZonotope X(Tensor({{0.2}, {-0.1}}), Tensor({{0.5, 0.0}, {0.1, 0.4}}),
+    const PolyZonotope X(Tensor({0.2, -0.1}), Tensor({{0.5, 0.0}, {0.1, 0.4}}),
                          Tensor({{0.1, 0.05}}), {{1, 0}, {0, 1}}, {1, 2});
     for (const bool in_gi : {true, false}) {
         const PolyZonotope XY = nn.evaluate_with_input(X, {.add_approx_error_to_gi = in_gi,

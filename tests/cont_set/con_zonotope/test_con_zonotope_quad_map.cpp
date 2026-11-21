@@ -13,7 +13,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -28,16 +27,16 @@ Tensor aux_image(const Tensor &Q, const Tensor &x) { return x.multiply(Q.matmul(
 /// Hand-computed: x^2 for x in [-1, 1] has the center 1/2 and two generators 1/2 (the square and
 /// the linear term, which is 0); a constraint x1 + x2 = 0 stays on the linear block.
 void quad_map_known(const std::string &b) {
-    const ConZonotope unit(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope unit(vec({0.0}), Tensor({{1.0}}));
     const ConZonotope r = unit.quad_map({Tensor({{1.0}})});
     check(close(r.c().expand_dims(-1), {0.5}, 0) &&
               close(r.generators().matrix_transpose(), {0.5, 0}, 0),
           b + ": x^2");
-    const ConZonotope a(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), vec({0.0}));
+    const ConZonotope a(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, 1.0}}), vec({0.0}));
     const ConZonotope q = a.quad_map({Tensor({{1.0}})});
     check(close(q.A(), {0, 0, 1, 1, 0}, 0) && close(q.b(), {0}, 0),
           b + ": the constraint on the linear block");
-    const ConZonotope plain(column({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope plain(vec({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     const ConZonotope m = plain.quad_map(plain, {Tensor({{1.0, 0.0}, {0.0, 1.0}})});
     // [c G]' [c G] has the center 1 and the entries of the products in column order
     check(close(m.c().expand_dims(-1), {1}, 0) &&
@@ -74,7 +73,7 @@ int main() {
         quad_map_known(b);
         quad_map_property(b);
     });
-    const ConZonotope a(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const ConZonotope a(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     check(test::raises([&] { a.quad_map({Tensor({{1.0}})}); }, Error::dimension_mismatch),
           "quad_map: a matrix of the wrong size");
     check(test::raises([&] { a.quad_map({}); }, Error::dimension_mismatch), "quad_map: no matrix");

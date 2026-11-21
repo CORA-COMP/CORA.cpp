@@ -12,7 +12,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,7 +22,7 @@ namespace {
 
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
-    return {column({1.0, 0.0}),
+    return {vec({1.0, 0.0}),
             Tensor::from_data({1, 1, 0, 2}, {2, 2}),
             Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
@@ -46,14 +46,12 @@ int main() {
         const PolyZonotope W = P.plus(P.linear_map(Tensor::eye(2) * -1.0));
         check(W.num_dependent() == 4, b + ": plus does not know the factors are shared");
         // a set with other identifiers is added with the union of the identifiers
-        const PolyZonotope Q(column({0.0, 0.0}), Tensor::from_data({1, 1}, {1, 2}),
+        const PolyZonotope Q(vec({0.0, 0.0}), Tensor::from_data({1, 1}, {1, 2}),
                              Tensor::zeros({0, 2}), {{1}}, {3});
         check(P.exact_plus(Q).num_factors() == 3, b + ": the union of the identifiers");
     });
     check(test::raises(
-              [] {
-                  known().exact_plus(PolyZonotope(Zonotope(column({1.0}), Tensor::zeros({0, 1}))));
-              },
+              [] { known().exact_plus(PolyZonotope(Zonotope(vec({1.0}), Tensor::zeros({0, 1})))); },
               Error::dimension_mismatch),
           "exact_plus: dimension");
     ChecksScope off(false);

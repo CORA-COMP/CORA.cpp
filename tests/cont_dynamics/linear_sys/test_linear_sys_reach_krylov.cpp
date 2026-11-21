@@ -59,7 +59,7 @@ SparseMatrix heat_grid(int64_t k) {
 /// k is e^{-k dt} times the start, up to rounding.
 void flow_in_one_dimension() {
     const LinearSys sys(Tensor({{-1.0}}), Tensor({{0.0}}));
-    const Zonotope R0(Tensor({{1.0}}), Tensor({{0.5}}));
+    const Zonotope R0(Tensor({1.0}), Tensor({{0.5}}));
     const double dt = 0.1;
     const ReachSet R = sys.reach({.initial_set = R0, .t_final = 1.0}, alg::Krylov{.time_step = dt});
     check(R.time_point.size() == 11 && R.time_interval.size() == 10, "krylov: 10 steps");
@@ -80,7 +80,7 @@ void flow_in_one_dimension() {
 /// sets are those of the call without it.
 void callback_receives_the_time_intervals() {
     const LinearSys sys(heat_grid(3), Tensor::zeros({27, 1}), Tensor::eye(27));
-    const Zonotope R0(Tensor::ones({27, 1}), Tensor::eye(27) * 0.1);
+    const Zonotope R0(Tensor::ones({27}), Tensor::eye(27) * 0.1);
     const ReachProblem problem{.initial_set = R0, .t_final = 0.3};
     const alg::Krylov krylov{.time_step = 0.1, .zonotope_order = 2};
     const ReachSet kept = sys.reach(problem, krylov);
@@ -139,7 +139,7 @@ void encloses_trajectories() {
     B(3, 0) = 1.0;
     cora::Rng rng(11);
     const Zonotope R0 = Zonotope::generate_random(rng, n, std::nullopt, 2);
-    const Zonotope U(Tensor({{0.7}}), Tensor::zeros({0, 1}));
+    const Zonotope U(Tensor({0.7}), Tensor::zeros({0, 1}));
     const double dt = 0.1;
     const LinearSys sys(S, tensor_of(B), tensor_of(C));
     const ReachSet R = sys.reach({.initial_set = R0, .input_set = U, .t_final = 1.0},
@@ -204,7 +204,7 @@ void restarted_windows_enclose_trajectories() {
 /// same.
 void checks_and_their_switch() {
     const LinearSys sys(heat_grid(2), Tensor::zeros({8, 1}));
-    const Zonotope R0(Tensor::ones({8, 1}), Tensor::zeros({0, 8}));
+    const Zonotope R0(Tensor::ones({8}), Tensor::zeros({0, 8}));
     const ReachProblem problem{.initial_set = R0, .t_final = 0.2};
     // the options: a time step, a positive step of the order, a nonnegative error
     check(test::raises([&] { sys.reach(problem, alg::Krylov{}); }, Error::wrong_value),

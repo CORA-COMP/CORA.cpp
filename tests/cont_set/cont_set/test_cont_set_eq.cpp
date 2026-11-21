@@ -15,7 +15,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -27,8 +26,8 @@ namespace {
 /// Whether two sets are equal across the classes: a box and the same box as a zonotope are equal.
 void eq_across_classes(const std::string &b) {
     const Interval I(vec({-1.0, 0.0}), vec({1.0, 2.0})), J(vec({-1.0, 0.0}), vec({1.0, 2.001}));
-    const Zonotope Z(column({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
-        W(column({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 2.0}, {2, 2}));
+    const Zonotope Z(vec({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2})),
+        W(vec({0.0, 1.0}), Tensor::from_data({1.0, 0.0, 0.0, 2.0}, {2, 2}));
     check(eq(I, Z) && eq(Z, I) && eq(Z, Z) && !eq(I, J) && !eq(Z, W), b + ": eq");
     check(I == Z && Z == I && !(I == J) && !(Z == W), b + ": the operator ==");
     check(!eq(I, J) && eq(I, J, 1e-2), b + ": tol relaxes the bounds");

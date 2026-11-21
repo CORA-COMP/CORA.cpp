@@ -38,7 +38,7 @@ bool has(const std::string &text, const std::string &what) {
 }
 
 // The initial set, made on the backend that is current.
-Zonotope initial_set() { return Zonotope(test::column({1, 0}), Tensor({{0.1, 0}, {0, 0.1}})); }
+Zonotope initial_set() { return Zonotope(test::vec({1, 0}), Tensor({{0.1, 0}, {0, 0.1}})); }
 
 ReachSet oscillator() {
     return LinearSys(Tensor({{-0.1, 1}, {-1, -0.1}}))

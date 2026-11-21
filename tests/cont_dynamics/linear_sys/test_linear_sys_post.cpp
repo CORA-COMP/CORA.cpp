@@ -29,7 +29,7 @@ const alg::WrappingFree kWrappingFree{.time_step = kStep, .taylor_terms = kTerms
 void the_steps_enclose_the_trajectories(const std::string &b) {
     const Tensor A = diagonal(), B = Tensor::eye(2), u = test::column({0.5, -0.5});
     const LinearSys sys(A, B);
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{0.1, 0.05}}));
+    const Zonotope U(test::vec({0.0, 0.0}), Tensor({{0.1, 0.05}}));
     const Tensor w = u + Tensor({{0.1}, {0.05}});
     for (const alg::LinearReach &a :
          {alg::LinearReach(kStandard), alg::LinearReach(kWrappingFree)}) {

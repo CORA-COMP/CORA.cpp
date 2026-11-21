@@ -11,7 +11,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -22,11 +21,11 @@ namespace {
 
 /// Hand-computed answers for a box, a segment, a point and a set without points.
 void representsa_known(const std::string &b) {
-    const ConZonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
+    const ConZonotope box(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({1.0}));
-    const ConZonotope point(column({1.0, 2.0}), Tensor({{0.0, 0.0}}));
-    const ConZonotope none(column({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
+    const ConZonotope point(vec({1.0, 2.0}), Tensor({{0.0, 0.0}}));
+    const ConZonotope none(vec({0.0}), Tensor({{1.0}}), Tensor({{1.0}}), vec({3.0}));
     check(box.representsa("zonotope") && box.representsa("interval"), b + ": a box");
     check(!segment.representsa("zonotope") && !segment.representsa("interval"),
           b + ": a segment with a constraint is neither");
@@ -41,8 +40,8 @@ void representsa_known(const std::string &b) {
               box.representsa("convexSet") && !box.representsa("halfspace") &&
               !box.representsa("fullspace"),
           b + ": the constant types");
-    const ConZonotope line(column({0.0}), Tensor({{1.0}}));
-    const ConZonotope dot(column({1.0}), Tensor({{0.0}}));
+    const ConZonotope line(vec({0.0}), Tensor({{1.0}}));
+    const ConZonotope dot(vec({1.0}), Tensor({{0.0}}));
     check(!line.representsa("hyperplane") && dot.representsa("hyperplane") &&
               !box.representsa("hyperplane"),
           b + ": a hyperplane is a point in one dimension");
@@ -55,7 +54,7 @@ void representsa_known(const std::string &b) {
 
 int main() {
     test::for_each_backend(representsa_known);
-    const ConZonotope box(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope box(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { box.representsa("cube"); }, Error::wrong_value),
           "representsa: a type");
     for (const char *type : {"conHyperplane", "capsule", "ellipsoid", "levelSet", "parallelotope"})

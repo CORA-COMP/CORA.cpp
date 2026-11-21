@@ -16,7 +16,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -58,7 +57,7 @@ void convex_hull_with_each_kind_of_set(const std::string &b) {
 
 /// Operands of another dimension, and a point that is not a column, are refused.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}})), Z1(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Z.convex_hull(Z1); }, Error::dimension_mismatch),
           "convex_hull: dim 1");
     check(test::raises([&] { Z.convex_hull(Interval(vec({0.0}), vec({1.0}))); },

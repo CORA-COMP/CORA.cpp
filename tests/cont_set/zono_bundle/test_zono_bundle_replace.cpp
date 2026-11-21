@@ -12,7 +12,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -22,7 +22,7 @@ using test::column;
 int main() {
     test::for_each_backend([](const std::string &b) {
         const ZonoBundle zono_bundle = test::two_zonotopes();
-        const Zonotope W(column({3.0, 3.0}), Tensor({{1.0, 1.0}}));
+        const Zonotope W(vec({3.0, 3.0}), Tensor({{1.0, 1.0}}));
         const ZonoBundle R = zono_bundle.replace(1, W);
         check(R.parallel_sets() == 2 &&
                   close((R.zonotopes()[1]).center().expand_dims(-1), {3, 3}, 0) &&
@@ -32,11 +32,11 @@ int main() {
               b + ": the original is unchanged");
     });
     const ZonoBundle zono_bundle = test::two_zonotopes();
-    const Zonotope W(column({3.0, 3.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope W(vec({3.0, 3.0}), Tensor({{1.0, 1.0}}));
     // wrong input is refused; the same call works with the checks off
     check(test::raises([&] { zono_bundle.replace(2, W); }, Error::wrong_value),
           "replace: an index too big");
-    check(test::raises([&] { zono_bundle.replace(0, Zonotope(column({0.0}), Tensor({{1.0}}))); },
+    check(test::raises([&] { zono_bundle.replace(0, Zonotope(vec({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "replace: a member of another dimension");
     ChecksScope off(false);

@@ -29,12 +29,12 @@ Tensor oscillator() { return Tensor({{-0.1, 1.0, 0.0}, {-1.0, -0.1, 0.0}, {0.0, 
 const std::vector<std::array<int64_t, 2>> kBlocks{{0, 1}, {2, 2}};
 
 Zonotope separate_set() {
-    return {test::column({1.0, 0.5, -1.0}),
+    return {test::vec({1.0, 0.5, -1.0}),
             Tensor({{0.2, 0.0, 0.0}, {0.0, 0.1, 0.0}, {0.0, 0.0, 0.3}})};
 }
 
 Zonotope coupled_set() {
-    return {test::column({1.0, 0.5, -1.0}),
+    return {test::vec({1.0, 0.5, -1.0}),
             Tensor({{0.2, 0.0, 0.0}, {0.0, 0.1, 0.0}, {0.1, 0.0, 0.3}})};
 }
 
@@ -94,7 +94,7 @@ void simulations_stay_inside(const std::string &b) {
     const Tensor A = oscillator(), B = Tensor::eye(3);
     const LinearSys sys(A, B);
     const Zonotope X0 = coupled_set();
-    const Zonotope U(test::column({1.0, 2.0, 0.5}), Tensor({{0.1, 0.0, 0.1}, {0.0, 0.2, 0.1}}));
+    const Zonotope U(test::vec({1.0, 2.0, 0.5}), Tensor({{0.1, 0.0, 0.1}, {0.0, 0.2, 0.1}}));
     const double dt = 0.5;
     const ReachProblem problem{.initial_set = X0, .input_set = U, .t_final = 3.0};
     for (const alg::LinearReach &a :

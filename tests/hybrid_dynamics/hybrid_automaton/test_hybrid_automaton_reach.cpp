@@ -121,8 +121,7 @@ bool aux_covered(const HybridReachSet &R, double t, const Tensor &p) {
             if (t < range[0] || t > range[1]) continue;
             const Interval box = b.time_interval[k]->interval();
             // the box first, then the set
-            if ((box.inf() - p.squeeze(-1)).max().item() <= 1e-9 &&
-                (p.squeeze(-1) - box.sup()).max().item() <= 1e-9 &&
+            if ((box.inf() - p).max().item() <= 1e-9 && (p - box.sup()).max().item() <= 1e-9 &&
                 contains(*b.time_interval[k], Zonotope(p, p.zeros_like({0, 2})), 1e-9))
                 return true;
         }
@@ -151,7 +150,7 @@ void ball(const std::string &name, alg::GuardIntersect method, BallFlow kind = B
         rng.uniform(u, 2, 0.0, 1.0);
         const double x0 = 1.0 + 0.2 * u[0], t = 1.45 * u[1];
         const std::array<double, 2> s = aux_exact(x0, t);
-        check(aux_covered(R, t, column({s[0], s[1]})), name + ": an exact state is reached");
+        check(aux_covered(R, t, vec({s[0], s[1]})), name + ": an exact state is reached");
     }
 }
 
@@ -223,7 +222,7 @@ void time_triggered() {
     const HybridAutomaton HA("clock", {first, second});
     // a flat initial clock: the time-point set at t = 1 lies on the guard
     HybridReachProblem p;
-    p.initial_set = Zonotope(column({1.0, 0.0}), Tensor({{0.1, 0.0}}));
+    p.initial_set = Zonotope(vec({1.0, 0.0}), Tensor({{0.1, 0.0}}));
     p.t_final = 1.5;
     const HybridReachSet R = HA.reach(p, aux_alg(alg::ZonoGirard{}));
     check(R.branches.size() == 2 && R.branches[1].location == 1, "clock: one jump");
@@ -277,7 +276,7 @@ void checks_and_their_switch() {
     p.t_final = 0;
     check(test::raises([&] { HA.reach(p, a); }, Error::wrong_value), "reach: t_final");
     p = aux_drop();
-    p.input_set = {Zonotope(column({0.0, 0.0}), Tensor::eye(2))};
+    p.input_set = {Zonotope(vec({0.0, 0.0}), Tensor::eye(2))};
     check(test::raises([&] { HA.reach(p, a); }, Error::dimension_mismatch), "reach: input set");
     // the algorithm and the specifications against the automaton
     alg::HybridStandard two = a;

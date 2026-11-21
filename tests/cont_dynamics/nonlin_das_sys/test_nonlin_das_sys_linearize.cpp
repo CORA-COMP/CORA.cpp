@@ -33,7 +33,7 @@ void the_linear_system_is_reduced(const std::string &b) {
         [](const Vars &x, const Vars &y, const Vars &) { return Vars{-1 * x[0] + y[0]}; },
         [](const Vars &x, const Vars &y, const Vars &u) { return Vars{y[0] - 0.5 * x[0] - u[0]}; },
         1, 1, 1);
-    const Zonotope U(col(0.3), Tensor({{0.1}}));
+    const Zonotope U(test::vec({0.3}), Tensor({{0.1}}));
     const DaeLinearized lin = sys.linearize(col(1.0), col(0.8), U, col(0.2), 0.1);
     // the point: u* = 0.3 + 0.2, x* = x0 + f(x0, y0, u*) dt/2 with f = -1 + 0.8, y* = x*/2 + u*
     const double x_star = 1.0 + (-1.0 + 0.8) * 0.05;
@@ -74,7 +74,8 @@ void wrong_arguments_are_described(const std::string &b) {
           b + ": time step 0");
     check(test::raises(
               [&] {
-                  sys.linearize(col(1.0), col(1.0), Zonotope(col(0.0), Tensor({{1.0}})), none, 0.1);
+                  sys.linearize(col(1.0), col(1.0), Zonotope(test::vec({0.0}), Tensor({{1.0}})),
+                                none, 0.1);
               },
               Error::not_supported),
           b + ": an input set for a system without inputs");

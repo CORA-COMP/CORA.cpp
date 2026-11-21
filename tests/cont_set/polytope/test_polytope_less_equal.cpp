@@ -17,7 +17,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -34,8 +33,8 @@ void containments(const std::string &b) {
     check(test::square_v().less_equal(Interval(vec({-1.0, -1.0}), vec({2.0, 2.0}))) &&
               !test::square_v().less_equal(Interval(vec({0.5, 0.0}), vec({2.0, 2.0}))),
           b + ": a box");
-    check(test::square_h().less_equal(Zonotope(column({0.5, 0.5}), Tensor::eye(2))) &&
-              !test::square_h().less_equal(Zonotope(column({0.5, 0.5}), Tensor::eye(2) * 0.2)),
+    check(test::square_h().less_equal(Zonotope(vec({0.5, 0.5}), Tensor::eye(2))) &&
+              !test::square_h().less_equal(Zonotope(vec({0.5, 0.5}), Tensor::eye(2) * 0.2)),
           b + ": a zonotope");
     // the whole space holds all, the empty set only itself; an unbounded set is in no bounded set
     check(test::square_h().less_equal(Fullspace(2)) &&

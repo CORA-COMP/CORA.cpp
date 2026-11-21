@@ -200,7 +200,7 @@ inline SparseMatrix read_sparse(const Json &entry, const std::string &bin) {
 inline Zonotope read_zonotope(const Json &matrices, const std::string &bin, const std::string &c,
                               const std::string &G) {
     const int64_t n = matrices[c]["shape"][0].integer(), m = matrices[G]["shape"][1].integer();
-    const Tensor center = Tensor::from_data(read_matrix(matrices[c], bin), {n, 1});
+    const Tensor center = Tensor::from_data(read_matrix(matrices[c], bin), {n});
     if (m == 0) return Zonotope(center, Tensor::zeros({1, n}));
     return Zonotope(center,
                     Tensor::from_data(read_matrix(matrices[G], bin), {n, m}).matrix_transpose());

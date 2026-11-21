@@ -17,7 +17,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -31,7 +30,7 @@ constexpr double kPi = 3.14159265358979323846;
 /// A quarter turn in the plane of states 0 and 1 takes (1, 0) to (0, 1) and leaves state 2; angle
 /// 0 is the identity; the rotation is the matrix [cos -sin; sin cos].
 void rotation_known(const std::string &b) {
-    const Zonotope Z(column({1.0, 0.0, 5.0}), Tensor({{1.0, 0.0, 2.0}, {0.0, 2.0, 0.0}}));
+    const Zonotope Z(vec({1.0, 0.0, 5.0}), Tensor({{1.0, 0.0, 2.0}, {0.0, 2.0, 0.0}}));
     const Zonotope R = Z.rotate({0, 1}, kPi / 2);
     check(close(R.center(), std::vector<double>{0, 1, 5}, 1e-15), b + ": the center");
     check(close(R.generators(), std::vector<double>{0, 1, 2, -2, 0, 0}, 1e-15),
@@ -68,7 +67,7 @@ void rotation_is_orthogonal(const std::string &b) {
 
 /// Wrong dims and a NaN angle are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({1.0, 0.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor({{1.0, 0.0}}));
     check(test::raises([&] { Z.rotate({0}, 1.0); }, Error::wrong_value), "rotate: one state");
     check(test::raises([&] { Z.rotate({0, 0}, 1.0); }, Error::wrong_value),
           "rotate: the same state");

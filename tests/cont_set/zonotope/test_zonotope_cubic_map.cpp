@@ -15,7 +15,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,13 +27,13 @@ using Grid = std::vector<std::vector<Tensor>>;
 
 /// n = 1, z = t x^3 for x in [0.5, 1.5]: x^3 = 1 + 1.5 b + 0.75 b^2 + 0.125 b^3, b^2 in [0, 1].
 void single_cubic_map_by_hand(const std::string &b) {
-    const Zonotope Z(column({1.0}), Tensor({{0.5}}));
+    const Zonotope Z(vec({1.0}), Tensor({{0.5}}));
     const Zonotope R = Z.cubic_map({{Tensor({{2.0}})}});
     check(close(R.center(), std::vector<double>{2.75}, 1e-14), b + ": center 2 (1 + 0.375)");
     check(close(R.generators(), std::vector<double>{3.0, 0.75, 0.25}, 1e-14),
           b + ": generators 2 (1.5, 0.375, 0.125)");
     // a mixed map (x1 t x2) x3 has the products of all factors as generators
-    const Zonotope Z2(column({2.0}), Tensor({{1.0}})), Z3(column({3.0}), Tensor({{0.5}}));
+    const Zonotope Z2(vec({2.0}), Tensor({{1.0}})), Z3(vec({3.0}), Tensor({{0.5}}));
     const Zonotope M = Z.cubic_map(Z2, Z3, {{Tensor({{1.0}})}});
     check(close(M.center(), std::vector<double>{6.0}, 0), b + ": mixed: center 1 * 2 * 3");
     check(close(M.generators(), std::vector<double>{3, 3, 1.5, 1, 0.5, 0.5, 0.25}, 1e-14),
@@ -93,14 +93,14 @@ void the_map_of_the_set_is_enclosed(const std::string &b) {
 
 /// Wrong grids and lists are refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const Zonotope Z(column({1.0, 0.0}), Tensor({{0.5, 0.2}}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor({{0.5, 0.2}}));
     const Tensor M({{1.0, 0.0}, {0.0, 1.0}});
     check(test::raises([&] { Z.cubic_map({}); }, Error::wrong_value), "cubic_map: no matrices");
     check(test::raises([&] { Z.cubic_map({{Tensor({{1.0}})}}); }, Error::wrong_value),
           "cubic_map: a 1x1 matrix for dimension 2");
     check(test::raises([&] { Z.cubic_map({{M, M}}, {{0, 5}}); }, Error::wrong_value),
           "cubic_map: ind out of range");
-    check(test::raises([&] { Z.cubic_map(Zonotope(column({1.0}), Tensor({{1.0}})), Z, {{M, M}}); },
+    check(test::raises([&] { Z.cubic_map(Zonotope(vec({1.0}), Tensor({{1.0}})), Z, {{M, M}}); },
                        Error::dimension_mismatch),
           "cubic_map: mixed, dimension 1");
     const Tensor on = Z.cubic_map({{M, M}}).generators();

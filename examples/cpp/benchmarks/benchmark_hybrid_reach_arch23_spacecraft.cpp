@@ -118,7 +118,7 @@ std::vector<HybridSpecification> aux_specs() {
 cora::bench::HybridInstance aux_instance(const std::string &name) {
     if (name != "SPRE22") CORA_FAIL(Error::wrong_value, "spacecraft: unknown instance " + name);
     HybridReachProblem problem;
-    problem.initial_set = Zonotope(column({-900, -400, 2.5, 2.5, 0}),
+    problem.initial_set = Zonotope(vec({-900, -400, 2.5, 2.5, 0}),
                                    matrix(5, 5, {25, 0, 0, 0, 0, 0,   25, 0, 0, 0, 0, 0, 2.5,
                                                  0,  0, 0, 0, 0, 2.5, 0,  0, 0, 0, 0, 0}));
     problem.t_final = 200;

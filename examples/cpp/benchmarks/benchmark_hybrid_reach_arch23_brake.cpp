@@ -58,7 +58,7 @@ bool aux_brkdc01() {
     const LinearSys sys(aux_A(0), column({0, 0, 0, 0}));
     const Tensor resetA = matrix(4, 4, {1, 0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0, -T_sample, 0, 1});
     const Tensor resetc = column({0, 0, x0, T_sample * x0});
-    ReachProblem problem{Zonotope(column({0, 0, 0, 0}), Tensor::zeros({0, 4})), std::nullopt,
+    ReachProblem problem{Zonotope(vec({0, 0, 0, 0}), Tensor::zeros({0, 4})), std::nullopt,
                          T_sample};
     const alg::Standard a{T_sample / 5, 5, 20};
     std::vector<Set> sets;
@@ -107,7 +107,7 @@ bool aux_brknc01() {
                        LinearSys(aux_A(1), column({0, 0, 0, 0, 0})), column({0, 0, 0, 0, 1}));
     const HybridAutomaton HA("brake_BRKNC01", {loc});
     HybridReachProblem problem;
-    problem.initial_set = Zonotope(column({0, 0, 0, 0, 0}), Tensor::eye(5) * 1e-8);
+    problem.initial_set = Zonotope(vec({0, 0, 0, 0, 0}), Tensor::eye(5) * 1e-8);
     problem.t_final = 0.1;
     const HybridReachSet Rs = HA.reach(problem, aux_options(5));
     std::cerr << "  " << Rs.branches.size() << " branches\n";
@@ -127,8 +127,8 @@ bool aux_brknp01() {
     const Location loc("loc1", c.invariant, {Transition(c.guard, c.reset, 0)}, flow);
     const HybridAutomaton HA("brake_BRKNP01", {loc});
     HybridReachProblem problem;
-    problem.initial_set = Zonotope(column({0, 0, 0, 0, 0}), Tensor::eye(5) * 1e-8);
-    problem.input_set = {Zonotope(column({1}), Tensor::zeros({0, 1}))};
+    problem.initial_set = Zonotope(vec({0, 0, 0, 0, 0}), Tensor::eye(5) * 1e-8);
+    problem.input_set = {Zonotope(vec({1}), Tensor::zeros({0, 1}))};
     problem.t_final = 0.1;
     alg::HybridStandard a = aux_options(10);
     a.intermediate_terms = 3;

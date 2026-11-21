@@ -13,7 +13,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -23,7 +23,7 @@ namespace {
 
 /// pZ = {(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t}: generators on a and a b, one independent.
 PolyZonotope known() {
-    return {column({1.0, 0.0}),
+    return {vec({1.0, 0.0}),
             Tensor::from_data({1, 1, 0, 2}, {2, 2}),
             Tensor::from_data({0, 1}, {1, 2}),
             {{1, 0}, {1, 1}},
@@ -38,7 +38,7 @@ PolyZonotope known() {
 int main() {
     test::for_each_backend([](const std::string &b) {
         const PolyZonotope P = known();
-        const Zonotope Z(column({5.0}), Tensor::from_data({1.0, 2.0}, {2, 1}));
+        const Zonotope Z(vec({5.0}), Tensor::from_data({1.0, 2.0}, {2, 1}));
         const PolyZonotope Q = P.cart_prod(Z);
         check(Q.dim() == 3 && close(Q.center(), {1.0, 0.0, 5.0}, 0), b + ": the centers stack");
         check(Q.independent_generators().shape()[0] == 3 && Q.num_dependent() == 2,
@@ -46,13 +46,12 @@ int main() {
         check(cart_prod(P, Z).is<PolyZonotope>(), b + ": through the registry");
     });
 
-    check(
-        test::raises(
-            [] { known().cart_prod(Zonotope(Tensor::zeros({2, 1, 1}), Tensor::zeros({2, 0, 1}))); },
-            Error::dimension_mismatch),
-        "cart_prod: a batch");
+    check(test::raises(
+              [] { known().cart_prod(Zonotope(Tensor::zeros({2, 1}), Tensor::zeros({2, 0, 1}))); },
+              Error::dimension_mismatch),
+          "cart_prod: a batch");
     ChecksScope off(false);
-    check(known().cart_prod(Zonotope(column({1.0}), Tensor::zeros({0, 1}))).dim() == 3,
+    check(known().cart_prod(Zonotope(vec({1.0}), Tensor::zeros({0, 1}))).dim() == 3,
           "cart_prod: valid with the checks off");
     return test::finish("poly_zonotope cart_prod");
 }

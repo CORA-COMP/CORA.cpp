@@ -12,7 +12,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -49,7 +48,7 @@ void unite_property(const std::string &b) {
 int main() {
     test::for_each_backend(unite_property);
     const ZonoBundle zono_bundle = test::two_zonotopes();
-    const Zonotope other(column({0.0}), Tensor({{1.0}}));
+    const Zonotope other(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { zono_bundle.unite(other); }, Error::dimension_mismatch),
           "unite: a zonotope of another dimension");
     ChecksScope off(false);

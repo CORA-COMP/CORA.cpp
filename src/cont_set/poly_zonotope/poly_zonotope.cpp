@@ -5,7 +5,7 @@
 // zonotope or a box gives dependent generators with E = I.
 //
 // Syntax:   PolyZonotope pZ(c, G, GI, E, id);   PolyZonotope pZ(Z);   PolyZonotope pZ(I);
-// Inputs:   c - center (n, 1)
+// Inputs:   c - center (n)
 //           G - dependent generators (n, h)
 //           GI - independent generators (n, q)
 //           E - the exponents of the h generators over p factors
@@ -63,12 +63,6 @@ Tensor aux_nonzero_rows(const Tensor &GI) {
     return int64_t(keep.size()) == q ? GI : priv_rows(GI, keep);
 }
 
-/// A center given as a column (n, 1) is the vector (n).
-Tensor aux_center_vector(Tensor c) {
-    if (c.defined() && c.ndim() == 2 && c.shape()[1] == 1) return c.squeeze(-1);
-    return c;
-}
-
 } // namespace
 
 
@@ -77,8 +71,7 @@ Tensor aux_center_vector(Tensor c) {
 // The constructors --------------------------------------------------------------------------------
 
 PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id)
-    : ContSet(kClassId), c_(aux_center_vector(std::move(c))), GI_(std::move(GI)),
-      id_(std::move(id)) {
+    : ContSet(kClassId), c_(std::move(c)), GI_(std::move(GI)), id_(std::move(id)) {
     detail::Entry entry;
     // the tensors, then the shapes of the center and of both generator matrices
     CORA_CHECK(c_.defined() && G.defined() && GI_.defined(), Error::wrong_input_in_constructor, [] {
@@ -119,8 +112,8 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vect
 
 PolyZonotope::PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E,
                            std::vector<int64_t> id, detail::Normalized)
-    : ContSet(kClassId), c_(aux_center_vector(std::move(c))), G_(std::move(G)),
-      GI_(aux_nonzero_rows(GI)), E_(std::move(E)), id_(std::move(id)) {
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), GI_(aux_nonzero_rows(GI)),
+      E_(std::move(E)), id_(std::move(id)) {
     // zero dependent generators go with their exponents
     const int64_t h = G_.shape()[0], n = G_.shape()[1];
     if (h == 0) return;
@@ -141,8 +134,8 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, const Tensor &GI, Exponents E,
 
 PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vector<int64_t> id,
                            detail::Verbatim)
-    : ContSet(kClassId), c_(aux_center_vector(std::move(c))), G_(std::move(G)), GI_(std::move(GI)),
-      E_(std::move(E)), id_(std::move(id)) {}
+    : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), GI_(std::move(GI)), E_(std::move(E)),
+      id_(std::move(id)) {}
 
 // The conversions ---------------------------------------------------------------------------------
 

@@ -17,7 +17,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -49,7 +49,7 @@ void simplex_property(const std::string &b) {
 
 int main() {
     test::for_each_backend(simplex_property);
-    const Zonotope Z(column({0.0}), Tensor({{1.0}}));
+    const Zonotope Z(vec({0.0}), Tensor({{1.0}}));
     check(test::raises([&] { Zonotope::stack({Z, Z}).simplex(); }, Error::not_supported),
           "simplex: a batch");
     ChecksScope off(false);

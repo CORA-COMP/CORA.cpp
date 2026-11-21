@@ -11,7 +11,7 @@
 
 using namespace cora;
 using test::check;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -21,7 +21,7 @@ using test::column;
 int main() {
     test::for_each_backend([](const std::string &b) {
         const ZonoBundle zono_bundle = test::two_zonotopes();
-        const Zonotope box(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+        const Zonotope box(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
         check(ZonoBundle::origin(2).representsa("origin") && !zono_bundle.representsa("origin"),
               b + ": origin");
         check(ZonoBundle::empty(2).representsa("emptySet") && !zono_bundle.representsa("emptySet"),

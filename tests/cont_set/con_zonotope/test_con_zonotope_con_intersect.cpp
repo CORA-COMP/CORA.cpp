@@ -13,7 +13,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -24,8 +23,8 @@ namespace {
 
 /// Hand-computed: the points x of [0, 2] with 2 x in [1, 3] are [0.5, 1.5]; the rows of the result.
 void con_intersect_known(const std::string &b) {
-    const ConZonotope A(column({1.0}), Tensor({{1.0}}));
-    const ConZonotope B(column({2.0}), Tensor({{1.0}}));
+    const ConZonotope A(vec({1.0}), Tensor({{1.0}}));
+    const ConZonotope B(vec({2.0}), Tensor({{1.0}}));
     const ConZonotope R = A.con_intersect(B, Tensor({{2.0}}));
     check(close(R.c().expand_dims(-1), {1}, 0) &&
               close(R.generators().matrix_transpose(), {1, 0}, 0),
@@ -35,9 +34,9 @@ void con_intersect_known(const std::string &b) {
     check(close(R.interval().inf(), {0.5}, 1e-9) && close(R.interval().sup(), {1.5}, 1e-9),
           b + ": the points [0.5, 1.5]");
     // the constraints of both sets stay, first set's rows first
-    const ConZonotope C(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope C(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}), Tensor({{1.0, 1.0}}),
                         vec({1.0}));
-    const ConZonotope D(column({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}), vec({0.0}));
+    const ConZonotope D(vec({0.0}), Tensor({{1.0}, {1.0}}), Tensor({{1.0, -1.0}}), vec({0.0}));
     const ConZonotope R2 = C.con_intersect(D, Tensor({{1.0, 0.0}}));
     check(close(R2.A(), {1, 1, 0, 0, 0, 0, 1, -1, 1, 0, -1, -1}, 0),
           b + ": the rows: C, D, agreement");
@@ -66,7 +65,7 @@ void con_intersect_property(const std::string &b) {
 
 /// A matrix of the wrong size is refused; with the checks off the result is the same.
 void checks_and_their_switch() {
-    const ConZonotope A(column({1.0}), Tensor({{1.0}}));
+    const ConZonotope A(vec({1.0}), Tensor({{1.0}}));
     check(
         test::raises([&] { A.con_intersect(A, Tensor({{1.0, 2.0}})); }, Error::dimension_mismatch),
         "con_intersect: M must map to the dimension of the second set");

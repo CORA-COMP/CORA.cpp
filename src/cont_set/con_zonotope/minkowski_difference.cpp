@@ -86,7 +86,7 @@ ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
     for (const double v : s)
         if (v > 1.0) return ConZonotope::empty(n);
     const Tensor D = (support.ones_like() - support).reshape({1, N});
-    return {cz.c().expand_dims(-1) - S.center().expand_dims(-1),
+    return {cz.c() - S.center(),
             (cz.generators().matrix_transpose().multiply(D)).matrix_transpose(), cz.A().multiply(D),
             cz.b()};
 }

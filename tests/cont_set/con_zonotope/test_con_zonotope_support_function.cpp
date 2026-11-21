@@ -24,11 +24,11 @@ namespace {
 
 /// Hand-computed: the formula without constraints, a linear program with them, -Inf if empty.
 void support_function_known(const std::string &b) {
-    const ConZonotope plain(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
+    const ConZonotope plain(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 2.0}}));
     check(close(test::support(plain, {1, 1}), 6.0) && close(test::support(plain, {1, 0}), 2.0),
           b + ": without constraints");
     // x = (xi_1 + xi_2, xi_2) with xi_1 + xi_2 = 0 is the segment {0} x [-1, 1]
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({0.0}));
     check(close(test::support(segment, {1, 0}), 0.0) &&
               close(test::support(segment, {0, 1}), 1.0) &&
@@ -42,7 +42,7 @@ void support_function_known(const std::string &b) {
 
 /// The range of d'x: both ends of the segment, the upper end the support value, empty if empty.
 void support_function_range(const std::string &b) {
-    const ConZonotope segment(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
+    const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({0.0}));
     const Interval r = segment.support_function_range(vec({0.0, 1.0}));
     check(close(r.inf().item(), -1.0) && close(r.sup().item(), 1.0), b + ": the segment's range");

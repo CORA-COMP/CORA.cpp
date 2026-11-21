@@ -34,7 +34,9 @@ inline double priv_extremal_weight(int i, double dt_over_fac) {
 }
 
 /// The zonotope with center 0 and the generators diag(radius): the box [-radius, radius].
-inline Zonotope priv_box(const Tensor &radius) { return {radius.zeros_like(), radius.diag()}; }
+inline Zonotope priv_box(const Tensor &radius) {
+    return {radius.zeros_like().squeeze(-1), radius.diag()};
+}
 
 /// Whether M is a square matrix equal to the identity (exact comparison).
 bool priv_is_identity(const Tensor &M);

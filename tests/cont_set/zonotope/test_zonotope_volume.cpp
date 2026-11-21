@@ -17,7 +17,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -27,7 +27,7 @@ namespace {
 
 /// CORA's unit test: Z = zonotope([-4 -3 -2 -1; 1 2 3 4]) has volume 80, the Alamo value 48.98...
 void cora_unit_test(const std::string &b) {
-    const Zonotope Z(column({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}, {-1.0, 4.0}}));
+    const Zonotope Z(vec({-4.0, 1.0}), Tensor({{-3.0, 2.0}, {-2.0, 3.0}, {-1.0, 4.0}}));
     check(close(Z.volume(), std::vector<double>{80}, 1e-12), b + ": exact 80");
     check(close(Z.volume("alamo"), std::vector<double>{48.9897948556635612}, 1e-12),
           b + ": alamo 4 sqrt(150)");
@@ -37,16 +37,16 @@ void cora_unit_test(const std::string &b) {
 
 /// A cube has volume 2^n; fewer generators than dimensions and a flat set have volume 0.
 void by_hand(const std::string &b) {
-    const Zonotope cube(column({1.0, 2.0, 3.0}),
+    const Zonotope cube(vec({1.0, 2.0, 3.0}),
                         Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}));
     check(close(cube.volume(), std::vector<double>{8}, 1e-14), b + ": the cube, exact");
     check(close(cube.volume("alamo"), std::vector<double>{8}, 1e-14), b + ": the cube, alamo");
-    const Zonotope few(column({0.0, 0.0, 0.0}), Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}}));
+    const Zonotope few(vec({0.0, 0.0, 0.0}), Tensor({{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}}));
     check(close(few.volume(), std::vector<double>{0}, 0), b + ": fewer generators than dimensions");
-    const Zonotope flat(column({0.0, 0.0}), Tensor({{1.0, 2.0}, {2.0, 4.0}, {3.0, 6.0}}));
+    const Zonotope flat(vec({0.0, 0.0}), Tensor({{1.0, 2.0}, {2.0, 4.0}, {3.0, 6.0}}));
     check(close(flat.volume(), std::vector<double>{0}, 0), b + ": exact: rank 1 in the plane");
     check(close(flat.volume("alamo"), std::vector<double>{0}, 0), b + ": alamo: rank 1");
-    const Zonotope point(column({1.0, 2.0}), Tensor::zeros({0, 2}));
+    const Zonotope point(vec({1.0, 2.0}), Tensor::zeros({0, 2}));
     check(close(point.volume(), std::vector<double>{0}, 0), b + ": a point");
 }
 
@@ -77,8 +77,7 @@ void the_volume_is_the_area(const std::string &b) {
 void a_batch(const std::string &b) {
     cora::Rng rng(62);
     const Zonotope A = Zonotope::generate_random(rng, 2, std::nullopt, 4);
-    const Zonotope flat(column({0.0, 0.0}),
-                        Tensor({{1.0, 2.0}, {2.0, 4.0}, {3.0, 6.0}, {1.0, 2.0}}));
+    const Zonotope flat(vec({0.0, 0.0}), Tensor({{1.0, 2.0}, {2.0, 4.0}, {3.0, 6.0}, {1.0, 2.0}}));
     const Zonotope batch = Zonotope::stack({A, flat});
     for (const std::string method : {"exact", "alamo"}) {
         const Tensor v = batch.volume(method);
@@ -93,7 +92,7 @@ void a_batch(const std::string &b) {
 /// A wrong method or order is refused, 'reduce' is not supported; with the checks off the same
 /// call gives the same result.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}}));
     check(test::raises([&] { Z.volume("fast"); }, Error::wrong_value), "volume: unknown method");
     check(test::raises([&] { Z.volume("exact", 0); }, Error::wrong_value), "volume: order 0");
     check(test::raises([&] { Z.volume("reduce", 1); }, Error::not_supported), "volume: reduce");

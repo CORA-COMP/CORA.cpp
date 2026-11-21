@@ -50,7 +50,7 @@ int main() {
         polytope_known(b);
         polytope_property(b);
     });
-    const Tensor batched = Tensor::from_data({0.0, 0.0, 1.0, 1.0}, {2, 2, 1});
+    const Tensor batched = Tensor::from_data({0.0, 0.0, 1.0, 1.0}, {2, 2});
     check(test::raises(
               [&] {
                   ConZonotope(batched,

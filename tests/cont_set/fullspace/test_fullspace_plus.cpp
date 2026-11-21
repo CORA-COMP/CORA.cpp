@@ -17,7 +17,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -28,7 +27,7 @@ namespace {
 
 void plus_is_the_whole_space(const std::string &b) {
     const Fullspace F(2);
-    const Zonotope Z(column({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
+    const Zonotope Z(vec({1.0, 2.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     const Interval I(vec({0.0, 1.0}), vec({2.0, 3.0}));
     check(F.plus(Z)->dim() == 2 && F.plus(I)->dim() == 2 && F.plus(Fullspace(2))->dim() == 2,
           b + ": with a zonotope, a box and the space");

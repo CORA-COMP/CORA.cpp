@@ -14,7 +14,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -25,8 +24,8 @@ namespace {
 
 /// A bundle, a zonotope and a box are appended in order; a box becomes its zonotope.
 void members_are_appended(const std::string &b) {
-    const Zonotope Z1(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
-        Z2(column({1.0, 0.0}), Tensor({{1.0, 1.0}})), Z3(column({0.0, 1.0}), Tensor({{2.0, 0.0}}));
+    const Zonotope Z1(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}})),
+        Z2(vec({1.0, 0.0}), Tensor({{1.0, 1.0}})), Z3(vec({0.0, 1.0}), Tensor({{2.0, 0.0}}));
     const ZonoBundle bundle({Z1, Z2});
     const ZonoBundle with_bundle = bundle.intersect(ZonoBundle({Z3, Z1}));
     check(with_bundle.parallel_sets() == 4 &&
@@ -43,7 +42,7 @@ void members_are_appended(const std::string &b) {
 
 /// The registry finds the pairs in either order, as CORA's precedence puts the bundle first.
 void through_the_registry(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({Z, Z});
     const Set left = intersect(Set(bundle), Set(Z)), right = intersect(Set(Z), Set(bundle));
     check(left.is<ZonoBundle>() && left.as<ZonoBundle>().parallel_sets() == 3,
@@ -72,9 +71,9 @@ void points_of_the_intersection(const std::string &b) {
 /// A set of another dimension or batch shape and an empty box are refused; the same call with the
 /// checks off.
 void checks_and_their_switch() {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
     const ZonoBundle bundle({Z});
-    check(test::raises([&] { bundle.intersect(Zonotope(column({0.0}), Tensor({{1.0}}))); },
+    check(test::raises([&] { bundle.intersect(Zonotope(vec({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "intersect: another dimension");
     check(

@@ -24,7 +24,7 @@ namespace {
 /// U = [-1, 1] on the first state: every term of the series has the same sign there, so the support
 /// is the sum of dt^(i+1)/(i+1)!, which is e^dt - 1 up to the truncated tail.
 void the_support_is_the_sum_of_the_terms(const std::string &b) {
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope U(test::vec({0.0, 0.0}), Tensor({{1.0, 0.0}}));
     const Zonotope PU = LinearSys(diagonal()).particular_solution_time_varying(U, kStep, kTerms);
     check(test::close(support(PU, {1, 0}), std::exp(kStep) - 1, 1e-13), b + ": e^dt - 1");
     check(test::close(support(PU, {-1, 0}), std::exp(kStep) - 1, 1e-13), b + ": symmetric");
@@ -51,7 +51,7 @@ void nothing_in_nothing_out(const std::string &b) {
     const Zonotope PU =
         LinearSys(diagonal()).particular_solution_time_varying(origin(2), kStep, kTerms);
     check(PU.representsa("origin"), b + ": the origin stays");
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{1.0, 2.0}}));
+    const Zonotope U(test::vec({0.0, 0.0}), Tensor({{1.0, 2.0}}));
     const Zonotope zero =
         LinearSys(Tensor::zeros({2, 2})).particular_solution_time_varying(U, kStep, 3);
     check(test::close(support(zero, {1, 1}), 3 * kStep, 1e-14), b + ": A = 0");
@@ -66,7 +66,7 @@ void checks_and_their_switch(const std::string &b) {
     check(test::raises([&] { sys.particular_solution_time_varying(origin(2), -1.0, kTerms); },
                        Error::wrong_value),
           b + ": a negative step");
-    const Zonotope U(test::column({0.0, 0.0}), Tensor({{1.0, 0.0}}));
+    const Zonotope U(test::vec({0.0, 0.0}), Tensor({{1.0, 0.0}}));
     const Tensor on = sys.particular_solution_time_varying(U, kStep, kTerms).generators();
     ChecksScope off(false);
     check(test::close(sys.particular_solution_time_varying(U, kStep, kTerms).generators(), on, 0),

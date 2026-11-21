@@ -13,7 +13,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -24,16 +23,16 @@ namespace {
 
 /// Hand-computed: [-2, 2]^2 minus [-1, 1]^2 is [-1, 1]^2 by every type; a point translates.
 void minkowski_difference_known(const std::string &b) {
-    const ConZonotope big(column({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 2.0}}));
+    const ConZonotope big(vec({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 2.0}}));
     const Interval small(vec({-1.0, -1.0}), vec({1.0, 1.0}));
-    const ConZonotope expected(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const ConZonotope expected(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     for (const char *type : {"exact", "inner:vertices", "inner:Vinod"}) {
         const ConZonotope r = big.minkowski_difference(Set(small), type).as<ConZonotope>();
         check(r.isequal(expected), b + ": the box difference (" + type + ")");
     }
-    const Zonotope Z(column({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z(vec({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(big.minkowski_difference(Set(Z)).as<ConZonotope>().isequal(
-              ConZonotope(column({-1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))),
+              ConZonotope(vec({-1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))),
           b + ": a zonotope with a center");
     check(close(big.minkowski_difference(vec({1.0, 1.0})).c().expand_dims(-1), {-1, -1}, 0),
           b + ": a point");
@@ -53,8 +52,8 @@ void minkowski_difference_property(const std::string &b) {
     for (int k = 0; k < 3; ++k) {
         const ConZonotope cz =
             test::random_con_zonotope(rng, 2, 4, 1)
-                .plus(ConZonotope(column({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 4.0}})));
-        const Zonotope S(column({0.0, 0.0}), Tensor({{0.2, 0.0}, {0.1, 0.2}}));
+                .plus(ConZonotope(vec({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 4.0}})));
+        const Zonotope S(vec({0.0, 0.0}), Tensor({{0.2, 0.0}, {0.1, 0.2}}));
         const ConZonotope r = cz.minkowski_difference(Set(S)).as<ConZonotope>();
         if (r.representsa("emptySet")) continue;
         const Interval sum = r.plus(S).interval(), box = cz.interval();
@@ -78,7 +77,7 @@ int main() {
         minkowski_difference_known(b);
         minkowski_difference_property(b);
     });
-    const ConZonotope a(column({0.0}), Tensor({{1.0}}));
+    const ConZonotope a(vec({0.0}), Tensor({{1.0}}));
     const Interval I(vec({0.0}), vec({1.0}));
     check(test::raises([&] { a.minkowski_difference(Set(I), "other"); }, Error::wrong_value),
           "minkowski_difference: type");

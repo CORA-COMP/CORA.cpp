@@ -33,7 +33,7 @@ ConZonotope ConZonotope::lift(int64_t N, const std::vector<int64_t> &dims) const
     // lift_impl comes here after the generic checks, which do not see the permutation: always fail
     if (plan.refusal) CORA_FAIL(plan.refusal->first, plan.refusal->second);
     // only the rows of the center and the generators move; the factors and constraints stay
-    return {c_.expand_dims(-1).take(plan.source, -2),
+    return {c_.expand_dims(-1).take(plan.source, -2).squeeze(-1),
             (G_.matrix_transpose().take(plan.source, -2)).matrix_transpose(), F_};
 }
 

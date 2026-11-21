@@ -70,8 +70,8 @@ void random_inputs_come_from_the_set(const std::string &b) {
     const Tensor A = tensor_of(oscillator3());
     const Tensor B = Tensor::from_data({1, 0, 0.5, -1, 0, 0.3}, {3, 2});
     const LinearSys sys(A, B);
-    const Zonotope X0(test::column({1, 0, 0}), 0.1 * Tensor::eye(3));
-    const Zonotope U(test::column({0.5, -0.5}), 0.2 * Tensor::eye(2));
+    const Zonotope X0(test::vec({1, 0, 0}), 0.1 * Tensor::eye(3));
+    const Zonotope U(test::vec({0.5, -0.5}), 0.2 * Tensor::eye(2));
 
     cora::Rng rng(3), same(3);
     const std::vector<Tensor> x = sys.simulate_random(

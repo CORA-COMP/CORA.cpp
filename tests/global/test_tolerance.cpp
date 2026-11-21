@@ -143,7 +143,7 @@ void operations_resolve_at_the_entry() {
               "... and do within a scope");
     }
     // a zonotope with a generator of norm 1e-12
-    const Zonotope Z(Tensor({{0.0}, {0.0}}), Tensor({{1.0, 0.5}, {0.2, 1.0}, {1e-12, 0.0}}));
+    const Zonotope Z(Tensor({0.0, 0.0}), Tensor({{1.0, 0.5}, {0.2, 1.0}, {1e-12, 0.0}}));
     check(Z.contains(Z) && Z.contains(Zonotope(Z.center(), Z.generators() * 1.0)),
           "zonotope: contains itself and its copy");
     check(Z.compact().nr_generators() == 3, "a generator of norm 1e-12 stays by default");

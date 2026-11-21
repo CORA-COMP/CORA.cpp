@@ -55,7 +55,7 @@ int main() {
 
     oracle::run("zonotope.representsa", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : sizes) {
-            const Tensor zeros = Tensor::zeros({m, n}), c = rnd.vector(n);
+            const Tensor zeros = Tensor::zeros({m, n}), c = rnd.point(n);
             const Zonotope random = rnd.zonotope(n, m), point(c, zeros),
                            origin(c.zeros_like(), zeros);
             for (const char *type : {"point", "origin"})

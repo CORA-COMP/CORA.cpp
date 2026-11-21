@@ -14,7 +14,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -33,7 +32,7 @@ void max_takes_the_larger_bounds(const std::string &b) {
           b + ": a column of numbers");
     check(close(I.max(Tensor::from_data({0.5}, {1, 1})).inf(), std::vector<double>{0.5, 0.5}),
           b + ": one number for every coordinate");
-    const Zonotope Z(column({3.0, 3.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
+    const Zonotope Z(vec({3.0, 3.0}), Tensor::from_data({1, 0, 0, 1}, {2, 2}));
     check(close(I.max(Z).inf(), std::vector<double>{2, 2}) &&
               close(I.max(Z).sup(), std::vector<double>{4, 4}),
           b + ": another set by its interval hull");

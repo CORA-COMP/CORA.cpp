@@ -19,7 +19,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,14 +29,14 @@ namespace {
 
 /// CORA's unit test: eight generators in two dimensions reduced to order 1.
 Zonotope example() {
-    return {column({1.0, 0.0}), Tensor({{1.0, 2.0},
-                                        {3.0, -1.0},
-                                        {-2.0, 1.0},
-                                        {3.0, 0.0},
-                                        {-1.0, 3.0},
-                                        {0.0, -2.0},
-                                        {2.0, 1.0},
-                                        {3.0, 2.0}})};
+    return {vec({1.0, 0.0}), Tensor({{1.0, 2.0},
+                                     {3.0, -1.0},
+                                     {-2.0, 1.0},
+                                     {3.0, 0.0},
+                                     {-1.0, 3.0},
+                                     {0.0, -2.0},
+                                     {2.0, 1.0},
+                                     {3.0, 2.0}})};
 }
 
 /// kochdumper by hand: the longest generator (3, 2) stays, the others (signed by their first
@@ -58,7 +58,7 @@ void raghuraman_by_hand(const std::string &b) {
     check(close(R.generators(), std::vector<double>{2, 4, 5, 0}, 1e-14),
           b + ": generators (2, 4) and (5, 0)");
     // a small generator orthogonal to the big one: CORA divides 0/0 and gets NaN, this drops it
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{3.0, 0.0}, {0.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{3.0, 0.0}, {0.0, 1.0}}));
     check(
         close(Z.reduce_under_approx("raghuraman", 0.5).generators(), std::vector<double>{3, 0}, 0),
         b + ": an orthogonal small generator is dropped");
@@ -66,7 +66,7 @@ void raghuraman_by_hand(const std::string &b) {
 
 /// Few enough generators: the zonotope without its zero generators.
 void nothing_to_reduce(const std::string &b) {
-    const Zonotope Z(column({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}, {2.0, 1.0}}));
+    const Zonotope Z(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 0.0}, {2.0, 1.0}}));
     for (const char *name : {"yang", "raghuraman", "kochdumper"}) {
         const Zonotope R = Z.reduce_under_approx(name, 1);
         check(close(R.generators(), std::vector<double>{1, 0, 2, 1}, 0),

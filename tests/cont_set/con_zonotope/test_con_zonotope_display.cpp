@@ -13,7 +13,6 @@
 
 using namespace cora;
 using test::check;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -22,7 +21,7 @@ using test::vec;
 // ===========================================  MAIN  =========================================== //
 
 int main() {
-    const ConZonotope cz(column({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}), Tensor({{1.0, 1.0}}),
+    const ConZonotope cz(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 3.0}}), Tensor({{1.0, 1.0}}),
                          vec({0.5}));
     const std::string text = cz.display();
     check(text.find("constrained zonotope") != std::string::npos, "display: the class");
@@ -33,7 +32,7 @@ int main() {
     std::ostringstream out;
     out << cz;
     check(out.str() == text, "display: operator<< prints the same text");
-    const ConZonotope batch(Tensor::zeros({2, 2, 1}), Tensor::ones({2, 2, 3}).matrix_transpose());
+    const ConZonotope batch(Tensor::zeros({2, 2}), Tensor::ones({2, 2, 3}).matrix_transpose());
     check(batch.display().find("batch of shape") != std::string::npos, "display: a batch: shapes");
     // display takes no input; with the checks off the text is the same
     ChecksScope off(false);
