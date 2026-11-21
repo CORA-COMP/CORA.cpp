@@ -82,6 +82,10 @@ Ellipsoid Ellipsoid::linear_map(const Tensor &M) const {
     return ask("ellipsoid.mtimes", {{"E", *this}, {"M", M}}).get<Ellipsoid>("E");
 }
 
+Ellipsoid Ellipsoid::linear_map_cora(const Tensor &M) const {
+    return ask("ellipsoid.mtimesCora", {{"E", *this}, {"M", M}}).get<Ellipsoid>("E");
+}
+
 // the answer is a Boolean (certified when true)
 bool Ellipsoid::isequal(const Ellipsoid &E2, double tol) const {
     return ask("ellipsoid.isequal", {{"E", *this}, {"E2", E2}, {"tol", number(tol)}})

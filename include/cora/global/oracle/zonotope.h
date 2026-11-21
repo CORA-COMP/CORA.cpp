@@ -12,7 +12,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   18-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -190,6 +190,9 @@ class Zonotope {
     double norm(int type = 2, const std::string &mode = "ub") const;
     double support_function(const Tensor &dir, const std::string &type = "upper") const;
     double radius(int k = 20) const;
+    /// CORA's radius, from the column sums of |G| (`zonotope.radiusCora`; send a nonzero error
+    /// box).
+    double radius_cora(int k = 20) const;
 
     /// A lower bound on the norm of the point p w.r.t. the zonotope centered at the origin (the
     /// center is ignored): the norm for n independent generators up to the rounding of quotients;

@@ -63,6 +63,8 @@ class Ellipsoid {
     Ellipsoid project(const std::vector<int64_t> &dims) const;
     Ellipsoid lift(int64_t N, const std::vector<int64_t> &dims) const;
     Ellipsoid linear_map(const Tensor &M) const;
+    /// CORA's M E, Q = M Q M' symmetrized in CORA's order (`ellipsoid.mtimesCora`).
+    Ellipsoid linear_map_cora(const Tensor &M) const;
 
     /// Whether the ellipsoids are equal (`ellipsoid.isequal`).
     bool isequal(const Ellipsoid &E2, double tol = 0) const;

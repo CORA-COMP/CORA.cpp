@@ -18,6 +18,7 @@
 // ORACLE: contSet/@ellipsoid/lift_.m
 // ORACLE: contSet/@ellipsoid/isequal.m
 // ORACLE: contSet/@ellipsoid/interval.m
+// ORACLE: contSet/@ellipsoid/mtimes.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
 // Last update:   21-November-2026
@@ -58,12 +59,24 @@ Ellipsoid aux_flat_ellipsoid(oracle::Random &rnd, int64_t n) {
 
 int main() {
     if (!oracle::available()) return 0;
+    // the box of the ellipsoid, then CORA's M E
     oracle::run("ellipsoid.interval", [](oracle::Random &rnd) {
         for (const int64_t n : {2, 3, 5}) {
             const Ellipsoid E = aux_ellipsoid(rnd, n);
             oracle::check(E.interval(), lean::Ellipsoid(E).interval());
         }
     });
+    oracle::run("ellipsoid.mtimesCora", [](oracle::Random &rnd) {
+        for (const int64_t n : {2, 3, 5}) {
+            const Ellipsoid E = aux_ellipsoid(rnd, n);
+            const Tensor M = rnd.matrix(n + 1, n);
+            const Ellipsoid theirs = lean::Ellipsoid(E).linear_map_cora(M).nominal();
+            const Ellipsoid mine = E.linear_map(M);
+            oracle::check("mtimes.Q", mine.Q(), theirs.Q());
+            oracle::check("mtimes.q", mine.q(), theirs.q());
+        }
+    });
+    // the center, the product with a point and the predicates next
     oracle::run("ellipsoid.center", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3);
         oracle::check(E.center(), lean::Ellipsoid(E).center());

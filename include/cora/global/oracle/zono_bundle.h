@@ -12,7 +12,7 @@
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -48,6 +48,8 @@ class ZonoBundle {
     ZonoBundle plus(const ZonoBundle &other) const;
     ZonoBundle project(const std::vector<int64_t> &dims) const;
     ZonoBundle quad_map(const std::vector<Tensor> &Q) const;
+    /// CORA's quadMap, each member by the quadratic map of CORA (`zonoBundle.quadMapCora`).
+    ZonoBundle quad_map_cora(const std::vector<Tensor> &Q) const;
     ZonoBundle reduce(int order) const;
     ZonoBundle replace(int64_t index, const Zonotope &Z) const;
     static ZonoBundle origin(int64_t n);

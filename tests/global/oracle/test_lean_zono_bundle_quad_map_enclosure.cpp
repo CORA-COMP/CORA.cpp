@@ -2,15 +2,15 @@
 //
 // result, member by member
 //
-// The oracle maps each member through its own (wider) enclosure, with the new generators laid out
-// differently from CORA.cpp, so no bit-exact test exists; the box of each member of CORA.cpp's
-// result lies inside the box of the oracle's member.
+// The oracle's plain `zonoBundle.quadMap` maps each member through its own (wider) enclosure, so
+// the box of each member of CORA.cpp's result lies inside the box of the oracle's member; the
+// bit-exact comparison is test_lean_zono_bundle_quad_map, against `zonoBundle.quadMapCora`.
 //
 // CORA: contSet/@zonoBundle/quadMap.m
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Opus 5.5
 // Written:       07-November-2026
-// Last update:   ---
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
