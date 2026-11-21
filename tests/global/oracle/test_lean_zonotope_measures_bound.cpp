@@ -1,22 +1,21 @@
-// test_lean_zonotope_measures_bound - generator_length, minnorm, intersect_strip and
+// test_lean_zonotope_measures_bound - minnorm, intersect_strip and
 //
 // is_intersecting of Zonotope against the CORALean oracle, within a stated bound
 //
-// CORA: contSet/@zonotope/generatorLength.m
 // CORA: contSet/@zonotope/minnorm.m
 // CORA: contSet/@zonotope/intersectStrip.m
 // CORA: contSet/@zonotope/isIntersecting_.m
 //
 // These cannot match the oracle bit for bit, by construction, so there is no ORACLE tag:
-// generator_length and minnorm take a square root, which the oracle computes by Newton steps
-// rounded up (one ulp from the correctly rounded one); intersect_strip is the oracle's
+// minnorm takes a square root, which the oracle computes by Newton steps rounded up (one ulp from
+// the correctly rounded one); intersect_strip is the oracle's
 // (I - L C) Z + L strip with an interval matrix (more generators, other roundings) where CORA
 // computes c + L (y - C c); is_intersecting is certified one way only (disjointness).
 //
 // CORA authors: Matthias Althoff, Victor Gassmann, Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -72,17 +71,6 @@ void aux_hull_agrees(const Zonotope &mine, const lean::Zonotope &theirs) {
 int main() {
     if (!oracle::available()) return 0;
     const std::vector<std::pair<int, int>> sizes{{2, 3}, {5, 30}, {20, 200}};
-
-    oracle::run("zonotope.generatorLength", [&](oracle::Random &rnd) {
-        for (const auto &[n, m] : sizes) {
-            const Zonotope Z = rnd.zonotope(n, m);
-            const std::vector<double> mine = Z.generator_length().data(),
-                                      theirs = lean::Zonotope(Z).generator_length().gather().data();
-            test::check(mine.size() == theirs.size(), "generatorLength: one length per generator");
-            for (std::size_t j = 0; j < mine.size(); ++j)
-                aux_below("generatorLength", mine[j], theirs[j]);
-        }
-    });
 
     oracle::run("zonotope.minnorm", [&](oracle::Random &rnd) {
         for (const auto &[n, m] : {std::pair{2, 4}, {3, 6}, {4, 7}}) {

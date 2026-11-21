@@ -9,7 +9,7 @@
 | AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 16.8 / 11.7 | 27 / 22 (23 instances) |
 
 <!-- BEGIN overall -->
-Over the 86 instances, 2304 of 2382 rows (96.7%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2311 of 2382 rows (97.0%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 <!-- END overall -->
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
@@ -165,7 +165,7 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 | GRBX02 | 1 | 1 | 0.123 [b] | 42/45 bit-exact, 3 property | - | 2.44 | 2.44 (CORA) | 19.8 |
 | BRKDC01 | 1 | 1 | 0.0381 | 9/10 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.63 |
 | BRKNC01 | 1 | 1 | 2.65 | 43/45 bit-exact, 2 property | - | 32.07 | 0.17 (JuliaReach) | 0.0641 |
-| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.00127 | 29/33 bit-exact, 4 property | 438 | 52.2 | 16.99 (JuliaReach) | - |
+| BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.00127 | 30/33 bit-exact, 3 property | 438 | 52.2 | 16.99 (JuliaReach) | - |
 
 [a] DTN01-06: JuliaReach's ARCH-COMP 2026 repeatability code (0.005-0.127 s, `powertrain_benchmark.jl`) runs `powertrain_homog(θ=k)` for DTN0k with the full initial set, where the report has θ = 2 (DTN01-03) or 22 (DTN04-06) and initial sets scaled to 5 %, 30 % and 100 %; the report does not mention it.
 
@@ -366,12 +366,12 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | ROBE25 (1) | 1 | 1 | 23.4 | 18/18 bit-exact, 0 property | 137.5 | 151 | 25 (JuliaReach) [b] | 1.07 |
 | ROBE25 (2) | 1 | 1 | 64.6 | 18/18 bit-exact, 0 property | 225.7 | 239 | 92 (JuliaReach) [b] | 1.42 |
 | ROBE25 (3) | 1 | 1 | 33.2 | 18/18 bit-exact, 0 property | 338.7 | 310 | 217 (JuliaReach) [b] | 6.54 |
-| CVDP23 | 1 | 1 | 12.3 | 62/63 bit-exact, 1 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.0324 |
+| CVDP23 | 1 | 1 | 12.3 | 63/63 bit-exact, 0 property | 461.7 | 571 | 0.4 (JuliaReach) | 0.0324 |
 | LALO20 W001 | 1 | 1 | 1.68 | 18/18 bit-exact, 0 property | 12.3 | 9.3 | 9.3 (CORA) [c] | 5.54 |
 | LALO20 W005 | 1 | 1 | 10.8 | 18/18 bit-exact, 0 property | 21.9 | 17 | 17 (CORA) [c] | 1.57 |
 | LALO20 W01 | 1 | 1 | 249 | 21/22 bit-exact, 0 property | 208 | 248 | 248 (CORA) [c] | 0.997 |
-| TSPS25 | 1 | 1 | 62.1 | 28/35 bit-exact, 5 property | 312 | 299 | 299 (CORA) | 4.82 |
-| LOVO25 | 1 | 1 [e] | 4.28 | 59/67 bit-exact, 3 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.25 |
+| TSPS25 | 1 | 1 | 62.1 | 29/35 bit-exact, 4 property | 312 | 299 | 299 (CORA) | 4.82 |
+| LOVO25 | 1 | 1 [e] | 4.28 | 60/67 bit-exact, 2 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.25 |
 
 [a] TRAF22: JuliaReach's ARCH-COMP 2026 repeatability code (32 s, `vehicle.jl`) holds the disturbances w constant (w' = 0), where the problem lets them vary arbitrarily over time, as the report states (p. 58).
 
@@ -568,9 +568,9 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | Unicycle reach | V | V | 0.448 | 32/33 bit-exact, 0 property | 8.87 | 8.015 | 7.093 (JuliaReach) | 15.8 |
 | Unicycle reach, with the report's disturbance w | V | V | 0.447 | 32/33 bit-exact, 0 property | - | 8.015 | 7.093 (JuliaReach) | 15.9 |
 | ACC safe-distance | V | V | 0.268 | 40/41 bit-exact, 0 property | 4.2 | 3.176 | 0.492 (JuliaReach) [a] | 1.84 |
-| TORA remain | V | V | 1.38 | 54/56 bit-exact, 1 property | 9.03 | 8.998 | 2.852 (CROWN-Reach) | 2.07 |
+| TORA remain | V | V | 1.38 | 55/56 bit-exact, 0 property | 9.03 | 8.998 | 2.852 (CROWN-Reach) | 2.07 |
 | TORA reach-tanh | V | V | 0.168 | 40/41 bit-exact, 0 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.684 |
-| TORA reach-sigmoid | V | V | 0.304 | 54/56 bit-exact, 1 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.48 |
+| TORA reach-sigmoid | V | V | 0.304 | 55/56 bit-exact, 0 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.48 |
 | Single Pendulum reach | V | V | 0.0425 | 40/41 bit-exact, 0 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 96.1 |
 | Double Pendulum less-robust | V (CORA: U) | V | 42.3 | 37/39 bit-exact, 1 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.59 |
 | Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.139 | 32/33 bit-exact, 0 property | 5.06 | 5.604 | - | - |
@@ -814,14 +814,14 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | Attitude_Control-avoid | 41/42 | 1 | 28 |
 | BRKDC01 | 9/10 | 1 | 12 |
 | BRKNC01 | 43/45 | 2 | 24 |
-| BRKNP01 | 29/33 | 4 | 21 |
+| BRKNP01 | 30/33 | 3 | 21 |
 | CBC01 | 3/3 | 0 | 11 |
 | CBC02 | 3/3 | 0 | 11 |
 | CBC03 | 3/3 | 0 | 11 |
 | CBF01 | 3/3 | 0 | 11 |
 | CBF02 | 3/3 | 0 | 11 |
 | CBF03 | 3/3 | 0 | 11 |
-| CVDP23 | 62/63 | 1 | 26 |
+| CVDP23 | 63/63 | 0 | 26 |
 | CartPole-reach | 40/41 | 1 | 23 |
 | CartPole-reach-report | 45/47 | 2 | 23 |
 | DTN01 | 30/30 | 0 | 18 |
@@ -848,8 +848,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W001 | 18/18 | 0 | 13 |
 | LALO20_W005 | 18/18 | 0 | 13 |
 | LALO20_W01 | 21/22 | 1 | 13 |
-| LOVO25 | 59/67 | 8 | 31 |
-| LOVO25-script | 68/77 | 9 | 32 |
+| LOVO25 | 60/67 | 7 | 31 |
+| LOVO25-script | 69/77 | 8 | 32 |
 | NAV-robust | 38/39 | 1 | 28 |
 | NAV-standard | 43/45 | 2 | 28 |
 | PLAA01_BND42 | 26/29 | 3 | 14 |
@@ -882,11 +882,11 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | SRU01 | 39/39 | 0 | 21 |
 | SRU02 | 53/55 | 2 | 26 |
 | Single_Pendulum-reach | 40/41 | 1 | 23 |
-| TORA-reach-sigmoid | 54/56 | 2 | 26 |
+| TORA-reach-sigmoid | 55/56 | 1 | 26 |
 | TORA-reach-tanh | 40/41 | 1 | 23 |
-| TORA-remain | 54/56 | 2 | 26 |
+| TORA-remain | 55/56 | 1 | 26 |
 | TRAF22 | 25/25 | 0 | 14 |
-| TSPS25 | 28/35 | 7 | 14 |
+| TSPS25 | 29/35 | 6 | 14 |
 | Unicycle-reach | 32/33 | 1 | 23 |
 | Unicycle-reach-disturbance | 32/33 | 1 | 23 |
 | VCAS-middle-19.5 | 21/21 | 0 | 12 |

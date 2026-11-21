@@ -11,7 +11,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   19-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -77,6 +77,8 @@ class Interval {
     Interval uminus() const;
     Interval uplus() const;
     Interval sign() const;
+    /// CORA's sign, [sign inf, sign sup] (`interval.signCora`); `sign` is the oracle's own.
+    Interval sign_cora() const;
     Interval round() const;
     Interval sqrt(int p = 20) const;
     Interval exp(int p = 20) const;
@@ -154,6 +156,8 @@ class Interval {
     double norm(int type = 2, const std::string &mode = "ub") const;
     double volume() const;
     double support_function(const Tensor &dir, const std::string &type = "upper") const;
+    /// CORA's upper support function d'c + |d|'r (`interval.supportFuncCora`).
+    double support_function_cora(const Tensor &dir) const;
 
     // Selection and reshaping ------------------------------------------------------------------
 

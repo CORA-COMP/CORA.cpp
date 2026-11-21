@@ -85,7 +85,17 @@ script: the constructor of a class (the method is named as the class), and `dim`
 `numgens`, `isemptyobject`, `representsa_emptyObject`, `reorder`. They have a column of their own
 in `benchmarks.md`; the status of the row in `status.json` does not change. A row that CORA.cpp
 implements but CORALean will not formalize is listed under "Not comparable with CORALean" in
-[out-of-scope.md](out-of-scope.md), with its reason, and is left out the same way.
+[out-of-scope.md](out-of-scope.md), with its reason, and is left out the same way; it is no oracle
+debt either (`coverage.py --summary`).
+
+**Constructors and class rows.** A constructor (or a class row such as `contSet/contSet`) is
+`oracle` only when a test compares the fields of the object it constructs with the oracle's own
+construction of the same object (`// ORACLE: <path>.m`), as the polynomial zonotope's constructor
+is compared with the op `polyZonotope.constructor`. A constructor that computes (normalizes, drops
+zero generators, merges) counts when that computed output is compared. A plain storage constructor,
+which keeps its arguments, has nothing to compare: it stays `ported` and is plumbing in the
+benchmark report. An oracle op that parses the object and prints it again (`ellipsoid.construct`)
+does not construct anything and earns no tag.
 """
 
 
@@ -294,10 +304,12 @@ def statuses(groups, evidence, ledger):
             for row in rows_of(groups)}
 
 
-def oracle_debt(status, lean):
-    """The rows that are ported or property while CORALean has them."""
+def oracle_debt(status, lean, apart=()):
+    """The rows that are ported or property while CORALean has them, except the rows `apart`
+    (not comparable with CORALean: there is nothing to compare, so they are no debt)."""
     return sorted(k for k, s in status.items()
-                  if s in ("ported", "property") and lean.get(k, {}).get("status") in LEAN_HAS)
+                  if s in ("ported", "property") and k not in apart
+                  and lean.get(k, {}).get("status") in LEAN_HAS)
 
 
 # ------------------------------------------------------------------------------- the python names
@@ -354,11 +366,11 @@ def percent(part, whole):
     return f"{100 * part / whole:.0f}%" if whole else "-"
 
 
-def counts(keys, status, lean):
+def counts(keys, status, lean, apart=()):
     """`{status: n, 'rows': n, 'debt': n}` of some rows."""
     out = {s: sum(status[k] == s for k in keys) for s in STATUSES + (OUT,)}
     out["rows"] = len(keys)
-    out["debt"] = len(oracle_debt({k: status[k] for k in keys}, lean))
+    out["debt"] = len(oracle_debt({k: status[k] for k in keys}, lean, apart))
     return out
 
 
@@ -370,13 +382,13 @@ def count_cells(c):
             f"{c['oracle']} | {c[OUT]} | {c['debt']}")
 
 
-def group_table(groups, status, lean, link=None):
+def group_table(groups, status, lean, link=None, apart=()):
     """The totals per group as a markdown table, with the share of CORA.cpp's rows."""
     lines = [HEAD.format("Group"), "|---|" + "---|" * 8]
     for g in GROUP_ORDER:
         keys = [cora_rows.key_of(*r) for r in rows_of({g: groups.get(g, {})})]
-        lines.append(f"| {link(g) if link else g} | {count_cells(counts(keys, status, lean))} |")
-    total = counts(list(status), status, lean)
+        lines.append(f"| {link(g) if link else g} | {count_cells(counts(keys, status, lean, apart))} |")
+    total = counts(list(status), status, lean, apart)
     lines.append(f"| **all** | {count_cells(total)} |")
     due = total["rows"] - total[OUT]
     lines.append("")
@@ -387,12 +399,12 @@ def group_table(groups, status, lean, link=None):
     return "\n".join(lines) + "\n"
 
 
-def class_tables(groups, status, lean):
+def class_tables(groups, status, lean, apart=()):
     lines = [HEAD.format("Class"), "|---|" + "---|" * 8]
     for g in GROUP_ORDER:
         for c in groups.get(g, {}):
             keys = [cora_rows.key_of(g, c, m) for m in groups[g][c]]
-            lines.append(f"| [{g}/{c}]({g}/{c}.md) | {count_cells(counts(keys, status, lean))} |")
+            lines.append(f"| [{g}/{c}]({g}/{c}.md) | {count_cells(counts(keys, status, lean, apart))} |")
     return "\n".join(lines) + "\n"
 
 
@@ -433,9 +445,10 @@ def status_text(inventory, status):
             f' "rows": {{\n{rows}\n }}\n}}\n')
 
 
-def summary(groups, status, lean):
+def summary(groups, status, lean, apart=()):
     """The totals per group and per class, as markdown."""
-    return ("## Coverage\n\n" + group_table(groups, status, lean) + "\n" + class_tables(groups, status, lean))
+    return ("## Coverage\n\n" + group_table(groups, status, lean, apart=apart) + "\n"
+            + class_tables(groups, status, lean, apart))
 
 
 # ------------------------------------------------------------------------------- the checks
@@ -453,7 +466,7 @@ def compare(root, expected, problems):
                         f"{shown}); rerun `python scripts/coverage/coverage.py`")
 
 
-def ratchet(status, committed, lean, accept_drop, accept_debt):
+def ratchet(status, committed, lean, accept_drop, accept_debt, apart=()):
     """`(problems, warnings)` of the status against the committed one: no drop, no new oracle debt."""
     problems, warnings = [], []
     rows = committed.get("rows", {})
@@ -467,8 +480,8 @@ def ratchet(status, committed, lean, accept_drop, accept_debt):
         else:
             problems.append(f"{message}: coverage may only go up; if the drop is intended, run "
                             f"`python scripts/coverage/coverage.py --accept-drop {key}`")
-    was = set(oracle_debt({k: v for k, v in rows.items() if k in status}, lean))
-    new = [k for k in oracle_debt(status, lean) if k not in was]
+    was = set(oracle_debt({k: v for k, v in rows.items() if k in status}, lean, apart))
+    new = [k for k in oracle_debt(status, lean, apart) if k not in was]
     if new:
         shown = ", ".join(new[:4]) + (" ..." if len(new) > 4 else "")
         message = f"{len(new)} new rows of oracle debt ({shown}): {LEAN_NOT_ORACLE}"
@@ -498,7 +511,7 @@ def run(root, check=True, accept_drop=(), accept_debt=False, cora=None):
     problems += existence_problems(root, cora, inventory)
     expected, status = generate(root, inventory, lean, evidence, ledger, python_names(root))
     committed = load_json(root / "coverage" / "status.json")
-    more, warnings = ratchet(status, committed, lean, set(accept_drop), accept_debt)
+    more, warnings = ratchet(status, committed, lean, set(accept_drop), accept_debt, set(apart))
     problems += more
     if check:
         compare(root, expected, problems)
@@ -553,12 +566,15 @@ def main():
     parser.add_argument("--accept-debt", action="store_true", help="accept rows that become oracle debt")
     parser.add_argument("--summary", action="store_true", help="print the totals as markdown, check nothing")
     args = parser.parse_args()
+    # the totals, without the rows that are not comparable with CORALean
     if args.summary:
         inventory = load_json(REPO / "coverage" / "cora-inventory.json")
         lean = load_json(REPO / "coverage" / "coralean-status.json").get("rows", {})
         status = load_json(REPO / "coverage" / "status.json").get("rows", {})
-        print(summary(inventory["groups"], status, lean), end="")
+        apart, _ = ledger_of(REPO, inventory["groups"], APART)
+        print(summary(inventory["groups"], status, lean, set(apart)), end="")
         return 0
+    # the checks, or the generated files
     cora = inventory_file.cora_checkout()
     problems, warnings = run(REPO, args.check, args.accept_drop, args.accept_debt, cora)
     for warning in warnings:
