@@ -116,6 +116,9 @@ Interval Interval::round() const { return aux_box("interval.round", {{"I", *this
 
 // The functions with a tuning p (series terms or halvings) and, for the inverses, k.
 Interval Interval::sqrt(int p) const { return aux_box("interval.sqrt", {{"I", *this}, {"p", p}}); }
+Interval Interval::sqrt_cora(int p) const {
+    return aux_box("interval.sqrtCora", {{"I", *this}, {"p", p}});
+}
 Interval Interval::exp(int p) const { return aux_box("interval.exp", {{"I", *this}, {"p", p}}); }
 Interval Interval::sin(int p) const { return aux_box("interval.sin", {{"I", *this}, {"p", p}}); }
 Interval Interval::cos(int p) const { return aux_box("interval.cos", {{"I", *this}, {"p", p}}); }

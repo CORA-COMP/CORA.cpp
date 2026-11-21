@@ -81,6 +81,9 @@ class Interval {
     Interval sign_cora() const;
     Interval round() const;
     Interval sqrt(int p = 20) const;
+    /// CORA's sqrt of a nonnegative box (`interval.sqrtCora`, p halvings); `sqrt` is the oracle's
+    /// own.
+    Interval sqrt_cora(int p = 20) const;
     Interval exp(int p = 20) const;
     Interval sin(int p = 20) const;
     Interval cos(int p = 20) const;

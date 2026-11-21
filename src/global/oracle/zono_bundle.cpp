@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/zono_bundle.h"
@@ -93,6 +93,10 @@ ZonoBundle ZonoBundle::plus(const ZonoBundle &other) const {
 
 ZonoBundle ZonoBundle::project(const std::vector<int64_t> &dims) const {
     return aux_set("zonoBundle.project", {{"zB", *this}, {"dims", dims}});
+}
+
+ZonoBundle ZonoBundle::quad_map_cora(const std::vector<Tensor> &Q) const {
+    return aux_set("zonoBundle.quadMapCora", {{"zB", *this}, {"Q", Q}});
 }
 
 // the quadratic map takes the list of matrices, the reduction the order

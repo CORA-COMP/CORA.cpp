@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   19-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/zonotope.h"
@@ -325,6 +325,7 @@ bool Zonotope::is_intersecting_approx(const Interval &I, double tol) const {
 
 // Numbers ------------------------------------------------------------------------------------
 
+// the numbers are read from the field `value` (the norm: `normSq`)
 double Zonotope::norm(int type, const std::string &mode) const {
     return ask("zonotope.norm", {{"Z", *this}, {"type", type}, {"mode", mode}})
         .get<double>("normSq");
@@ -335,6 +336,10 @@ double Zonotope::support_function(const Tensor &dir, const std::string &type) co
 }
 double Zonotope::radius(int k) const {
     return ask("zonotope.radius", {{"Z", *this}, {"k", k}}).get<double>("value");
+}
+// CORA's radius, from the half-widths of the box
+double Zonotope::radius_cora(int k) const {
+    return ask("zonotope.radiusCora", {{"Z", *this}, {"k", k}}).get<double>("value");
 }
 std::optional<double> Zonotope::minnorm(int p) const {
     return ask("zonotope.minnorm", {{"Z", *this}, {"p", p}}).get<std::optional<double>>("value");

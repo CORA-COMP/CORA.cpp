@@ -15,7 +15,7 @@
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -107,6 +107,12 @@ class Polytope {
     Polytope minus(const Tensor &v) const;
     Polytope lift(int64_t N, const std::vector<int64_t> &dims) const;
     Polytope project_high_dim(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// CORA's not: the opposite halfspace shifted by eps (`polytope.not`); CORA.cpp's eps is 2^-52.
+    Polytope complement(double eps) const;
+
+    /// CORA's minkDiff of a box, offsets lowered by its support function (`polytope.minkDiffCora`).
+    Polytope mink_diff_cora(const Interval &I) const;
 
     /// Vertex form: `mtimes`, `plus`, `or`, `project` and the bound of `supportFunc`.
     Polytope linear_map(const Tensor &M) const;
