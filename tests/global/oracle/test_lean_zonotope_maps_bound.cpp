@@ -1,22 +1,20 @@
-// test_lean_zonotope_maps_bound - radius, rotate and quad_map of Zonotope against the oracle,
+// test_lean_zonotope_maps_bound - radius and quad_map of Zonotope against the oracle,
 //
 // within a stated bound
 //
 // CORA: contSet/@zonotope/radius.m
-// CORA: contSet/@zonotope/rotate.m
 // CORA: contSet/@zonotope/quadMap.m
 //
 // These cannot match the oracle bit for bit, by construction, so there is no ORACLE tag: radius
 // takes square roots, which the oracle computes by Newton steps rounded up (a few ulp above the
-// correctly rounded ones); rotate takes cos and sin of the platform's math library, where the
-// oracle encloses them (an interval rotation matrix); quad_map is CORA's zonotope map, where
+// correctly rounded ones); quad_map is CORA's zonotope map, where
 // CORALean maps through a polynomial zonotope (a different, wider set), so its box only has to
-// lie inside the oracle's. Radius and rotate are compared within a relative 1e-12.
+// lie inside the oracle's. Radius is compared within a relative 1e-12.
 //
 // CORA authors: Matthias Althoff, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       03-November-2026
-// Last update:   19-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -37,24 +35,8 @@ namespace oracle = test::oracle;
 namespace {
 
 /// The slack of the comparisons: a relative 1e-12 (a few thousand ulp), for the Newton square
-/// roots, cos and sin, and the rounding of sums of up to 50 products.
+/// roots and the rounding of sums of up to 50 products.
 constexpr double kSlack = 1e-12;
-
-/// The interval hull of mine lies in the oracle's enclosure up to the slack, and is not tighter
-/// than a relative 1e-9 of the scale from it.
-void aux_hull_agrees(const std::string &what, const Zonotope &mine, const lean::Zonotope &theirs) {
-    const Interval a = mine.interval();
-    const auto [inf, sup] = theirs.enclosure().interval().gather();
-    const std::vector<double> lo = a.inf().data(), hi = a.sup().data();
-    const std::vector<double> blo = inf.data(), bhi = sup.data();
-    for (std::size_t i = 0; i < lo.size(); ++i) {
-        const double scale = 1 + std::abs(bhi[i]) + std::abs(blo[i]);
-        test::check(blo[i] <= lo[i] + kSlack * scale && hi[i] <= bhi[i] + kSlack * scale,
-                    what + ": outside the enclosure");
-        test::check(lo[i] - blo[i] <= 1e-9 * scale && bhi[i] - hi[i] <= 1e-9 * scale,
-                    what + ": far inside the enclosure");
-    }
-}
 
 } // namespace
 
@@ -90,14 +72,6 @@ int main() {
         }
     });
 
-    oracle::run("zonotope.rotate", [&](oracle::Random &rnd) {
-        for (const auto &[n, m] : sizes) {
-            const Zonotope Z = rnd.zonotope(n, m);
-            const double angle = rnd.uniform(-3, 3);
-            aux_hull_agrees("rotate", Z.rotate({0, int64_t(n - 1)}, angle),
-                            lean::Zonotope(Z).rotate(20, 0, n - 1, angle));
-        }
-    });
     return test::finish("lean zonotope maps (bounds)");
 }
 

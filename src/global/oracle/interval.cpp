@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   19-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/interval.h"
@@ -111,6 +111,7 @@ Interval Interval::abs() const { return aux_box("interval.abs", {{"I", *this}});
 Interval Interval::uminus() const { return aux_box("interval.uminus", {{"I", *this}}); }
 Interval Interval::uplus() const { return aux_box("interval.uplus", {{"I", *this}}); }
 Interval Interval::sign() const { return aux_box("interval.sign", {{"I", *this}}); }
+Interval Interval::sign_cora() const { return aux_box("interval.signCora", {{"I", *this}}); }
 Interval Interval::round() const { return aux_box("interval.round", {{"I", *this}}); }
 
 // The functions with a tuning p (series terms or halvings) and, for the inverses, k.
@@ -264,6 +265,10 @@ double Interval::volume() const {
 double Interval::support_function(const Tensor &dir, const std::string &type) const {
     return ask("interval.supportFunc", {{"I", *this}, {"dir", dir}, {"type", type}})
         .get<double>("value");
+}
+
+double Interval::support_function_cora(const Tensor &dir) const {
+    return ask("interval.supportFuncCora", {{"I", *this}, {"dir", dir}}).get<double>("value");
 }
 
 // Selection and reshaping --------------------------------------------------------------------

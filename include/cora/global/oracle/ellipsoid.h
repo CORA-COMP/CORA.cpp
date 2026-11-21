@@ -10,12 +10,13 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
+#include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/tensor.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -70,6 +71,9 @@ class Ellipsoid {
     /// largest semi-axis (`ellipsoid.radius`, p steps).
     double norm(int k = 100) const;
     double radius(int p = 100) const;
+
+    /// The box q +- sqrt(diag Q), a column box (`ellipsoid.interval`, k Newton steps).
+    Interval interval(int k = 20) const;
 
     /// The parallelotope that holds the ellipsoid (`ellipsoid.zonotope`).
     Zonotope zonotope() const;

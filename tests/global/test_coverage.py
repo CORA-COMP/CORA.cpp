@@ -11,7 +11,7 @@ Exit code: 0 if all pass.
 
 Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 Written:       02-November-2026
-Last update:   19-November-2026
+Last update:   21-November-2026
 Reviewed:      ---
 """
 import json
@@ -152,6 +152,22 @@ class Checker(unittest.TestCase):
         problems, warnings = self.check(accept_debt=True)
         self.assertFalse([p for p in problems if "oracle debt" in p])
         self.assertTrue(any("oracle debt" in w and "accepted" in w for w in warnings))
+
+    def test_a_row_not_comparable_with_cora_lean_is_no_oracle_debt(self):
+        # `center` is ported, CORALean has it: debt, until it is listed as not comparable
+        write(self.root, "src/cont_set/zonotope/center.cpp", CENTER)
+        write(self.root, "tests/cont_set/zonotope/test_zonotope_center.cpp",
+              CPP_TEST.replace("plus", "center"))
+        write(self.root, "tests/python/test_center.py",
+              PY_TEST.replace("plus", "center").replace("test_zonotope", "test_center"))
+        status = {"contSet/zonotope/center": "ported", "contSet/zonotope/plus": "oracle"}
+        self.assertEqual(cov.oracle_debt(status, LEAN["rows"]), ["contSet/zonotope/center"])
+        self.assertEqual(cov.oracle_debt(status, LEAN["rows"], {"contSet/zonotope/center"}), [])
+        section = cov.APART + "\n\n| Row | Reason |\n|---|---|\n| `contSet/zonotope/center` | no solver |\n"
+        write(self.root, "coverage/out-of-scope.md", "# Out of scope\n\n" + section)
+        self.assertFalse([p for p in self.check()[0] if "oracle debt" in p])
+        text = cov.summary(INVENTORY["groups"], status, LEAN["rows"], {"contSet/zonotope/center"})
+        self.assertIn("| **all** | 2 | 0 | 0 | 1 | 0 | 1 | 0 | 0 |", text)
 
     def test_the_summary_has_the_totals(self):
         status = json.loads((self.root / "coverage/status.json").read_text())["rows"]

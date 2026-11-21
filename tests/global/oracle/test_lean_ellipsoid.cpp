@@ -4,9 +4,10 @@
 // columns, q extended), and the Booleans isFullDim and isBigger on well-conditioned ellipsoids,
 // where CORA's rank and eigenvalue tests and CORALean's certified Cholesky checks agree (CORA's
 // tolerances 100 eps and 1e-6 do not enter, and CORA's shortcut for dimension 1 is not taken;
-// docs/cora-differences.md). The rest of the batch has no oracle op: ellipsoid-ellipsoid cartProd,
-// contains, and, enclose, enclosePoints, generators, intersectStrip, ellipsoidNorm, isBadDir,
-// interval.
+// docs/cora-differences.md). The box is the center plus and minus the root of the diagonal of Q:
+// at nearest the oracle's root is the machine's, as CORA.cpp's. The rest of the batch has no
+// oracle op: ellipsoid-ellipsoid cartProd, contains, and, enclose, enclosePoints, generators,
+// intersectStrip, ellipsoidNorm, isBadDir.
 //
 // ORACLE: contSet/@ellipsoid/center.m
 // ORACLE: contSet/@ellipsoid/cartProd_.m
@@ -16,9 +17,10 @@
 // ORACLE: contSet/@ellipsoid/project.m
 // ORACLE: contSet/@ellipsoid/lift_.m
 // ORACLE: contSet/@ellipsoid/isequal.m
+// ORACLE: contSet/@ellipsoid/interval.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
@@ -56,6 +58,12 @@ Ellipsoid aux_flat_ellipsoid(oracle::Random &rnd, int64_t n) {
 
 int main() {
     if (!oracle::available()) return 0;
+    oracle::run("ellipsoid.interval", [](oracle::Random &rnd) {
+        for (const int64_t n : {2, 3, 5}) {
+            const Ellipsoid E = aux_ellipsoid(rnd, n);
+            oracle::check(E.interval(), lean::Ellipsoid(E).interval());
+        }
+    });
     oracle::run("ellipsoid.center", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3);
         oracle::check(E.center(), lean::Ellipsoid(E).center());

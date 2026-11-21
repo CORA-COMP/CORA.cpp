@@ -29,4 +29,14 @@ script: the constructor of a class (the method is named as the class), and `dim`
 `numgens`, `isemptyobject`, `representsa_emptyObject`, `reorder`. They have a column of their own
 in `benchmarks.md`; the status of the row in `status.json` does not change. A row that CORA.cpp
 implements but CORALean will not formalize is listed under "Not comparable with CORALean" in
-[out-of-scope.md](out-of-scope.md), with its reason, and is left out the same way.
+[out-of-scope.md](out-of-scope.md), with its reason, and is left out the same way; it is no oracle
+debt either (`coverage.py --summary`).
+
+**Constructors and class rows.** A constructor (or a class row such as `contSet/contSet`) is
+`oracle` only when a test compares the fields of the object it constructs with the oracle's own
+construction of the same object (`// ORACLE: <path>.m`), as the polynomial zonotope's constructor
+is compared with the op `polyZonotope.constructor`. A constructor that computes (normalizes, drops
+zero generators, merges) counts when that computed output is compared. A plain storage constructor,
+which keeps its arguments, has nothing to compare: it stays `ported` and is plumbing in the
+benchmark report. An oracle op that parses the object and prints it again (`ellipsoid.construct`)
+does not construct anything and earns no tag.

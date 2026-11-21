@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/ellipsoid.h"
@@ -98,6 +98,10 @@ double Ellipsoid::norm(int k) const {
 
 double Ellipsoid::radius(int p) const {
     return ask("ellipsoid.radius", {{"E", *this}, {"p", p}}).get<double>("value");
+}
+
+Interval Ellipsoid::interval(int k) const {
+    return ask("ellipsoid.interval", {{"E", *this}, {"k", k}}).get<Interval>("I");
 }
 
 Zonotope Ellipsoid::zonotope() const {
