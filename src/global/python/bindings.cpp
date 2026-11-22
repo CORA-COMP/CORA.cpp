@@ -36,6 +36,7 @@
 #include "cora/global/oracle/empty_set.h"
 #include "cora/global/oracle/interval_matrix.h"
 #include "cora/global/oracle/linear_sys.h"
+#include "cora/global/oracle/neural_network.h"
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"
 #include "cora/global/plot/plot.h"
@@ -5667,6 +5668,36 @@ void bind_lean(py::module_ &top) {
         .def(
             "gather", [](const LZ &Z) { return Z.gather(); },
             "(cora.Zonotope, cora.Interval): the nominal part and the error, exactly");
+    // the layers ("linear", W, b), ("relu",), ("leakyRelu", a), ("sigmoid",), ("tanh",) in order
+    m.def(
+        "evaluate_network",
+        [](const py::object &layers, const LZ &Z, const std::string &poly_method) {
+            const py::list items(layers); // any sequence of tuples
+            std::vector<lean::NnLayer> out;
+            out.reserve(items.size());
+            for (const py::handle &item : items) {
+                const py::tuple layer = py::cast<py::tuple>(item);
+                const std::string kind = py::cast<std::string>(layer[0]);
+                // the layer of the name, with its weights or its slope
+                if (kind == "linear")
+                    out.push_back(
+                        lean::NnLayer::linear(tensor_of(layer[1], "W"), tensor_of(layer[2], "b")));
+                else if (kind == "relu")
+                    out.push_back(lean::NnLayer::relu());
+                else if (kind == "leakyRelu")
+                    out.push_back(lean::NnLayer::leaky_relu(py::cast<double>(layer[1])));
+                else if (kind == "sigmoid")
+                    out.push_back(lean::NnLayer::sigmoid());
+                else if (kind == "tanh")
+                    out.push_back(lean::NnLayer::tanh());
+                else
+                    CORA_FAIL(Error::wrong_value, "evaluate_network: unknown layer " + kind);
+            }
+            // nnLayer.evaluateZonotope per layer at the poly_method
+            return lean::evaluate_network(out, Z, poly_method);
+        },
+        "layers"_a, "Z"_a, "poly_method"_a = "singh",
+        "CORALean's neuralNetwork.evaluate on the zonotope (nnLayer.evaluateZonotope per layer)");
 
     py::class_<lean::Fullspace>(m, "Fullspace", "The whole space R^n and the oracle's operations")
         .def(py::init<int64_t>(), "n"_a)
