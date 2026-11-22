@@ -75,7 +75,7 @@ class LinParamSys {
     /// algorithm does not compute it.
     ReachSet reach(const ReachProblem &problem, const alg::LinParamReach &alg) const;
 
-    /// The first step from R_init for the inputs in U plus the constant u_trans (m, 1); U should
+    /// The first step from R_init for the inputs in U plus the constant u_trans (m); U should
     /// hold the origin, as reach makes it (CORA's initReach).
     LinParamStep init_reach(const Zonotope &R_init, const Zonotope &U, const Tensor &u_trans,
                             const alg::LinParamReach &alg) const;

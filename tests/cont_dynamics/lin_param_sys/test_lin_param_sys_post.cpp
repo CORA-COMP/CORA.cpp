@@ -16,7 +16,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -45,8 +44,7 @@ void second_step() {
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const ReachSet R = sys.reach({R0, U, 0.15}, a);
-    const LinParamStep second =
-        sys.post(sys.init_reach(R0, U - U.center(), U.center().expand_dims(-1), a), a);
+    const LinParamStep second = sys.post(sys.init_reach(R0, U - U.center(), U.center(), a), a);
     check(close(R.time_interval[1].center(), second.time_interval.center(), 0) &&
               close(R.time_interval[1].generators(), second.time_interval.generators(), 0) &&
               close(R.time_point[2].center().expand_dims(-1),
@@ -55,8 +53,7 @@ void second_step() {
     // without the time-point sets
     a.comp_time_point = false;
     const ReachSet ti = sys.reach({R0, U, 0.15}, a);
-    const LinParamStep next =
-        sys.post(sys.init_reach(R0, U - U.center(), U.center().expand_dims(-1), a), a);
+    const LinParamStep next = sys.post(sys.init_reach(R0, U - U.center(), U.center(), a), a);
     check(ti.time_point.empty() && ti.time_interval.size() == 3 && !next.time_point,
           "post: no time-point sets if they are not computed");
 }
@@ -67,7 +64,7 @@ void checks_and_their_switch() {
     const Zonotope U(vec({0.0}), Tensor({{0.1}}));
     alg::LinParamStandard a;
     a.time_step = 0.05;
-    const LinParamStep first = aux_sys().init_reach(R0, U, column({0.0}), a);
+    const LinParamStep first = aux_sys().init_reach(R0, U, vec({0.0}), a);
     check(test::raises([&] { aux_sys(true).post(first, a); }, Error::dimension_mismatch),
           "post: a step of the system's dimension");
     const Tensor on = (aux_sys().post(first, a).time_interval).center();

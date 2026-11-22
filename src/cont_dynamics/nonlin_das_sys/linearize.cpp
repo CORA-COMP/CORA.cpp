@@ -38,14 +38,17 @@ DaeLinearized NonlinDASys::linearize(const Tensor &x0, const Tensor &y0,
     CORA_CHECK(!U || m_ > 0, Error::not_supported,
                [] { return std::string("linearize: the system has no inputs; leave U empty"); });
     // the expansion point: the input's center, the state half a step on, y consistent with it
-    const Tensor u_center = U ? U->center().expand_dims(-1) : x0.zeros_like({m_, 1});
+    const Tensor u_center = U ? U->center() : x0.zeros_like({m_});
     const Tensor u_star = u_center + u_trans;
-    const Tensor x_star = x0 + dynamics(x0, y0, u_star) * (0.5 * time_step);
-    const Tensor y_star = newton_algebraic(x_star, y0, u_star, false);
+    // the computation runs on CORA's columns
+    const Tensor x_col = x0.expand_dims(-1), u_col = u_star.expand_dims(-1);
+    const Tensor x_star =
+        x_col + dynamics_columns(x_col, y0.expand_dims(-1), u_col) * (0.5 * time_step);
+    const Tensor y_star = newton_algebraic(x_star, y0.expand_dims(-1), u_col, false);
     // the blocks of the Jacobian and the residuals there
-    const Tensor f0_dyn = dynamics(x_star, y_star, u_star);
-    const Tensor g0 = constraints(x_star, y_star, u_star);
-    const DaeJacobians J = jacobian(x_star, y_star, u_star);
+    const Tensor f0_dyn = dynamics_columns(x_star, y_star, u_col);
+    const Tensor g0 = constraints_columns(x_star, y_star, u_col);
+    const DaeJacobians J = jacobian_columns(x_star, y_star, u_col);
     // eliminating y: A_lin = A - C F^-1 D, B_lin = B - C F^-1 E, f0 = f - C F^-1 g
     const Tensor F_inv = J.F.pinv();
     const Tensor CF_inv = J.C.matmul(F_inv);
@@ -54,8 +57,18 @@ DaeLinearized NonlinDASys::linearize(const Tensor &x0, const Tensor &y0,
     const Tensor B_lin = J.B - CF_inv.matmul(J.E);
     // the input of the affine system: B_lin (U - center), the constant part in u_const
     Zonotope BU = Zonotope(x0.zeros_like({n_}), x0.zeros_like({0, n_}));
-    if (m_ > 0 && U) BU = (*U - u_center.squeeze(-1)).linear_map(B_lin);
-    return {x_star, y_star, u_star, g0, J.D, J.E, F_inv, CF_inv, LinearSys(A_lin), BU, f0};
+    if (m_ > 0 && U) BU = (*U - u_center).linear_map(B_lin);
+    return {x_star.squeeze(-1),
+            y_star.squeeze(-1),
+            u_star,
+            g0.squeeze(-1),
+            J.D,
+            J.E,
+            F_inv,
+            CF_inv,
+            LinearSys(A_lin),
+            BU,
+            f0.squeeze(-1)};
 }
 
 } // namespace cora

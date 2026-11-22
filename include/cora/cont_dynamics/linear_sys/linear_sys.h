@@ -69,7 +69,7 @@ struct VerifyResult {
 /// is B c and the time-varying part B U0.
 struct InputSolution {
     Zonotope PU;     ///< time-varying solution at t = time_step, centered at the origin
-    Tensor Pu;       ///< constant-input solution at t = time_step (n, 1)
+    Tensor Pu;       ///< constant-input solution at t = time_step (n)
     Zonotope Cinput; ///< curvature enlargement of the constant input
 };
 
@@ -222,18 +222,18 @@ class LinearSys {
     ConstantSolution particular_solution_constant(const Zonotope &U, double time_step,
                                                   int taylor_terms) const;
 
-    /// The homogeneous solution plus the constant input u (n, 1) (CORA's affineSolution).
+    /// The homogeneous solution plus the constant input u (n) (CORA's affineSolution).
     AffineSolution affine_solution(const Zonotope &X, const Tensor &u, double time_step,
                                    int taylor_terms) const;
 
-    /// One step of reach from X with the input set U and the constant input u (n, 1) (CORA's
+    /// One step of reach from X with the input set U and the constant input u (n) (CORA's
     /// oneStep). CORA's blocks argument is what alg::Decomposition uses; here the state is one
     /// block. Not a batch of systems.
     OneStep one_step(const Zonotope &X, const Zonotope &U, const Tensor &u, double time_step,
                      int taylor_terms) const;
 
     /// The first step of the algorithm "standard" or "wrapping_free" from Rinit with the input
-    /// set U and the constant input u_trans (CORA's initReach); post continues from its state.
+    /// set U and the constant input u_trans (m) (CORA's initReach); post continues from its state.
     ReachStep init_reach(const Zonotope &R_init, const std::optional<Zonotope> &U,
                          const std::optional<Tensor> &u_trans, const alg::LinearReach &alg) const;
 

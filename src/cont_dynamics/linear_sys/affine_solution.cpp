@@ -5,7 +5,7 @@
 //
 // Syntax:   AffineSolution S = sys.affine_solution(X, u, time_step, taylor_terms);
 // Inputs:   X - initial set of the step (zonotope of the dimension of A)
-//           u - constant input in the state space (n, 1)
+//           u - constant input in the state space (n)
 //           time_step - step size, positive
 //           taylor_terms - order of the series, at least 1
 // Outputs:  S - time_point (Htp), constant (Pu), time_interval (Hti), state_curvature,
@@ -32,8 +32,8 @@ AffineSolution LinearSys::affine_solution(const Zonotope &X, const Tensor &u, do
                                           int taylor_terms) const {
     detail::Entry entry;
     if (entry.check()) validate_step("affine_solution", X, time_step, taylor_terms);
-    CORA_CHECK(u.shape() == std::vector<int64_t>({dim(), 1}), Error::dimension_mismatch, [&] {
-        return "affine_solution: u must be a column (" + std::to_string(dim()) + ", 1), got " +
+    CORA_CHECK(u.shape() == std::vector<int64_t>({dim()}), Error::dimension_mismatch, [&] {
+        return "affine_solution: u must be a vector (" + std::to_string(dim()) + "), got " +
                shape_text(u.shape());
     });
     CORA_CHECK(A().ndim() == 2, Error::not_supported, [] {
@@ -44,7 +44,7 @@ AffineSolution LinearSys::affine_solution(const Zonotope &X, const Tensor &u, do
     const Blocks blocks = priv_one_block(dim());
     const BlockSets Xb{X};
     // the constant input is a point of the state space
-    const Zonotope point = Zonotope(u.squeeze(-1), u.zeros_like({0, dim()}));
+    const Zonotope point = Zonotope(u, u.zeros_like({0, dim()}));
     BlockConstant Pu =
         priv_particular_constant(*this, taylor, blocks, point, time_step, taylor_terms);
     BlockHomogeneous H = priv_homogeneous(*this, taylor, blocks, Xb, time_step, taylor_terms);

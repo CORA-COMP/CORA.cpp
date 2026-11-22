@@ -32,17 +32,20 @@ NonlinDASys square_system() {
         1);
 }
 
-Tensor col(double v) { return test::column({v}); }
+Tensor col(double v) { return test::vec({v}); }
 
-/// f and g at columns of points, and the blocks of the Jacobian at one.
+/// A 1 x 1 matrix.
+Tensor mat(double v) { return test::column({v}); }
+
+/// f and g at rows of points, and the blocks of the Jacobian at one.
 void the_values_and_the_jacobian(const std::string &b) {
     const NonlinDASys sys = square_system();
-    const Tensor x = Tensor({{1.0, 2.0}}), y = Tensor({{3.0, 3.0}}), u = Tensor::zeros({0, 2});
-    check(test::close(sys.dynamics(x, y, u), Tensor({{3.0, 3.0}})), b + ": f = y");
-    check(test::close(sys.constraints(x, y, u), Tensor({{2.0, -1.0}})), b + ": g = y - x^2");
-    const DaeJacobians J = sys.jacobian(col(2.0), col(3.0), Tensor::zeros({0, 1}));
-    check(test::close(J.A, col(0.0)) && test::close(J.C, col(1.0)), b + ": A = 0, C = 1");
-    check(test::close(J.D, col(-4.0)) && test::close(J.F, col(1.0)), b + ": D = -2 x, F = 1");
+    const Tensor x = Tensor({{1.0}, {2.0}}), y = Tensor({{3.0}, {3.0}}), u = Tensor::zeros({0});
+    check(test::close(sys.dynamics(x, y, u), Tensor({{3.0}, {3.0}})), b + ": f = y");
+    check(test::close(sys.constraints(x, y, u), Tensor({{2.0}, {-1.0}})), b + ": g = y - x^2");
+    const DaeJacobians J = sys.jacobian(col(2.0), col(3.0), Tensor::zeros({0}));
+    check(test::close(J.A, mat(0.0)) && test::close(J.C, mat(1.0)), b + ": A = 0, C = 1");
+    check(test::close(J.D, mat(-4.0)) && test::close(J.F, mat(1.0)), b + ": D = -2 x, F = 1");
     check(J.B.shape() == std::vector<int64_t>({1, 0}) &&
               J.E.shape() == std::vector<int64_t>({1, 0}),
           b + ": no input columns");
@@ -51,12 +54,12 @@ void the_values_and_the_jacobian(const std::string &b) {
 /// The Hessian of g over a box is -2 in the (x, x) entry, the zeros are empty.
 void the_hessian_over_a_box(const std::string &b) {
     const NonlinDASys sys = square_system();
-    const Range x(col(0.0), col(1.0)), y(col(0.0), col(1.0)), u(Tensor::zeros({0, 1}));
+    const Range x(mat(0.0), mat(1.0)), y(mat(0.0), mat(1.0)), u(Tensor::zeros({0, 1}));
     const DaeHessians H = sys.hessian_enclosure(x, y, u);
     // z = (x, y): row g, entry (x, x) = -2; every other entry and every entry of f is empty
     check(H.f.size() == 4 && H.g.size() == 4, b + ": one row of d x d = 4 entries each");
     for (const auto &h : H.f) check(!h, b + ": f is linear");
-    check(H.g[0] && test::close(H.g[0]->lo, col(-2.0)) && test::close(H.g[0]->hi, col(-2.0)),
+    check(H.g[0] && test::close(H.g[0]->lo, mat(-2.0)) && test::close(H.g[0]->hi, mat(-2.0)),
           b + ": d2g/dx2 = -2");
     check(!H.g[1] && !H.g[2] && !H.g[3], b + ": the other entries of g are 0");
 }
@@ -64,10 +67,10 @@ void the_hessian_over_a_box(const std::string &b) {
 /// Wrong arguments are described: a mismatch of sizes, a wrong number of equations.
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinDASys sys = square_system();
-    check(test::raises(
-              [&] { sys.constraints(test::column({1.0, 2.0}), col(0.0), Tensor::zeros({0, 1})); },
-              Error::dimension_mismatch),
-          b + ": a state of the wrong size");
+    check(
+        test::raises([&] { sys.constraints(test::vec({1.0, 2.0}), col(0.0), Tensor::zeros({0})); },
+                     Error::dimension_mismatch),
+        b + ": a state of the wrong size");
     check(test::raises(
               [&] {
                   NonlinDASys(
@@ -81,9 +84,9 @@ void wrong_arguments_are_described(const std::string &b) {
                        Error::wrong_input_in_constructor),
           b + ": no state");
     // with the checks off the values are the same
-    const Tensor on = sys.constraints(col(2.0), col(3.0), Tensor::zeros({0, 1}));
+    const Tensor on = sys.constraints(col(2.0), col(3.0), Tensor::zeros({0}));
     ChecksScope off(false);
-    check(test::close(sys.constraints(col(2.0), col(3.0), Tensor::zeros({0, 1})), on, 0),
+    check(test::close(sys.constraints(col(2.0), col(3.0), Tensor::zeros({0})), on, 0),
           b + ": the same with the checks off");
 }
 

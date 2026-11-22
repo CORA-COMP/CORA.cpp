@@ -27,8 +27,8 @@ void the_end_is_the_sum_of_its_parts(const std::string &b) {
     const Zonotope U(test::vec({0.0, 0.0}), Tensor({{0.5, 0.25}}));
     // the parts of the step are those of the single solutions
     const LinearSys sys(A);
-    const OneStep s = sys.one_step(initial_set(), U, u, kStep, kTerms);
-    const AffineSolution affine = sys.affine_solution(initial_set(), u, kStep, kTerms);
+    const OneStep s = sys.one_step(initial_set(), U, u.squeeze(-1), kStep, kTerms);
+    const AffineSolution affine = sys.affine_solution(initial_set(), u.squeeze(-1), kStep, kTerms);
     const Zonotope PU = sys.particular_solution_time_varying(U, kStep, kTerms);
     check(test::close(s.time_point.center(), affine.time_point.center() + PU.center(), 1e-15),
           b + ": the center");
@@ -51,7 +51,7 @@ void trajectories_stay_inside(const std::string &b) {
     const Tensor A = diagonal();
     const Zonotope U(test::vec({0.0, 0.0}), Tensor({{0.5, 0.25}}));
     const Tensor u = test::column({0.5, 0.0});
-    const OneStep s = LinearSys(A).one_step(initial_set(), U, u, kStep, kTerms);
+    const OneStep s = LinearSys(A).one_step(initial_set(), U, u.squeeze(-1), kStep, kTerms);
     // the end of a trajectory under a held input w = u + factor * generator
     for (const double factor : {-1.0, 0.0, 1.0}) {
         const Tensor w = u + Tensor({{0.5}, {0.25}}) * factor;
@@ -68,23 +68,27 @@ void trajectories_stay_inside(const std::string &b) {
 void checks_and_their_switch(const std::string &b) {
     const LinearSys sys(diagonal());
     const Tensor u = test::column({0.0, 0.0});
-    // the dimensions of U and u, the order and the checks switch
-    check(test::raises([&] { sys.one_step(initial_set(), origin(3), u, kStep, kTerms); },
-                       Error::dimension_mismatch),
-          b + ": U of three dimensions");
+    // the dimensions of U and u, the number of terms, and the checks switch
+    check(
+        test::raises([&] { sys.one_step(initial_set(), origin(3), u.squeeze(-1), kStep, kTerms); },
+                     Error::dimension_mismatch),
+        b + ": U of three dimensions");
     check(test::raises(
-              [&] { sys.one_step(initial_set(), origin(2), test::column({0.0}), kStep, kTerms); },
+              [&] { sys.one_step(initial_set(), origin(2), test::vec({0.0}), kStep, kTerms); },
               Error::dimension_mismatch),
           b + ": u of one row");
-    check(test::raises([&] { sys.one_step(initial_set(), origin(2), u, kStep, 0); },
+    check(test::raises([&] { sys.one_step(initial_set(), origin(2), u.squeeze(-1), kStep, 0); },
                        Error::wrong_value),
           b + ": no terms");
+    // the same step with the checks on, then off
     const Tensor on =
-        (sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval).center();
+        (sys.one_step(initial_set(), origin(2), u.squeeze(-1), kStep, kTerms).time_interval)
+            .center();
     ChecksScope off(false);
     check(test::close(
-              (sys.one_step(initial_set(), origin(2), u, kStep, kTerms).time_interval).center(), on,
-              0),
+              (sys.one_step(initial_set(), origin(2), u.squeeze(-1), kStep, kTerms).time_interval)
+                  .center(),
+              on, 0),
           b + ": the same with the checks off");
 }
 

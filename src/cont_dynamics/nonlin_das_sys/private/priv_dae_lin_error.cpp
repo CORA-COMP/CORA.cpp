@@ -164,8 +164,9 @@ struct Parts {
 Parts aux_whole(const NonlinDASys &sys, const DaeLinearized &lin, const Zonotope &R,
                 const Zonotope &R_y_cor, const Zonotope &R_y_add, const std::optional<Zonotope> &U0,
                 const alg::DaeLinearization &alg) {
-    const Remainder r = aux_remainder(sys, lin.x_star, lin.y_star, lin.u_star, R, R_y_cor, R_y_add,
-                                      U0, alg.error_order);
+    const Remainder r =
+        aux_remainder(sys, lin.x_star.expand_dims(-1), lin.y_star.expand_dims(-1),
+                      lin.u_star.expand_dims(-1), R, R_y_cor, R_y_add, U0, alg.error_order);
     return {aux_combine(r, lin.CF_inv).reduce(alg.zonotope_order),
             aux_error(r.x_mid, r.x_rad).compact("zeros", 0.0),
             aux_error(r.y_mid, r.y_rad).compact("zeros", 0.0).reduce(alg.zonotope_order)};
@@ -178,13 +179,14 @@ Parts aux_composed(const DaeLinearized &lin, const Zonotope &R, const Zonotope &
                    const DaeDecomposition &decomposition, const alg::DaeLinearization &alg) {
     const int64_t n = lin.x_star.shape()[0], p = lin.y_star.shape()[0];
     const Zonotope R_y = R_y_cor + R_y_add;
-    Zonotope total_x = Zonotope(lin.x_star.zeros_like().squeeze(-1), lin.x_star.zeros_like({0, n}));
-    Zonotope total_y = Zonotope(lin.y_star.zeros_like().squeeze(-1), lin.y_star.zeros_like({0, p}));
+    Zonotope total_x = Zonotope(lin.x_star.zeros_like(), lin.x_star.zeros_like({0, n}));
+    Zonotope total_y = Zonotope(lin.y_star.zeros_like(), lin.y_star.zeros_like({0, p}));
     for (const DaeSubsystem &s : decomposition.subsystems) {
         // the subsystem's point and the inputs it reads: its neighbours' y and the voltages
-        const Tensor p_x = s.X.matmul(lin.x_star), p_y = s.Y.matmul(lin.y_star);
-        const Tensor p_u =
-            s.Uv.matmul(decomposition.v_gen) + s.Uy.matmul(lin.y_star) + s.Uu.matmul(lin.u_star);
+        const Tensor x_star = lin.x_star.expand_dims(-1), y_star = lin.y_star.expand_dims(-1);
+        const Tensor p_x = s.X.matmul(x_star), p_y = s.Y.matmul(y_star);
+        const Tensor p_u = s.Uv.matmul(decomposition.v_gen) + s.Uy.matmul(y_star) +
+                           s.Uu.matmul(lin.u_star.expand_dims(-1));
         Zonotope Usub = R_y.linear_map(s.Uy);
         if (U0) Usub = Usub + U0->linear_map(s.Uu);
         const Remainder r =
@@ -216,7 +218,7 @@ DaeError priv_dae_lin_error(const NonlinDASys &sys, const DaeLinearized &lin, co
                             const alg::DaeLinearization &alg) {
     // the algebraic set: the part that depends on R, and the rest
     const Tensor minus_F_inv = lin.F_inv * -1.0;
-    const Zonotope R_y_cor = (R.linear_map(lin.D) + lin.g0.squeeze(-1)).linear_map(minus_F_inv);
+    const Zonotope R_y_cor = (R.linear_map(lin.D) + lin.g0).linear_map(minus_F_inv);
     Zonotope uncorrelated = V_y;
     if (U0) uncorrelated = uncorrelated + (*U0).linear_map(lin.E);
     const Zonotope R_y_add = uncorrelated.linear_map(minus_F_inv);
@@ -225,10 +227,10 @@ DaeError priv_dae_lin_error(const NonlinDASys &sys, const DaeLinearized &lin, co
                             ? aux_composed(lin, R, R_y_cor, R_y_add, U0, *decomposition, alg)
                             : aux_whole(sys, lin, R, R_y_cor, R_y_add, U0, alg);
     // the algebraic variables over the step, and the bounds
-    Zonotope u_part = R.linear_map(lin.D) + lin.g0.squeeze(-1);
+    Zonotope u_part = R.linear_map(lin.D) + lin.g0;
     if (U0) u_part = u_part + (*U0).linear_map(lin.E);
-    const Zonotope algebraic = ((u_part + error.y).linear_map(minus_F_inv) + lin.y_star.squeeze(-1))
-                                   .reduce(alg.zonotope_order);
+    const Zonotope algebraic =
+        ((u_part + error.y).linear_map(minus_F_inv) + lin.y_star).reduce(alg.zonotope_order);
     return {error.set, aux_bound(error.set), aux_bound(error.x), aux_bound(error.y), algebraic};
 }
 

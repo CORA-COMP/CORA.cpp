@@ -94,13 +94,11 @@ double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const 
     const bool inputs = sys.input_dim() > 0;
     const Zonotope Ubox = U.interval().zonotope();
     const Zonotope Z = inputs ? R.cart_prod(Ubox) : R;
-    const std::optional<Tensor> uc =
-        inputs ? std::optional<Tensor>(Ubox.center().expand_dims(-1)) : std::nullopt;
     const std::optional<Tensor> Ubox_center =
         inputs ? std::optional<Tensor>(Ubox.center()) : std::nullopt;
     // the value and the linear part at the center
     const Tensor a_t = a.matrix_transpose();
-    const Jacobians J = sys.jacobian(R.center().expand_dims(-1), uc);
+    const Jacobians J = sys.jacobian(R.center(), Ubox_center);
     const Tensor AB = inputs ? Tensor::concat({J.A, J.B}, -1) : J.A;
     double bound = a_t.matmul(sys.dynamics(R.center(), Ubox_center).expand_dims(-1)).item() +
                    a_t.matmul(AB).matmul(Z.generators().matrix_transpose()).abs().sum().item();

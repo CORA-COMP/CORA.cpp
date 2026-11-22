@@ -158,9 +158,10 @@ dimensions first:
   axis never broadcasts;
 - the scalar results (volume, norms, `ball_radius`, distances, support values) have the batch
   shape (...);
-- `simulate` (initial states and inputs as rows, the trajectories (..., N, n)) is in this layout;
-  the inputs u of a reach step and the expansion points still take CORA's columns (n, 1); they
-  move in a later PR of #163;
+- `simulate` (initial states and inputs as rows, the trajectories (..., N, n)), the constant
+  input u of a reach step, the expansion points of `linearize` and the dynamics at points are in
+  this layout; the problem fields, the reset and `Location::c()` still take CORA's columns (n, 1);
+  they move in a later PR of #163;
 - CORA's n x h columns appear only where data crosses to CORA: the private MATLAB-data loader and
   the oracle client. An algorithm that is written on CORA's columns (the linear programs of
   `ConZonotope`, the adaptive linear reach) transposes once, explicitly. There is no public

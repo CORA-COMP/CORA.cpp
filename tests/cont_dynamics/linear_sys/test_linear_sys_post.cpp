@@ -33,7 +33,7 @@ void the_steps_enclose_the_trajectories(const std::string &b) {
     const Tensor w = u + Tensor({{0.1}, {0.05}});
     for (const alg::LinearReach &a :
          {alg::LinearReach(kStandard), alg::LinearReach(kWrappingFree)}) {
-        ReachStep s = sys.init_reach(initial_set(), U, u, a);
+        ReachStep s = sys.init_reach(initial_set(), U, u.squeeze(-1), a);
         for (int k = 1; k <= 3; ++k) {
             // the end of the step k from the corner (2, 2.5) under the constant input w
             const Tensor x = flow(A, k * kStep, test::column({2.0, 2.5})) +

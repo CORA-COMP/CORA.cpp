@@ -9,7 +9,7 @@
 // Inputs:   sys - the system
 //           series - priv_mapping_matrix of the step
 //           U - the centered input set (m)
-//           u_trans - the constant input (m, 1)
+//           u_trans - the constant input (m)
 //           r - the step size
 //           eta - the Taylor order
 //           order - the zonotope order of the input solution
@@ -100,7 +100,8 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
     // the centered inputs V = B U and the constant input B u_trans + c (cora-differences.md)
     const Zonotope V = sys.B() ? U.linear_map(*sys.B())
                                : Zonotope(c.zeros_like().squeeze(-1), c.zeros_like({0, n}));
-    const Tensor v_trans = (sys.B() ? sys.B()->matmul(u_trans) : c.zeros_like()) + c;
+    const Tensor v_trans =
+        (sys.B() ? sys.B()->matmul(u_trans.expand_dims(-1)) : c.zeros_like()) + c;
     Zonotope input_set = V * r;
     const Tensor start = c.eye_like(n) * r;
     Interval integral = Interval::matrix(start, start);

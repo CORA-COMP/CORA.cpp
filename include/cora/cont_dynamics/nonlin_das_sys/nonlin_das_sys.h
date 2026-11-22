@@ -62,12 +62,12 @@ struct DaeHessians {
 /// the fields of its linError): x' = A_lin x + u with the input in U + u_const, expanded at
 /// (x_star, y_star, u_star).
 struct DaeLinearized {
-    Tensor x_star, y_star, u_star; ///< the expansion point (CORA's p.x, p.y, p.u)
-    Tensor g0;                     ///< g at the point (CORA's f0_con)
+    Tensor x_star, y_star, u_star; ///< the expansion point (n), (p), (m) (CORA's p.x, p.y, p.u)
+    Tensor g0;                     ///< g at the point (p) (CORA's f0_con)
     Tensor D, E, F_inv, CF_inv;    ///< dg/dx, dg/du, pinv(dg/dy) and df/dy * pinv(dg/dy)
     LinearSys sys;                 ///< x' = A_lin x with the input in the state space (B = I)
     Zonotope U;                    ///< B_lin (U - u_star), centered (CORA's linParams.U)
-    Tensor u_const;                ///< f at the point minus C F^-1 g there (CORA's f0)
+    Tensor u_const;                ///< f at the point minus C F^-1 g there (n) (CORA's f0)
 };
 
 /// One step of reach: the sets over the step and at its end, the algebraic variables over the
@@ -104,11 +104,12 @@ class NonlinDASys {
     int64_t input_dim() const { return m_; }
     int64_t constraint_dim() const { return p_; }
 
-    /// f and g at the columns of x (n, N), y (p, N) and u (m, N) or (m, 1): (n, N) and (p, N).
+    /// f and g at the rows of x (N, n), y (N, p) and u (N, m) or one vector (m): (N, n) and
+    /// (N, p); vectors x (n) and y (p) give vectors.
     Tensor dynamics(const Tensor &x, const Tensor &y, const Tensor &u) const;
     Tensor constraints(const Tensor &x, const Tensor &y, const Tensor &u) const;
 
-    /// The Jacobians at the columns x (n, 1), y (p, 1) and u (m, 1).
+    /// The Jacobians at the point x (n), y (p) and u (m).
     DaeJacobians jacobian(const Tensor &x, const Tensor &y, const Tensor &u) const;
 
     /// The Hessians of f and g over the box x, y, u (CORA's hessian after setHessian('int')); the
@@ -157,7 +158,12 @@ class NonlinDASys {
     /// step is added if add_last (consistentInitialState), else not (priv_linearize's helper).
     Tensor newton_algebraic(const Tensor &x, const Tensor &y, const Tensor &u, bool add_last) const;
 
-    /// The check of a state x (n, 1) and a guess y (p, 1) of the operation `op`.
+    /// f, g and the Jacobians on CORA's columns: x (n, N), y (p, N) and u (m, N) or (m, 1).
+    Tensor dynamics_columns(const Tensor &x, const Tensor &y, const Tensor &u) const;
+    Tensor constraints_columns(const Tensor &x, const Tensor &y, const Tensor &u) const;
+    DaeJacobians jacobian_columns(const Tensor &x, const Tensor &y, const Tensor &u) const;
+
+    /// The check of a state x (n) and a guess y (p) of the operation `op`.
     void validate_state(const char *op, const Tensor &x, const Tensor &y) const;
 
     struct Second; // the second derivatives, derived once on first use (nonlin_das_sys.cpp)

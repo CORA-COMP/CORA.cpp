@@ -55,7 +55,7 @@ ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const 
     if (steps < 1) return {{}, {X}};
 
     // First step: the affine solution of the time point and of the interval, without C_input.
-    Zonotope Htp = X.linear_map(e_adt) + in.Pu.squeeze(-1);
+    Zonotope Htp = X.linear_map(e_adt) + in.Pu;
     Zonotope Hti = X.linear_combination(Htp).plus(X.linear_map(F));
     Zonotope PUnext = in.PU;
     Tensor PUrad = in.PU.interval().half_width(); // the time-varying solution as a box around zero
@@ -64,8 +64,8 @@ ReachSet priv_reach_wrappingfree(const Zonotope &X0, const Tensor &e_adt, const 
     R.time_point.push_back(Htp.plus(in.PU));
 
     for (int k = 1; k < steps; ++k) {
-        Hti = Hti.linear_map(e_adt) + in.Pu.squeeze(-1);
-        Htp = Htp.linear_map(e_adt) + in.Pu.squeeze(-1);
+        Hti = Hti.linear_map(e_adt) + in.Pu;
+        Htp = Htp.linear_map(e_adt) + in.Pu;
         PUnext = PUnext.linear_map(e_adt);
         PUrad = PUrad + PUnext.interval().half_width();
         const Zonotope PU = priv_box(PUrad.expand_dims(-1));

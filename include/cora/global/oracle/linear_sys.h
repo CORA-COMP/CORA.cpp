@@ -198,7 +198,7 @@ class LinearSys {
                                           int taylor_terms) const;
     Zonotope affine_solution(const Zonotope &V, double time_step, int taylor_terms) const;
 
-    /// One step from X with the input set U and the constant input u (n, 1).
+    /// One step from X with the input set U and the constant input u (n).
     Step one_step(const Zonotope &X, const Zonotope &U, const cora::Tensor &u, double time_step,
                   int taylor_terms) const;
 

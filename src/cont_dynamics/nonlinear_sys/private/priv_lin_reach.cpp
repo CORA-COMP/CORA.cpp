@@ -174,8 +174,8 @@ NonlinearStep aux_lean_step(const NonlinearSys &sys, const Zonotope &R, const Te
     const double dt = alg.time_step;
     // the affine system; its input without the error is f(x*, u*) + B (U - u*), centered at f
     const Linearized lin = sys.linearize(R, U, dt);
-    const Zonotope V_base = Zonotope(lin.u_const.squeeze(-1), lin.U.generators());
-    const LeanStepper step(lin.sys.A(), lin.x_star, R, alg);
+    const Zonotope V_base = Zonotope(lin.u_const, lin.U.generators());
+    const LeanStepper step(lin.sys.A(), lin.x_star.expand_dims(-1), R, alg);
     // the centered input set (CORA's params.U); without one, the input 0
     const std::optional<Zonotope> U0 =
         priv_centered_inputs(R.center().expand_dims(-1), sys.input_dim(), U);
@@ -189,8 +189,7 @@ NonlinearStep aux_lean_step(const NonlinearSys &sys, const Zonotope &R, const Te
         const Zonotope V_guess = Zonotope(applied.zeros_like().squeeze(-1), applied.diag());
         const Zonotope window = step(V_base + V_guess).first;
         // the error is computed relative to the point of linearization
-        const Zonotope relative = Zonotope(
-            (window.center().expand_dims(-1) - lin.x_star).squeeze(-1), window.generators());
+        const Zonotope relative = Zonotope(window.center() - lin.x_star, window.generators());
         err = priv_abstrerr_lin(sys, relative, lin, U0, alg);
         perf = priv_ratio_max(err->bound, applied);
         bound = err->bound;
@@ -272,8 +271,7 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
     const int eta = alg.taylor_terms;
     // the affine system and its step from R - x*
     const Linearized lin = sys.linearize(R, U, dt);
-    AffineStep step =
-        priv_affine_step(lin.sys, R - lin.x_star.squeeze(-1), lin.U, lin.u_const, dt, eta);
+    AffineStep step = priv_affine_step(lin.sys, R - lin.x_star, lin.U, lin.u_const, dt, eta);
     const Zonotope &R_ti = step.time_interval;
     // the centered input set (CORA's params.U); without one, the input 0
     const std::optional<Zonotope> U0 =
@@ -287,8 +285,7 @@ NonlinearStep priv_lin_reach(const NonlinearSys &sys, const Zonotope &R, const T
     // the solution of the error moves both sets, which return to the coordinates of the state
     const Zonotope R_error =
         priv_particular_time_varying(lin.sys, step.taylor, step.blocks, err.set, dt, eta)[0];
-    return {(R_ti + lin.x_star.squeeze(-1)) + R_error,
-            (step.time_point + lin.x_star.squeeze(-1)) + R_error, err.bound};
+    return {(R_ti + lin.x_star) + R_error, (step.time_point + lin.x_star) + R_error, err.bound};
 }
 
 } // namespace cora

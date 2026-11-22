@@ -24,7 +24,7 @@ namespace {
 
 using Vars = std::vector<Expr>;
 
-Tensor col(double v) { return test::column({v}); }
+Tensor col(double v) { return test::vec({v}); }
 
 /// x' = y with the constraint g.
 NonlinDASys with_constraint(const std::function<Expr(const Expr &x, const Expr &y)> &g) {
@@ -35,7 +35,7 @@ NonlinDASys with_constraint(const std::function<Expr(const Expr &x, const Expr &
 
 /// Newton on y - x^2 is exact after one step; on y^2 - x it reaches sqrt(x).
 void newton_solves_the_constraint(const std::string &b) {
-    const Tensor no_input = Tensor::zeros({0, 1});
+    const Tensor no_input = Tensor::zeros({0});
     const NonlinDASys square =
         with_constraint([](const Expr &x, const Expr &y) { return y - x * x; });
     check(test::close(square.consistent_initial_state(col(1.5), col(0.0), no_input), col(2.25),
@@ -53,22 +53,20 @@ void wrong_arguments_are_described(const std::string &b) {
     const NonlinDASys sys = with_constraint([](const Expr &x, const Expr &y) { return y - x; });
     check(test::raises(
               [&] {
-                  sys.consistent_initial_state(test::column({1.0, 2.0}), col(0.0),
-                                               Tensor::zeros({0, 1}));
+                  sys.consistent_initial_state(test::vec({1.0, 2.0}), col(0.0), Tensor::zeros({0}));
               },
               Error::dimension_mismatch),
           b + ": a state of the wrong size");
     // a constraint without a root in y does not converge: g = y^2 + 1 has none
     const NonlinDASys none = with_constraint([](const Expr &, const Expr &y) { return y * y + 1; });
-    check(test::raises(
-              [&] { none.consistent_initial_state(col(0.0), col(1.0), Tensor::zeros({0, 1})); },
-              Error::not_converged),
-          b + ": no root");
-    const Tensor on = sys.consistent_initial_state(col(2.0), col(0.0), Tensor::zeros({0, 1}));
-    ChecksScope off(false);
     check(
-        test::close(sys.consistent_initial_state(col(2.0), col(0.0), Tensor::zeros({0, 1})), on, 0),
-        b + ": the same with the checks off");
+        test::raises([&] { none.consistent_initial_state(col(0.0), col(1.0), Tensor::zeros({0})); },
+                     Error::not_converged),
+        b + ": no root");
+    const Tensor on = sys.consistent_initial_state(col(2.0), col(0.0), Tensor::zeros({0}));
+    ChecksScope off(false);
+    check(test::close(sys.consistent_initial_state(col(2.0), col(0.0), Tensor::zeros({0})), on, 0),
+          b + ": the same with the checks off");
 }
 
 } // namespace

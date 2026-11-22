@@ -91,6 +91,23 @@ NonlinearSys::NonlinearSys(const InputDynamics &f, int64_t n, int64_t m)
 
 // The variables -----------------------------------------------------------------------------------
 
+void NonlinearSys::validate_vectors(const char *op, const Tensor &x,
+                                    const std::optional<Tensor> &u) const {
+    detail::Validation entry;
+    // the point and the input are vectors
+    CORA_CHECK(x.defined() && x.shape() == std::vector<int64_t>({n_}), Error::dimension_mismatch,
+               [&] {
+                   return std::string(op) + ": the point must be a vector (" + std::to_string(n_) +
+                          "), got the shape " + (x.defined() ? shape_text(x.shape()) : "none");
+               });
+    // the input is needed exactly when the system has inputs
+    CORA_CHECK(m_ == 0 || (u && u->defined() && u->shape() == std::vector<int64_t>({m_})),
+               Error::dimension_mismatch, [&] {
+                   return std::string(op) + ": the input must be a vector (" + std::to_string(m_) +
+                          ")";
+               });
+}
+
 void NonlinearSys::validate_point(const char *op, const Tensor &x,
                                   const std::optional<Tensor> &u) const {
     detail::Validation entry;
@@ -165,11 +182,18 @@ Tensor NonlinearSys::dynamics(const Tensor &x, const std::optional<Tensor> &u) c
 }
 
 // A and B are the first n and the last m columns of the Jacobian over z.
-Jacobians NonlinearSys::jacobian(const Tensor &x, const std::optional<Tensor> &u) const {
-    detail::Entry entry;
-    if (entry.check()) validate_point("jacobian", x, u);
+Jacobians NonlinearSys::jacobian_columns(const Tensor &x, const std::optional<Tensor> &u) const {
     const Tensor J = Expr::eval_matrix(jacobian_, 0, n_, n_ + m_, variables(x, u), x);
     return {J.slice(-1, 0, n_), m_ == 0 ? x.zeros_like({n_, 0}) : J.slice(-1, n_, n_ + m_)};
+}
+
+// The point and the input are vectors; the Jacobians of the columns are those of the point.
+Jacobians NonlinearSys::jacobian(const Tensor &x, const std::optional<Tensor> &u) const {
+    detail::Entry entry;
+    if (entry.check()) validate_vectors("jacobian", x, u);
+    // the point is one column of CORA's evaluation
+    return jacobian_columns(x.expand_dims(-1),
+                            u ? std::optional<Tensor>(u->expand_dims(-1)) : std::nullopt);
 }
 
 // One range per component, joined into a column.
@@ -189,13 +213,16 @@ Range NonlinearSys::enclosure(const Range &x, const std::optional<Range> &u) con
 
 std::vector<Tensor> NonlinearSys::hessian(const Tensor &x, const std::optional<Tensor> &u) const {
     detail::Entry entry;
-    if (entry.check()) validate_point("hessian", x, u);
+    if (entry.check()) validate_vectors("hessian", x, u);
     const int64_t d = n_ + m_;
-    const std::vector<Tensor> z = variables(x, u);
+    // the point is one column of CORA's evaluation
+    const Tensor xc = x.expand_dims(-1);
+    const std::optional<Tensor> uc = u ? std::optional<Tensor>(u->expand_dims(-1)) : std::nullopt;
+    const std::vector<Tensor> z = variables(xc, uc);
     std::vector<Tensor> out;
     out.reserve(std::size_t(n_));
     for (int64_t i = 0; i < n_; ++i)
-        out.push_back(Expr::eval_matrix(hessian_, std::size_t(i * d * d), d, d, z, x));
+        out.push_back(Expr::eval_matrix(hessian_, std::size_t(i * d * d), d, d, z, xc));
     return out;
 }
 

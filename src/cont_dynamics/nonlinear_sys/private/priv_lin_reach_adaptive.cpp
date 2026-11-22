@@ -60,8 +60,8 @@ struct Tune {
 /// The expansion matrices B at (xs, us).
 Tensor aux_B(const Tune &c, const Tensor &like, const Vec &xs, const Vec &us) {
     return c.sys
-        .jacobian(priv_column(like, xs),
-                  c.m > 0 ? std::optional<Tensor>(priv_column(like, us)) : std::nullopt)
+        .jacobian(priv_column(like, xs).squeeze(-1),
+                  c.m > 0 ? std::optional<Tensor>(priv_column(like, us).squeeze(-1)) : std::nullopt)
         .B;
 }
 
@@ -72,9 +72,9 @@ int aux_init_tensor_order(const Tune &c, const Zonotope &R) {
     if (R.nr_generators() == 0) return 2;
     const Vec xs = R.center().data(), us = c.m > 0 ? c.U->center().expand_dims(-1).data() : Vec{};
     const Tensor &like = R.center().expand_dims(-1);
-    const Jacobians J =
-        c.sys.jacobian(priv_column(like, xs),
-                       c.m > 0 ? std::optional<Tensor>(priv_column(like, us)) : std::nullopt);
+    const Jacobians J = c.sys.jacobian(
+        priv_column(like, xs).squeeze(-1),
+        c.m > 0 ? std::optional<Tensor>(priv_column(like, us).squeeze(-1)) : std::nullopt);
     const Vec L2 = priv_norm_mag(
         priv_zonotope_box(priv_abstr_err_adaptive(c.sys, 2, J.A, J.B, xs, R, c.U, c.alg.zeta_z)));
     const Vec L3 = priv_norm_mag(

@@ -110,15 +110,16 @@ int main() {
                    kAgreement);
         // CORALean's affine solution is the same sum of the input
         if (!test::oracle::serves("linearSys.affineSolution")) return;
-        check_hull(LinearSys(o.A).affine_solution(o.X, o.u, kStep, kTerms).constant,
+        check_hull(LinearSys(o.A).affine_solution(o.X, o.u.squeeze(-1), kStep, kTerms).constant,
                    lean::LinearSys(o.A).affine_solution(point, kStep, kTerms), kAgreement);
     });
 
     // one step of reach: the end of the step and its enclosure
     aux_run("linearSys.oneStep", [](test::oracle::Random &rnd) {
         const Operands o = draw(rnd);
-        const OneStep mine = LinearSys(o.A).one_step(o.X, o.U, o.u, kStep, kTerms);
-        const lean::Step theirs = lean::LinearSys(o.A).one_step(o.X, o.U, o.u, kStep, kTerms);
+        const OneStep mine = LinearSys(o.A).one_step(o.X, o.U, o.u.squeeze(-1), kStep, kTerms);
+        const lean::Step theirs =
+            lean::LinearSys(o.A).one_step(o.X, o.U, o.u.squeeze(-1), kStep, kTerms);
         check_hull(mine.time_point, theirs.time_point, kAgreement);
         aux_inside(mine.time_interval, theirs.time_interval, kGap);
     });
