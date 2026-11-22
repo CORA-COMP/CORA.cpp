@@ -9,7 +9,8 @@
 // so constraints on the output are constraints on the input. A ReLU takes CORALean's line, sigmoid
 // and tanh CORA's "bounds" or CORALean's "singh". splits (B, s) hold signed neuron ids of earlier
 // splits (-id: at least 0, +id: at most 0, 0: none), which clamp the bounds. On the lean backend
-// every sum nests to the right, as CORALean's: the sets are the oracle's bit for bit.
+// every sum nests to the right, as CORALean's: the sets are the oracle's bit for bit. The exact
+// F-radius gradient (exact_backprop) passes back through the slopes, offsets and errors too.
 //
 // Syntax:   ZonoNet net(nn, q0, dn, "bounds", "length");   auto in = net.input_zonotope(x, r);
 //           ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true);
@@ -97,10 +98,9 @@ class ZonoNet {
                                     const Tensor &splits) const;
 };
 
-/// The F-radius sqrt(sum G^2) of the output and its gradient with respect to each generator's
-/// value (the input's and every slot's). exact (CORA's exact_backprop): the reverse pass through
-/// the slopes, offsets and errors, which depend on l and u and so on G and dr; otherwise the
-/// slopes held, |G_g|^2 / (v_g F) per row g. Sets the records' grad, returns the input's (B, q0).
+/// The F-radius sqrt(sum G^2)'s gradient in each generator's value (the input's, every slot's):
+/// exact (CORA's exact_backprop) through the lines, else the slopes held, |G_g|^2 / (v_g F).
+/// Sets the records' grad and returns the input's (B, q0).
 Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const ZonoNet &net,
                            const Tensor &splits, bool exact);
 

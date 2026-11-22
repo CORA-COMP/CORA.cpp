@@ -487,6 +487,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
         const StepTimer timer(stats_, "artifacts_seconds");
         art = aux_artifacts(xi, ri, si);
     }
+    // 2. falsification at the candidates of the sets
     bool falsified = false;
     {
         const StepTimer timer(stats_, "falsify_seconds");

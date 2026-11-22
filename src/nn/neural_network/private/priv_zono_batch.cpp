@@ -3,6 +3,8 @@
 // See priv_zono_batch.h. The order of the operations of a layer is CORALean's Layer.activation
 // (as in evaluate.cpp): the bounds as CORALean's interval of a zonotope, the line, the slope map
 // with + 0.0 (a zero slope makes -0 +0), and the box of the offset and the error.
+// Without a record the error rows v_i e_j of a layer wait for the next linear map, which makes
+// them v_i times the row j of W: no (B, dn, n) block and no product with it.
 //
 // CORA: nn/@neuralNetwork/evaluateZonotopeBatch_.m
 // CORA: nn/@neuralNetwork/prepareForZonoBatchEval.m
@@ -191,8 +193,9 @@ LineJacobian aux_bounds_jacobian(Activation activation, const Tensor &l, const T
     const double eps = machine_eps(l.dtype());
     const Tensor equal = width.less_equal(center.abs().maximum(1.0) * eps);
     const Tensor w = Tensor::where(equal, one, width);
-    const auto [dl, ddl] = aux_derivatives(activation, l);
-    const auto [du, ddu] = aux_derivatives(activation, u);
+    // the slope and its derivatives in l and u
+    const Tensor dl = aux_derivatives(activation, l).first;
+    const Tensor du = aux_derivatives(activation, u).first;
     const Tensor half_dd = aux_derivatives(activation, center).second * 0.5;
     const Tensor m =
         Tensor::where(equal, aux_derivatives(activation, center).first, (f(u) - f(l)).divide(w));
@@ -204,6 +207,7 @@ LineJacobian aux_bounds_jacobian(Activation activation, const Tensor &l, const T
     Tensor lo_x = zero, hi_x = zero, lo_dl = zero, lo_du = zero, hi_dl = zero, hi_du = zero;
     const Tensor cands[] = {xu.negative(), xu, l, u};
     for (int i = 0; i < 4; ++i) {
+        // f(x) - m x at the candidate, kept where it is inside [l, u] and the least or largest
         const Tensor &x = cands[i];
         const Tensor d = f(x) - m.multiply(x);
         const Tensor inside = x.greater_equal(l).multiply(x.less_equal(u));
@@ -218,6 +222,7 @@ LineJacobian aux_bounds_jacobian(Activation activation, const Tensor &l, const T
         hi_dl = Tensor::where(above, dir_l, hi_dl);
         hi_du = Tensor::where(above, dir_u, hi_du);
     }
+    // the chain through m, then the offset and radius are the middle and half of [lo, hi]
     const Tensor lo_l = lo_dl - lo_x.multiply(m_l), lo_u = lo_du - lo_x.multiply(m_u);
     const Tensor hi_l = hi_dl - hi_x.multiply(m_l), hi_u = hi_du - hi_x.multiply(m_u);
     return {m_l,
@@ -410,8 +415,7 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
     Tensor c = c_, dr = dr_, G = G_;
     ZonoPropagation out;
     const bool split = splits.defined() && splits.shape()[1] > 0;
-    // without a record the error generators of a layer stay diagonal until the next linear map:
-    // the rows v_i e_j W are v_i times the row j of W, no (B, dn, n) block and no product with it
+    // without a record a layer's error generators stay diagonal until the next linear map
     Tensor pending_values, pending_neurons;
     bool pending_all = false;
     const auto take_pending = [&](const Tensor &M) {
@@ -519,8 +523,8 @@ Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const Zono
     if (!exact) return aux_held_gradients(out, in);
     // d F / d G at the output, then back through every layer
     const Tensor frad = (out.G.square().sum(-1).sum(-1, true) + numerics::kFradSmoothing).sqrt();
-    Tensor gG = out.G.divide(frad.expand_dims(-1));
-    Tensor gc = out.c.zeros_like(), gdr = out.dr.defined() ? out.dr.zeros_like() : Tensor();
+    Tensor g_gen = out.G.divide(frad.expand_dims(-1));
+    Tensor g_c = out.c.zeros_like(), g_dr = out.dr.defined() ? out.dr.zeros_like() : Tensor();
     std::size_t next = out.layers.size();
     for (std::size_t k = net.W.size(); k-- > 0;) {
         if (net.activations[k] != Activation::identity) {
@@ -533,16 +537,16 @@ Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const Zono
                 const Tensor &neurons = rec.slot_neurons;
                 const int64_t dn = neurons.shape()[1];
                 const Tensor hot = aux_onehot(neurons, n);
-                const Tensor gv = gG.slice(1, qk, qk + dn)
+                const Tensor gv = g_gen.slice(1, qk, qk + dn)
                                       .take_along_axis(neurons.expand_dims(-1), 2)
                                       .squeeze(-1);
                 rec.grad = hot.multiply(gv.expand_dims(-1)).sum(1);
                 g_reach = rec.grad;
-                if (dn < n && gdr.defined()) g_reach = g_reach + gdr.multiply(1.0 - hot.max(1));
-                gG = gG.slice(1, 0, qk);
+                if (dn < n && g_dr.defined()) g_reach = g_reach + g_dr.multiply(1.0 - hot.max(1));
+                g_gen = g_gen.slice(1, 0, qk);
             } else {
                 rec.grad = rec.l.zeros_like();
-                g_reach = gdr.defined() ? gdr : rec.l.zeros_like();
+                g_reach = g_dr.defined() ? g_dr : rec.l.zeros_like();
             }
             // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = m dr1 + reach
             const ClampJacobian cl = aux_clamp_jacobian(rec.first_id, rec.l, rec.u, splits);
@@ -550,25 +554,25 @@ Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const Zono
                 priv_verify_line(net.activations[k], cl.lc, cl.uc, net.poly_method).slope;
             const LineJacobian J =
                 aux_line_jacobian(net.activations[k], cl.lc, cl.uc, net.poly_method);
-            Tensor g_m = gc.multiply(c1) + gG.multiply(G1).sum(1);
-            if (dr1.defined()) g_m = g_m + gdr.multiply(dr1);
-            const Tensor g_lc = g_m.multiply(J.m_l) + gc.multiply(J.o_l) + g_reach.multiply(J.r_l);
-            const Tensor g_uc = g_m.multiply(J.m_u) + gc.multiply(J.o_u) + g_reach.multiply(J.r_u);
+            Tensor g_m = g_c.multiply(c1) + g_gen.multiply(G1).sum(1);
+            if (dr1.defined()) g_m = g_m + g_dr.multiply(dr1);
+            const Tensor g_lc = g_m.multiply(J.m_l) + g_c.multiply(J.o_l) + g_reach.multiply(J.r_l);
+            const Tensor g_uc = g_m.multiply(J.m_u) + g_c.multiply(J.o_u) + g_reach.multiply(J.r_u);
             const Tensor g_l = g_lc.multiply(cl.lc_l) + g_uc.multiply(cl.uc_l);
             const Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
             // l = c1 - sum |G1| - dr1, u = c1 + sum |G1| + dr1
             const Tensor g_rad = g_u - g_l;
-            gc = gc.multiply(m) + g_l + g_u;
-            gG = m.expand_dims(1).multiply(gG) + G1.sign().multiply(g_rad.expand_dims(1));
-            gdr = dr1.defined() ? gdr.multiply(m) + g_rad : Tensor();
+            g_c = g_c.multiply(m) + g_l + g_u;
+            g_gen = m.expand_dims(1).multiply(g_gen) + G1.sign().multiply(g_rad.expand_dims(1));
+            g_dr = dr1.defined() ? g_dr.multiply(m) + g_rad : Tensor();
         }
         // the linear layer; the centers and radii of the first layer's input are not needed
-        gG = gG.matmul(net.WT[k]);
+        g_gen = g_gen.matmul(net.WT[k]);
         if (k == 0) break;
-        gc = gc.matmul(net.WT[k]);
-        if (gdr.defined()) gdr = gdr.matmul(net.abs_wT[k]);
+        g_c = g_c.matmul(net.WT[k]);
+        if (g_dr.defined()) g_dr = g_dr.matmul(net.abs_wT[k]);
     }
-    return gG.take_along_axis(in.dims.expand_dims(-1), 2).squeeze(-1);
+    return g_gen.take_along_axis(in.dims.expand_dims(-1), 2).squeeze(-1);
 }
 
 } // namespace cora
