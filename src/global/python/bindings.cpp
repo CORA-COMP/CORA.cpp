@@ -614,8 +614,11 @@ void bind_cont_set(py::module_ &m) {
                 // a point is tested by the class of the first set
                 if (py::isinstance<Interval>(S1))
                     return py::cast<const Interval &>(S1).contains(point_of(S2, "the point")).all();
+                // a zonotope answers a mask: one flag per point
                 if (py::isinstance<Zonotope>(S1))
-                    return py::cast<const Zonotope &>(S1).contains(point_of(S2, "the points"));
+                    return py::cast<const Zonotope &>(S1)
+                        .contains(point_of(S2, "the points"))
+                        .all();
                 // contains dispatches on the class of the first set
                 if (py::isinstance<ConZonotope>(S1))
                     return py::cast<const ConZonotope &>(S1).contains(point_of(S2, "the points"));
@@ -624,9 +627,12 @@ void bind_cont_set(py::module_ &m) {
                 if (py::isinstance<Polytope>(S1))
                     return py::cast<const Polytope &>(S1).contains(point_of(S2, "the points"));
                 if (py::isinstance<Ellipsoid>(S1))
-                    return py::cast<const Ellipsoid &>(S1).contains(point_of(S2, "the points"));
+                    return py::cast<const Ellipsoid &>(S1)
+                        .contains(point_of(S2, "the points"))
+                        .all();
+                // the batch tests answer all() of the mask
                 if (py::isinstance<Capsule>(S1))
-                    return py::cast<const Capsule &>(S1).contains(point_of(S2, "the points"));
+                    return py::cast<const Capsule &>(S1).contains(point_of(S2, "the points")).all();
                 if (py::isinstance<EmptySet>(S1))
                     return py::cast<const EmptySet &>(S1).contains(point_of(S2, "the points"));
                 if (py::isinstance<Fullspace>(S1))
@@ -1635,15 +1641,17 @@ void bind_zonotope(py::module_ &m) {
         // containment and norm minimizers
         .def(
             "contains",
-            [](const Zonotope &Z, const py::object &S, const std::string &method, Tol tol) {
+            [](const Zonotope &Z, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
                 if (py::isinstance<Zonotope>(S))
-                    return Z.contains(py::cast<Zonotope>(S), method, tol);
+                    return py::cast(Z.contains(py::cast<Zonotope>(S), method, tol));
                 if (py::isinstance<Interval>(S))
-                    return Z.contains(py::cast<Interval>(S), method, tol);
-                return Z.contains(point_of(S, "the points"), method, tol);
+                    return py::cast(Z.contains(py::cast<Interval>(S), method, tol));
+                return values(Z.contains(point_of(S, "the points"), method, tol));
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the zonotope contains the point(s) (n,) or (N, n), a zonotope or a box")
+        // the point where a ray leaves the zonotope
         .def(
             "boundary_point",
             [](const Zonotope &Z, const py::object &dir, const std::optional<py::object> &start) {
@@ -1677,6 +1685,7 @@ void bind_zonotope(py::module_ &m) {
             },
             py::arg("tol") = py::none(),
             "(res, subspace): is_full_dim and a basis (n, r) of the span")
+        // equality with a zonotope, a box or a point
         .def(
             "isequal",
             [](const Zonotope &Z, const py::object &S, Tol tol) {
@@ -1688,13 +1697,14 @@ void bind_zonotope(py::module_ &m) {
             "Whether S (a zonotope, a box or a point) is the same set, up to tol")
         .def(
             "is_intersecting",
-            [](const Zonotope &Z, const py::object &S, const std::string &type, Tol tol) {
+            [](const Zonotope &Z, const py::object &S, const std::string &type,
+               Tol tol) -> py::object {
                 if (py::isinstance<Zonotope>(S))
-                    return Z.is_intersecting(py::cast<Zonotope>(S), type, tol);
+                    return py::cast(Z.is_intersecting(py::cast<Zonotope>(S), type, tol));
                 if (py::isinstance<Interval>(S))
-                    return Z.is_intersecting(py::cast<Interval>(S), type, tol);
+                    return py::cast(Z.is_intersecting(py::cast<Interval>(S), type, tol));
                 // intersection with sets or points
-                return Z.is_intersecting(point_of(S, "the points"), type, tol);
+                return values(Z.is_intersecting(point_of(S, "the points"), type, tol));
             },
             py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
             "Whether Z and a zonotope, a box or points intersect; 'exact' (default) or 'approx'")
@@ -2677,9 +2687,10 @@ void bind_ellipsoid(py::module_ &m) {
         // meeting points or an ellipsoid
         .def(
             "is_intersecting",
-            [](const Ellipsoid &E, const py::object &S, Tol tol) {
-                if (py::isinstance<Ellipsoid>(S)) return E.is_intersecting(ellipsoid_of(S), tol);
-                return E.is_intersecting(point_of(S, "the points"), tol);
+            [](const Ellipsoid &E, const py::object &S, Tol tol) -> py::object {
+                if (py::isinstance<Ellipsoid>(S))
+                    return py::cast(E.is_intersecting(ellipsoid_of(S), tol));
+                return values(E.is_intersecting(point_of(S, "the points"), tol));
             },
             py::arg("S"), py::arg("tol") = py::none(),
             "Whether the ellipsoid meets an ellipsoid (one a point) or contains the points (..., "
@@ -2792,16 +2803,19 @@ void bind_ellipsoid(py::module_ &m) {
             "The Cartesian product with an ellipsoid (of the bounding boxes) or a point (exact)")
         .def(
             "contains",
-            [](const Ellipsoid &E, const py::object &S, const std::string &method, Tol tol) {
+            [](const Ellipsoid &E, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
                 if (py::isinstance<Zonotope>(S))
-                    return E.contains(py::cast<Zonotope>(S), method, tol);
+                    return py::cast(E.contains(py::cast<Zonotope>(S), method, tol));
                 if (py::isinstance<Interval>(S))
-                    return E.contains(py::cast<Interval>(S), method, tol);
-                if (py::isinstance<Ellipsoid>(S)) return E.contains(ellipsoid_of(S), method, tol);
-                return E.contains(point_of(S, "the points"), method, tol);
+                    return py::cast(E.contains(py::cast<Interval>(S), method, tol));
+                if (py::isinstance<Ellipsoid>(S))
+                    return py::cast(E.contains(ellipsoid_of(S), method, tol));
+                return values(E.contains(point_of(S, "the points"), method, tol));
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the ellipsoid contains the points (..., n), a zonotope, a box or an ellipsoid")
+        // the ellipsoid enclosing an ellipsoid or a set
         .def(
             "enclose",
             [](const Ellipsoid &E, const ContSet &S2) {
@@ -2918,20 +2932,24 @@ void bind_capsule(py::module_ &m) {
             "Whether the capsules are equal up to tol, or both empty")
         .def(
             "contains",
-            [](const Capsule &C, const py::object &S, Tol tol) {
-                if (py::isinstance<Capsule>(S)) return C.contains(py::cast<Capsule>(S), tol);
-                if (py::isinstance<Zonotope>(S)) return C.contains(py::cast<Zonotope>(S), tol);
-                if (py::isinstance<Interval>(S)) return C.contains(py::cast<Interval>(S), tol);
+            [](const Capsule &C, const py::object &S, Tol tol) -> py::object {
+                if (py::isinstance<Capsule>(S))
+                    return py::cast(C.contains(py::cast<Capsule>(S), tol));
+                if (py::isinstance<Zonotope>(S))
+                    return py::cast(C.contains(py::cast<Zonotope>(S), tol));
+                if (py::isinstance<Interval>(S))
+                    return py::cast(C.contains(py::cast<Interval>(S), tol));
                 // containment of points or sets
-                return C.contains(point_of(S, "the points"), tol);
+                return values(C.contains(point_of(S, "the points"), tol));
             },
             py::arg("S"), py::arg("tol") = py::none(),
             "Whether the capsule contains the points (N, n), a capsule, a zonotope or a box")
         .def(
             "is_intersecting",
-            [](const Capsule &C, const py::object &S, Tol tol) {
-                if (py::isinstance<Capsule>(S)) return C.is_intersecting(py::cast<Capsule>(S), tol);
-                return C.is_intersecting(point_of(S, "the points"), tol);
+            [](const Capsule &C, const py::object &S, Tol tol) -> py::object {
+                if (py::isinstance<Capsule>(S))
+                    return py::cast(C.is_intersecting(py::cast<Capsule>(S), tol));
+                return values(C.is_intersecting(point_of(S, "the points"), tol));
             },
             py::arg("S"), py::arg("tol") = py::none(),
             "Whether the capsule meets a capsule or contains the points (N, n), up to tol")
