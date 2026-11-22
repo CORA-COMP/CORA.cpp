@@ -114,7 +114,7 @@ int main() {
 
                     // the error over Rmax from the point of the pass, against the oracle's
                     const Jacobians J =
-                        c.sys.jacobian(priv_column(like, mine->xs), c.U.center().expand_dims(-1));
+                        c.sys.jacobian(priv_column(like, mine->xs).squeeze(-1), c.U.center());
                     const Zonotope V = priv_abstr_err_adaptive(c.sys, kappa, J.A, J.B, mine->xs,
                                                                mine->Rmax, U, alg.zeta_z);
                     const auto err =
