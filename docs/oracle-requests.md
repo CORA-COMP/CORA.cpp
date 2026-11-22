@@ -490,9 +490,23 @@ Phase 2 (CORA.cpp#227, #228) adds steps no CORALean op covers yet:
 | `neuralNetwork.backwardBound` | none: CROWN's backward linear bound of rows of the output over a box, at given pre-activation bounds (chord above, slope below; the zonotope line's parallels for sigmoid/tanh) | `layers`, `x`, `r`, `l`, `u`, `rows`, `alpha` | the lower bounds |
 | `neuralNetwork.reluChordRow` | none: the row `ReLU(x) <= u (x - l) / (u - l)` on the factors of a layer's input and output sets (`relu_constraint_faces` `triangle`) | `Zin`, `Zout`, `l`, `u`, `j` | `a`, `b` |
 
+The dual certificate (`dual_certificate`) is the `conZonotope.dualBound` row above, applied to the
+specification rows: its request fields are the rows `C`, `d` of the factors (the splits and the
+three ReLU faces), `w = G a` and `lambda`.
+
 The slopes' gradient is checked against the central difference, and the witness test runs all of
-Phase 2 (0 wrong of 60); a theorem `alpha_line_sound` and `backward_bound_sound` would close the
-soundness rows of docs/nn_verification.md.
+Phase 2 (0 wrong of 60). Three theorems would close the soundness rows of docs/nn_verification.md:
+
+- `dual_bound_sound` (weak duality): for `C : Matrix p q`, `d : Vec p`, `w : Vec q`, `lambda >= 0`
+  and every `beta` in `[-1, 1]^q` with `C beta <= d`: `w . beta >= -sum_j |w_j + (C^T lambda)_j| -
+  lambda . d`; and its float form at `nearest` with the rounding bound of the sum.
+- `alpha_line_sound`: for `l < 0 < u`, `a` in `[0, 1]` and `x` in `[l, u]`: `relu x - a x` lies in
+  `[0, max (-a l) ((1 - a) u)]`, so `a x + h / 2 +- h / 2` is an `IsRelaxationOf` of the ReLU.
+- `backward_bound_sound`: for a network of affine layers and activations with pre-activation
+  bounds `[l_k, u_k]` that hold on the box, linear bounds `s_l x + b_l <= f(x) <= s_u x + b_u` on
+  each `[l_k, u_k]` and a row `a`: CROWN's backward value (`Lambda` through `W_k^T` and the
+  positive and negative parts of the slopes, the constant, then `Lambda x - |Lambda| r`) is at
+  most `a . N(x')` for every `x'` in the box `(x, r)`.
 
 The ReLU rows and the iterated refinement are not formalized. The coverage rows `verify`,
 `computePGDAttack` and `computeFGSMAttack` are oracle debt until then.

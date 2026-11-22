@@ -113,6 +113,12 @@ struct NnVerifyOptions {
     std::string fourier_motzkin_order = "cora";
     /// The check also takes CROWN's backward bound over the same relaxation, the better of the two.
     bool backward_bound = false;
+    /// The check also takes the dual certificate: per row a Lagrangian bound under the splits'
+    /// rows and the three faces of dual_relu_rows crossing ReLUs (beta-CROWN's multipliers).
+    bool dual_certificate = false;
+    int64_t dual_iterations = 20; ///< projected Adam steps on the multipliers
+    double dual_step_size = 0.1;  ///< Adam's step, times the row's largest coefficient
+    int64_t dual_relu_rows = 32;  ///< crossing ReLUs whose faces are rows, by their error
     /// The candidates of a look-ahead neuron split heuristic ("fsb") per set.
     int64_t look_ahead_candidates = 8;
     // the bounding "zonotope-alpha": CORA's verify whose check optimizes the ReLU slopes

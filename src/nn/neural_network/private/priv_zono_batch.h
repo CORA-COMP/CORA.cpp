@@ -135,6 +135,17 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
                            const std::vector<Tensor> *alpha = nullptr);
 
+/// The rows C beta <= d (B, p, q) on the factors of a recorded propagation (priv_verify_dual.cpp):
+/// one per split of splits, the three faces of the num_relu crossing ReLU neurons of largest error.
+/// Undefined if there is none.
+std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoNet &net,
+                                         const Tensor &splits, int64_t num_relu);
+
+/// The Lagrangian lower bound (B, R) of w (B, R, q) times beta over [-1, 1]^q with C beta <= d,
+/// lambda by `iterations` projected Adam steps in dtype; evaluated again in w's dtype.
+Tensor priv_dual_lower(const Tensor &w, const Tensor &C, const Tensor &d, int64_t iterations,
+                       double step, DType dtype);
+
 /// The line of CORA's poly_method "bounds" (aux_imgEncBatch) or CORALean's "singh" over [l, u].
 PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &u,
                           const std::string &poly_method);
