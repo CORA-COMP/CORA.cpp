@@ -24,7 +24,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       22-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -299,6 +299,11 @@ NeuralNetwork::Layer NeuralNetwork::Layer::to(DType dtype, const std::string &de
         p->abs_kt = move(p->abs_kt);
         layer.plan = p;
     }
+    // the graph: the same sources, the residuals' maps moved as well
+    layer.source = source;
+    for (const Residual &r : residuals)
+        layer.residuals.push_back(
+            {r.source, r.map ? std::make_shared<Layer>(r.map->to(dtype, device)) : nullptr});
     return layer;
 }
 

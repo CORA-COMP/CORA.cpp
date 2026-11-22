@@ -160,12 +160,16 @@ Tensor aux_pieces_offsets(const Tensor &lo, const Tensor &hi, const Tensor &cent
 /// The gradient of the output box's F-radius with respect to the input radius r (B, n0), through
 /// the interval propagation of the network (CORA's aux_updateGradients of an interval).
 Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &r) {
-    std::vector<Tensor> lo{x - r}, hi{x + r}, plo, phi;
+    // the boxes' centers and radii of each output (mids[j + 1]; 0: the input)
+    std::vector<Tensor> lo{x - r}, hi{x + r}, plo, phi, mids, rads;
     for (std::size_t k = 0; k < net.W.size(); ++k) {
-        const Tensor mid = net.map(k, (lo.back() + hi.back()) * 0.5) + net.b[k];
-        const Tensor rad = net.map_abs(k, (hi.back() - lo.back()) * 0.5);
+        mids.push_back((lo.back() + hi.back()) * 0.5);
+        rads.push_back((hi.back() - lo.back()) * 0.5);
+        const Tensor mid = net.linear(k, mids) + net.b[k];
+        const Tensor rad = net.linear(k, rads, true);
         plo.push_back(mid - rad);
         phi.push_back(mid + rad);
+        // the box after the activation
         lo.push_back(net.activations[k] == Activation::identity  ? plo.back()
                      : net.activations[k] == Activation::relu    ? plo.back().maximum(0.0)
                      : net.activations[k] == Activation::sigmoid ? plo.back().sigmoid()
@@ -179,7 +183,15 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
     const Tensor width = hi.back() - lo.back();
     const Tensor frad = (width.square().sum(1, true) + numerics::kFradSmoothing).sqrt();
     Tensor g_hi = width.divide(frad), g_lo = g_hi.negative();
+    // the gradients of each output's center and radius, summed over the layers that read it
+    std::vector<Tensor> g_mids(net.W.size() + 1), g_rads(net.W.size() + 1);
     for (std::size_t k = net.W.size(); k-- > 0;) {
+        // the bounds' gradients of output k (the last one's: the seeds)
+        if (k + 1 < net.W.size()) {
+            const Tensor g_mid = g_mids[k + 1] * 0.5, g_rad = g_rads[k + 1] * 0.5;
+            g_lo = g_mid - g_rad;
+            g_hi = g_mid + g_rad;
+        }
         const auto slope = [&](const Tensor &z) {
             switch (net.activations[k]) {
             case Activation::identity:
@@ -196,12 +208,11 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
         g_hi = g_hi.multiply(slope(phi[k]));
         g_lo = g_lo.multiply(slope(plo[k]));
         // lo = mid - rad, hi = mid + rad, mid and rad of the layer's input box
-        const Tensor g_mid = net.map_t(k, g_lo + g_hi) * 0.5;
-        const Tensor g_rad = net.map_abs_t(k, g_hi - g_lo) * 0.5;
-        g_lo = g_mid - g_rad;
-        g_hi = g_mid + g_rad;
+        net.linear_t(k, g_lo + g_hi, g_mids);
+        net.linear_t(k, g_hi - g_lo, g_rads, true);
     }
-    return g_hi - g_lo;
+    const Tensor g_mid = g_mids[0] * 0.5, g_rad = g_rads[0] * 0.5;
+    return (g_mid + g_rad) - (g_mid - g_rad);
 }
 
 // The parts of a batch ----------------------------------------------------------------------------
@@ -361,7 +372,7 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     while (bytes(*net_) > problem.memory_budget && net_->q > net_->q0) {
         int64_t widest = 0;
         for (const int64_t s : net_->slots) widest = std::max(widest, s);
-        const int64_t half = widest / 2; // (whole slots)
+        const int64_t half = widest / 2;
         slots = double(half);
         net_ = std::make_unique<ZonoNet>(problem.net(), o_.num_init_gens, slots, o_.poly_method,
                                          o_.approx_error_order);

@@ -70,10 +70,15 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     convert = (lambda t: t.to(device)) if backend == "torch" else (lambda t: t.numpy())
 
     def one(layer):
-        # a dense pair, or a conv2d or gather dict whose tensors move
+        # a dense pair, or a dict whose tensors move, the residuals' maps as well
+        if layer is None:
+            return None
         if not isinstance(layer, dict):
             return (convert(layer[0]), convert(layer[1]))
-        return {k: convert(v) if torch.is_tensor(v) else v for k, v in layer.items()}
+        out = {k: convert(v) if torch.is_tensor(v) else v for k, v in layer.items()}
+        if "residuals" in out:
+            out["residuals"] = [{**r, "map": one(r["map"])} for r in out["residuals"]]
+        return out
 
     try:
         network = cora.NeuralNetwork([one(layer) for layer in layers], activations)
