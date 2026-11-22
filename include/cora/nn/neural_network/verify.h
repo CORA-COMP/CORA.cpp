@@ -101,6 +101,8 @@ struct NnVerifyOptions {
     std::string neuron_split_position = "zero"; ///< or "middle"
     double num_relu_constraints = 0;
     std::string relu_constraint_heuristic = "most-sensitive-approx-error";
+    /// The faces of a ReLU row: "cora" (ReLU(x) >= 0, >= x) or "triangle" (also <= its chord).
+    std::string relu_constraint_faces = "cora";
     std::string input_generator_heuristic = "most-sensitive-input-radius";
     int64_t mini_batch_size = 1024;
     /// The heuristics' F-radius gradient through the slopes, offsets and errors of the lines

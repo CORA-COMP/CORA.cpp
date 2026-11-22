@@ -13,7 +13,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -121,6 +121,15 @@ int main() {
               << "stale factors as CORA: " << aux_wrong(stale) << " wrong\n"
               << "interval-center splits as CORA: " << aux_wrong(center) << " wrong\n";
     check(wrong_dummy > 0, "CORA's dummy splits answer some instance with unsafe inputs unsat");
+    // Phase 2's slopes, backward bound, look-ahead splits and chord rows answer none unsat
+    NnVerifyOptions phase2 = repaired;
+    phase2.bounding_method = "zonotope-alpha";
+    phase2.backward_bound = true;
+    phase2.neuron_split_heuristic = "fsb";
+    phase2.relu_constraint_faces = "triangle";
+    const int wrong2 = aux_wrong(phase2);
+    std::cout << "phase 2: " << wrong2 << " wrong of " << kNetworks << "\n";
+    check(wrong2 == 0, "zonotope-alpha, the backward bound, fsb and the chord rows are sound");
     return test::finish("neuralNetwork verify witness");
 }
 

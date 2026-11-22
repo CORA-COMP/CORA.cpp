@@ -482,5 +482,17 @@ oracle serves the op: the batched zonotope with a slot per error at a point cent
 | `conZonotope.dualBound` | none: weak duality at given multipliers (the study's `dualCertificate`) | `C`, `d`, `G`, `lambda` | `h` |
 | `neuralNetwork.fradGradient` | none: the gradient of the output's F-radius in each generator's value through the lines' slopes, offsets and errors (CORA's `backpropZonotopeBatch` with `exact_backprop`); CORA.cpp checks it against the central difference | `layers`, `Z`, `dr`, `slots`, `splits` | the gradients |
 
+Phase 2 (CORA.cpp#227, #228) adds steps no CORALean op covers yet:
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `nnLayer.evaluateZonotope` with ReLU slopes | none: the ReLU line `a x + h / 2 +- h / 2`, `h = max(-a l, (1 - a) u)`, `a` in [0, 1] (`zonotope-alpha`); soundness: `relu(x) - a x` in `[0, h]` on `[l, u]` | `layer`, `Z`, `alpha` | `Z` |
+| `neuralNetwork.backwardBound` | none: CROWN's backward linear bound of rows of the output over a box, at given pre-activation bounds (chord above, slope below; the zonotope line's parallels for sigmoid/tanh) | `layers`, `x`, `r`, `l`, `u`, `rows`, `alpha` | the lower bounds |
+| `neuralNetwork.reluChordRow` | none: the row `ReLU(x) <= u (x - l) / (u - l)` on the factors of a layer's input and output sets (`relu_constraint_faces` `triangle`) | `Zin`, `Zout`, `l`, `u`, `j` | `a`, `b` |
+
+The slopes' gradient is checked against the central difference, and the witness test runs all of
+Phase 2 (0 wrong of 60); a theorem `alpha_line_sound` and `backward_bound_sound` would close the
+soundness rows of docs/nn_verification.md.
+
 The ReLU rows and the iterated refinement are not formalized. The coverage rows `verify`,
 `computePGDAttack` and `computeFGSMAttack` are oracle debt until then.

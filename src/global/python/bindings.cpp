@@ -4761,6 +4761,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(neuron_split_position, "'zero' or 'middle'");
     CORA_VERIFY_FIELD(num_relu_constraints, "The ReLU rows per set (inf: all)");
     CORA_VERIFY_FIELD(relu_constraint_heuristic, "CORA's relu_constraint_heuristic");
+    CORA_VERIFY_FIELD(relu_constraint_faces, "'cora' (two faces) or 'triangle' (and the chord)");
     CORA_VERIFY_FIELD(input_generator_heuristic, "CORA's input_generator_heuristic");
     CORA_VERIFY_FIELD(mini_batch_size, "The sets per batch at most");
     CORA_VERIFY_FIELD(exact_backprop, "CORA's exact_backprop: the gradient through the lines");

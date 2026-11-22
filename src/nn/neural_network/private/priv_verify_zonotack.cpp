@@ -888,6 +888,9 @@ std::pair<Tensor, Tensor> ConZonotopeBounding::aux_relu_constraints(const Tensor
     const int64_t k = std::min(n_relu_, score.shape()[1]);
     const Tensor top = score.topk(k, 1).second;
     Tensor A1 = top.zeros_like({B, k, q}), A2 = A1, b1 = top.zeros_like({B, k}), b2 = b1;
+    // relu_constraint_faces "triangle" adds the chord above each crossing neuron
+    const bool triangle = o_.relu_constraint_faces == "triangle";
+    Tensor A3 = A1, b3 = b1;
     int64_t start = 0;
     for (const ZonoLayerRecord *rec : recs) {
         const int64_t n = rec->l.shape()[1];
@@ -906,8 +909,24 @@ std::pair<Tensor, Tensor> ConZonotopeBounding::aux_relu_constraints(const Tensor
         A2 = Tensor::where(hit, go + gi, A2);
         b1 = Tensor::where(inside, co_u, b1);
         b2 = Tensor::where(inside, co_u - ci_l, b2);
+        if (triangle) {
+            // ReLU(x) <= s (x - l), s = u / (u - l), on a crossing neuron (the chord, the cut)
+            const auto [lc, uc] = net.clamp(rec->first_id, rec->l, rec->u, si);
+            const Tensor l = aux_at(lc, j), u = aux_at(uc, j);
+            const Tensor cross =
+                inside.multiply(l.less(l.zeros_like())).multiply(u.greater(u.zeros_like()));
+            const Tensor slope = u.divide((u - l).maximum(numerics::kTiny));
+            const Tensor gs = aux_pad(aux_columns(rec->G_in, j), q).multiply(slope.expand_dims(-1));
+            Tensor b = slope.multiply(aux_at(rec->c_in, j) - l) - aux_at(rec->c_out, j);
+            if (rec->dr_out.defined()) b = b + aux_at(rec->dr_out, j);
+            if (rec->dr_in.defined()) b = b + slope.multiply(aux_at(rec->dr_in, j));
+            A3 = Tensor::where(cross.expand_dims(-1), go.negative() - gs, A3);
+            b3 = Tensor::where(cross, b, b3);
+        }
         start += n;
     }
+    if (triangle)
+        return aux_compact(Tensor::concat({A1, A2, A3}, 1), Tensor::concat({b1, b2, b3}, 1));
     return aux_compact(Tensor::concat({A1, A2}, 1), Tensor::concat({b1, b2}, 1));
 }
 
