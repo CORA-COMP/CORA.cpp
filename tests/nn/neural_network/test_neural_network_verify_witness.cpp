@@ -129,6 +129,11 @@ int main() {
     phase2.neuron_split_heuristic = "fsb";
     phase2.relu_constraint_faces = "triangle";
     const int wrong2 = aux_wrong(phase2);
+    phase2.alpha_method = "crown";
+    phase2.optimize_gap = 0.5;
+    const int wrong3 = aux_wrong(phase2);
+    std::cout << "phase 2, alpha-CROWN within a gap of 0.5: " << wrong3 << " wrong\n";
+    check(wrong3 == 0, "alpha-CROWN within optimize_gap is sound");
     std::cout << "phase 2: " << wrong2 << " wrong of " << kNetworks << "\n";
     check(wrong2 == 0, "zonotope-alpha, the backward bound, the dual certificate, fsb and the "
                        "chord rows are sound");

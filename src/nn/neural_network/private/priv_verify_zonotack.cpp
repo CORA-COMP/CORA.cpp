@@ -274,6 +274,8 @@ class ConZonotopeBounding : public Bounding {
     Tensor aux_excluded(const ZonoPropagation &out, const Tensor &cases) const;
     Tensor aux_excluded_lower(const Tensor &lower, const Tensor &cases) const;
     Tensor aux_dual_margins(const ZonoPropagation &out, const Tensor &si) const;
+    Tensor aux_crown_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
+                                    const Tensor &si, const Tensor &excluded) const;
     std::vector<int64_t> aux_near(const std::vector<int64_t> &open, const Tensor &gap) const;
     Tensor aux_gap(const ZonoPropagation &out, const Tensor &lower, const Tensor &excluded) const;
     Tensor aux_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
@@ -388,6 +390,20 @@ Tensor ConZonotopeBounding::aux_dual_margins(const ZonoPropagation &out, const T
     const Tensor dual =
         priv_dual_lower(w, C, d, o_.dual_iterations, o_.dual_step_size, problem_->options().dtype);
     return (base + dual).reshape({B, P_, K_});
+}
+
+Tensor ConZonotopeBounding::aux_crown_alpha_excluded(const Tensor &xi, const Tensor &ri,
+                                                     const Tensor &ci, const Tensor &si,
+                                                     const Tensor &excluded) const {
+    // CROWN's bound with the lower ReLU slopes optimized per row, over the zonotope's bounds
+    const ZonoInput in = net_->input_zonotope(xi, ri);
+    const ZonoPropagation out = net_->forward(in.c, in.dr, in.G, si, nullptr, true);
+    const int64_t B = xi.shape()[0];
+    const Tensor crown = priv_backward_alpha(out, *net_, si, xi, ri, AT_.matrix_transpose(),
+                                             o_.alpha_iterations, o_.alpha_step_size) -
+                         b_.reshape({P_ * K_});
+    const Tensor lower = aux_margins(out).maximum(crown.reshape({B, P_, K_}));
+    return excluded.maximum(aux_excluded_lower(lower, ci));
 }
 
 std::vector<int64_t> ConZonotopeBounding::aux_near(const std::vector<int64_t> &open,
@@ -630,9 +646,11 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
         if (!near.empty()) {
             const StepTimer timer(stats_, "alpha_seconds");
             (*stats_)["alpha_sets"] += double(near.size());
-            const Tensor ex =
-                aux_alpha_excluded(xi_.take(near, 0), ri_.take(near, 0), ci_.take(near, 0),
-                                   si_.take(near, 0), excluded_all.take(near, 0));
+            const Tensor xn = xi_.take(near, 0), rn = ri_.take(near, 0), cn = ci_.take(near, 0),
+                         sn = si_.take(near, 0), en = excluded_all.take(near, 0);
+            const Tensor ex = o_.alpha_method == "crown"
+                                  ? aux_crown_alpha_excluded(xn, rn, cn, sn, en)
+                                  : aux_alpha_excluded(xn, rn, cn, sn, en);
             excluded_all = aux_put_rows(excluded_all, near, ex);
             // the sets the slopes verified
             const std::size_t before = open.size();

@@ -95,6 +95,7 @@ void NnVerifyOptions::validate() const {
                {"fourier-motzkin", "dual-iter"});
     aux_one_of("neuron_split_position", neuron_split_position, {"zero", "middle"});
     aux_one_of("fourier_motzkin_order", fourier_motzkin_order, {"cora", "coralean"});
+    aux_one_of("alpha_method", alpha_method, {"zonotope", "crown"});
     aux_one_of("relu_constraint_faces", relu_constraint_faces, {"cora", "triangle"});
     // the counts
     aux_at_least("num_splits", double(num_splits), 1);

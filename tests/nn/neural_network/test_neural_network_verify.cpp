@@ -334,6 +334,23 @@ void backward_bounds(const std::string &b) {
             check(holds, b + ": CROWN's backward bound holds the sampled outputs" +
                              (given ? " (slopes given)" : ""));
         }
+        // alpha-CROWN: the optimized slopes hold the sampled outputs, at least CROWN's bound
+        const Tensor crown = priv_backward_lower(out, net, splits, x, r, rows);
+        const Tensor opt = priv_backward_alpha(out, net, splits, x, r, rows, 20, 0.1);
+        bool holds = opt.greater_equal(crown - 1e-9).min().item() > 0;
+        const std::vector<double> lower = opt.data();
+        for (int64_t i = 0; i < 2; ++i) {
+            const Tensor xs = Tensor::from_data(pts, {3000, 3}).multiply(r.slice(0, i, i + 1)) +
+                              x.slice(0, i, i + 1);
+            const std::vector<double> hv = (xs.matmul(net.W[0]) + net.b[0]).data();
+            const std::vector<double> y = nn.evaluate(xs).matmul(rows.matrix_transpose()).data();
+            for (std::size_t p = 0; p < 3000; ++p) {
+                if (i == 0 && (hv[p * 6 + 2] < 0 || hv[p * 6 + 4] > 0)) continue;
+                for (std::size_t j = 0; j < 2; ++j)
+                    holds = holds && lower[std::size_t(i) * 2 + j] <= y[p * 2 + j];
+            }
+        }
+        check(holds, b + ": alpha-CROWN holds the sampled outputs, at least CROWN's bound");
     }
 }
 

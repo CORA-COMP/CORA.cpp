@@ -135,6 +135,13 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
                            const std::vector<Tensor> *alpha = nullptr);
 
+/// CROWN's lower bounds as priv_backward_lower with a ReLU's lower slope per row optimized
+/// (alpha-CROWN): `iterations` projected Adam steps of size `step` on the slopes in [0, 1], the
+/// record's bounds held; the best bound of each row over the steps.
+Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
+                           const Tensor &x, const Tensor &rad, const Tensor &rows,
+                           int64_t iterations, double step);
+
 /// The rows C beta <= d (B, p, q) on the factors of a recorded propagation (priv_verify_dual.cpp):
 /// one per split of splits, the three faces of the num_relu crossing ReLU neurons of largest error.
 /// Undefined if there is none.
