@@ -86,6 +86,18 @@ int main() {
     check(test::raises([&] { test::square_h().mink_diff(Polytope::inf(3)); },
                        Error::dimension_mismatch),
           "mink_diff: dimensions");
+    // a batch of polytopes, and the shifts of a set that has no generators or vertices
+    check(test::raises(
+              [&] { Polytope(Tensor::ones({3, 4, 2}), Tensor::ones({3, 4})).mink_diff(box); },
+              Error::not_supported),
+          "mink_diff: a batch of polytopes");
+    check(test::raises(
+              [&] {
+                  test::square_h().mink_diff(Ellipsoid(Tensor::eye(2)),
+                                             std::string("exact:vertices"));
+              },
+              Error::noops),
+          "mink_diff: exact:vertices of an ellipsoid");
     ChecksScope off(false);
     check(test::square_h().mink_diff(vec({0.5, 0.5})).dim() == 2,
           "mink_diff: the same with the checks off");
