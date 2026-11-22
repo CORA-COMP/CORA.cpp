@@ -903,7 +903,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
 
 Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
-                           int64_t iterations, double step) {
+                           int64_t iterations, double step, double deadline) {
     const int64_t B = x.shape()[0], R = rows.shape()[0];
     const bool split = splits.defined() && splits.shape()[1] > 0;
     // per activation layer the clamped bounds' lines: a ReLU's chord above, its lower slope free
@@ -968,7 +968,8 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
         const Tensor value =
             lam.matmul(xe).squeeze(-1) - lam.abs().matmul(re).squeeze(-1) + constant;
         best = best.defined() ? best.maximum(value) : value;
-        if (t == iterations) break;
+        // (every step's bound holds: the best so far at the deadline)
+        if (t == iterations || now_seconds() >= deadline) break;
         // the reverse: d value / d Lambda from the input box up, the slopes' gradients on the way
         std::vector<Tensor> gs{x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1))};
         const double c1 = 1.0 - std::pow(kB1, double(t + 1)),

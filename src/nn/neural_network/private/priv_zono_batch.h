@@ -35,6 +35,7 @@
 
 #include "nn/neural_network/private/priv_layers.h"
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -160,10 +161,11 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
 
 /// CROWN's lower bounds as priv_backward_lower with a ReLU's lower slope per row optimized
 /// (alpha-CROWN): `iterations` projected Adam steps of size `step` on the slopes in [0, 1], the
-/// record's bounds held; the best bound of each row over the steps.
+/// record's bounds held, none after the deadline (now_seconds); each row's best bound.
 Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
-                           int64_t iterations, double step);
+                           int64_t iterations, double step,
+                           double deadline = std::numeric_limits<double>::infinity());
 
 /// The rows C beta <= d (B, p, q) on the factors of a recorded propagation (priv_verify_dual.cpp):
 /// one per split of splits, the three faces of the num_relu crossing ReLU neurons of largest error.

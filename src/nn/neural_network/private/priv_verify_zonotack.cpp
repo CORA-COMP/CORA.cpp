@@ -436,7 +436,7 @@ Tensor ConZonotopeBounding::aux_crown_alpha_excluded(const Tensor &xi, const Ten
     const ZonoPropagation out = net_->forward(in.c, in.dr, in.G, si, nullptr, true);
     const int64_t B = xi.shape()[0];
     const Tensor crown = priv_backward_alpha(out, *net_, si, xi, ri, AT_.matrix_transpose(),
-                                             o_.alpha_iterations, o_.alpha_step_size) -
+                                             o_.alpha_iterations, o_.alpha_step_size, deadline_) -
                          b_.reshape({P_ * K_});
     const Tensor lower = aux_margins(out).maximum(crown.reshape({B, P_, K_}));
     return excluded.maximum(aux_excluded_lower(lower, ci));
