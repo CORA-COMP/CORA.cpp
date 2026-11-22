@@ -1,12 +1,12 @@
 // minus - the polytope shifted by a vector, as CORA's polytope.minus
 //
 // CORA defines minus for a vector subtrahend only; the Minkowski difference is
-// minkowski_difference. The offsets become b - A v and be - Ae v, the vertices V - v.
+// mink_diff. The offsets become b - A v and be - Ae v, the vertices V - v.
 //
 // Syntax:   Pres = P.minus(v);   Pres = P - v;
 // Inputs:   v - a vector (..., n)
 // Outputs:  Pres - {x - v | x in P}
-// See also: Polytope::plus, Polytope::minkowski_difference
+// See also: Polytope::plus, Polytope::mink_diff
 //
 // CORA: contSet/@polytope/minus.m
 // CORA authors: Viktor Kotsev, Mark Wetzlinger

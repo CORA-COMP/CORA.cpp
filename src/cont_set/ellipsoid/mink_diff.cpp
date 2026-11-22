@@ -5,7 +5,7 @@
 // matrices a point. The general case runs over directions of the equal-area partition, which
 // CORA.cpp lacks: Error::not_supported. An empty S2 gives the whole space.
 //
-// Syntax:   Eres = E.mink_diff(v);   Eres = E.mink_diff(S2);   S = E.minkowski_difference(S2);
+// Syntax:   Eres = E.mink_diff(v);   Eres = E.mink_diff(S2);   S = E.mink_diff(S2);
 // Inputs:   v - vector (..., n)
 //           S2 - ellipsoid
 // Outputs:  Eres - {x | x + S2 in E}
@@ -61,16 +61,14 @@ Ellipsoid Ellipsoid::mink_diff(const Ellipsoid &S2) const {
               "partition of the sphere (eq_point_set)");
 }
 
-Set Ellipsoid::minkowski_difference_impl(const ContSet &S2,
-                                         const std::optional<std::string> &type) const {
+Set Ellipsoid::mink_diff_impl(const ContSet &S2, const std::optional<std::string> &type) const {
     const std::string method = type.value_or("outer");
     if (method != "outer" && method != "inner")
         CORA_FAIL(Error::wrong_value,
-                  "minkowski_difference: the type must be 'outer' or 'inner', got '" + method +
-                      "'");
+                  "mink_diff: the type must be 'outer' or 'inner', got '" + method + "'");
     if (S2.class_id() != ClassId::ellipsoid)
         CORA_FAIL(Error::noops,
-                  "minkowski_difference is not implemented for Ellipsoid and " + S2.class_name());
+                  "mink_diff is not implemented for Ellipsoid and " + S2.class_name());
     const Ellipsoid &E2 = static_cast<const Ellipsoid &>(S2);
     // subtracting the empty set leaves everything
     if (priv_is_empty(E2)) return Fullspace(dim());

@@ -287,10 +287,10 @@ class Interval : public ContSet {
     /// The Minkowski difference {x | x + S in I}: [inf - inf2, sup - sup2] for a box S, a shift
     /// for a point, the support function for another set. An empty difference is the empty
     /// interval.
-    Interval minkowski_difference(const Interval &S) const;
-    Interval minkowski_difference(const Tensor &p) const;
-    Interval minkowski_difference(const ContSet &S,
-                                  const std::optional<std::string> &method = std::nullopt) const;
+    Interval mink_diff(const Interval &S) const;
+    Interval mink_diff(const Tensor &p) const;
+    Interval mink_diff(const ContSet &S,
+                       const std::optional<std::string> &method = std::nullopt) const;
 
     /// The smallest box around this and I2 (CORA's or); an empty operand returns the other. With
     /// a point p, the box grown to contain p.
@@ -451,8 +451,7 @@ class Interval : public ContSet {
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     Set uplus_impl() const override;
     Set times_impl(const Tensor &factor) const override;
-    Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &method) const override;
+    Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const override;
     Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
     Tensor norm_impl(Tensor::Norm type, const std::string &method) const override;

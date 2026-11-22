@@ -542,9 +542,9 @@ void bind_cont_set(py::module_ &m) {
         .def(
             "__pos__", [](const ContSet &S) { return object_of(S.uplus()); }, "S itself")
         .def(
-            "minkowski_difference",
+            "mink_diff",
             [](const ContSet &S, const py::object &S2, const std::optional<std::string> &method) {
-                return object_of(S.minkowski_difference(set_of(S2), method));
+                return object_of(S.mink_diff(set_of(S2), method));
             },
             py::arg("S2"), py::arg("method") = py::none(),
             "The Minkowski difference {x | x + S2 in S}")
@@ -1006,13 +1006,12 @@ void bind_interval(py::module_ &m) {
             py::arg("other") = py::none(),
             "The elementwise smaller of two boxes; without an argument the lower bound")
         .def(
-            "minkowski_difference",
+            "mink_diff",
             [](const Interval &I, const py::object &S, const std::optional<std::string> &method) {
-                if (py::isinstance<Interval>(S))
-                    return I.minkowski_difference(py::cast<Interval>(S));
+                if (py::isinstance<Interval>(S)) return I.mink_diff(py::cast<Interval>(S));
                 if (py::isinstance<ContSet>(S))
-                    return I.minkowski_difference(py::cast<const ContSet &>(S), method);
-                return I.minkowski_difference(point_of(S, "the point"));
+                    return I.mink_diff(py::cast<const ContSet &>(S), method);
+                return I.mink_diff(point_of(S, "the point"));
             },
             py::arg("S"), py::arg("method") = py::none(),
             "The box of x with x + S in the box; empty if there is none")
@@ -2040,13 +2039,11 @@ void bind_con_zonotope(py::module_ &m) {
             py::arg("S"), py::arg("method") = "linprog", py::arg("order") = py::none(),
             "A set without constraints that contains the union with S (a set, a point or a list)")
         .def(
-            "minkowski_difference",
+            "mink_diff",
             [](const ConZonotope &Z, const py::object &S2,
                const std::optional<std::string> &method) {
-                if (py::isinstance<ContSet>(S2))
-                    return object_of(Z.minkowski_difference(set_of(S2), method));
-                // the next step of the same case
-                return py::cast(Z.minkowski_difference(point_of(S2, "the point")));
+                if (py::isinstance<ContSet>(S2)) return object_of(Z.mink_diff(set_of(S2), method));
+                return py::cast(Z.mink_diff(point_of(S2, "the point")));
             },
             py::arg("S2"), py::arg("method") = py::none(),
             "The Minkowski difference {x | x + S2 in Z} with a zonotope, a box or a point")

@@ -138,21 +138,21 @@ class Arithmetic(unittest.TestCase):
             with self.assertRaises(cora.errors.DimensionMismatch):
                 f(box([0.0], [1.0]))
 
-    def test_minkowski_difference(self):
+    def test_mink_diff(self):
         I = box([0.0, 0.0], [10.0, 4.0])
-        R = I.minkowski_difference(box([1.0, -1.0], [3.0, 1.0]))
+        R = I.mink_diff(box([1.0, -1.0], [3.0, 1.0]))
         np.testing.assert_allclose(R.inf, [-1.0, 1.0])
         np.testing.assert_allclose(R.sup, [7.0, 3.0])
-        np.testing.assert_allclose(I.minkowski_difference(np.array([1.0, 2.0])).sup, [9.0, 2.0])
+        np.testing.assert_allclose(I.mink_diff(np.array([1.0, 2.0])).sup, [9.0, 2.0])
         Z = cora.Zonotope(np.zeros(2), 0.5 * np.eye(2))
         B = box([0.0, 0.0], [4.0, 4.0])
-        np.testing.assert_allclose(B.minkowski_difference(Z).inf, [0.5, 0.5])
-        np.testing.assert_allclose(B.minkowski_difference(Z, "inner").sup, [3.5, 3.5])
-        self.assertTrue(box([0.0], [1.0]).minkowski_difference(box([-1.0], [1.0])).is_empty())
+        np.testing.assert_allclose(B.mink_diff(Z).inf, [0.5, 0.5])
+        np.testing.assert_allclose(B.mink_diff(Z, "inner").sup, [3.5, 3.5])
+        self.assertTrue(box([0.0], [1.0]).mink_diff(box([-1.0], [1.0])).is_empty())
         with self.assertRaises(cora.errors.NoExactAlg):
-            I.minkowski_difference(Z, "exact")
+            I.mink_diff(Z, "exact")
         with self.assertRaises(cora.errors.WrongValue):
-            I.minkowski_difference(Z, "outer")
+            I.mink_diff(Z, "outer")
 
     def test_kron_and_matrix_power(self):
         # Kronecker products
@@ -262,7 +262,7 @@ class Gradients(unittest.TestCase):
         self.check(lambda I: I.max(I + shift), lo, hi)
         self.check(lambda I: I.min(I + shift), lo, hi)
         self.check(lambda I: I.unite(I + shift * 4.0), lo, hi)
-        self.check(lambda I: I.minkowski_difference(I.enlarge(0.5)), lo, hi)
+        self.check(lambda I: I.mink_diff(I.enlarge(0.5)), lo, hi)
         # positive entries, away from the sign changes of the corner products
         low, high = [[1.0, 0.5], [0.3, 1.2]], [[1.5, 0.9], [0.8, 1.6]]
         self.check(lambda A: A.matrix_power(3), low, high)

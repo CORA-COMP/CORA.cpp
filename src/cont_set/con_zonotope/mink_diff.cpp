@@ -1,4 +1,4 @@
-// minkowski_difference - the Minkowski difference of a constrained zonotope and a set
+// mink_diff - the Minkowski difference of a constrained zonotope and a set
 //
 // "exact" intersects the translates cz - v by the corners v of S (CORA's vertices; at most 12
 // generators); "inner:vertices" translates by the center of S and intersects cz + g and cz - g
@@ -7,8 +7,8 @@
 // the empty set if that exceeds 1; the inner ones take a zonotope or a box. A point translates
 // the set. Not a batch.
 //
-// Syntax:   cZres = cz.minkowski_difference(S);   cZres = cz.minkowski_difference(S, method);
-//           cZres = cz.minkowski_difference(p);
+// Syntax:   cZres = cz.mink_diff(S);   cZres = cz.mink_diff(S, method);
+//           cZres = cz.mink_diff(p);
 // Inputs:   S - a zonotope or a box, or a point p (n)
 //           method - "exact" (default), "inner:vertices" or "inner:Vinod"
 // Outputs:  cZres - {x | x + S in cz}
@@ -101,18 +101,17 @@ ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
 ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::string &method) {
     // the generic entry has checked the dimension; the rest is this class's own
     if (method != "exact" && method != "inner:vertices" && method != "inner:Vinod")
-        CORA_FAIL(Error::wrong_value, "minkowski_difference: the method must be exact, "
+        CORA_FAIL(Error::wrong_value, "mink_diff: the method must be exact, "
                                       "inner:vertices or inner:Vinod, got '" +
                                           method + "'");
     if (cz.c().ndim() != 1 || S.center().ndim() != 1)
-        CORA_FAIL(Error::not_supported,
-                  "minkowski_difference: it supports single sets, not a batch");
+        CORA_FAIL(Error::not_supported, "mink_diff: it supports single sets, not a batch");
     if (method == "inner:vertices") return aux_inner_vertices(cz, S);
     if (method == "inner:Vinod") return aux_inner_vinod(cz, S);
     const Zonotope compacted = S.compact();
     if (compacted.nr_generators() > Zonotope::kMaxCornerGenerators)
         CORA_FAIL(Error::not_supported,
-                  "minkowski_difference: a set of more than 12 generators has too many vertices "
+                  "mink_diff: a set of more than 12 generators has too many vertices "
                   "to intersect one by one");
     return aux_exact(cz, compacted);
 }
@@ -122,17 +121,16 @@ ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::
 
 // ===========================================  MAIN  =========================================== //
 
-ConZonotope ConZonotope::minkowski_difference(const Tensor &p) const { return plus(p * -1.0); }
+ConZonotope ConZonotope::mink_diff(const Tensor &p) const { return plus(p * -1.0); }
 
-Set ConZonotope::minkowski_difference_impl(const ContSet &S2,
-                                           const std::optional<std::string> &method_arg) const {
+Set ConZonotope::mink_diff_impl(const ContSet &S2,
+                                const std::optional<std::string> &method_arg) const {
     const std::string method = method_arg.value_or("exact");
     if (S2.class_id() == ClassId::zonotope)
         return aux_difference(*this, static_cast<const Zonotope &>(S2), method);
     if (S2.class_id() == ClassId::interval)
         return aux_difference(*this, static_cast<const Interval &>(S2).zonotope(), method);
-    CORA_FAIL(Error::noops,
-              "minkowski_difference is not implemented for ConZonotope and " + S2.class_name());
+    CORA_FAIL(Error::noops, "mink_diff is not implemented for ConZonotope and " + S2.class_name());
 }
 
 } // namespace cora
