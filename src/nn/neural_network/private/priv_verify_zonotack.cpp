@@ -349,8 +349,11 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
         n_relu_ = int64_t(o_.num_relu_constraints);
     }
     // CORA's batch size, at most what the memory budget holds
-    int64_t elements = net_->n0;
+    int64_t elements = net_->n0, work = 0;
     for (const int64_t w : net_->widths) elements += w;
+    // a convolution's patches are the largest tensor of a layer's product
+    for (const NeuralNetwork::Layer &layer : net_->maps) work = std::max(work, layer.work());
+    elements += work;
     const int64_t box_bytes = 8 * 4 * net_->q * elements;
     batch_ = std::min(o_.mini_batch_size, std::max<int64_t>(1, problem.memory_budget / box_bytes));
     return true;

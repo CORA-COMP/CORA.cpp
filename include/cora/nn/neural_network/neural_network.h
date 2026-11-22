@@ -147,6 +147,8 @@ class NeuralNetwork {
 
         int64_t inputs() const;
         int64_t outputs() const;
+        /// The entries per row of a product's largest intermediate (a convolution's patches).
+        int64_t work() const;
         /// W times each row of x (..., in) without the bias; |W|; W^T times rows (..., out); |W|^T.
         Tensor rows(const Tensor &x) const { return aux_product(x, false, false); }
         Tensor abs_rows(const Tensor &x) const { return aux_product(x, true, false); }

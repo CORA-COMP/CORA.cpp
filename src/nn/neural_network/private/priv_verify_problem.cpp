@@ -209,7 +209,13 @@ std::optional<std::vector<double>> NnProblem::confirm(const Tensor &x) {
 
 int64_t NnProblem::attack_batch() const {
     int64_t elements = net_->input_dim();
-    for (const NeuralNetwork::Layer &layer : net_->layers()) elements += 2 * layer.outputs();
+    int64_t work = 0;
+    for (const NeuralNetwork::Layer &layer : net_->layers()) {
+        // the values and gradients of every layer, and the largest patches of a product
+        elements += 2 * layer.outputs();
+        work = std::max(work, layer.work());
+    }
+    elements += 2 * work;
     const int64_t itemsize = options_.dtype == DType::float32 ? 4 : 8; // NOLINT(backend): bytes
     return std::max<int64_t>(1, memory_budget / (4 * elements * itemsize));
 }
