@@ -176,6 +176,16 @@ inline Tensor point_of(const py::handle &o, const char *what) {
                   " must be a point: a torch tensor (..., n), a numpy array or a number");
 }
 
+/// A mask in the array type of its backend: a bool for one set, a bool array of the batch shape
+/// for a batch (#163).
+inline py::object values(const Mask &m) {
+    if (m.tensor().ndim() == 0) return py::bool_(m.all());
+    const Array a = matrix(m.tensor());
+    // numpy and torch name the cast differently
+    return py::hasattr(a, "astype") ? py::object(a.attr("astype")("bool"))
+                                    : py::object(a.attr("bool")());
+}
+
 /// A tensor in the array type of its backend, of its own shape; a 0-d result is a float.
 inline py::object values(const Tensor &t) {
 #ifdef CORACPP_PYTHON_TORCH // NOLINT(backend): the bindings convert to torch tensors

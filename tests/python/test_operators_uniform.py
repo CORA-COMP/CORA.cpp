@@ -1,7 +1,7 @@
 """test_operators_uniform - the Python operators that every set class answers alike.
 
 A number or a point shifts a set (+, -, and v - S), A <= B is containment, a Taylm takes numbers,
-numpy defers to the operators.
+numpy defers to the operators, and the predicates of a batch of boxes answer a mask.
 
 CORA authors: Tobias Ladner, Mark Wetzlinger
 Authors:       Claude Opus 5.5
@@ -104,6 +104,31 @@ class Taylm(unittest.TestCase):
         L = level_set()
         with self.assertRaises(TypeError):
             np.eye(2) @ L
+
+
+class Masks(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("eigen"))
+
+    # a batch of boxes answers one flag per member, one box a plain bool
+    def test_the_predicates_of_a_batch_of_intervals(self):
+        I = cora.Interval(np.zeros((2, 2)), np.array([[1.0, 1.0], [2.0, 2.0]]))
+        p = np.array([1.5, 1.5])
+        for mask, expected in [
+            (I.contains(p), [False, True]),
+            (I.is_intersecting(p), [False, True]),
+            (I.is_intersecting(cora.Interval(np.array([1.5, 1.5]), np.array([3.0, 3.0]))), [False, True]),
+            (I.isequal(I), [True, True]),
+            (I.is_full_dim(), [True, True]),
+            (I.is_bounded(), [True, True]),
+        ]:
+            self.assertEqual(mask.dtype, np.bool_)
+            np.testing.assert_array_equal(mask, expected)
+        one = cora.Interval(np.zeros(2), np.ones(2))
+        self.assertIs(one.contains(np.array([0.5, 0.5])), True)
+        self.assertIs(one.is_bounded(), True)
+        # `in` is the whole batch
+        self.assertFalse(p in I)
 
 
 class RandPoint(unittest.TestCase):
