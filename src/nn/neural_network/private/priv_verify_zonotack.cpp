@@ -386,7 +386,11 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
     ZonoPropagation out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
     std::vector<Tensor> alpha = priv_alpha_start(out, net, si), m1(alpha.size()), m2(alpha.size());
     constexpr double kB1 = 0.9, kB2 = 0.999;
+    // the steps stop after alpha_patience of them without a newly excluded polytope
+    double count = excluded.sum().item();
+    int64_t gained = 0;
     for (int64_t t = 1; t <= o_.alpha_iterations && now_seconds() < deadline_; ++t) {
+        if (t - gained > o_.alpha_patience) break;
         // the ascent of the sum over the open polytopes of their best row's lower bound
         const Tensor lower = aux_margins(out);
         const int64_t B = lower.shape()[0];
@@ -411,14 +415,19 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
         out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha);
         excluded = excluded.maximum(aux_excluded(out, ci));
         result = aux_put_rows(result, rows, excluded);
+        const double now = excluded.sum().item();
+        if (now > count) gained = t;
+        count = now;
         const std::vector<int64_t> open = aux_where(1.0 - excluded.min(1));
         if (open.empty()) break;
         if (int64_t(open.size()) == B) continue;
         // the open sets only, from here
         std::vector<int64_t> kept;
+        kept.reserve(open.size());
         for (const int64_t i : open) kept.push_back(rows[std::size_t(i)]);
         rows = kept;
         excluded = excluded.take(open, 0);
+        count = excluded.sum().item();
         ci = ci.take(open, 0);
         si = si.take(open, 0);
         in = {in.c.take(open, 0), in.dr.defined() ? in.dr.take(open, 0) : Tensor(),
@@ -816,6 +825,7 @@ Tensor ConZonotopeBounding::aux_look_ahead(const Tensor &xi, const Tensor &ri, c
     const Tensor cand = score.topk(C, 1).second;
     // the neuron id of every column of the scores (0 for the padding columns)
     std::vector<Tensor> id_cols;
+    id_cols.reserve(art.out.layers.size() + 1);
     for (const ZonoLayerRecord &rec : art.out.layers)
         id_cols.push_back(rec.l.arange_like(rec.l.shape()[1]) + double(rec.first_id));
     id_cols.push_back(xi.zeros_like({k}));

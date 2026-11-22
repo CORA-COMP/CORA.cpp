@@ -113,6 +113,7 @@ struct NnVerifyOptions {
     // the bounding "zonotope-alpha": CORA's verify whose check optimizes the ReLU slopes
     int64_t alpha_iterations = 10; ///< projected Adam steps on the open sets' margins
     double alpha_step_size = 0.3;  ///< Adam's step on the slopes in [0, 1]
+    int64_t alpha_patience = 3;    ///< steps without a newly excluded polytope before it stops
     // the repairs of CORA's unsound steps (docs/nn_verification.md), on by default
     bool project_stale_factors = true; ///< the split rows keep the input factors after one pass
     bool drop_dummy_duplicates = true; ///< a dummy split drops its duplicate child only

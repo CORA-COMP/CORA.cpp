@@ -107,6 +107,7 @@ void NnVerifyOptions::validate() const {
     aux_at_least("pgd_restarts", double(pgd_restarts), 1);
     aux_at_least("alpha_iterations", double(alpha_iterations), 0);
     aux_at_least("look_ahead_candidates", double(look_ahead_candidates), 1);
+    aux_at_least("alpha_patience", double(alpha_patience), 1);
     if (!(alpha_step_size > 0))
         CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: alpha_step_size must be positive");
     if (!(attack_time_share >= 0 && attack_time_share <= 1))

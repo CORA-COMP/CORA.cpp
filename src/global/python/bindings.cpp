@@ -4689,6 +4689,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(backward_bound, "The check also takes CROWN's backward bound");
     CORA_VERIFY_FIELD(look_ahead_candidates, "The candidates of the look-ahead heuristic fsb");
     CORA_VERIFY_FIELD(alpha_iterations, "zonotope-alpha: Adam steps on the ReLU slopes");
+    CORA_VERIFY_FIELD(alpha_patience, "zonotope-alpha: steps without progress before it stops");
     CORA_VERIFY_FIELD(alpha_step_size, "zonotope-alpha: Adam's step on the slopes");
     CORA_VERIFY_FIELD(project_stale_factors, "Repair: the split rows keep the input factors");
     CORA_VERIFY_FIELD(drop_dummy_duplicates, "Repair: a dummy split drops its duplicate only");
