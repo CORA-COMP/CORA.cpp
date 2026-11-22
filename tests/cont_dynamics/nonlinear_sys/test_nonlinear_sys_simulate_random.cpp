@@ -28,16 +28,18 @@ NonlinearSys decay() {
 void the_start_points_lie_in_the_set_and_repeat(const std::string &b) {
     const Zonotope X0(Tensor({1.0, 2.0}), Tensor({{0.1, 0.0}, {0.0, 0.2}}));
     cora::Rng first(3), second(3);
+    // the same seed gives the same points, which lie in the set
     const std::vector<Tensor> a = decay().simulate_random(
         {.initial_set = X0, .t_final = 0.5}, alg::RungeKutta4{.time_step = 0.1}, 6, first);
     const std::vector<Tensor> c = decay().simulate_random(
         {.initial_set = X0, .t_final = 0.5}, alg::RungeKutta4{.time_step = 0.1}, 6, second);
-    check(a.size() == 6 && a[0].shape() == std::vector<int64_t>({2, 6}), b + ": six columns");
+    check(a.size() == 6 && a[0].shape() == std::vector<int64_t>({6, 2}), b + ": six rows");
     check(test::close(a.back(), c.back(), 0.0), b + ": the same seed gives the same points");
     const std::vector<double> start = a[0].data();
     bool inside = true;
     for (int j = 0; j < 6; ++j)
-        inside = inside && std::abs(start[j] - 1.0) <= 0.1 && std::abs(start[6 + j] - 2.0) <= 0.2;
+        inside = inside && std::abs(start[2 * j] - 1.0) <= 0.1 &&
+                 std::abs(start[2 * j + 1] - 2.0) <= 0.2;
     check(inside, b + ": the start points are points of the set");
 }
 

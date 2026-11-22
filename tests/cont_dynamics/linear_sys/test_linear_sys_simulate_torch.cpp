@@ -31,11 +31,11 @@ double max_diff(const torch::Tensor &a, const torch::Tensor &b) {
 void batched_simulate(const torch::TensorOptions &opts, const std::string &where) {
     const int64_t S = 3, n = 3, N = 6;
     const torch::Tensor As = torch::randn({S, n, n}, opts) * 0.5,
-                        x0 = torch::randn({S, n, N}, opts);
+                        x0 = torch::randn({S, N, n}, opts);
     const std::vector<Tensor> all = LinearSys(from_torch(As))
                                         .simulate({.initial_state = from_torch(x0), .t_final = 1.0},
                                                   alg::Exact{.time_step = 0.1});
-    check(all.size() == 11 && to_torch(all[3]).sizes().vec() == std::vector<int64_t>({S, n, N}),
+    check(all.size() == 11 && to_torch(all[3]).sizes().vec() == std::vector<int64_t>({S, N, n}),
           where + ": batched simulate shapes");
     for (int64_t b = 0; b < S; ++b) {
         const std::vector<Tensor> one =
@@ -53,7 +53,7 @@ void batched_simulate(const torch::TensorOptions &opts, const std::string &where
         LinearSys(from_torch(As[0]))
             .simulate({.initial_state = from_torch(x0), .t_final = 0.5},
                       alg::Exact{.time_step = 0.1});
-    check(to_torch(shared.back()).sizes().vec() == std::vector<int64_t>({S, n, N}),
+    check(to_torch(shared.back()).sizes().vec() == std::vector<int64_t>({S, N, n}),
           where + ": one system, batched starts");
 }
 

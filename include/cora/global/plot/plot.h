@@ -109,7 +109,7 @@ void plot_rand_point(Figure &fig, const ContSet &S, const std::vector<int64_t> &
 void plot(Figure &fig, const Specification &spec, const std::vector<int64_t> &dims = {0, 1},
           const PlotOptions &options = {});
 
-/// Trajectories as `LinearSys::simulate` returns them, x[k] the points (n, N) at time k: a line
+/// Trajectories as `LinearSys::simulate` returns them, x[k] the points (N, n) at time k: a line
 /// per trajectory.
 void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> &dims = {0, 1},
           const PlotOptions &options = {});

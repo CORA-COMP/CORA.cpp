@@ -55,8 +55,8 @@ pendulum = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)
 
 
 def measure(count, seed):
-    """Noisy trajectories from `count` random points of X0: (steps + 1, 2, count)."""
-    x0 = X0.rand_point(count, cora.Rng(seed)).T  # the points as columns
+    """Noisy trajectories from `count` random points of X0: (steps + 1, count, 2)."""
+    x0 = X0.rand_point(count, cora.Rng(seed))  # the points as rows
     truth = pendulum.simulate(x0, time_step=time_step, t_final=t_final)
     generator = torch.Generator().manual_seed(seed)
     return truth + noise * torch.randn(truth.shape, generator=generator, dtype=truth.dtype)
@@ -79,20 +79,20 @@ print(f"learned A: {A.detach().numpy().round(2).tolist()}, fit error {loss.item(
 
 with torch.no_grad():
     R = cora.LinearSys(A).reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
-inf = torch.stack([Z.interval().inf for Z in R.time_point])[:, :, None]  # (steps + 1, 2, 1)
-sup = torch.stack([Z.interval().sup for Z in R.time_point])[:, :, None]
+inf = torch.stack([Z.interval().inf for Z in R.time_point])[:, None, :]  # (steps + 1, 1, 2)
+sup = torch.stack([Z.interval().sup for Z in R.time_point])[:, None, :]
 
 # Conformal Prediction ----------------------------------------------------------------------
 
 
 def scores(trajectories):
-    """How far every trajectory (steps + 1, 2, N) leaves the reachable boxes at its worst time."""
+    """How far every trajectory (steps + 1, N, 2) leaves the reachable boxes at its worst time."""
     outside = torch.relu(inf - trajectories) + torch.relu(trajectories - sup)
-    return outside.amax(dim=(0, 1))
+    return outside.amax(dim=(0, 2))
 
 
 # The ceil((n + 1) (1 - alpha)) / n quantile of the calibration scores.
-n = calibration.shape[2]
+n = calibration.shape[1]
 level = min(1.0, math.ceil((n + 1) * (1 - alpha)) / n)
 radius = torch.quantile(scores(calibration), level, interpolation="higher").item()
 
@@ -112,10 +112,10 @@ fig, (phase, histogram) = plt.subplots(1, 2, figsize=(11, 4.5))
 
 plt.sca(phase)
 for i in range(40):
-    phase.plot(test[:, 0, i], test[:, 1, i], color="0.3", linewidth=0.6, zorder=5,
+    phase.plot(test[:, i, 0], test[:, i, 1], color="0.3", linewidth=0.6, zorder=5,
                label="Test trajectories" if i == 0 else None)
 for k in range(len(R.time_point)):
-    cora.plot(cora.Interval((inf[k, :, 0] - radius), (sup[k, :, 0] + radius)), filled=False,
+    cora.plot(cora.Interval((inf[k, 0] - radius), (sup[k, 0] + radius)), filled=False,
               color="CORA:red", label="Enlarged by the conformal radius" if k == 0 else None)
 cora.plot(R, label="Reachable set of the learned model")
 cora.plot(X0, label="Initial set")

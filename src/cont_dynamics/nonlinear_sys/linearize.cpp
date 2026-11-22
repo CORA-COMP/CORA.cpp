@@ -44,8 +44,8 @@ Linearized NonlinearSys::linearize_impl(const Tensor &center, const std::optiona
     const std::optional<Tensor> u_star =
         m_ == 0 ? std::nullopt
                 : std::optional<Tensor>(U ? U->center().expand_dims(-1) : c.zeros_like({m_, 1}));
-    const Tensor x_star = c + dynamics(c, u_star) * (0.5 * time_step);
-    const Tensor f0 = dynamics(x_star, u_star);
+    const Tensor x_star = c + dynamics_columns(c, u_star) * (0.5 * time_step);
+    const Tensor f0 = dynamics_columns(x_star, u_star);
     const Jacobians J = jacobian(x_star, u_star);
     // the input of the affine system: B (U - u*) around its center, and the constant part
     Zonotope BU = Zonotope(c.zeros_like({n_}), c.zeros_like({0, n_}));

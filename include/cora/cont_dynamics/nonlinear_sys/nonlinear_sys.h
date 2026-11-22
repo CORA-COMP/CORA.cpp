@@ -107,7 +107,8 @@ class NonlinearSys {
     const std::vector<Expr> &expressions() const { return f_; }
     int64_t input_dim() const { return m_; }
 
-    /// f at the columns of x (n, N) and u (m, N) or (m, 1) (none: no inputs): (n, N).
+    /// f at the rows of x (N, n) and u (N, m) or one vector (m) (none: no inputs): (N, n); a
+    /// vector x (n) gives f (n).
     Tensor dynamics(const Tensor &x, const std::optional<Tensor> &u = std::nullopt) const;
 
     /// The Jacobians at the column x (n, 1) and u (m, 1).
@@ -176,8 +177,8 @@ class NonlinearSys {
     Linearized linearize_impl(const Tensor &center, const std::optional<Zonotope> &U,
                               double time_step) const;
 
-    /// Trajectories from the points initial_state (n, N) at the times k*time_step, k = 0..steps,
-    /// with the constant input `input` (m, N) or (m, 1).
+    /// Trajectories from the points initial_state (N, n) at the times k*time_step, k = 0..steps,
+    /// each (N, n), with the constant input `input` (N, m) or (m).
     std::vector<Tensor> simulate(const SimulationProblem &problem,
                                  const alg::NonlinearSimulate &alg) const;
 
@@ -188,6 +189,9 @@ class NonlinearSys {
                                         Rng &rng) const;
 
   private:
+    /// dynamics on the columns of CORA: x (n, N) and u (m, N) or (m, 1), giving (n, N).
+    Tensor dynamics_columns(const Tensor &x, const std::optional<Tensor> &u) const;
+
     /// The variables of the expressions: the entries of x, then those of u.
     std::vector<Tensor> variables(const Tensor &x, const std::optional<Tensor> &u) const;
     std::vector<Range> variables(const Range &x, const std::optional<Range> &u) const;

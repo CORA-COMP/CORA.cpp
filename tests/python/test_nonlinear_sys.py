@@ -65,7 +65,7 @@ class Expressions(unittest.TestCase):
 
     def test_dynamics_may_return_numbers(self):
         sys = cora.NonlinearSys(lambda x: [x[1], 0.0], 2)
-        x = sys.simulate(cora.Tensor([[0.0], [1.0]]), time_step=0.1, t_final=1.0)
+        x = sys.simulate(cora.Tensor([[0.0, 1.0]]), time_step=0.1, t_final=1.0)
         self.assertAlmostEqual(float(x[-1][0, 0]), 1.0, places=9)
 
     def test_wrong_dynamics_are_described(self):
@@ -78,12 +78,12 @@ class Simulate(unittest.TestCase):
     # the harmonic oscillator
     def test_follows_the_harmonic_oscillator(self):
         sys = cora.NonlinearSys(lambda x: [x[1], -x[0]], 2)
-        x = sys.simulate(cora.Tensor([[1.0], [0.0]]), time_step=0.1, t_final=2.0)
-        self.assertEqual(tuple(x.shape), (21, 2, 1))
+        x = sys.simulate(cora.Tensor([[1.0, 0.0]]), time_step=0.1, t_final=2.0)
+        self.assertEqual(tuple(x.shape), (21, 1, 2))
         np.testing.assert_allclose(np.asarray(x[-1]).ravel(), [np.cos(2.0), -np.sin(2.0)], atol=1e-9)
 
     def test_numpy_agrees_with_torch(self):
-        x0 = np.array([[1.4], [2.3]])
+        x0 = np.array([[1.4, 2.3]])
         on_eigen = van_der_pol().simulate(x0, time_step=0.05, t_final=1.0)
         on_torch = van_der_pol().simulate(torch.tensor(x0), time_step=0.05, t_final=1.0)
         self.assertIsInstance(on_eigen, np.ndarray)
@@ -92,7 +92,7 @@ class Simulate(unittest.TestCase):
     def test_random_points_are_repeatable(self):
         a = van_der_pol().simulate_random(start(), points=4, time_step=0.05, t_final=0.5, rng=cora.Rng(2))
         b = van_der_pol().simulate_random(start(), points=4, time_step=0.05, t_final=0.5, rng=cora.Rng(2))
-        self.assertEqual(tuple(a.shape), (11, 2, 4))
+        self.assertEqual(tuple(a.shape), (11, 4, 2))
         np.testing.assert_array_equal(np.asarray(a), np.asarray(b))
 
 
@@ -108,8 +108,8 @@ class ReachSet(unittest.TestCase):
         self.assertEqual(len(R.time_point), len(R.time_interval) + 1)
         for k, Z in enumerate(R.time_point):
             box = Z.interval()
-            self.assertTrue(np.all(x[k] >= np.asarray(box.inf)[:, None] - 1e-9))
-            self.assertTrue(np.all(x[k] <= np.asarray(box.sup)[:, None] + 1e-9))
+            self.assertTrue(np.all(x[k] >= np.asarray(box.inf) - 1e-9))
+            self.assertTrue(np.all(x[k] <= np.asarray(box.sup) + 1e-9))
 
     def test_the_zonotope_order_limits_the_generators(self):
         R = van_der_pol().reach(start(), time_step=0.01, t_final=0.5, zonotope_order=3)

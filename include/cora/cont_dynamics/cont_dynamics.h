@@ -59,9 +59,9 @@ struct ReachProblem {
 
 /// What simulate is asked (CORA's params of simulate).
 struct SimulationProblem {
-    Tensor initial_state; ///< the start points as columns (..., n, N), required (CORA's x0)
+    Tensor initial_state; ///< the start points as rows (..., N, n), required (CORA's x0)
     std::optional<Tensor> input =
-        std::nullopt;   ///< a constant input per trajectory (m, N), or one (m, 1) (CORA's u)
+        std::nullopt;   ///< a constant input per trajectory (N, m), or one vector (m) (CORA's u)
     double t_final = 0; ///< the time horizon, positive (CORA's tFinal)
 
     static constexpr auto fields() {

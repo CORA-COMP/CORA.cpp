@@ -32,13 +32,13 @@ with cora.backend("torch"):
 
 
 def trajectories(count, seed):
-    return PENDULUM.simulate(X0.rand_point(count, cora.Rng(seed)).T, time_step=0.1, t_final=2.0)
+    return PENDULUM.simulate(X0.rand_point(count, cora.Rng(seed)), time_step=0.1, t_final=2.0)
 
 
 def scores(trajectories, inf, sup):
-    """How far every trajectory (steps + 1, 2, N) leaves the boxes at its worst time."""
+    """How far every trajectory (steps + 1, N, 2) leaves the boxes at its worst time."""
     outside = torch.relu(inf - trajectories) + torch.relu(trajectories - sup)
-    return outside.amax(dim=(0, 1))
+    return outside.amax(dim=(0, 2))
 
 
 # ============================================  MAIN  ============================================ #
@@ -49,8 +49,8 @@ class Conformal(unittest.TestCase):
 
     def test_the_quantile_of_the_scores_gives_the_promised_coverage(self):
         R = MODEL.reach(X0, time_step=0.1, t_final=2.0, taylor_terms=6)
-        inf = torch.stack([Z.interval().inf for Z in R.time_point])[:, :, None]
-        sup = torch.stack([Z.interval().sup for Z in R.time_point])[:, :, None]
+        inf = torch.stack([Z.interval().inf for Z in R.time_point])[:, None, :]
+        sup = torch.stack([Z.interval().sup for Z in R.time_point])[:, None, :]
         calibration = scores(trajectories(100, 1), inf, sup)
         test = scores(trajectories(500, 2), inf, sup)
 

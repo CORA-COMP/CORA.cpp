@@ -55,7 +55,7 @@ torch::Tensor reach_loss(const torch::Tensor &c, const torch::Tensor &G, const t
     return total;
 }
 
-/// The first state at the end of a simulation of the start points x0 (2, N), summed.
+/// The first state at the end of a simulation of the start points x0 (N, 2), summed.
 torch::Tensor simulate_loss(const torch::Tensor &x0) {
     return to_torch(van_der_pol()
                         .simulate({.initial_state = from_torch(x0), .t_final = 0.5},
@@ -116,7 +116,7 @@ void default_linearization_refuses_gradients() {
 
 void simulate_is_differentiable() {
     const torch::TensorOptions opts = torch::TensorOptions().dtype(torch::kDouble);
-    const torch::Tensor x0 = torch::tensor({{1.4, 0.5}, {2.3, -1.0}}, opts);
+    const torch::Tensor x0 = torch::tensor({{1.4, 2.3}, {0.5, -1.0}}, opts);
     const double error = gradient_error(simulate_loss, x0);
     check(error < 1e-6, "simulate: the gradient is off by " + std::to_string(error));
 }

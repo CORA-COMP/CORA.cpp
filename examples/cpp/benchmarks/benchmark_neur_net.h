@@ -211,9 +211,9 @@ inline bool run_instance(const std::vector<AinncsInstance> &instances, const std
                       << out.pieces_verified << " leaves verified, at most " << out.max_splits
                       << " splits deep\n";
         if (out.violating_start)
-            std::cerr << "  a simulated run from " << out.violating_start->matrix_transpose()
-                      << " violates at t = " << out.violation_time << " in "
-                      << out.violating_state->matrix_transpose() << '\n';
+            std::cerr << "  a simulated run from " << *out.violating_start
+                      << " violates at t = " << out.violation_time << " in " << *out.violating_state
+                      << '\n';
         if (!inst.tuning.empty()) std::cerr << "  differs from the script: " << inst.tuning << '\n';
         std::cerr << "  " << name << ": ARCH26 report (CORA): " << verdict_name(inst.expected)
                   << ", " << inst.expected_time << " s\n";

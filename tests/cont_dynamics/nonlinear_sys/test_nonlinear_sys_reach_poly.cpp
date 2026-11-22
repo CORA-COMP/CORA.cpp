@@ -59,7 +59,10 @@ int outside(const PolyReachSet &R, const std::vector<Tensor> &x, double dt, doub
         const std::size_t N = p.size() / lo.size();
         for (std::size_t j = 0; j < N; ++j)
             for (std::size_t i = 0; i < lo.size(); ++i)
-                count += !(p[i * N + j] >= lo[i] - 1e-9 && p[i * N + j] <= hi[i] + 1e-9) ? 1 : 0;
+                count +=
+                    !(p[j * lo.size() + i] >= lo[i] - 1e-9 && p[j * lo.size() + i] <= hi[i] + 1e-9)
+                        ? 1
+                        : 0;
     }
     return count;
 }
@@ -94,10 +97,10 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
     const PolyReachSet R = sys.reach({.initial_set = start(), .input_set = U, .t_final = 1.5},
                                      alg::PolyNonlinearReach{options(dt)});
     cora::Rng rng(1);
-    const Tensor x0 = start().rand_point(25, rng).matrix_transpose(); // columns (n, N)
+    const Tensor x0 = start().rand_point(25, rng); // rows (N, n)
     for (const double u : {-0.1, 0.0, 0.1}) {
         const std::vector<Tensor> x =
-            sys.simulate({.initial_state = x0, .input = Tensor({{u}}), .t_final = 1.5},
+            sys.simulate({.initial_state = x0, .input = test::vec({u}), .t_final = 1.5},
                          alg::RungeKutta4{.time_step = sim_dt});
         check(outside(R, x, dt, sim_dt) == 0,
               b + ": points left the enclosure, input " + std::to_string(u));

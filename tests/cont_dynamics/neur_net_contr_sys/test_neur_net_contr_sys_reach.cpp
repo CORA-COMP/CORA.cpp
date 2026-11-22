@@ -38,11 +38,12 @@ int outside(const ClosedLoopReach<S> &R, const ClosedLoopTrajectories &traj) {
         const Interval at = R.time_point[k].interval(), over = R.time_interval[k - 1].interval();
         for (const Interval *box : {&at, &over}) {
             const std::vector<double> lo = box->inf().data(), hi = box->sup().data(),
-                                      p = traj.x[k].data();
+                                      p = traj.x[k].data(); // rows (N, n)
             const std::size_t N = p.size() / lo.size();
             for (std::size_t j = 0; j < N; ++j)
                 for (std::size_t i = 0; i < lo.size(); ++i)
-                    count += !(p[i * N + j] >= lo[i] - 1e-9 && p[i * N + j] <= hi[i] + 1e-9);
+                    count += !(p[j * lo.size() + i] >= lo[i] - 1e-9 &&
+                               p[j * lo.size() + i] <= hi[i] + 1e-9);
         }
     }
     return count;

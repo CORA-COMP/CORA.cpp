@@ -69,9 +69,9 @@ class NonlinDASys(unittest.TestCase):
     def test_simulate_follows_the_reduced_system(self):
         x, y = linear_system().simulate([1.0], [0.0], 1.0, 0.1, u=[0.2])
         exact = np.exp(-0.5) + 0.4 * (1 - np.exp(-0.5))
-        self.assertEqual(x.shape, (1, 11))
-        self.assertAlmostEqual(x[0, -1], exact, places=6)
-        self.assertAlmostEqual(y[0, -1], 0.5 * exact + 0.2, places=6)
+        self.assertEqual(x.shape, (11, 1))
+        self.assertAlmostEqual(x[-1, 0], exact, places=6)
+        self.assertAlmostEqual(y[-1, 0], 0.5 * exact + 0.2, places=6)
 
     def test_wrong_input_is_refused(self):
         with self.assertRaises(cora.errors.WrongValue):

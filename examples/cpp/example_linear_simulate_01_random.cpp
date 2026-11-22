@@ -9,7 +9,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Tobias Ladner
 // Written:       29-September-2026
-// Last update:   03-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_dynamics/linear_sys/linear_sys.h"
@@ -45,12 +45,12 @@ int main() {
 
     // Simulation ------------------------------------------------------------------------------
 
-    // traj[k] holds the 20 points at time k * time_step / 2; the columns are the trajectories.
+    // traj[k] holds the 20 points at time k * time_step / 2; the rows are the trajectories.
     const std::vector<Tensor> traj = sys.simulate_random(
         {.initial_set = R0, .t_final = t_final}, alg::Exact{.time_step = time_step / 2}, 20, rng);
 
     // The corners of the generator cube as start points, and their trajectories.
-    const Tensor corners = R0.rand_point(20, rng, "extreme").matrix_transpose(); // columns
+    const Tensor corners = R0.rand_point(20, rng, "extreme"); // rows (N, n)
     const std::vector<Tensor> traj_extreme = sys.simulate(
         {.initial_state = corners, .t_final = t_final}, alg::Exact{.time_step = time_step / 2});
 
@@ -61,11 +61,11 @@ int main() {
     bool inside = true;
     for (std::size_t j = 0; j < traj_extreme.size(); ++j) {
         const std::size_t step = std::min(j / 2, R.time_interval.size() - 1); // two points per step
-        const std::vector<double> along = d.expand_dims(0).matmul(traj_extreme[j]).data();
+        const std::vector<double> along = traj_extreme[j].matmul(d.expand_dims(-1)).data();
         inside &= *std::max_element(along.begin(), along.end()) <=
                   R.time_interval[step].support_function(d).data()[0] + 1e-9;
     }
-    std::cout << "time points: " << traj.size() << ", trajectories: " << traj[0].shape()[1] << "\n"
+    std::cout << "time points: " << traj.size() << ", trajectories: " << traj[0].shape()[0] << "\n"
               << "trajectories from the corners stay in the reachable set: "
               << (inside ? "yes" : "NO") << "\n";
 

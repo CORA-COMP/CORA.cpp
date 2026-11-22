@@ -38,11 +38,11 @@ R = sys.reach(R0, time_step=time_step, t_final=t_final, taylor_terms=8)
 
 # Simulation --------------------------------------------------------------------------------
 
-# traj[k] holds the 20 points at time k * time_step / 2: (time points, n, points).
+# traj[k] holds the 20 points at time k * time_step / 2: (time points, points, n).
 traj = sys.simulate_random(R0, points=20, time_step=time_step / 2, t_final=t_final, rng=rng)
 
 # The corners of the generator cube as start points, and their trajectories.
-corners = R0.rand_point(20, rng, type="extreme").T  # as the columns of the simulation
+corners = R0.rand_point(20, rng, type="extreme")  # as the rows of the simulation
 traj_extreme = sys.simulate(corners, time_step=time_step / 2, t_final=t_final)
 
 # Verification ------------------------------------------------------------------------------
@@ -52,8 +52,8 @@ d = cora.Tensor([-1.0, 0.5])
 inside = True
 for j in range(traj_extreme.shape[0]):
     step = min(j // 2, len(R.time_interval) - 1)  # two points per step
-    inside &= bool((d @ traj_extreme[j]).max() <= R.time_interval[step].support_function(d) + 1e-9)
-print("simulation:", tuple(traj.shape), "(time points, n, points)")
+    inside &= bool((traj_extreme[j] @ d).max() <= R.time_interval[step].support_function(d) + 1e-9)
+print("simulation:", tuple(traj.shape), "(time points, points, n)")
 print("trajectories from the corners stay in the reachable set:", inside)
 
 # example completed

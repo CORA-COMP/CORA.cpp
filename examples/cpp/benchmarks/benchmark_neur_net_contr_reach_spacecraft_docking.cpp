@@ -131,15 +131,15 @@ ClosedLoopVerdict aux_docking_run(Rng &rng, bool polygon) {
     double worst = 1e9, worst_time = 0;
     for (std::size_t k = 0; k < traj.x.size(); ++k) {
         const std::vector<double> x = traj.x[k].data();
-        const std::size_t N = std::size_t(traj.x[k].shape()[1]);
+        const std::size_t N = std::size_t(traj.x[k].shape()[0]); // rows (N, 4)
         for (std::size_t j = 0; j < N; ++j) {
             if (verbose) {
-                const double margin = 0.2 + 2 * n * std::hypot(x[j], x[N + j]) -
-                                      std::hypot(x[2 * N + j], x[3 * N + j]);
+                const double margin = 0.2 + 2 * n * std::hypot(x[4 * j], x[4 * j + 1]) -
+                                      std::hypot(x[4 * j + 2], x[4 * j + 3]);
                 if (margin < worst) worst = margin, worst_time = traj.time[k];
             }
             // a sample outside the constraint is a violation
-            if (!aux_docking_point_safe({x[j], x[N + j], x[2 * N + j], x[3 * N + j]}, n)) {
+            if (!aux_docking_point_safe({x[4 * j], x[4 * j + 1], x[4 * j + 2], x[4 * j + 3]}, n)) {
                 out.verdict = Verdict::falsified;
                 out.violation_time = traj.time[k];
                 return out;

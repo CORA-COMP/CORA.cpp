@@ -54,9 +54,9 @@ std::pair<int64_t, std::size_t> aux_violating_run(const TimedSpecifications &spe
         const Tensor &x = traj.x[k];
         for (const TimedSpecification &spec : specs) {
             if (!priv_in_window(spec, traj.time[k], traj.time[k])) continue;
-            for (int64_t j = 0; j < x.shape()[1]; ++j)
-                if (!spec.spec.check(Zonotope(x.slice(1, j, j + 1).squeeze(-1),
-                                              x.zeros_like({0, x.shape()[0]}))))
+            for (int64_t j = 0; j < x.shape()[0]; ++j)
+                if (!spec.spec.check(
+                        Zonotope(x.slice(0, j, j + 1).squeeze(0), x.zeros_like({0, x.shape()[1]}))))
                     return {j, k};
         }
     }
@@ -207,11 +207,11 @@ ClosedLoopVerdict aux_verify(const NeurNetContrSys &sys, const S &X0, const Zono
     const auto [violating, sample] = aux_violating_run(specs, traj);
     if (violating >= 0) {
         out.violation_time = traj.time[sample];
-        out.violating_state = traj.x[sample].slice(1, violating, violating + 1);
+        out.violating_state = traj.x[sample].slice(0, violating, violating + 1).squeeze(0);
         // the reach from the start of the violating run, without the specification
-        const Tensor start = traj.x[0].slice(1, violating, violating + 1);
+        const Tensor start = traj.x[0].slice(0, violating, violating + 1).squeeze(0);
         out.violating_start = start;
-        const PolyZonotope point{Zonotope(start.squeeze(-1), start.zeros_like({0, sys.dim()}))};
+        const PolyZonotope point{Zonotope(start, start.zeros_like({0, sys.dim()}))};
         const ClosedLoopReach<PolyZonotope> R = sys.reach(point, U, t_final, options);
         out.verdict = aux_verified(specs, R) ? Verdict::verified : Verdict::falsified;
         return out;

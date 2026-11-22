@@ -27,10 +27,10 @@ void the_dynamics_are_a_x(const std::string &b) {
     const Tensor A({{-0.5, 1.0}, {-1.0, -0.5}});
     const NonlinearSys nl = LinearSys(A).nonlinear_sys();
     check(nl.dim() == 2, b + ": the dimension");
-    const Tensor x = Tensor({{1.0, 0.0}, {2.0, -1.0}});
-    check(test::close(nl.dynamics(x), A.matmul(x), 1e-15), b + ": f(x) = A x");
+    const Tensor x = Tensor({{1.0, 2.0}, {0.0, -1.0}}); // the rows are the points
+    check(test::close(nl.dynamics(x), x.matmul(A.matrix_transpose()), 1e-15), b + ": f(x) = A x");
     // simulation of both agree
-    const Tensor x0 = test::column({1.0, 2.0});
+    const Tensor x0 = Tensor({{1.0, 2.0}});
     const auto from_nonlinear =
         nl.simulate({.initial_state = x0, .t_final = 1.0}, alg::RungeKutta4{.time_step = 0.25});
     const auto from_linear =

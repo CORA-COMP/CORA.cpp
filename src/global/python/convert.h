@@ -22,6 +22,7 @@
 #pragma once
 
 #include "cora/cont_dynamics/algorithms.h"
+#include "cora/cont_dynamics/cont_dynamics.h"
 #include "cora/cont_set/capsule/capsule.h"
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
@@ -312,7 +313,13 @@ S fill(S s, py::dict &kwargs) {
             (([&] {
                  if (!kwargs.contains(f.name)) return;
                  using T = std::decay_t<decltype(s.*(f.member))>;
-                 s.*(f.member) = value_of<T>(kwargs[f.name], f.name);
+                 // the points of a simulation are rows; the other problems still take columns
+                 if constexpr (std::is_same_v<S, SimulationProblem> &&
+                               (std::is_same_v<T, Tensor> ||
+                                std::is_same_v<T, std::optional<Tensor>>))
+                     s.*(f.member) = point_of(kwargs[f.name], f.name);
+                 else
+                     s.*(f.member) = value_of<T>(kwargs[f.name], f.name);
                  PyDict_DelItemString(kwargs.ptr(), f.name);
              }()),
              ...);

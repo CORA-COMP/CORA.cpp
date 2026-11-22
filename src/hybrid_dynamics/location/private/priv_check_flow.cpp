@@ -96,11 +96,13 @@ double aux_nonlinear_flow_bound(const NonlinearSys &sys, const Tensor &a, const 
     const Zonotope Z = inputs ? R.cart_prod(Ubox) : R;
     const std::optional<Tensor> uc =
         inputs ? std::optional<Tensor>(Ubox.center().expand_dims(-1)) : std::nullopt;
+    const std::optional<Tensor> Ubox_center =
+        inputs ? std::optional<Tensor>(Ubox.center()) : std::nullopt;
     // the value and the linear part at the center
     const Tensor a_t = a.matrix_transpose();
     const Jacobians J = sys.jacobian(R.center().expand_dims(-1), uc);
     const Tensor AB = inputs ? Tensor::concat({J.A, J.B}, -1) : J.A;
-    double bound = a_t.matmul(sys.dynamics(R.center().expand_dims(-1), uc)).item() +
+    double bound = a_t.matmul(sys.dynamics(R.center(), Ubox_center).expand_dims(-1)).item() +
                    a_t.matmul(AB).matmul(Z.generators().matrix_transpose()).abs().sum().item();
     // the remainder by the Hessian over the box of Z
     const Interval box = Z.interval();
@@ -179,12 +181,8 @@ double aux_outside(const Location &loc, const LevelSet &guard, const Set &first)
 double aux_level_flow_at(const NonlinearSys &sys, const LevelSet &guard, double outside,
                          const Tensor &c, const Zonotope &U_state) {
     const std::vector<double> x = c.data();
-    // the dynamics take CORA's columns
-    const Tensor column = c.expand_dims(-1);
     const std::vector<double> f =
-        (sys.input_dim() == 0 ? sys.dynamics(column)
-                              : sys.dynamics(column, U_state.center().expand_dims(-1)))
-            .data();
+        (sys.input_dim() == 0 ? sys.dynamics(c) : sys.dynamics(c, U_state.center())).data();
     double flow = 0;
     // sum_j dg/dx_j f_j
     for (int64_t j = 0; j < sys.dim(); ++j)

@@ -14,8 +14,8 @@ Syntax:   cora.plot(R)                a reachable set: the ReachSet of LinearSys
           cora.plot(Z)                a Zonotope or an Interval, filled, in the next CORA color
           cora.plot(Z, dims=(0, 1, 2))   the faces of a 3-D set (axes of projection="3d")
           cora.plot_over_time(R, dim)    a dimension of a ReachSet over time (or of simulations)
-          cora.plot(simulation)       trajectories from simulate, (time points, n, N)
-          cora.plot(points)           points from rand_point, (n, N)
+          cora.plot(simulation)       trajectories from simulate, (time points, N, n)
+          cora.plot(points)           points from rand_point, (N, n)
           cora.plot(spec)             a Specification: the region it forbids
           cora.use_cora_colors("CORA:contDynamics")   sets as initial sets, reachable sets in blue
 
@@ -81,7 +81,7 @@ def _core_options(label, style):
 
 def _data(obj):
     """What the core plots: a set, a reachable set, a specification or an array (torch or numpy)
-    of points (n, N) or of a simulation (time points, n, N)."""
+    of points (N, n) or of a simulation (time points, N, n)."""
     if isinstance(obj, (ContSet, ReachSet, Specification)):
         return obj
     try:
@@ -92,8 +92,8 @@ def _data(obj):
     if array is not None and getattr(array, "ndim", 0) in (2, 3):
         return array
     raise TypeError(f"cora.plot does not know how to draw a {type(obj).__name__}; it draws a "
-                    "ReachSet, Zonotope, Interval, Specification, simulations (time points, n, N) "
-                    "or points (n, N)")
+                    "ReachSet, Zonotope, Interval, Specification, simulations (time points, N, n) "
+                    "or points (N, n)")
 
 
 def _draw_polygons(ax, layer, style):
@@ -194,8 +194,8 @@ def _show(ax, figure, style):
 
 
 def plot(obj, dims=(0, 1), ax=None, label=None, **style):
-    """CORA's `plot`: draws a ReachSet, a Zonotope, an Interval, simulations `(time points, n, N)`,
-    points `(n, N)`, or a Specification, by what it is, on one, two or (for sets, with the keyword
+    """CORA's `plot`: draws a ReachSet, a Zonotope, an Interval, simulations `(time points, N, n)`,
+    points `(N, n)`, or a Specification, by what it is, on one, two or (for sets, with the keyword
     `ax` on axes of projection="3d") three dimensions `dims`; returns what it drew."""
     ax = _axes(ax, len(dims) == 3)
     options = _core_options(label, style)
@@ -207,7 +207,7 @@ def plot(obj, dims=(0, 1), ax=None, label=None, **style):
 
 def plot_over_time(obj, dim=0, ax=None, label=None, time_step=None, **style):
     """CORA's `plotOverTime`: dimension `dim` of a ReachSet (boxes over its time intervals), or of
-    simulations `(time points, n, N)` with their `time_step`, over time."""
+    simulations `(time points, N, n)` with their `time_step`, over time."""
     ax = _axes(ax, False)
     options = _core_options(label, style)
     figure = core_figure(ax)

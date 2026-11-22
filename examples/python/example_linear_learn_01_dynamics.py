@@ -49,7 +49,7 @@ A_true = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
 
 # Twenty noisy trajectories from the initial set: measurements[k] are the points at time k.
 torch.manual_seed(0)
-x0 = X0.rand_point(20, cora.Rng(0)).T  # the simulation takes the points as columns
+x0 = X0.rand_point(20, cora.Rng(0))  # the simulation takes the points as rows
 truth = cora.LinearSys(A_true).simulate(x0, time_step=time_step, t_final=t_final)
 measurements = truth + 0.01 * torch.randn_like(truth)
 
@@ -69,8 +69,8 @@ class LearnedSystem(nn.Module):
         for k in range(1, len(R.time_point)):
             box = R.time_point[k].interval()
             # How far the measurements are outside the box around the set at time k, and its size.
-            outside = outside + (torch.relu(y[k] - box.sup[:, None])
-                                 + torch.relu(box.inf[:, None] - y[k])).mean()
+            outside = outside + (torch.relu(y[k] - box.sup)
+                                 + torch.relu(box.inf - y[k])).mean()
             width = width + (box.sup - box.inf).mean()
         return outside / (len(R.time_point) - 1), width / (len(R.time_point) - 1)
 
@@ -101,7 +101,7 @@ cora.use_cora_colors("CORA:contDynamics")
 plt.figure()
 cora.plot(R, label="Learned reachable set")
 cora.plot(X0, label="Initial set")
-cora.plot(measurements.reshape(-1, 2, 20).permute(1, 0, 2).reshape(2, -1), label="Measurements",
+cora.plot(measurements.reshape(-1, 2), label="Measurements",
           color="CORA:red")
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")

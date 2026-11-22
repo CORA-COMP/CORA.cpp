@@ -120,8 +120,8 @@ bool aux_simulate(bool middle, double hdot0, const std::vector<NeuralNetwork> &n
             violated = aux_unsafe(x[0], x[1], x[2]);
         }
         if (violated) {
-            out.violating_start = Tensor::from_data({x0[0], x0[1], x0[2]}, {3, 1});
-            out.violating_state = Tensor::from_data({x[0], x[1], x[2]}, {3, 1});
+            out.violating_start = Tensor::from_data({x0[0], x0[1], x0[2]}, {3});
+            out.violating_state = Tensor::from_data({x[0], x[1], x[2]}, {3});
             out.violation_time = k;
             return true;
         }

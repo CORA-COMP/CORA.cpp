@@ -38,7 +38,8 @@ NonlinearSys aux_system() {
 void the_derivatives_at_a_point(const std::string &b) {
     const NonlinearSys sys = aux_system();
     const Tensor x = test::column({1.0, 2.0}), u = test::column({0.5});
-    check(test::close(sys.dynamics(x, u), {2.5, std::sin(1.0)}), b + ": f");
+    check(test::close(sys.dynamics(test::vec({1.0, 2.0}), test::vec({0.5})), {2.5, std::sin(1.0)}),
+          b + ": f");
     const Jacobians J = sys.jacobian(x, u);
     check(test::close(J.A, {2.0, 1.0, std::cos(1.0), 0.0}) && test::close(J.B, {1.0, 0.0}),
           b + ": A and B");
