@@ -30,3 +30,4 @@ out of the bit-exact numerator and denominator, as it does the rows that CORALea
 |---|---|
 | `contDynamics/nonlinearSys/simulate` | numerical ODE integration (ode45-like) with no set to compare: CORALean has no ODE solver, and marks `contDynamics/contDynamics/simulateRandom` out of scope |
 | `contDynamics/neurNetContrSys/simulate` | numerical ODE integration of the closed loop with no set to compare: CORALean has no ODE solver (only the theorem that a simulation lies in the reachable set), and marks `contDynamics/contDynamics/simulateRandom` out of scope |
+| `contSet/contSet/plus` | the abstract class's sum dispatches on the operand classes and constructs nothing of its own: CORALean has the sums of the concrete sets, and no operation of the base class to compare |

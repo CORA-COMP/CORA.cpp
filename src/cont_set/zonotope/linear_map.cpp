@@ -6,6 +6,11 @@
 // Outputs:  Zres - M * Z exactly; for an interval matrix, a zonotope enclosing [I] * Z
 // See also: plus, linear_combination, Interval::linear_map
 //
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of linear systems with
+//        uncertain parameters and inputs", 46th IEEE CDC, 2007, pp. 726-732, Thm. 4 (the
+//        interval matrix times a zonotope).
+//
 // CORA: contSet/@zonotope/mtimes.m
 // CORA authors: Matthias Althoff
 // Authors:       Tobias Ladner, Claude Opus 5.5
