@@ -74,16 +74,17 @@ void the_solutions_enclose_the_flow(const std::string &b) {
         const Case c = random_case(rng);
         const Tensor &A = c.sys.A();
         const HomogeneousSolution H = c.sys.homogeneous_solution(c.X, kStep, kTerms);
-        const OneStep one = c.sys.one_step(c.X, c.U, c.u, kStep, kTerms);
-        const AffineSolution affine = c.sys.affine_solution(c.X, c.u, kStep, kTerms);
+        const OneStep one = c.sys.one_step(c.X, c.U, c.u.squeeze(-1), kStep, kTerms);
+        const AffineSolution affine = c.sys.affine_solution(c.X, c.u.squeeze(-1), kStep, kTerms);
         const Zonotope PU = c.sys.particular_solution_time_varying(c.U, kStep, kTerms);
         const ConstantSolution Pu = c.sys.particular_solution_constant(
             Zonotope(c.u.squeeze(-1), c.u.zeros_like({0, 3})), kStep, kTerms);
         // the first step of both algorithms, and the step after the first
         const ReachStep first = c.sys.init_reach(
-            c.X, c.U, c.u, alg::Standard{.time_step = kStep, .taylor_terms = kTerms});
-        const ReachStep wf = c.sys.init_reach(
-            c.X, c.U, c.u, alg::WrappingFree{.time_step = kStep, .taylor_terms = kTerms});
+            c.X, c.U, c.u.squeeze(-1), alg::Standard{.time_step = kStep, .taylor_terms = kTerms});
+        const ReachStep wf =
+            c.sys.init_reach(c.X, c.U, c.u.squeeze(-1),
+                             alg::WrappingFree{.time_step = kStep, .taylor_terms = kTerms});
         const ReachStep second =
             c.sys.post(first.state, alg::Standard{.time_step = kStep, .taylor_terms = kTerms});
         // each sample: a start point and a constant input of the set

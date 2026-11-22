@@ -29,18 +29,20 @@ std::pair<Tensor, Tensor> NonlinDASys::steady_state(const Tensor &x0, const Tens
                                                     const Tensor &u0) const {
     detail::Entry entry;
     if (entry.check()) validate_state("steady_state", x0, y0);
-    Tensor x = x0, y = y0;
+    // the iteration runs on CORA's columns
+    Tensor x = x0.expand_dims(-1), y = y0.expand_dims(-1);
+    const Tensor u = u0.expand_dims(-1);
     for (int i = 0; i < 100; ++i) {
         // the residual (f, g) and the matrix [A C; D F] of the stacked system
-        const Tensor k = dynamics(x, y, u0), l = constraints(x, y, u0);
-        const DaeJacobians J = jacobian(x, y, u0);
+        const Tensor k = dynamics_columns(x, y, u), l = constraints_columns(x, y, u);
+        const DaeJacobians J = jacobian_columns(x, y, u);
         const Tensor M =
             Tensor::concat({Tensor::concat({J.A, J.C}, -1), Tensor::concat({J.D, J.F}, -1)}, -2);
         const Tensor delta_z = M.solve(-Tensor::concat({k, l}, -2));
         x = x + delta_z.slice(-2, 0, n_);
         y = y + delta_z.slice(-2, n_, n_ + p_);
         if (delta_z.vector_norm(Tensor::Norm::two, -2).item() < numerics::kNewtonStep)
-            return {x, y};
+            return {x.squeeze(-1), y.squeeze(-1)};
     }
     CORA_FAIL(Error::not_converged, "steady_state: Newton's method did not converge in 100 steps");
 }

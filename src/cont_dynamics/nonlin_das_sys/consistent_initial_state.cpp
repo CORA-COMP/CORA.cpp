@@ -31,7 +31,9 @@ Tensor NonlinDASys::consistent_initial_state(const Tensor &x0, const Tensor &y0,
                                              const Tensor &u0) const {
     detail::Entry entry;
     if (entry.check()) validate_state("consistent_initial_state", x0, y0);
-    return newton_algebraic(x0, y0, u0, true);
+    // Newton's method runs on CORA's columns
+    return newton_algebraic(x0.expand_dims(-1), y0.expand_dims(-1), u0.expand_dims(-1), true)
+        .squeeze(-1);
 }
 
 } // namespace cora

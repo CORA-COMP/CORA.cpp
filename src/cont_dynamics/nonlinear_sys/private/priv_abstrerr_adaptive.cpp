@@ -185,8 +185,9 @@ AdaptiveLinearization priv_linearize_adaptive(const NonlinearSys &sys,
                              (0.5 * dt) * (0.5 * (fc.lo[std::size_t(i)] + fc.hi[std::size_t(i)]));
     // the Jacobians there and the input of the linear system without the error
     Tensor xs_t = priv_column(like, xs);
-    Jacobians J =
-        sys.jacobian(xs_t, m > 0 ? std::optional<Tensor>(priv_column(like, us)) : std::nullopt);
+    Jacobians J = sys.jacobian(xs_t.squeeze(-1),
+                               m > 0 ? std::optional<Tensor>(priv_column(like, us).squeeze(-1))
+                                     : std::nullopt);
     Zonotope Vbase = priv_box_zonotope(like, priv_enclosure(sys, like, Box{xs, xs}, point_u(us)));
     if (m > 0) Vbase = Vbase + (*U - U->center()).linear_map(J.B);
     return {xs, std::move(xs_t), std::move(J), std::move(Vbase)};

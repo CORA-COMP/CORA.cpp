@@ -41,7 +41,7 @@ void first_step() {
     alg::LinParamStandard a;
     a.time_step = 0.05;
     const ReachSet R = sys.reach({R0, U, 0.1}, a);
-    const LinParamStep first = sys.init_reach(R0, U - U.center(), U.center().expand_dims(-1), a);
+    const LinParamStep first = sys.init_reach(R0, U - U.center(), U.center(), a);
     check(close(R.time_interval[0].center(), first.time_interval.center(), 0) &&
               close(R.time_interval[0].generators(), first.time_interval.generators(), 0) &&
               close(R.time_point[1].center().expand_dims(-1),
@@ -59,16 +59,16 @@ void checks_and_their_switch() {
     const Zonotope U(vec({0.0}), Tensor({{0.1}}));
     alg::LinParamStandard a;
     a.time_step = 0.05;
-    check(test::raises([&] { sys.init_reach(R0, U, column({0.0, 0.0}), a); },
-                       Error::dimension_mismatch),
-          "init_reach: u_trans of the columns of B");
+    check(
+        test::raises([&] { sys.init_reach(R0, U, vec({0.0, 0.0}), a); }, Error::dimension_mismatch),
+        "init_reach: u_trans of the columns of B");
     check(test::raises(
-              [&] { sys.init_reach(Zonotope(vec({1.0}), Tensor({{1.0}})), U, column({0.0}), a); },
+              [&] { sys.init_reach(Zonotope(vec({1.0}), Tensor({{1.0}})), U, vec({0.0}), a); },
               Error::dimension_mismatch),
           "init_reach: R_init of the dimension of the system");
-    const Tensor on = (sys.init_reach(R0, U, column({0.0}), a).time_interval).center();
+    const Tensor on = (sys.init_reach(R0, U, vec({0.0}), a).time_interval).center();
     ChecksScope off(false);
-    check(close((sys.init_reach(R0, U, column({0.0}), a).time_interval).center(), on, 0),
+    check(close((sys.init_reach(R0, U, vec({0.0}), a).time_interval).center(), on, 0),
           "init_reach: the same with the checks off");
 }
 

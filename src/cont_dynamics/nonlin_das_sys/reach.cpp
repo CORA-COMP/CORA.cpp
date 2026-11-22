@@ -154,7 +154,8 @@ DaeStep NonlinDASys::init_reach(const DaeReachProblem &problem, const alg::DaeRe
     const Tensor u_star =
         problem.input_set ? problem.input_set->center().expand_dims(-1) + u_trans : u_trans;
     const Tensor y0 =
-        consistent_initial_state(R0.center().expand_dims(-1), *problem.y0_guess, u_star);
+        consistent_initial_state(R0.center(), problem.y0_guess->squeeze(-1), u_star.squeeze(-1))
+            .expand_dims(-1);
     return priv_dae_lin_reach(*this, R0, y0, R0.center().expand_dims(-1).zeros_like(),
                               y0.zeros_like(), problem.input_set, u_trans, problem.decomposition,
                               options);

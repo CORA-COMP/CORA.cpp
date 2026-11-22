@@ -43,6 +43,19 @@ Tensor aux_broadcast(const Tensor &u, int64_t points) {
     return u;
 }
 
+/// f or g at rows (N, ...) or vectors, through the function `on_columns` of CORA's columns.
+template <class OnColumns>
+Tensor aux_on_columns(const Tensor &x, const Tensor &y, const Tensor &u,
+                      const OnColumns &on_columns) {
+    // a vector is one column, the rows of a matrix its columns
+    const bool vector = x.shape().size() == 1;
+    const auto columns = [](const Tensor &t) {
+        return t.shape().size() == 1 ? t.expand_dims(-1) : t.matrix_transpose();
+    };
+    const Tensor out = on_columns(columns(x), columns(y), columns(u));
+    return vector ? out.squeeze(-1) : out.matrix_transpose();
+}
+
 /// The checks of the points of an evaluation: the columns x, y and the inputs u.
 void aux_validate_points(const char *op, const Tensor &x, const Tensor &y, const Tensor &u,
                          int64_t n, int64_t p, int64_t m, int64_t columns) {
@@ -130,20 +143,38 @@ std::vector<Range> NonlinDASys::variables(const Range &x, const Range &y, const 
 
 // Evaluation --------------------------------------------------------------------------------------
 
-Tensor NonlinDASys::dynamics(const Tensor &x, const Tensor &y, const Tensor &u) const {
+Tensor NonlinDASys::dynamics_columns(const Tensor &x, const Tensor &y, const Tensor &u) const {
     detail::Entry entry;
     if (entry.check()) aux_validate_points("dynamics", x, y, u, n_, p_, m_, -1);
     return Tensor::concat(Expr::eval_tensor(f_, variables(x, y, u)), -1).matrix_transpose();
 }
 
-Tensor NonlinDASys::constraints(const Tensor &x, const Tensor &y, const Tensor &u) const {
+Tensor NonlinDASys::constraints_columns(const Tensor &x, const Tensor &y, const Tensor &u) const {
     detail::Entry entry;
     if (entry.check()) aux_validate_points("constraints", x, y, u, n_, p_, m_, -1);
     return Tensor::concat(Expr::eval_tensor(g_, variables(x, y, u)), -1).matrix_transpose();
 }
 
-// The blocks of the Jacobian over z = (x, y, u): rows f then g, columns x, y, then u.
+// The rows of the points run through the columns of CORA: a transpose is exact.
+Tensor NonlinDASys::dynamics(const Tensor &x, const Tensor &y, const Tensor &u) const {
+    return aux_on_columns(x, y, u, [&](const Tensor &xc, const Tensor &yc, const Tensor &uc) {
+        return dynamics_columns(xc, yc, uc);
+    });
+}
+
+Tensor NonlinDASys::constraints(const Tensor &x, const Tensor &y, const Tensor &u) const {
+    return aux_on_columns(x, y, u, [&](const Tensor &xc, const Tensor &yc, const Tensor &uc) {
+        return constraints_columns(xc, yc, uc);
+    });
+}
+
 DaeJacobians NonlinDASys::jacobian(const Tensor &x, const Tensor &y, const Tensor &u) const {
+    return jacobian_columns(x.expand_dims(-1), y.expand_dims(-1), u.expand_dims(-1));
+}
+
+// The blocks of the Jacobian over z = (x, y, u): rows f then g, columns x, y, then u.
+DaeJacobians NonlinDASys::jacobian_columns(const Tensor &x, const Tensor &y,
+                                           const Tensor &u) const {
     detail::Entry entry;
     if (entry.check()) aux_validate_points("jacobian", x, y, u, n_, p_, m_, 1);
     const int64_t d = n_ + p_ + m_;
@@ -163,7 +194,7 @@ Tensor NonlinDASys::newton_algebraic(const Tensor &x, const Tensor &y, const Ten
     Tensor out = y;
     for (int i = 0; i < kMaxNewton; ++i) {
         // the step solves F delta_y = -g; the loop ends at the first step below the threshold
-        const Tensor delta_y = jacobian(x, out, u).F.solve(-constraints(x, out, u));
+        const Tensor delta_y = jacobian_columns(x, out, u).F.solve(-constraints_columns(x, out, u));
         const bool converged =
             delta_y.vector_norm(Tensor::Norm::two, -2).item() < numerics::kNewtonStep;
         if (!converged || add_last) out = out + delta_y;
@@ -176,11 +207,11 @@ Tensor NonlinDASys::newton_algebraic(const Tensor &x, const Tensor &y, const Ten
 
 void NonlinDASys::validate_state(const char *op, const Tensor &x, const Tensor &y) const {
     detail::Validation entry;
-    CORA_CHECK(x.defined() && y.defined() && x.shape() == std::vector<int64_t>({n_, 1}) &&
-                   y.shape() == std::vector<int64_t>({p_, 1}),
+    CORA_CHECK(x.defined() && y.defined() && x.shape() == std::vector<int64_t>({n_}) &&
+                   y.shape() == std::vector<int64_t>({p_}),
                Error::dimension_mismatch, [&] {
-                   return std::string(op) + ": the state must be a column (" + std::to_string(n_) +
-                          ", 1) and the algebraic variables (" + std::to_string(p_) + ", 1)";
+                   return std::string(op) + ": the state must be a vector (" + std::to_string(n_) +
+                          ") and the algebraic variables (" + std::to_string(p_) + ")";
                });
 }
 

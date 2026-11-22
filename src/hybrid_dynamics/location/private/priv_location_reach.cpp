@@ -113,7 +113,7 @@ class BundleSteps {
         const int64_t m = sys.B() ? sys.input_dim() : 1;
         const Tensor &c = sys.c();
         Zonotope Uc = U ? *U : Zonotope(c.zeros_like({m}), c.zeros_like({0, m}));
-        const Tensor u_trans = Uc.center().expand_dims(-1);
+        const Tensor u_trans = Uc.center();
         Uc = Uc - Uc.center();
         mappings_.emplace(priv_mappings(sys, Uc, u_trans, *param_alg_));
     }

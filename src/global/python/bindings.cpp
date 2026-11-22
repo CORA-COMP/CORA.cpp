@@ -3655,7 +3655,7 @@ void bind_linear_sys(py::module_ &m) {
             "affine_solution",
             [](const LinearSys &sys, const Zonotope &X, const py::object &u, double time_step,
                int taylor_terms) {
-                return sys.affine_solution(X, columns_of(u, "u"), time_step, taylor_terms);
+                return sys.affine_solution(X, point_of(u, "u"), time_step, taylor_terms);
             },
             py::arg("X"), py::arg("u"), py::arg("time_step"), py::arg("taylor_terms"),
             "The solution of one step of x' = A x + u for the constant input u (n,)")
@@ -3664,7 +3664,7 @@ void bind_linear_sys(py::module_ &m) {
             "one_step",
             [](const LinearSys &sys, const Zonotope &X, const Zonotope &U, const py::object &u,
                double time_step, int taylor_terms) {
-                return sys.one_step(X, U, columns_of(u, "u"), time_step, taylor_terms);
+                return sys.one_step(X, U, point_of(u, "u"), time_step, taylor_terms);
             },
             py::arg("X"), py::arg("U"), py::arg("u"), py::arg("time_step"), py::arg("taylor_terms"),
             "One step of reach from X with the input set U and the constant input u (n,)")
@@ -3678,7 +3678,7 @@ void bind_linear_sys(py::module_ &m) {
                 return sys.init_reach(R_init, U,
                                       u_trans.is_none()
                                           ? std::nullopt
-                                          : std::optional<Tensor>(columns_of(u_trans, "u_trans")),
+                                          : std::optional<Tensor>(point_of(u_trans, "u_trans")),
                                       linear_reach_algorithm(alg, options, "init_reach"));
             },
             py::arg("R_init"), py::arg("U") = py::none(), py::arg("u_trans") = py::none(),
@@ -3927,20 +3927,18 @@ void bind_nonlinear_sys(py::module_ &m) {
     // the results of the steps
     py::class_<Linearized>(m, "Linearized", "The affine system of a step (CORA's linearize).")
         .def_property_readonly(
-            "x_star", [](const Linearized &l) { return values(l.x_star.squeeze(-1)); },
+            "x_star", [](const Linearized &l) { return values(l.x_star); },
             "The expansion point of the state")
         .def_property_readonly(
-            "u_star", [](const Linearized &l) { return values(l.u_star.squeeze(-1)); },
+            "u_star", [](const Linearized &l) { return values(l.u_star); },
             "The expansion point of the input")
         .def_property_readonly(
-            "f0", [](const Linearized &l) { return values(l.f0.squeeze(-1)); },
-            "f at the expansion point")
+            "f0", [](const Linearized &l) { return values(l.f0); }, "f at the expansion point")
         // the affine system and its input
         .def_readonly("sys", &Linearized::sys, "x' = A x + u")
         .def_readonly("U", &Linearized::U, "The centered input set in the state space")
         .def_property_readonly(
-            "u_const", [](const Linearized &l) { return values(l.u_const.squeeze(-1)); },
-            "The constant input");
+            "u_const", [](const Linearized &l) { return values(l.u_const); }, "The constant input");
     // one step of reach
     py::class_<NonlinearStep>(m, "NonlinearStep", "One step of init_reach or post.")
         .def_readonly("time_interval", &NonlinearStep::time_interval, "The set over the step")
@@ -4117,11 +4115,8 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "consistent_initial_state",
             [](const NonlinDASys &sys, const py::object &x0, const py::object &y0,
                const py::object &u0) {
-                // the system takes CORA's columns (#163 moves the dynamics later)
-                return values(sys.consistent_initial_state(columns_of(x0, "x0"),
-                                                           columns_of(y0, "y0"),
-                                                           columns_of(u0, "u0"))
-                                  .squeeze(-1));
+                return values(sys.consistent_initial_state(point_of(x0, "x0"), point_of(y0, "y0"),
+                                                           point_of(u0, "u0")));
             },
             py::arg("x0"), py::arg("y0"), py::arg("u0") = py::list(),
             "The algebraic variables with g(x0, y, u0) = 0 by Newton's method from y0")
@@ -4130,9 +4125,9 @@ void bind_nonlin_das_sys(py::module_ &m) {
             [](const NonlinDASys &sys, const py::object &x0, const py::object &y0,
                const py::object &u0) {
                 // the state and y as a pair of vectors
-                const auto [x, y] = sys.steady_state(columns_of(x0, "x0"), columns_of(y0, "y0"),
-                                                     columns_of(u0, "u0"));
-                return py::make_tuple(values(x.squeeze(-1)), values(y.squeeze(-1)));
+                const auto [x, y] =
+                    sys.steady_state(point_of(x0, "x0"), point_of(y0, "y0"), point_of(u0, "u0"));
+                return py::make_tuple(values(x), values(y));
             },
             py::arg("x0"), py::arg("y0"), py::arg("u0") = py::list(),
             // the steady state returns the state and the algebraic variables

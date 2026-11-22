@@ -100,8 +100,8 @@ PolyNonlinearStep priv_poly_reach(const NonlinearSys &sys, const PolyZonotope &R
         priv_particular_time_varying(s.lin.sys, s.taylor, s.blocks, err.set, dt, eta)[0];
     const PolyZonotope R_error =
         aux_constant_input(s.lin.sys, s.taylor, stat.error, dt, eta).plus(R_dyn);
-    return {s.R_ti.plus(s.lin.x_star.squeeze(-1)).exact_plus(R_error),
-            s.R_tp.plus(s.lin.x_star.squeeze(-1)).exact_plus(R_error), err.bound};
+    return {s.R_ti.plus(s.lin.x_star).exact_plus(R_error),
+            s.R_tp.plus(s.lin.x_star).exact_plus(R_error), err.bound};
 }
 
 } // namespace cora

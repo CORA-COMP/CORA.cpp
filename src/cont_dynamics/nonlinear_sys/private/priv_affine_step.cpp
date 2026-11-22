@@ -34,7 +34,7 @@ AffineStep priv_affine_step(const LinearSys &sys, const Zonotope &R_delta, const
     const int64_t n = R_delta.center().expand_dims(-1).shape()[0];
     TaylorLinSys taylor(sys.A());
     Blocks blocks = priv_one_block(n);
-    const Zonotope u = Zonotope(u_const.squeeze(-1), u_const.zeros_like({0, n}));
+    const Zonotope u = Zonotope(u_const, u_const.zeros_like({0, n}));
     BlockStep step = priv_one_step(sys, taylor, blocks, R_delta, U, u, time_step, taylor_terms);
     return {std::move(taylor), std::move(blocks), std::move(step.time_interval[0]),
             std::move(step.time_point[0])};

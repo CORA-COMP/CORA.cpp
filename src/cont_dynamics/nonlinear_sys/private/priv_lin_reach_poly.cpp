@@ -108,13 +108,12 @@ PolyNonlinearStep aux_lean_step(const NonlinearSys &sys, const PolyZonotope &R, 
 
 PolyStepPieces::PolyStepPieces(const NonlinearSys &sys, const PolyZonotope &R,
                                const std::optional<Zonotope> &U, double dt, int eta)
-    : lin(sys.linearize_impl(R.center().expand_dims(-1), U, dt)),
-      R_delta(R.plus(lin.x_star.squeeze(-1) * -1.0)), taylor(lin.sys.A()),
-      blocks(priv_one_block(sys.dim())),
+    : lin(sys.linearize_impl(R.center(), U, dt)), R_delta(R.plus(lin.x_star * -1.0)),
+      taylor(lin.sys.A()), blocks(priv_one_block(sys.dim())),
       PU(priv_particular_time_varying(lin.sys, taylor, blocks, lin.U, dt, eta)[0]),
-      Pu(priv_particular_constant(
-          lin.sys, taylor, blocks,
-          Zonotope(lin.u_const.squeeze(-1), lin.u_const.zeros_like({0, sys.dim()})), dt, eta)),
+      Pu(priv_particular_constant(lin.sys, taylor, blocks,
+                                  Zonotope(lin.u_const, lin.u_const.zeros_like({0, sys.dim()})), dt,
+                                  eta)),
       R_tp(R_delta.linear_map(taylor.e_adt(dt)).plus(Pu.time_point[0]).plus(PU)),
       R_ti(R_delta.enclose(R_delta.linear_map(taylor.e_adt(dt)).plus(Pu.time_point[0]))
                .plus(R_delta.linear_map(lin.sys.correction_matrix_state(dt, eta)))
@@ -143,8 +142,8 @@ PolyNonlinearStep priv_lin_reach_poly(const NonlinearSys &sys, const PolyZonotop
     // the solution of the error joins both sets as independent generators
     const Zonotope R_error =
         priv_particular_time_varying(s.lin.sys, s.taylor, s.blocks, err.set, dt, eta)[0];
-    return {s.R_ti.plus(s.lin.x_star.squeeze(-1)).plus(R_error),
-            s.R_tp.plus(s.lin.x_star.squeeze(-1)).plus(R_error), err.bound};
+    return {s.R_ti.plus(s.lin.x_star).plus(R_error), s.R_tp.plus(s.lin.x_star).plus(R_error),
+            err.bound};
 }
 
 } // namespace cora

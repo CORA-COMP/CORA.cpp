@@ -8,7 +8,7 @@
 // Syntax:   OneStep s = sys.one_step(X, U, u, time_step, taylor_terms);
 // Inputs:   X - initial set of the step (zonotope of the dimension of A)
 //           U - input set in the state space, centered (zonotope; the origin for none)
-//           u - constant input in the state space (n, 1)
+//           u - constant input in the state space (n)
 //           time_step - step size, positive
 //           taylor_terms - order of the series, at least 1
 // Outputs:  s - time_point (Rtp), time_interval (Rti) and the parts they are made of
@@ -36,10 +36,10 @@ OneStep LinearSys::one_step(const Zonotope &X, const Zonotope &U, const Tensor &
     detail::Entry entry;
     if (entry.check()) validate_step("one_step", X, time_step, taylor_terms);
     // the input set and the constant input live in the state space
-    CORA_CHECK(U.dim() == dim() && u.shape() == std::vector<int64_t>({dim(), 1}),
+    CORA_CHECK(U.dim() == dim() && u.shape() == std::vector<int64_t>({dim()}),
                Error::dimension_mismatch, [&] {
                    return "one_step: U must have the dimension " + std::to_string(dim()) +
-                          " and u the shape (" + std::to_string(dim()) + ", 1), got " +
+                          " and u the shape (" + std::to_string(dim()) + "), got " +
                           std::to_string(U.dim()) + " and " + shape_text(u.shape());
                });
     CORA_CHECK(A().ndim() == 2, Error::not_supported, [] {
@@ -47,7 +47,7 @@ OneStep LinearSys::one_step(const Zonotope &X, const Zonotope &U, const Tensor &
     });
     // the powers of A are shared by the solutions; the constant input is a point set
     TaylorLinSys taylor(A());
-    const Zonotope point(u.squeeze(-1), u.zeros_like({0, dim()}));
+    const Zonotope point(u, u.zeros_like({0, dim()}));
     BlockStep s =
         priv_one_step(*this, taylor, priv_one_block(dim()), X, U, point, time_step, taylor_terms);
     return {s.time_point[0],

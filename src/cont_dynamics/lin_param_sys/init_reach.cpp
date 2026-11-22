@@ -8,7 +8,7 @@
 // Syntax:   LinParamStep R = sys.init_reach(R_init, U, u_trans, alg);
 // Inputs:   R_init - the initial set (n)
 //           U - the input set (m) without its center (reach removes it)
-//           u_trans - the constant input (m, 1)
+//           u_trans - the constant input (m)
 //           alg - alg::LinParamStandard
 // Outputs:  R - the sets of the first step and the mappings
 // See also: post, reach
@@ -45,9 +45,9 @@ LinParamStep LinParamSys::init_reach(const Zonotope &R_init, const Zonotope &U,
                });
     const int64_t m = B_ ? input_dim() : U.dim();
     CORA_CHECK(U.dim() == m && U.center().ndim() == 1 &&
-                   u_trans.shape() == std::vector<int64_t>({m, 1}),
+                   u_trans.shape() == std::vector<int64_t>({m}),
                Error::dimension_mismatch, [&] {
-                   return "init_reach: U and u_trans (m, 1) need the " + std::to_string(m) +
+                   return "init_reach: U and u_trans (m) need the " + std::to_string(m) +
                           " columns of B, got " + std::to_string(U.dim()) + " and the shape " +
                           shape_text(u_trans.shape());
                });

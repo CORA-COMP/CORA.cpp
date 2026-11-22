@@ -147,9 +147,11 @@ std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Inte
     const Interval IHx = priv_with_origin(IHx0);
     std::optional<Interval> IHu;
     if (IHu0) IHu = priv_with_origin(*IHu0);
-    const Range x_box(aux_col(IHx.inf()) + lin.x_star, aux_col(IHx.sup()) + lin.x_star);
+    // the Ranges are columns
+    const Tensor x_col = lin.x_star.expand_dims(-1), u_col = lin.u_star.expand_dims(-1);
+    const Range x_box(aux_col(IHx.inf()) + x_col, aux_col(IHx.sup()) + x_col);
     std::optional<Range> u_box;
-    if (IHu) u_box = Range(aux_col(IHu->inf()) + lin.u_star, aux_col(IHu->sup()) + lin.u_star);
+    if (IHu) u_box = Range(aux_col(IHu->inf()) + u_col, aux_col(IHu->sup()) + u_col);
     return aux_third_order(sys.third_order_enclosure(x_box, u_box), aux_dz(IHx, IHu), sys.dim());
 }
 
@@ -159,12 +161,14 @@ AbstractionError priv_abstrerr_lin(const NonlinearSys &sys, const Zonotope &R,
     const int64_t n = sys.dim();
     // the boxes of x - x* and u - u*, and of x and u
     const Interval IHx = priv_with_origin(R.interval());
-    const Range x_box(aux_col(IHx.inf()) + lin.x_star, aux_col(IHx.sup()) + lin.x_star);
+    // the Ranges are columns
+    const Tensor x_col = lin.x_star.expand_dims(-1), u_col = lin.u_star.expand_dims(-1);
+    const Range x_box(aux_col(IHx.inf()) + x_col, aux_col(IHx.sup()) + x_col);
     std::optional<Interval> IHu;
     std::optional<Range> u_box;
     if (U0) {
         IHu = priv_with_origin(U0->interval());
-        u_box = Range(aux_col(IHu->inf()) + lin.u_star, aux_col(IHu->sup()) + lin.u_star);
+        u_box = Range(aux_col(IHu->inf()) + u_col, aux_col(IHu->sup()) + u_col);
     }
     if (alg.tensor_order == 2) {
         // the Hessian over the box, and the largest |z - z*| per coordinate

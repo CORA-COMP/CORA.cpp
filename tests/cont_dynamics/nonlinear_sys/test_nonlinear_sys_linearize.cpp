@@ -37,9 +37,8 @@ NonlinearSys aux_system() {
 /// The Jacobians and the Hessians at the point (1, 2), u = 0.5.
 void the_derivatives_at_a_point(const std::string &b) {
     const NonlinearSys sys = aux_system();
-    const Tensor x = test::column({1.0, 2.0}), u = test::column({0.5});
-    check(test::close(sys.dynamics(test::vec({1.0, 2.0}), test::vec({0.5})), {2.5, std::sin(1.0)}),
-          b + ": f");
+    const Tensor x = test::vec({1.0, 2.0}), u = test::vec({0.5});
+    check(test::close(sys.dynamics(x, u), {2.5, std::sin(1.0)}), b + ": f");
     const Jacobians J = sys.jacobian(x, u);
     check(test::close(J.A, {2.0, 1.0, std::cos(1.0), 0.0}) && test::close(J.B, {1.0, 0.0}),
           b + ": A and B");
@@ -95,8 +94,7 @@ void checks_and_their_switch() {
     check(test::throws([&] { sys.linearize(R, R, 0.1); }), "an input set of another dimension");
     check(test::raises([&] { sys.linearize(R, std::nullopt, 0.0); }, Error::wrong_value),
           "time step 0");
-    check(test::throws([&] { sys.jacobian(test::column({1.0, 2.0})); }),
-          "a point without its input");
+    check(test::throws([&] { sys.jacobian(test::vec({1.0, 2.0})); }), "a point without its input");
     const Tensor on = sys.linearize(R, std::nullopt, 0.1).x_star;
     ChecksScope off(false);
     check(test::close(sys.linearize(R, std::nullopt, 0.1).x_star, on, 0), "the same, checks off");

@@ -70,7 +70,7 @@ InputSolution LinearSys::input_solution(const Zonotope &U, double time_step,
     const Tensor top = Tensor::concat({A, u}, -1);
     const Tensor M = Tensor::concat({top, A.zeros_like({1, n + 1})}, -2);
     const Tensor input = (M * time_step).expm().slice(-1, n, n + 1);
-    const Tensor Pu = input.slice(-2, 0, n);
+    const Tensor Pu = input.slice(-2, 0, n).squeeze(-1);
 
     // G u for the interval matrix G: the center maps u, the radius maps |u|.
     const Interval G = correction_matrix_input(time_step, taylor_terms);

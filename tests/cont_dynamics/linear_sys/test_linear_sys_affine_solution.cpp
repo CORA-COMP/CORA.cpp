@@ -25,7 +25,8 @@ namespace {
 /// dt} X.
 void the_end_of_the_step_adds_the_input(const std::string &b) {
     const Tensor A = diagonal(), u = test::column({1.0, -1.0});
-    const AffineSolution S = LinearSys(A).affine_solution(initial_set(), u, kStep, kTerms);
+    const AffineSolution S =
+        LinearSys(A).affine_solution(initial_set(), u.squeeze(-1), kStep, kTerms);
     const Tensor center = flow(A, kStep, initial_set().center().expand_dims(-1)) +
                           (A.inv().matmul((A * kStep).expm() - Tensor::eye(2))).matmul(u);
     check(test::close(S.time_point.center().expand_dims(-1), center, 1e-14), b + ": the center");
@@ -40,7 +41,8 @@ void the_end_of_the_step_adds_the_input(const std::string &b) {
 /// The enclosure holds the start, the end and the trajectories of the corners between them.
 void the_step_is_enclosed(const std::string &b) {
     const Tensor A = diagonal(), u = test::column({1.0, -1.0});
-    const AffineSolution S = LinearSys(A).affine_solution(initial_set(), u, kStep, kTerms);
+    const AffineSolution S =
+        LinearSys(A).affine_solution(initial_set(), u.squeeze(-1), kStep, kTerms);
     const Tensor G = (A.inv().matmul((A * kStep).expm() - Tensor::eye(2)));
     for (const std::vector<double> &x :
          {std::vector<double>{2, 2.5}, {0, 1.5}, {2, 1.5}, {0, 2.5}}) {
@@ -60,21 +62,24 @@ void the_step_is_enclosed(const std::string &b) {
 void checks_and_their_switch(const std::string &b) {
     const LinearSys sys(diagonal());
     const Tensor u = test::column({1.0, 0.0});
-    check(test::raises(
-              [&] { sys.affine_solution(initial_set(), test::column({1.0}), kStep, kTerms); },
-              Error::dimension_mismatch),
+    // a u of the wrong size, a set of the wrong dimension, no terms, and the checks off
+    check(test::raises([&] { sys.affine_solution(initial_set(), test::vec({1.0}), kStep, kTerms); },
+                       Error::dimension_mismatch),
           b + ": u of one row");
-    check(test::raises([&] { sys.affine_solution(origin(3), u, kStep, kTerms); },
+    check(test::raises([&] { sys.affine_solution(origin(3), u.squeeze(-1), kStep, kTerms); },
                        Error::dimension_mismatch),
           b + ": a set of three dimensions");
-    check(
-        test::raises([&] { sys.affine_solution(initial_set(), u, kStep, 0); }, Error::wrong_value),
-        b + ": no terms");
-    const Tensor on = (sys.affine_solution(initial_set(), u, kStep, kTerms).time_point).center();
+    check(test::raises([&] { sys.affine_solution(initial_set(), u.squeeze(-1), kStep, 0); },
+                       Error::wrong_value),
+          b + ": no terms");
+    const Tensor on =
+        (sys.affine_solution(initial_set(), u.squeeze(-1), kStep, kTerms).time_point).center();
     ChecksScope off(false);
-    check(test::close((sys.affine_solution(initial_set(), u, kStep, kTerms).time_point).center(),
-                      on, 0),
-          b + ": the same with the checks off");
+    check(
+        test::close(
+            (sys.affine_solution(initial_set(), u.squeeze(-1), kStep, kTerms).time_point).center(),
+            on, 0),
+        b + ": the same with the checks off");
 }
 
 } // namespace

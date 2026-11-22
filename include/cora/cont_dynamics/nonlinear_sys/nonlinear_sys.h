@@ -55,10 +55,11 @@ struct Jacobians {
 /// The affine system of a step (CORA's linearize: linsys, linParams and linError): x' = A x + u
 /// with u in U + u_const, expanded at (x_star, u_star).
 struct Linearized {
-    Tensor x_star, u_star, f0; ///< the expansion point and f there (CORA's p.x, p.u, f0)
-    LinearSys sys;             ///< x' = A x with the input u in the state space (B = I)
-    Zonotope U;                ///< B (U - u_star) without its center (CORA's linParams.U)
-    Tensor u_const;            ///< f0 plus that center (CORA's linParams.uTrans)
+    Tensor x_star, u_star,
+        f0;         ///< the expansion point (n), (m) and f there (n) (CORA's p.x, p.u, f0)
+    LinearSys sys;  ///< x' = A x with the input u in the state space (B = I)
+    Zonotope U;     ///< B (U - u_star) without its center (CORA's linParams.U)
+    Tensor u_const; ///< f0 plus that center (n) (CORA's linParams.uTrans)
 };
 
 /// One step of reach: the set over the step and at its end, and the linearization error that
@@ -111,14 +112,14 @@ class NonlinearSys {
     /// vector x (n) gives f (n).
     Tensor dynamics(const Tensor &x, const std::optional<Tensor> &u = std::nullopt) const;
 
-    /// The Jacobians at the column x (n, 1) and u (m, 1).
+    /// The Jacobians at the point x (n) and the input u (m).
     Jacobians jacobian(const Tensor &x, const std::optional<Tensor> &u = std::nullopt) const;
 
     /// f over the box x (bounds (n, 1)) and u (bounds (m, 1)): a range of shape (n, 1).
     Range enclosure(const Range &x, const std::optional<Range> &u = std::nullopt) const;
 
     /// The Hessians of the components over z = (x, u) at the point (CORA's hessian): n matrices
-    /// (n + m, n + m).
+    /// (n + m, n + m); x (n) and u (m).
     std::vector<Tensor> hessian(const Tensor &x,
                                 const std::optional<Tensor> &u = std::nullopt) const;
 
@@ -173,7 +174,7 @@ class NonlinearSys {
     PolyNonlinearStep post(const PolyNonlinearStep &step, const std::optional<Zonotope> &U,
                            const alg::Linearization &alg) const;
 
-    /// linearize from the center (n, 1) of a set of any class, unchecked (the algorithms check).
+    /// linearize from the center (n) of a set of any class, unchecked (the algorithms check).
     Linearized linearize_impl(const Tensor &center, const std::optional<Zonotope> &U,
                               double time_step) const;
 
@@ -211,7 +212,10 @@ class NonlinearSys {
     void validate_poly_sets(const char *op, const PolyZonotope &R,
                             const std::optional<Zonotope> &U) const;
 
-    /// The checks of a point x (n, 1) and an input u (m, 1) of the derivatives.
+    /// The checks of a point x (n) and an input u (m) of the derivatives.
+    void validate_vectors(const char *op, const Tensor &x, const std::optional<Tensor> &u) const;
+
+    /// The checks of the boxes (n, 1) and (m, 1) of the ranges.
     void validate_point(const char *op, const Tensor &x, const std::optional<Tensor> &u) const;
 
     struct ThirdOrder; // the third-order tensor, derived once on first use (nonlinear_sys.cpp)

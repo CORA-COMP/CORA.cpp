@@ -64,7 +64,7 @@ ReachStep LinearSys::init_reach(const Zonotope &R_init, const std::optional<Zono
     CORA_CHECK(!(U || u_trans) || B_.has_value(), Error::wrong_value,
                [] { return std::string("init_reach: an input needs B; use LinearSys(A, B)"); });
     CORA_CHECK((!U || U->dim() == B_->shape().back()) &&
-                   (!u_trans || u_trans->shape() == std::vector<int64_t>({B_->shape().back(), 1})),
+                   (!u_trans || u_trans->shape() == std::vector<int64_t>({B_->shape().back()})),
                Error::dimension_mismatch, [&] {
                    return std::string("init_reach: U and u_trans must have the dimension of the "
                                       "columns of B");
@@ -91,7 +91,8 @@ ReachStep LinearSys::init_reach(const Zonotope &R_init, const std::optional<Zono
         Interval::matrix(s.integral + E.inf() * dt, s.integral + E.sup() * dt);
     std::optional<Zonotope> trans_point;
     if (u_trans)
-        trans_point = Zonotope(B_->matmul(*u_trans).squeeze(-1), A().zeros_like({0, dim()}));
+        trans_point =
+            Zonotope(B_->matmul(u_trans->expand_dims(-1)).squeeze(-1), A().zeros_like({0, dim()}));
     const Zonotope R_trans = trans_point ? trans_point->linear_map(e_at_int) : origin;
 
     // the first step: the end of the step, then the enclosure with the curvatures
