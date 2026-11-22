@@ -130,7 +130,9 @@ NnProblem::NnProblem(const NeuralNetwork &net, const NnProperty &property,
     // the polytopes in float64 and in the search dtype
     A = Tensor::like(like64, property.A.data(), property.A.shape());
     b = Tensor::like(like64, property.b.data(), property.b.shape());
-    std::vector<double> cases(property.poly_case.begin(), property.poly_case.end());
+    std::vector<double> cases;
+    cases.reserve(property.poly_case.size());
+    for (const int64_t k : property.poly_case) cases.push_back(double(k));
     poly_case = Tensor::like(like64, cases, {int64_t(cases.size())});
     A32_ = A.to(options.dtype);
     b32_ = b.to(options.dtype);

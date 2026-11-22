@@ -212,6 +212,23 @@ struct Artifacts {
     Tensor input_grad;
 };
 
+/// Adds the seconds of its scope to a stat (the time of each step of a batch).
+class StepTimer {
+  public:
+    StepTimer(std::map<std::string, double> *stats, const char *name)
+        : stats_(stats), name_(name), started_(now_seconds()) {}
+    ~StepTimer() {
+        if (stats_) (*stats_)[name_] += now_seconds() - started_;
+    }
+    StepTimer(const StepTimer &) = delete;
+    StepTimer &operator=(const StepTimer &) = delete;
+
+  private:
+    std::map<std::string, double> *stats_;
+    const char *name_;
+    double started_;
+};
+
 // The bounding ------------------------------------------------------------------------------------
 
 /// CORA's verify: the zonotopes of priv_zono_batch, refined in the latent space.
@@ -279,6 +296,7 @@ class ConZonotopeBounding : public Bounding {
     double deadline_ = kInf;
     bool timed_out_ = false;
     AttackResult *found_ = nullptr;
+    std::map<std::string, double> *stats_ = nullptr;
 };
 
 bool ConZonotopeBounding::prepare(NnProblem &problem) {
@@ -368,6 +386,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
                                                   AttackResult &found) {
     deadline_ = deadline;
     found_ = &found;
+    stats_ = &stats;
     Tensor xs = (problem.outer_lo + problem.outer_hi) * 0.5;
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
@@ -443,10 +462,14 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
     const ZonoNet &net = *net_;
     Step step;
     // 1. the check on the whole batch
-    const ZonoInput in = net.input_zonotope(xi_, ri_);
-    const Tensor excluded_all =
-        aux_excluded(net.forward(in.c, in.dr, in.G, si_, nullptr, false), ci_);
-    const std::vector<int64_t> open = aux_where(1.0 - excluded_all.min(1));
+    Tensor excluded_all;
+    std::vector<int64_t> open;
+    {
+        const StepTimer timer(stats_, "check_seconds");
+        const ZonoInput in = net.input_zonotope(xi_, ri_);
+        excluded_all = aux_excluded(net.forward(in.c, in.dr, in.G, si_, nullptr, false), ci_);
+        open = aux_where(1.0 - excluded_all.min(1));
+    }
     step.verified = xi_.shape()[0] - int64_t(open.size());
     const auto empty = [&] {
         return Children{xi_.slice(0, 0, 0), ri_.slice(0, 0, 0), ci_.slice(0, 0, 0),
@@ -459,8 +482,17 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
     const Tensor xi = xi_.take(open, 0), ri = ri_.take(open, 0), ci = ci_.take(open, 0),
                  si = si_.take(open, 0), excluded = excluded_all.take(open, 0);
     // the artifacts of the open sets, then 2. falsification
-    const Artifacts art = aux_artifacts(xi, ri, si);
-    if (aux_falsify(xi, ri, ci, art, excluded)) {
+    Artifacts art;
+    {
+        const StepTimer timer(stats_, "artifacts_seconds");
+        art = aux_artifacts(xi, ri, si);
+    }
+    bool falsified = false;
+    {
+        const StepTimer timer(stats_, "falsify_seconds");
+        falsified = aux_falsify(xi, ri, ci, art, excluded);
+    }
+    if (falsified) {
         step.found = true;
         return step;
     }
@@ -474,9 +506,15 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
                                                 o_.refinement_method +
                                                 "' is unknown; use 'zonotack' or 'naive'");
     // 3. the split and ReLU constraints, 4. the refinement of every child
-    const SplitRows split = aux_split_constraints(xi, ri, si, art);
-    const auto [At, bt] = aux_relu_constraints(si, art);
-    auto [children, n_empty] = aux_refine(ci, si, art, excluded, split, At, bt);
+    SplitRows split;
+    std::pair<Tensor, Tensor> relu_rows;
+    {
+        const StepTimer timer(stats_, "constraints_seconds");
+        split = aux_split_constraints(xi, ri, si, art);
+        relu_rows = aux_relu_constraints(si, art);
+    }
+    auto [children, n_empty] =
+        aux_refine(ci, si, art, excluded, split, relu_rows.first, relu_rows.second);
     if (timed_out_) return step;
     step.verified += n_empty;
     // the point sets are checked and dropped
@@ -525,8 +563,10 @@ Artifacts ConZonotopeBounding::aux_artifacts(const Tensor &xi, const Tensor &ri,
     art.in = net.input_zonotope(xi, ri, dims);
     art.out = net.forward(art.in.c, art.in.dr, art.in.G, si,
                           art.has_sens ? &art.sens.layer_sum : nullptr, true);
-    if (need_grad)
+    if (need_grad) {
+        const StepTimer timer(stats_, "gradient_seconds");
         art.input_grad = priv_frad_gradients(art.out, art.in, net, si, o_.exact_backprop);
+    }
     return art;
 }
 
@@ -776,7 +816,12 @@ std::pair<Children, int64_t> ConZonotopeBounding::aux_refine(const Tensor &ci, c
     const bool has_rows = C.shape()[1] > 0;
     for (int64_t it = 1; it < o_.refinement_max_iter; ++it) {
         if (aux_late()) return {};
-        const auto [bl, bu, child_empty] = aux_bound_children(cy, Gy, dry, C, d, member, n_ch);
+        std::tuple<Tensor, Tensor, Tensor> bounds;
+        {
+            const StepTimer timer(stats_, "fourier_motzkin_seconds");
+            bounds = aux_bound_children(cy, Gy, dry, C, d, member, n_ch);
+        }
+        const auto &[bl, bu, child_empty] = bounds;
         if (timed_out_) return {};
         empty = empty.maximum(child_empty);
         const Tensor bc = (bu + bl) * 0.5, br = (bu - bl) * 0.5;
@@ -794,6 +839,7 @@ std::pair<Children, int64_t> ConZonotopeBounding::aux_refine(const Tensor &ci, c
         }
         // the refined input set through the network again
         if (it + 1 < o_.refinement_max_iter) {
+            const StepTimer timer(stats_, "refine_forward_seconds");
             const ZonoPropagation prop =
                 net.forward(cx, drx, Gx, splits, art.has_sens ? &layer_sens : nullptr, false);
             cy = prop.c;

@@ -410,10 +410,27 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
     Tensor c = c_, dr = dr_, G = G_;
     ZonoPropagation out;
     const bool split = splits.defined() && splits.shape()[1] > 0;
+    // without a record the error generators of a layer stay diagonal until the next linear map:
+    // the rows v_i e_j W are v_i times the row j of W, no (B, dn, n) block and no product with it
+    Tensor pending_values, pending_neurons;
+    bool pending_all = false;
+    const auto take_pending = [&](const Tensor &M) {
+        const int64_t B = pending_values.shape()[0], dn = pending_values.shape()[1];
+        const Tensor rows =
+            pending_all
+                ? M.expand_dims(0)
+                : M.take(pending_neurons.reshape({B * dn}), 0).reshape({B, dn, M.shape()[1]});
+        // + 0.0: the product's zero is +0, as the sum of the block's row with zeros is
+        return pending_values.expand_dims(-1).multiply(rows) + 0.0;
+    };
     for (std::size_t k = 0; k < W.size(); ++k) {
         // the linear layer, exactly
         c = c.matmul(W[k]) + b[k];
         G = G.matmul(W[k]);
+        if (pending_values.defined()) {
+            G = Tensor::concat({G, take_pending(W[k])}, 1);
+            pending_values = Tensor();
+        }
         if (dr.defined()) dr = dr.matmul(abs_w[k]);
         if (activations[k] == Activation::identity) continue;
         // the bounds of every neuron (CORALean's interval of a zonotope), then the split clamps
@@ -464,9 +481,16 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
                               "' is unknown; use 'length', 'sensitivity*length' or 'sequential'");
             }
             // the generators of the slot neurons, the rest of the errors in dr
-            const Tensor values = reach.take_along_axis(neurons, 1);
-            const Tensor hot = aux_onehot(neurons, n);
-            G = Tensor::concat({G, hot.multiply(values.expand_dims(-1))}, 1);
+            const Tensor values = dn == n ? reach : reach.take_along_axis(neurons, 1);
+            const bool defer = !record && k + 1 < W.size();
+            const Tensor hot = defer && dn == n ? Tensor() : aux_onehot(neurons, n);
+            if (defer) {
+                pending_values = values;
+                pending_neurons = neurons;
+                pending_all = dn == n;
+            } else {
+                G = Tensor::concat({G, hot.multiply(values.expand_dims(-1))}, 1);
+            }
             if (dn < n) {
                 const Tensor rest = reach.multiply(1.0 - hot.max(1));
                 dr = dr.defined() ? dr + rest : rest;
