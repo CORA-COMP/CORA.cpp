@@ -16,7 +16,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -213,6 +213,11 @@ void priv_register_heuristics() {
     // the gradient of the F-radius times the error
     add("zono-norm-gradient", false, true,
         [](const HeuristicInputs &in) { return aux_grad(in).multiply(in.er); });
+    // FSB-like: zono-norm-gradient filters the candidates, a look-ahead bound picks among them
+    Heuristic fsb{[](const HeuristicInputs &in) { return aux_grad(in).multiply(in.er); }, false,
+                  true};
+    fsb.look_ahead = true;
+    register_heuristic("fsb", std::move(fsb));
 }
 
 Tensor priv_compute_heuristic(const std::string &name, const HeuristicInputs &in,

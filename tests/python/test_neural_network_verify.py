@@ -65,9 +65,11 @@ class Verify(unittest.TestCase):
             cora.NnVerifyOptions(dtype="float16")
         # the registered names of the built-ins
         names = cora.verify_strategies()
-        self.assertEqual(len(names["heuristics"]), 10)
+        self.assertEqual(len(names["heuristics"]), 11)
         self.assertIn("zonotack", names["attacks"])
         self.assertIn("conzonotope", names["boundings"])
+        self.assertIn("zonotope-alpha", names["boundings"])
+        self.assertIn("fsb", names["heuristics"])
 
     def test_wrong_inputs(self):
         with self.assertRaises(cora.CORAError):

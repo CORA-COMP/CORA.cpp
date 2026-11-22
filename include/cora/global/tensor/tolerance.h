@@ -121,6 +121,7 @@ inline constexpr double kActivationFitTol = 1e-4;  ///< error of an activation's
 inline constexpr double kRidgeLambda = 1e-3;       ///< ridge regression of an activation's fit
 inline constexpr double kSensitivityFloor = 1e-6;  ///< verify: CORA's floor of a sensitivity
 inline constexpr double kFradSmoothing = 1e-12;    ///< verify: keeps the F-radius's root smooth
+inline constexpr double kAdamEpsilon = 1e-8;       ///< verify: Adam's floor of the step's root
 inline constexpr double kHeuristicGradient = 1e-3; ///< verify: CORA's offset of a gradient score
 inline constexpr double kVerifiedMargin = 1e-4;    ///< verify: float32 network vs float64 enclosure
 

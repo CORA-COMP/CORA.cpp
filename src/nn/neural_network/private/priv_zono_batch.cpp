@@ -20,7 +20,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "nn/neural_network/private/priv_zono_batch.h"
@@ -305,6 +305,118 @@ Tensor aux_held_gradients(ZonoPropagation &out, const ZonoInput &in) {
     return gradient(0, in.values);
 }
 
+// The optimized slopes ----------------------------------------------------------------------------
+
+/// Where a ReLU crosses zero at the (clamped) bounds.
+Tensor aux_crossing(const Tensor &l, const Tensor &u) {
+    const Tensor zero = l.zeros_like();
+    return u.greater(zero).multiply(l.less(zero));
+}
+
+/// Where -a l is the larger end of relu(x) - a x over [l, u].
+Tensor aux_alpha_left(const Tensor &l, const Tensor &u, const Tensor &a) {
+    return a.multiply(l).negative().greater_equal((1.0 - a).multiply(u));
+}
+
+/// The slopes of layer k, if alpha holds them and the layer is a ReLU.
+const Tensor *aux_alpha_of(const ZonoNet &net, const std::vector<Tensor> *alpha, std::size_t k) {
+    if (!alpha || k >= alpha->size() || !(*alpha)[k].defined()) return nullptr;
+    return net.activations[k] == Activation::relu ? &(*alpha)[k] : nullptr;
+}
+
+/// A ReLU's line with the slope a in [0, 1] where it crosses zero: relu(x) - a x lies in [0, h]
+/// over [l, u] with h = max(-a l, (1 - a) u), so the offset and the radius are h / 2.
+PrivLine aux_alpha_line(const PrivLine &base, const Tensor &l, const Tensor &u, const Tensor &a) {
+    const Tensor cross = aux_crossing(l, u);
+    const Tensor half = a.multiply(l).negative().maximum((1.0 - a).multiply(u)) * 0.5;
+    return {Tensor::where(cross, a, base.slope), Tensor::where(cross, half, base.offset),
+            Tensor::where(cross, half, base.radius)};
+}
+
+/// The partial derivatives of aux_alpha_line in l and u: the slope is held, h / 2 moves with the
+/// larger end.
+LineJacobian aux_alpha_jacobian(const LineJacobian &base, const Tensor &l, const Tensor &u,
+                                const Tensor &a) {
+    const Tensor cross = aux_crossing(l, u), left = aux_alpha_left(l, u, a);
+    const Tensor zero = l.zeros_like();
+    const Tensor h_l = Tensor::where(left, a.negative(), zero) * 0.5;
+    const Tensor h_u = Tensor::where(left, zero, 1.0 - a) * 0.5;
+    return {Tensor::where(cross, zero, base.m_l), Tensor::where(cross, zero, base.m_u),
+            Tensor::where(cross, h_l, base.o_l),  Tensor::where(cross, h_u, base.o_u),
+            Tensor::where(cross, h_l, base.r_l),  Tensor::where(cross, h_u, base.r_u)};
+}
+
+/// The reverse pass from the partial derivatives of the output (g_c, g_gen, g_dr) back through
+/// every layer: the input's generator rows (B, q0, n0) if need_input, each record's slot gradient
+/// (per neuron) into slot_grads, the slopes' gradients into g_alpha where alpha holds them.
+Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits, Tensor g_c,
+                   Tensor g_gen, Tensor g_dr, const std::vector<Tensor> *alpha,
+                   std::vector<Tensor> *g_alpha, std::vector<Tensor> *slot_grads, bool need_input) {
+    std::size_t next = out.layers.size();
+    for (std::size_t k = net.W.size(); k-- > 0;) {
+        if (net.activations[k] != Activation::identity) {
+            const ZonoLayerRecord &rec = out.layers[--next];
+            const Tensor &c1 = rec.c_in, &G1 = rec.G_in, &dr1 = rec.dr_in;
+            const int64_t n = rec.l.shape()[1], qk = G1.shape()[1];
+            // the errors: the slot generators' values and the rest in dr are the reach
+            Tensor g_reach;
+            if (rec.slot_values.defined()) {
+                const Tensor &neurons = rec.slot_neurons;
+                const int64_t dn = neurons.shape()[1];
+                const Tensor hot = aux_onehot(neurons, n);
+                const Tensor gv = g_gen.slice(1, qk, qk + dn)
+                                      .take_along_axis(neurons.expand_dims(-1), 2)
+                                      .squeeze(-1);
+                g_reach = hot.multiply(gv.expand_dims(-1)).sum(1);
+                if (slot_grads) (*slot_grads)[next] = g_reach;
+                if (dn < n && g_dr.defined()) g_reach = g_reach + g_dr.multiply(1.0 - hot.max(1));
+                g_gen = g_gen.slice(1, 0, qk);
+            } else {
+                if (slot_grads) (*slot_grads)[next] = rec.l.zeros_like();
+                g_reach = g_dr.defined() ? g_dr : rec.l.zeros_like();
+            }
+            // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = m dr1 + reach
+            const ClampJacobian cl = aux_clamp_jacobian(rec.first_id, rec.l, rec.u, splits);
+            PrivLine line = priv_verify_line(net.activations[k], cl.lc, cl.uc, net.poly_method);
+            LineJacobian J = aux_line_jacobian(net.activations[k], cl.lc, cl.uc, net.poly_method);
+            const Tensor *a = aux_alpha_of(net, alpha, k);
+            if (a) {
+                line = aux_alpha_line(line, cl.lc, cl.uc, *a);
+                J = aux_alpha_jacobian(J, cl.lc, cl.uc, *a);
+            }
+            const Tensor &m = line.slope;
+            Tensor g_m = g_c.multiply(c1) + g_gen.multiply(G1).sum(1);
+            if (dr1.defined()) g_m = g_m + g_dr.multiply(dr1);
+            if (a) {
+                // the slope's own gradient: c2, G2, dr2 through m, the offset and reach through h
+                const Tensor zero = rec.l.zeros_like();
+                const Tensor left = aux_alpha_left(cl.lc, cl.uc, *a);
+                const Tensor h_a = Tensor::where(left, cl.lc.negative(), cl.uc.negative());
+                (*g_alpha)[k] = Tensor::where(aux_crossing(cl.lc, cl.uc),
+                                              g_m + (g_c + g_reach).multiply(h_a) * 0.5, zero);
+            }
+            const Tensor g_lc = g_m.multiply(J.m_l) + g_c.multiply(J.o_l) + g_reach.multiply(J.r_l);
+            const Tensor g_uc = g_m.multiply(J.m_u) + g_c.multiply(J.o_u) + g_reach.multiply(J.r_u);
+            const Tensor g_l = g_lc.multiply(cl.lc_l) + g_uc.multiply(cl.uc_l);
+            const Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
+            // l = c1 - sum |G1| - dr1, u = c1 + sum |G1| + dr1
+            const Tensor g_rad = g_u - g_l;
+            g_c = g_c.multiply(m) + g_l + g_u;
+            g_gen = m.expand_dims(1).multiply(g_gen) + G1.sign().multiply(g_rad.expand_dims(1));
+            g_dr = dr1.defined() ? g_dr.multiply(m) + g_rad : Tensor();
+        }
+        // the linear layer; the centers and radii of the first layer's input are not needed
+        if (k == 0) {
+            if (need_input) g_gen = aux_rows_times(g_gen, net.WT[k]);
+            break;
+        }
+        g_gen = aux_rows_times(g_gen, net.WT[k]);
+        g_c = g_c.matmul(net.WT[k]);
+        if (g_dr.defined()) g_dr = g_dr.matmul(net.abs_wT[k]);
+    }
+    return g_gen;
+}
+
 } // namespace
 
 
@@ -424,7 +536,7 @@ std::pair<Tensor, Tensor> ZonoNet::clamp(int64_t first_id, const Tensor &l, cons
 
 ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tensor &G_,
                                  const Tensor &splits, const std::vector<Tensor> *layer_sens,
-                                 bool record) const {
+                                 bool record, const std::vector<Tensor> *alpha) const {
     Tensor c = c_, dr = dr_, G = G_;
     ZonoPropagation out;
     const bool split = splits.defined() && splits.shape()[1] > 0;
@@ -459,7 +571,9 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             u = u + dr;
         }
         const auto [lc, uc] = split ? clamp(first_ids[k], l, u, splits) : std::pair{l, u};
-        const PrivLine line = priv_verify_line(activations[k], lc, uc, poly_method);
+        PrivLine line = priv_verify_line(activations[k], lc, uc, poly_method);
+        if (const Tensor *a = aux_alpha_of(*this, alpha, k))
+            line = aux_alpha_line(line, lc, uc, *a);
         // CORALean's Layer.activation: the slope map and the box of the offset and the error
         const Tensor lo = line.offset - line.radius, hi = line.offset + line.radius;
         const Tensor middle = (lo + hi) * 0.5, reach = (hi - middle).maximum(middle - lo);
@@ -536,56 +650,88 @@ Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const Zono
     if (!exact) return aux_held_gradients(out, in);
     // d F / d G at the output, then back through every layer
     const Tensor frad = (out.G.square().sum(-1).sum(-1, true) + numerics::kFradSmoothing).sqrt();
-    Tensor g_gen = out.G.divide(frad.expand_dims(-1));
-    Tensor g_c = out.c.zeros_like(), g_dr = out.dr.defined() ? out.dr.zeros_like() : Tensor();
+    // the reverse pass sets each record's slot gradient
+    std::vector<Tensor> slot_grads(out.layers.size());
+    const Tensor g_gen = aux_reverse(
+        out, net, splits, out.c.zeros_like(), out.G.divide(frad.expand_dims(-1)),
+        out.dr.defined() ? out.dr.zeros_like() : Tensor(), nullptr, nullptr, &slot_grads, true);
+    // the records' gradients, and the input's of its generator dimensions
+    for (std::size_t i = 0; i < out.layers.size(); ++i) out.layers[i].grad = slot_grads[i];
+    return g_gen.take_along_axis(in.dims.expand_dims(-1), 2).squeeze(-1);
+}
+
+std::vector<Tensor> priv_alpha_gradients(const ZonoPropagation &out, const ZonoNet &net,
+                                         const Tensor &splits, const std::vector<Tensor> &alpha,
+                                         const Tensor &g_c, const Tensor &g_gen,
+                                         const Tensor &g_dr) {
+    // the reverse pass without the input's gradient
+    std::vector<Tensor> g_alpha(net.W.size());
+    aux_reverse(out, net, splits, g_c, g_gen, g_dr, &alpha, &g_alpha, nullptr, false);
+    return g_alpha;
+}
+
+std::vector<Tensor> priv_alpha_start(const ZonoPropagation &out, const ZonoNet &net,
+                                     const Tensor &splits) {
+    std::vector<Tensor> alpha(net.W.size());
+    for (const ZonoLayerRecord &rec : out.layers) {
+        const auto k = std::size_t(rec.index);
+        if (net.activations[k] != Activation::relu) continue;
+        const bool split = splits.defined() && splits.shape()[1] > 0;
+        const auto [lc, uc] =
+            split ? net.clamp(rec.first_id, rec.l, rec.u, splits) : std::pair{rec.l, rec.u};
+        // u / (u - l) where the neuron crosses zero, else a slope that is never read
+        const Tensor cross = aux_crossing(lc, uc);
+        alpha[k] =
+            Tensor::where(cross, uc.divide((uc - lc).maximum(numerics::kTiny)), lc.zeros_like());
+    }
+    return alpha;
+}
+
+Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
+                           const Tensor &x, const Tensor &rad, const Tensor &rows,
+                           const std::vector<Tensor> *alpha) {
+    const int64_t B = x.shape()[0], R = rows.shape()[0];
+    // Lambda (B, R, n): the rows' coefficients of the current layer's output, and the constant
+    Tensor lam = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
+    Tensor constant = x.zeros_like({B, R});
+    const bool split = splits.defined() && splits.shape()[1] > 0;
     std::size_t next = out.layers.size();
     for (std::size_t k = net.W.size(); k-- > 0;) {
         if (net.activations[k] != Activation::identity) {
-            ZonoLayerRecord &rec = out.layers[--next];
-            const Tensor &c1 = rec.c_in, &G1 = rec.G_in, &dr1 = rec.dr_in;
-            const int64_t n = rec.l.shape()[1], qk = G1.shape()[1];
-            // the errors: the slot generators' values and the rest in dr are the reach
-            Tensor g_reach;
-            if (rec.slot_values.defined()) {
-                const Tensor &neurons = rec.slot_neurons;
-                const int64_t dn = neurons.shape()[1];
-                const Tensor hot = aux_onehot(neurons, n);
-                const Tensor gv = g_gen.slice(1, qk, qk + dn)
-                                      .take_along_axis(neurons.expand_dims(-1), 2)
-                                      .squeeze(-1);
-                rec.grad = hot.multiply(gv.expand_dims(-1)).sum(1);
-                g_reach = rec.grad;
-                if (dn < n && g_dr.defined()) g_reach = g_reach + g_dr.multiply(1.0 - hot.max(1));
-                g_gen = g_gen.slice(1, 0, qk);
+            const ZonoLayerRecord &rec = out.layers[--next];
+            const auto [lc, uc] =
+                split ? net.clamp(rec.first_id, rec.l, rec.u, splits) : std::pair{rec.l, rec.u};
+            Tensor sl, su, bl, bu;
+            if (net.activations[k] == Activation::relu) {
+                // the chord above, a slope in [0, 1] below (alpha, else CROWN's 0 or 1)
+                const Tensor zero = lc.zeros_like(), one = lc.ones_like();
+                const Tensor cross = aux_crossing(lc, uc), on = lc.greater_equal(zero);
+                const Tensor chord = uc.divide((uc - lc).maximum(numerics::kTiny));
+                su = Tensor::where(cross, chord, on);
+                bu = Tensor::where(cross, chord.multiply(lc).negative(), zero);
+                const Tensor *a = aux_alpha_of(net, alpha, k);
+                const Tensor below = a ? *a : uc.greater(lc.negative());
+                sl = Tensor::where(cross, below, on);
+                bl = zero;
             } else {
-                rec.grad = rec.l.zeros_like();
-                g_reach = g_dr.defined() ? g_dr : rec.l.zeros_like();
+                // the parallel lines of the zonotope's line
+                const PrivLine line = priv_verify_line(net.activations[k], lc, uc, net.poly_method);
+                sl = su = line.slope;
+                bl = line.offset - line.radius;
+                bu = line.offset + line.radius;
             }
-            // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = m dr1 + reach
-            const ClampJacobian cl = aux_clamp_jacobian(rec.first_id, rec.l, rec.u, splits);
-            const Tensor m =
-                priv_verify_line(net.activations[k], cl.lc, cl.uc, net.poly_method).slope;
-            const LineJacobian J =
-                aux_line_jacobian(net.activations[k], cl.lc, cl.uc, net.poly_method);
-            Tensor g_m = g_c.multiply(c1) + g_gen.multiply(G1).sum(1);
-            if (dr1.defined()) g_m = g_m + g_dr.multiply(dr1);
-            const Tensor g_lc = g_m.multiply(J.m_l) + g_c.multiply(J.o_l) + g_reach.multiply(J.r_l);
-            const Tensor g_uc = g_m.multiply(J.m_u) + g_c.multiply(J.o_u) + g_reach.multiply(J.r_u);
-            const Tensor g_l = g_lc.multiply(cl.lc_l) + g_uc.multiply(cl.uc_l);
-            const Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
-            // l = c1 - sum |G1| - dr1, u = c1 + sum |G1| + dr1
-            const Tensor g_rad = g_u - g_l;
-            g_c = g_c.multiply(m) + g_l + g_u;
-            g_gen = m.expand_dims(1).multiply(g_gen) + G1.sign().multiply(g_rad.expand_dims(1));
-            g_dr = dr1.defined() ? g_dr.multiply(m) + g_rad : Tensor();
+            const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
+            constant = constant + pos.matmul(bl.expand_dims(-1)).squeeze(-1) +
+                       neg.matmul(bu.expand_dims(-1)).squeeze(-1);
+            lam = pos.multiply(sl.expand_dims(1)) + neg.multiply(su.expand_dims(1));
         }
-        // the linear layer; the centers and radii of the first layer's input are not needed
-        g_gen = aux_rows_times(g_gen, net.WT[k]);
-        if (k == 0) break;
-        g_c = g_c.matmul(net.WT[k]);
-        if (g_dr.defined()) g_dr = g_dr.matmul(net.abs_wT[k]);
+        // the linear layer
+        constant = constant + lam.multiply(net.b[k]).sum(-1);
+        lam = aux_rows_times(lam, net.WT[k]);
     }
-    return g_gen.take_along_axis(in.dims.expand_dims(-1), 2).squeeze(-1);
+    // the input box
+    return lam.matmul(x.expand_dims(-1)).squeeze(-1) -
+           lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
 }
 
 } // namespace cora
