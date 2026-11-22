@@ -379,7 +379,7 @@ class ConZonotope(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             S.is_intersecting(meets, "fast")
 
-    def test_split_unite_and_minkowski_difference(self):
+    def test_split_unite_and_mink_diff(self):
         S = segment()
         low, high = S.split(0)
         np.testing.assert_allclose(low.interval().sup, [0.5, 1.0], atol=1e-9)
@@ -407,10 +407,10 @@ class ConZonotope(unittest.TestCase):
         small = cora.Interval(-np.ones(2), np.ones(2))
         expected = con_zonotope([0.0, 0.0], np.eye(2))
         for kind in ("exact", "inner:vertices", "inner:Vinod"):
-            self.assertTrue(big.minkowski_difference(small, kind).isequal(expected))
-        np.testing.assert_array_equal(big.minkowski_difference(np.array([1.0, 1.0])).c, [-1.0, -1.0])
+            self.assertTrue(big.mink_diff(small, kind).isequal(expected))
+        np.testing.assert_array_equal(big.mink_diff(np.array([1.0, 1.0])).c, [-1.0, -1.0])
         with self.assertRaises(cora.errors.WrongValue):
-            big.minkowski_difference(small, "other")
+            big.mink_diff(small, "other")
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #

@@ -230,7 +230,7 @@ int main() {
         for (const int n : {2, 5, 20}) {
             // S narrower than I, so the difference is not empty
             const Interval I = rnd.box(n), S = I.enlarge(0.3);
-            const Interval R = aux_set(I).minkowski_difference(S).as<Interval>();
+            const Interval R = aux_set(I).mink_diff(S).as<Interval>();
             const lean::Interval O = lean::Interval(I).mink_diff(lean::Interval(S));
             oracle::check("interval.minkDiff", R, O);
         }

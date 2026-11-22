@@ -44,8 +44,8 @@ void mink_diff_known(const std::string &b) {
           b + ": a larger subtrahend is empty");
     check(E.mink_diff(E).Q().abs().max().item() == 0 && close(E.mink_diff(E).q(), {0, 0}, 0),
           b + ": E - E is the point 0");
-    check(E.minkowski_difference(E).is<Ellipsoid>() &&
-              E.minkowski_difference(Ellipsoid::empty(2)).is<Fullspace>(),
+    const ContSet &S = E;
+    check(S.mink_diff(E).is<Ellipsoid>() && S.mink_diff(Ellipsoid::empty(2)).is<Fullspace>(),
           b + ": the generic entry");
 }
 
@@ -60,10 +60,10 @@ void checks_and_their_switch() {
           "mink_diff: vector");
     check(test::raises([&] { E.mink_diff(Ellipsoid(Tensor::eye(3))); }, Error::dimension_mismatch),
           "mink_diff: dimension");
-    check(test::raises([&] { E.minkowski_difference(small, "best"); }, Error::wrong_value),
-          "mink_diff: type");
-    check(test::raises([&] { E.minkowski_difference(Fullspace(2)); }, Error::noops),
-          "mink_diff: class");
+    const ContSet &S = E;
+    check(test::raises([&] { S.mink_diff(small, "best"); }, Error::wrong_value),
+          "mink_diff: method");
+    check(test::raises([&] { S.mink_diff(Fullspace(2)); }, Error::noops), "mink_diff: class");
     ChecksScope off(false);
     check(E.mink_diff(vec({0.0, 0.0})).dim() == 2, "mink_diff: works with the checks off");
 }

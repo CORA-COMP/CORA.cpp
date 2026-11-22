@@ -213,6 +213,7 @@ class Ellipsoid : public ContSet {
     /// The Minkowski difference with a vector (..., n) (CORA's minkDiff): the shift by -v; with an
     /// ellipsoid only the cases without directions of the equal-area partition, else
     /// Error::not_supported.
+    using ContSet::mink_diff;
     Ellipsoid mink_diff(const Tensor &v) const;
     Ellipsoid mink_diff(const Ellipsoid &S2) const;
 
@@ -251,8 +252,7 @@ class Ellipsoid : public ContSet {
     int64_t dim_impl() const override { return q_.size(-1); }
     Tensor center_impl() const override;
     Set reduce_impl(int order) const override;
-    Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &method) const override;
+    Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const override;
     Set translate_impl(const Tensor &v) const override;
     Set linear_map_impl(const Tensor &M) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;

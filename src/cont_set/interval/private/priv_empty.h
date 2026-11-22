@@ -3,7 +3,7 @@
 // Syntax:   Interval E = priv_empty(like);
 // Inputs:   like - a tensor of the shape of the bounds (..., n, k) and the backend of the result
 // Outputs:  E - the interval of bounds (..., n, 0): no columns, as CORA's empty interval
-// See also: intersect, minkowski_difference
+// See also: intersect, mink_diff
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026

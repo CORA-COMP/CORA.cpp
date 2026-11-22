@@ -3,8 +3,8 @@
 // Syntax:   R = S.minus(p);   R = ContSet::minus(p, S);
 // Inputs:   S - set of dimension n
 //           p - a point (..., n)
-// Outputs:  R - S + (-p) and -S + p; the Minkowski difference of two sets is minkowski_difference
-// See also: minkowski_difference, Interval::minus
+// Outputs:  R - S + (-p) and -S + p; the Minkowski difference of two sets is mink_diff
+// See also: mink_diff, Interval::minus
 //
 // CORA: contSet/@contSet/minus.m
 // CORA authors: Mark Wetzlinger

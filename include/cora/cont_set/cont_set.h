@@ -11,7 +11,7 @@
 //             Set P = S.project(d);
 // Operations: support_function, interval, rand_point, project, vertices, vertices_3d, display,
 //             center, is_bounded, is_full_dim, reduce, linear_map, enlarge, minus,
-//             minkowski_difference, decompose, project_high_dim, project_on_hyperplane,
+//             mink_diff, decompose, project_high_dim, project_on_hyperplane,
 //             uminus, uplus, times, compact, generate_random, lift, norm, enclose (one file each in
 //             src/cont_set/cont_set/, the checks; the classes implement the _impl forms, and a
 //             class that does not gets CORA's noops)
@@ -163,7 +163,7 @@ class ContSet {
     Set enlarge(double factor) const;
 
     /// The set shifted by -p for a point p (..., n), and for the static form -S + p (CORA's
-    /// minus with a vector); the Minkowski difference is minkowski_difference.
+    /// minus with a vector); the Minkowski difference is mink_diff.
     Set minus(const Tensor &p) const;
     static Set minus(const Tensor &p, const ContSet &S);
 
@@ -185,8 +185,7 @@ class ContSet {
 
     /// The Minkowski difference {x | x + S2 in this set} (CORA's minkDiff); type picks the
     /// algorithm of the class (default: the class's own), Error::noops for a pair without one.
-    Set minkowski_difference(const ContSet &S2,
-                             const std::optional<std::string> &method = std::nullopt) const;
+    Set mink_diff(const ContSet &S2, const std::optional<std::string> &method = std::nullopt) const;
 
     /// The projections onto the blocks of coordinates [first, last] (0-based, both inclusive),
     /// one set per block, as CORA's decompose.
@@ -264,8 +263,7 @@ class ContSet {
     virtual Set compact_impl(const std::optional<std::string> &method, Tol tol) const;
     /// CORA's enlarge: the generic formula, which a class with a cheaper one overrides.
     virtual Set enlarge_impl(const Tensor &factor) const;
-    virtual Set minkowski_difference_impl(const ContSet &S2,
-                                          const std::optional<std::string> &method) const;
+    virtual Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const;
     /// CORA's projectHighDim_: I(:, proj) * S, which a class with a cheaper one overrides.
     virtual Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const;
     /// CORA's lift_ (proj has one valid position per coordinate); noops for a class without it.

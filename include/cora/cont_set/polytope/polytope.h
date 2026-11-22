@@ -339,10 +339,10 @@ class Polytope : public ContSet {
     Polytope reduce(int order, Rng &rng, const std::string &method = "rand") const;
 
     /// The Minkowski difference {x | x + S in this set} (CORA's minkDiff, through
-    /// ContSet::minkowski_difference) of a set with a support function: method "exact" (default;
+    /// ContSet::mink_diff) of a set with a support function: method "exact" (default;
     /// the offsets of the rows lowered by the support function of S) or "exact:vertices".
-    using ContSet::minkowski_difference;
-    Polytope minkowski_difference(const Tensor &p) const;
+    using ContSet::mink_diff;
+    Polytope mink_diff(const Tensor &p) const;
 
     /// The pieces of the set difference this \ S (CORA's mldivide): polytopes whose union is the
     /// closure of the difference. Only full-dimensional operands (CORA's other branches are
@@ -388,8 +388,7 @@ class Polytope : public ContSet {
     Set linear_map_impl(const Tensor &M) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
     Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-    Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &method) const override;
+    Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const override;
     std::optional<std::vector<std::string>> compact_methods_impl() const override;
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     Set enclose_impl(const ContSet &S2) const override;

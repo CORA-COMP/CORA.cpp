@@ -1,7 +1,7 @@
 """test_cont_set_generic - the operations every set has (ContSet) on a box, a zonotope and a set
 
 written in Python: center, dim, is_bounded, is_full_dim, reduce, linear_map, enlarge, minus,
-minkowski_difference, isequal, eq, ne, decompose, project_high_dim, project_on_hyperplane,
+mink_diff, isequal, eq, ne, decompose, project_high_dim, project_on_hyperplane,
 generate_random, lift, norm, enclose and the unchecked and_, contains_ and isIntersecting_ forms.
 
 CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
@@ -86,7 +86,7 @@ class Generic(unittest.TestCase):
         self.assertEqual(cora.ContSet.enlarge(self.I, 2.0).sup.tolist(), [2.0, 3.0])
         m = cora.ContSet.minus(self.Z, np.array([1.0, 1.0]))
         self.assertEqual(m.center.tolist(), [0.0, -1.0])
-        d = cora.ContSet.minkowski_difference(self.I, box([-0.5, 0.0], [0.5, 0.5]))
+        d = cora.ContSet.mink_diff(self.I, box([-0.5, 0.0], [0.5, 0.5]))
         self.assertEqual((d.inf.tolist(), d.sup.tolist()), ([-0.5, 0.0], [0.5, 1.5]))
         with self.assertRaises(cora.errors.DimensionMismatch):
             cora.ContSet.linear_map(self.I, np.ones((1, 3)))

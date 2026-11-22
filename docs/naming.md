@@ -32,7 +32,7 @@ changed, and the reasons are listed below.
   accepts (it may add keyword arguments with defaults); `tests/python/test_stubs.py` checks it by
   type-checking the stubs with mypy.
 - **One selector name:** `method` names every algorithm selector, whatever CORA calls it (`type`,
-  `mode`, `alg`, `method`): `contains`, `is_intersecting`, `minkowski_difference`, `compact`,
+  `mode`, `alg`, `method`): `contains`, `is_intersecting`, `mink_diff`, `compact`,
   `reduce`, `rescale`, the conversions, and every Ellipsoid operation. `type` stays only where
   CORA names the kind of question: `representsa(type)`, the order of `norm(type, method)`,
   `rand_point(N, rng, type)` and `round(type)`. The option values are CORA's strings.
@@ -90,7 +90,7 @@ changed, and the reasons are listed below.
 | `isBounded(S)`, `isFullDim(S, tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` |
 | `enlarge(S, factor)` | `S.enlarge(factor)` | `S.enlarge(factor)` |
 | `minus(S, p)`, `minus(p, S)` | `S.minus(p)`, `ContSet::minus(p, S)` | `S.minus(p)` |
-| `minkDiff(S, S2, type)` | `S.minkowski_difference(S2, method)` | `S.minkowski_difference(S2, method)` |
+| `minkDiff(S, S2, type)` | `S.mink_diff(S2, method)` | `S.mink_diff(S2, method)` |
 | `mldivide(P, S)` | `P.set_difference(S)` (all pieces) | `P.set_difference(S)` |
 | `isequal(S1, S2, tol)`, `eq`, `ne` | `isequal(S1, S2, tol)`, `eq`, `ne`, `S1 == S2` | `cora.isequal`, `cora.eq`, `cora.ne`, `S1 == S2` |
 | `decompose(S, blocks)` | `S.decompose(blocks)` (0-based, inclusive) | `S.decompose(blocks)` |
@@ -158,7 +158,7 @@ changed, and the reasons are listed below.
 | `kron(I1, I2)` | `I.kron(I2)`, `Interval::kron(A, I)` | `I.kron(I2)`, `I.kron(A, left=True)` |
 | `mpower(I, k)` | `I.matrix_power(k)` | `I.matrix_power(k)` |
 | `max(I, Y)`, `min(I, Y)` | `I.max(Y)`, `I.min(Y)`, `I.max()` (the bound) | the same |
-| `minkDiff(I, S, type)` | `I.minkowski_difference(S, method)` | `I.minkowski_difference(S, method)` |
+| `minkDiff(I, S, type)` | `I.mink_diff(S, method)` | `I.mink_diff(S, method)` |
 | `or(I, S)` | `I.unite(S)` | `I.unite(S)` |
 | `norm_(I, type)` | `I.norm(type)` | `I.norm(type)` |
 | `lift_(I, N, proj)` | `I.lift(N, dims)` | `I.lift(N, dims)` |
@@ -288,8 +288,9 @@ changed, and the reasons are listed below.
   - `infNorm` is `infinity_norm` and `expmInd` is `expm_independent` (`Ind` is *independent*; `Inf` is
     also the unbounded box), as words, not abbreviations. `expm` is a term of art.
   - `le` and `lt` (operators of MATLAB) are `less_equal` and `less`, as Tensor names them;
-    `mrdivide` (the division by a number) is `divide`, `mpower` is `matrix_power`, and `minkDiff`
-    is `minkowski_difference`: words, not abbreviations.
+    `mrdivide` (the division by a number) is `divide` and `mpower` is `matrix_power`: words, not
+    abbreviations. The one exception is `minkDiff`, which is `mink_diff` (CORA's name, in snake
+    case) on every class, as it is the name users know.
   - `timeInt` is `time_interval`, `tComp` is `computation_time`, `nrSteps` is `num_steps` and
     `fals` is `falsification`, for the same reason.
   - `Reach` is `ReachSet`, as CORA's `reachSet`.

@@ -318,6 +318,7 @@ class Zonotope : public ContSet {
     /// The Minkowski difference with a zonotope, a box or a point, by scaling the generators:
     /// method "approx" (default), "inner", "exact" (two dimensions, or aligned generators),
     /// "outer", "outer:coarse"; an empty result is an error (no empty set yet). Not a batch.
+    using ContSet::mink_diff;
     Zonotope mink_diff(const Zonotope &subtrahend, const std::string &method = "approx") const;
     Zonotope mink_diff(const Interval &subtrahend, const std::string &method = "approx") const;
     Zonotope mink_diff(const Tensor &p, const std::string &method = "approx") const;
@@ -461,8 +462,7 @@ class Zonotope : public ContSet {
     Set translate_impl(const Tensor &v) const override;
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     std::optional<std::vector<std::string>> compact_methods_impl() const override;
-    Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &method) const override;
+    Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const override;
     bool is_bounded_impl() const override;
     bool is_full_dim_impl(Tol tol) const override;
     Set reduce_impl(int order) const override;

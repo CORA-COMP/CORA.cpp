@@ -1,4 +1,4 @@
-// test_lean_polytope_mink_diff_not - Polytope::minkowski_difference of a box and complement against
+// test_lean_polytope_mink_diff_not - Polytope::mink_diff of a box and complement against
 //
 // the CORALean oracle
 //
@@ -49,8 +49,7 @@ int main() {
             for (double &x : r) x = rnd.uniform(0, 0.1);
             const Tensor rad = Tensor::from_data(r, {n});
             const Interval I(rad * -1.0, rad);
-            oracle::check(P.minkowski_difference(I).as<Polytope>(),
-                          lean::Polytope(P).mink_diff_cora(I));
+            oracle::check(P.mink_diff(I).as<Polytope>(), lean::Polytope(P).mink_diff_cora(I));
         }
     });
     oracle::run("polytope.not", [](oracle::Random &rnd) {

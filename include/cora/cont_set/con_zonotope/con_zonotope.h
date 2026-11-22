@@ -11,7 +11,7 @@
 //             compact, cart_prod, intersect, con_intersect, enclose, convex_hull, cubic_map,
 //             intersect_strip, contains, approximate_bounds, display, origin, plus, linear_map,
 //             lift, reduce, quad_map, rescale, representsa, isequal, is_intersecting, split, unite,
-//             minkowski_difference, project, support_function, vertices, rand_point, zonotope,
+//             mink_diff, project, support_function, vertices, rand_point, zonotope,
 //             zono_bundle, polytope, generate_random, cut, interval_tight, interval_cert (one file
 //             each).
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
@@ -361,8 +361,8 @@ class ConZonotope : public ContSet {
 
     /// The Minkowski difference {x | x + S in this set} (CORA's minkDiff) with a zonotope, a box
     /// or a point (n): method "exact" (default), "inner:vertices" or "inner:Vinod". Not a batch.
-    using ContSet::minkowski_difference;
-    ConZonotope minkowski_difference(const Tensor &p) const;
+    using ContSet::mink_diff;
+    ConZonotope mink_diff(const Tensor &p) const;
 
     // Bounds of batches ---------------------------------------------------------------------------
 
@@ -407,8 +407,7 @@ class ConZonotope : public ContSet {
     Set linear_map_impl(const Tensor &M) const override;
     Set reduce_impl(int order) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-    Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &method) const override;
+    Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const override;
     bool is_bounded_impl() const override;
     bool is_full_dim_impl(Tol tol) const override;
 
