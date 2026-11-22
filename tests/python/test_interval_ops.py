@@ -46,14 +46,14 @@ class Predicates(unittest.TestCase):
 
     def test_is_intersecting(self):
         I = box([0.0, 0.0], [2.0, 2.0])
-        self.assertTrue(I.is_intersecting(box([1.0, 1.0], [3.0, 3.0])))
-        self.assertTrue(I.is_intersecting(box([2.0, 2.0], [3.0, 3.0])))
+        self.assertTrue(np.all(I.is_intersecting(box([1.0, 1.0], [3.0, 3.0]))))
+        self.assertTrue(np.all(I.is_intersecting(box([2.0, 2.0], [3.0, 3.0]))))
         apart = box([2.5, 0.0], [3.0, 1.0])
-        self.assertFalse(I.is_intersecting(apart))
-        self.assertTrue(I.is_intersecting(apart, tol=0.6))
-        self.assertFalse(I.is_intersecting(apart, tol=0.2))
-        self.assertTrue(I.is_intersecting(np.array([1.0, 2.0])))
-        self.assertFalse(I.is_intersecting(np.array([1.0, 2.5])))
+        self.assertFalse(np.all(I.is_intersecting(apart)))
+        self.assertTrue(np.all(I.is_intersecting(apart, tol=0.6)))
+        self.assertFalse(np.all(I.is_intersecting(apart, tol=0.2)))
+        self.assertTrue(np.all(I.is_intersecting(np.array([1.0, 2.0]))))
+        self.assertFalse(np.all(I.is_intersecting(np.array([1.0, 2.5]))))
         self.assertTrue(cora.is_intersecting(I, box([1.0, 1.0], [3.0, 3.0])))
         with self.assertRaises(cora.errors.DimensionMismatch):
             I.is_intersecting(box([0.0], [1.0]))

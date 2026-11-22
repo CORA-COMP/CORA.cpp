@@ -116,13 +116,13 @@ class SetOperations(unittest.TestCase):
 
     # containment
     def test_contains_and_is_intersecting(self):
-        self.assertTrue(self.F.contains(self.Z))
-        self.assertTrue(self.F.contains(np.array([[1.0, 2.0], [3.0, 4.0]])))
-        self.assertTrue(cora.contains(self.F, self.I))
-        self.assertTrue(self.F.is_intersecting(self.I))
-        self.assertTrue(self.F.is_intersecting(np.array([5.0, 5.0])))
-        self.assertFalse(self.F.is_intersecting(cora.Interval.empty(2)))
-        self.assertFalse(self.F.is_intersecting(cora.EmptySet(2)))
+        self.assertTrue(np.all(self.F.contains(self.Z)))
+        self.assertTrue(np.all(self.F.contains(np.array([[1.0, 2.0], [3.0, 4.0]]))))
+        self.assertTrue(np.all(cora.contains(self.F, self.I)))
+        self.assertTrue(np.all(self.F.is_intersecting(self.I)))
+        self.assertTrue(np.all(self.F.is_intersecting(np.array([5.0, 5.0]))))
+        self.assertFalse(np.all(self.F.is_intersecting(cora.Interval.empty(2))))
+        self.assertFalse(np.all(self.F.is_intersecting(cora.EmptySet(2))))
         self.assertTrue(cora.is_intersecting(self.Z, self.F))
         with self.assertRaises(cora.errors.NotSupported):
             cora.Fullspace(0).contains(cora.Fullspace(0))

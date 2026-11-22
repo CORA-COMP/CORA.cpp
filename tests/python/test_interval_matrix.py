@@ -69,18 +69,18 @@ class Bounds(unittest.TestCase):
         np.testing.assert_allclose(EXAMPLE.inf, [[1, -1], [0, 2]])
         rng = np.random.default_rng(1)
         A = random_matrix(rng, 3, 1.0)
-        self.assertTrue(A.contains(A.center))
+        self.assertTrue(np.all(A.contains(A.center)))
         self.assertTrue(all(np.all(np.abs(member(A, rng)) <= A.abs().sup + 1e-15) for _ in range(20)))
 
     # containment
     def test_contains(self):
         out = np.array([[1.0, -1.0], [3.5, 2.0]])
-        self.assertTrue(EXAMPLE.contains(EXAMPLE.center))
-        self.assertFalse(EXAMPLE.contains(out))
-        self.assertTrue(EXAMPLE.contains(out, tol=0.2))
-        self.assertFalse(EXAMPLE.contains(out, tol=0.05))
-        self.assertTrue(EXAMPLE.contains(EXAMPLE.center, "approx"))
-        self.assertTrue(EXAMPLE.contains(EXAMPLE.center))
+        self.assertTrue(np.all(EXAMPLE.contains(EXAMPLE.center)))
+        self.assertFalse(np.all(EXAMPLE.contains(out)))
+        self.assertTrue(np.all(EXAMPLE.contains(out, tol=0.2)))
+        self.assertFalse(np.all(EXAMPLE.contains(out, tol=0.05)))
+        self.assertTrue(np.all(EXAMPLE.contains(EXAMPLE.center, "approx")))
+        self.assertTrue(np.all(EXAMPLE.contains(EXAMPLE.center)))
         with self.assertRaises(cora.errors.DimensionMismatch):
             EXAMPLE.contains(np.ones((1, 3)))
         with self.assertRaises(cora.errors.WrongValue):
@@ -119,9 +119,9 @@ class Squares(unittest.TestCase):
         square, H = cora.mat_exp.dependent_terms(A, 1.0)
         for _ in range(30):
             X = member(A, rng)
-            self.assertTrue(square.contains(X @ X, tol=1e-12))
+            self.assertTrue(np.all(square.contains(X @ X, tol=1e-12)))
             # dependent terms contain the powers
-            self.assertTrue(H.contains(np.eye(3) + X + X @ X / 2, tol=1e-12))
+            self.assertTrue(np.all(H.contains(np.eye(3) + X + X @ X / 2, tol=1e-12)))
 
     def test_matrix_power(self):
         A = interval_matrix(cora.Interval.matrix(np.array([[1.0, 0.0], [0.0, 1.0]]),
@@ -143,7 +143,7 @@ class Squares(unittest.TestCase):
         np.testing.assert_allclose((-2.0 * EXAMPLE).inf, [[-4, -2], [-6, -4]])
         np.testing.assert_allclose((EXAMPLE * 2.0).sup, [[4, 2], [6, 4]])
         P = EXAMPLE @ EXAMPLE
-        self.assertTrue(P.contains(EXAMPLE.center @ EXAMPLE.center))
+        self.assertTrue(np.all(P.contains(EXAMPLE.center @ EXAMPLE.center)))
         Z = cora.Zonotope(np.array([1.0, 1.0]), np.eye(2))
         # products with sets
         R = EXAMPLE @ Z
@@ -172,7 +172,7 @@ class Exponential(unittest.TestCase):
         A = random_matrix(rng, 2, 0.3)
         R = cora.mat_exp.expm_independent(A, 8, initial_order=3, initial_power=A.matrix_power(3))
         X = member(A, rng)
-        self.assertTrue(R.enclosure.contains(exponential(X) - np.eye(2) - X - X @ X / 2, tol=1e-12))
+        self.assertTrue(np.all(R.enclosure.contains(exponential(X) - np.eye(2) - X - X @ X / 2, tol=1e-12)))
         with self.assertRaises(cora.errors.WrongValue):
             cora.mat_exp.expm_independent(A, -1)
 
@@ -183,7 +183,7 @@ class Exponential(unittest.TestCase):
         R = cora.mat_exp.expm_mixed(A, 1.0, 3, 9)
         total = interval_matrix(R.enclosure + R.enclosure_rest)
         for _ in range(20):
-            self.assertTrue(total.contains(exponential(member(A, rng)), tol=1e-12))
+            self.assertTrue(np.all(total.contains(exponential(member(A, rng)), tol=1e-12)))
         self.assertEqual((len(R.powers), len(R.powers2)), (3, 6))
         with self.assertRaises(cora.errors.WrongValue):
             cora.mat_exp.expm_mixed(A, 1.0, 1, 9)

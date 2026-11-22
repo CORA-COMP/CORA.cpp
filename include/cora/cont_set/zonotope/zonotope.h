@@ -198,8 +198,9 @@ class Zonotope : public ContSet {
                                std::optional<int> filter_length2 = std::nullopt) const;
 
     /// Whether the zonotope contains the points p (..., n), a zonotope or a box, up to tol; method
-    /// "exact", "exact:venum", "approx" or "approx:st". Not a batch.
-    bool contains(const Tensor &p, const std::string &method = "exact",
+    /// "exact", "exact:venum", "approx" or "approx:st". The points answer a mask, one flag per
+    /// point (..., a 0-d mask for one point). Not a batch.
+    Mask contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
     bool contains(const Zonotope &S, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
@@ -268,14 +269,14 @@ class Zonotope : public ContSet {
     bool isequal(const Interval &I, Tol tol = std::nullopt) const;
     bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
-    /// Whether the zonotope and a zonotope, a box or points (..., n) (all of them) intersect, with
-    /// S enlarged by tol (default: the repository tolerance). type "exact" decides by a linear
-    /// program, "approx" tests the boxes around the sets. Not a batch.
+    /// Whether the zonotope and a zonotope, a box or points (..., n) (a mask, one flag per point)
+    /// intersect, with S enlarged by tol (default: the repository tolerance). type "exact" decides
+    /// by a linear program, "approx" tests the boxes around the sets. Not a batch.
     bool is_intersecting(const Zonotope &S, const std::string &type = "exact",
                          Tol tol = std::nullopt) const;
     bool is_intersecting(const Interval &I, const std::string &type = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Tensor &p, const std::string &type = "exact",
+    Mask is_intersecting(const Tensor &p, const std::string &type = "exact",
                          Tol tol = std::nullopt) const;
 
     /// The zonotope in N dimensions whose state dims[i] is state i (a permutation: new dimensions

@@ -124,37 +124,37 @@ class Containment(unittest.TestCase):
     def test_points(self):
         C = capsule([0, 0], [1, 0], 0.5)
         # points in a capsule
-        self.assertTrue(C.contains(np.array([0.5, 0.4])))
+        self.assertTrue(np.all(C.contains(np.array([0.5, 0.4]))))
         self.assertTrue([0.0, 0.0] in C)
-        self.assertFalse(C.contains(np.array([0.0, 0.6])))
-        self.assertTrue(C.contains(np.array([[0.0, 0.0], [1.0, 0.2]])))
-        self.assertFalse(C.contains(np.array([[0.0, 0.0], [1.0, 0.7]])))
-        self.assertTrue(C.contains(np.array([0.0, 0.5001]), tol=1e-3))
+        self.assertFalse(np.all(C.contains(np.array([0.0, 0.6]))))
+        self.assertTrue(np.all(C.contains(np.array([[0.0, 0.0], [1.0, 0.2]]))))
+        self.assertFalse(np.all(C.contains(np.array([[0.0, 0.0], [1.0, 0.7]]))))
+        self.assertTrue(np.all(C.contains(np.array([0.0, 0.5001]), tol=1e-3)))
         with self.assertRaises(cora.errors.DimensionMismatch):
             C.contains(np.array([0.0, 0.0, 0.0]))
 
     # containment of a capsule, a zonotope, a box and the special sets
     def test_sets(self):
         outer = capsule([0, 0], [2, 0], 1.0)
-        self.assertTrue(outer.contains(capsule([0.5, 0], [1, 0], 0.5)))
-        self.assertFalse(outer.contains(capsule([0, 0], [2, 0], 1.1)))
-        self.assertTrue(outer.contains(cora.Zonotope(np.zeros(2), np.diag([1.0, 0.5]))))
-        self.assertTrue(outer.contains(cora.Interval(np.array([-1.0, -0.5]), np.array([1.0, 0.5]))))
-        self.assertFalse(outer.contains(cora.Interval(np.array([-1.0, -1.5]), np.array([1.0, 0.5]))))
-        self.assertTrue(cora.contains(outer, capsule([0.5, 0], [1, 0], 0.5)))
-        self.assertTrue(cora.contains(outer, cora.EmptySet(2)))
-        self.assertFalse(cora.contains(outer, cora.Fullspace(2)))
-        self.assertTrue(outer.contains(empty(2)))
-        self.assertFalse(empty(2).contains(outer))
+        self.assertTrue(np.all(outer.contains(capsule([0.5, 0], [1, 0], 0.5))))
+        self.assertFalse(np.all(outer.contains(capsule([0, 0], [2, 0], 1.1))))
+        self.assertTrue(np.all(outer.contains(cora.Zonotope(np.zeros(2), np.diag([1.0, 0.5])))))
+        self.assertTrue(np.all(outer.contains(cora.Interval(np.array([-1.0, -0.5]), np.array([1.0, 0.5])))))
+        self.assertFalse(np.all(outer.contains(cora.Interval(np.array([-1.0, -1.5]), np.array([1.0, 0.5])))))
+        self.assertTrue(np.all(cora.contains(outer, capsule([0.5, 0], [1, 0], 0.5))))
+        self.assertTrue(np.all(cora.contains(outer, cora.EmptySet(2))))
+        self.assertFalse(np.all(cora.contains(outer, cora.Fullspace(2))))
+        self.assertTrue(np.all(outer.contains(empty(2))))
+        self.assertFalse(np.all(empty(2).contains(outer)))
 
     def test_is_intersecting(self):
         # capsules near and far, a point and the empty set
         C1 = capsule([0, 0], [1, 0], 0.1)
-        self.assertTrue(C1.is_intersecting(capsule([0.5, 0], [0, 1], 0.1)))
-        self.assertFalse(C1.is_intersecting(capsule([0, 1], [1, 0], 0.4)))
-        self.assertTrue(C1.is_intersecting(capsule([0, 1], [1, 0], 0.9)))
-        self.assertTrue(C1.is_intersecting(np.array([0.5, 0.05])))
-        self.assertFalse(C1.is_intersecting(empty(2)))
+        self.assertTrue(np.all(C1.is_intersecting(capsule([0.5, 0], [0, 1], 0.1))))
+        self.assertFalse(np.all(C1.is_intersecting(capsule([0, 1], [1, 0], 0.4))))
+        self.assertTrue(np.all(C1.is_intersecting(capsule([0, 1], [1, 0], 0.9))))
+        self.assertTrue(np.all(C1.is_intersecting(np.array([0.5, 0.05]))))
+        self.assertFalse(np.all(C1.is_intersecting(empty(2))))
         self.assertTrue(cora.is_intersecting(C1, capsule([0.5, 0], [0, 1], 0.1)))
 
 
@@ -182,8 +182,8 @@ class Combination(unittest.TestCase):
         rng = np.random.default_rng(11)
         points = rng.standard_normal((3, 12)).T
         C = cora.Capsule.enclose_points(points)
-        self.assertTrue(C.contains(points))
-        self.assertFalse(cora.Capsule(C.c, C.generator, C.r * 0.999).contains(points))
+        self.assertTrue(np.all(C.contains(points)))
+        self.assertFalse(np.all(cora.Capsule(C.c, C.generator, C.r * 0.999).contains(points)))
 
     def test_linear_map(self):
         C = capsule([1, 2], [1, -1], 0.5)

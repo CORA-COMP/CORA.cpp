@@ -44,8 +44,8 @@ Ellipsoid Ellipsoid::unite(const Ellipsoid &S, const std::string &mode) const {
     CORA_CHECK(Q_.ndim() == 2 && S.Q_.ndim() == 2, Error::not_supported,
                [] { return std::string("unite: it supports single ellipsoids, not a batch"); });
     // a point inside the other ellipsoid adds nothing
-    if (priv_is_point(S) && contains(S.q_)) return *this;
-    if (priv_is_point(*this) && S.contains(q_)) return S;
+    if (priv_is_point(S) && contains(S.q_).all()) return *this;
+    if (priv_is_point(*this) && S.contains(q_).all()) return S;
     CORA_FAIL(Error::not_supported,
               "unite: the smallest ellipsoid around two ellipsoids needs an SDP solver");
 }

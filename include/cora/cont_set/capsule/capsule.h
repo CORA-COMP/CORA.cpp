@@ -124,15 +124,16 @@ class Capsule : public ContSet {
     bool isequal(const Capsule &S, Tol tol = std::nullopt) const;
 
     /// Whether the capsule contains the points p (..., N, n), a capsule, a zonotope or a box, up
-    /// to tol in the distance to the axis; for a batch, every member.
-    bool contains(const Tensor &p, Tol tol = std::nullopt) const;
+    /// to tol in the distance to the axis; the points answer a mask, one flag per point (a point
+    /// (n) a flag per member); a set, for a batch, every member.
+    Mask contains(const Tensor &p, Tol tol = std::nullopt) const;
     bool contains(const Capsule &S, Tol tol = std::nullopt) const;
     bool contains(const Zonotope &Z, Tol tol = std::nullopt) const;
     bool contains(const Interval &I, Tol tol = std::nullopt) const;
 
-    /// Whether the capsule meets the points p (all of them in it) or a capsule: the least
+    /// Whether the capsule meets the points p (a mask, as contains) or a capsule: the least
     /// distance of the two axes is at most the sum of the radii, up to tol. Exact.
-    bool is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
     bool is_intersecting(const Capsule &S, Tol tol = std::nullopt) const;
 
     // Combining with other sets -------------------------------------------------------------------

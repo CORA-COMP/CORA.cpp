@@ -53,7 +53,7 @@ Ellipsoid Ellipsoid::intersect(const Tensor &p) const {
     const detail::Refusal refusal = priv_unbatched_refusal(*this, "intersect");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the machine epsilon is CORA's tolerance of this test
-    if (contains(p, "exact", machine_eps(Q_.dtype()))) return aux_point(*this, p);
+    if (contains(p, "exact", machine_eps(Q_.dtype())).all()) return aux_point(*this, p);
     return empty(dim());
 }
 
@@ -73,8 +73,9 @@ Ellipsoid Ellipsoid::intersect(const Ellipsoid &S, const std::string &mode) cons
     const double eps = machine_eps(Q_.dtype());
     // a point intersects an ellipsoid in itself or in nothing
     if (priv_is_point(*this))
-        return S.contains(q_, "exact", eps) ? aux_point(*this, q_) : empty(dim());
-    if (priv_is_point(S)) return contains(S.q(), "exact", eps) ? aux_point(S, S.q()) : empty(dim());
+        return S.contains(q_, "exact", eps).all() ? aux_point(*this, q_) : empty(dim());
+    if (priv_is_point(S))
+        return contains(S.q(), "exact", eps).all() ? aux_point(S, S.q()) : empty(dim());
     // the other cases need a solver
     CORA_FAIL(Error::not_supported,
               "intersect: two ellipsoids that are no points are intersected by SDP solvers, which "

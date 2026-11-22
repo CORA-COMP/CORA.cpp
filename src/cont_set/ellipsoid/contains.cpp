@@ -9,8 +9,8 @@
 // fewer arguments, docs/cora-differences.md). Error::not_supported: "approx" (an SDP) and an
 // ellipsoid as the contained set unless it is a point or empty. Not a batch.
 //
-// Syntax:   bool res = E.contains(p);   bool res = E.contains(Z, method, tol);   E.contains(I);
-// Inputs:   p - points (..., n), one per row, all must be inside
+// Syntax:   Mask m = E.contains(p);   bool res = E.contains(Z, method, tol);   E.contains(I);
+// Inputs:   p - points (..., n), one per row; the mask has one flag per point
 //           Z, I - a zonotope, a box
 //           S - an ellipsoid
 //           method - "exact" (default; the points ignore it)
@@ -35,6 +35,7 @@
 #include "global/format.h"
 
 #include <algorithm>
+#include <cmath>
 #include <numeric>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -96,6 +97,8 @@ bool aux_contains_zonotope(const Ellipsoid &E, const Tensor &c, const Tensor &G,
     return aux_inside(E, all, norms, order, 0, all.zeros_like({E.dim(), 1}), total, tol);
 }
 
+// Refusals ----------------------------------------------------------------------------------------
+
 /// Why the call is refused, if it is: a batch, a method, or the wrong dimension. Only points
 /// are decided with "approx" (exactly, as CORA does); for a set it needs an SDP.
 detail::Refusal aux_refusal(const Ellipsoid &E, int64_t n, const std::string &method, bool is_set) {
@@ -132,7 +135,7 @@ std::optional<bool> aux_degenerate(const Ellipsoid &E, bool s_empty, const Tenso
 
 // Entries -----------------------------------------------------------------------------------------
 
-bool Ellipsoid::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
+Mask Ellipsoid::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, Q_.dtype(), "contains");
     CORA_CHECK(p.defined() && p.ndim() >= 1, Error::wrong_value, [] {
@@ -140,12 +143,28 @@ bool Ellipsoid::contains(const Tensor &p, const std::string &method, Tol tol_arg
     });
     const detail::Refusal refusal = aux_refusal(*this, p.size(-1), method, false);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
-    // no points: nothing to violate
-    if (p.numel() == 0) return true;
-    if (priv_is_empty(*this)) return false;
-    if (priv_is_point(*this)) return (p - q_).abs().max().item() <= tol;
-    return aux_contains_points(*this, p.reshape({p.numel() / dim(), dim()}).matrix_transpose(),
-                               tol);
+    // one flag per point; an empty ellipsoid contains none, and no points violate nothing
+    Shape batch = p.shape();
+    batch.pop_back();
+    const int64_t n = dim(), N = n == 0 ? 0 : p.numel() / n;
+    std::vector<double> flags(std::size_t(std::max<int64_t>(N, 0)), 0.0);
+    if (N > 0 && !priv_is_empty(*this)) {
+        // a point ellipsoid holds the points within tol of it, entry by entry
+        if (priv_is_point(*this)) {
+            const std::vector<double> x = p.data(), c = q_.data();
+            for (int64_t k = 0; k < N; ++k) {
+                double far = 0.0;
+                for (int64_t i = 0; i < n; ++i) far = std::max(far, std::abs(x[k * n + i] - c[i]));
+                flags[k] = far <= tol ? 1.0 : 0.0;
+            }
+        } else {
+            // else the ellipsoid norm of each point at most 1 + tol
+            const std::vector<double> norms =
+                aux_norms(*this, p.reshape({N, n}).matrix_transpose());
+            for (int64_t k = 0; k < N; ++k) flags[k] = norms[k] <= 1.0 + tol ? 1.0 : 0.0;
+        }
+    }
+    return Mask(Tensor::like(Q_, flags, batch));
 }
 
 bool Ellipsoid::contains(const Zonotope &S, const std::string &method, Tol tol_arg) const {

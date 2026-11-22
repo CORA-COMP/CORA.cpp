@@ -33,7 +33,8 @@ void enclose_points_known(const std::string &b) {
     check(Capsule::enclose_points(Tensor::zeros({0, 2})).is_empty(), b + ": no points");
     // on a line (n = 1) both ends are covered: CORA's maximum as the generator misses the minimum
     const Capsule interval = Capsule::enclose_points(Tensor({{0.0}, {1.0}, {1.1}}));
-    check(interval.contains(Tensor({{0.0}, {1.0}, {1.1}})), b + ": in R^1 the minimum is covered");
+    check(interval.contains(Tensor({{0.0}, {1.0}, {1.1}})).all(),
+          b + ": in R^1 the minimum is covered");
     // a triangle: the farthest point from the mean (1, 1/3) is (1, 1) ... the first of them
     const Capsule triangle = Capsule::enclose_points(Tensor({{0.0, 0.0}, {2.0, 0.0}, {1.0, 1.0}}));
     check(close(triangle.c(), {1, 1.0 / 3.0}, 1e-14), b + ": the mean");
@@ -55,9 +56,9 @@ void enclose_points_property(const std::string &b) {
         rng.normal(data.data(), data.size(), 1.0);
         const Tensor points = Tensor::from_data(data, {3, 12}).matrix_transpose();
         const Capsule C = Capsule::enclose_points(points);
-        check(C.contains(points), b + ": all points are inside");
+        check(C.contains(points).all(), b + ": all points are inside");
         const Capsule smaller(C.c(), C.generator(), C.r().data()[0] * 0.999);
-        check(!smaller.contains(points), b + ": the radius is the largest distance");
+        check(!smaller.contains(points).all(), b + ": the radius is the largest distance");
     }
 }
 

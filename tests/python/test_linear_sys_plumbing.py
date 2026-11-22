@@ -78,7 +78,7 @@ class Plumbing(unittest.TestCase):
             self.assertEqual((len(R.time_interval), len(R.time_point)), (6, 7))
             for k in range(13):
                 sets = R.time_point[k // 2] if k % 2 == 0 else R.time_interval[k // 2]
-                self.assertTrue(sets.contains(x[k]))
+                self.assertTrue(np.all(sets.contains(x[k])))
         with self.assertRaises(cora.errors.CORAError):
             sys.reach(X0, t_final=1.0, alg="decomposition", time_step=0.1)
 

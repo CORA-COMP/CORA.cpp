@@ -78,7 +78,7 @@ class Operations(unittest.TestCase):
         rng = np.random.default_rng(13)
         F = random_ellipsoid(rng, 3)
         M = rng.standard_normal((2, 3))
-        self.assertTrue(F.linear_map(M).contains(boundary_points(F, rng, 20) @ M.T, tol=1e-6))
+        self.assertTrue(np.all(F.linear_map(M).contains(boundary_points(F, rng, 20) @ M.T, tol=1e-6)))
 
     def test_sums_and_hulls(self):
         # a vector shifts, two ellipsoids add by the enclosure of Halder
@@ -104,16 +104,16 @@ class Operations(unittest.TestCase):
         rng = np.random.default_rng(17)
         F, G = random_ellipsoid(rng, 3), random_ellipsoid(rng, 3)
         sums = boundary_points(F, rng, 20) + boundary_points(G, rng, 20)
-        self.assertTrue(F.plus(G).contains(sums, tol=1e-6))
+        self.assertTrue(np.all(F.plus(G).contains(sums, tol=1e-6)))
 
     def test_distance_and_intersection(self):
         # -1 at the center, 0 on the boundary, positive outside
         d = self.E.distance(np.array([[1.0, 2.0], [3.0, 2.0], [1.0, 4.0]]))
         np.testing.assert_allclose(d, [-1.0, 0.0, 3.0], atol=1e-12)
         point = ellipsoid(np.zeros((2, 2)), [1.0, 3.0])
-        self.assertTrue(self.E.is_intersecting(point))
-        self.assertTrue(self.E.is_intersecting(np.array([1.0, 2.0])))
-        self.assertFalse(self.E.is_intersecting(np.array([5.0, 5.0])))
+        self.assertTrue(np.all(self.E.is_intersecting(point)))
+        self.assertTrue(np.all(self.E.is_intersecting(np.array([1.0, 2.0]))))
+        self.assertFalse(np.all(self.E.is_intersecting(np.array([5.0, 5.0]))))
         with self.assertRaises(cora.errors.NotSupported):
             self.E.is_intersecting(self.E)
 
@@ -123,13 +123,13 @@ class Operations(unittest.TestCase):
         np.testing.assert_allclose(Z.generators, [[2, 0], [0, 1]], atol=1e-12)
         rng = np.random.default_rng(19)
         F = random_ellipsoid(rng, 3)
-        self.assertTrue(F.zonotope().contains(boundary_points(F, rng, 10), tol=1e-8))
+        self.assertTrue(np.all(F.zonotope().contains(boundary_points(F, rng, 10), tol=1e-8)))
         with self.assertRaises(cora.errors.NotSupported):
             F.zonotope("outer:norm")
         # random points, conversions
         points = F.rand_point(20, cora.Rng(7))
-        self.assertTrue(F.contains(points, tol=1e-6))
-        self.assertTrue(F.contains(F.rand_point(20, cora.Rng(8), type="extreme"), tol=1e-6))
+        self.assertTrue(np.all(F.contains(points, tol=1e-6)))
+        self.assertTrue(np.all(F.contains(F.rand_point(20, cora.Rng(8), type="extreme"), tol=1e-6)))
         # the ellipsoids of a box and of a zonotope
         box = cora.Interval(np.array([0.0, 0.0]), np.array([2.0, 1.0]))
         np.testing.assert_allclose(cora.Ellipsoid(box).Q, 2 * np.diag([1.0, 0.25]), atol=1e-12)
