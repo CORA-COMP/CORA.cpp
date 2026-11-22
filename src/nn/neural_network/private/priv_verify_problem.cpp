@@ -162,6 +162,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
     std::vector<Tensor> pre, outs{x};
     Tensor h = x;
     for (std::size_t k = 0; k < layers.size(); ++k) {
+        check_deadline(deadline);
         // the map of the source's output, plus the residuals
         Tensor z = layers[k].rows(outs[std::size_t(net.source(k) + 1)]);
         for (const NeuralNetwork::Residual &r : layers[k].residuals) {
@@ -202,6 +203,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         t = t.defined() ? t + v : v;
     };
     for (std::size_t k = layers.size(); k-- > 0;) {
+        check_deadline(deadline);
         Tensor g = std::move(acc[k + 1]);
         // through the activation, then the maps' transposes to the outputs read
         const Activation a = net.activations()[k];
@@ -252,6 +254,7 @@ bool priv_confirm_rows(NnProblem &problem, const Tensor &x, const Tensor &loss,
     });
     if (int64_t(rows.size()) > problem.options().max_candidates)
         rows.resize(std::size_t(problem.options().max_candidates));
+    // each candidate through the confirm check, the first that passes is the result
     for (const int64_t i : rows) {
         ++result.candidates;
         const Tensor point = x.slice(0, i, i + 1).squeeze(0);
@@ -273,11 +276,27 @@ bool priv_check_points(NnProblem &problem, const Tensor &x, const Tensor &cases,
     const Tensor x32 = x.to(problem.lo.dtype())
                            .maximum(problem.lo.take(index, 0))
                            .minimum(problem.hi.take(index, 0));
-    const Tensor loss = problem.loss(problem.search_net().evaluate(x32), index);
-    return priv_confirm_rows(problem, x32, loss, result);
+    // in chunks of a quarter of the attack's batch, the deadline checked between them
+    const int64_t S = x32.shape()[0], chunk = std::max<int64_t>(1, problem.attack_batch() / 4);
+    if (S <= chunk) {
+        // one chunk: all at once
+        const Tensor loss = problem.loss(problem.search_net().evaluate(x32), index);
+        return priv_confirm_rows(problem, x32, loss, result);
+    }
+    for (int64_t start = 0; start < S; start += chunk) {
+        // the chunk's losses and its candidates
+        check_deadline(problem.deadline);
+        const int64_t stop = std::min(S, start + chunk);
+        const Tensor xs = x32.slice(0, start, stop);
+        const Tensor loss =
+            problem.loss(problem.search_net().evaluate(xs), index.slice(0, start, stop));
+        if (priv_confirm_rows(problem, xs, loss, result)) return true;
+    }
+    return false;
 }
 
 bool priv_is_oom(const std::exception &error) {
+    // std's, torch's and CORA's messages
     const std::string what = error.what();
     return dynamic_cast<const std::bad_alloc *>(&error) != nullptr ||
            what.find("out of memory") != std::string::npos ||

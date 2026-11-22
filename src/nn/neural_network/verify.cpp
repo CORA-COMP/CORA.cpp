@@ -32,6 +32,7 @@
 #include "nn/neural_network/private/priv_verify.h"
 
 #include <cmath>
+#include <exception>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -62,7 +63,16 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
     };
     const auto run_attack = [&](double until, int64_t rounds) {
         const double t = now_seconds();
-        AttackResult found = attack->run(problem, until, rounds);
+        // a step the deadline cuts short finds nothing
+        AttackResult found;
+        problem.deadline = until;
+        try {
+            found = attack->run(problem, until, rounds);
+        } catch (const Error &error) {
+            if (!is_deadline(error)) std::rethrow_exception(std::current_exception());
+            result.stats["attack_cut"] += 1;
+        }
+        // its time and steps
         result.stats["attack_seconds"] += now_seconds() - t;
         result.stats["attack_iterations"] += double(found.iterations);
         return found;
@@ -76,10 +86,17 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
     }
     // the branch and bound, then the attack in the time that is left
     if (can_bound) {
+        // a deadline part-way through leaves the verdict open
         const double t = now_seconds();
         AttackResult found;
-        const std::string status =
-            bounding->branch_and_bound(problem, deadline, result.stats, found);
+        problem.deadline = deadline;
+        std::string status = "unknown";
+        try {
+            status = bounding->branch_and_bound(problem, deadline, result.stats, found);
+        } catch (const Error &error) {
+            if (!is_deadline(error)) std::rethrow_exception(std::current_exception());
+            result.stats["bab_cut"] += 1;
+        }
         result.stats["bab_seconds"] = now_seconds() - t;
         if (status == "sat") return sat(found);
         if (status == "unsat") {
@@ -88,6 +105,7 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
             return result;
         }
     }
+    // the attack in the time that is left
     const AttackResult found = run_attack(deadline, -1);
     if (!found.x.empty()) return sat(found);
     result.status = "unknown";

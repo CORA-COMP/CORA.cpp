@@ -397,6 +397,7 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
     // from the last layer back: the activation, then the linear maps
     std::size_t next = out.layers.size();
     for (std::size_t k = L; k-- > 0;) {
+        check_deadline(net.deadline);
         g_c = std::move(acc[k + 1].c);
         g_gen = std::move(acc[k + 1].gen);
         g_dr = std::move(acc[k + 1].dr);
@@ -596,6 +597,7 @@ Tensor ZonoNet::evaluate(const Tensor &x) const {
     // the outputs that a later layer still reads
     std::vector<Tensor> outs{x};
     for (std::size_t k = 0; k < W.size(); ++k) {
+        check_deadline(deadline);
         outs.push_back(aux_apply(activations[k], linear(k, outs) + b[k]));
         if (!kept[k]) outs[k] = Tensor();
     }
@@ -608,6 +610,7 @@ ZonoSensitivity ZonoNet::sensitivity(const Tensor &x) const {
     // the inputs of the activations, then the chain rule from the outputs back
     std::vector<Tensor> pre, outs{x};
     for (std::size_t k = 0; k < W.size(); ++k) {
+        check_deadline(deadline);
         pre.push_back(linear(k, outs) + b[k]);
         outs.push_back(aux_apply(activations[k], pre.back()));
     }
@@ -619,6 +622,7 @@ ZonoSensitivity ZonoNet::sensitivity(const Tensor &x) const {
     out.layer_sum.resize(W.size());
     out.layer_max.resize(W.size());
     for (std::size_t k = W.size(); k-- > 0;) {
+        check_deadline(deadline);
         Tensor S = std::move(acc[k + 1]);
         if (activations[k] != Activation::identity) {
             S = S.multiply(aux_derivative(activations[k], pre[k]).expand_dims(1));
@@ -695,6 +699,7 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
     std::vector<State> states(chain ? 0 : W.size() + 1);
     if (!chain) states[0] = {c, dr, G};
     for (std::size_t k = 0; k < W.size(); ++k) {
+        check_deadline(deadline);
         // the linear layer, exactly; an earlier source's rows are the first factors of all so far
         const int64_t rows = G.shape()[1];
         if (sources[k] != int64_t(k) - 1) {
@@ -862,6 +867,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     const bool split = splits.defined() && splits.shape()[1] > 0;
     std::size_t next = out.layers.size();
     for (std::size_t k = net.W.size(); k-- > 0;) {
+        check_deadline(net.deadline);
         Tensor lam = std::move(lams[k + 1]);
         if (net.activations[k] != Activation::identity) {
             const ZonoLayerRecord &rec = out.layers[--next];
@@ -949,6 +955,9 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
         acc.back() = lam0;
         Tensor constant = x.zeros_like({B, R});
         for (std::size_t k = net.W.size(); k-- > 0;) {
+            // late: the best bound so far, none before the first pass
+            if (best.defined() && now_seconds() >= std::min(deadline, net.deadline)) return best;
+            check_deadline(net.deadline);
             Tensor lam = std::move(acc[k + 1]);
             if (net.activations[k] != Activation::identity) {
                 const Lines &L = lines[k];
@@ -969,12 +978,13 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
             lam.matmul(xe).squeeze(-1) - lam.abs().matmul(re).squeeze(-1) + constant;
         best = best.defined() ? best.maximum(value) : value;
         // (every step's bound holds: the best so far at the deadline)
-        if (t == iterations || now_seconds() >= deadline) break;
+        if (t == iterations || now_seconds() >= std::min(deadline, net.deadline)) break;
         // the reverse: d value / d Lambda from the input box up, the slopes' gradients on the way
         std::vector<Tensor> gs{x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1))};
         const double c1 = 1.0 - std::pow(kB1, double(t + 1)),
                      c2 = 1.0 - std::pow(kB2, double(t + 1));
         for (std::size_t k = 0; k < net.W.size(); ++k) {
+            if (now_seconds() >= std::min(deadline, net.deadline)) return best;
             // through the linear layer: Lambda_k W_k, plus the bias
             Tensor g = net.linear(k, gs) + net.b[k];
             if (net.activations[k] == Activation::identity) {
