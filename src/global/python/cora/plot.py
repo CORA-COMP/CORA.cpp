@@ -102,19 +102,6 @@ def _method(function):
     return method
 
 
-ContSet.plot = _method(plot)
-
-ContSet.plot_rand_point = _method(plot_rand_point)
-
-ReachSet.plot = _method(plot)
-
-ReachSet.plot_over_time = _method(plot_over_time)
-
-Specification.plot = _method(plot)
-
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 _CORE_OPTIONS = ("face_alpha", "line_width", "unify", "filled", "set", "time_points", "step",
                  "num_colors", "cidx")
 
@@ -248,5 +235,16 @@ def _draw(ax, layer, style):
                           zorder=layer["zorder"], label=layer["label"] or None)
     line.set(**style)
     return line
+
+
+ContSet.plot = _method(plot)
+
+ContSet.plot_rand_point = _method(plot_rand_point)
+
+ReachSet.plot = _method(plot)
+
+ReachSet.plot_over_time = _method(plot_over_time)
+
+Specification.plot = _method(plot)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

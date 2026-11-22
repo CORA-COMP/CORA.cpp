@@ -111,6 +111,24 @@ def _function(name, expr):
     return function
 
 
+def _torch():
+    if not current_backend().startswith("torch"):
+        return None
+    import torch
+    return torch
+
+
+_NAMES = {"float64": "float64", "double": "float64", "float32": "float32", "float": "float32"}
+
+
+def _dtype(dtype):
+    """The name of a dtype given as a name ("float64", "float32"), a numpy or a torch dtype."""
+    name = str(getattr(dtype, "__name__", dtype)).replace("torch.", "")
+    if name not in _NAMES:
+        raise ValueError(f"cora: unknown dtype {dtype!r}; use 'float64' or 'float32'")
+    return _NAMES[name]
+
+
 sin = _function("sin", _sin_expr)
 
 cos = _function("cos", _cos_expr)
@@ -143,25 +161,5 @@ class Tensor:
     exp = staticmethod(exp)
     log = staticmethod(log)
     sqrt = staticmethod(sqrt)
-
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def _torch():
-    if not current_backend().startswith("torch"):
-        return None
-    import torch
-    return torch
-
-
-_NAMES = {"float64": "float64", "double": "float64", "float32": "float32", "float": "float32"}
-
-
-def _dtype(dtype):
-    """The name of a dtype given as a name ("float64", "float32"), a numpy or a torch dtype."""
-    name = str(getattr(dtype, "__name__", dtype)).replace("torch.", "")
-    if name not in _NAMES:
-        raise ValueError(f"cora: unknown dtype {dtype!r}; use 'float64' or 'float32'")
-    return _NAMES[name]
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

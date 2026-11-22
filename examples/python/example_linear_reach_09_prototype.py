@@ -19,6 +19,23 @@ from cora import eye, LinearSys, ReachProblem, ReachSet, register_algorithm, Ten
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+# Algorithm ---------------------------------------------------------------------------------
+
+@register_algorithm(LinearSys, "euler")
+def euler(sys: LinearSys, problem: ReachProblem, time_step: float = 0.1) -> ReachSet:
+    """Steps x + dt A x on the zonotope of the initial set (no error term)."""
+    step = eye(sys.A.shape[-1]) + time_step * sys.A
+    X = problem.initial_set
+    assert X is not None
+    sets = [X]
+    for _ in range(int(round(problem.t_final / time_step))):
+        X = X.linear_map(step)
+        sets.append(X)
+    return ReachSet(time_interval=sets[1:], time_point=sets, time_step=time_step)
+
+
+# Parameters --------------------------------------------------------------------------------
+
 t_final = 2.0
 
 R0 = Zonotope(Tensor([1.0, 0.5]), Tensor([[0.1, 0.0], [0.0, 0.1]]))
@@ -38,22 +55,5 @@ Rstandard = sys.reach(R0, t_final=t_final, alg="standard", time_step=0.1)
 for name, R in (("euler", Rprototype), ("standard", Rstandard)):
     last = R.time_point[-1]
     print(f"{name:>8}: {len(R.time_point)} time points, last center {last.center}")
-
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-@register_algorithm(LinearSys, "euler")
-def euler(sys: LinearSys, problem: ReachProblem, time_step: float = 0.1) -> ReachSet:
-    """Steps x + dt A x on the zonotope of the initial set (no error term)."""
-    step = eye(sys.A.shape[-1]) + time_step * sys.A
-    X = problem.initial_set
-    assert X is not None
-    sets = [X]
-    for _ in range(int(round(problem.t_final / time_step))):
-        X = X.linear_map(step)
-        sets.append(X)
-    return ReachSet(time_interval=sets[1:], time_point=sets, time_step=time_step)
-
-# Parameters --------------------------------------------------------------------------------
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

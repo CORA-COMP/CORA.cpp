@@ -65,6 +65,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import layout  # noqa: E402
 
 
+MARKER_LIKE = re.compile(r"^# [-=]{5,}\s+(BEGIN CODE|AUXILIARY|MAIN|END OF CODE)\s+[-=]{5,} #$")
+
+
 class Skip(Exception):
     """A file that the converter leaves alone; `text` is what it would have written."""
 
@@ -112,11 +115,15 @@ def move_blocks(lines, begin, aux, main, end):
     """BEGIN, the MAIN blocks, AUXILIARY, the helper blocks, the `__main__` guard, END."""
     tree = ast.parse("\n".join(lines))
     helpers = blocks(lines, tree, aux + 1, main)
+    stray = [line for line in lines[begin + 1:aux] if line.strip() and not MARKER_LIKE.match(line)]
+    if stray and helpers:  # a comment between BEGIN CODE and AUXILIARY belongs to the first helper
+        text, node, blank = helpers[0]
+        helpers[0] = (stray + [""] + text, node, blank)
     operation = blocks(lines, tree, main + 1, end)
     guard = [b for b in operation if is_guard(b[1])]
     operation = [b for b in operation if not is_guard(b[1])]
     imports, helpers = hoist_imports(helpers)
-    operation, helpers = promote(operation, helpers)
+    operation, helpers = promote(operation, helpers, definitions(tree))
     head = lines[:begin]
     if imports:
         head = add_imports(head, tree, imports)
@@ -126,6 +133,23 @@ def move_blocks(lines, begin, aux, main, end):
     if guard:
         out += ["", ""] + render(guard)
     return out + ["", lines[end]] + lines[end + 1:]
+
+
+def operation_after(helpers, operation):
+    """The helpers first, then the operation, no AUXILIARY: the old order without the MAIN marker."""
+    return helpers + operation, []
+
+
+def runs_at_load(nodes):
+    """Whether top-level statements do more than define: a call, a loop, a with, a branch."""
+    for node in nodes:
+        if isinstance(node, (ast.For, ast.While, ast.With, ast.AugAssign, ast.Try, ast.Assert)):
+            return True
+        if isinstance(node, ast.Expr) and not layout.is_docstring(node):
+            return True
+        if isinstance(node, ast.If) and not layout.is_import_statement(node):
+            return True
+    return False
 
 
 def hoist_imports(helpers):
@@ -147,19 +171,22 @@ def add_imports(head, tree, imports):
     return head[:last] + added + head[last:]
 
 
-def promote(operation, helpers):
+def promote(operation, helpers, known):
     """Moves the helpers that the operation reads while the module loads (a decorator, a default
     value, a base class, a statement of a script) above the first block that reads them, with
     the helpers they need and the statements with side effects that stood above them."""
     chosen = set()
     needed_by = {}  # helper index -> first operation index that reads it
+    if runs_at_load([node for _, node, _ in operation]):
+        # the module calls things while it loads, and a helper may register what they use
+        return operation_after(helpers, operation)
     defines = [defined_names(node) for _, node, _ in helpers]
     for i, (_, node, _) in enumerate(helpers):
         if layout.is_import_statement(node):  # an import after a side effect keeps its place next to it
             chosen.add(i)
             needed_by[i] = 0
     for j, (_, node, _) in enumerate(operation):
-        for name in deftime_names(node):
+        for name in reach(deftime_names(node), known):
             for i, names in enumerate(defines):
                 if name in names:
                     chosen.add(i)
@@ -169,7 +196,7 @@ def promote(operation, helpers):
     while changed:
         changed = False
         for i in sorted(chosen):
-            wanted = deftime_names(helpers[i][1])
+            wanted = reach(deftime_names(helpers[i][1]), known)
             for k in range(i):
                 side_effect = not isinstance(helpers[k][1], (ast.FunctionDef, ast.AsyncFunctionDef,
                                                               ast.ClassDef, ast.Assign, ast.AnnAssign,
@@ -237,6 +264,23 @@ def defined_names(node):
     if isinstance(node, (ast.Import, ast.ImportFrom)):
         return {(a.asname or a.name).split(".")[0] for a in node.names}
     return {n.id for n in ast.walk(node) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+
+
+def definitions(tree):
+    """{name: the names that its body reads} of the top-level functions and classes."""
+    return {n.name: {m.id for m in ast.walk(n) if isinstance(m, ast.Name) and isinstance(m.ctx, ast.Load)}
+            for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}
+
+
+def reach(names, known):
+    """The names with those that the functions among them read when they run (a call at load time)."""
+    found, todo = set(names), list(names)
+    while todo:
+        for name in known.get(todo.pop(), ()):
+            if name not in found:
+                found.add(name)
+                todo.append(name)
+    return found
 
 
 def deftime_names(node):
@@ -336,11 +380,20 @@ def shape(text, example):
     return sorted(ast.dump(n) for n in keep)
 
 
+def comments(text):
+    """The comments of the file except the marker lines, sorted, to see that none is lost."""
+    found = [t.string for t in tokenize.generate_tokens(io.StringIO(text).readline)
+             if t.type == tokenize.COMMENT and not MARKER_LIKE.match(t.string)]
+    return sorted(found)
+
+
 def verify(path, old, new):
     """The statements are the same set, apart from order and imports; the markers are in order."""
     example = is_example(path) and "from cora import" in new
     if shape(old, example) != shape(new, example):
         raise Skip("the AST changed (not only statement order and imports)", new)
+    if comments(old) != comments(new):
+        raise Skip("a comment was lost or added", new)
     if example and "import cora" in new.split("\n"):
         raise Skip("an example still has `import cora`", new)
 

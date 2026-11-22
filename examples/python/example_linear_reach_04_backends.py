@@ -18,13 +18,6 @@ from cora import backend, eye, LinearSys, Tensor, Zonotope
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-backends = ["eigen", "torch"]
-
-# Reachability Analysis ---------------------------------------------------------------------
-
-centers = {}
-
-
 def reach_oscillator():
     """The reachable set of a damped oscillator, on whichever backend is current."""
     # Parameters ----------------------------------------------------------------------------
@@ -41,6 +34,12 @@ def reach_oscillator():
 
 # Backends ----------------------------------------------------------------------------------
 
+
+backends = ["eigen", "torch"]
+
+# Reachability Analysis ---------------------------------------------------------------------
+
+centers = {}
 
 for spec in backends:
     with backend(spec):
