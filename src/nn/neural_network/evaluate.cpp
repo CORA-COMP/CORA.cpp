@@ -337,10 +337,10 @@ Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
                 std::vector<std::vector<double>> *errors = nullptr) {
     for (std::size_t k = 0; k < layers.size(); ++k) {
         // a set goes through matrices only (a convolution: evaluate at points or verify)
-        CORA_CHECK(!layers[k].plan, Error::not_supported, [&] {
-            return "evaluate: layer " + std::to_string(k) +
-                   " is a convolution or a gather; sets take matrices (Layer::dense)";
-        });
+        if (layers[k].plan)
+            CORA_FAIL(Error::not_supported,
+                      "evaluate: layer " + std::to_string(k) +
+                          " is a convolution or a gather; sets take matrices (Layer::dense)");
         r.c = layers[k].W.matmul(r.c) + layers[k].b.expand_dims(-1);
         r.G = layers[k].W.matmul(r.G);
         r.GI = layers[k].W.matmul(r.GI);

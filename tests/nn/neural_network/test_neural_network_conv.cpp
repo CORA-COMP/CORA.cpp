@@ -105,9 +105,14 @@ void layers(const std::string &b) {
     check(aux_gap(G.rows_t(Tensor({{1.0, 2.0, 3.0, 4.0}})), Tensor({{3.0, 0.0, 1.0, 4.0, 0.0}})) ==
               0,
           b + ": the gather's transpose");
-    check(test::raises([&] { NeuralNetwork::Layer::gather({1, 1}, 2, Tensor({0.0, 0.0})); },
+    // a repeated input (a nearest upsample): the transpose sums its outputs
+    const NeuralNetwork::Layer U =
+        NeuralNetwork::Layer::gather({1, 1, 0}, 2, Tensor({0.0, 0.0, 0.0}));
+    check(aux_gap(U.rows_t(Tensor({{1.0, 2.0, 5.0}})), Tensor({{5.0, 3.0}})) == 0,
+          b + ": a repeated input's transpose sums its outputs");
+    check(test::raises([&] { NeuralNetwork::Layer::gather({2}, 2, Tensor({0.0})); },
                        Error::wrong_input_in_constructor),
-          b + ": a gather refuses a repeated input");
+          b + ": a gather refuses an index out of range");
 }
 
 /// A small convolutional network and the same network of dense layers.
