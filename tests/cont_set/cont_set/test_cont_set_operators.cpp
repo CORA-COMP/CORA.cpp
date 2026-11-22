@@ -38,6 +38,7 @@ void operators_are_the_members(const std::string &b) {
         check(test::close(a, b2, 0.0), b + ": " + what);
     };
 
+    // Capsule: a point shift and the sums with other sets.
     const Capsule C(vec({0.0, 0.0}), vec({1.0, 0.0}), 0.5);
     same((C + v).center(), C.plus(v).center(), "capsule + point");
     same((v + C).center(), C.plus(v).center(), "point + capsule");
@@ -46,6 +47,7 @@ void operators_are_the_members(const std::string &b) {
     same((C + Z).center(), C.plus(Z).center(), "capsule + zonotope");
     same((C + C).center(), C.plus(C).center(), "capsule + capsule");
 
+    // Ellipsoid: a point shift, the linear map and the sum.
     const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
     same((E + v).center(), E.plus(v).center(), "ellipsoid + point");
     same((v + E).center(), E.plus(v).center(), "point + ellipsoid");
@@ -53,6 +55,7 @@ void operators_are_the_members(const std::string &b) {
     same((M * E).center(), E.linear_map(M).center(), "matrix * ellipsoid");
     same((E + E).center(), E.plus(E).center(), "ellipsoid + ellipsoid");
 
+    // Zonotope bundle: a point shift, the sums and the linear map.
     const ZonoBundle ZB({Z, Z});
     same((ZB + v).center(), ZB.plus(v).center(), "bundle + point");
     same((v + ZB).center(), ZB.plus(v).center(), "point + bundle");
@@ -62,6 +65,7 @@ void operators_are_the_members(const std::string &b) {
     same((ZB + ZB).center(), ZB.plus(ZB).center(), "bundle + bundle");
     same((M * ZB).center(), ZB.linear_map(M).center(), "matrix * bundle");
 
+    // Polynomial zonotope: a point shift, the sums and the linear map.
     const PolyZonotope PZ(Z);
     same((PZ + v).center(), PZ.plus(v).center(), "poly zonotope + point");
     same((v + PZ).center(), PZ.plus(v).center(), "point + poly zonotope");
@@ -71,6 +75,7 @@ void operators_are_the_members(const std::string &b) {
     same((PZ + PZ).center(), PZ.plus(PZ).center(), "poly zonotope + poly zonotope");
     same((M * PZ).center(), PZ.linear_map(M).center(), "matrix * poly zonotope");
 
+    // Constrained zonotope: the sums and the linear map.
     const ConZonotope CZ(Z.center(), Z.generators());
     same((CZ + Z).center(), CZ.plus(Z).center(), "con zonotope + zonotope");
     same((Z + CZ).center(), CZ.plus(Z).center(), "zonotope + con zonotope");
