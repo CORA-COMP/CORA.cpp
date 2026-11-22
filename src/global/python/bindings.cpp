@@ -4363,14 +4363,35 @@ py::dict closed_loop_dict(const ClosedLoopReach<S> &R) {
     return out;
 }
 
-/// A layer of the NeuralNetwork constructor: a pair (W, b), or a dict of a conv2d or a gather.
+NeuralNetwork::Layer aux_nn_map(const py::object &layer);
+
+/// A layer of the NeuralNetwork constructor: a pair (W, b), or a dict of a conv2d, a gather or a
+/// dense map ('W'), with its graph keys: 'source' and 'residuals' [{'source', 'map' (or None)}].
 NeuralNetwork::Layer aux_nn_layer(const py::object &layer) {
+    NeuralNetwork::Layer out = aux_nn_map(layer);
+    if (!py::isinstance<py::dict>(layer)) return out;
+    const py::dict d = layer.cast<py::dict>();
+    if (d.contains("source") && !d["source"].is_none()) out.source = d["source"].cast<int64_t>();
+    if (d.contains("residuals"))
+        for (const py::handle r : d["residuals"]) {
+            const py::dict rd = r.cast<py::dict>();
+            NeuralNetwork::Residual res{rd["source"].cast<int64_t>(), nullptr};
+            if (rd.contains("map") && !rd["map"].is_none())
+                res.map = std::make_shared<NeuralNetwork::Layer>(aux_nn_map(rd["map"]));
+            out.residuals.push_back(res);
+        }
+    return out;
+}
+
+/// The linear map of a layer: a pair (W, b), or a dict of a conv2d, a gather or a matrix ('W').
+NeuralNetwork::Layer aux_nn_map(const py::object &layer) {
     if (!py::isinstance<py::dict>(layer)) {
         const auto [W, b] = layer.cast<std::pair<py::object, py::object>>();
         return {tensor_of(W, "the weights"), point_of(b, "the bias")};
     }
     const py::dict d = layer.cast<py::dict>();
     const Tensor bias = point_of(d["bias"], "the bias");
+    if (d.contains("W")) return {tensor_of(d["W"], "the weights"), bias};
     if (d.contains("gather"))
         return NeuralNetwork::Layer::gather(d["gather"].cast<std::vector<int64_t>>(),
                                             d["inputs"].cast<int64_t>(), bias);
@@ -4407,7 +4428,10 @@ void bind_neural_network(py::module_ &m) {
              py::arg("layers"), py::arg("activations") = py::none(),
              "the layers as (W (out, in), b (out,)) pairs, first to last, or dicts {'conv2d': "
              "kernel, 'bias', 'input': (C, H, W), 'stride', 'dilation', 'pads', 'groups'} and "
-             "{'gather': index, 'inputs', 'bias'}, and optionally the activation of each: "
+             "{'gather': index, 'inputs', 'bias'} or {'W', 'bias'}, each with the optional graph "
+             "keys "
+             "'source' (the layer it reads, -1 the input) and 'residuals' ([{'source', 'map': a "
+             "layer or None for the identity}], added), and optionally the activation of each: "
              "'identity', 'relu', 'sigmoid' or 'tanh'")
         .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
         .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")

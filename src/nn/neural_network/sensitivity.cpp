@@ -18,7 +18,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
@@ -37,8 +37,8 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
         return "sensitivity: the point must be a vector (" + std::to_string(input_dim()) +
                "), got the shape " + shape_text(x.shape());
     });
-    CORA_CHECK(is_dense(), Error::not_supported, [] {
-        return std::string("sensitivity: the layers must be matrices (Layer::dense)");
+    CORA_CHECK(is_dense() && is_chain(), Error::not_supported, [] {
+        return std::string("sensitivity: the layers must be a chain of matrices (Layer::dense)");
     });
     // the Jacobian of the layers so far, from the identity, and the value after them (a column)
     Tensor h = x.expand_dims(-1), J = x.eye_like(input_dim());

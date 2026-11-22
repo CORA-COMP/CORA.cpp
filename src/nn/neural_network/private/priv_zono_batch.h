@@ -1,17 +1,17 @@
 // priv_zono_batch - batched zonotopes through a dense network: slots, interval center, factors
 //
 // The set propagation of CORA's verify (evaluateZonotopeBatch_, prepareForZonoBatchEval), batch
-// first: a batch of B zonotopes is the center c (B, n), the generators as rows G (B, q, n) and the
-// radius dr (B, n) of the interval center (undefined when every error has a generator). The input
-// gets q0 = min(num_init_gens, n0) generators, an activation layer min(num_approx_err, n_k) error
-// generators in the order of approx_error_order, the rest goes to dr. The output's first q0
-// factors are the input's and every error generator is a factor of its own (ICLR 2026, Sec. 3),
-// so constraints on the output are constraints on the input. A ReLU takes CORALean's line, sigmoid
-// and tanh CORA's "bounds" or CORALean's "singh". splits (B, s) hold signed neuron ids of earlier
-// splits (-id: at least 0, +id: at most 0, 0: none), which clamp the bounds. On lean every sum
-// nests to the right, as CORALean's (bit for bit). One reverse pass gives the exact F-radius
-// gradient (exact_backprop) and a margin's gradient in free ReLU slopes alpha; CROWN's backward
-// bound runs over the recorded bounds of a crossing ReLU (its chord, a slope through 0).
+// first: B zonotopes are the center c (B, n), the generator rows G (B, q, n) and the radius dr
+// (B, n) of the interval center (undefined when every error has a generator). The input gets q0 =
+// min(num_init_gens, n0) generators, an activation layer min(num_approx_err, n_k) error generators
+// (approx_error_order), the rest goes to dr. The first q0 factors are the input's, every error
+// generator is a factor of its own (ICLR 2026, Sec. 3), so output constraints constrain the input.
+// A graph's layer reads an earlier output and adds residuals: their rows are the first factors of
+// the layer's (generators add row by row). A ReLU takes CORALean's line, sigmoid and tanh CORA's
+// "bounds" or CORALean's "singh". splits (B, s) hold signed neuron ids of earlier splits (-id: at
+// least 0, +id: at most 0), which clamp the bounds. On lean every sum nests to the right, as
+// CORALean's. One reverse pass gives the exact F-radius gradient (exact_backprop) and a margin's
+// gradient in free ReLU slopes alpha; CROWN's backward bound runs over the recorded bounds.
 //
 // Syntax:   ZonoNet net(nn, q0, dn, "bounds", "length");   auto in = net.input_zonotope(x, r);
 //           ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true);
@@ -82,6 +82,12 @@ class ZonoNet {
     std::vector<NeuralNetwork::Layer> maps; ///< the layers (a convolution: W undefined above)
     std::vector<Activation> activations;
     std::vector<int64_t> slots, first_ids, widths;
+    /// The graph: the output each layer reads (-1: the input) and those it adds; kept[j + 1]
+    /// whether output j (0: the input) is read by more than the next layer's own map.
+    std::vector<int64_t> sources;
+    std::vector<std::vector<NeuralNetwork::Residual>> residuals;
+    std::vector<bool> kept;
+    bool chain = true;
     std::string poly_method, approx_error_order;
     int64_t n0 = 0, q0 = 0, q = 0, num_outputs = 0, num_neurons = 0;
     bool interval_center = false;
@@ -92,6 +98,15 @@ class ZonoNet {
     Tensor map_abs(std::size_t k, const Tensor &x) const;
     Tensor map_t(std::size_t k, const Tensor &y) const;
     Tensor map_abs_t(std::size_t k, const Tensor &y) const;
+    /// Residual i of layer k on rows: its map (the identity without one), |map|, or a transpose.
+    Tensor residual(std::size_t k, std::size_t i, const Tensor &x, bool absolute,
+                    bool transposed) const;
+    /// Layer k's linear part without the bias on outs (outs[j + 1]: output j, outs[0]: the input):
+    /// its map of its source plus its residuals' (with absolute, |W| of each).
+    Tensor linear(std::size_t k, const std::vector<Tensor> &outs, bool absolute = false) const;
+    /// The transpose: g (rows of layer k's linear part) to each of its inputs, added into acc.
+    void linear_t(std::size_t k, const Tensor &g, std::vector<Tensor> &acc,
+                  bool absolute = false) const;
 
     /// The network at the points (B, n0).
     Tensor evaluate(const Tensor &x) const;

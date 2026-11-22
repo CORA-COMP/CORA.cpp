@@ -3,11 +3,12 @@
 Small graphs of every operator the loader knows, built with onnx.helper: the batched torch run
 equals onnxruntime's (float32) to float32 accuracy; a chain of affine maps and activations lowers
 to dense layers whose network equals the graph in float64, and a plain Gemm keeps its weights bit
-for bit; a residual connection or a max pool is no chain and says why.
+for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
+folded into the convolutions); a product of branches and a max pool do not and say why.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   22-November-2026
 Reviewed:      ---
 """
 
@@ -37,7 +38,7 @@ from cora.onnx_network import OnnxNetwork
 class TorchRun(unittest.TestCase):
     def test_every_operator_agrees_with_onnxruntime(self):
         # each graph on 7 rows at once, against onnxruntime one sample at a time
-        for m in (mlp(), conv_net(), residual_net(), maxpool_net()):
+        for m in (mlp(), conv_net(), residual_net(), resnet_block(), maxpool_net()):
             net = OnnxNetwork(m, dtype=torch.float32)
             x = RNG.uniform(-1, 1, (7, net.num_inputs)).astype(np.float32)
             expected = onnxruntime_rows(m, x)
@@ -83,9 +84,9 @@ class Lowering(unittest.TestCase):
         x = torch.as_tensor(RNG.uniform(-1, 1, (5, 5)))
         np.testing.assert_allclose(np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12)
 
-    def test_what_is_no_chain(self):
-        # a residual connection and a max pool, each with the reason
-        for m, reason in ((residual_net(), "residual"), (maxpool_net(), "MaxPool")):
+    def test_what_does_not_lower(self):
+        # a product of two branches and a max pool, each with the reason
+        for m, reason in ((product_net(), "joins two branches"), (maxpool_net(), "MaxPool")):
             nn, why = OnnxNetwork(m).to_neural_network()
             self.assertIsNone(nn)
             self.assertIn(reason, why)
@@ -102,6 +103,24 @@ class Lowering(unittest.TestCase):
         np.testing.assert_allclose(
             structured_rows(*lowered, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12
         )
+
+    def test_residual_graphs(self):
+        # a dense residual and a ResNet block: layers with residuals, the network equals the graph
+        for m, residuals in ((residual_net(), 1), (resnet_block(), 1)):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            nn, why = net.to_neural_network()
+            self.assertIsNone(why)
+            (layers, _), _ = net.layers()
+            self.assertEqual(sum(1 for la in layers if la.get("residuals")), residuals)
+            x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+            np.testing.assert_allclose(
+                np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
+            )
+        # the block's batch norms are folded into its convolutions: conv, conv + shortcut, gemm
+        (layers, acts), _ = OnnxNetwork(resnet_block()).layers()
+        self.assertEqual(acts, ["relu", "relu", "identity"])
+        self.assertTrue(all("conv2d" in la for la in layers[:2]))
+        self.assertIn("conv2d", layers[1]["residuals"][0]["map"])
 
     def test_size_cap(self):
         # max_elements refuses unit-vector batches beyond it
@@ -204,6 +223,8 @@ def structured_rows(layers, activations, x):
         # a dense layer, a gather, a ConvTranspose or a convolution
         if not isinstance(layer, dict):
             h = h @ layer[0].T + layer[1]
+        elif "W" in layer:
+            h = h @ layer["W"].T + layer["bias"]
         elif "gather" in layer:
             padded = torch.cat([h, torch.zeros(h.shape[0], 1, dtype=h.dtype)], 1)
             index = [i if i >= 0 else h.shape[1] for i in layer["gather"]]
@@ -274,6 +295,39 @@ def residual_net():
         helper.make_node("Add", ["m", "x"], ["y"]),
     ]
     return model(nodes, [("x", [1, 3])], [("y", [1, 3])], {"W1": weight(3, 4), "W2": weight(4, 3)})
+
+
+def product_net():
+    """The product of two branches, which is no affine map: y = relu(W1 x) * x."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W1"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("Mul", ["r", "x"], ["y"]),
+    ]
+    return model(nodes, [("x", [1, 3])], [("y", [1, 3])], {"W1": weight(3, 3)})
+
+
+def resnet_block():
+    """A ResNet block: relu(BN(conv(relu(BN(conv x)))) + BN(conv1x1 x)) as a Gemm's input, the
+    shortcut (strided) after the main branch in the graph."""
+    bn = {f"{k}{i}": v for i in range(3) for k, v in
+          (("s", weight(2)), ("o", weight(2)), ("mu", weight(2)), ("var", np.abs(weight(2)) + 0.5))}
+    nodes = [
+        helper.make_node("Conv", ["x", "W1", "b1"], ["c1"], pads=[1, 1, 1, 1], strides=[2, 2]),
+        helper.make_node("BatchNormalization", ["c1", "s0", "o0", "mu0", "var0"], ["n1"]),
+        helper.make_node("Relu", ["n1"], ["r1"]),
+        helper.make_node("Conv", ["r1", "W2", "b2"], ["c2"], pads=[1, 1, 1, 1]),
+        helper.make_node("BatchNormalization", ["c2", "s1", "o1", "mu1", "var1"], ["n2"]),
+        helper.make_node("Conv", ["x", "W3", "b3"], ["c3"], strides=[2, 2]),
+        helper.make_node("BatchNormalization", ["c3", "s2", "o2", "mu2", "var2"], ["n3"]),
+        helper.make_node("Add", ["n2", "n3"], ["a"]),
+        helper.make_node("Relu", ["a"], ["r2"]),
+        helper.make_node("Flatten", ["r2"], ["f"]),
+        helper.make_node("Gemm", ["f", "W", "b"], ["y"], transB=1),
+    ]
+    init = {"W1": weight(2, 1, 3, 3), "b1": weight(2), "W2": weight(2, 2, 3, 3), "b2": weight(2),
+            "W3": weight(2, 1, 1, 1), "b3": weight(2), "W": weight(3, 8), "b": weight(3), **bn}
+    return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 3])], init)
 
 
 def maxpool_net():

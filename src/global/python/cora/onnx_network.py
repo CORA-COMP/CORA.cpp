@@ -5,7 +5,9 @@ device and in any float dtype (float32 for the search, float64 for re-checks). P
 (B, n) of the flattened input (C order), outputs rows (B, m). A graph that is a chain of affine
 maps and element-wise activations lowers to a cora.NeuralNetwork: each affine part becomes one
 dense linear layer, its matrix the image of the unit vectors with the additive constants dropped
-(so a plain Gemm keeps its weights bit for bit), its bias the image of zero.
+(so a plain Gemm keeps its weights bit for bit), its bias the image of zero. A graph with
+convolutions or two branches joined by an Add (a ResNet) lowers layer by layer, a branch as a
+residual input of a layer.
 
 Syntax:   net = OnnxNetwork.load("net.onnx", dtype=torch.float32, device="cpu")
           y = net(x)                       x (B, n) -> y (B, m), batched, autograd on
@@ -17,7 +19,7 @@ See also: cora.vnnlib, cora.nn_verify, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   22-November-2026
 Reviewed:      ---
 """
 
@@ -132,15 +134,20 @@ class OnnxNetwork:
         return (cora.NeuralNetwork(*lowered), None) if lowered else (None, why)
 
     def layers(self, max_elements=2**27):
-        """(([layer], activation names), None) of the chain in float64, or (None, why): with a
-        Conv or an AveragePool one layer per linear node (cora.NeuralNetwork's conv2d and gather
-        dicts, never a matrix of a convolution), else the dense layers."""
+        """(([layer], activation names), None) of the network in float64, or (None, why): a chain
+        without a Conv or an AveragePool as dense layers; else one layer per linear node
+        (cora.NeuralNetwork's conv2d, gather and dense dicts, never a matrix of a convolution),
+        with the graph keys of a residual connection."""
         if not any(op in STRUCTURED_OPS for op, _, _, _ in self.nodes):
-            return self.dense_layers(max_elements)
+            dense, why = self.dense_layers(max_elements)
+            if dense or "joins two layers" not in why:
+                return dense, why
         try:
             return self._lower_structured(), None
         except (_NotAChain, NotImplementedError) as reason:
             return None, str(reason)
+        except (TypeError, ValueError, RuntimeError, IndexError) as error:  # a node we cannot run
+            return None, f"a node fails to lower: {type(error).__name__}: {error}"
 
     def dense_layers(self, max_elements=2**27):
         """(([(W, b)], activation names), None) of the chain in float64, or (None, why)."""
@@ -474,28 +481,69 @@ class OnnxNetwork:
 
     # ------------------------------------------------------------------- lowering with convolutions
     def _lower_structured(self):
-        """The layers of a chain with convolutions, one per linear node, none made a matrix: a Conv
-        (and a BatchNormalization or an AveragePool, as a depthwise one) a conv2d layer, a Gemm or
-        MatMul a dense one, a data move (Transpose, Pad, Slice, Concat with constants) a gather,
-        found by running the node on the indices; Flatten and Reshape change only the shape.
-        Additive constants go into the bias of the layer before."""
+        """The layers of a graph with convolutions, one per linear node, none made a matrix: a Conv
+        (a BatchNormalization after it folded in, else as a depthwise one, as an AveragePool) a
+        conv2d layer, a Gemm or MatMul a dense one, a data move (Transpose, Pad, Slice, Concat with
+        constants) a gather, found by running the node on the indices; Flatten and Reshape change
+        only the shape. A value is a pending sum of maps of earlier layers' outputs (_Expr): an
+        activation or the output makes it layers, the longest term as a chain and each other term
+        as a residual of the last one (an Add of two branches, as in a ResNet)."""
         net = self.cast(torch.float64, "cpu")
         layers, activations = [], []
         values = dict(net.constants)
-        chain = {self.input_name: tuple(self.input_shape)}  # the chain's values, batch first
-        latest = self.input_name
-        size = self.num_inputs
+        chain = {self.input_name: _Expr(tuple(self.input_shape), [(-1, [])])}
+        done = {}  # id of an expression made layers -> the layer of its value
 
-        def push(layer, out_shape):
-            nonlocal size
-            layers.append(layer)
-            activations.append("identity")
-            size = math.prod(out_shape)
 
-        def bias_room():
-            # a layer whose output may take an additive constant (no activation after it yet)
-            if not layers or activations[-1] != "identity":
-                push(_gather(list(range(size)), size, torch.zeros(size)), (size,))
+        def emit(maps, source, residuals=()):
+            # the maps as layers, the first reading source, the last adding the residuals
+            for k, layer in enumerate(maps):
+                graph = {"source": source}
+                if k == len(maps) - 1 and residuals:
+                    graph["residuals"] = [{"source": j, "map": m} for j, m in residuals]
+                layers.append(_with_graph(layer, graph))
+                activations.append("identity")
+                source = len(layers) - 1
+            return source
+
+        def materialize(expr):
+            # the expression as layers (once); a bare output of a layer (or the input) stays itself
+            if len(expr.terms) == 1 and not expr.terms[0][1] and expr.bias is None:
+                return expr.terms[0][0]
+            if id(expr) in done:
+                return done[id(expr)][0]
+            size = math.prod(expr.shape[1:])
+            terms = sorted(expr.terms, key=lambda t: -len(t[1]))
+            (src, maps), others = terms[0], terms[1:]
+            residuals = []
+            for j, m in others:
+                # a longer branch: its first maps as layers, the last as the residual's map
+                if len(m) > 1:
+                    j = emit(m[:-1], j)
+                residuals.append((j, m[-1] if m else None))
+            maps = list(maps) or [_gather(list(range(size)), size, torch.zeros(size))]
+            if expr.bias is not None:
+                maps[-1] = _add_bias(maps[-1], expr.bias)
+            done[id(expr)] = (emit(maps, src, residuals), expr)  # (the expression kept alive)
+            return done[id(expr)][0]
+
+        def terms(expr):
+            # the terms of an expression, one term if it is made layers already
+            if id(expr) in done:
+                return [(done[id(expr)][0], [])], None
+            return expr.terms, expr.bias
+
+        def single(expr):
+            # one term without a pending constant, for a map after it
+            if len(expr.terms) > 1 or id(expr) in done:
+                return _Expr(expr.shape, [(materialize(expr), [])])
+            src, maps = expr.terms[0]
+            if expr.bias is None:
+                return expr
+            size = math.prod(expr.shape[1:])
+            maps = list(maps) or [_gather(list(range(size)), size, torch.zeros(size))]
+            maps[-1] = _add_bias(maps[-1], expr.bias)
+            return _Expr(expr.shape, [(src, maps)])
 
         for op, ins, outs, attrs in net.nodes:
             linked = [name for name in ins if name in chain]
@@ -505,7 +553,7 @@ class OnnxNetwork:
             if op in STRUCTURE_OPS:
                 # shape arithmetic on the chain: its shape only
                 probes = [
-                    torch.zeros(1, *chain[n][1:], dtype=torch.float64)
+                    torch.zeros(1, *chain[n].shape[1:], dtype=torch.float64)
                     if n in chain
                     else values.get(n)
                     if n
@@ -514,23 +562,48 @@ class OnnxNetwork:
                 ]
                 values[outs[0]] = net._run(op, probes, attrs)
                 continue
-            if len(set(linked)) > 1 or linked[0] != latest:
-                raise _NotAChain(f"{op} joins two layers (a residual connection)")
-            x_name = latest
-            shape = chain[x_name]
+            if op in ("Add", "Sub") and len(ins) == 2 and len(set(linked)) == 2:
+                # two branches: the sum of their terms
+                a, b = chain[ins[0]], chain[ins[1]]
+                if op == "Sub" or a.shape != b.shape:
+                    raise _NotAChain(f"{op} of two branches of other shapes, or a difference")
+                (ta, ba), (tb, bb) = terms(a), terms(b)
+                bias = ba if bb is None else bb if ba is None else ba + bb
+                chain[outs[0]] = _Expr(a.shape, ta + tb, bias)
+                continue
+            if len(set(linked)) > 1 or len(linked) > 1:
+                raise _NotAChain(f"{op} joins two branches")
+            x_name = linked[0]
+            expr = chain[x_name]
+            shape = expr.shape
             probe = torch.zeros(1, *shape[1:], dtype=torch.float64)
             args = [probe if n == x_name else (values.get(n) if n else None) for n in ins]
             out_shape = tuple(net._run(op, args, attrs).shape)
+            size = math.prod(shape[1:])
+
+            def then(layer, expr=expr, out_shape=out_shape):
+                # the map after the expression
+                src, maps = single(expr).terms[0]
+                return _Expr(out_shape, [(src, maps + [layer])])
+
             if op in ACTIVATIONS:
-                if not layers or activations[-1] != "identity":
-                    push(_gather(list(range(size)), size, torch.zeros(size)), shape)
-                activations[-1] = ACTIVATIONS[op]
-            elif op == "Conv":
+                # in place only on a layer made just now (nothing else reads it yet)
+                before = len(layers)
+                k = materialize(expr)
+                if k < 0 or k < before or activations[k] != "identity":
+                    # (a layer's output that others may read keeps its own)
+                    k = emit([_gather(list(range(size)), size, torch.zeros(size))], k)
+                else:
+                    done.pop(id(expr), None)  # the layer's own output is now the activation's
+                activations[k] = ACTIVATIONS[op]
+                chain[outs[0]] = _Expr(out_shape, [(k, [])])
+                continue
+            if op == "Conv":
                 w = args[1]
                 if w.dim() == 3:  # Conv1D as a 2-D convolution of width 1
                     w = w.unsqueeze(-1)
                 b = args[2] if len(args) > 2 and args[2] is not None else torch.zeros(w.shape[0])
-                push(_conv(w, b, shape, attrs, out_shape), out_shape)
+                chain[outs[0]] = then(_conv(w, b, shape, attrs, out_shape))
             elif op == "ConvTranspose" and len(shape) == 4:
                 # the transpose of the convolution from the output back to the input
                 w = args[1]
@@ -541,13 +614,16 @@ class OnnxNetwork:
                 spec["bias"] = spec["bias"].to(torch.float64).contiguous()
                 spec["conv_transpose2d"] = spec.pop("conv2d")
                 spec["output"] = spec.pop("input")
-                push(spec, out_shape)
+                chain[outs[0]] = then(spec)
             elif op == "BatchNormalization":
                 scale, shift, mean, var = args[1:5]
                 factor = scale / torch.sqrt(var + attrs.get("epsilon", 1e-5))
                 c = shape[1]
-                w = factor.reshape(c, 1, 1, 1)
-                push(_conv(w, shift - mean * factor, shape, {"group": c}, out_shape), out_shape)
+                fused = _fold_batch_norm(single(expr), factor, shift - mean * factor)
+                chain[outs[0]] = fused or then(
+                    _conv(factor.reshape(c, 1, 1, 1), shift - mean * factor, shape, {"group": c},
+                          out_shape)
+                )
             elif (
                 op == "AveragePool"
                 and not attrs.get("ceil_mode", 0)
@@ -555,24 +631,25 @@ class OnnxNetwork:
             ):
                 k, c = list(attrs["kernel_shape"]), shape[1]
                 w = torch.full((c, 1, *k), 1.0 / math.prod(k), dtype=torch.float64)
-                push(_conv(w, torch.zeros(c), shape, {**attrs, "group": c}, out_shape), out_shape)
+                chain[outs[0]] = then(_conv(w, torch.zeros(c), shape, {**attrs, "group": c},
+                                            out_shape))
             elif op in ("Gemm", "MatMul"):
                 # the matrix of the unit vectors (small: one per input of a dense layer)
                 eye = torch.eye(size, dtype=torch.float64).reshape(size, *shape[1:])
                 zero = torch.zeros(1, *shape[1:], dtype=torch.float64)
                 lin = net._run_batched(op, [eye] + args[1:2], [True, False], attrs)
                 bias = net._run(op, [zero] + args[1:], attrs)
-                push((lin.reshape(size, -1).T.contiguous(), bias.reshape(-1)), out_shape)
+                chain[outs[0]] = then((lin.reshape(size, -1).T.contiguous(), bias.reshape(-1)))
             elif op in ("Add", "Sub") and len(ins) == 2:
                 other = args[1] if ins[0] == x_name else args[0]
-                sign = -1.0 if op == "Sub" and ins[1] == x_name else 1.0
-                if sign < 0:
+                if op == "Sub" and ins[1] == x_name:
                     raise _NotAChain("Sub of the chain from a constant")
                 delta = torch.broadcast_to(other * (-1.0 if op == "Sub" else 1.0), out_shape)
-                bias_room()
-                layers[-1] = _add_bias(layers[-1], delta.reshape(-1))
+                delta = delta.reshape(-1)
+                bias = delta if expr.bias is None else expr.bias + delta
+                chain[outs[0]] = _Expr(out_shape, expr.terms, bias)
             elif op in ("Flatten", "Reshape", "Squeeze", "Unsqueeze", "Identity", "Dropout"):
-                pass
+                chain[outs[0]] = _Expr(out_shape, expr.terms, expr.bias)
             elif op in ("Transpose", "Pad", "Slice", "Concat", "Upsample"):
                 # the input index + 1 of each output (0: a constant), and the constants
                 idx = torch.arange(1, size + 1, dtype=torch.float64).reshape(1, *shape[1:])
@@ -588,15 +665,17 @@ class OnnxNetwork:
                 moved = net._run(op, moved_args, {**attrs, "value": 0.0} if op == "Pad" else attrs)
                 const = net._run(op, args, attrs)
                 index = (moved.reshape(-1).round().long() - 1).tolist()
-                push(_gather(index, size, const.reshape(-1)), out_shape)
+                chain[outs[0]] = then(_gather(index, size, const.reshape(-1)))
             else:
                 raise _NotAChain(f"{op} on the chain is not a layer yet")
-            chain[outs[0]] = out_shape
-            latest = outs[0]
-        if self.output_name != latest:
+        if self.output_name not in chain:
             raise _NotAChain("the output does not depend on the input")
-        if not layers:
-            push(_gather(list(range(size)), size, torch.zeros(size)), (size,))
+        out = chain[self.output_name]
+        last = materialize(out)
+        if last != len(layers) - 1 or last < 0:
+            # the output is an earlier layer's or the input: one more identity layer
+            size = math.prod(out.shape[1:])
+            emit([_gather(list(range(size)), size, torch.zeros(size))], last)
         return layers, activations
 
     def _run_batched(self, op, args, batched, attrs):
@@ -683,6 +762,37 @@ def _gather(index, inputs, bias):
         "inputs": int(inputs),
         "bias": bias.to(torch.float64).contiguous(),
     }
+
+
+class _Expr:
+    """A value of the lowering: the sum of terms (source layer, maps after it; -1: the input) and
+    a constant (flat, or None), of the shape (batch first)."""
+
+    def __init__(self, shape, terms, bias=None):
+        self.shape, self.terms, self.bias = tuple(shape), list(terms), bias
+
+
+def _with_graph(layer, graph):
+    """A layer as a dict with its graph keys (a dense pair as {'W', 'bias'})."""
+    if not isinstance(layer, dict):
+        layer = {"W": layer[0], "bias": layer[1]}
+    return {**layer, **graph}
+
+
+def _fold_batch_norm(expr, factor, shift):
+    """The expression with a per-channel x * factor + shift folded into its last map, a conv2d
+    (kernel rows and bias scaled); None if that map is no convolution."""
+    src, maps = expr.terms[0]
+    if not maps or not isinstance(maps[-1], dict) or "conv2d" not in maps[-1]:
+        return None
+    conv = maps[-1]
+    c = conv["conv2d"].shape[0]
+    if factor.numel() != c:
+        return None
+    kernel = conv["conv2d"] * factor.reshape(c, 1, 1, 1)
+    bias = (conv["bias"].reshape(c, -1) * factor.reshape(c, 1) + shift.reshape(c, 1)).reshape(-1)
+    fused = {**conv, "conv2d": kernel.contiguous(), "bias": bias.contiguous()}
+    return _Expr(expr.shape, [(src, maps[:-1] + [fused])])
 
 
 def _add_bias(layer, delta):

@@ -23,7 +23,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -157,17 +157,26 @@ Tensor NnProblem::loss(const Tensor &y, const Tensor &cases) const {
 
 Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss) const {
     const NeuralNetwork &net = *net32_;
-    // the forward pass, keeping the inputs of the activations
-    std::vector<Tensor> pre;
+    // the forward pass, keeping the inputs of the activations and the outputs (outs[k + 1])
+    const std::vector<NeuralNetwork::Layer> &layers = net.layers();
+    std::vector<Tensor> pre, outs{x};
     Tensor h = x;
-    for (std::size_t k = 0; k < net.layers().size(); ++k) {
-        pre.push_back(net.layers()[k].rows(h) + net.layers()[k].b);
+    for (std::size_t k = 0; k < layers.size(); ++k) {
+        // the map of the source's output, plus the residuals
+        Tensor z = layers[k].rows(outs[std::size_t(net.source(k) + 1)]);
+        for (const NeuralNetwork::Residual &r : layers[k].residuals) {
+            const Tensor &hr = outs[std::size_t(r.source + 1)];
+            z = z + (r.map ? r.map->rows(hr) : hr);
+        }
+        pre.push_back(z + layers[k].b);
         const Activation a = net.activations()[k];
         h = a == Activation::relu      ? pre.back().maximum(0.0)
             : a == Activation::sigmoid ? pre.back().sigmoid()
             : a == Activation::tanh    ? pre.back().tanh()
                                        : pre.back();
+        outs.push_back(h);
     }
+    // the margins of the rows of every polytope
     const int64_t S = x.shape()[0], P = A32_.shape()[0], K = A32_.shape()[1];
     const Tensor margin = h.matmul(A32_.reshape({P * K, A32_.shape()[2]}).matrix_transpose())
                               .reshape({S, P, K})
@@ -185,17 +194,26 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
     const Tensor hot = worst.equal(rows.arange_like(K).reshape({1, K}));
     const Tensor weight = rows.greater(rows.zeros_like()) + hot * 0.1;
     const Tensor chosen = A32_.take(best.squeeze(1), 0);
-    Tensor g = weight.expand_dims(1).matmul(chosen).squeeze(1);
-    // back through the layers
-    for (std::size_t k = net.layers().size(); k-- > 0;) {
+    // back through the layers, each output's gradient summed over the layers that read it
+    std::vector<Tensor> acc(layers.size() + 1);
+    acc.back() = weight.expand_dims(1).matmul(chosen).squeeze(1);
+    const auto add = [&](int64_t j, const Tensor &v) {
+        Tensor &t = acc[std::size_t(j + 1)];
+        t = t.defined() ? t + v : v;
+    };
+    for (std::size_t k = layers.size(); k-- > 0;) {
+        Tensor g = std::move(acc[k + 1]);
+        // through the activation, then the maps' transposes to the outputs read
         const Activation a = net.activations()[k];
         const Tensor &z = pre[k];
         if (a == Activation::relu) g = g.multiply(z.greater(z.zeros_like()));
         if (a == Activation::sigmoid) g = g.multiply(z.sigmoid().multiply(1.0 - z.sigmoid()));
         if (a == Activation::tanh) g = g.multiply(1.0 - z.tanh().square());
-        g = net.layers()[k].rows_t(g);
+        for (const NeuralNetwork::Residual &r : layers[k].residuals)
+            add(r.source, r.map ? r.map->rows_t(g) : g);
+        add(net.source(k), layers[k].rows_t(g));
     }
-    return g;
+    return acc[0];
 }
 
 std::optional<std::vector<double>> NnProblem::confirm(const Tensor &x) {

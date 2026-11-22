@@ -45,7 +45,7 @@
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   19-November-2026
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -336,11 +336,15 @@ Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
                 bool keep_zero, const NnOptions &options,
                 std::vector<std::vector<double>> *errors = nullptr) {
     for (std::size_t k = 0; k < layers.size(); ++k) {
-        // a set goes through matrices only (a convolution: evaluate at points or verify)
+        // a set goes through a chain of matrices only (a convolution, a graph: points or verify)
         if (layers[k].plan)
             CORA_FAIL(Error::not_supported,
                       "evaluate: layer " + std::to_string(k) +
                           " is a convolution or a gather; sets take matrices (Layer::dense)");
+        if (layers[k].source != int64_t(k) - 1 || !layers[k].residuals.empty())
+            CORA_FAIL(Error::not_supported,
+                      "evaluate: layer " + std::to_string(k) +
+                          " reads another layer than the one before; sets take a chain");
         r.c = layers[k].W.matmul(r.c) + layers[k].b.expand_dims(-1);
         r.G = layers[k].W.matmul(r.G);
         r.GI = layers[k].W.matmul(r.GI);
@@ -585,11 +589,23 @@ Tensor NeuralNetwork::evaluate(const Tensor &x) const {
                           "), got the shape " + shape_text(x.shape());
                });
     // per layer its map on the columns (a convolution's on the rows), then its activation
+    const auto apply = [](const Layer &L, const Tensor &h) {
+        return L.plan ? L.rows(h.matrix_transpose()).matrix_transpose() : L.W.matmul(h);
+    };
+    // the outputs of a graph's layers (outs[j + 1] is layer j's, outs[0] the input)
+    std::vector<Tensor> outs;
+    if (!is_chain()) outs.resize(layers_.size() + 1);
     Tensor h = x.matrix_transpose();
+    if (!outs.empty()) outs[0] = h;
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         const Layer &L = layers_[k];
-        const Tensor z = L.plan ? L.rows(h.matrix_transpose()).matrix_transpose() : L.W.matmul(h);
+        Tensor z = apply(L, outs.empty() ? h : outs[std::size_t(L.source + 1)]);
+        for (const Residual &r : L.residuals) {
+            const Tensor &hr = outs[std::size_t(r.source + 1)];
+            z = z + (r.map ? apply(*r.map, hr) : hr);
+        }
         h = aux_apply(activations_[k], z + L.b.expand_dims(-1));
+        if (!outs.empty()) outs[k + 1] = h;
     }
     return h.matrix_transpose();
 }
