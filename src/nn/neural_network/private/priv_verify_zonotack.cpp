@@ -162,8 +162,8 @@ Tensor aux_pieces_offsets(const Tensor &lo, const Tensor &hi, const Tensor &cent
 Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &r) {
     std::vector<Tensor> lo{x - r}, hi{x + r}, plo, phi;
     for (std::size_t k = 0; k < net.W.size(); ++k) {
-        const Tensor mid = ((lo.back() + hi.back()) * 0.5).matmul(net.W[k]) + net.b[k];
-        const Tensor rad = ((hi.back() - lo.back()) * 0.5).matmul(net.abs_w[k]);
+        const Tensor mid = net.map(k, (lo.back() + hi.back()) * 0.5) + net.b[k];
+        const Tensor rad = net.map_abs(k, (hi.back() - lo.back()) * 0.5);
         plo.push_back(mid - rad);
         phi.push_back(mid + rad);
         lo.push_back(net.activations[k] == Activation::identity  ? plo.back()
@@ -196,8 +196,8 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
         g_hi = g_hi.multiply(slope(phi[k]));
         g_lo = g_lo.multiply(slope(plo[k]));
         // lo = mid - rad, hi = mid + rad, mid and rad of the layer's input box
-        const Tensor g_mid = (g_lo + g_hi).matmul(net.W[k].matrix_transpose()) * 0.5;
-        const Tensor g_rad = (g_hi - g_lo).matmul(net.abs_w[k].matrix_transpose()) * 0.5;
+        const Tensor g_mid = net.map_t(k, g_lo + g_hi) * 0.5;
+        const Tensor g_rad = net.map_abs_t(k, g_hi - g_lo) * 0.5;
         g_lo = g_mid - g_rad;
         g_hi = g_mid + g_rad;
     }

@@ -508,5 +508,15 @@ Phase 2 (0 wrong of 60). Three theorems would close the soundness rows of docs/n
   positive and negative parts of the slopes, the constant, then `Lambda x - |Lambda| r`) is at
   most `a . N(x')` for every `x'` in the box `(x, r)`.
 
+Phase 3 (convolutional networks) adds two layers no CORALean op serves on a zonotope:
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `nnLayer.evaluateZonotope` of a `ConvLayer` | `ConvLayer` (Dyadic) on points only: the convolution of the center and of every generator row (the generator axis as a batch), groups, strides, dilations, pads | `kernel`, `input` (C, H, W), `stride`, `dilation`, `pads`, `groups`, `Z` | `Z` |
+| `nnLayer.evaluateZonotope` of a `MaxPoolLayer` | none on a zonotope (CORALean's `MaxPoolLayer` enclosure is of intervals); CORA.cpp does not lower a max pool yet | `kernel`, `stride`, `Z` | `Z` |
+
+The convolution is checked against its definition and its matrix (`test_neural_network_conv`); a
+gather (a permutation, a pad, a nearest upsample) is exact.
+
 The ReLU rows and the iterated refinement are not formalized. The coverage rows `verify`,
 `computePGDAttack` and `computeFGSMAttack` are oracle debt until then.

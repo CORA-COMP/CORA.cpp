@@ -407,12 +407,12 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
         }
         // the linear layer; the centers and radii of the first layer's input are not needed
         if (k == 0) {
-            if (need_input) g_gen = aux_rows_times(g_gen, net.WT[k]);
+            if (need_input) g_gen = net.map_t(k, g_gen);
             break;
         }
-        g_gen = aux_rows_times(g_gen, net.WT[k]);
-        g_c = g_c.matmul(net.WT[k]);
-        if (g_dr.defined()) g_dr = g_dr.matmul(net.abs_wT[k]);
+        g_gen = net.map_t(k, g_gen);
+        g_c = net.map_t(k, g_c);
+        if (g_dr.defined()) g_dr = net.map_abs_t(k, g_dr);
     }
     return g_gen;
 }
@@ -444,14 +444,17 @@ ZonoNet::ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_appr
     int64_t id = 1, widest = 0;
     for (std::size_t k = 0; k < net.layers().size(); ++k) {
         const NeuralNetwork::Layer &layer = net.layers()[k];
-        // the transposed weights, which the rows multiply from the right
-        W.push_back(layer.W.matrix_transpose());
-        abs_w.push_back(W.back().abs());
-        WT.push_back(layer.W);
-        abs_wT.push_back(layer.W.abs());
+        // the transposed weights, which the rows multiply from the right; a convolution or a
+        // gather keeps its plan
+        maps.push_back(layer);
+        const bool dense = !layer.plan;
+        W.push_back(dense ? layer.W.matrix_transpose() : Tensor());
+        abs_w.push_back(dense ? W.back().abs() : Tensor());
+        WT.push_back(dense ? layer.W : Tensor());
+        abs_wT.push_back(dense ? layer.W.abs() : Tensor());
         b.push_back(layer.b);
         // a slot count and the first global id per activation layer
-        const int64_t n = layer.W.shape()[0];
+        const int64_t n = layer.outputs();
         widths.push_back(n);
         const bool active = activations[k] != Activation::identity;
         slots.push_back(active ? aux_count(num_approx_err, n) : 0);
@@ -468,9 +471,29 @@ ZonoNet::ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_appr
     interval_center = q0 < n0 || aux_count(num_approx_err, widest) < widest;
 }
 
+Tensor ZonoNet::map(std::size_t k, const Tensor &x) const {
+    if (!W[k].defined()) return maps[k].rows(x);
+    return x.shape().size() == 3 ? aux_rows_times(x, W[k]) : x.matmul(W[k]);
+}
+
+Tensor ZonoNet::map_abs(std::size_t k, const Tensor &x) const {
+    if (!W[k].defined()) return maps[k].abs_rows(x);
+    return x.shape().size() == 3 ? aux_rows_times(x, abs_w[k]) : x.matmul(abs_w[k]);
+}
+
+Tensor ZonoNet::map_t(std::size_t k, const Tensor &y) const {
+    if (!W[k].defined()) return maps[k].rows_t(y);
+    return y.shape().size() == 3 ? aux_rows_times(y, WT[k]) : y.matmul(WT[k]);
+}
+
+Tensor ZonoNet::map_abs_t(std::size_t k, const Tensor &y) const {
+    if (!W[k].defined()) return maps[k].abs_rows_t(y);
+    return y.shape().size() == 3 ? aux_rows_times(y, abs_wT[k]) : y.matmul(abs_wT[k]);
+}
+
 Tensor ZonoNet::evaluate(const Tensor &x) const {
     Tensor h = x;
-    for (std::size_t k = 0; k < W.size(); ++k) h = aux_apply(activations[k], h.matmul(W[k]) + b[k]);
+    for (std::size_t k = 0; k < W.size(); ++k) h = aux_apply(activations[k], map(k, h) + b[k]);
     return h;
 }
 
@@ -481,7 +504,7 @@ ZonoSensitivity ZonoNet::sensitivity(const Tensor &x) const {
     std::vector<Tensor> pre;
     Tensor h = x;
     for (std::size_t k = 0; k < W.size(); ++k) {
-        pre.push_back(h.matmul(W[k]) + b[k]);
+        pre.push_back(map(k, h) + b[k]);
         h = aux_apply(activations[k], pre.back());
     }
     const int64_t B = x.shape()[0];
@@ -497,7 +520,7 @@ ZonoSensitivity ZonoNet::sensitivity(const Tensor &x) const {
             out.layer_sum[k] = a.sum(1);
             out.layer_max[k] = a.maximum(numerics::kSensitivityFloor).max(1);
         }
-        S = S.matmul(W[k].matrix_transpose());
+        S = map_t(k, S);
     }
     out.input = S.abs().maximum(numerics::kSensitivityFloor).max(1);
     out.jacobian = S;
@@ -543,8 +566,15 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
     // without a record a layer's error generators stay diagonal until the next linear map
     Tensor pending_values, pending_neurons;
     bool pending_all = false;
-    const auto take_pending = [&](const Tensor &M) {
+    const auto take_pending = [&](std::size_t k) {
         const int64_t B = pending_values.shape()[0], dn = pending_values.shape()[1];
+        // a convolution or a gather maps the error block (B, dn, n) itself
+        if (!W[k].defined()) {
+            const int64_t n = maps[k].inputs();
+            return map(k, aux_onehot(pending_neurons, n).multiply(pending_values.expand_dims(-1))) +
+                   0.0;
+        }
+        const Tensor &M = W[k];
         const Tensor rows =
             pending_all
                 ? M.expand_dims(0)
@@ -554,13 +584,13 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
     };
     for (std::size_t k = 0; k < W.size(); ++k) {
         // the linear layer, exactly
-        c = c.matmul(W[k]) + b[k];
-        G = aux_rows_times(G, W[k]);
+        c = map(k, c) + b[k];
+        G = map(k, G);
         if (pending_values.defined()) {
-            G = Tensor::concat({G, take_pending(W[k])}, 1);
+            G = Tensor::concat({G, take_pending(k)}, 1);
             pending_values = Tensor();
         }
-        if (dr.defined()) dr = dr.matmul(abs_w[k]);
+        if (dr.defined()) dr = map_abs(k, dr);
         if (activations[k] == Activation::identity) continue;
         // the bounds of every neuron (CORALean's interval of a zonotope), then the split clamps
         const Tensor r = G.abs().sum(1);
@@ -727,7 +757,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
         }
         // the linear layer
         constant = constant + lam.multiply(net.b[k]).sum(-1);
-        lam = aux_rows_times(lam, net.WT[k]);
+        lam = net.map_t(k, lam);
     }
     // the input box
     return lam.matmul(x.expand_dims(-1)).squeeze(-1) -
@@ -790,7 +820,7 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                 lam = pos.multiply(sl) + neg.multiply(L.su);
             }
             constant = constant + lam.multiply(net.b[k]).sum(-1);
-            lam = aux_rows_times(lam, net.WT[k]);
+            lam = net.map_t(k, lam);
         }
         const Tensor value =
             lam.matmul(xe).squeeze(-1) - lam.abs().matmul(re).squeeze(-1) + constant;
@@ -802,7 +832,7 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                      c2 = 1.0 - std::pow(kB2, double(t + 1));
         for (std::size_t k = 0; k < net.W.size(); ++k) {
             // through the linear layer: Lambda_k W_k, plus the bias
-            g = aux_rows_times(g, net.W[k]) + net.b[k];
+            g = net.map(k, g) + net.b[k];
             if (net.activations[k] == Activation::identity) continue;
             const Lines &L = lines[k];
             const Tensor &lk = lams[k];
