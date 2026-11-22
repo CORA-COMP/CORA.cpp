@@ -3,7 +3,8 @@
 A ReLU network of 2 inputs with a sat property (PGD finds a counterexample that passes the
 scoring's check through the callback), an unsat one (CORA's verify and the zonotope bounding)
 and a zero budget (unknown), on the eigen and the torch backend. A network that does not lower to
-dense layers (a max pool) is unknown with the reason.
+dense layers (a max pool) is unknown with the reason; one with a layer that C++ cannot take (a
+sine) is unknown at once, without reading the property.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -92,6 +93,17 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(result.status, "unknown")
         self.assertIn("max pool", result.stats["bounding"])
 
+    def test_fail_fast(self):
+        # a layer that C++ cannot take: unknown at once, with the reason, the property not read
+        path = os.path.join(self.dir.name, "sin.onnx")
+        network(path, activation="Sin")
+        instance = nn_verify.load(path, os.path.join(self.dir.name, "missing.vnnlib"))
+        self.assertIsNone(instance.network)
+        self.assertIsNone(instance.prop)
+        result = nn_verify.verify(instance, 10)
+        self.assertEqual(result.status, "unknown")
+        self.assertIn("Sin", result.stats["bounding"])
+
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
@@ -102,11 +114,11 @@ W1, B1 = RNG.standard_normal((16, 2)).astype(np.float32), RNG.standard_normal(16
 W2, B2 = RNG.standard_normal((2, 16)).astype(np.float32), RNG.standard_normal(2).astype(np.float32)
 
 
-def network(path):
-    """y = W2 relu(W1 x + b1) + b2 for x of shape (1, 2)."""
+def network(path, activation="Relu"):
+    """y = W2 relu(W1 x + b1) + b2 for x of shape (1, 2) (or another activation)."""
     nodes = [
         helper.make_node("Gemm", ["x", "W1", "b1"], ["h"], transB=1),
-        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node(activation, ["h"], ["r"]),
         helper.make_node("Gemm", ["r", "W2", "b2"], ["y"], transB=1),
     ]
     init = [numpy_helper.from_array(a, n) for n, a in (("W1", W1), ("b1", B1), ("W2", W2), ("b2", B2))]
