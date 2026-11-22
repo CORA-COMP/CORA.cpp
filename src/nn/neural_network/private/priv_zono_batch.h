@@ -8,9 +8,10 @@
 // factors are the input's and every error generator is a factor of its own (ICLR 2026, Sec. 3),
 // so constraints on the output are constraints on the input. A ReLU takes CORALean's line, sigmoid
 // and tanh CORA's "bounds" or CORALean's "singh". splits (B, s) hold signed neuron ids of earlier
-// splits (-id: at least 0, +id: at most 0, 0: none), which clamp the bounds. On the lean backend
-// every sum nests to the right, as CORALean's: the sets are the oracle's bit for bit. The exact
-// F-radius gradient (exact_backprop) passes back through the slopes, offsets and errors too.
+// splits (-id: at least 0, +id: at most 0, 0: none), which clamp the bounds. On lean every sum
+// nests to the right, as CORALean's (bit for bit). One reverse pass gives the exact F-radius
+// gradient (exact_backprop) and a margin's gradient in free ReLU slopes alpha; CROWN's backward
+// bound runs over the recorded bounds of a crossing ReLU (its chord, a slope through 0).
 //
 // Syntax:   ZonoNet net(nn, q0, dn, "bounds", "length");   auto in = net.input_zonotope(x, r);
 //           ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true);
@@ -22,7 +23,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -35,6 +36,8 @@
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora {
+
+// The sets ----------------------------------------------------------------------------------------
 
 /// What an activation layer saw and made, for the constraints and heuristics of verify: its input
 /// set, the unclamped bounds, the error radius, the output set and the neurons with a slot.
@@ -89,20 +92,43 @@ class ZonoNet {
 
     /// The output of the batch: every linear layer exactly, every activation by its line, the
     /// errors in the slots and the rest in dr. layer_sens orders the slots ("sensitivity*length").
+    /// alpha (per layer, (B, n) or undefined) holds a ReLU's slope where it crosses zero.
     ZonoPropagation forward(const Tensor &c, const Tensor &dr, const Tensor &G,
                             const Tensor &splits, const std::vector<Tensor> *layer_sens,
-                            bool record) const;
+                            bool record, const std::vector<Tensor> *alpha = nullptr) const;
 
     /// The bounds with the clamps of earlier splits (CORA's aux_setLayerBoundsFromPreviousSplits).
     std::pair<Tensor, Tensor> clamp(int64_t first_id, const Tensor &l, const Tensor &u,
                                     const Tensor &splits) const;
 };
 
+// Gradients and bounds ----------------------------------------------------------------------------
+
 /// The F-radius sqrt(sum G^2)'s gradient in each generator's value (the input's, every slot's):
 /// exact (CORA's exact_backprop) through the lines, else the slopes held, |G_g|^2 / (v_g F).
 /// Sets the records' grad and returns the input's (B, q0).
 Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const ZonoNet &net,
                            const Tensor &splits, bool exact);
+
+/// The gradient in the ReLU slopes alpha (per layer, 0 off the crossing) of a margin whose partial
+/// derivatives in the output's c, G and dr are the seeds (g_dr undefined without dr), exact through
+/// the bounds of the later layers.
+std::vector<Tensor> priv_alpha_gradients(const ZonoPropagation &out, const ZonoNet &net,
+                                         const Tensor &splits, const std::vector<Tensor> &alpha,
+                                         const Tensor &g_c, const Tensor &g_gen,
+                                         const Tensor &g_dr);
+
+/// The ReLU slopes of a recorded propagation's lines, u / (u - l) at the clamped bounds where a
+/// neuron crosses zero (the start of the optimization), per layer; undefined for the others.
+std::vector<Tensor> priv_alpha_start(const ZonoPropagation &out, const ZonoNet &net,
+                                     const Tensor &splits);
+
+/// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
+/// with each activation's linear bounds at the record's clamped bounds: a ReLU's slope alpha (else
+/// CROWN's 0 or 1), a sigmoid or tanh between the zonotope line's two parallels.
+Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
+                           const Tensor &x, const Tensor &rad, const Tensor &rows,
+                           const std::vector<Tensor> *alpha = nullptr);
 
 /// The line of CORA's poly_method "bounds" (aux_imgEncBatch) or CORALean's "singh" over [l, u].
 PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &u,

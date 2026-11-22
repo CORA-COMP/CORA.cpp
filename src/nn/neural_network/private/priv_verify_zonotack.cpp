@@ -10,7 +10,8 @@
 // to that box and propagated again (refinement_max_iter - 1 times). An empty child is verified.
 // The three repairs of CORA's unsound steps are options (on): project_stale_factors,
 // drop_dummy_duplicates, remember_point_splits_only (docs/nn_verification.md). Running out of
-// memory takes fewer ReLU rows, then half the batch (CORA's catch).
+// memory takes fewer ReLU rows, then half the batch (CORA's catch). "zonotope-alpha" also
+// optimizes the ReLU slopes of the open sets in the check, backward_bound adds CROWN's bound.
 //
 // See also: priv_zono_batch.h, priv_verify.h, docs/nn_verification.md
 //
@@ -18,7 +19,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -55,6 +56,16 @@ std::vector<int64_t> aux_rest(int64_t n, const std::vector<int64_t> &taken) {
         rest.push_back(i);
     }
     return rest;
+}
+
+/// The tensor x with its rows at the sorted indices `rows` replaced by those of v.
+Tensor aux_put_rows(const Tensor &x, const std::vector<int64_t> &rows, const Tensor &v) {
+    const std::vector<int64_t> others = aux_rest(x.shape()[0], rows);
+    std::vector<int64_t> order = rows;
+    order.insert(order.end(), others.begin(), others.end());
+    std::vector<int64_t> inverse(order.size());
+    for (std::size_t i = 0; i < order.size(); ++i) inverse[std::size_t(order[i])] = int64_t(i);
+    return Tensor::concat({v, x.take(others, 0)}, 0).take(inverse, 0);
 }
 
 /// The flat indices of the set entries of a 0/1 tensor.
@@ -234,7 +245,9 @@ class StepTimer {
 /// CORA's verify: the zonotopes of priv_zono_batch, refined in the latent space.
 class ConZonotopeBounding : public Bounding {
   public:
-    explicit ConZonotopeBounding(const NnVerifyOptions &o) : o_(o) {}
+    /// alpha: the check also optimizes the ReLU slopes (the bounding "zonotope-alpha").
+    explicit ConZonotopeBounding(const NnVerifyOptions &o, bool alpha = false)
+        : o_(o), alpha_(alpha) {}
 
     bool prepare(NnProblem &problem) override;
     std::string branch_and_bound(NnProblem &problem, double deadline,
@@ -255,6 +268,9 @@ class ConZonotopeBounding : public Bounding {
     Step aux_iteration(const Tensor &xi, const Tensor &ri, const Tensor &ci, const Tensor &si);
     Tensor aux_margins(const ZonoPropagation &out) const;
     Tensor aux_excluded(const ZonoPropagation &out, const Tensor &cases) const;
+    Tensor aux_excluded_lower(const Tensor &lower, const Tensor &cases) const;
+    Tensor aux_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
+                              const Tensor &si, const Tensor &excluded) const;
     Artifacts aux_artifacts(const Tensor &xi, const Tensor &ri, const Tensor &si) const;
     Tensor aux_input_dims(const Tensor &xi, const Tensor &ri, const Artifacts &art) const;
     std::pair<Tensor, Tensor> aux_zonotack_candidates(const Tensor &cx, const Tensor &Gx,
@@ -264,8 +280,10 @@ class ConZonotopeBounding : public Bounding {
     bool aux_falsify(const Tensor &xi, const Tensor &ri, const Tensor &ci, const Artifacts &art,
                      const Tensor &excluded);
     // the constraints and the refinement
-    SplitRows aux_split_constraints(const Tensor &xi, const Tensor &ri, const Tensor &si,
-                                    const Artifacts &art) const;
+    SplitRows aux_split_constraints(const Tensor &xi, const Tensor &ri, const Tensor &ci,
+                                    const Tensor &si, const Artifacts &art) const;
+    Tensor aux_look_ahead(const Tensor &xi, const Tensor &ri, const Tensor &ci, const Tensor &si,
+                          const Artifacts &art, const Tensor &score, int64_t k) const;
     std::pair<Tensor, Tensor> aux_relu_constraints(const Tensor &si, const Artifacts &art) const;
     std::pair<Children, int64_t> aux_refine(const Tensor &ci, const Tensor &si,
                                             const Artifacts &art, const Tensor &excluded,
@@ -288,6 +306,7 @@ class ConZonotopeBounding : public Bounding {
     }
 
     NnVerifyOptions o_;
+    bool alpha_ = false;
     // the problem, the network and the polytopes as rows
     NnProblem *problem_ = nullptr;
     std::unique_ptr<ZonoNet> net_;
@@ -342,10 +361,77 @@ Tensor ConZonotopeBounding::aux_margins(const ZonoPropagation &out) const {
 }
 
 Tensor ConZonotopeBounding::aux_excluded(const ZonoPropagation &out, const Tensor &cases) const {
-    const Tensor decided =
-        aux_margins(out).greater(out.c.full_like({1}, o_.verified_margin)).any(2);
+    return aux_excluded_lower(aux_margins(out), cases);
+}
+
+Tensor ConZonotopeBounding::aux_excluded_lower(const Tensor &lower, const Tensor &cases) const {
+    const Tensor decided = lower.greater(lower.full_like({1}, o_.verified_margin)).any(2);
     const Tensor other = cases.expand_dims(1).not_equal(poly_case_.expand_dims(0));
     return decided.maximum(other);
+}
+
+// The optimized slopes ----------------------------------------------------------------------------
+
+Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &ri_,
+                                               const Tensor &ci_, const Tensor &si_,
+                                               const Tensor &excluded_) const {
+    const ZonoNet &net = *net_;
+    const Tensor A = A_.reshape({P_ * K_, A_.shape()[2]}), abs_a = A.abs();
+    // the open sets; a set leaves the loop once every polytope of its case is excluded
+    Tensor ci = ci_, si = si_, excluded = excluded_;
+    std::vector<int64_t> rows(static_cast<std::size_t>(xi_.shape()[0]));
+    for (std::size_t i = 0; i < rows.size(); ++i) rows[i] = int64_t(i);
+    Tensor result = excluded_;
+    ZonoInput in = net.input_zonotope(xi_, ri_);
+    ZonoPropagation out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
+    std::vector<Tensor> alpha = priv_alpha_start(out, net, si), m1(alpha.size()), m2(alpha.size());
+    constexpr double kB1 = 0.9, kB2 = 0.999;
+    for (int64_t t = 1; t <= o_.alpha_iterations && now_seconds() < deadline_; ++t) {
+        // the ascent of the sum over the open polytopes of their best row's lower bound
+        const Tensor lower = aux_margins(out);
+        const int64_t B = lower.shape()[0];
+        const Tensor best =
+            aux_onehot(lower.argmax(2), K_).multiply((1.0 - excluded).expand_dims(-1));
+        const Tensor w = best.reshape({B, P_ * K_});
+        const Tensor S = out.G.matmul(AT_).sign().multiply(w.expand_dims(1));
+        const std::vector<Tensor> g =
+            priv_alpha_gradients(out, net, si, alpha, w.matmul(A), S.matmul(A).negative(),
+                                 out.dr.defined() ? w.matmul(abs_a).negative() : Tensor());
+        // Adam, projected onto [0, 1]
+        const double c1 = 1.0 - std::pow(kB1, double(t)), c2 = 1.0 - std::pow(kB2, double(t));
+        for (std::size_t k = 0; k < alpha.size(); ++k) {
+            if (!g[k].defined()) continue;
+            m1[k] = m1[k].defined() ? m1[k] * kB1 + g[k] * (1.0 - kB1) : g[k] * (1.0 - kB1);
+            const Tensor g2 = g[k].square() * (1.0 - kB2);
+            m2[k] = m2[k].defined() ? m2[k] * kB2 + g2 : g2;
+            const Tensor step = (m1[k] / c1).divide((m2[k] / c2).sqrt() + numerics::kAdamEpsilon);
+            alpha[k] = (alpha[k] + step * o_.alpha_step_size).maximum(0.0).minimum(1.0);
+        }
+        // every bound is sound: a polytope excluded once stays excluded
+        out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha);
+        excluded = excluded.maximum(aux_excluded(out, ci));
+        result = aux_put_rows(result, rows, excluded);
+        const std::vector<int64_t> open = aux_where(1.0 - excluded.min(1));
+        if (open.empty()) break;
+        if (int64_t(open.size()) == B) continue;
+        // the open sets only, from here
+        std::vector<int64_t> kept;
+        for (const int64_t i : open) kept.push_back(rows[std::size_t(i)]);
+        rows = kept;
+        excluded = excluded.take(open, 0);
+        ci = ci.take(open, 0);
+        si = si.take(open, 0);
+        in = {in.c.take(open, 0), in.dr.defined() ? in.dr.take(open, 0) : Tensor(),
+              in.G.take(open, 0), in.dims.take(open, 0), in.values.take(open, 0)};
+        for (std::size_t k = 0; k < alpha.size(); ++k) {
+            if (!alpha[k].defined()) continue;
+            alpha[k] = alpha[k].take(open, 0);
+            if (m1[k].defined()) m1[k] = m1[k].take(open, 0);
+            if (m2[k].defined()) m2[k] = m2[k].take(open, 0);
+        }
+        out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha);
+    }
+    return result;
 }
 
 // The queue ---------------------------------------------------------------------------------------
@@ -466,9 +552,33 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
     std::vector<int64_t> open;
     {
         const StepTimer timer(stats_, "check_seconds");
+        // the output zonotope, recorded for the backward bound
         const ZonoInput in = net.input_zonotope(xi_, ri_);
-        excluded_all = aux_excluded(net.forward(in.c, in.dr, in.G, si_, nullptr, false), ci_);
+        const ZonoPropagation out = net.forward(in.c, in.dr, in.G, si_, nullptr, o_.backward_bound);
+        if (o_.backward_bound) {
+            // the better of the zonotope's and CROWN's lower bound of every row
+            const int64_t B = xi_.shape()[0];
+            const Tensor crown =
+                priv_backward_lower(out, net, si_, xi_, ri_, AT_.matrix_transpose()) -
+                b_.reshape({P_ * K_});
+            const Tensor lower = aux_margins(out).maximum(crown.reshape({B, P_, K_}));
+            excluded_all = aux_excluded_lower(lower, ci_);
+        } else {
+            excluded_all = aux_excluded(out, ci_);
+        }
         open = aux_where(1.0 - excluded_all.min(1));
+    }
+    // 1b. the open sets again with optimized ReLU slopes ("zonotope-alpha")
+    if (alpha_ && !open.empty() && o_.alpha_iterations > 0) {
+        const StepTimer timer(stats_, "alpha_seconds");
+        const Tensor ex =
+            aux_alpha_excluded(xi_.take(open, 0), ri_.take(open, 0), ci_.take(open, 0),
+                               si_.take(open, 0), excluded_all.take(open, 0));
+        excluded_all = aux_put_rows(excluded_all, open, ex);
+        // the sets the slopes verified
+        const std::size_t before = open.size();
+        open = aux_where(1.0 - excluded_all.min(1));
+        (*stats_)["alpha_verified"] += double(before - open.size());
     }
     step.verified = xi_.shape()[0] - int64_t(open.size());
     const auto empty = [&] {
@@ -511,7 +621,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
     std::pair<Tensor, Tensor> relu_rows;
     {
         const StepTimer timer(stats_, "constraints_seconds");
-        split = aux_split_constraints(xi, ri, si, art);
+        split = aux_split_constraints(xi, ri, ci, si, art);
         relu_rows = aux_relu_constraints(si, art);
     }
     auto [children, n_empty] =
@@ -622,7 +732,8 @@ bool ConZonotopeBounding::aux_falsify(const Tensor &xi, const Tensor &ri, const 
 // The constraints ---------------------------------------------------------------------------------
 
 SplitRows ConZonotopeBounding::aux_split_constraints(const Tensor &xi, const Tensor &ri,
-                                                     const Tensor &si, const Artifacts &art) const {
+                                                     const Tensor &ci, const Tensor &si,
+                                                     const Artifacts &art) const {
     const ZonoNet &net = *net_;
     const int64_t B = xi.shape()[0], q = net.q, pieces = o_.num_splits;
     std::vector<Tensor> rows, offsets, ids, dummy;
@@ -638,7 +749,10 @@ SplitRows ConZonotopeBounding::aux_split_constraints(const Tensor &xi, const Ten
                 priv_compute_heuristic(o_.neuron_split_heuristic, in, si, rec.first_id, true));
         }
         scores.push_back(xi.full_like({B, k}, -1.0));
-        const Tensor top = Tensor::concat(scores, 1).topk(k, 1).second;
+        const Tensor all = Tensor::concat(scores, 1);
+        const Tensor top = heuristic(o_.neuron_split_heuristic).look_ahead
+                               ? aux_look_ahead(xi, ri, ci, si, art, all, k)
+                               : all.topk(k, 1).second;
         // the generator column, the pieces and the id of each chosen neuron, layer by layer
         Tensor R = xi.zeros_like({B, k, q}), off = xi.zeros_like({B, k, pieces - 1});
         Tensor nid = xi.zeros_like({B, k});
@@ -692,6 +806,51 @@ SplitRows ConZonotopeBounding::aux_split_constraints(const Tensor &xi, const Ten
                 xi.zeros_like({B, 0}), xi.zeros_like({B, 0})};
     return {Tensor::concat(rows, 1), Tensor::concat(offsets, 1), Tensor::concat(ids, 1),
             Tensor::concat(dummy, 1)};
+}
+
+Tensor ConZonotopeBounding::aux_look_ahead(const Tensor &xi, const Tensor &ri, const Tensor &ci,
+                                           const Tensor &si, const Artifacts &art,
+                                           const Tensor &score, int64_t k) const {
+    const int64_t B = xi.shape()[0], cols = score.shape()[1];
+    const int64_t C = std::min(std::max(k, o_.look_ahead_candidates), cols);
+    const Tensor cand = score.topk(C, 1).second;
+    // the neuron id of every column of the scores (0 for the padding columns)
+    std::vector<Tensor> id_cols;
+    for (const ZonoLayerRecord &rec : art.out.layers)
+        id_cols.push_back(rec.l.arange_like(rec.l.shape()[1]) + double(rec.first_id));
+    id_cols.push_back(xi.zeros_like({k}));
+    const Tensor all_ids = Tensor::concat(id_cols, 0).reshape({1, cols}).broadcast_to({B, cols});
+    const Tensor ids = all_ids.take_along_axis(cand, 1);
+    // each candidate's children, at least 0 (-id) and at most 0 (+id), other bounds held (FSB)
+    const Tensor sides = Tensor::concat({ids.negative(), ids}, 1).reshape({B * 2 * C, 1});
+    std::vector<int64_t> each;
+    for (int64_t i = 0; i < B; ++i)
+        for (int64_t j = 0; j < 2 * C; ++j) each.push_back(i);
+    ZonoPropagation light;
+    for (const ZonoLayerRecord &rec : art.out.layers) {
+        ZonoLayerRecord r;
+        r.index = rec.index;
+        r.first_id = rec.first_id;
+        r.l = rec.l.take(each, 0);
+        r.u = rec.u.take(each, 0);
+        light.layers.push_back(r);
+    }
+    const Tensor child_splits = Tensor::concat({si.take(each, 0), sides}, 1);
+    const Tensor lower = (priv_backward_lower(light, *net_, child_splits, xi.take(each, 0),
+                                              ri.take(each, 0), AT_.matrix_transpose()) -
+                          b_.reshape({P_ * K_}))
+                             .reshape({B, 2 * C, P_, K_});
+    // a child's objective: its worst polytope of the case, by the polytope's best row
+    const Tensor other = ci.expand_dims(1).not_equal(poly_case_.expand_dims(0)).expand_dims(1);
+    const Tensor best = Tensor::where(other, lower.full_like({1}, kInf), lower.max(3));
+    const Tensor child = best.min(2);
+    Tensor value = child.slice(1, 0, C).minimum(child.slice(1, C, 2 * C));
+    // a padding column or a neuron the filter ruled out is never preferred
+    const Tensor allowed =
+        score.take_along_axis(cand, 1).isfinite().multiply(ids.not_equal(ids.zeros_like()));
+    value = Tensor::where(allowed, value, value.full_like({1}, -kInf));
+    const Tensor order = value.argsort(1, true).slice(1, 0, k);
+    return cand.take_along_axis(order, 1);
 }
 
 std::pair<Tensor, Tensor> ConZonotopeBounding::aux_relu_constraints(const Tensor &si,
@@ -989,6 +1148,9 @@ class ZonotackAttack : public Attack {
 void priv_register_zonotack() {
     register_bounding("conzonotope", [](const NnVerifyOptions &o) {
         return std::make_unique<ConZonotopeBounding>(o);
+    });
+    register_bounding("zonotope-alpha", [](const NnVerifyOptions &o) {
+        return std::make_unique<ConZonotopeBounding>(o, true);
     });
     register_attack("zonotack",
                     [](const NnVerifyOptions &o) { return std::make_unique<ZonotackAttack>(o); });

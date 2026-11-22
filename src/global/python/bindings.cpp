@@ -4656,7 +4656,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
     CORA_VERIFY_FIELD(seed, "The seed of the restarts");
     // the bounding and its splits
-    CORA_VERIFY_FIELD(bounding_method, "'zonotope' or 'conzonotope' (CORA's verify)");
+    CORA_VERIFY_FIELD(bounding_method, "'zonotope', 'conzonotope' or 'zonotope-alpha'");
     CORA_VERIFY_FIELD(input_split_heuristic, "CORA's input_split_heuristic");
     CORA_VERIFY_FIELD(neuron_split_heuristic, "CORA's neuron_split_heuristic, or 'none'");
     CORA_VERIFY_FIELD(num_splits, "The pieces per split");
@@ -4686,6 +4686,10 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(mini_batch_size, "The sets per batch at most");
     CORA_VERIFY_FIELD(exact_backprop, "CORA's exact_backprop: the gradient through the lines");
     CORA_VERIFY_FIELD(fourier_motzkin_order, "'cora' (fast) or 'coralean' (the oracle's)");
+    CORA_VERIFY_FIELD(backward_bound, "The check also takes CROWN's backward bound");
+    CORA_VERIFY_FIELD(look_ahead_candidates, "The candidates of the look-ahead heuristic fsb");
+    CORA_VERIFY_FIELD(alpha_iterations, "zonotope-alpha: Adam steps on the ReLU slopes");
+    CORA_VERIFY_FIELD(alpha_step_size, "zonotope-alpha: Adam's step on the slopes");
     CORA_VERIFY_FIELD(project_stale_factors, "Repair: the split rows keep the input factors");
     CORA_VERIFY_FIELD(drop_dummy_duplicates, "Repair: a dummy split drops its duplicate only");
     CORA_VERIFY_FIELD(remember_point_splits_only, "Repair: split bounds at a point center only");

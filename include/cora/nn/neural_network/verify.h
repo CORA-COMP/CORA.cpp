@@ -18,7 +18,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -72,7 +72,7 @@ struct NnVerifyOptions {
     int64_t max_candidates = 8;                     ///< confirm checks per attack step
     uint64_t seed = 0;
     // the bounding and its splits
-    std::string bounding_method = "zonotope"; ///< or "conzonotope" (CORA's verify)
+    std::string bounding_method = "zonotope"; ///< "conzonotope" (CORA's verify), "zonotope-alpha"
     std::string input_split_heuristic = "most-sensitive-input-radius";
     std::string neuron_split_heuristic = "none";
     int64_t num_splits = 2;                      ///< pieces per split
@@ -106,6 +106,13 @@ struct NnVerifyOptions {
     /// "cora": a row's bound of a factor is the row's sum minus its term (fast); "coralean": the
     /// sum of the other terms in CORALean's order (contractHalfspace, bit-exact on lean).
     std::string fourier_motzkin_order = "cora";
+    /// The check also takes CROWN's backward bound over the same relaxation, the better of the two.
+    bool backward_bound = false;
+    /// The candidates of a look-ahead neuron split heuristic ("fsb") per set.
+    int64_t look_ahead_candidates = 8;
+    // the bounding "zonotope-alpha": CORA's verify whose check optimizes the ReLU slopes
+    int64_t alpha_iterations = 10; ///< projected Adam steps on the open sets' margins
+    double alpha_step_size = 0.3;  ///< Adam's step on the slopes in [0, 1]
     // the repairs of CORA's unsound steps (docs/nn_verification.md), on by default
     bool project_stale_factors = true; ///< the split rows keep the input factors after one pass
     bool drop_dummy_duplicates = true; ///< a dummy split drops its duplicate child only
@@ -214,6 +221,9 @@ struct HeuristicInputs {
 struct Heuristic {
     std::function<Tensor(const HeuristicInputs &)> score;
     bool sens = false, grad = false;
+    /// As a neuron split heuristic: the score filters look_ahead_candidates neurons, and the one
+    /// whose two children have the best backward bound is split (FSB, filtered smart branching).
+    bool look_ahead = false;
 };
 
 /// An input split heuristic of the zonotope bounding: the dimension to split per box (B, n).

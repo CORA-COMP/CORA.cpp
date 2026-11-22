@@ -9,7 +9,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -84,13 +84,22 @@ void options_and_strategies() {
         if (field == "position") w.neuron_split_position = "x";
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "an unknown " + field);
     }
+    // the counts of Phase 2: the slopes' steps, their step size, the look-ahead candidates
+    for (const std::string field : {"alpha_iterations", "alpha_step_size", "candidates"}) {
+        NnVerifyOptions w = vnncomp_options("x");
+        w.bounding_method = "zonotope-alpha";
+        if (field == "alpha_iterations") w.alpha_iterations = -1;
+        if (field == "alpha_step_size") w.alpha_step_size = 0;
+        if (field == "candidates") w.look_ahead_candidates = 0;
+        check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "a wrong " + field);
+    }
     vnncomp_options("cora_2024").validate();
     const NnVerifyOptions cora = vnncomp_options("cora_2024"), safe = vnncomp_options("safenlp");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");
-    check(heuristic_names().size() == 10 && attack_names().size() >= 4 &&
-              bounding_names().size() >= 2 && input_split_heuristic_names().size() >= 2,
+    check(heuristic_names().size() == 11 && attack_names().size() >= 4 &&
+              bounding_names().size() >= 3 && input_split_heuristic_names().size() >= 2,
           "the built-ins are registered");
     // a registered attack replaces the search
     struct Fixed : Attack {

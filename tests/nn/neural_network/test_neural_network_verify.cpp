@@ -17,7 +17,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -82,7 +82,9 @@ double aux_least_output(const NeuralNetwork &nn, Rng &rng, int64_t n, double lo,
 
 /// The options of a small run: the bounding, dtype float64 on lean (which has no float32).
 NnVerifyOptions aux_options(const std::string &bounding, const std::string &b) {
-    NnVerifyOptions o = bounding == "conzonotope" ? vnncomp_options("test") : NnVerifyOptions{};
+    NnVerifyOptions o = bounding == "zonotope" ? NnVerifyOptions{} : vnncomp_options("test");
+    o.bounding_method = bounding;
+    o.alpha_iterations = 5;
     if (b == "lean") o.dtype = DType::float64;
     o.pgd_restarts = 8;
     o.pgd_steps = 20;
@@ -96,7 +98,7 @@ void verdicts(const std::string &b) {
     for (const Activation a : {Activation::relu, Activation::sigmoid, Activation::tanh}) {
         const NeuralNetwork nn = aux_network(rng, {3, 8, 8, 2}, a);
         const double least = aux_least_output(nn, rng, 3, -0.2, 0.2);
-        for (const std::string bounding : {"conzonotope", "zonotope"}) {
+        for (const std::string bounding : {"conzonotope", "zonotope", "zonotope-alpha"}) {
             NnVerifyOptions o = aux_options(bounding, b);
             o.falsification_order = "bound-first";
             const NnVerifyResult safe = nn.verify(aux_below(3, 2, -0.2, 0.2, least - 1.0), 20, o);
@@ -106,6 +108,20 @@ void verdicts(const std::string &b) {
             check(unsafe.status == "sat" && unsafe.y.size() == 2 && unsafe.y[0] <= least + 0.01,
                   b + " " + bounding + ": around the least output is sat, with its output");
         }
+    }
+    // the look-ahead neuron splits (fsb) and the backward bound, on a ReLU network
+    {
+        const NeuralNetwork nn = aux_network(rng, {3, 8, 8, 2}, Activation::relu);
+        const double least = aux_least_output(nn, rng, 3, -0.2, 0.2);
+        NnVerifyOptions o = aux_options("conzonotope", b);
+        o.falsification_order = "bound-first";
+        o.neuron_split_heuristic = "fsb";
+        o.num_neuron_splits = 1;
+        o.backward_bound = true;
+        NnVerifyResult r = nn.verify(aux_below(3, 2, -0.2, 0.2, least - 0.05), 20, o);
+        check(r.status == "unsat", b + ": fsb splits verify below the outputs");
+        r = nn.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
+        check(r.status == "sat", b + ": fsb splits falsify around the least output");
     }
     // every attack finds an unsafe set that holds most of the box
     const NeuralNetwork nn = aux_network(rng, {2, 6, 2}, Activation::relu);
@@ -200,6 +216,125 @@ void frad_gradients(const std::string &b) {
     }
 }
 
+/// The lower bound of a y over the output of set i, the slopes alpha, and the sampled least.
+double aux_alpha_lower(const ZonoNet &net, const ZonoInput &in, const Tensor &splits,
+                       const std::vector<Tensor> &alpha, const Tensor &a, int64_t i) {
+    const ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, false, &alpha);
+    Tensor lower = out.c.matmul(a) - out.G.matmul(a).abs().sum(1);
+    if (out.dr.defined()) lower = lower - out.dr.matmul(a.abs());
+    return lower.data()[std::size_t(i)];
+}
+
+/// zonotope-alpha's reverse pass is the central difference of a lower bound in every slope, with
+/// splits and an interval center; every slope in [0, 1] bounds the sampled outputs.
+void alpha_gradients(const std::string &b) {
+    Rng rng(13);
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
+                 r = Tensor({{0.4, 0.3, 0.5}, {0.25, 0.4, 0.3}});
+    const Tensor splits = Tensor({{-3.0, 5.0}, {0.0, 2.0}}), a = Tensor({{1.0}, {-0.7}});
+    const NeuralNetwork nn = aux_network(rng, {3, 6, 5, 2}, Activation::relu);
+    for (const double slots : {2.0, std::numeric_limits<double>::infinity()}) {
+        const ZonoNet net(nn, 3, slots, "bounds", "length");
+        // the start of the slopes, then random ones in (0.1, 0.9)
+        const ZonoInput in = net.input_zonotope(x, r);
+        const ZonoPropagation first = net.forward(in.c, in.dr, in.G, splits, nullptr, true);
+        std::vector<Tensor> alpha = priv_alpha_start(first, net, splits);
+        for (Tensor &t : alpha) {
+            if (!t.defined()) continue;
+            std::vector<double> v(t.data().size());
+            rng.uniform(v.data(), v.size(), 0.1, 0.9);
+            t = Tensor::like(t, v, t.shape());
+        }
+        // the seeds of the lower bound of a y, then the gradient in every slope
+        const ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true, &alpha);
+        const Tensor at = a.matrix_transpose();
+        const Tensor S = out.G.matmul(a).sign();
+        const std::vector<Tensor> g = priv_alpha_gradients(
+            out, net, splits, alpha, at.broadcast_to({2, 2}), S.matmul(at).negative(),
+            out.dr.defined() ? at.abs().broadcast_to({2, 2}).negative() : Tensor());
+        // the difference quotient in each slope of each set
+        bool close = true;
+        int64_t compared = 0;
+        for (std::size_t k = 0; k < alpha.size(); ++k) {
+            if (!alpha[k].defined()) continue;
+            const std::vector<double> gk = g[k].data(), ak = alpha[k].data();
+            for (std::size_t j = 0; j < ak.size(); ++j) {
+                const double h = 1e-6;
+                std::vector<Tensor> plus = alpha, minus = alpha;
+                std::vector<double> e(ak.size(), 0.0);
+                e[j] = h;
+                plus[k] = alpha[k] + Tensor::like(alpha[k], e, alpha[k].shape());
+                minus[k] = alpha[k] - Tensor::like(alpha[k], e, alpha[k].shape());
+                // the set of the slope, its lower bound up and down
+                const auto i = int64_t(j) / alpha[k].shape()[1];
+                const double fd = (aux_alpha_lower(net, in, splits, plus, a, i) -
+                                   aux_alpha_lower(net, in, splits, minus, a, i)) /
+                                  (2 * h);
+                close = close && std::abs(fd - gk[j]) <= 1e-5 * std::max(1.0, std::abs(fd));
+                compared += gk[j] != 0.0 ? 1 : 0;
+            }
+        }
+        check(close && compared > 0, b + ": the slopes' gradient is the difference quotient");
+        // the sampled outputs of set 0 lie above the lower bound, at every slope
+        std::vector<double> pts(std::size_t(2000 * 3));
+        rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+        const Tensor xs =
+            Tensor::from_data(pts, {2000, 3}).multiply(r.slice(0, 0, 1)) + x.slice(0, 0, 1);
+        // the points that respect the splits of set 0 (neuron 3 at least 0, neuron 5 at most 0)
+        const Tensor h1 = xs.matmul(net.W[0]) + net.b[0];
+        const std::vector<double> hv = h1.data(), y = nn.evaluate(xs).matmul(a).data();
+        double least = std::numeric_limits<double>::infinity();
+        for (std::size_t p = 0; p < 2000; ++p)
+            if (hv[p * 6 + 2] >= 0 && hv[p * 6 + 4] <= 0) least = std::min(least, y[p]);
+        check(aux_alpha_lower(net, in, splits, alpha, a, 0) <= least,
+              b + ": the slopes' zonotope holds the sampled outputs");
+    }
+}
+
+/// CROWN's backward bound holds the sampled outputs of the boxes, with splits, for every
+/// activation and with given ReLU slopes; on a box around a point it is close to the output.
+void backward_bounds(const std::string &b) {
+    Rng rng(17);
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
+                 r = Tensor({{0.4, 0.3, 0.5}, {0.25, 0.4, 0.3}});
+    const Tensor splits = Tensor({{-3.0, 5.0}, {0.0, 0.0}}),
+                 rows = Tensor({{1.0, -0.7}, {-0.3, 1.0}});
+    std::vector<double> pts(std::size_t(3000 * 3));
+    rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+    for (const Activation a : {Activation::relu, Activation::sigmoid, Activation::tanh}) {
+        const NeuralNetwork nn = aux_network(rng, {3, 6, 5, 2}, a);
+        const ZonoNet net(nn, 3, 2, "bounds", "length");
+        const ZonoInput in = net.input_zonotope(x, r);
+        const ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true);
+        std::vector<Tensor> half;
+        if (a == Activation::relu) half = priv_alpha_start(out, net, splits);
+        for (Tensor &t : half)
+            if (t.defined()) t = t.full_like(t.shape(), 0.5);
+        // CROWN's slopes, then the given ones (ReLU only)
+        for (const bool given : {false, true}) {
+            if (given && a != Activation::relu) continue;
+            const std::vector<double> lower =
+                priv_backward_lower(out, net, splits, x, r, rows, given ? &half : nullptr).data();
+            bool holds = true;
+            for (int64_t i = 0; i < 2; ++i) {
+                const Tensor xs = Tensor::from_data(pts, {3000, 3}).multiply(r.slice(0, i, i + 1)) +
+                                  x.slice(0, i, i + 1);
+                const std::vector<double> hv = (xs.matmul(net.W[0]) + net.b[0]).data();
+                const std::vector<double> y =
+                    nn.evaluate(xs).matmul(rows.matrix_transpose()).data();
+                for (std::size_t p = 0; p < 3000; ++p) {
+                    // set 0 holds neuron 3 at least 0 and neuron 5 at most 0
+                    if (i == 0 && (hv[p * 6 + 2] < 0 || hv[p * 6 + 4] > 0)) continue;
+                    for (std::size_t j = 0; j < 2; ++j)
+                        holds = holds && lower[std::size_t(i) * 2 + j] <= y[p * 2 + j];
+                }
+            }
+            check(holds, b + ": CROWN's backward bound holds the sampled outputs" +
+                             (given ? " (slopes given)" : ""));
+        }
+    }
+}
+
 /// Fourier-Motzkin in both orders holds the feasible points, and the orders agree closely.
 void fourier_motzkin(const std::string &b) {
     Rng rng(9);
@@ -290,6 +425,8 @@ int main() {
         verdicts(b);
         batched_zonotopes(b);
         frad_gradients(b);
+        alpha_gradients(b);
+        backward_bounds(b);
         fourier_motzkin(b);
         switches(b);
     });

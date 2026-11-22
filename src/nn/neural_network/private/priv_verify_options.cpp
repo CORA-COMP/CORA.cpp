@@ -14,7 +14,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -105,6 +105,10 @@ void NnVerifyOptions::validate() const {
     aux_at_least("max_candidates", double(max_candidates), 1);
     aux_at_least("pgd_steps", double(pgd_steps), 1);
     aux_at_least("pgd_restarts", double(pgd_restarts), 1);
+    aux_at_least("alpha_iterations", double(alpha_iterations), 0);
+    aux_at_least("look_ahead_candidates", double(look_ahead_candidates), 1);
+    if (!(alpha_step_size > 0))
+        CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: alpha_step_size must be positive");
     if (!(attack_time_share >= 0 && attack_time_share <= 1))
         CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: attack_time_share must be in [0, 1]");
 }

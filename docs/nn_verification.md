@@ -66,9 +66,9 @@ name (`register_attack`, `register_bounding`, `register_heuristic`, `register_in
 | Option (`NnVerifyOptions`) | Interface | Built-ins |
 | --- | --- | --- |
 | `falsification_method` | `Attack::run(problem, deadline, rounds)` | `pgd`, `fgsm`, `center`, `zonotack` |
-| `bounding_method` | `Bounding::prepare`, `Bounding::branch_and_bound` | `zonotope`, `conzonotope` |
+| `bounding_method` | `Bounding::prepare`, `Bounding::branch_and_bound` | `zonotope`, `conzonotope`, `zonotope-alpha` |
 | `input_split_heuristic` | zonotope: `(problem, lo, hi, cases) -> dimension`; conzonotope: a `Heuristic` | `largest-radius`, `most-sensitive-input-radius`; CORA's ten |
-| `neuron_split_heuristic`, `relu_constraint_heuristic`, `input_generator_heuristic` | `Heuristic`: `score(l, u, er, sens, grad)` | CORA's ten (`computeHeuristic`) |
+| `neuron_split_heuristic`, `relu_constraint_heuristic`, `input_generator_heuristic` | `Heuristic`: `score(l, u, er, sens, grad)`, `look_ahead` | CORA's ten (`computeHeuristic`), `fsb` |
 
 CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradient`, `most-unstable`,
 `gap-sensitivity`, `product-sensitivity`, `centered-sensitivity`, `most-sensitive-approx-error`,
@@ -126,6 +126,16 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
   `|G_g|^2 / (v_g F)` for the row `g` of the value `v_g`. The input generators' heuristic
   (`num_init_gens` below the input dimension) takes the gradient through the interval propagation,
   written out.
+- **zonotope-alpha:** CORA's verify whose check runs `alpha_iterations` projected Adam steps on the
+  ReLU slopes of the open sets (from `u / (u - l)`), ascending the sum over the open polytopes of
+  their best row's lower bound. The gradient is a hand-written reverse pass (the one of
+  `exact_backprop`, seeded with the margins), exact through the bounds of the later layers; a ctest
+  checks it against the central difference. A set leaves the loop once it is verified.
+- **backward_bound:** the check also bounds every row by CROWN's backward pass over the input box and
+  takes the better of it and the zonotope's bound. Its cost is `(B, P K, n)` per layer, so it stays
+  cheap on wide layers.
+- **fsb:** the neuron split heuristic filters `look_ahead_candidates` neurons by zono-norm-gradient,
+  then splits the one whose worse child has the best backward bound (FSB's look-ahead).
 - **dual-iter:** `conzonotope_bounding_method` `dual-iter` tightens only the box of the inputs, which
   the refinement does not read (it rescales by the factor box), so it never decides; it is accepted
   and does the same as `fourier-motzkin`.
@@ -147,6 +157,14 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
 | dummy splits counted as verified (`isDummySplit`) | **no** | a set without an unstable neuron is not verified by having none; the flags are also tiled (`repmat`) over children ordered by `repelem` | repaired (`drop_dummy_duplicates`): the duplicate child is dropped, the other is refined |
 | a neuron split's bound under an interval center | **no** | the split hyperplane is at the interval's middle, so `x >= 0` does not follow on the child | repaired (`remember_point_splits_only`): the bound is remembered only at a point center |
 | single precision on the GPU | **no** (no rounding control) | CORA's `verify.m` casts to `single` | float64 bounds and `verified_margin`; the float64 re-check of the leaves is Phase 2 |
+
+Beyond CORA (Phase 2), every step sound for any choice it optimizes:
+
+| Step | Sound? | Evidence | Here |
+| --- | --- | --- | --- |
+| ReLU slope `alpha` in `[0, 1]` (`zonotope-alpha`) | yes, in the reals | `relu(x) - a x` lies in `[0, max(-a l, (1 - a) u)]` on `[l, u]` for `a` in `[0, 1]` (convex, 0 at 0); not formalized | every iteration's bound is a bound; a polytope excluded once stays excluded |
+| CROWN backward bound (`backward_bound`) | yes, in the reals | the chord above and a slope in `[0, 1]` through 0 below a crossing ReLU; the zonotope line's parallels for sigmoid/tanh; not formalized | float64, `verified_margin`, the clamped bounds of the zonotope |
+| FSB look-ahead (`fsb`) | no claim (it only picks the neuron) | the children are as for any neuron split | the backward bound of both children, the other bounds held |
 
 The repairs are options, on by default. `tests/nn/neural_network/test_neural_network_verify_witness.cpp`
 runs 60 random 2-input ReLU networks whose properties have unsafe inputs: with the repairs no verdict
