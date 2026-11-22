@@ -128,7 +128,7 @@ void NnVerifyOptions::validate() const {
 
 // CORA's presets ----------------------------------------------------------------------------------
 
-NnVerifyOptions vnncomp_options(const std::string &category) {
+NnVerifyOptions cora_vnncomp_options(const std::string &category) {
     detail::Entry entry;
     const std::string name = std::regex_replace(category, std::regex("[_-](20[0-9][0-9])$"), "");
     const double inf = std::numeric_limits<double>::infinity();
@@ -187,6 +187,20 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.num_neuron_splits = 1;
         o.mini_batch_size = 32;
     }
+    return o;
+}
+
+// The VNN-COMP preset -----------------------------------------------------------------------------
+
+NnVerifyOptions vnncomp_options(const std::string &category) {
+    detail::Entry entry;
+    const std::string name = std::regex_replace(category, std::regex("[_-](20[0-9][0-9])$"), "");
+    // CORA's preset, then Phase 2's bounds as measured on the dev sets (docs/nn_verification.md)
+    NnVerifyOptions o = cora_vnncomp_options(category);
+    o.bounding_method = "zonotope-alpha";
+    o.backward_bound = true;
+    // acasxu's few inputs: the zonotope's slopes, which move every later bound; else alpha-CROWN
+    o.alpha_method = name == "acasxu" ? "zonotope" : "crown";
     return o;
 }
 

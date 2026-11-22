@@ -4817,6 +4817,14 @@ void bind_verify(py::module_ &m) {
             return verify_options_of(vnncomp_options(category), kwargs);
         },
         py::arg("category"),
+        "The VNN-COMP preset of the benchmark (CORA's with Phase 2's bounds), with any field "
+        "given as a keyword");
+    m.def(
+        "cora_vnncomp_options",
+        [](const std::string &category, const py::kwargs &kwargs) {
+            return verify_options_of(cora_vnncomp_options(category), kwargs);
+        },
+        py::arg("category"),
         "CORA's getDefaultVNNCOMPoptions of the benchmark, with any field given as a keyword");
     m.def(
         "verify_strategies",
