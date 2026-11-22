@@ -276,6 +276,13 @@ class Ellipsoid : public ContSet {
     double tol_;
 };
 
+/// M * E maps, E + S sums (the default mode of plus), a point v translates; E - v translates by -v.
+inline Ellipsoid operator*(const Tensor &M, const Ellipsoid &E) { return E.linear_map(M); }
+inline Ellipsoid operator+(const Ellipsoid &E, const Ellipsoid &S) { return E.plus(S); }
+inline Ellipsoid operator+(const Ellipsoid &E, const Tensor &v) { return E.plus(v); }
+inline Ellipsoid operator+(const Tensor &v, const Ellipsoid &E) { return E.plus(v); }
+inline Ellipsoid operator-(const Ellipsoid &E, const Tensor &v) { return E.plus(v * -1.0); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

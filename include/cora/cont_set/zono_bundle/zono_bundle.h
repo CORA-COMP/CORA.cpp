@@ -226,6 +226,15 @@ class ZonoBundle : public ContSet {
     std::vector<Zonotope> Z_;
 };
 
+/// M * ZB maps, ZB + S sums, a point v translates; ZB - v translates by -v.
+inline ZonoBundle operator*(const Tensor &M, const ZonoBundle &ZB) { return ZB.linear_map(M); }
+inline ZonoBundle operator+(const ZonoBundle &ZB, const ZonoBundle &S) { return ZB.plus(S); }
+inline ZonoBundle operator+(const ZonoBundle &ZB, const Zonotope &Z) { return ZB.plus(Z); }
+inline ZonoBundle operator+(const ZonoBundle &ZB, const Interval &I) { return ZB.plus(I); }
+inline ZonoBundle operator+(const ZonoBundle &ZB, const Tensor &v) { return ZB.plus(v); }
+inline ZonoBundle operator+(const Tensor &v, const ZonoBundle &ZB) { return ZB.plus(v); }
+inline ZonoBundle operator-(const ZonoBundle &ZB, const Tensor &v) { return ZB.plus(v * -1.0); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -490,6 +490,8 @@ Interval operator+(const Interval &I, double s);
 inline Interval operator+(double s, const Interval &I) { return I + s; }
 inline Interval operator-(const Interval &I, const Interval &I2) { return I.minus(I2); }
 inline Interval operator-(const Interval &I, const Tensor &v) { return I.minus(v); }
+inline Interval operator-(const Interval &I, double s) { return I + -s; }
+inline Interval operator-(double s, const Interval &I) { return I.uminus() + s; }
 inline Interval operator-(const Tensor &v, const Interval &I) { return Interval::minus(v, I); }
 inline Interval operator/(const Interval &I, double d) { return I.divide(d); }
 inline bool operator<=(const Interval &I, const Interval &I2) { return I.less_equal(I2); }

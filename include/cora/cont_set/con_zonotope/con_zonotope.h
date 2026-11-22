@@ -423,6 +423,10 @@ class ConZonotope : public ContSet {
 // Operators, as CORA writes them: M * cz maps, s * cz scales, cz + S sums, a point v translates.
 inline ConZonotope operator*(const Tensor &M, const ConZonotope &cz) { return cz.linear_map(M); }
 inline ConZonotope operator+(const ConZonotope &cz, const ConZonotope &S) { return cz.plus(S); }
+inline ConZonotope operator+(const ConZonotope &cz, const Zonotope &Z) { return cz.plus(Z); }
+inline ConZonotope operator+(const Zonotope &Z, const ConZonotope &cz) { return cz.plus(Z); }
+inline ConZonotope operator+(const ConZonotope &cz, const Interval &I) { return cz.plus(I); }
+inline ConZonotope operator+(const Interval &I, const ConZonotope &cz) { return cz.plus(I); }
 inline ConZonotope operator+(const ConZonotope &cz, const Tensor &v) { return cz.plus(v); }
 inline ConZonotope operator+(const Tensor &v, const ConZonotope &cz) { return cz.plus(v); }
 inline ConZonotope operator-(const ConZonotope &cz, const Tensor &v) { return cz.plus(v * -1.0); }
