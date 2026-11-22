@@ -28,7 +28,6 @@ void empty_known(const std::string &b) {
           b + ": flagged, the radius 0 at the origin");
     check(C.center().shape() == Shape{3} && std::isnan(C.center().data()[0]),
           b + ": the center is NaN, as the empty box's");
-    check(Capsule::empty().dim() == 0, b + ": the dimension defaults to 0");
     check(!C.contains(test::vec({0.0, 0.0, 0.0})), b + ": it contains no point");
     check(!Capsule(vec({0.0, 0.0, 0.0})).is_empty(), b + ": a point is not empty");
     check(C.interval().is_empty(), b + ": its box is empty");

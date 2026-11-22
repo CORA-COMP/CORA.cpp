@@ -49,6 +49,9 @@ int main() {
               b + ": a constant joins c");
     });
 
+    // a polynomial zonotope has the method "all" only
+    check(test::raises([&] { known().compact("fast"); }, Error::no_specific_alg),
+          "compact: another method");
     ChecksScope off(false);
     check(known().compact().dim() == 2, "compact: valid with the checks off");
     return test::finish("poly_zonotope compact");

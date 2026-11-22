@@ -283,10 +283,6 @@ class Zonotope : public ContSet {
     /// would be unbounded). CORA's lift_ projects onto dims, the inverse permutation.
     Zonotope lift(int64_t N, const std::vector<int64_t> &dims) const;
 
-    /// An upper bound (...) of the norm (type 1, 2 or infinity) of the points: method "ub"
-    /// (default) is the norm of the box around the set; "exact" and "ub_convex" are not supported.
-    Tensor norm(double type = 2, const std::string &method = "ub") const;
-
     /// The distance from the center to the boundary () (the largest ball about the center in
     /// the set; 0 if the set is flat) and the nearest point of the boundary (n). Not a batch.
     std::pair<Tensor, Tensor> minnorm() const;

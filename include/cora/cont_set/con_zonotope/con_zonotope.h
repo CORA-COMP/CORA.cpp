@@ -96,7 +96,7 @@ class ConZonotope : public ContSet {
     /// The empty set of n dimensions (CORA's conZonotope.empty): no generators and the constraint
     /// 0 = 1, so that every operation on it stays an enclosure (CORA's has a center without
     /// columns, which and_ and cartProd_ mishandle; docs/cora-differences.md).
-    static ConZonotope empty(int64_t n = 0);
+    static ConZonotope empty(int64_t n);
 
     // Conversions ---------------------------------------------------------------------------------
 
@@ -429,6 +429,12 @@ inline ConZonotope operator+(const Interval &I, const ConZonotope &cz) { return 
 inline ConZonotope operator+(const ConZonotope &cz, const Tensor &v) { return cz.plus(v); }
 inline ConZonotope operator+(const Tensor &v, const ConZonotope &cz) { return cz.plus(v); }
 inline ConZonotope operator-(const ConZonotope &cz, const Tensor &v) { return cz.plus(v * -1.0); }
+
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline ConZonotope operator*(double s, const ConZonotope &S) {
+    return static_cast<const ContSet &>(S).times(s).as<ConZonotope>();
+}
+inline ConZonotope operator*(const ConZonotope &S, double s) { return s * S; }
 
 } // namespace cora
 

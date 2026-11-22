@@ -27,7 +27,6 @@ void empty_set_data() {
           "empty: dimension, no generators");
     check(close(E.A(), Tensor::ones({1, 0}), 0) && close(E.b(), {1}, 0),
           "empty: the constraint 0 = 1");
-    check(ConZonotope::empty().dim() == 0, "empty: the dimension 0 by default");
     check(E.interval().is_empty(), "empty: its box is empty");
     check(!E.is_full_dim(), "empty: it has no interior");
     check(!E.contains(vec({0.0, 0.0, 0.0})), "empty: it contains no point");

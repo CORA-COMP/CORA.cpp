@@ -4,7 +4,7 @@
 // the factors that no generator uses (CORA's methods "states" and "exponentMatrix"), and moves
 // the generators of exponent 0 to the center.
 //
-// Syntax:   S = pZ.compact();
+// Syntax:   S = pZ.compact();   S = pZ.compact("all", tol);
 // Inputs:   -
 // Outputs:  S - the same set in canonical form
 // See also: reduce
@@ -29,8 +29,12 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-PolyZonotope PolyZonotope::compact() const {
+PolyZonotope PolyZonotope::compact(const std::optional<std::string> &method, Tol tol) const {
     detail::Entry entry;
+    static_cast<void>(resolve_tol(entry, tol, c_.dtype(), "compact"));
+    CORA_CHECK(!method || *method == "all", Error::no_specific_alg, [&] {
+        return "compact: a polynomial zonotope has the method 'all' only, got '" + *method + "'";
+    });
     PolyZonotope folded = priv_fold_constants(*this);
     Exponents E = folded.exponents();
     std::vector<int64_t> id = folded.ids();

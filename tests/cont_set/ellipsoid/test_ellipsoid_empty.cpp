@@ -24,7 +24,7 @@ void empty_known(const std::string &b) {
     check(E.is_empty() && E.empty_mask().all() && E.Q().shape() == Shape{3, 3} &&
               E.q().shape() == Shape{3},
           b + ": flagged in the mask, the shapes keep n");
-    check(E.dim() == 3 && Ellipsoid::empty().dim() == 0, b + ": the dimension is n");
+    check(E.dim() == 3, b + ": the dimension is n");
     check(E.center().shape() == Shape{3} && std::isnan(E.center().data()[0]),
           b + ": the center is NaN");
     check(!E.is_full_dim() && E.is_bounded(), b + ": empty: no interior, bounded");

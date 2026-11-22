@@ -58,7 +58,6 @@ class EmptySet(unittest.TestCase):
         self.assertEqual(self.E.dim, 2)
         self.assertEqual(self.E.class_name, "EmptySet")
         self.assertEqual(cora.EmptySet.empty(4).dim, 4)
-        self.assertEqual(cora.EmptySet.empty().dim, 0)
         self.assertIn("2-dimensional empty set", repr(self.E))
         with self.assertRaises(cora.errors.NoInputInSetConstructor):
             cora.EmptySet()

@@ -235,6 +235,12 @@ inline ZonoBundle operator+(const ZonoBundle &ZB, const Tensor &v) { return ZB.p
 inline ZonoBundle operator+(const Tensor &v, const ZonoBundle &ZB) { return ZB.plus(v); }
 inline ZonoBundle operator-(const ZonoBundle &ZB, const Tensor &v) { return ZB.plus(v * -1.0); }
 
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline ZonoBundle operator*(double s, const ZonoBundle &S) {
+    return static_cast<const ContSet &>(S).times(s).as<ZonoBundle>();
+}
+inline ZonoBundle operator*(const ZonoBundle &S, double s) { return s * S; }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
