@@ -45,9 +45,23 @@ namespace cora {
 
 class Polytope;
 
+class Capsule;
+class ConZonotope;
+class Ellipsoid;
+class ZonoBundle;
+class PolyZonotope;
 class Zonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::zonotope;
+
+    /// The zonotope of another set class, as the member of that class (CORA's zonotope(S)).
+    explicit Zonotope(const Interval &I);
+    explicit Zonotope(const Capsule &C);
+    explicit Zonotope(const ConZonotope &cz, const std::string &method = "nullSpace");
+    explicit Zonotope(const Ellipsoid &E, const std::string &method = "outer:box");
+    explicit Zonotope(const Polytope &P, const std::string &method = "outer");
+    explicit Zonotope(const ZonoBundle &bundle);
+    explicit Zonotope(const PolyZonotope &poly);
     /// The most generators whose corners a containment test enumerates one by one.
     static constexpr int64_t kMaxCornerGenerators = 12;
 

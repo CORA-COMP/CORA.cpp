@@ -32,6 +32,9 @@
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
+#include "cora/cont_set/capsule/capsule.h"
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
@@ -158,6 +161,19 @@ Ellipsoid::Ellipsoid(const Zonotope &Z, const std::string &method)
     const double factor = method.rfind("outer", 0) == 0 ? static_cast<double>(n) : 1.0;
     *this = Ellipsoid(c, G.matrix_transpose().matmul(G) * factor);
 }
+
+// Conversions from the other set classes ----------------------------------------------------------
+
+Ellipsoid::Ellipsoid(const Polytope &P, const std::string &method)
+    : Ellipsoid(P.ellipsoid(method)) {}
+
+Ellipsoid::Ellipsoid(const Capsule &C, const std::string &method)
+    : Ellipsoid(C.ellipsoid(method)) {}
+
+Ellipsoid::Ellipsoid(const PolyZonotope &)
+    : Ellipsoid(detail::refuse_conversion<Ellipsoid>(
+          "Ellipsoid(PolyZonotope): CORA bounds the radius by a global optimization of the "
+          "support function (contSet/@polyZonotope/ellipsoid.m)")) {}
 
 } // namespace cora
 

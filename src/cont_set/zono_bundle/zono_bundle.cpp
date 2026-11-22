@@ -18,7 +18,10 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cont_set/zono_bundle/private/priv.h"
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
+#include "cora/cont_set/polytope/polytope.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -33,6 +36,10 @@ ZonoBundle::ZonoBundle(std::vector<Zonotope> zonotopes)
     const detail::Refusal refusal = priv_members_refusal(Z_);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
 }
+
+ZonoBundle::ZonoBundle(const ConZonotope &cz) : ZonoBundle(cz.zono_bundle()) {}
+
+ZonoBundle::ZonoBundle(const Polytope &P) : ZonoBundle(P.zono_bundle()) {}
 
 } // namespace cora
 

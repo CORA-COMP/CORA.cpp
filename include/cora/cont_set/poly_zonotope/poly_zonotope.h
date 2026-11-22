@@ -55,9 +55,23 @@ struct Normalized {};
 struct Verbatim {};
 } // namespace detail
 
+class ConZonotope;
+class Capsule;
+class Ellipsoid;
+class ZonoBundle;
 class PolyZonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::poly_zonotope;
+
+    // Constructors --------------------------------------------------------------------------------
+
+    /// The polynomial zonotope of another set class: CORA defines them by vertices or Taylor
+    /// models, Error::not_supported.
+    explicit PolyZonotope(const ConZonotope &);
+    explicit PolyZonotope(const Capsule &);
+    explicit PolyZonotope(const Ellipsoid &);
+    explicit PolyZonotope(const Polytope &);
+    explicit PolyZonotope(const ZonoBundle &);
 
     /// The set of the center c (n), the dependent generator rows G (h, n) with the exponents E of
     /// the factors id (p identifiers), and the independent generator rows GI (q, n).

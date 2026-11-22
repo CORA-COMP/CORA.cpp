@@ -39,7 +39,7 @@ void two_squares(const std::string &b) {
 /// One member is the zonotope itself, without constraints.
 void single_member(const std::string &b) {
     const Zonotope Z(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.5, 1.0}}));
-    const ConZonotope cz = ZonoBundle({Z}).con_zonotope();
+    const ConZonotope cz = ZonoBundle(std::vector<Zonotope>{Z}).con_zonotope();
     check(cz.A().shape() == Shape{0, 2} &&
               close(cz.c().expand_dims(-1), Z.center().expand_dims(-1), 0) &&
               close(cz.generators().matrix_transpose(), Z.generators().matrix_transpose(), 0),

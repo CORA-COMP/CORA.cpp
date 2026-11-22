@@ -57,6 +57,12 @@ changed, and the reasons are listed below.
   `power` and `rdivide`) and `Polytope.center_by` (C++ `center(method)`, as `center` is a property)
   are kept; a polynomial zonotope's `c`, `G`, `GI`, `E` and `id` are aliases of `center`,
   `generators`, `independent_generators`, `exponents` and `ids`.
+- **Conversions:** one spelling per arrow, the constructor of the target, `Zonotope(P, method)`,
+  `Polytope(Z)`, `Ellipsoid(C, method)`; the member of the source (`P.zonotope(method)`, CORA's
+  `zonotope(P)`) stays and the constructor forwards to it. Every arrow that CORA defines has the
+  constructor; those CORA computes by an algorithm that is not ported (into `PolyZonotope` from
+  the other classes, and `Polytope(PolyZonotope)`, `Ellipsoid(PolyZonotope)`) raise
+  `Error::not_supported` and name the CORA file.
 - **Options** have the same names in C++ (struct fields) and in Python (keywords):
   - `time_step`, `t_final`, `taylor_terms`, `zonotope_order`;
   - the problem: `initial_set`, `input_set`, `initial_state`, `input`.

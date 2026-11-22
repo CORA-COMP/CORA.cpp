@@ -52,6 +52,11 @@ class ConZonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::con_zonotope;
 
+    /// The constrained zonotope of a polytope or a bundle (CORA's conZonotope(S)).
+    explicit ConZonotope(const Polytope &P, const std::string &method = "exact:supportFunc",
+                         const std::optional<Interval> &box = std::nullopt);
+    explicit ConZonotope(const ZonoBundle &bundle);
+
     /// The constrained zonotope of the center c (..., n), the generators G (..., m, n), one per
     /// row (#163), and the constraints A x = b (A (..., p, m), b (..., p)); without A and b no
     /// constraint.

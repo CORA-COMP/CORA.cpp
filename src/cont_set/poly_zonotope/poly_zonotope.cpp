@@ -25,7 +25,13 @@
 // Last update:   18-November-2026
 // Reviewed:      ---
 
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
 #include "cont_set/poly_zonotope/private/priv.h"
+#include "cora/cont_set/capsule/capsule.h"
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
+#include "cora/cont_set/ellipsoid/ellipsoid.h"
+#include "cora/cont_set/polytope/polytope.h"
+#include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "global/format.h"
 
 #include <algorithm>
@@ -142,11 +148,38 @@ PolyZonotope::PolyZonotope(Tensor c, Tensor G, Tensor GI, Exponents E, std::vect
 
 // The conversions ---------------------------------------------------------------------------------
 
+// the zonotope: its generators are dependent with the identity exponents
 PolyZonotope::PolyZonotope(const Zonotope &Z)
     : PolyZonotope(Z.center(), Z.generators(), Z.center().zeros_like({0, Z.dim()}),
                    aux_identity(Z.nr_generators()), aux_ids(Z.nr_generators())) {}
 
 PolyZonotope::PolyZonotope(const Interval &I) : PolyZonotope(I.zonotope()) {}
+
+PolyZonotope::PolyZonotope(const ConZonotope &)
+    : PolyZonotope(detail::refuse_conversion<PolyZonotope>(
+          "PolyZonotope(ConZonotope): CORA converts through the vertices of the polytope "
+          "(contSet/@conZonotope/polyZonotope.m)")) {}
+
+PolyZonotope::PolyZonotope(const Capsule &)
+    : PolyZonotope(detail::refuse_conversion<PolyZonotope>(
+          // the next step of the same case
+          "PolyZonotope(Capsule): CORA parametrizes the capsule by "
+          "Taylor models (contSet/@capsule/polyZonotope.m)")) {}
+
+PolyZonotope::PolyZonotope(const Ellipsoid &)
+    : PolyZonotope(detail::refuse_conversion<PolyZonotope>(
+          "PolyZonotope(Ellipsoid): CORA parametrizes the ellipsoid by Taylor models "
+          "(contSet/@ellipsoid/polyZonotope.m)")) {}
+
+PolyZonotope::PolyZonotope(const Polytope &)
+    : PolyZonotope(detail::refuse_conversion<PolyZonotope>(
+          "PolyZonotope(Polytope): CORA converts through the "
+          "vertices (contSet/@polytope/polyZonotope.m)")) {}
+
+PolyZonotope::PolyZonotope(const ZonoBundle &)
+    : PolyZonotope(detail::refuse_conversion<PolyZonotope>(
+          "PolyZonotope(ZonoBundle): CORA converts through the vertices of the polytope "
+          "(contSet/@zonoBundle/polyZonotope.m)")) {}
 
 } // namespace cora
 

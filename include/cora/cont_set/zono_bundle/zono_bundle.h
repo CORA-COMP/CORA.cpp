@@ -50,6 +50,10 @@ class ZonoBundle : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::zono_bundle;
 
+    /// The bundle of a constrained zonotope or a polytope (CORA's zonoBundle(S)).
+    explicit ZonoBundle(const ConZonotope &cz);
+    explicit ZonoBundle(const Polytope &P);
+
     /// The intersection of the zonotopes (CORA's zonoBundle(list)): at least one, of one dimension
     /// and one batch shape.
     explicit ZonoBundle(std::vector<Zonotope> zonotopes);

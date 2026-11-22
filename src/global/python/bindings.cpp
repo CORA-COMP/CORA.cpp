@@ -1421,8 +1421,19 @@ std::vector<std::vector<Tensor>> matrices_of(const py::list &T) {
 
 using Indices = std::vector<std::vector<int64_t>>;
 
+// the next step of the same case
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
+        .def(py::init<const Interval &>(), py::arg("I"), "A box as a zonotope")
+        .def(py::init<const Capsule &>(), py::arg("C"), "A zonotope that holds a capsule")
+        .def(py::init<const ConZonotope &, const std::string &>(), py::arg("cz"),
+             py::arg("method") = "nullSpace", "A zonotope that holds a constrained zonotope")
+        .def(py::init<const Ellipsoid &, const std::string &>(), py::arg("E"),
+             py::arg("method") = "outer:box", "A zonotope that holds or lies in an ellipsoid")
+        .def(py::init<const Polytope &, const std::string &>(), py::arg("P"),
+             py::arg("method") = "outer", "A zonotope that holds a polytope")
+        .def(py::init<const ZonoBundle &>(), py::arg("zB"), "The member of least volume")
+        .def(py::init<const PolyZonotope &>(), py::arg("pZ"), "A zonotope that holds the set")
         .def(py::init([](const Array &c, const Array &G) {
                  return Zonotope(point_of(c, "the center"), tensor_of(G, "the generators"));
              }),
@@ -1917,6 +1928,10 @@ void bind_con_zonotope(py::module_ &m) {
             "center c (..., n), generators G (..., m, n), one per row, and the constraints A x = b")
         // the conversions of the other sets
         .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope as a constrained zonotope")
+        .def(py::init<const Polytope &, const std::string &, const std::optional<Interval> &>(),
+             py::arg("P"), py::arg("method") = "exact:supportFunc", py::arg("box") = py::none(),
+             "The constrained zonotope of a polytope")
+        .def(py::init<const ZonoBundle &>(), py::arg("zB"), "The constrained zonotope of a bundle")
         .def(py::init<const Interval &>(), py::arg("I"), "A box as a constrained zonotope")
         .def_static(
             "from_matrix",
@@ -2210,6 +2225,8 @@ std::vector<Zonotope> zonotopes_of(const py::handle &list) {
 void bind_zono_bundle(py::module_ &m) {
     py::class_<ZonoBundle, ContSet>(m, "ZonoBundle",
                                     "The intersection of a list of zonotopes (a zonotope bundle).")
+        .def(py::init<const ConZonotope &>(), py::arg("cz"), "The bundle of a constrained zonotope")
+        .def(py::init<const Polytope &>(), py::arg("P"), "The bundle of a polytope")
         .def(py::init([](const py::object &zonotopes) {
                  // a zonotope or a box is a bundle of one member
                  if (py::isinstance<Zonotope>(zonotopes))
@@ -2398,6 +2415,14 @@ Polytope polytope_arg(const py::handle &o) {
 void bind_polytope(py::module_ &m) {
     py::class_<Polytope, ContSet>(
         m, "Polytope", "The polytope {x : A x <= b, Ae x = be} or the hull of vertices V.")
+        .def(py::init<const Zonotope &>(), py::arg("Z"), "The polytope of a zonotope")
+        .def(py::init<const ConZonotope &>(), py::arg("cz"),
+             // the next step of the same case
+             "The polytope of a constrained zonotope")
+        .def(py::init<const ZonoBundle &>(), py::arg("zB"), "The polytope of a bundle")
+        .def(py::init<const Capsule &, const std::string &>(), py::arg("C"),
+             py::arg("method") = "exact", "The polytope of a capsule")
+        .def(py::init<const PolyZonotope &>(), py::arg("pZ"), "Not supported, see the message")
         .def(py::init([](const py::object &first, const py::object &b, const py::object &Ae,
                          const py::object &be) { return polytope_of(first, b, Ae, be); }),
              py::arg("A"), py::arg("b") = py::none(), py::arg("Ae") = py::none(),
@@ -2651,6 +2676,11 @@ void bind_ellipsoid(py::module_ &m) {
              py::arg("method") = "outer:norm_bnd",
              "An ellipsoid that holds a zonotope of n independent generators")
         // a shape matrix alone is centered at 0 (an array as tol fails here: the next form)
+        .def(py::init<const Polytope &, const std::string &>(), py::arg("P"),
+             py::arg("method") = "outer", "An ellipsoid that holds (or lies in) a polytope")
+        .def(py::init<const Capsule &, const std::string &>(), py::arg("C"),
+             py::arg("method") = "exact", "An ellipsoid that holds a capsule")
+        .def(py::init<const PolyZonotope &>(), py::arg("pZ"), "Not supported, see the message")
         .def(py::init(
                  [](const py::object &Q, Tol tol) { return Ellipsoid(tensor_of(Q, "Q"), tol); }),
              py::arg("Q"), py::arg("tol") = py::none(), "shape matrix Q (..., n, n) around 0")
@@ -3033,6 +3063,11 @@ void bind_poly_zonotope(py::module_ &m) {
         "+ GI b with factors a_i, b in [-1, 1].")
         .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope: its generators are dependent")
         .def(py::init<const Interval &>(), py::arg("I"), "A box: a dependent generator per axis")
+        .def(py::init<const ConZonotope &>(), py::arg("cz"), "Not supported, see the message")
+        .def(py::init<const Capsule &>(), py::arg("C"), "Not supported, see the message")
+        .def(py::init<const Ellipsoid &>(), py::arg("E"), "Not supported, see the message")
+        .def(py::init<const Polytope &>(), py::arg("P"), "Not supported, see the message")
+        .def(py::init<const ZonoBundle &>(), py::arg("zB"), "Not supported, see the message")
         .def(py::init([](const py::object &c, const py::object &G, const py::object &GI,
                          const py::object &E, const py::object &id) {
                  const Tensor center = point_of(c, "the center");

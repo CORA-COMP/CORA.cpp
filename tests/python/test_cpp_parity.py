@@ -18,6 +18,7 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+# the sets answer to the C++ names
 class Parity(unittest.TestCase):
     # every test runs on the Eigen backend
     def setUp(self):
@@ -32,6 +33,7 @@ class Parity(unittest.TestCase):
 
     # a polytope given by halfspaces reports H, not V
     def test_the_representation_of_a_polytope(self):
+        # the next step of the same case
         P = cora.Polytope(np.array([[1.0, 0.0], [-1.0, 0.0]]), np.array([1.0, 1.0]))
         self.assertTrue(P.is_h_rep())
         self.assertFalse(P.is_v_rep())

@@ -50,9 +50,18 @@ class ConZonotope;
 class EmptySet;
 class Fullspace;
 
+class Capsule;
+class PolyZonotope;
 class Polytope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::polytope;
+
+    /// The polytope of another set class, as the member of that class (CORA's polytope(S)).
+    explicit Polytope(const Zonotope &Z);
+    explicit Polytope(const ConZonotope &cz);
+    explicit Polytope(const ZonoBundle &bundle);
+    explicit Polytope(const Capsule &C, const std::string &method = "exact");
+    explicit Polytope(const PolyZonotope &poly);
 
     /// The convex hull of the vertices V (..., p, n), one per row; none (p = 0) is the empty
     /// set. The vertices must not be NaN, and finite unless n = 1. In one dimension only the

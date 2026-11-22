@@ -44,9 +44,17 @@ namespace cora {
 
 class Rng;
 
+class Polytope;
+class Capsule;
+class PolyZonotope;
 class Ellipsoid : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::ellipsoid;
+
+    /// The ellipsoid of a polytope or a capsule, as the member of that class (CORA's ellipsoid(S)).
+    explicit Ellipsoid(const Polytope &P, const std::string &method = "outer");
+    explicit Ellipsoid(const Capsule &C, const std::string &method = "exact");
+    explicit Ellipsoid(const PolyZonotope &poly);
 
     /// The ellipsoid of the center q (..., n) and the shape matrix Q (..., n, n), the center first
     /// as in every set (the center 0 without q). tol (CORA's TOL) bounds the asymmetry of Q and
