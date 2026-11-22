@@ -22,25 +22,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-RNG = np.random.default_rng(4)
-LAYERS = [(RNG.standard_normal((8, 2)) / 1.5, 0.3 * RNG.standard_normal(8)),
-          (RNG.standard_normal((2, 8)) / 3.0, 0.3 * RNG.standard_normal(2))]
-NET = cora.NeuralNetwork(LAYERS)
-LO, HI = np.full((1, 2), -0.5), np.full((1, 2), 0.5)
-A = np.array([[[1.0, 0.0]]])
-
-
-def least_output():
-    """The least sampled y_0 over the box."""
-    x = RNG.uniform(-0.5, 0.5, (4000, 2))
-    return float(NET.evaluate(x)[:, 0].min())
-
-
-# ============================================  MAIN  ============================================ #
-
-
 class Verify(unittest.TestCase):
     def test_verdicts(self):
         # far below the outputs: unsat; around the least output: sat, the output inside
@@ -93,6 +74,26 @@ class Verify(unittest.TestCase):
             NET.verify(np.zeros((1, 3)), np.ones((1, 3)), [0], A, np.array([[0.0]]), 1)
         with self.assertRaises(cora.CORAError):
             NET.verify(LO, HI, [1], A, np.array([[0.0]]), 1)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+RNG = np.random.default_rng(4)
+
+LAYERS = [(RNG.standard_normal((8, 2)) / 1.5, 0.3 * RNG.standard_normal(8)),
+          (RNG.standard_normal((2, 8)) / 3.0, 0.3 * RNG.standard_normal(2))]
+
+NET = cora.NeuralNetwork(LAYERS)
+
+LO, HI = np.full((1, 2), -0.5), np.full((1, 2), 0.5)
+
+A = np.array([[[1.0, 0.0]]])
+
+
+def least_output():
+    """The least sampled y_0 over the box."""
+    x = RNG.uniform(-0.5, 0.5, (4000, 2))
+    return float(NET.evaluate(x)[:, 0].min())
 
 
 if __name__ == "__main__":
