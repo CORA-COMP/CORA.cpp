@@ -508,12 +508,13 @@ Phase 2 (0 wrong of 60). Three theorems would close the soundness rows of docs/n
   positive and negative parts of the slopes, the constant, then `Lambda x - |Lambda| r`) is at
   most `a . N(x')` for every `x'` in the box `(x, r)`.
 
-Phase 3 (convolutional networks) adds two layers no CORALean op serves on a zonotope:
+Phase 3 (convolutional networks) adds layers no CORALean op serves on a zonotope:
 
 | op (proposed) | CORALean definition | request fields | reply |
 |---|---|---|---|
 | `nnLayer.evaluateZonotope` of a `ConvLayer` | `ConvLayer` (Dyadic) on points only: the convolution of the center and of every generator row (the generator axis as a batch), groups, strides, dilations, pads | `kernel`, `input` (C, H, W), `stride`, `dilation`, `pads`, `groups`, `Z` | `Z` |
-| `nnLayer.evaluateZonotope` of a `MaxPoolLayer` | none on a zonotope (CORALean's `MaxPoolLayer` enclosure is of intervals); CORA.cpp does not lower a max pool yet | `kernel`, `stride`, `Z` | `Z` |
+| `nnLayer.evaluateZonotope` of a `MaxPoolLayer` | none on a zonotope (CORALean's `MaxPoolLayer` enclosure is of intervals). CORA.cpp's front end lowers a max pool to `max(a, b) = b + relu(a - b)`, pairwise over the window, round by round: a grouped convolution of the differences, its ReLU (the existing line and error), then a gather of the ReLUs plus the second item of each pair as a residual. Request: the same composition at `nearest`, and `maxPool_encloses` (the composition of exact affine maps and the ReLU enclosure contains every `maxpool(x)`, `x` in `Z`) | `kernel`, `stride`, `dilation`, `Z` | `Z` |
+| `nnLayer.evaluateZonotope` of an `AddLayer` (a residual) | none (CORALean's networks are chains). CORA.cpp adds the generator rows of an earlier output to the first rows of the later set (the same factors) and the interval-center radii | the two branches' `Z` with their factor counts | `Z` |
 
 The convolution is checked against its definition and its matrix (`test_neural_network_conv`); a
 gather (a permutation, a pad, a nearest upsample) is exact.

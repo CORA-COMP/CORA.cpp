@@ -51,8 +51,14 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   (`Layer::conv_transpose2d`), BatchNormalization and AveragePool depthwise convolutions, the data
   moves (Transpose, Pad, Slice, Concat with constants, nearest Upsample) a `Layer::gather` found by
   running the node on the indices, Flatten and Reshape nothing, Gemm and MatMul dense layers, and an
-  added constant the bias of the layer before. A residual connection or a max pool does not lower;
-  such an instance is `unknown` with the reason.
+  added constant the bias of the layer before (a BatchNormalization after a Conv folds into it).
+  Two branches joined by an Add (a ResNet, soundnessbench's carriers) become a graph: each value is
+  a pending sum of maps of earlier outputs, emitted as layers when an activation or the output
+  needs it, the longest term as a chain and the others as residuals of its last layer (`source`,
+  `residuals` of a `Layer`). A MaxPool without pads lowers to `max(a, b) = b + relu(a - b)` pairwise
+  over its window (a grouped convolution of the differences, a ReLU, a gather plus a residual
+  convolution of the second items, per round). What does not lower, or what C++ refuses, is
+  `unknown` at once with the reason, before the property is read.
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of
