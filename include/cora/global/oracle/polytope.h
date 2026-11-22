@@ -114,6 +114,11 @@ class Polytope {
     /// CORA's minkDiff of a box, offsets lowered by its support function (`polytope.minkDiffCora`).
     Polytope mink_diff_cora(const Interval &I) const;
 
+    /// CORA.cpp's normalizeConstraints of type "b": every row divided by its offset's magnitude, an
+    /// equality by the offset, the rounding paid in the offsets over the box dom
+    /// (`polytope.normalizeConstraintsCora`).
+    Polytope normalize_constraints_cora(const Interval &dom) const;
+
     /// Vertex form: `mtimes`, `plus`, `or`, `project` and the bound of `supportFunc`.
     Polytope linear_map(const Tensor &M) const;
     Polytope plus(const Polytope &P2) const;

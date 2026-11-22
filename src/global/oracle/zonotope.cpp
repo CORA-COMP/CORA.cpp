@@ -170,6 +170,12 @@ Zonotope Zonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Ten
                    {{"Z", *this}, {"C", C}, {"phi", phi}, {"y", y}, {"Lambda", Lambda}});
 }
 
+Zonotope Zonotope::intersect_strip_cora(const Tensor &C, const Tensor &phi, const Tensor &y,
+                                        const Tensor &Lambda) const {
+    return aux_set("zonotope.intersectStripCora",
+                   {{"Z", *this}, {"C", C}, {"phi", phi}, {"y", y}, {"Lambda", Lambda}});
+}
+
 Zonotope Zonotope::quad_map(const std::vector<Tensor> &Q) const {
     return aux_set("zonotope.quadMap", {{"Z", *this}, {"Q", Q}});
 }

@@ -145,6 +145,14 @@ PolyZonotope PolyZonotope::quad_map(const std::vector<Tensor> &Q) const {
     return aux_set("polyZonotope.quadMap", {{"P", *this}, {"Q", Q}});
 }
 
+PolyZonotope PolyZonotope::compact() const {
+    return aux_set("polyZonotope.compact", {{"P", *this}});
+}
+
+PolyZonotope PolyZonotope::project(const std::vector<int64_t> &dims) const {
+    return aux_set("polyZonotope.project", {{"P", *this}, {"dims", dims}});
+}
+
 bool PolyZonotope::is_intersecting(const cora::Polytope &S, double tol) const {
     return ask("polyZonotope.isIntersecting", {{"P", *this}, {"S", Polytope(S)}, {"tol", tol}})
         .get<bool>("value");

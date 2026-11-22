@@ -86,6 +86,14 @@ class PolyZonotope {
     /// [c G], CORA's three zonotope maps of the independent part, the constructor.
     PolyZonotope quad_map(const std::vector<Tensor> &Q) const;
 
+    /// CORA's project(P, dims): the coordinates dims (0-based) of the center and of both blocks of
+    /// generators, the exponents and the identifiers kept.
+    PolyZonotope project(const std::vector<int64_t> &dims) const;
+
+    /// CORA's compact(P): the generators of no factor added to the center, the factors no column
+    /// reads dropped, the constructor again (`polyZonotope.compact`).
+    PolyZonotope compact() const;
+
     /// CORA's reduce(P, 'girard', order) and enclose(P, Q).
     PolyZonotope reduce(int order) const;
     PolyZonotope enclose(const PolyZonotope &Q) const;

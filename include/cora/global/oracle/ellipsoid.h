@@ -62,6 +62,11 @@ class Ellipsoid {
     /// M E (`ellipsoid.mtimes`).
     Ellipsoid project(const std::vector<int64_t> &dims) const;
     Ellipsoid lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// Always true (`ellipsoid.isBounded`), and the order reduction (`ellipsoid.reduce`), which
+    /// returns the ellipsoid itself, as CORA's does.
+    bool is_bounded() const;
+    Ellipsoid reduce(int order) const;
     Ellipsoid linear_map(const Tensor &M) const;
     /// CORA's M E, Q = M Q M' symmetrized in CORA's order (`ellipsoid.mtimesCora`).
     Ellipsoid linear_map_cora(const Tensor &M) const;

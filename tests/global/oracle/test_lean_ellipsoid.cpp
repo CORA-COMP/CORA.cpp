@@ -10,6 +10,8 @@
 // intersectStrip, ellipsoidNorm, isBadDir.
 //
 // ORACLE: contSet/@ellipsoid/center.m
+// ORACLE: contSet/@ellipsoid/isBounded.m
+// ORACLE: contSet/@ellipsoid/reduce.m
 // ORACLE: contSet/@ellipsoid/cartProd_.m
 // ORACLE: contSet/@ellipsoid/isFullDim.m
 // ORACLE: contSet/@ellipsoid/isBigger.m
@@ -94,6 +96,18 @@ int main() {
         const Ellipsoid E = aux_ellipsoid(rnd, 3), flat = aux_flat_ellipsoid(rnd, 3);
         oracle::check(E.is_full_dim(), lean::Ellipsoid(E).is_full_dim());
         oracle::check(flat.is_full_dim(), lean::Ellipsoid(flat).is_full_dim());
+    });
+    // always bounded, and reduce returns the set
+    oracle::run("ellipsoid.isBounded", [](oracle::Random &rnd) {
+        const Ellipsoid E = aux_ellipsoid(rnd, 3);
+        oracle::check(E.is_bounded(), lean::Ellipsoid(E).is_bounded());
+    });
+    oracle::run("ellipsoid.reduce", [](oracle::Random &rnd) {
+        const Ellipsoid E = aux_ellipsoid(rnd, 3);
+        const Ellipsoid theirs = lean::Ellipsoid(E).reduce(2).nominal();
+        const Ellipsoid mine = E.reduce(2).as<Ellipsoid>();
+        oracle::check("reduce.Q", mine.Q(), theirs.Q());
+        oracle::check("reduce.q", mine.q(), theirs.q());
     });
     oracle::run("ellipsoid.isBigger", [](oracle::Random &rnd) {
         const Ellipsoid E = aux_ellipsoid(rnd, 3);

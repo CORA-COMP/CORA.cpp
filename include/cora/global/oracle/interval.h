@@ -128,6 +128,10 @@ class Interval {
     /// The enclosure of x' Q_i x over the box, one row per matrix of Q.
     Interval quad_map(const std::vector<Tensor> &Q) const;
 
+    /// The same in CORA.cpp's order (`interval.quadMapCora`): the box of the quadratic map of the
+    /// box's zonotope.
+    Interval quad_map_cora(const std::vector<Tensor> &Q) const;
+
     // Predicates (exact answers) ---------------------------------------------------------------
 
     bool le(const Interval &I2, double tol = 0) const;

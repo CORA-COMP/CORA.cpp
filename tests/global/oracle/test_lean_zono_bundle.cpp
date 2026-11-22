@@ -3,8 +3,9 @@
 // Bit for bit where CORALean builds the same set: and, cartProd, empty, enlarge, interval,
 // isBounded, isIntersecting (CORA's "approx": the oracle tests the boxes), isequal (members) and
 // lift. The constrained zonotope is checked as CORALean's form of the same set (inequality rows for
-// the agreement of the points, as for conZonotope.and). enclose is not compared: CORALean's is the
-// generic route (all combinations of members), CORA's is member by member, so the sets differ.
+// the agreement of the points, as for conZonotope.and). enclose is not compared here: the oracle's
+// `zonoBundle.enclose` is the generic route (all combinations of members), CORA's is member by
+// member, so the sets differ; the member-wise `encloseCora` is in test_lean_zono_bundle_enclose.
 //
 // ORACLE: contSet/@zonoBundle/and_.m
 // ORACLE: contSet/@zonoBundle/cartProd_.m

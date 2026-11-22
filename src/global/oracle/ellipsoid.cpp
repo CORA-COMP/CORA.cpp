@@ -126,6 +126,15 @@ bool Ellipsoid::is_full_dim() const {
     return ask("ellipsoid.isFullDim", {{"E", *this}}).get<bool>("value");
 }
 
+bool Ellipsoid::is_bounded() const {
+    return ask("ellipsoid.isBounded", {{"E", *this}}).get<bool>("value");
+}
+
+Ellipsoid Ellipsoid::reduce(int order) const {
+    return ask("ellipsoid.reduce", {{"E", *this}, {"order", order}, {"method", "girard"}})
+        .get<Ellipsoid>("E");
+}
+
 bool Ellipsoid::is_bigger(const Ellipsoid &E2) const {
     return ask("ellipsoid.isBigger", {{"E", *this}, {"E2", E2}}).get<bool>("value");
 }
