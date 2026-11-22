@@ -23,14 +23,42 @@ import json
 import os
 import sys
 
-from cora import counterexample
+import cora.counterexample
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("csv")
+    parser.add_argument("--expected", default="")
+    parser.add_argument("--json", default="")
+    args = parser.parse_args()
+    # the rows, the expected verdicts, the result files beside the CSV
+    with open(args.csv, newline="") as stream:
+        rows = [r for r in csv.reader(stream) if r]
+    expected = {}
+    if args.expected and os.path.exists(args.expected):
+        with open(args.expected, newline="") as stream:
+            expected = {(os.path.basename(o), os.path.basename(p)): v for o, p, v in csv.reader(stream)}
+    results_dir = os.path.join(os.path.dirname(os.path.abspath(args.csv)), "results")
+    scores = score_rows(rows, results_dir, expected)
+    # one line per category
+    for cat, s in scores.items():
+        print(f"{cat}: {s['verified']} verified, {s['falsified']} falsified, {s['unknown']} unknown, "
+              f"{s['incorrect']} incorrect; score {s['score']} of {s['maximum']} "
+              f"({100.0 * s['score'] / max(1, s['maximum']):.1f}%); {s['run_seconds']:.0f} s, "
+              f"peak RSS {s['peak_rss_mib']:.0f} MiB; checks {s['checks']}")
+    if args.json:
+        with open(args.json, "w") as out:
+            json.dump(scores, out, indent=2)
+    return 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 PENALTY_INCORRECT = -150
+
 SUBSTITUTIONS = [("unsat", "holds"), ("sat", "violated"), ("timed-out", "timeout"),
                  ("no_result_in_file", "unknown"), ("prepare_instance_error_", "unknown"),
                  ("run_instance_timeout", "timeout"), ("prepare_instance_timeout", "timeout"),
@@ -77,9 +105,9 @@ def score_rows(rows, results_dir, expected):
         truth = expected.get((os.path.basename(onnx), os.path.basename(prop)))
         # the verdict against its check
         if result == "violated":
-            check, _ = counterexample.check_counterexample(onnx, prop, counterexample_text(results_dir, k))
+            check, _ = cora.counterexample.check_counterexample(onnx, prop, counterexample_text(results_dir, k))
             s["checks"][check] = s["checks"].get(check, 0) + 1
-            good = check in (counterexample.CORRECT, counterexample.CORRECT_UP_TO_TOLERANCE)
+            good = check in (cora.counterexample.CORRECT, cora.counterexample.CORRECT_UP_TO_TOLERANCE)
             s["falsified" if good else "incorrect"] += 1
             s["score"] += 10 if good else PENALTY_INCORRECT
         elif result == "holds":
@@ -92,35 +120,6 @@ def score_rows(rows, results_dir, expected):
         s["maximum"] = 10 * s["instances"]
         s["overhead_seconds"] = overhead
     return out
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("csv")
-    parser.add_argument("--expected", default="")
-    parser.add_argument("--json", default="")
-    args = parser.parse_args()
-    # the rows, the expected verdicts, the result files beside the CSV
-    with open(args.csv, newline="") as stream:
-        rows = [r for r in csv.reader(stream) if r]
-    expected = {}
-    if args.expected and os.path.exists(args.expected):
-        with open(args.expected, newline="") as stream:
-            expected = {(os.path.basename(o), os.path.basename(p)): v for o, p, v in csv.reader(stream)}
-    results_dir = os.path.join(os.path.dirname(os.path.abspath(args.csv)), "results")
-    scores = score_rows(rows, results_dir, expected)
-    # one line per category
-    for cat, s in scores.items():
-        print(f"{cat}: {s['verified']} verified, {s['falsified']} falsified, {s['unknown']} unknown, "
-              f"{s['incorrect']} incorrect; score {s['score']} of {s['maximum']} "
-              f"({100.0 * s['score'] / max(1, s['maximum']):.1f}%); {s['run_seconds']:.0f} s, "
-              f"peak RSS {s['peak_rss_mib']:.0f} MiB; checks {s['checks']}")
-    if args.json:
-        with open(args.json, "w") as out:
-            json.dump(scores, out, indent=2)
-    return 0
 
 
 if __name__ == "__main__":

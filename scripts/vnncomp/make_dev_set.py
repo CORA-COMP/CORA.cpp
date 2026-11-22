@@ -36,9 +36,47 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("benchmark", choices=sorted(SOURCES))
+    parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--out", required=True)
+    parser.add_argument("--sources", default=os.path.join(HOME, "vnncomp", "sources"))
+    parser.add_argument(
+        "--official", default=os.path.join(HOME, "vnncomp", "vnncomp2026_benchmarks")
+    )
+    parser.add_argument(
+        "--python", default=os.path.join(HOME, "vnncomp", "genvenv", "bin", "python")
+    )
+    parser.add_argument("--cache", default=os.path.join(HOME, "vnncomp", "cache"))
+    parser.add_argument("--keep-official", action="store_true")
+    args = parser.parse_args()
+    work = os.path.join(args.out, args.benchmark, "work")
+    # the benchmark's own generator, else a sampler of the official instances' structure
+    if args.benchmark == "acasxu_2023":
+        args.method = (
+            "sampled: random sub-boxes of the official properties (the generator is deterministic)"
+        )
+        os.makedirs(work, exist_ok=True)
+        rows = sampled_acasxu(args, work)
+    elif args.benchmark == "dist_shift_2023":
+        args.method = "sampled: random MNIST test images (the generator is not public)"
+        os.makedirs(work, exist_ok=True)
+        rows = sampled_dist_shift(args, work)
+    else:
+        args.method = "generator: generate_properties.py with the seed"
+        run_generator(args, work)
+        rows = generated_rows(args, work)
+    manifest = write_set(args, work, rows)
+    shutil.rmtree(work)
+    print(json.dumps(manifest))
+    return 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 HOME = os.path.expanduser("~")
+
 # the source repositories and commits of the 2026 benchmark repository's READMEs
 SOURCES = {
     "acasxu_2023": (
@@ -124,14 +162,14 @@ def sampled_acasxu(args, work):
     """acasxu: the generator is deterministic, so every official (network, property) gets a random
     sub-box of the property's input box: per dimension a width of U(0.2, 1) of the original and a
     uniform position (the property 6 cases each get one)."""
-    from cora import vnnlib
+    import cora.vnnlib
 
     rng = np.random.default_rng(args.seed)
     official = os.path.join(args.official, "benchmarks", args.benchmark, "1.0")
     os.makedirs(os.path.join(work, "vnnlib"), exist_ok=True)
     rows = []
     for k, (onnx, prop, timeout) in enumerate(read_rows(os.path.join(official, "instances.csv"))):
-        text = vnnlib.read_text(os.path.join(official, prop + ".gz"))
+        text = cora.vnnlib.read_text(os.path.join(official, prop + ".gz"))
         name = f"vnnlib/{os.path.basename(prop)[:-7]}_dev{k}.vnnlib"
         with open(os.path.join(work, name), "w") as out:
             out.write(_resample_boxes(text, rng))
@@ -246,7 +284,8 @@ def _copy_official(official, onnx, work):
 
 def write_set(args, work, rows):
     """The set in VNN-COMP's layout, 1.0 and 2.0, the manifest and the expected verdicts."""
-    from cora import onnx_network, vnnlib
+    import cora.onnx_network
+    import cora.vnnlib
 
     base = os.path.join(args.out, args.benchmark)
     official = os.path.join(args.official, "benchmarks", args.benchmark, "1.0")
@@ -261,17 +300,17 @@ def write_set(args, work, rows):
         shutil.rmtree(os.path.join(base, version), ignore_errors=True)
     for onnx, prop, timeout in rows:
         if onnx not in shapes:
-            net = onnx_network.OnnxNetwork.load(os.path.join(work, onnx))
+            net = cora.onnx_network.OnnxNetwork.load(os.path.join(work, onnx))
             shapes[onnx] = (net.input_shape, net.output_shape)
         # the property in 1.0 and 2.0, the network beside it
-        text = vnnlib.read_text(os.path.join(work, prop))
+        text = cora.vnnlib.read_text(os.path.join(work, prop))
         key = (sha256(os.path.join(work, onnx)), hashlib.sha256(text.encode()).hexdigest())
         if key in official_props:
             overlap += 1
             if not args.keep_official:  # an official instance is no dev instance
                 continue
         kept.append((onnx, prop, timeout))
-        for version, body in (("1.0", text), ("2.0", vnnlib.to_vnnlib2(text, *shapes[onnx]))):
+        for version, body in (("1.0", text), ("2.0", cora.vnnlib.to_vnnlib2(text, *shapes[onnx]))):
             for rel, data in ((onnx, None), (prop, body)):
                 target = os.path.join(base, version, rel)
                 os.makedirs(os.path.dirname(target), exist_ok=True)
@@ -291,6 +330,7 @@ def write_set(args, work, rows):
     if expected:
         with open(os.path.join(base, "expected.csv"), "w", newline="") as out:
             csv.writer(out, lineterminator="\n").writerows(expected)
+    # the manifest: the seed, the source and a hash of the instances
     manifest = {
         "benchmark": args.benchmark,
         "seed": args.seed,
@@ -305,46 +345,6 @@ def write_set(args, work, rows):
     with open(os.path.join(base, "manifest.json"), "w") as out:
         json.dump(manifest, out, indent=2)
     return manifest
-
-
-# ============================================  MAIN  ============================================ #
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("benchmark", choices=sorted(SOURCES))
-    parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--out", required=True)
-    parser.add_argument("--sources", default=os.path.join(HOME, "vnncomp", "sources"))
-    parser.add_argument(
-        "--official", default=os.path.join(HOME, "vnncomp", "vnncomp2026_benchmarks")
-    )
-    parser.add_argument(
-        "--python", default=os.path.join(HOME, "vnncomp", "genvenv", "bin", "python")
-    )
-    parser.add_argument("--cache", default=os.path.join(HOME, "vnncomp", "cache"))
-    parser.add_argument("--keep-official", action="store_true")
-    args = parser.parse_args()
-    work = os.path.join(args.out, args.benchmark, "work")
-    # the benchmark's own generator, else a sampler of the official instances' structure
-    if args.benchmark == "acasxu_2023":
-        args.method = (
-            "sampled: random sub-boxes of the official properties (the generator is deterministic)"
-        )
-        os.makedirs(work, exist_ok=True)
-        rows = sampled_acasxu(args, work)
-    elif args.benchmark == "dist_shift_2023":
-        args.method = "sampled: random MNIST test images (the generator is not public)"
-        os.makedirs(work, exist_ok=True)
-        rows = sampled_dist_shift(args, work)
-    else:
-        args.method = "generator: generate_properties.py with the seed"
-        run_generator(args, work)
-        rows = generated_rows(args, work)
-    manifest = write_set(args, work, rows)
-    shutil.rmtree(work)
-    print(json.dumps(manifest))
-    return 0
 
 
 if __name__ == "__main__":

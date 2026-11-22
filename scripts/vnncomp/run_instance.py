@@ -27,11 +27,55 @@ import sys
 import time
 
 import cora
+import cora.nn_verify
 import torch
-from cora import nn_verify
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--prepare", action="store_true")
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--backend", default=os.environ.get("CORACPP_VNNCOMP_BACKEND", "eigen"),
+                        help="the Tensor backend of the verifier: eigen or torch (cuda: torch)")
+    parser.add_argument("category")
+    parser.add_argument("onnx")
+    parser.add_argument("vnnlib")
+    parser.add_argument("result", nargs="?")
+    parser.add_argument("timeout", nargs="?", type=float)
+    args = parser.parse_args()
+    start = float(os.environ.get("VNNCOMP_START", time.time() - time.process_time()))
+    backend = "torch" if args.device.startswith("cuda") else args.backend
+    options = options_for(args.category, args.device if backend == "torch" else "")
+    load_start = time.monotonic()
+    instance = cora.nn_verify.load(args.onnx, args.vnnlib, backend=backend, device=args.device)
+    load_seconds = time.monotonic() - load_start
+    if args.prepare:
+        return 0
+    # the budget: the timeout less the start and a safety margin
+    budget = max(0.0, args.timeout - (time.time() - start) - SAFETY)
+    try:
+        result = cora.nn_verify.verify(instance, budget, options)
+    except NotImplementedError as error:  # an operator or a property we do not support yet
+        result = cora.nn_verify.VerifyResult("unknown", stats={"unsupported": str(error)})
+    write_result(args.result, result)
+    rss, cuda = peak_memory()
+    stats = {
+        k: (v if isinstance(v, (int, float, str)) else str(v)) for k, v in result.stats.items()
+    }
+    stats.update(
+        status=result.status,
+        load_seconds=load_seconds,
+        budget=budget,
+        seconds=time.time() - start,
+        peak_rss_mib=rss,
+        peak_cuda_mib=cuda,
+    )
+    with open(args.result + ".stats.json", "w") as out:
+        json.dump(stats, out)
+    return 0
+
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
@@ -57,53 +101,6 @@ def peak_memory():
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024  # KiB on Linux
     cuda = torch.cuda.max_memory_allocated() / 2**20 if torch.cuda.is_available() else 0.0
     return rss, cuda
-
-
-# ============================================  MAIN  ============================================ #
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--prepare", action="store_true")
-    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    parser.add_argument("--backend", default=os.environ.get("CORACPP_VNNCOMP_BACKEND", "eigen"),
-                        help="the Tensor backend of the verifier: eigen or torch (cuda: torch)")
-    parser.add_argument("category")
-    parser.add_argument("onnx")
-    parser.add_argument("vnnlib")
-    parser.add_argument("result", nargs="?")
-    parser.add_argument("timeout", nargs="?", type=float)
-    args = parser.parse_args()
-    start = float(os.environ.get("VNNCOMP_START", time.time() - time.process_time()))
-    backend = "torch" if args.device.startswith("cuda") else args.backend
-    options = options_for(args.category, args.device if backend == "torch" else "")
-    load_start = time.monotonic()
-    instance = nn_verify.load(args.onnx, args.vnnlib, backend=backend, device=args.device)
-    load_seconds = time.monotonic() - load_start
-    if args.prepare:
-        return 0
-    # the budget: the timeout less the start and a safety margin
-    budget = max(0.0, args.timeout - (time.time() - start) - SAFETY)
-    try:
-        result = nn_verify.verify(instance, budget, options)
-    except NotImplementedError as error:  # an operator or a property we do not support yet
-        result = nn_verify.VerifyResult("unknown", stats={"unsupported": str(error)})
-    write_result(args.result, result)
-    rss, cuda = peak_memory()
-    stats = {
-        k: (v if isinstance(v, (int, float, str)) else str(v)) for k, v in result.stats.items()
-    }
-    stats.update(
-        status=result.status,
-        load_seconds=load_seconds,
-        budget=budget,
-        seconds=time.time() - start,
-        peak_rss_mib=rss,
-        peak_cuda_mib=cuda,
-    )
-    with open(args.result + ".stats.json", "w") as out:
-        json.dump(stats, out)
-    return 0
 
 
 if __name__ == "__main__":

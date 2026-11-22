@@ -29,9 +29,39 @@ from concurrent.futures import ThreadPoolExecutor
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("dir")
+    parser.add_argument("--out", required=True)
+    parser.add_argument("--version", default="2.0")
+    parser.add_argument("--jobs", type=int, default=1)
+    parser.add_argument("--threads", type=int, default=2)
+    parser.add_argument("--max-timeout", type=float, default=0.0)
+    parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--tool", default=HERE)
+    args = parser.parse_args()
+    with open(os.path.join(args.dir, args.version, "instances.csv"), newline="") as stream:
+        rows = [r for r in csv.reader(stream) if r]
+    if args.limit:
+        rows = rows[: args.limit]
+    args.results = os.path.join(os.path.dirname(os.path.abspath(args.out)), "results")
+    os.makedirs(args.results, exist_ok=True)
+    # the instances in parallel, the rows in the order of instances.csv
+    with ThreadPoolExecutor(args.jobs) as pool:
+        out = list(pool.map(lambda kr: run_one(args, *kr), enumerate(rows)))
+    with open(args.out, "w", newline="") as stream:
+        writer = csv.writer(stream, lineterminator="\n")
+        writer.writerows(out)
+    with open(os.path.splitext(args.out)[0] + ".columns.txt", "w") as stream:
+        stream.write(",".join(COLUMNS) + "\n")
+    print(f"{len(out)} instances -> {args.out}")
+    return 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
 COLUMNS = [
     "category",
     "onnx",
@@ -105,38 +135,6 @@ def run_one(args, k, row):
     return [category, onnx, prop, f"{prepare:.3f}", result, f"{run:.3f}", timeout, f"{rss:.1f}",
             f"{stats.get('peak_cuda_mib', 0.0):.1f}", seconds("attack_seconds"),
             seconds("bab_seconds"), stats.get("boxes", 0), stats.get("bounding", "")]
-
-
-# ============================================  MAIN  ============================================ #
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("dir")
-    parser.add_argument("--out", required=True)
-    parser.add_argument("--version", default="2.0")
-    parser.add_argument("--jobs", type=int, default=1)
-    parser.add_argument("--threads", type=int, default=2)
-    parser.add_argument("--max-timeout", type=float, default=0.0)
-    parser.add_argument("--limit", type=int, default=0)
-    parser.add_argument("--tool", default=HERE)
-    args = parser.parse_args()
-    with open(os.path.join(args.dir, args.version, "instances.csv"), newline="") as stream:
-        rows = [r for r in csv.reader(stream) if r]
-    if args.limit:
-        rows = rows[: args.limit]
-    args.results = os.path.join(os.path.dirname(os.path.abspath(args.out)), "results")
-    os.makedirs(args.results, exist_ok=True)
-    # the instances in parallel, the rows in the order of instances.csv
-    with ThreadPoolExecutor(args.jobs) as pool:
-        out = list(pool.map(lambda kr: run_one(args, *kr), enumerate(rows)))
-    with open(args.out, "w", newline="") as stream:
-        writer = csv.writer(stream, lineterminator="\n")
-        writer.writerows(out)
-    with open(os.path.splitext(args.out)[0] + ".columns.txt", "w") as stream:
-        stream.write(",".join(COLUMNS) + "\n")
-    print(f"{len(out)} instances -> {args.out}")
-    return 0
 
 
 if __name__ == "__main__":
