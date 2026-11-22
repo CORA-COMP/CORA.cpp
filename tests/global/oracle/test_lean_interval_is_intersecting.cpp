@@ -22,12 +22,12 @@ int main() {
     test::oracle::run("interval.isIntersecting", [](test::oracle::Random &rnd) {
         for (const int n : {2, 5, 20}) {
             const Interval I = rnd.box(n), J = rnd.box(n), K = I.enlarge(0.5);
-            test::oracle::check(I.is_intersecting(J, 0),
-                                lean::Interval(I).is_intersecting(lean::Interval(J), 0));
-            test::oracle::check(I.is_intersecting(K, 0),
-                                lean::Interval(I).is_intersecting(lean::Interval(K), 0));
-            test::oracle::check(I.is_intersecting(I, 0),
-                                lean::Interval(I).is_intersecting(lean::Interval(I), 0));
+            test::oracle::check(I.is_intersecting(J, 0.0),
+                                lean::Interval(I).is_intersecting(lean::Interval(J), 0.0));
+            test::oracle::check(I.is_intersecting(K, 0.0),
+                                lean::Interval(I).is_intersecting(lean::Interval(K), 0.0));
+            test::oracle::check(I.is_intersecting(I, 0.0),
+                                lean::Interval(I).is_intersecting(lean::Interval(I), 0.0));
         }
     });
     return test::finish("lean interval is_intersecting");

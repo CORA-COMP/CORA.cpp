@@ -4,10 +4,10 @@
 // directions and takes the support function of the set along each as the offset, so the result
 // contains the set (a direction without bound drops its row). Not a batch.
 //
-// Syntax:   Pres = P.reduce(order, rng);   Pres = P.reduce(order, rng, "rand");
+// Syntax:   Pres = P.reduce(order, "rand");   Pres = P.reduce(order, "rand", &rng);
 // Inputs:   order - a positive integer: the number of rows is 2 * order * n
-//           rng - draws the directions
-//           method - "rand" (default)
+//           method - "rand"
+//           rng - draws the directions (default: a generator of the seed 0)
 // Outputs:  Pres - a polytope with at most 2 * order * n rows that contains P
 // See also: Polytope::compact, Polytope::support_function
 //
@@ -27,13 +27,16 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Polytope Polytope::reduce(int order, Rng &rng, const std::string &method) const {
+Polytope Polytope::reduce(int order, const std::string &method, Rng *rng_arg) const {
     detail::Entry entry;
     CORA_CHECK(method == "rand", Error::wrong_value,
                [&] { return "reduce: the method must be rand, got '" + method + "'"; });
     CORA_CHECK(order >= 1, Error::wrong_value, [&] {
         return "reduce: the order must be a positive integer, got " + std::to_string(order);
     });
+    // without a generator, a fixed seed gives the same directions every time
+    Rng fallback(0);
+    Rng &rng = rng_arg ? *rng_arg : fallback;
     const Polytope P = compact();
     if (P.representsa("emptySet")) return empty(dim());
     const Tensor &like = P.is_h_rep() ? P.A() : P.V();
@@ -48,6 +51,8 @@ Polytope Polytope::reduce(int order, Rng &rng, const std::string &method) const 
     }
     return {Tensor::like(like, directions, {rows, n}), Tensor::like(like, offsets, {rows})};
 }
+
+Set Polytope::reduce_impl(int order) const { return reduce(order, "rand"); }
 
 } // namespace cora
 

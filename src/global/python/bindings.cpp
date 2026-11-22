@@ -716,18 +716,20 @@ void bind_fullspace(py::module_ &m) {
         // the queries take points or boxes
         .def(
             "contains",
-            [](const Fullspace &F, const py::object &S, Tol tol) {
-                return F.contains(operand_set(S).get(), tol);
+            [](const Fullspace &F, const py::object &S, const std::string &method, Tol tol) {
+                return F.contains(operand_set(S).get(), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(), "Whether the set contains S: always")
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the set contains S: always")
         // the box of any set decides the intersection
         .def(
             "is_intersecting",
-            [](const Fullspace &F, const py::object &S, Tol tol) {
+            [](const Fullspace &F, const py::object &S, const std::string &method, Tol tol) {
                 // the whole space meets every set unless it is empty
-                return F.is_intersecting(operand_set(S).get(), tol);
+                return F.is_intersecting(operand_set(S).get(), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(), "Whether the set meets S: unless S is empty")
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the set meets S: unless S is empty")
         .def(
             "isequal",
             [](const Fullspace &F, const py::object &S, Tol tol) {
@@ -944,12 +946,12 @@ void bind_interval(py::module_ &m) {
         // meeting and equality, too, answer a mask
         .def(
             "is_intersecting",
-            [](const Interval &I, const py::object &other, Tol tol) {
+            [](const Interval &I, const py::object &other, const std::string &method, Tol tol) {
                 if (py::isinstance<Interval>(other))
-                    return values(I.is_intersecting(py::cast<Interval>(other), tol));
-                return values(I.is_intersecting(point_of(other, "the point"), tol));
+                    return values(I.is_intersecting(py::cast<Interval>(other), method, tol));
+                return values(I.is_intersecting(point_of(other, "the point"), method, tol));
             },
-            py::arg("other"), py::arg("tol") = py::none(),
+            py::arg("other"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the box meets another box or contains a point, up to tol")
         .def(
             "isequal",
@@ -1346,7 +1348,7 @@ void bind_empty_set(py::module_ &m) {
                  return EmptySet(*n);
              }),
              py::arg("n") = py::none(), "The empty set of n >= 0 dimensions")
-        .def_static("empty", &EmptySet::empty, py::arg("n") = 0, "The empty set of n dimensions")
+        .def_static("empty", &EmptySet::empty, py::arg("n"), "The empty set of n dimensions")
         .def("is_bounded", &EmptySet::is_bounded, "Whether the set is bounded: always")
         .def("intersect", &EmptySet::intersect, py::arg("S"), "The intersection with S: empty")
         .def(
@@ -1364,16 +1366,22 @@ void bind_empty_set(py::module_ &m) {
             },
             py::arg("S"), "The convex hull with S: S itself")
         .def(
+            // the next step of the same case
             "contains",
-            [](const EmptySet &E, const py::object &S, Tol tol) {
+            [](const EmptySet &E, const py::object &S, const std::string &method, Tol tol) {
                 if (py::isinstance<ContSet>(S))
-                    return E.contains(py::cast<const ContSet &>(S), tol);
-                return E.contains(point_of(S, "the points"), tol);
+                    return E.contains(py::cast<const ContSet &>(S), method, tol);
+                return E.contains(point_of(S, "the points"), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether S (a set, or points (N, n)) is contained: only if it is empty")
-        .def("is_intersecting", &EmptySet::is_intersecting, py::arg("S"),
-             py::arg("tol") = py::none(), "Whether S meets the set: never")
+        .def(
+            "is_intersecting",
+            [](const EmptySet &E, const py::object &S, const std::string &method, Tol tol) {
+                return E.is_intersecting(set_of(S).get(), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether S meets the set: never")
         // the set is empty and the sum equals the other
         .def("isequal", &EmptySet::isequal, py::arg("S"), py::arg("tol") = py::none(),
              "Whether S is the empty set of the same dimension")
@@ -1903,7 +1911,7 @@ void bind_con_zonotope(py::module_ &m) {
             py::arg("Z"), py::arg("A") = py::none(), py::arg("b") = py::none(),
             "CORA's legacy form: Z = [c G] (..., n, 1 + m)")
         // the empty set is a constrained zonotope without generators
-        .def_static("empty", &ConZonotope::empty, py::arg("n") = 0,
+        .def_static("empty", &ConZonotope::empty, py::arg("n"),
                     "The empty set of n dimensions: no generators and the constraint 0 = 1")
         // the stored data, one generator per row
         .def_property_readonly(
@@ -2375,8 +2383,8 @@ void bind_polytope(py::module_ &m) {
              py::arg("be") = py::none(),
              "Polytope(V): vertices (p, n); Polytope(A, b[, Ae, be]): halfspaces; Polytope(I): a "
              "box")
-        .def_static("empty", &Polytope::empty, py::arg("n") = 0, "The empty set of n dimensions")
-        .def_static("inf", &Polytope::inf, py::arg("n") = 0, "R^n")
+        .def_static("empty", &Polytope::empty, py::arg("n"), "The empty set of n dimensions")
+        .def_static("inf", &Polytope::inf, py::arg("n"), "R^n")
         .def_static(
             "enclose_points",
             [](const py::object &points) {
@@ -2560,13 +2568,12 @@ void bind_polytope(py::module_ &m) {
              py::arg("type") = "outer", "Drops the constraints that are inactive on the box dom")
         .def(
             "reduce",
-            [](const Polytope &P, int order, std::optional<std::reference_wrapper<cora::Rng>> rng,
-               const std::string &method) {
+            [](const Polytope &P, int order, const std::string &method,
+               std::optional<std::reference_wrapper<cora::Rng>> rng) {
                 // without a generator, a fixed seed gives the same directions every time
-                cora::Rng fallback(0);
-                return P.reduce(order, rng ? rng->get() : fallback, method);
+                return P.reduce(order, method, rng ? &rng->get() : nullptr);
             },
-            py::arg("order") = 1, py::arg("rng") = py::none(), py::arg("method") = "rand",
+            py::arg("order") = 1, py::arg("method") = "rand", py::arg("rng") = py::none(),
             "An enclosing polytope with at most order * dim constraints")
         .def(
             "set_difference",
@@ -2630,22 +2637,23 @@ void bind_ellipsoid(py::module_ &m) {
              py::arg("q"), py::arg("Q"), py::arg("tol") = py::none(),
              "center q (..., n) and shape matrix Q (..., n, n); tol bounds the asymmetry and the "
              "negative eigenvalues of Q")
-        .def_static("empty", &Ellipsoid::empty, py::arg("n") = 0,
-                    "The empty ellipsoid of n dimensions")
+        .def_static("empty", &Ellipsoid::empty, py::arg("n"), "The empty ellipsoid of n dimensions")
         .def_static("origin", &Ellipsoid::origin, py::arg("n"),
                     "The ellipsoid that is the origin of R^n")
         // a random ellipsoid
         .def_static(
             "generate_random",
-            [](cora::Rng &rng, const std::optional<int64_t> &dimension, bool is_degenerate,
-               const py::object &center) {
+            [](cora::Rng &rng, const std::optional<int64_t> &dimension, const py::object &center,
+               bool is_degenerate) {
                 return Ellipsoid::generate_random(
-                    rng, dimension, is_degenerate,
+                    rng, dimension,
                     center.is_none() ? std::nullopt
-                                     : std::optional<Tensor>(point_of(center, "center")));
+                                     : std::optional<Tensor>(point_of(center, "center")),
+                    is_degenerate);
             },
-            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("is_degenerate") = false,
-            py::arg("center") = py::none(),
+            // the next step of the same case
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
+            py::arg("is_degenerate") = false,
             "A random ellipsoid: the dimension (default that of center, else random in 1..30), "
             "whether Q is singular, and the center")
         .def(
@@ -2690,12 +2698,13 @@ void bind_ellipsoid(py::module_ &m) {
         // meeting points or an ellipsoid
         .def(
             "is_intersecting",
-            [](const Ellipsoid &E, const py::object &S, Tol tol) -> py::object {
+            [](const Ellipsoid &E, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
                 if (py::isinstance<Ellipsoid>(S))
-                    return py::bool_(E.is_intersecting(ellipsoid_of(S), tol));
-                return values(E.is_intersecting(point_of(S, "the points"), tol));
+                    return py::bool_(E.is_intersecting(ellipsoid_of(S), method, tol));
+                return values(E.is_intersecting(point_of(S, "the points"), method, tol));
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the ellipsoid meets an ellipsoid (one a point) or contains the points (..., "
             "n)")
         // the Minkowski sum
@@ -2857,7 +2866,7 @@ void bind_capsule(py::module_ &m) {
              }),
              py::arg("c"), py::arg("g") = py::none(), py::arg("r") = py::none(),
              "center c (..., n), generator g (..., n; default 0) and radius r (default 0)")
-        .def_static("empty", &Capsule::empty, py::arg("n") = 0,
+        .def_static("empty", &Capsule::empty, py::arg("n"),
                     "The empty capsule of n dimensions, flagged in empty_mask")
         .def_static("origin", &Capsule::origin, py::arg("n"),
                     "The capsule that is the origin of R^n")
@@ -2933,29 +2942,32 @@ void bind_capsule(py::module_ &m) {
             "isequal",
             [](const Capsule &C, const Capsule &S, Tol tol) { return C.isequal(S, tol); },
             py::arg("S"), py::arg("tol") = py::none(),
+            // the next step of the same case
             "Whether the capsules are equal up to tol, or both empty")
         .def(
             "contains",
-            [](const Capsule &C, const py::object &S, Tol tol) -> py::object {
+            [](const Capsule &C, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
                 if (py::isinstance<Capsule>(S))
-                    return py::bool_(C.contains(py::cast<Capsule>(S), tol));
+                    return py::bool_(C.contains(py::cast<Capsule>(S), method, tol));
                 if (py::isinstance<Zonotope>(S))
-                    return py::bool_(C.contains(py::cast<Zonotope>(S), tol));
+                    return py::bool_(C.contains(py::cast<Zonotope>(S), method, tol));
                 if (py::isinstance<Interval>(S))
-                    return py::bool_(C.contains(py::cast<Interval>(S), tol));
+                    return py::bool_(C.contains(py::cast<Interval>(S), method, tol));
                 // containment of points or sets
-                return values(C.contains(point_of(S, "the points"), tol));
+                return values(C.contains(point_of(S, "the points"), method, tol));
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the capsule contains the points (N, n), a capsule, a zonotope or a box")
         .def(
             "is_intersecting",
-            [](const Capsule &C, const py::object &S, Tol tol) -> py::object {
+            [](const Capsule &C, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
                 if (py::isinstance<Capsule>(S))
-                    return py::bool_(C.is_intersecting(py::cast<Capsule>(S), tol));
-                return values(C.is_intersecting(point_of(S, "the points"), tol));
+                    return py::bool_(C.is_intersecting(py::cast<Capsule>(S), method, tol));
+                return values(C.is_intersecting(point_of(S, "the points"), method, tol));
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the capsule meets a capsule or contains the points (N, n), up to tol")
         .def("convex_hull", &Capsule::convex_hull, py::arg("S"),
              "A capsule that encloses the capsule and S");
@@ -3108,10 +3120,10 @@ void bind_poly_zonotope(py::module_ &m) {
         // CORA's approximate test: False is certain
         .def(
             "is_intersecting",
-            [](const PolyZonotope &P, const Polytope &S, Tol tol) {
-                return P.is_intersecting(S, tol);
+            [](const PolyZonotope &P, const Polytope &S, const std::string &method, Tol tol) {
+                return P.is_intersecting(S, method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "False if the set certainly misses the polytope, else True");
     m.attr("PolyZonotope").attr("__array_ufunc__") = py::none();
 }
@@ -3914,8 +3926,8 @@ void bind_level_set(py::module_ &m) {
              }),
              py::arg("eq"), py::arg("n"), py::arg("op"), "One constraint eq op 0 on n states")
         // the two constants, the constraints and the queries
-        .def_static("empty", &LevelSet::empty, py::arg("n") = 0, "The empty set of n dimensions")
-        .def_static("inf", &LevelSet::inf, py::arg("n") = 0, "The whole space of n dimensions")
+        .def_static("empty", &LevelSet::empty, py::arg("n"), "The empty set of n dimensions")
+        .def_static("inf", &LevelSet::inf, py::arg("n"), "The whole space of n dimensions")
         .def_property_readonly("num_equations", &LevelSet::num_equations,
                                "The number of constraints")
         .def_property_readonly(
@@ -3940,19 +3952,20 @@ void bind_level_set(py::module_ &m) {
         // contains takes points or a box
         .def(
             "contains",
-            [](const LevelSet &L, const py::object &S, Tol tol) {
-                if (py::isinstance<Interval>(S)) return L.contains(py::cast<Interval>(S), tol);
-                return L.contains(point_of(S, "the points"), tol);
+            [](const LevelSet &L, const py::object &S, const std::string &method, Tol tol) {
+                if (py::isinstance<Interval>(S))
+                    return L.contains(py::cast<Interval>(S), method, tol);
+                return L.contains(point_of(S, "the points"), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether all points (N, n), or the box S, satisfy every constraint")
         // is_intersecting goes through the box of the other set
         .def(
             "is_intersecting",
-            [](const LevelSet &L, const py::object &S, Tol tol) {
-                return L.is_intersecting(set_of(S).get(), tol);
+            [](const LevelSet &L, const py::object &S, const std::string &method, Tol tol) {
+                return L.is_intersecting(set_of(S).get(), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "False if the box of S shows that S and the level set are disjoint")
         // the contractor, the complement and the split
         .def("tighten_domain", &LevelSet::tighten_domain, py::arg("I"),

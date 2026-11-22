@@ -29,7 +29,6 @@ void empty_set(const std::string &b) {
     check(P.is_v_rep() && P.V().shape() == Shape{0, 3}, b + ": no vertices");
     check(P.Ae().shape() == Shape{0, 3}, b + ": no equalities");
     check(Polytope::empty(0).A().shape() == Shape{0, 0}, b + ": n = 0: no row");
-    check(Polytope::empty().dim() == 0, b + ": the default dimension is 0");
     check(Polytope::empty(1).A().shape() == Shape{1, 1}, b + ": one row in 1D");
 }
 

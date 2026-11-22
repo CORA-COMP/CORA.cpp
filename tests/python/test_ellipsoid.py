@@ -61,7 +61,6 @@ class Ellipsoid(unittest.TestCase):
         # the empty ellipsoid is flagged and keeps its shapes
         E = cora.Ellipsoid.empty(3)
         self.assertEqual(E.dim, 3)
-        self.assertEqual(cora.Ellipsoid.empty().dim, 0)
         self.assertTrue(E.is_empty())
         self.assertEqual(E.Q.shape, (3, 3))
         self.assertEqual(E.q.shape, (3,))

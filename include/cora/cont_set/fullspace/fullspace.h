@@ -72,10 +72,19 @@ class Fullspace : public detail::DimensionSet {
     /// Whether the set contains S: always. tol relaxes nothing, but is checked; default: the
     /// repository tolerance (docs/architecture.md). Error::not_supported in R^0.
     bool contains(const ContSet &S, Tol tol = std::nullopt) const;
+    bool contains(const ContSet &S, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(S, tol);
+    }
 
     /// Whether the set meets S: unless S is an empty interval. tol as contains.
     /// Error::not_supported in R^0.
     bool is_intersecting(const ContSet &S, Tol tol = std::nullopt) const;
+    bool is_intersecting(const ContSet &S, const std::string &method,
+                         Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(S, tol);
+    }
 
     /// Whether S is the whole space of the same dimension: a Fullspace, or an Interval with all
     /// bounds infinite; false for any other set, for a point and for a different dimension. tol
@@ -137,6 +146,12 @@ class Fullspace : public detail::DimensionSet {
 
 /// The image of the whole space under a matrix, as CORA writes M * F.
 inline Set operator*(const Tensor &M, const Fullspace &F) { return F.linear_map(M); }
+
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline Set operator*(double s, const Fullspace &S) {
+    return static_cast<const ContSet &>(S).times(s);
+}
+inline Set operator*(const Fullspace &S, double s) { return s * S; }
 
 } // namespace cora
 

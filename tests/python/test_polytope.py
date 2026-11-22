@@ -72,7 +72,6 @@ class Polytope(unittest.TestCase):
         W = cora.Polytope.inf(2)
         self.assertEqual(W.A.shape, (0, 2))
         self.assertTrue(np.all(W.contains(np.array([1e9, -1e9]))))
-        self.assertEqual(cora.Polytope.empty().dim, 0)
         with self.assertRaises(cora.errors.WrongValue):
             cora.Polytope.empty(-1)
 

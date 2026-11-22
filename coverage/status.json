@@ -526,7 +526,7 @@
   "contSet/polyZonotope/mtimes": "oracle",
   "contSet/polyZonotope/noIndep": "todo",
   "contSet/polyZonotope/onlyId": "todo",
-  "contSet/polyZonotope/origin": "todo",
+  "contSet/polyZonotope/origin": "untested",
   "contSet/polyZonotope/outerApprox": "todo",
   "contSet/polyZonotope/partZonotope": "todo",
   "contSet/polyZonotope/plot3D": "todo",

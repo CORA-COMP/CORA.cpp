@@ -76,8 +76,9 @@ bool aux_apply(const std::string &method, HostH &H, double tol) {
 
 // The compaction ----------------------------------------------------------------------------------
 
-Polytope Polytope::compact(const std::string &method, Tol tol_arg) const {
+Polytope Polytope::compact(const std::optional<std::string> &method_arg, Tol tol_arg) const {
     detail::Entry entry;
+    const std::string method = method_arg.value_or("all");
     const double tol = resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "compact");
     CORA_CHECK(std::find(std::begin(kMethods), std::end(kMethods), method) != std::end(kMethods),
                Error::wrong_value, [&] {
@@ -117,7 +118,7 @@ std::optional<std::vector<std::string>> Polytope::compact_methods_impl() const {
 }
 
 Set Polytope::compact_impl(const std::optional<std::string> &method, Tol tol) const {
-    return compact(method.value_or("all"), tol);
+    return compact(method, tol);
 }
 
 } // namespace cora

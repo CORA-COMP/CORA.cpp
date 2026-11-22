@@ -69,7 +69,7 @@ class Ellipsoid : public ContSet {
 
     /// The empty ellipsoid of n dimensions (CORA's ellipsoid.empty): flagged in empty_mask(), with
     /// the center 0 (n) and Q = 0 (n, n).
-    static Ellipsoid empty(int64_t n = 0);
+    static Ellipsoid empty(int64_t n);
 
     /// The ellipsoid that is the origin of R^n, n >= 1 (CORA's ellipsoid.origin): Q = 0, q = 0.
     static Ellipsoid origin(int64_t n);
@@ -78,8 +78,8 @@ class Ellipsoid : public ContSet {
     /// 1..30), center (default N(0, 1)^n), is_degenerate (Q singular); Q is scaled to entries
     /// below 10.
     static Ellipsoid generate_random(Rng &rng, std::optional<int64_t> dimension = std::nullopt,
-                                     bool is_degenerate = false,
-                                     const std::optional<Tensor> &center = std::nullopt);
+                                     const std::optional<Tensor> &center = std::nullopt,
+                                     bool is_degenerate = false);
 
     using ContSet::rand_point;
 
@@ -119,7 +119,16 @@ class Ellipsoid : public ContSet {
     /// ellipsoid (CORA's isIntersecting_): exact when one is a point; else the distance of two
     /// ellipsoids needs a solver, Error::not_supported. Not a batch.
     Mask is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Tensor &p, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(p, tol);
+    }
     bool is_intersecting(const Ellipsoid &S, Tol tol = std::nullopt) const;
+    bool is_intersecting(const Ellipsoid &S, const std::string &method,
+                         Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(S, tol);
+    }
 
     /// Always true: the shape matrix is finite.
     bool is_bounded() const;
@@ -276,6 +285,12 @@ class Ellipsoid : public ContSet {
     Tensor Q_, q_;
     double tol_;
 };
+
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline Ellipsoid operator*(double s, const Ellipsoid &S) {
+    return static_cast<const ContSet &>(S).times(s).as<Ellipsoid>();
+}
+inline Ellipsoid operator*(const Ellipsoid &S, double s) { return s * S; }
 
 } // namespace cora
 

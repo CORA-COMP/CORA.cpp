@@ -89,7 +89,6 @@ class ConZonotope(unittest.TestCase):
         self.assertTrue(np.isnan(E.center).all())
         self.assertTrue(E.is_bounded())
         self.assertTrue(segment().is_bounded())
-        self.assertEqual(cora.ConZonotope.empty().dim, 0)
         with self.assertRaises(cora.errors.WrongValue):
             cora.ConZonotope.empty(-1)
 

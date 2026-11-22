@@ -80,6 +80,9 @@ class PolyZonotope : public ContSet {
     /// The box as a polynomial zonotope with one dependent generator per dimension.
     explicit PolyZonotope(const Interval &I);
 
+    /// The set {0} of n dimensions (CORA's polyZonotope.origin).
+    static PolyZonotope origin(int64_t n);
+
     /// The center c (n) and the generator rows G (h, n) and GI (q, n).
     const Tensor &center() const noexcept { return c_; }
     const Tensor &generators() const noexcept { return G_; }
@@ -138,6 +141,11 @@ class PolyZonotope : public ContSet {
     /// Whether the set may meet a polytope (CORA's isIntersecting_ with type "approx"): false is
     /// certain, true says nothing. tol (default: the repository tolerance) widens the equalities.
     bool is_intersecting(const Polytope &P, Tol tol = std::nullopt) const;
+    bool is_intersecting(const Polytope &P, const std::string &method,
+                         Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(P, tol);
+    }
 
     /// The halves along the factor with the identifier id (CORA's splitDepFactor): alpha becomes
     /// (alpha +- 1) / 2, so the halves cover the set and have the identifiers of this one.
@@ -148,8 +156,10 @@ class PolyZonotope : public ContSet {
     std::pair<PolyZonotope, PolyZonotope> split_longest_gen() const;
 
     /// The set without the generators that are zero and the factors that no generator uses (CORA's
-    /// compact_ "all", whose exponent merging the constructor does).
-    PolyZonotope compact() const;
+    /// compact_ "all", whose exponent merging the constructor does). The only method is "all" (the
+    /// default); tol is checked and unused.
+    PolyZonotope compact(const std::optional<std::string> &method = std::nullopt,
+                         Tol tol = std::nullopt) const;
 
     /// The dependent generators of equal exponents added into the one of the least index, the sum
     /// from the last column to the first (CORALean's compactGens); no zero generator is dropped.
@@ -176,6 +186,12 @@ class PolyZonotope : public ContSet {
     Exponents E_;
     std::vector<int64_t> id_;
 };
+
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline PolyZonotope operator*(double s, const PolyZonotope &S) {
+    return static_cast<const ContSet &>(S).times(s).as<PolyZonotope>();
+}
+inline PolyZonotope operator*(const PolyZonotope &S, double s) { return s * S; }
 
 } // namespace cora
 

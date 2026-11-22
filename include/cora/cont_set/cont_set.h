@@ -293,6 +293,22 @@ using Refusal = std::optional<std::pair<Error::Id, std::string>>;
 Refusal project_high_dim_refusal(int64_t n, int64_t N, const std::vector<int64_t> &proj,
                                  const char *operation = "project_high_dim");
 
+/// The refusal of a conversion that is not ported, as an expression of the target class T, so
+/// that a delegating constructor can raise it: it never returns.
+template <class T>
+[[noreturn]] T refuse_conversion(const std::string &message) {
+    CORA_FAIL(Error::not_supported, message);
+}
+
+/// Refuses a method of contains or is_intersecting other than CORA's "exact" and "approx" (a
+/// class with one algorithm answers both alike); `operation` names the predicate.
+inline void check_predicate_method(const std::string &method, const char *operation) {
+    if (method != "exact" && method != "approx")
+        CORA_FAIL(Error::wrong_value, std::string(operation) +
+                                          ": the method must be 'exact' or 'approx', got '" +
+                                          method + "'");
+}
+
 // Details -----------------------------------------------------------------------------------------
 
 /// The lift of a set that cannot grow is a permutation: the state of position j of the lifted set

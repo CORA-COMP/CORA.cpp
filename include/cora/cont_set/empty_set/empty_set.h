@@ -47,7 +47,7 @@ class EmptySet : public detail::DimensionSet {
     explicit EmptySet(int64_t n);
 
     /// The empty set of n dimensions (CORA's emptySet.empty); n = 0 by default.
-    static EmptySet empty(int64_t n = 0);
+    static EmptySet empty(int64_t n);
 
     /// Whether the set is bounded: always.
     bool is_bounded() const;
@@ -85,10 +85,23 @@ class EmptySet : public detail::DimensionSet {
     /// Whether the set contains S: true exactly if S is empty, up to tol as CORA passes it on.
     /// Points p (..., N, n) are contained if there are none (N = 0).
     bool contains(const ContSet &S, Tol tol = std::nullopt) const;
+    bool contains(const ContSet &S, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(S, tol);
+    }
     bool contains(const Tensor &p, Tol tol = std::nullopt) const;
+    bool contains(const Tensor &p, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(p, tol);
+    }
 
     /// Whether S meets the set (CORA's isIntersecting_): never.
     bool is_intersecting(const ContSet &S, Tol tol = std::nullopt) const;
+    bool is_intersecting(const ContSet &S, const std::string &method,
+                         Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(S, tol);
+    }
 
     /// Whether S is the empty set of this dimension; tol is CORA's argument (default: the
     /// repository tolerance) and relaxes nothing here.

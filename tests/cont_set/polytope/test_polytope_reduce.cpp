@@ -27,13 +27,17 @@ void reductions(const std::string &b) {
     Rng rng(4);
     const Polytope P = test::random_polytope(rng, 3, 8);
     for (int order = 1; order <= 2; ++order) {
-        const Polytope R = P.reduce(order, rng);
+        const Polytope R = P.reduce(order, "rand", &rng);
         check(R.A().shape()[0] <= 6 * order && R.dim() == 3, b + ": at most 2 order n rows");
         check(R.contains(test::sample_points(P, rng, 20), "exact", 1e-8),
               b + ": it contains the set");
     }
     // the empty set stays empty
-    check(Polytope::empty(2).reduce(1, rng).representsa("emptySet"), b + ": the empty set");
+    check(Polytope::empty(2).reduce(1, "rand", &rng).representsa("emptySet"),
+          b + ": the empty set");
+    // through the generic entry, without a generator
+    const ContSet &S = P;
+    check(S.reduce(1).is<Polytope>(), b + ": the generic entry reduces a polytope");
 }
 
 } // namespace
@@ -44,12 +48,13 @@ void reductions(const std::string &b) {
 int main() {
     test::for_each_backend(reductions);
     Rng rng(4);
-    check(test::raises([&] { test::square_h().reduce(0, rng); }, Error::wrong_value),
+    check(test::raises([&] { test::square_h().reduce(0, "rand", &rng); }, Error::wrong_value),
           "reduce: order >= 1");
-    check(test::raises([&] { test::square_h().reduce(1, rng, "girard"); }, Error::wrong_value),
+    check(test::raises([&] { test::square_h().reduce(1, "girard", &rng); }, Error::wrong_value),
           "reduce: the method");
     ChecksScope off(false);
-    check(test::square_h().reduce(1, rng).dim() == 2, "reduce: the same with the checks off");
+    check(test::square_h().reduce(1, "rand", &rng).dim() == 2,
+          "reduce: the same with the checks off");
     return test::finish("polytope reduce");
 }
 

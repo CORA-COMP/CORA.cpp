@@ -226,6 +226,12 @@ class ZonoBundle : public ContSet {
     std::vector<Zonotope> Z_;
 };
 
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline ZonoBundle operator*(double s, const ZonoBundle &S) {
+    return static_cast<const ContSet &>(S).times(s).as<ZonoBundle>();
+}
+inline ZonoBundle operator*(const ZonoBundle &S, double s) { return s * S; }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

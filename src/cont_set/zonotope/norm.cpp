@@ -3,8 +3,8 @@
 // "ub" is the norm of the box around the zonotope, so no point has a larger norm; "exact" needs a
 // mixed-integer solver and "ub_convex" a semidefinite one, neither is supported.
 //
-// Syntax:   val = Z.norm();   val = Z.norm(type, "ub");
-// Inputs:   type - 1, 2 (default) or infinity (ContSet::norm also takes fro)
+// Syntax:   val = Z.norm();   val = Z.norm(Tensor::Norm::one, "ub");
+// Inputs:   type - Tensor::Norm: one, two (default), inf or fro (ContSet::norm)
 //           method - "ub" (default)
 // Outputs:  val - the bound, (...)
 // See also: interval, minnorm
@@ -21,7 +21,6 @@
 #include "cora/cont_set/zonotope/zonotope.h"
 
 #include <cmath>
-#include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -29,22 +28,6 @@ namespace cora {
 
 
 // ===========================================  MAIN  =========================================== //
-
-Tensor Zonotope::norm(double type, const std::string &method) const {
-    detail::Entry entry;
-    CORA_CHECK(type == 1 || type == 2 || type == std::numeric_limits<double>::infinity(),
-               Error::wrong_value, [&] {
-                   return "norm: the type must be 1, 2 or infinity, got " + std::to_string(type);
-               });
-    CORA_CHECK(
-        method == "exact" || method == "ub" || method == "ub_convex", Error::wrong_value, [&] {
-            return "norm: the method must be 'exact', 'ub' or 'ub_convex', got '" + method + "'";
-        });
-    return norm_impl(type == 1   ? Tensor::Norm::one
-                     : type == 2 ? Tensor::Norm::two
-                                 : Tensor::Norm::inf,
-                     method);
-}
 
 Tensor Zonotope::norm_impl(Tensor::Norm type, const std::string &method) const {
     if (method != "ub")

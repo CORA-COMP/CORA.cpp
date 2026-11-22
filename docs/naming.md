@@ -36,6 +36,27 @@ changed, and the reasons are listed below.
   `reduce`, `rescale`, the conversions, and every Ellipsoid operation. `type` stays only where
   CORA names the kind of question: `representsa(type)`, the order of `norm(type, method)`,
   `rand_point(N, rng, type)` and `round(type)`. The option values are CORA's strings.
+- **One predicate signature:** `contains` and `is_intersecting` take `(S, method, tol)` on every
+  class, with `method` "exact" or "approx" (CORA's types). A class with one algorithm validates
+  the method and ignores it. Where `method` has a default it is "exact"; the older `(S, tol)` form
+  stays beside `(S, method, tol)` on the classes that had no method.
+- **Masks:** a predicate of points or of a batch of sets answers a `Mask` (one flag per point or
+  member, of the batch shape; NumPy semantics: its bool is allowed for exactly one member, for more
+  use `all()` or `any()`). In Python it is a bool for one set and a bool array for a batch.
+- **Kept CORA spellings:** `isequal`, `isnan` and `representsa` keep CORA's run-together spelling
+  against `is_intersecting`, `is_bounded`, `is_full_dim` and `is_empty`: they name the function of
+  the same name in CORA, which the file headers cite, and renaming them would break that lookup.
+- **Constructors and factories:** `empty(n)`, `inf(n)` and `origin(n)` take the dimension, with no
+  default; `Interval::unbounded(n)` is the unbounded box (`inf` is its lower bound), and
+  `generate_random(rng, dimension, center, ...)` takes the center third on every class.
+- **`reduce`:** `reduce(order, method)` takes CORA's method strings; the zonotope's
+  `reduce_adaptive`, `reduce_pca` and `reduce_under_approx` stay separate names because their
+  arguments are not a method of one signature (CORA's `reduce(Z, 'adaptive', ...)`).
+- **`norm`:** `norm(Tensor::Norm type, method)` on every class; Python takes 1, 2, inf or 'fro'.
+- **Python-only names:** `Interval.power_of` and `rdivide_of` (the static two-interval forms of
+  `power` and `rdivide`) and `Polytope.center_by` (C++ `center(method)`, as `center` is a property)
+  are kept; a polynomial zonotope's `c`, `G`, `GI`, `E` and `id` are aliases of `center`,
+  `generators`, `independent_generators`, `exponents` and `ids`.
 - **Options** have the same names in C++ (struct fields) and in Python (keywords):
   - `time_step`, `t_final`, `taylor_terms`, `zonotope_order`;
   - the problem: `initial_set`, `input_set`, `initial_state`, `input`.

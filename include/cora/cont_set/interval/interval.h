@@ -220,7 +220,16 @@ class Interval : public ContSet {
     /// tol as within_tol; false if one is empty. With a point p, whether p is in the box. A mask
     /// of the batch shape. tol default: the repository tolerance.
     Mask is_intersecting(const Interval &I2, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Interval &I2, const std::string &method,
+                         Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(I2, tol);
+    }
     Mask is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Tensor &p, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(p, tol);
+    }
 
     /// Whether the boxes have the same bounds, up to tol as within_tol; infinite bounds must
     /// agree exactly. Boxes of different shape are not equal. A point p is the box [p, p]. A mask
@@ -300,7 +309,7 @@ class Interval : public ContSet {
     /// The norm (batch...) of the largest member: type two is the 2-norm of max(|inf|, |sup|) of a
     /// box (refused for a matrix, as CORA's intervalMatrix), else the norm of |center| +
     /// half_width (one, inf, fro); -Inf for an empty interval.
-    Tensor norm(Tensor::Norm type = Tensor::Norm::two) const;
+    Tensor norm(Tensor::Norm type = Tensor::Norm::two, const std::string &method = "ub") const;
 
     // Embedding -----------------------------------------------------------------------------------
 

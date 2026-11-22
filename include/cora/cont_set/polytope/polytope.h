@@ -76,11 +76,11 @@ class Polytope : public ContSet {
 
     /// The empty set of n dimensions (CORA's polytope.empty): flagged in empty_mask(), with the
     /// row 0 <= -1 (none for n = 0) and no vertices (0, n).
-    static Polytope empty(int64_t n = 0);
+    static Polytope empty(int64_t n);
 
     /// R^n (CORA's polytope.Inf): no constraints. CORA also stores the 2^n vertices at infinity
     /// for n <= 8; vertices are not ported, so none are held here.
-    static Polytope inf(int64_t n = 0);
+    static Polytope inf(int64_t n);
 
     /// {x | Ae x = be} without inequalities (Ae (..., k, n), be (..., k)), e.g. the factor
     /// polytope of a constrained zonotope; the offsets must be finite (an input check). A batch is
@@ -140,9 +140,10 @@ class Polytope : public ContSet {
     Tensor center(const std::string &method) const;
 
     /// The set without redundancy (CORA's compact_), with the tolerance tol for "is zero" and "is
-    /// aligned"; method "all" (default), "A", "Ae", "aligned", "zeros", "AtoAe" or "V". Not a
-    /// batch.
-    Polytope compact(const std::string &method = "all", Tol tol = std::nullopt) const;
+    /// aligned"; method "all" (default, no method), "A", "Ae", "aligned", "zeros", "AtoAe" or "V".
+    /// Not a batch.
+    Polytope compact(const std::optional<std::string> &method = std::nullopt,
+                     Tol tol = std::nullopt) const;
 
     /// The constrained zonotope of the set (CORA's conZonotope, after Scott et al.):
     /// "exact:supportFunc" (default) or "exact:vertices". An unbounded set is
@@ -336,7 +337,8 @@ class Polytope : public ContSet {
 
     /// An enclosure by 2 * order * n random supporting halfspaces (CORA's reduce with 'rand'),
     /// directions drawn with rng. Not a batch.
-    Polytope reduce(int order, Rng &rng, const std::string &method = "rand") const;
+    using ContSet::reduce;
+    Polytope reduce(int order, const std::string &method, Rng *rng = nullptr) const;
 
     /// The Minkowski difference {x | x + S in this set} (CORA's minkDiff, through
     /// ContSet::mink_diff) of a set with a support function: method "exact" (default;
@@ -384,6 +386,7 @@ class Polytope : public ContSet {
     // the overrides of the queries and maps of the second batch
     bool is_bounded_impl() const override;
     bool is_full_dim_impl(Tol tol) const override;
+    Set reduce_impl(int order) const override;
     Set translate_impl(const Tensor &v) const override;
     Set linear_map_impl(const Tensor &M) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
@@ -410,6 +413,12 @@ inline Polytope operator+(const Polytope &P, const Polytope &S) { return P.plus(
 inline Polytope operator+(const Polytope &P, const Tensor &v) { return P.plus(v); }
 inline Polytope operator+(const Tensor &v, const Polytope &P) { return P.plus(v); }
 inline Polytope operator-(const Polytope &P, const Tensor &v) { return P.minus(v); }
+
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline Polytope operator*(double s, const Polytope &S) {
+    return static_cast<const ContSet &>(S).times(s).as<Polytope>();
+}
+inline Polytope operator*(const Polytope &S, double s) { return s * S; }
 
 } // namespace cora
 
