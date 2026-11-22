@@ -2,7 +2,7 @@
 
 The Python side of prepare_instance.sh and run_instance.sh (VNN-COMP's tool interface). It loads
 the network and the property once (cora.nn_verify.load), runs the C++ cora.NeuralNetwork.verify
-with CORA's preset of the category (cora.vnncomp_options) within the timeout (less the time spent
+with the VNN-COMP preset of the category (cora.vnncomp_options) within the timeout (less the time spent
 starting), and writes the result file: "sat" and the counterexample in the format of the
 property's VNN-LIB version, "unsat", or "unknown". Next to it, RESULT.stats.json holds the time
 and memory of the run (peak RSS, torch's peak on a GPU) and the counts of the attack and the
@@ -83,9 +83,9 @@ SAFETY = 1.0  # seconds kept for writing the result before the timeout
 
 
 def options_for(category, device):
-    """The verify options of a benchmark category: CORA's preset of it (cora.vnncomp_options, CORA's
-    getDefaultVNNCOMPoptions) with the PGD attack around it, and the overrides of the environment
-    variable CORACPP_VNNCOMP_OPTIONS (a JSON object of NnVerifyOptions fields), for experiments."""
+    """The verify options of a benchmark category: the VNN-COMP preset (cora.vnncomp_options, CORA's
+    getDefaultVNNCOMPoptions with Phase 2's bounds) with the PGD attack around it, and the overrides
+    of the environment variable CORACPP_VNNCOMP_OPTIONS (a JSON object of NnVerifyOptions fields)."""
     overrides = json.loads(os.environ.get("CORACPP_VNNCOMP_OPTIONS", "{}"))
     return cora.vnncomp_options(category, device=device, **overrides)
 

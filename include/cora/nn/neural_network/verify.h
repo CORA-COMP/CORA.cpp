@@ -142,6 +142,10 @@ struct NnVerifyOptions {
 
 /// CORA's getDefaultVNNCOMPoptions of a benchmark (a year suffix _2024 is dropped): the
 /// conzonotope bounding with zonotack, the PGD attack around it.
+NnVerifyOptions cora_vnncomp_options(const std::string &category);
+
+/// The VNN-COMP preset: CORA's, with Phase 2's bounds chosen on the dev sets (zonotope-alpha,
+/// backward_bound, alpha_method by benchmark).
 NnVerifyOptions vnncomp_options(const std::string &category);
 
 // The result --------------------------------------------------------------------------------------

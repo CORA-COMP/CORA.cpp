@@ -6,7 +6,7 @@ layers of a cora.NeuralNetwork (cora.onnx_network), the property's input boxes a
 polytopes stacked (cora.vnnlib), and the scoring's counterexample check, which C++ calls back for
 every candidate (onnxruntime on the float32 point, then VNN-COMP's own check of the written
 counterexample). A network that is no chain of affine maps and activations is "unknown" with the
-reason. The options are cora.NnVerifyOptions; cora.vnncomp_options(category) gives CORA's presets.
+reason. The options are cora.NnVerifyOptions; cora.vnncomp_options(category) gives the preset.
 
 Syntax:   instance = load("net.onnx", "prop.vnnlib")
           result = verify(instance, 60, cora.vnncomp_options("acasxu_2023"))   result.status

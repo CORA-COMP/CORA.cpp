@@ -79,7 +79,7 @@ Instance aux_instance(int seed) {
 
 /// The options of the witness search: CORA's preset with splits, ReLU rows and an interval center.
 NnVerifyOptions aux_options() {
-    NnVerifyOptions o = vnncomp_options("witness");
+    NnVerifyOptions o = cora_vnncomp_options("witness");
     o.falsification_method = "center";
     o.falsification_order = "bound-first";
     o.bab_falsification_method = "center";

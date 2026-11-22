@@ -82,7 +82,7 @@ double aux_least_output(const NeuralNetwork &nn, Rng &rng, int64_t n, double lo,
 
 /// The options of a small run: the bounding, dtype float64 on lean (which has no float32).
 NnVerifyOptions aux_options(const std::string &bounding, const std::string &b) {
-    NnVerifyOptions o = bounding == "zonotope" ? NnVerifyOptions{} : vnncomp_options("test");
+    NnVerifyOptions o = bounding == "zonotope" ? NnVerifyOptions{} : cora_vnncomp_options("test");
     o.bounding_method = bounding;
     o.alpha_iterations = 5;
     if (b == "lean") o.dtype = DType::float64;
@@ -473,9 +473,9 @@ void checks_and_their_switch() {
     check(test::raises([&] { nn.verify(aux_below(2, 2, 0, 1, 0), -1); }, Error::wrong_value),
           "verify: a negative timeout");
     const NnProperty far = aux_below(2, 2, 0, 1, -100);
-    const std::string on = nn.verify(far, 5, vnncomp_options("x")).status;
+    const std::string on = nn.verify(far, 5, cora_vnncomp_options("x")).status;
     ChecksScope off(false);
-    check(nn.verify(far, 5, vnncomp_options("x")).status == on,
+    check(nn.verify(far, 5, cora_vnncomp_options("x")).status == on,
           "verify: the same with the checks off");
 }
 

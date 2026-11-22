@@ -1,9 +1,9 @@
 // test_neural_network_verify_options - the options of verify and its registries of strategies
 //
-// The options refuse unknown strategy names and option values, vnncomp_options gives CORA's
-// presets (the year of a benchmark dropped), the built-in strategies are registered, and a
-// program's own attack is used by its name. Every heuristic scores every entry, and an
-// out-of-memory error is recognized.
+// The options refuse unknown strategy names and option values, cora_vnncomp_options gives CORA's
+// presets (the year of a benchmark dropped) and vnncomp_options adds Phase 2's bounds, the built-in
+// strategies are registered, and a program's own attack is used by its name. Every heuristic scores
+// every entry, and an out-of-memory error is recognized.
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Tobias Ladner, Lukas Koller
@@ -94,7 +94,16 @@ void options_and_strategies() {
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "a wrong " + field);
     }
     vnncomp_options("cora_2024").validate();
-    const NnVerifyOptions cora = vnncomp_options("cora_2024"), safe = vnncomp_options("safenlp");
+    const NnVerifyOptions cora = cora_vnncomp_options("cora_2024"),
+                          safe = cora_vnncomp_options("safenlp");
+    check(cora.bounding_method == "conzonotope" && !cora.backward_bound,
+          "CORA's presets stay CORA's");
+    const NnVerifyOptions ours = vnncomp_options("cora_2024"),
+                          acas = vnncomp_options("acasxu_2023");
+    check(ours.bounding_method == "zonotope-alpha" && ours.backward_bound &&
+              ours.alpha_method == "crown" && acas.alpha_method == "zonotope" &&
+              ours.num_neuron_splits == cora.num_neuron_splits,
+          "the VNN-COMP preset: CORA's with Phase 2's bounds");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");

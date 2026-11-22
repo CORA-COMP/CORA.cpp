@@ -98,6 +98,7 @@ from ._cora import (
     use_cora_colors,
     verify_strategies,
     vnncomp_options,
+    cora_vnncomp_options,
 )
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
@@ -132,7 +133,7 @@ __all__ = [
     "set_default_backend", "set_default_tolerance", "set_num_threads", "strict_gradients",
     "subplots", "tensor_ops",
     "to_tikz", "tolerance", "unite",
-    "use_cora_colors", "verify_strategies", "vnncomp_options", "Tensor", "cos",
+    "use_cora_colors", "verify_strategies", "vnncomp_options", "cora_vnncomp_options", "Tensor", "cos",
     "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
 ]
 
