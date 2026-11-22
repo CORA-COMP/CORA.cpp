@@ -144,6 +144,14 @@ benchmark report. An oracle op that parses the object and prints it again (`elli
 does not construct anything and earns no tag.
 """
 
+# the constructors, which are no oracle debt
+HEADER += """
+A constructor row (the method is named as the class) is never oracle debt: no operation of CORALean
+constructs a set, so a `ported` or `property` constructor has nothing to compare, and is counted as not
+comparable with CORALean (`is_constructor` in `coverage.py`; a rule, not a list). It becomes `oracle`
+when a test compares the construction, as above.
+"""
+
 
 # ------------------------------------------------------------------------------------ the tree
 
@@ -350,11 +358,19 @@ def statuses(groups, evidence, ledger):
             for row in rows_of(groups)}
 
 
+def is_constructor(key):
+    """Whether the row `group/class/method` is the constructor of its class (the method is named as
+    the class): no operation of CORALean constructs a set, so the oracle has nothing to compare."""
+    parts = key.split("/")
+    return len(parts) == 3 and parts[2] == parts[1]
+
+
 def oracle_debt(status, lean, apart=()):
     """The rows that are ported or property while CORALean has them, except the rows `apart`
-    (not comparable with CORALean: there is nothing to compare, so they are no debt)."""
+    (not comparable with CORALean: there is nothing to compare, so they are no debt) and the
+    constructors, which are no debt either until a test compares the construction (then `oracle`)."""
     return sorted(k for k, s in status.items()
-                  if s in ("ported", "property") and k not in apart
+                  if s in ("ported", "property") and k not in apart and not is_constructor(k)
                   and lean.get(k, {}).get("status") in LEAN_HAS)
 
 

@@ -118,6 +118,14 @@ class Checker(unittest.TestCase):
         self.assertFalse([p for p in problems if "oracle debt" in p])
         self.assertTrue(any("oracle debt" in w and "accepted" in w for w in warnings))
 
+    # a constructor has no construction op in CORALean to compare with
+    def test_a_constructor_is_no_oracle_debt(self):
+        status = {"contSet/zonotope/zonotope": "ported", "contSet/zonotope/center": "ported"}
+        lean = {k: {"status": "float"} for k in status}
+        self.assertTrue(cov.is_constructor("contSet/zonotope/zonotope"))
+        self.assertFalse(cov.is_constructor("contSet/zonotope/center"))
+        self.assertEqual(cov.oracle_debt(status, lean), ["contSet/zonotope/center"])
+
     def test_a_row_not_comparable_with_cora_lean_is_no_oracle_debt(self):
         # `center` is ported, CORALean has it: debt, until it is listed as not comparable
         write(self.root, "src/cont_set/zonotope/center.cpp", CENTER)

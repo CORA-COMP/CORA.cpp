@@ -40,3 +40,8 @@ zero generators, merges) counts when that computed output is compared. A plain s
 which keeps its arguments, has nothing to compare: it stays `ported` and is plumbing in the
 benchmark report. An oracle op that parses the object and prints it again (`ellipsoid.construct`)
 does not construct anything and earns no tag.
+
+A constructor row (the method is named as the class) is never oracle debt: no operation of CORALean
+constructs a set, so a `ported` or `property` constructor has nothing to compare, and is counted as not
+comparable with CORALean (`is_constructor` in `coverage.py`; a rule, not a list). It becomes `oracle`
+when a test compares the construction, as above.
