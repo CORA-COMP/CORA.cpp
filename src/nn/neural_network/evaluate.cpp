@@ -584,8 +584,7 @@ Tensor NeuralNetwork::evaluate(const Tensor &x) const {
                    return "evaluate: the points must be rows (N, " + std::to_string(input_dim()) +
                           "), got the shape " + shape_text(x.shape());
                });
-    // an affine map per layer on the columns of the points (a convolution's on the rows), then
-    // its activation
+    // per layer its map on the columns (a convolution's on the rows), then its activation
     Tensor h = x.matrix_transpose();
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         const Layer &L = layers_[k];

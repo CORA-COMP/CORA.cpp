@@ -190,7 +190,7 @@ NnVerifyOptions cora_vnncomp_options(const std::string &category) {
     return o;
 }
 
-// The VNN-COMP preset -----------------------------------------------------------------------------
+// The competition preset --------------------------------------------------------------------------
 
 NnVerifyOptions vnncomp_options(const std::string &category) {
     detail::Entry entry;

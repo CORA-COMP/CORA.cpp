@@ -118,7 +118,9 @@ class _Confirm:
         x = np.asarray(x, dtype=np.float32)
         y = self.session.run(None, {self.name: x.reshape(self.shape)})[0].reshape(-1)
         text = counterexample.write_counterexample(x, y, self.instance.prop)
-        result, _ = counterexample.check_counterexample(self.instance.onnx_path, None, text, self.instance.vnnlib_text)
+        result, _ = counterexample.check_counterexample(
+            self.instance.onnx_path, None, text, self.instance.vnnlib_text
+        )
         return y.astype(np.float64) if result == counterexample.CORRECT else None
 
 

@@ -1,4 +1,4 @@
-// test_neural_network_conv - convolution and gather layers on rows, sets and in verify
+// test_neural_network_conv2d - convolution and gather layers on rows, sets and in verify
 //
 // A convolution with groups, strides, dilations and asymmetric pads maps rows as the direct sum of
 // its definition; its transpose and absolute value are those of its matrix (Layer::dense), on
@@ -22,6 +22,8 @@
 #include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
+
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 using namespace cora;
 using test::check;
@@ -110,9 +112,11 @@ void layers(const std::string &b) {
         NeuralNetwork::Layer::gather({1, 1, 0}, 2, Tensor({0.0, 0.0, 0.0}));
     check(aux_gap(U.rows_t(Tensor({{1.0, 2.0, 5.0}})), Tensor({{5.0, 3.0}})) == 0,
           b + ": a repeated input's transpose sums its outputs");
-    check(test::raises([&] { NeuralNetwork::Layer::gather({2}, 2, Tensor({0.0})); },
-                       Error::wrong_input_in_constructor),
-          b + ": a gather refuses an index out of range");
+    // a wrong index is refused while the checks are on
+    if (checks_enabled())
+        check(test::raises([&] { NeuralNetwork::Layer::gather({2}, 2, Tensor({0.0})); },
+                           Error::wrong_input_in_constructor),
+              b + ": a gather refuses an index out of range");
 }
 
 /// A small convolutional network and the same network of dense layers.
@@ -179,6 +183,11 @@ int main() {
         layers(b);
         networks(b);
     });
+    // the same with the checks off
+    {
+        ChecksScope off(false);
+        layers("checks off");
+    }
     return test::finish("neuralNetwork convolutions");
 }
 

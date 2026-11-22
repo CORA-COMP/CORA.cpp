@@ -1,4 +1,4 @@
-// layer - the linear part of a network layer: a matrix, a 2-D convolution or a gather
+// conv2d - the linear part of a network layer: a matrix, a 2-D convolution or a gather
 //
 // A layer maps rows h (..., in) to W h + b (..., out). W is a dense matrix, a convolution (ONNX's
 // Conv of a (channels, height, width) input in C order, with strides, pads, dilations and groups)
@@ -10,6 +10,11 @@
 //
 // Syntax:   Layer L = NeuralNetwork::Layer::conv2d(kernel, bias, {C, H, W}, spec);
 //           Tensor y = L.rows(x) + L.b;   Tensor g = L.rows_t(y);   Tensor r = L.abs_rows(dr);
+// Inputs:   kernel - (out, in / groups, kh, kw)
+//           bias - (out channels times output pixels)
+//           input - (channels, height, width) of the input
+//           spec - strides, dilations, pads, groups
+// Outputs:  L - the layer; rows (..., in) -> (..., out), rows_t (..., out) -> (..., in)
 // See also: cora/nn/neural_network/neural_network.h, priv_zono_batch.h
 // References:
 //    [1] K. Chellapilla, S. Puri, P. Simard. "High performance convolutional neural networks for
@@ -32,6 +37,10 @@
 
 namespace cora {
 
+// ----------------------------------------  AUXILIARY  ----------------------------------------- //
+
+// The plan ----------------------------------------------------------------------------------------
+
 /// What a convolution or a gather needs per product: the index lists and the kernel as matrices.
 struct NeuralNetwork::LinearPlan {
     bool conv = false, transposed = false; ///< transposed: ConvTranspose, the convolution's W^T
@@ -45,9 +54,9 @@ struct NeuralNetwork::LinearPlan {
     int64_t fan = 1;
 };
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
 namespace {
+
+// Patches and gathers ----------------------------------------------------------------------------
 
 /// The rows (N, k) of the leading axes of x (..., k), and back.
 Tensor aux_flat(const Tensor &x, int64_t k) { return x.reshape({x.numel() / k, k}); }
@@ -83,6 +92,8 @@ Tensor aux_conv(const Tensor &X, int64_t channels, int64_t pixels, const std::ve
 
 // ===========================================  MAIN  =========================================== //
 
+// The layers --------------------------------------------------------------------------------------
+
 NeuralNetwork::Layer NeuralNetwork::Layer::conv2d(const Tensor &kernel, const Tensor &bias,
                                                   const std::vector<int64_t> &input,
                                                   const Conv2d &spec, bool check_bias) {
@@ -95,6 +106,7 @@ NeuralNetwork::Layer NeuralNetwork::Layer::conv2d(const Tensor &kernel, const Te
                           " does not fit the input (channels, height, width) " + shape_text(input) +
                           " with " + std::to_string(spec.groups) + " groups";
                });
+    // the sizes of the input and the output
     auto plan = std::make_shared<LinearPlan>();
     const int64_t cin = input[0], H = input[1], Wd = input[2], cout = k[0], kh = k[2], kw = k[3];
     const auto [sh, sw] = spec.stride;
@@ -103,6 +115,7 @@ NeuralNetwork::Layer NeuralNetwork::Layer::conv2d(const Tensor &kernel, const Te
     const int64_t Wo = (Wd + spec.pads[1] + spec.pads[3] - dw * (kw - 1) - 1) / sw + 1;
     CORA_CHECK(Ho >= 1 && Wo >= 1, Error::wrong_input_in_constructor,
                [] { return std::string("Layer::conv2d: the output has no pixel"); });
+    // the plan's counts
     plan->conv = true;
     plan->cin = cin;
     plan->cout = cout;
@@ -127,7 +140,7 @@ NeuralNetwork::Layer NeuralNetwork::Layer::conv2d(const Tensor &kernel, const Te
                     plan->patch_t[std::size_t(i * KK + kk)] = o;
                 }
     // the kernel as (cin offsets, cout), zero between groups, and transposed as (cout offsets, cin)
-    const std::vector<double> kv = kernel.to(DType::float64).data();
+    const std::vector<double> kv = kernel.data();
     const int64_t cg = cin / spec.groups, og = cout / spec.groups;
     std::vector<double> M(std::size_t(cin * KK * cout), 0.0), MT(std::size_t(cout * KK * cin), 0.0);
     for (int64_t o = 0; o < cout; ++o)
@@ -138,6 +151,7 @@ NeuralNetwork::Layer NeuralNetwork::Layer::conv2d(const Tensor &kernel, const Te
                 M[std::size_t((ci * KK + kk) * cout + o)] = v;
                 MT[std::size_t((o * KK + kk) * cin + ci)] = v;
             }
+    // the matrices on the kernel's backend, and their absolute values
     plan->K = Tensor::like(kernel, M, {cin * KK, cout});
     plan->KT = Tensor::like(kernel, MT, {cout * KK, cin});
     plan->abs_k = plan->K.abs();
@@ -188,7 +202,7 @@ NeuralNetwork::Layer NeuralNetwork::Layer::conv_transpose2d(const Tensor &kernel
                                                             const Conv2d &spec) {
     detail::Entry entry;
     // the convolution from the output (out channels, H, W) back to the input is its transpose
-    const Layer conv = conv2d(kernel, Tensor::zeros({1}).to(kernel.dtype()), output, spec, false);
+    const Layer conv = conv2d(kernel, kernel.zeros_like({1}), output, spec, false);
     auto plan = std::make_shared<LinearPlan>(*conv.plan);
     plan->transposed = true;
     std::swap(plan->in, plan->out);
@@ -202,14 +216,18 @@ NeuralNetwork::Layer NeuralNetwork::Layer::conv_transpose2d(const Tensor &kernel
     return layer;
 }
 
+// The products ------------------------------------------------------------------------------------
+
 int64_t NeuralNetwork::Layer::inputs() const { return plan ? plan->in : W.shape()[1]; }
 int64_t NeuralNetwork::Layer::outputs() const { return plan ? plan->out : W.shape()[0]; }
 
 Tensor NeuralNetwork::Layer::aux_product(const Tensor &x, bool absolute, bool transposed_) const {
+    detail::Entry entry;
     // a ConvTranspose is the transposed product of its convolution
     const bool transposed = plan && plan->transposed ? !transposed_ : transposed_;
     const int64_t from = transposed_ ? outputs() : inputs(),
                   to = transposed_ ? inputs() : outputs();
+    // the rows as a matrix (N, from)
     const Tensor X = aux_flat(x, from);
     Tensor Y;
     if (!plan) {
@@ -217,6 +235,7 @@ Tensor NeuralNetwork::Layer::aux_product(const Tensor &x, bool absolute, bool tr
         const Tensor M = absolute ? W.abs() : W;
         Y = transposed ? X.matmul(M) : X.matmul(M.matrix_transpose());
     } else if (plan->conv) {
+        // a convolution: the patches times the kernel, or the transposed patches
         const LinearPlan &p = *plan;
         Y = transposed ? aux_conv(X, p.cout, p.pixels_out, p.patch_t, p.pixels_in, p.offsets,
                                   absolute ? p.abs_kt : p.KT)
@@ -233,11 +252,13 @@ Tensor NeuralNetwork::Layer::aux_product(const Tensor &x, bool absolute, bool tr
 }
 
 NeuralNetwork::Layer NeuralNetwork::Layer::to(DType dtype, const std::string &device) const {
+    detail::Entry entry;
     const auto move = [&](const Tensor &t) {
         if (!t.defined()) return t;
         return (device.empty() ? t : t.to(device)).to(dtype);
     };
     Layer layer{move(W), move(b)};
+    // the kernel matrices move with the layer; the index lists stay on the host
     if (plan) {
         auto p = std::make_shared<LinearPlan>(*plan);
         p->K = move(p->K);
@@ -250,6 +271,7 @@ NeuralNetwork::Layer NeuralNetwork::Layer::to(DType dtype, const std::string &de
 }
 
 Tensor NeuralNetwork::Layer::dense() const {
+    detail::Entry entry;
     if (!plan) return W;
     // the image of the unit vectors, column by column
     const Tensor eye = b.eye_like(inputs());

@@ -55,7 +55,7 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   such an instance is `unknown` with the reason.
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose gathers, for every input pixel and kernel offset, the output pixel
-  it feeds, so `W^T y` is the same kind of product (`layer.cpp`). The generator rows of a batch of
+  it feeds, so `W^T y` is the same kind of product (`conv2d.cpp`). The generator rows of a batch of
   zonotopes `(B, q, n)` are just more rows, so the propagation, the reverse pass, CROWN's bound and
   the attacks run unchanged on them; the set operations other than `verify` take dense layers.
 - **Property.** VNN-LIB 1.0 is read with the semantics of the scoring's parser, 2.0 by the
