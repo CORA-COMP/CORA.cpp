@@ -11,14 +11,11 @@ Reviewed:      ---
 """
 import unittest
 
+import cora.matlab as matlab
 import numpy as np
-from cora import matlab
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 class TestMatlab(unittest.TestCase):
 

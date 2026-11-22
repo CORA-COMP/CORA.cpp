@@ -17,15 +17,12 @@ Reviewed:      ---
 """
 import argparse
 
-import cora
+from cora import NeuralNetwork, plot, Rng, Zonotope
 import torch
 from torch import nn
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -72,7 +69,7 @@ print(f"training loss {loss.item():.3f}, test accuracy {(predicted == truth).dou
 # Verification ------------------------------------------------------------------------------
 
 # The network of cora has the weights of the torch model.
-net = cora.NeuralNetwork([(m.weight.detach(), m.bias.detach()) for m in model if isinstance(m, nn.Linear)])
+net = NeuralNetwork([(m.weight.detach(), m.bias.detach()) for m in model if isinstance(m, nn.Linear)])
 
 # Logit of the other class minus the predicted along d: below 0 over the output set, the class holds
 d = torch.where((predicted == 0)[:, None], torch.tensor([-1.0, 1.0], dtype=dtype),
@@ -81,7 +78,7 @@ d = torch.where((predicted == 0)[:, None], torch.tensor([-1.0, 1.0], dtype=dtype
 
 def perturbations(eps):
     """The boxes of half-width eps around every test point, as one batch of zonotopes."""
-    return cora.Zonotope(points, eps * torch.eye(2, dtype=dtype).expand(len(points), 2, 2))
+    return Zonotope(points, eps * torch.eye(2, dtype=dtype).expand(len(points), 2, 2))
 
 
 generator = torch.Generator().manual_seed(1)
@@ -115,10 +112,10 @@ from_boundary = (points.norm(dim=1) - radius).abs()
 lo, hi = torch.full((2,), torch.inf, dtype=dtype), torch.full((2,), -torch.inf, dtype=dtype)
 for label, mask in (("certified", certified), ("not certified", ~certified)):
     index = torch.where(mask)[0][from_boundary[mask].argmin()]
-    X = cora.Zonotope(points[index], plot_eps * torch.eye(2, dtype=dtype))
+    X = Zonotope(points[index], plot_eps * torch.eye(2, dtype=dtype))
     Y = net.evaluate(X)
-    cora.plot(Y, label=f"Output set ({label})")
-    y = net.evaluate(X.rand_point(300, cora.Rng(0)))  # one output per row
+    plot(Y, label=f"Output set ({label})")
+    y = net.evaluate(X.rand_point(300, Rng(0)))  # one output per row
     right.scatter(y[:, 0], y[:, 1], s=4, label=f"Sampled outputs ({label})")
     box = Y.interval()
     lo, hi = torch.minimum(lo, box.inf), torch.maximum(hi, box.sup)

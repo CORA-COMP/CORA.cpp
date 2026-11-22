@@ -25,37 +25,6 @@ from cora.vnnlib import parse_vnnlib, to_vnnlib2
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-DECLARE = "".join(f"(declare-const X_{i} Real)\n" for i in range(3)) + "".join(
-    f"(declare-const Y_{j} Real)\n" for j in range(3)
-)
-BOX = (
-    "(assert (<= X_0 0.5))\n(assert (>= X_0 -0.5))\n(assert (<= X_1 1))\n(assert (>= X_1 0))\n"
-    "(assert (<= X_2 0.25))\n(assert (>= X_2 0.25))\n"
-)
-SIMPLE = DECLARE + "; a comment\n" + BOX + "(assert (<= Y_0 Y_1))\n(assert (>= Y_2 3.5))\n"
-DISJUNCTION = DECLARE + BOX + "(assert (or\n  (and (>= Y_0 Y_2))\n  (and (<= Y_1 -2) (>= Y_1 Y_0))\n))\n"
-TWO_BOXES = (
-    DECLARE + "(assert (or (and (<= X_0 1) (>= X_0 0) (<= X_1 1) (>= X_1 0)) "
-    "(and (<= X_0 3) (>= X_0 2) (<= X_1 1) (>= X_1 0))))\n(assert (<= X_2 0))\n(assert (>= X_2 0))\n"
-    "(assert (or (and (<= Y_1 Y_0)) (and (<= Y_2 Y_0))))\n"
-)
-
-
-def same(test, p, q):
-    """Two properties with the same cases, bit for bit."""
-    test.assertEqual(len(p.cases), len(q.cases))
-    for a, b in zip(p.cases, q.cases, strict=True):
-        test.assertTrue(np.array_equal(a.lo, b.lo) and np.array_equal(a.hi, b.hi))
-        test.assertEqual(len(a.polytopes), len(b.polytopes))
-        for (A1, b1), (A2, b2) in zip(a.polytopes, b.polytopes, strict=True):
-            test.assertTrue(np.array_equal(A1, A2) and np.array_equal(b1 + 0.0, b2 + 0.0))
-
-
-# ============================================  MAIN  ============================================ #
-
-
 class Version1(unittest.TestCase):
     def test_box_and_conjunction(self):
         p = parse_vnnlib(SIMPLE, 3, 3)
@@ -116,5 +85,36 @@ class Version2(unittest.TestCase):
         np.testing.assert_array_equal(A, [[-1, -2]])
         np.testing.assert_array_equal(b, [-1.5])
 
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+DECLARE = "".join(f"(declare-const X_{i} Real)\n" for i in range(3)) + "".join(
+    f"(declare-const Y_{j} Real)\n" for j in range(3)
+)
+
+BOX = (
+    "(assert (<= X_0 0.5))\n(assert (>= X_0 -0.5))\n(assert (<= X_1 1))\n(assert (>= X_1 0))\n"
+    "(assert (<= X_2 0.25))\n(assert (>= X_2 0.25))\n"
+)
+
+SIMPLE = DECLARE + "; a comment\n" + BOX + "(assert (<= Y_0 Y_1))\n(assert (>= Y_2 3.5))\n"
+
+DISJUNCTION = DECLARE + BOX + "(assert (or\n  (and (>= Y_0 Y_2))\n  (and (<= Y_1 -2) (>= Y_1 Y_0))\n))\n"
+
+TWO_BOXES = (
+    DECLARE + "(assert (or (and (<= X_0 1) (>= X_0 0) (<= X_1 1) (>= X_1 0)) "
+    "(and (<= X_0 3) (>= X_0 2) (<= X_1 1) (>= X_1 0))))\n(assert (<= X_2 0))\n(assert (>= X_2 0))\n"
+    "(assert (or (and (<= Y_1 Y_0)) (and (<= Y_2 Y_0))))\n"
+)
+
+
+def same(test, p, q):
+    """Two properties with the same cases, bit for bit."""
+    test.assertEqual(len(p.cases), len(q.cases))
+    for a, b in zip(p.cases, q.cases, strict=True):
+        test.assertTrue(np.array_equal(a.lo, b.lo) and np.array_equal(a.hi, b.hi))
+        test.assertEqual(len(a.polytopes), len(b.polytopes))
+        for (A1, b1), (A2, b2) in zip(a.polytopes, b.polytopes, strict=True):
+            test.assertTrue(np.array_equal(A1, A2) and np.array_equal(b1 + 0.0, b2 + 0.0))
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

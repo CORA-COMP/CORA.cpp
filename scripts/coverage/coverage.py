@@ -28,27 +28,72 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 HERE = Path(__file__).resolve().parent
+
 sys.path.insert(0, str(HERE))
+
 import cora_rows  # noqa: E402
 import inventory as inventory_file  # noqa: E402
 
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--check", action="store_true", help="verify, write nothing")
+    parser.add_argument("--accept-drop", action="append", default=[], metavar="ROW",
+                        help="accept that ROW (group/class/method) fell below its committed status")
+    parser.add_argument("--accept-debt", action="store_true", help="accept rows that become oracle debt")
+    parser.add_argument("--summary", action="store_true", help="print the totals as markdown, check nothing")
+    args = parser.parse_args()
+    # the totals, without the rows that are not comparable with CORALean
+    if args.summary:
+        inventory = load_json(REPO / "coverage" / "cora-inventory.json")
+        lean = load_json(REPO / "coverage" / "coralean-status.json").get("rows", {})
+        status = load_json(REPO / "coverage" / "status.json").get("rows", {})
+        apart, _ = ledger_of(REPO, inventory["groups"], APART)
+        print(summary(inventory["groups"], status, lean, set(apart)), end="")
+        return 0
+    # the checks, or the generated files
+    cora = inventory_file.cora_checkout()
+    problems, warnings = run(REPO, args.check, args.accept_drop, args.accept_debt, cora)
+    for warning in warnings:
+        print(f"WARNING: {warning}")
+    for problem in problems:
+        print(f"  {problem}")
+    # the verdict
+    if problems:
+        print(f"coverage: {len(problems)} problems")
+        return 1
+    print("coverage: all constraints hold" if args.check else "coverage: wrote coverage/")
+    return 0
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 REPO = HERE.parents[1]
+
 STATUSES = ("todo", "untested", "ported", "property", "oracle")
+
 OUT = "out-of-scope"
+
 RANK = {name: i for i, name in enumerate(STATUSES + (OUT,))}
+
 LEAN_HAS = ("proved", "float", "bound")
+
 GROUP_ORDER = cora_rows.GROUPS
+
 ORACLE_HELPER = re.compile(r"oracle_testing")
+
 INEXACT_TEST = re.compile(r"_(agreement|enclosure|bound)$")
+
 ORACLE_SKIP = re.compile(r"\bavailable\(\)|\bneeds_oracle\b")
+
 TAG = re.compile(r"^(?://|#) (CORA|PROPERTY|ORACLE): (\S+)\s*$")
+
 ONLY = re.compile(r"^// CORA\.cpp only: \S")
+
 SEED = re.compile(r"Rng\s+\w+\(\s*\d+\s*\)|Rng\(\s*\d+\s*\)|manual_seed\(|default_rng\(\s*\d+|"
                   r"RandomState\(\s*\d+|random\.seed\(|Random\(\s*\d+")
+
 LEAN_NOT_ORACLE = "CORALean has it (proved, float or bound) and CORA.cpp does not yet check against it"
 
 # the introduction of coverage/README.md
@@ -76,6 +121,7 @@ rewrites these files. A single-file class names its method: `// CORA: specificat
 (`--accept-drop <row>` records a drop), and no row may become **oracle debt**, `ported` or
 `property` while CORALean has it (`--accept-debt`). `coverage.py --summary` prints the totals.
 """  # noqa: E501 (the table rows of the generated README are one line each)
+
 # the plumbing rows of the benchmark report
 HEADER += """
 **Plumbing rows.** The benchmark report (`benchmarks.py`) counts the bit-exact rows of an instance
@@ -315,6 +361,7 @@ def oracle_debt(status, lean, apart=()):
 # ------------------------------------------------------------------------------- the python names
 
 CLASS_RE = re.compile(r'py::class_<([\w:]+)(?:,\s*([\w:]+))?[^>]*>\(\s*m,\s*"(\w+)"')
+
 DEF_RE = re.compile(r'\bm\.def\(\s*"(\w+)"|\.(?:def|def_static|def_property_readonly|def_property|'
                     r'def_readonly|def_readwrite)\(\s*"(\w+)"')
 
@@ -554,39 +601,6 @@ def write(root, expected):
         target = root / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding="utf-8")
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--check", action="store_true", help="verify, write nothing")
-    parser.add_argument("--accept-drop", action="append", default=[], metavar="ROW",
-                        help="accept that ROW (group/class/method) fell below its committed status")
-    parser.add_argument("--accept-debt", action="store_true", help="accept rows that become oracle debt")
-    parser.add_argument("--summary", action="store_true", help="print the totals as markdown, check nothing")
-    args = parser.parse_args()
-    # the totals, without the rows that are not comparable with CORALean
-    if args.summary:
-        inventory = load_json(REPO / "coverage" / "cora-inventory.json")
-        lean = load_json(REPO / "coverage" / "coralean-status.json").get("rows", {})
-        status = load_json(REPO / "coverage" / "status.json").get("rows", {})
-        apart, _ = ledger_of(REPO, inventory["groups"], APART)
-        print(summary(inventory["groups"], status, lean, set(apart)), end="")
-        return 0
-    # the checks, or the generated files
-    cora = inventory_file.cora_checkout()
-    problems, warnings = run(REPO, args.check, args.accept_drop, args.accept_debt, cora)
-    for warning in warnings:
-        print(f"WARNING: {warning}")
-    for problem in problems:
-        print(f"  {problem}")
-    # the verdict
-    if problems:
-        print(f"coverage: {len(problems)} problems")
-        return 1
-    print("coverage: all constraints hold" if args.check else "coverage: wrote coverage/")
-    return 0
 
 
 if __name__ == "__main__":

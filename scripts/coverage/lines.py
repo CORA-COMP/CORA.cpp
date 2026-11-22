@@ -30,12 +30,38 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    sub = parser.add_subparsers(dest="command", required=True)
+    run = sub.add_parser("run")
+    run.add_argument("--build-dir", default="build/coverage")
+    run.add_argument("--suite", choices=("unit", "oracle"), required=True)
+    run.add_argument("--out", required=True)
+    run.add_argument("--jobs", type=int, default=4)
+    sub.add_parser("report").add_argument("files", nargs="+")
+    changed = sub.add_parser("changed")
+    changed.add_argument("files", nargs="+")
+    changed.add_argument("--base", required=True)
+    changed.add_argument("--min", type=float, default=90.0)
+    # the commands and their arguments
+    ratchet = sub.add_parser("ratchet")
+    ratchet.add_argument("files", nargs="+")
+    ratchet.add_argument("--update", action="store_true")
+    args = parser.parse_args()
+    return {"run": command_run, "report": command_report, "changed": command_changed,
+            "ratchet": command_ratchet}[args.command](args)
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = Path(__file__).resolve().parents[2]
+
 BASELINE = ROOT / "coverage" / "lines.json"
+
 TOLERANCE = 0.1  # percentage points that a run may lose against the baseline: the tests of threads
+
 FILE_LIMIT = 70.0  # a file below it counts as thin
+
 MIN_FILE_LINES = 10  # smaller files are never thin: one gcov line on a class head moves 3 lines to 67%
 
 
@@ -210,30 +236,6 @@ def command_ratchet(args):
     for line in bad:
         print("lines: " + line)
     return 1 if bad else 0
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    sub = parser.add_subparsers(dest="command", required=True)
-    run = sub.add_parser("run")
-    run.add_argument("--build-dir", default="build/coverage")
-    run.add_argument("--suite", choices=("unit", "oracle"), required=True)
-    run.add_argument("--out", required=True)
-    run.add_argument("--jobs", type=int, default=4)
-    sub.add_parser("report").add_argument("files", nargs="+")
-    changed = sub.add_parser("changed")
-    changed.add_argument("files", nargs="+")
-    changed.add_argument("--base", required=True)
-    changed.add_argument("--min", type=float, default=90.0)
-    # the commands and their arguments
-    ratchet = sub.add_parser("ratchet")
-    ratchet.add_argument("files", nargs="+")
-    ratchet.add_argument("--update", action="store_true")
-    args = parser.parse_args()
-    return {"run": command_run, "report": command_report, "changed": command_changed,
-            "ratchet": command_ratchet}[args.command](args)
 
 
 if __name__ == "__main__":

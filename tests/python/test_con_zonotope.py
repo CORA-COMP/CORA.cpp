@@ -49,50 +49,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def con_zonotope(c, G, A=None, b=None):
-    A = None if A is None else np.array(A, dtype=float)
-    b = None if b is None else np.array(b, dtype=float)
-    return cora.ConZonotope(np.array(c, dtype=float), np.array(G, dtype=float), A, b)
-
-
-def segment():
-    """x = xi on xi1 + xi2 = 1: the segment from (0, 1) to (1, 0)."""
-    return con_zonotope([0.0, 0.0], np.eye(2), [[1.0, 1.0]], [1.0])
-
-
-def is_empty_box(box):
-    """Whether a box has no point: every member flagged in its empty mask."""
-    return box.is_empty()
-
-
-def random_set(rng, n, m, p):
-    """A random set with the constraints [I B] x = b, whose points are drawn by rejection."""
-    B = 0.3 * rng.standard_normal((p, m - p))
-    xi = rng.uniform(-0.5, 0.5, m)
-    A = np.hstack([np.eye(p), B])
-    return con_zonotope(rng.standard_normal(n), rng.standard_normal((m, n)), A, A @ xi)
-
-
-def sample(cZ, rng, count):
-    """Points of a set made by random_set, as rows (count, n)."""
-    G, A, b, c = cZ.generators, cZ.A, cZ.b, cZ.c
-    p, m = A.shape
-    points = []
-    while len(points) < count:
-        xi = rng.uniform(-1, 1, m)
-        xi[:p] = b - A[:, p:] @ xi[p:]
-        if np.all(np.abs(xi) <= 1):
-            points.append(c + xi @ G)
-    return np.array(points)
-
-
-# -===========================================  MAIN  ===========================================- #
-
-
-# ============================================  MAIN  ============================================ #
-
 class ConZonotope(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -455,6 +411,48 @@ class ConZonotope(unittest.TestCase):
         np.testing.assert_array_equal(big.minkowski_difference(np.array([1.0, 1.0])).c, [-1.0, -1.0])
         with self.assertRaises(cora.errors.WrongValue):
             big.minkowski_difference(small, "other")
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def con_zonotope(c, G, A=None, b=None):
+    A = None if A is None else np.array(A, dtype=float)
+    b = None if b is None else np.array(b, dtype=float)
+    return cora.ConZonotope(np.array(c, dtype=float), np.array(G, dtype=float), A, b)
+
+
+def segment():
+    """x = xi on xi1 + xi2 = 1: the segment from (0, 1) to (1, 0)."""
+    return con_zonotope([0.0, 0.0], np.eye(2), [[1.0, 1.0]], [1.0])
+
+
+def is_empty_box(box):
+    """Whether a box has no point: every member flagged in its empty mask."""
+    return box.is_empty()
+
+
+def random_set(rng, n, m, p):
+    """A random set with the constraints [I B] x = b, whose points are drawn by rejection."""
+    B = 0.3 * rng.standard_normal((p, m - p))
+    xi = rng.uniform(-0.5, 0.5, m)
+    A = np.hstack([np.eye(p), B])
+    return con_zonotope(rng.standard_normal(n), rng.standard_normal((m, n)), A, A @ xi)
+
+
+def sample(cZ, rng, count):
+    """Points of a set made by random_set, as rows (count, n)."""
+    G, A, b, c = cZ.generators, cZ.A, cZ.b, cZ.c
+    p, m = A.shape
+    points = []
+    while len(points) < count:
+        xi = rng.uniform(-1, 1, m)
+        xi[:p] = b - A[:, p:] @ xi[p:]
+        if np.all(np.abs(xi) <= 1):
+            points.append(c + xi @ G)
+    return np.array(points)
+
+
+# -===========================================  MAIN  ===========================================- #
 
 
 if __name__ == "__main__":

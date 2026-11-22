@@ -24,21 +24,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def zonotope(c, G):
-    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-def triples(m):
-    """CORA's lists for m generators: the ordered triples, the sorted ones, the column of each."""
-    comb = [list(t) for t in itertools.combinations_with_replacement(range(m), 3)]
-    perm = [list(t) for t in itertools.product(range(m), repeat=3)]
-    return perm, comb, [comb.index(sorted(t)) for t in perm]
-
-
-# ============================================  MAIN  ============================================ #
-
 class TensorMultiplication(unittest.TestCase):
     def test_by_hand(self):
         Z = zonotope([0], [[1], [2]])
@@ -146,6 +131,19 @@ class ZonotopeNorm(unittest.TestCase):
             cora.Zonotope.stack([Z, Z]).zonotope_norm(np.array([1.0, 0]))
         with self.assertRaises(cora.errors.DimensionMismatch):
             Z.zonotope_norm(np.ones(3))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def zonotope(c, G):
+    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
+
+
+def triples(m):
+    """CORA's lists for m generators: the ordered triples, the sorted ones, the column of each."""
+    comb = [list(t) for t in itertools.combinations_with_replacement(range(m), 3)]
+    perm = [list(t) for t in itertools.product(range(m), repeat=3)]
+    return perm, comb, [comb.index(sorted(t)) for t in perm]
 
 
 if __name__ == "__main__":

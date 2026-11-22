@@ -21,27 +21,11 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 # Skips without CORACPP_ORACLE; with CORACPP_REQUIRE_ORACLE (CI) the tests run and fail instead.
 needs_oracle = unittest.skipUnless(
     os.environ.get("CORACPP_ORACLE") or os.environ.get("CORACPP_REQUIRE_ORACLE", "0") not in ("", "0"),
     "needs CORACPP_ORACLE")
 
-
-def same_bits(test, a, b):
-    """a and b as float64 arrays of one shape and the same bits (-0 differs from 0)."""
-    a, b = np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
-    test.assertEqual(a.shape, b.shape)
-    test.assertTrue(np.array_equal(a.view(np.uint64), b.view(np.uint64)), f"{a} != {b}")
-
-
-def column(x):
-    """A result of the oracle as a vector (its matrices are (n, 1))."""
-    return np.asarray(x, dtype=np.float64).reshape(-1)
-
-
-# ============================================  MAIN  ============================================ #
 
 @needs_oracle
 
@@ -91,6 +75,20 @@ class RoundTrip(unittest.TestCase):
         """The op list of the oracle: a served op, and one that no oracle has."""
         self.assertTrue(cora.lean.serves("zonotope.supportFunc"))
         self.assertFalse(cora.lean.serves("zonotope.noSuchOperation"))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def same_bits(test, a, b):
+    """a and b as float64 arrays of one shape and the same bits (-0 differs from 0)."""
+    a, b = np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
+    test.assertEqual(a.shape, b.shape)
+    test.assertTrue(np.array_equal(a.view(np.uint64), b.view(np.uint64)), f"{a} != {b}")
+
+
+def column(x):
+    """A result of the oracle as a vector (its matrices are (n, 1))."""
+    return np.asarray(x, dtype=np.float64).reshape(-1)
 
 
 if __name__ == "__main__":

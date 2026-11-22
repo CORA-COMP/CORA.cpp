@@ -26,24 +26,57 @@ import sys
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("revisions", nargs="*", help="<base> <head>")
+    parser.add_argument("--files", nargs="+", help="changed files instead of two commits")
+    parser.add_argument("--torch", action="store_true", help="print true or false: do the libtorch runs apply?")
+    args = parser.parse_args()
+    # the changed files: given, or the diff of two commits
+    if args.files:
+        changed = args.files
+    elif len(args.revisions) == 2:
+        changed = changed_files(*args.revisions)
+    else:
+        parser.error("give <base> <head> or --files")
+
+    # the file contents, for the #include graph
+    def read(name):
+        with open(os.path.join(ROOT, name), encoding="utf-8", errors="replace") as handle:
+            return handle.read()
+
+    if args.torch:
+        print("true" if needs_torch(changed) else "false")
+        return
+    print(select(changed, list_files(), read))
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
 SOURCE_DIRS = ("src", "include", "tests", "examples")
+
 INCLUDE_ROOTS = ("include", "src", "tests")  # where a quoted include is looked up after its own folder
+
 INCLUDE = re.compile(r'^\s*#\s*include\s*[<"]([^">]+)[">]', re.M)
+
 # Changes that can affect anything: shared code, the build, the CI itself.
 ALL_PATTERNS = (r"^src/global/(tensor|backend)/", r"^include/cora/global/", r"(^|/)CMakeLists\.txt$",
                 r"\.cmake$", r"\.cmake\.in$", r"^CMakePresets\.json$", r"^\.github/", r"^scripts/ci/",
                 r"^include/cora/config\.h\.in$", r"^tests/testing\.h$", r"^scripts/environment\.yml$",
                 r"^scripts/requirements.*\.txt$")
+
 # Changes no test of the core presets can see: documentation, the competition entry, other languages' examples.
 NO_TEST_PATTERNS = (r"\.md$", r"^docs/", r"^LICENSE", r"^\.gitignore$", r"^scripts/competition/",
                     r"^tests/competition/", r"^examples/(matlab|benchmarks)/")
+
 # What the libtorch runs of CI cannot see; anything else, a new or unknown file included, runs them.
 NO_TORCH_PATTERNS = NO_TEST_PATTERNS + (r"^benchmarks/", r"^coverage/", r"^scripts/(ci|coverage)/",
                                         r"^tests/global/test_[^/]+\.py$")
+
 CPP_SUFFIXES = (".cpp", ".h")
+
 BACKEND_COPY = "(:[a-z]+)?"  # the suffix of a test's run on another backend (CMakeLists.txt)
 
 
@@ -186,33 +219,6 @@ def changed_files(base, head):
     out = subprocess.run(["git", "diff", "--name-only", f"{base}...{head}"], cwd=ROOT, check=True,
                          capture_output=True, text=True).stdout
     return [line for line in out.splitlines() if line]
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("revisions", nargs="*", help="<base> <head>")
-    parser.add_argument("--files", nargs="+", help="changed files instead of two commits")
-    parser.add_argument("--torch", action="store_true", help="print true or false: do the libtorch runs apply?")
-    args = parser.parse_args()
-    # the changed files: given, or the diff of two commits
-    if args.files:
-        changed = args.files
-    elif len(args.revisions) == 2:
-        changed = changed_files(*args.revisions)
-    else:
-        parser.error("give <base> <head> or --files")
-
-    # the file contents, for the #include graph
-    def read(name):
-        with open(os.path.join(ROOT, name), encoding="utf-8", errors="replace") as handle:
-            return handle.read()
-
-    if args.torch:
-        print("true" if needs_torch(changed) else "false")
-        return
-    print(select(changed, list_files(), read))
 
 
 if __name__ == "__main__":

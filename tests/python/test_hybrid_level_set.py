@@ -18,31 +18,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def disc():
-    """The unit disc x^2 + y^2 <= 1 as a level set."""
-    x, y = cora.Expr.var(0), cora.Expr.var(1)
-    return cora.LevelSet(x * x + y * y - 1.0, 2, "<=")
-
-
-def particle():
-    """A particle that moves right at speed 1 inside the disc, with a circle as a guard."""
-    x, y = cora.Expr.var(0), cora.Expr.var(1)
-    circle = cora.LevelSet(x * x + y * y - 1.0, 2, "==")
-    flow = cora.NonlinearSys(lambda s: [cora.Expr(1.0), cora.Expr(0.0)], 2)
-    jump = cora.Transition(circle, cora.LinearReset(np.eye(2)), 1)
-    return cora.Location("fly", disc(), [jump], flow)
-
-
-def beyond():
-    """The whole space, where the particle goes on after the circle."""
-    flow = cora.NonlinearSys(lambda s: [cora.Expr(1.0), cora.Expr(0.0)], 2)
-    return cora.Location("beyond", cora.LevelSet(cora.Expr(-1.0), 2, "<="), [], flow)
-
-
-# ============================================  MAIN  ============================================ #
-
 class LevelSetLocation(unittest.TestCase):
     # the invariant and the guard are level sets
     def test_parts(self):
@@ -70,8 +45,30 @@ class LevelSetLocation(unittest.TestCase):
         self.assertTrue(0.9 <= np.asarray(first.inf).ravel()[0] and np.asarray(first.sup).ravel()[0] <= 1.1)
 
 
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def disc():
+    """The unit disc x^2 + y^2 <= 1 as a level set."""
+    x, y = cora.Expr.var(0), cora.Expr.var(1)
+    return cora.LevelSet(x * x + y * y - 1.0, 2, "<=")
+
+
+def particle():
+    """A particle that moves right at speed 1 inside the disc, with a circle as a guard."""
+    x, y = cora.Expr.var(0), cora.Expr.var(1)
+    circle = cora.LevelSet(x * x + y * y - 1.0, 2, "==")
+    flow = cora.NonlinearSys(lambda s: [cora.Expr(1.0), cora.Expr(0.0)], 2)
+    jump = cora.Transition(circle, cora.LinearReset(np.eye(2)), 1)
+    return cora.Location("fly", disc(), [jump], flow)
+
+
+def beyond():
+    """The whole space, where the particle goes on after the circle."""
+    flow = cora.NonlinearSys(lambda s: [cora.Expr(1.0), cora.Expr(0.0)], 2)
+    return cora.Location("beyond", cora.LevelSet(cora.Expr(-1.0), 2, "<="), [], flow)
+
+
 if __name__ == "__main__":
     unittest.main()
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

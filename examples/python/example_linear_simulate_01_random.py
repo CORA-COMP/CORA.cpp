@@ -13,7 +13,7 @@ Last update:   ---
 Reviewed:      ---
 """
 
-import cora
+from cora import eye, LinearSys, Rng, Tensor, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -21,15 +21,13 @@ import cora
 # Parameters --------------------------------------------------------------------------------
 
 
-# ============================================  MAIN  ============================================ #
-
 t_final = 1.0
-R0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
-rng = cora.Rng(1)  # a seed makes the points repeatable
+R0 = Zonotope(Tensor([1.0, 0.0]), 0.1 * eye(2))
+rng = Rng(1)  # a seed makes the points repeatable
 
 # System Dynamics ---------------------------------------------------------------------------
 
-sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
+sys = LinearSys(Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
 
 # Reachability Analysis ---------------------------------------------------------------------
 
@@ -48,7 +46,7 @@ traj_extreme = sys.simulate(corners, time_step=time_step / 2, t_final=t_final)
 # Verification ------------------------------------------------------------------------------
 
 # A point is in the reachable set of its step if d'x is at most the support function there.
-d = cora.Tensor([-1.0, 0.5])
+d = Tensor([-1.0, 0.5])
 inside = True
 for j in range(traj_extreme.shape[0]):
     step = min(j // 2, len(R.time_interval) - 1)  # two points per step

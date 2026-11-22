@@ -25,15 +25,8 @@ from typing import Any, Callable, TypeVar
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 Function = TypeVar("Function", bound=Callable[..., Any])
 
-# {(system class name, operation, algorithm name): function(system, problem, **options)}
-ALGORITHMS = {}
-
-
-# ============================================  MAIN  ============================================ #
 
 def register_algorithm(system: type, name: str,
                        operation: str = "reach") -> Callable[[Function], Function]:
@@ -42,5 +35,11 @@ def register_algorithm(system: type, name: str,
         ALGORITHMS[(system.__name__, operation, name)] = function
         return function
     return register
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+# {(system class name, operation, algorithm name): function(system, problem, **options)}
+ALGORITHMS = {}
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

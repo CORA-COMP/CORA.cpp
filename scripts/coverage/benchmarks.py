@@ -33,17 +33,80 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 HERE = Path(__file__).resolve().parent
+
 sys.path.insert(0, str(HERE))
+
 import coverage as cov  # noqa: E402
 
 
+def main():
+    # --check runs no benchmark: a stale rendering or a measured file that is gone fails it
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--check", action="store_true", help="compare the committed files, write nothing")
+    parser.add_argument("--files", action="store_true", help="only check that every measured file exists")
+    parser.add_argument("--remeasure", action="store_true", help="with --check: also run every instance again")
+    parser.add_argument("--render-only", action="store_true", help="render the committed measurement")
+    parser.add_argument("--only", action="append", default=[], help="measure just this instance")
+    parser.add_argument("--timeout", type=int, default=1800, help="seconds per instance (default 1800)")
+    parser.add_argument("--build-dir", default="build/coverage")
+    args = parser.parse_args()
+    # the instances come from a measurement, or from the committed file (--render-only)
+    root = REPO
+    data = root / "coverage" / "benchmarks.json"
+    committed = cov.load_json(data)
+    if args.render_only or args.files or (args.check and not args.remeasure):
+        measured = committed.get("instances", {})
+        # a file that is gone cannot be tagged: say so before the rendering fails on it
+        if args.files or args.check:
+            lines = missing_files(root, measured)
+            print("\n".join(lines))
+            if lines or args.files:
+                return 1 if lines else 0
+    else:
+        build_programs(root, "coverage")
+        build = root / args.build_dir
+        measured = measure(root, build, args.only or instances(build), args.timeout,
+                           committed.get("instances", {}))
+        if args.only:
+            measured = {**committed.get("instances", {}), **measured}
+    # in the order of the committed file, not of ctest, so that the files do not depend on it
+    measured = dict(sorted(measured.items()))
+    inventory = cov.load_json(root / "coverage" / "cora-inventory.json")
+    status = cov.load_json(root / "coverage" / "status.json").get("rows", {})
+    lean = cov.load_json(root / "coverage" / "coralean-status.json").get("rows", {})
+    apart, _ = cov.ledger_of(root, inventory["groups"], cov.APART)
+    summary = summarize(measured, status, inventory["groups"], root, lean, apart)
+    # the files to write, by path
+    expected = {
+        data: json.dumps({"instances": measured}, indent=1, sort_keys=True) + "\n",
+        root / "coverage" / "benchmarks.md": render_markdown(summary, lean),
+        root / "examples" / "benchmarks" / "README.md": splice(splice(fill_main_tables(
+            (root / "examples" / "benchmarks" / "README.md").read_text(encoding="utf-8"), summary),
+            render_table(summary)), render_overall(summary), OVERALL_BEGIN, OVERALL_END),
+    }
+    if args.check:
+        stale = [p.relative_to(root).as_posix() for p, text in expected.items()
+                 if not p.exists() or p.read_text(encoding="utf-8") != text]
+        for name in stale:
+            print(f"  {name} is stale; run python scripts/coverage/benchmarks.py --render-only")
+        return 1 if stale else 0
+    for path, text in expected.items():
+        path.write_text(text, encoding="utf-8")
+    print("benchmarks: wrote coverage/benchmarks.json, coverage/benchmarks.md and the README table")
+    return 0
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 REPO = HERE.parents[1]
+
 STATUSES = cov.STATUSES + (cov.OUT,)
+
 BEGIN, END = "<!-- BEGIN bit-exact -->", "<!-- END bit-exact -->"
+
 OVERALL_BEGIN, OVERALL_END = "<!-- BEGIN overall -->", "<!-- END overall -->"
+
 # The text that coverage/benchmarks.md starts with
 HEADER = """# What the benchmarks run, and how much of it is bit-exact against CORALean
 
@@ -381,65 +444,6 @@ def missing_files(root, measured):
                      f"instances again (coverage preset, minutes each):\n"
                      f"  python3 scripts/coverage/benchmarks.py {only}")
     return lines
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    # --check runs no benchmark: a stale rendering or a measured file that is gone fails it
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--check", action="store_true", help="compare the committed files, write nothing")
-    parser.add_argument("--files", action="store_true", help="only check that every measured file exists")
-    parser.add_argument("--remeasure", action="store_true", help="with --check: also run every instance again")
-    parser.add_argument("--render-only", action="store_true", help="render the committed measurement")
-    parser.add_argument("--only", action="append", default=[], help="measure just this instance")
-    parser.add_argument("--timeout", type=int, default=1800, help="seconds per instance (default 1800)")
-    parser.add_argument("--build-dir", default="build/coverage")
-    args = parser.parse_args()
-    # the instances come from a measurement, or from the committed file (--render-only)
-    root = REPO
-    data = root / "coverage" / "benchmarks.json"
-    committed = cov.load_json(data)
-    if args.render_only or args.files or (args.check and not args.remeasure):
-        measured = committed.get("instances", {})
-        # a file that is gone cannot be tagged: say so before the rendering fails on it
-        if args.files or args.check:
-            lines = missing_files(root, measured)
-            print("\n".join(lines))
-            if lines or args.files:
-                return 1 if lines else 0
-    else:
-        build_programs(root, "coverage")
-        build = root / args.build_dir
-        measured = measure(root, build, args.only or instances(build), args.timeout,
-                           committed.get("instances", {}))
-        if args.only:
-            measured = {**committed.get("instances", {}), **measured}
-    # in the order of the committed file, not of ctest, so that the files do not depend on it
-    measured = dict(sorted(measured.items()))
-    inventory = cov.load_json(root / "coverage" / "cora-inventory.json")
-    status = cov.load_json(root / "coverage" / "status.json").get("rows", {})
-    lean = cov.load_json(root / "coverage" / "coralean-status.json").get("rows", {})
-    apart, _ = cov.ledger_of(root, inventory["groups"], cov.APART)
-    summary = summarize(measured, status, inventory["groups"], root, lean, apart)
-    # the files to write, by path
-    expected = {
-        data: json.dumps({"instances": measured}, indent=1, sort_keys=True) + "\n",
-        root / "coverage" / "benchmarks.md": render_markdown(summary, lean),
-        root / "examples" / "benchmarks" / "README.md": splice(splice(fill_main_tables(
-            (root / "examples" / "benchmarks" / "README.md").read_text(encoding="utf-8"), summary),
-            render_table(summary)), render_overall(summary), OVERALL_BEGIN, OVERALL_END),
-    }
-    if args.check:
-        stale = [p.relative_to(root).as_posix() for p, text in expected.items()
-                 if not p.exists() or p.read_text(encoding="utf-8") != text]
-        for name in stale:
-            print(f"  {name} is stale; run python scripts/coverage/benchmarks.py --render-only")
-        return 1 if stale else 0
-    for path, text in expected.items():
-        path.write_text(text, encoding="utf-8")
-    print("benchmarks: wrote coverage/benchmarks.json, coverage/benchmarks.md and the README table")
-    return 0
 
 
 if __name__ == "__main__":

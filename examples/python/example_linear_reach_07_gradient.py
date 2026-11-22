@@ -13,7 +13,7 @@ Last update:   ---
 Reviewed:      ---
 """
 
-import cora
+from cora import eye, LinearSys, Tensor, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -21,18 +21,16 @@ import cora
 # Parameters --------------------------------------------------------------------------------
 
 
-# ============================================  MAIN  ============================================ #
-
-R0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
+R0 = Zonotope(Tensor([1.0, 0.0]), 0.1 * eye(2))
 
 def total_width(A, custom_backward):
     """The total width of the enclosures for the system A: a scalar to differentiate."""
-    R = cora.LinearSys(A, custom_backward=custom_backward).reach(R0, time_step=0.1, t_final=1.0, taylor_terms=8)
+    R = LinearSys(A, custom_backward=custom_backward).reach(R0, time_step=0.1, t_final=1.0, taylor_terms=8)
     return sum(Z.generators.abs().sum() for Z in R.time_interval)
 
 # System Dynamics ---------------------------------------------------------------------------
 
-A = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]], requires_grad=True)
+A = Tensor([[-0.1, 1.0], [-1.0, -0.1]], requires_grad=True)
 
 # Gradient ----------------------------------------------------------------------------------
 

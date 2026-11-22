@@ -26,15 +26,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def models():
-    """The models of the box [1, 3] x [0, 2]."""
-    return cora.Taylm.from_interval(cora.Interval(np.array([1.0, 0.0]), np.array([3.0, 2.0])))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Models(unittest.TestCase):
     # a box gives its own bounds, a zonotope its coordinates
     def test_factories(self):
@@ -70,8 +61,14 @@ class Models(unittest.TestCase):
             models()[0].plus(cora.Taylm.constant(1.0, 5))
 
 
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def models():
+    """The models of the box [1, 3] x [0, 2]."""
+    return cora.Taylm.from_interval(cora.Interval(np.array([1.0, 0.0]), np.array([3.0, 2.0])))
+
+
 if __name__ == "__main__":
     unittest.main()
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

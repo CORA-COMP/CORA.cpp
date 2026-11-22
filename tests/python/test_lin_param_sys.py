@@ -19,6 +19,28 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+class LinParamSys(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(cora.backend("eigen"))
+
+    def test_reach_holds_the_nominal_solution(self):
+        # the nominal solution stays in the time-point sets
+        for kind in ("constant", "varying"):
+            R = oscillator(kind).reach(initial_set=X0, input_set=U, t_final=1.0, time_step=0.05,
+                                       taylor_terms=6, intermediate_terms=3, zonotope_order=20)
+            self.assertEqual(len(R.time_interval), 20)
+            for k in range(1, 21):
+                self.assertTrue(R.time_point[k].contains(nominal(0.05 * k)), k)
+
+    def test_wrong_input_is_refused(self):
+        with self.assertRaises(cora.errors.WrongValue):
+            oscillator().reach(initial_set=X0, t_final=1.0, time_step=0.05, intermediate_terms=9)
+        self.assertEqual(oscillator().type, "constant")
+        with self.assertRaises(cora.errors.WrongValue):
+            oscillator("varParam")
+        self.assertEqual(oscillator().dim, 2)
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def oscillator(kind="constant"):
@@ -42,31 +64,8 @@ def nominal(t):
 
 
 X0 = cora.Zonotope(np.array([1.0, 0.5]), np.array([[0.05, 0.0], [0.0, 0.05]]))
+
 U = cora.Zonotope(np.array([0.05]), np.array([[0.25]]))
-
-
-# ============================================  MAIN  ============================================ #
-
-class LinParamSys(unittest.TestCase):
-    def setUp(self):
-        self.enterContext(cora.backend("eigen"))
-
-    def test_reach_holds_the_nominal_solution(self):
-        # the nominal solution stays in the time-point sets
-        for kind in ("constant", "varying"):
-            R = oscillator(kind).reach(initial_set=X0, input_set=U, t_final=1.0, time_step=0.05,
-                                       taylor_terms=6, intermediate_terms=3, zonotope_order=20)
-            self.assertEqual(len(R.time_interval), 20)
-            for k in range(1, 21):
-                self.assertTrue(R.time_point[k].contains(nominal(0.05 * k)), k)
-
-    def test_wrong_input_is_refused(self):
-        with self.assertRaises(cora.errors.WrongValue):
-            oscillator().reach(initial_set=X0, t_final=1.0, time_step=0.05, intermediate_terms=9)
-        self.assertEqual(oscillator().type, "constant")
-        with self.assertRaises(cora.errors.WrongValue):
-            oscillator("varParam")
-        self.assertEqual(oscillator().dim, 2)
 
 
 if __name__ == "__main__":

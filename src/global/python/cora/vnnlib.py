@@ -29,12 +29,106 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+@dataclass
+class Case:
+    """An input box [lo, hi] and the unsafe outputs: the union of the polytopes A y <= b."""
+
+    lo: np.ndarray
+    hi: np.ndarray
+    polytopes: list = field(default_factory=list)
+
+
+@dataclass
+class Property:
+    """A VNN-LIB property: its version (1 or 2), its cases, and the 2.0 query (None for 1.0)."""
+
+    version: int
+    num_inputs: int
+    num_outputs: int
+    cases: list
+    query: object = None
+
+    def specifications(self, case=0):
+        """The unsafe sets of a case as cora.Specification objects (one per polytope)."""
+        import cora
+
+        return [
+            cora.Specification.unsafe_set(cora.Polytope(A, b))
+            for A, b in self.cases[case].polytopes
+        ]
+
+    def stacked(self):
+        """All polytopes of all cases as arrays padded to one row count: case index (P,), A
+        (P, K, m), b (P, K); a padding row is 0 <= +inf, which never decides."""
+        rows = max(A.shape[0] for c in self.cases for A, _ in c.polytopes)
+        index, As, bs = [], [], []
+        for k, case in enumerate(self.cases):
+            for A, b in case.polytopes:
+                index.append(k)
+                As.append(np.vstack([A, np.zeros((rows - A.shape[0], self.num_outputs))]))
+                bs.append(np.concatenate([b, np.full(rows - b.shape[0], np.inf)]))
+        return np.array(index), np.array(As), np.array(bs)
+
+
+def read_vnnlib(path, num_inputs, num_outputs):
+    """The property of a VNN-LIB file (.vnnlib or .vnnlib.gz); the version from its header."""
+    return parse_vnnlib(read_text(path), num_inputs, num_outputs)
+
+
+def parse_vnnlib(text, num_inputs, num_outputs):
+    """The property of a VNN-LIB text."""
+    if VERSION_2.search(text):
+        cases, query = _read_v2(text, num_inputs, num_outputs)
+        prop = Property(2, num_inputs, num_outputs, cases, query)
+    else:
+        prop = Property(1, num_inputs, num_outputs, _read_v1(text, num_inputs, num_outputs))
+    for case in prop.cases:
+        if case.lo.shape != (num_inputs,):
+            raise ValueError(f"vnnlib: {case.lo.shape[0]} inputs, the network has {num_inputs}")
+    return prop
+
+
+def to_vnnlib2(text, input_shape, output_shape, input_type="float32", output_type="float32"):
+    """The VNN-LIB 2.0 form of a 1.0 text, as VNN-COMP's benchmark repository writes it: a
+    declare-network of the ONNX shapes, X_i and Y_j as indices into them, the rest kept."""
+
+    def index(match):
+        name, flat = match.group(1), int(match.group(2))
+        shape = input_shape if name == "X" else output_shape
+        return f"{name}[{','.join(str(int(i)) for i in np.unravel_index(flat, shape))}]"
+
+    dims = lambda s: "[" + ", ".join(str(d) for d in s) + "]"  # noqa: E731
+    head = [
+        "(vnnlib-version <2.0>)",
+        "",
+        "(declare-network N",
+        f"    (declare-input  X {input_type} {dims(input_shape)})",
+        f"    (declare-output Y {output_type} {dims(output_shape)})",
+        ")",
+    ]
+    # the declarations of 1.0 go; every X_i and Y_j becomes an index
+    body = [line for line in text.splitlines() if not DECLARE.match(line.strip())]
+    body = [re.sub(r"\b([XY])_(\d+)\b", index, line) for line in body]
+    # an integer constant is a real one in 2.0 (its type checker refuses 1 for a float32)
+    body = [
+        line
+        if line.lstrip().startswith(";")
+        else re.sub(r"(?<=[\s(])(-?\d+)(?=[\s)])", r"\1.0", line)
+        for line in body
+    ]
+    return "\n".join(head + body) + "\n"
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 COMPARISON = r"\((<=|>=) (\S+) (\S+)\)"
+
 DECLARE = re.compile(r"^\(declare-const (X|Y)_(\S+) Real\)$")
+
 SIMPLE_ASSERT = re.compile(r"^\(assert " + COMPARISON + r"\)$")
+
 DNF_ASSERT = re.compile(r"^\(assert \(or (\(and ?(" + COMPARISON + r")+\))+\)\)$")
+
 VERSION_2 = re.compile(r"\(\s*vnnlib-version\s*<\s*2\.0\s*>\s*\)")
 
 
@@ -224,99 +318,5 @@ def _add_atom(case, op, row, const, kind):
         case.lo[i] = max(case.lo[i], bound)
     if case.lo[i] > case.hi[i]:
         raise ValueError(f"vnnlib: the range of input {i} is empty")
-
-
-# ============================================  MAIN  ============================================ #
-
-
-@dataclass
-class Case:
-    """An input box [lo, hi] and the unsafe outputs: the union of the polytopes A y <= b."""
-
-    lo: np.ndarray
-    hi: np.ndarray
-    polytopes: list = field(default_factory=list)
-
-
-@dataclass
-class Property:
-    """A VNN-LIB property: its version (1 or 2), its cases, and the 2.0 query (None for 1.0)."""
-
-    version: int
-    num_inputs: int
-    num_outputs: int
-    cases: list
-    query: object = None
-
-    def specifications(self, case=0):
-        """The unsafe sets of a case as cora.Specification objects (one per polytope)."""
-        import cora
-
-        return [
-            cora.Specification.unsafe_set(cora.Polytope(A, b))
-            for A, b in self.cases[case].polytopes
-        ]
-
-    def stacked(self):
-        """All polytopes of all cases as arrays padded to one row count: case index (P,), A
-        (P, K, m), b (P, K); a padding row is 0 <= +inf, which never decides."""
-        rows = max(A.shape[0] for c in self.cases for A, _ in c.polytopes)
-        index, As, bs = [], [], []
-        for k, case in enumerate(self.cases):
-            for A, b in case.polytopes:
-                index.append(k)
-                As.append(np.vstack([A, np.zeros((rows - A.shape[0], self.num_outputs))]))
-                bs.append(np.concatenate([b, np.full(rows - b.shape[0], np.inf)]))
-        return np.array(index), np.array(As), np.array(bs)
-
-
-def read_vnnlib(path, num_inputs, num_outputs):
-    """The property of a VNN-LIB file (.vnnlib or .vnnlib.gz); the version from its header."""
-    return parse_vnnlib(read_text(path), num_inputs, num_outputs)
-
-
-def parse_vnnlib(text, num_inputs, num_outputs):
-    """The property of a VNN-LIB text."""
-    if VERSION_2.search(text):
-        cases, query = _read_v2(text, num_inputs, num_outputs)
-        prop = Property(2, num_inputs, num_outputs, cases, query)
-    else:
-        prop = Property(1, num_inputs, num_outputs, _read_v1(text, num_inputs, num_outputs))
-    for case in prop.cases:
-        if case.lo.shape != (num_inputs,):
-            raise ValueError(f"vnnlib: {case.lo.shape[0]} inputs, the network has {num_inputs}")
-    return prop
-
-
-def to_vnnlib2(text, input_shape, output_shape, input_type="float32", output_type="float32"):
-    """The VNN-LIB 2.0 form of a 1.0 text, as VNN-COMP's benchmark repository writes it: a
-    declare-network of the ONNX shapes, X_i and Y_j as indices into them, the rest kept."""
-
-    def index(match):
-        name, flat = match.group(1), int(match.group(2))
-        shape = input_shape if name == "X" else output_shape
-        return f"{name}[{','.join(str(int(i)) for i in np.unravel_index(flat, shape))}]"
-
-    dims = lambda s: "[" + ", ".join(str(d) for d in s) + "]"  # noqa: E731
-    head = [
-        "(vnnlib-version <2.0>)",
-        "",
-        "(declare-network N",
-        f"    (declare-input  X {input_type} {dims(input_shape)})",
-        f"    (declare-output Y {output_type} {dims(output_shape)})",
-        ")",
-    ]
-    # the declarations of 1.0 go; every X_i and Y_j becomes an index
-    body = [line for line in text.splitlines() if not DECLARE.match(line.strip())]
-    body = [re.sub(r"\b([XY])_(\d+)\b", index, line) for line in body]
-    # an integer constant is a real one in 2.0 (its type checker refuses 1 for a float32)
-    body = [
-        line
-        if line.lstrip().startswith(";")
-        else re.sub(r"(?<=[\s(])(-?\d+)(?=[\s)])", r"\1.0", line)
-        for line in body
-    ]
-    return "\n".join(head + body) + "\n"
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

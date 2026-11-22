@@ -13,22 +13,20 @@ Written:       29-September-2026
 Last update:   ---
 Reviewed:      ---
 """
-import cora
+from cora import backend, eye, LinearSys, Tensor, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 def reach_oscillator():
     """The reachable set of a damped oscillator, on whichever backend is current."""
     # Parameters ----------------------------------------------------------------------------
 
-    R0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
+    R0 = Zonotope(Tensor([1.0, 0.0]), 0.1 * eye(2))
 
     # System Dynamics -----------------------------------------------------------------------
 
-    sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
+    sys = LinearSys(Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
 
     # Reachability Analysis -----------------------------------------------------------------
 
@@ -37,15 +35,14 @@ def reach_oscillator():
 # Backends ----------------------------------------------------------------------------------
 
 
-# ============================================  MAIN  ============================================ #
-
 backends = ["eigen", "torch"]
 
 # Reachability Analysis ---------------------------------------------------------------------
 
 centers = {}
+
 for spec in backends:
-    with cora.backend(spec):
+    with backend(spec):
         R = reach_oscillator()
     centers[spec] = R.time_interval[-1].center
     print(f"{spec}: the last center is {centers[spec]} ({type(centers[spec]).__module__})")
@@ -53,6 +50,7 @@ for spec in backends:
 # Evaluation --------------------------------------------------------------------------------
 
 gap = abs(centers["eigen"] - centers["torch"].numpy()).max()
+
 print("eigen and torch differ by", float(gap))
 
 # example completed

@@ -31,70 +31,6 @@ import torch.nn.functional as F
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh"}  # what cora's layers know
-LINEAR_OPS = {
-    "Add",
-    "Sub",
-    "Mul",
-    "Div",
-    "Neg",
-    "MatMul",
-    "Gemm",
-    "Conv",
-    "BatchNormalization",
-    "Flatten",
-    "Reshape",
-    "Transpose",
-    "Squeeze",
-    "Unsqueeze",
-    "Concat",
-    "Identity",
-    "Dropout",
-    "AveragePool",
-    "GlobalAveragePool",
-    "Pad",
-}
-STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
-
-
-def _load_model(path):
-    """The ModelProto of an .onnx or .onnx.gz file."""
-    import onnx
-
-    if str(path).endswith(".gz"):
-        with gzip.open(path, "rb") as stream:
-            return onnx.load_model_from_string(stream.read())
-    return onnx.load(str(path))
-
-
-def _attributes(node):
-    """The attributes of a node as a dict of Python values."""
-    from onnx import helper
-
-    return {a.name: helper.get_attribute_value(a) for a in node.attribute}
-
-
-def _dims(value_info):
-    """The dimensions of a graph input or output; a symbolic or unset one is 1."""
-    return [d.dim_value if d.dim_value > 0 else 1 for d in value_info.type.tensor_type.shape.dim]
-
-
-def _pool_padding(x, pads, value):
-    """ONNX pads (begin..., end...) applied to the spatial axes of x (N, C, *spatial)."""
-    if not pads or not any(pads):
-        return x
-    k = len(pads) // 2
-    flat = []
-    for i in reversed(range(k)):  # torch's pad lists the last axis first
-        flat += [pads[i], pads[i + k]]
-    return F.pad(x, flat, value=value)
-
-
-# ============================================  MAIN  ============================================ #
-
-
 class OnnxNetwork:
     """An ONNX graph run node by node on batched torch tensors; the constants are in one dtype and
     on one device, loaded once and reused across attacks and bounds."""
@@ -505,5 +441,67 @@ class OnnxNetwork:
 class _NotAChain(Exception):
     """The graph is not a chain of affine maps and element-wise activations."""
 
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh"}  # what cora's layers know
+
+LINEAR_OPS = {
+    "Add",
+    "Sub",
+    "Mul",
+    "Div",
+    "Neg",
+    "MatMul",
+    "Gemm",
+    "Conv",
+    "BatchNormalization",
+    "Flatten",
+    "Reshape",
+    "Transpose",
+    "Squeeze",
+    "Unsqueeze",
+    "Concat",
+    "Identity",
+    "Dropout",
+    "AveragePool",
+    "GlobalAveragePool",
+    "Pad",
+}
+
+STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
+
+
+def _load_model(path):
+    """The ModelProto of an .onnx or .onnx.gz file."""
+    import onnx
+
+    if str(path).endswith(".gz"):
+        with gzip.open(path, "rb") as stream:
+            return onnx.load_model_from_string(stream.read())
+    return onnx.load(str(path))
+
+
+def _attributes(node):
+    """The attributes of a node as a dict of Python values."""
+    from onnx import helper
+
+    return {a.name: helper.get_attribute_value(a) for a in node.attribute}
+
+
+def _dims(value_info):
+    """The dimensions of a graph input or output; a symbolic or unset one is 1."""
+    return [d.dim_value if d.dim_value > 0 else 1 for d in value_info.type.tensor_type.shape.dim]
+
+
+def _pool_padding(x, pads, value):
+    """ONNX pads (begin..., end...) applied to the spatial axes of x (N, C, *spatial)."""
+    if not pads or not any(pads):
+        return x
+    k = len(pads) // 2
+    flat = []
+    for i in reversed(range(k)):  # torch's pad lists the last axis first
+        flat += [pads[i], pads[i + k]]
+    return F.pad(x, flat, value=value)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

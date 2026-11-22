@@ -29,10 +29,82 @@ from ._cora import ContSet, Figure, ReachSet, Rng, Specification
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+def core_figure(ax):
+    """The core figure of the axes: it holds every layer drawn on them, with the choices of the
+    core, one per axes so that the sets take one color after another."""
+    if getattr(ax, "_cora_figure", None) is None:
+        ax._cora_figure = Figure()
+        ax._cora_drawn = 0
+        if getattr(ax, "name", "") == "3d":
+            ax.view_init(elev=ax._cora_figure.elevation, azim=ax._cora_figure.azimuth - 90)
+    return ax._cora_figure
+
+
+def _show(ax, figure, style):
+    """Draws the layers the core added since the last call; returns what was drawn."""
+    layers = figure.layers()
+    artists = [_draw(ax, layer, style) for layer in layers[ax._cora_drawn:]]
+    ax._cora_drawn = len(layers)
+    for name in ("x", "y", "z"):
+        text, setter = getattr(figure, name + "label"), getattr(ax, f"set_{name}label", None)
+        if text and setter and not getattr(ax, f"get_{name}label")():
+            setter(text)
+    if figure.equal_axes:
+        ax.set_aspect("equal", adjustable="box")
+    ax.autoscale_view()
+    return artists[0] if len(artists) == 1 else artists
+
+
+def plot(obj, dims=(0, 1), ax=None, label=None, **style):
+    """CORA's `plot`: draws a ReachSet, a Zonotope, an Interval, simulations `(time points, N, n)`,
+    points `(N, n)`, or a Specification, by what it is, on one, two or (for sets, with the keyword
+    `ax` on axes of projection="3d") three dimensions `dims`; returns what it drew."""
+    ax = _axes(ax, len(dims) == 3)
+    options = _core_options(label, style)
+    data = _data(obj)
+    figure = core_figure(ax)
+    figure.plot(data, [int(d) for d in dims], **options)
+    return _show(ax, figure, style)
+
+
+def plot_over_time(obj, dim=0, ax=None, label=None, time_step=None, **style):
+    """CORA's `plotOverTime`: dimension `dim` of a ReachSet (boxes over its time intervals), or of
+    simulations `(time points, N, n)` with their `time_step`, over time."""
+    ax = _axes(ax, False)
+    options = _core_options(label, style)
+    figure = core_figure(ax)
+    if isinstance(obj, ReachSet):
+        figure.plot_over_time(obj, int(dim), **options)
+    else:
+        if time_step is None:
+            raise TypeError("plot_over_time of simulations needs their time_step=...")
+        figure.plot_over_time(_data(obj), int(dim), float(time_step), **options)
+    return _show(ax, figure, style)
+
+
+def plot_rand_point(obj, dims=(0, 1), num_points=100, rng=None, ax=None, label=None, **style):
+    """CORA's `plotRandPoint`: `num_points` random points of the set as dots, e.g. over the input
+    set of a network and the points it maps them to."""
+    ax = _axes(ax, False)
+    options = _core_options(label, style)
+    figure = core_figure(ax)
+    rng = Rng(0) if rng is None else rng
+    figure.plot_rand_point(obj, [int(d) for d in dims], int(num_points), rng, **options)
+    return _show(ax, figure, style)
+
+
+# The plot functions are methods of the classes they draw: Z.plot(), R.plot_over_time(0).
+def _method(function):
+    def method(self, *args, **kwargs):
+        return function(self, *args, **kwargs)
+    method.__doc__ = function.__doc__
+    method.__name__ = function.__name__
+    return method
+
 
 _CORE_OPTIONS = ("face_alpha", "line_width", "unify", "filled", "set", "time_points", "step",
                  "num_colors", "cidx")
+
 _ALIASES = {"facecolor": "face_color", "edgecolor": "edge_color"}
 
 
@@ -165,85 +237,14 @@ def _draw(ax, layer, style):
     return line
 
 
-# ============================================  MAIN  ============================================ #
-
-def core_figure(ax):
-    """The core figure of the axes: it holds every layer drawn on them, with the choices of the
-    core, one per axes so that the sets take one color after another."""
-    if getattr(ax, "_cora_figure", None) is None:
-        ax._cora_figure = Figure()
-        ax._cora_drawn = 0
-        if getattr(ax, "name", "") == "3d":
-            ax.view_init(elev=ax._cora_figure.elevation, azim=ax._cora_figure.azimuth - 90)
-    return ax._cora_figure
-
-
-def _show(ax, figure, style):
-    """Draws the layers the core added since the last call; returns what was drawn."""
-    layers = figure.layers()
-    artists = [_draw(ax, layer, style) for layer in layers[ax._cora_drawn:]]
-    ax._cora_drawn = len(layers)
-    for name in ("x", "y", "z"):
-        text, setter = getattr(figure, name + "label"), getattr(ax, f"set_{name}label", None)
-        if text and setter and not getattr(ax, f"get_{name}label")():
-            setter(text)
-    if figure.equal_axes:
-        ax.set_aspect("equal", adjustable="box")
-    ax.autoscale_view()
-    return artists[0] if len(artists) == 1 else artists
-
-
-def plot(obj, dims=(0, 1), ax=None, label=None, **style):
-    """CORA's `plot`: draws a ReachSet, a Zonotope, an Interval, simulations `(time points, N, n)`,
-    points `(N, n)`, or a Specification, by what it is, on one, two or (for sets, with the keyword
-    `ax` on axes of projection="3d") three dimensions `dims`; returns what it drew."""
-    ax = _axes(ax, len(dims) == 3)
-    options = _core_options(label, style)
-    data = _data(obj)
-    figure = core_figure(ax)
-    figure.plot(data, [int(d) for d in dims], **options)
-    return _show(ax, figure, style)
-
-
-def plot_over_time(obj, dim=0, ax=None, label=None, time_step=None, **style):
-    """CORA's `plotOverTime`: dimension `dim` of a ReachSet (boxes over its time intervals), or of
-    simulations `(time points, N, n)` with their `time_step`, over time."""
-    ax = _axes(ax, False)
-    options = _core_options(label, style)
-    figure = core_figure(ax)
-    if isinstance(obj, ReachSet):
-        figure.plot_over_time(obj, int(dim), **options)
-    else:
-        if time_step is None:
-            raise TypeError("plot_over_time of simulations needs their time_step=...")
-        figure.plot_over_time(_data(obj), int(dim), float(time_step), **options)
-    return _show(ax, figure, style)
-
-
-def plot_rand_point(obj, dims=(0, 1), num_points=100, rng=None, ax=None, label=None, **style):
-    """CORA's `plotRandPoint`: `num_points` random points of the set as dots, e.g. over the input
-    set of a network and the points it maps them to."""
-    ax = _axes(ax, False)
-    options = _core_options(label, style)
-    figure = core_figure(ax)
-    rng = Rng(0) if rng is None else rng
-    figure.plot_rand_point(obj, [int(d) for d in dims], int(num_points), rng, **options)
-    return _show(ax, figure, style)
-
-
-# The plot functions are methods of the classes they draw: Z.plot(), R.plot_over_time(0).
-def _method(function):
-    def method(self, *args, **kwargs):
-        return function(self, *args, **kwargs)
-    method.__doc__ = function.__doc__
-    method.__name__ = function.__name__
-    return method
-
-
 ContSet.plot = _method(plot)
+
 ContSet.plot_rand_point = _method(plot_rand_point)
+
 ReachSet.plot = _method(plot)
+
 ReachSet.plot_over_time = _method(plot_over_time)
+
 Specification.plot = _method(plot)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

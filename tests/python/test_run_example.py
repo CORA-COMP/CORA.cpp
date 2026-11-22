@@ -17,21 +17,11 @@ import unittest
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-SCRIPT = os.path.join(ROOT, "scripts", "run_example.py")
 # the build directory the examples are built in: ctest names its own; without one, nothing is built
 BUILD = os.environ.get("CORACPP_BUILD", "")
+
 CONFIGURED = bool(BUILD) and os.path.isfile(os.path.join(BUILD, "CMakeCache.txt"))
 
-
-def run(path):
-    """Runs the script on the file `path` and returns the finished process."""
-    return subprocess.run([sys.executable, SCRIPT, path], capture_output=True, text=True, cwd=ROOT)
-
-
-# ============================================  MAIN  ============================================ #
 
 @unittest.skipIf(sys.platform == "win32", "the helper scripts of the repository need bash")
 class RunExample(unittest.TestCase):
@@ -72,6 +62,18 @@ class RunExample(unittest.TestCase):
         header = "CORA.cpp | example_linear_reach_03_specification.cpp | default backend:"
         self.assertIn(header, result.stdout)
         self.assertIn("CORA END", result.stdout)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+SCRIPT = os.path.join(ROOT, "scripts", "run_example.py")
+
+
+def run(path):
+    """Runs the script on the file `path` and returns the finished process."""
+    return subprocess.run([sys.executable, SCRIPT, path], capture_output=True, text=True, cwd=ROOT)
 
 
 if __name__ == "__main__":

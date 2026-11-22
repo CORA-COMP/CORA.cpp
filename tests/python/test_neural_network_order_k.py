@@ -26,29 +26,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-
-def neuron(activation):
-    """A network of one neuron a(x)."""
-    return cora.NeuralNetwork([(np.array([[1.0]]), np.array([0.0]))], [activation])
-
-
-def interval_set(lo, hi):
-    """x = c + g alpha over alpha in [-1, 1]."""
-    return cora.PolyZonotope(np.array([(lo + hi) / 2]), np.array([[(hi - lo) / 2]]), None,
-                             np.array([[1]]), [1])
-
-
-def outside(net, X, Y, n=300):
-    """How many outputs of sampled points of X leave the box of Y."""
-    box = Y.zonotope().interval()
-    y = net.evaluate(np.asarray(X.rand_point(n, cora.Rng(3))))
-    return int(((y < np.asarray(box.inf) - 1e-9) | (y > np.asarray(box.sup) + 1e-9)).sum())
-
-
-# ============================================  MAIN  ============================================ #
-
 class OrderK(unittest.TestCase):
     def test_a_relu_of_order_2_is_the_hand_computed_polynomial(self):
         # 3/16 (x + 1)^2 + 7/96 +- 25/96 over [-1, 3] by Singh's polynomial
@@ -148,6 +125,26 @@ class Refine(unittest.TestCase):
             net.evaluate(interval_set(-1.0, 1.0), orders=[2])
         with self.assertRaises(ValueError):
             net.refine([], [[1.0]], type="foo")
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def neuron(activation):
+    """A network of one neuron a(x)."""
+    return cora.NeuralNetwork([(np.array([[1.0]]), np.array([0.0]))], [activation])
+
+
+def interval_set(lo, hi):
+    """x = c + g alpha over alpha in [-1, 1]."""
+    return cora.PolyZonotope(np.array([(lo + hi) / 2]), np.array([[(hi - lo) / 2]]), None,
+                             np.array([[1]]), [1])
+
+
+def outside(net, X, Y, n=300):
+    """How many outputs of sampled points of X leave the box of Y."""
+    box = Y.zonotope().interval()
+    y = net.evaluate(np.asarray(X.rand_point(n, cora.Rng(3))))
+    return int(((y < np.asarray(box.inf) - 1e-9) | (y > np.asarray(box.sup) + 1e-9)).sum())
 
 
 if __name__ == "__main__":

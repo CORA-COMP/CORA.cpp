@@ -27,6 +27,21 @@ import sys
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main(argv):
+    folder = next((a for a in argv if not a.startswith("--")), DATA)
+    if "--check" in argv:
+        # the model against the matrices MATLAB exported
+        for instance, samples in (("HEAT01", 5), ("HEAT02", 10)):
+            same = heat_matrix(samples) == read_coo(folder, instance, "A")
+            print(f"{instance}: A {'bit-identical' if same else 'DIFFERS'}")
+            if not same:
+                return 1
+        return 0
+    write_heat03(folder)
+    print(f"wrote HEAT03 to {os.path.abspath(folder)}")
+    return 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "benchmarks", "data")
@@ -125,23 +140,6 @@ def write_heat03(folder):
         f.write(blob)
     with open(os.path.join(folder, "HEAT03.json"), "w", newline="\n") as f:
         f.write(json.dumps(meta, indent=2) + "\n")
-
-
-# ============================================  MAIN  ============================================ #
-
-def main(argv):
-    folder = next((a for a in argv if not a.startswith("--")), DATA)
-    if "--check" in argv:
-        # the model against the matrices MATLAB exported
-        for instance, samples in (("HEAT01", 5), ("HEAT02", 10)):
-            same = heat_matrix(samples) == read_coo(folder, instance, "A")
-            print(f"{instance}: A {'bit-identical' if same else 'DIFFERS'}")
-            if not same:
-                return 1
-        return 0
-    write_heat03(folder)
-    print(f"wrote HEAT03 to {os.path.abspath(folder)}")
-    return 0
 
 
 if __name__ == "__main__":

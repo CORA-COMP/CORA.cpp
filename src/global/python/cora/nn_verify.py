@@ -113,5 +113,4 @@ class _Confirm:
             self.instance.onnx_path, None, text, self.instance.vnnlib_text)
         return y.astype(np.float64) if result == counterexample.CORRECT else None
 
-
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

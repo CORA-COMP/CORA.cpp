@@ -12,14 +12,11 @@ Written:       29-September-2026
 Last update:   ---
 Reviewed:      ---
 """
-import cora
+from cora import eye, LinearSys, Tensor, Zonotope
 import torch
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 if not torch.cuda.is_available():
     print("no CUDA device: nothing to show")
@@ -27,11 +24,11 @@ if not torch.cuda.is_available():
 
 # Parameters --------------------------------------------------------------------------------
 
-R0 = cora.Zonotope(cora.Tensor([1.0, 0.0], device="gpu"), 0.1 * cora.eye(2, device="gpu"))
+R0 = Zonotope(Tensor([1.0, 0.0], device="gpu"), 0.1 * eye(2, device="gpu"))
 
 # System Dynamics ---------------------------------------------------------------------------
 
-sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]], device="gpu"))
+sys = LinearSys(Tensor([[-0.1, 1.0], [-1.0, -0.1]], device="gpu"))
 
 # Reachability Analysis ---------------------------------------------------------------------
 

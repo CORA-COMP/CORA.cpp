@@ -17,9 +17,21 @@ import sys
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    found = []
+    for name in tracked():
+        if os.path.exists(os.path.join(ROOT, name)):
+            with open(os.path.join(ROOT, name), encoding="utf-8", errors="replace", newline="") as handle:
+                found += problems(name, handle.read())
+    found += workflow_problems()
+    print("\n".join(found[:200]) if found else "check_format: ok")
+    return 1 if found else 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
 SUFFIXES = (".cpp", ".h", ".py", ".md", ".yml", ".yaml", ".cmake", ".txt", ".sh", ".json", ".in")
 
 
@@ -59,19 +71,6 @@ def workflow_problems():
         except yaml.YAMLError as error:
             found.append(f".github/workflows/{name}: {str(error).splitlines()[0]}")
     return found
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    found = []
-    for name in tracked():
-        if os.path.exists(os.path.join(ROOT, name)):
-            with open(os.path.join(ROOT, name), encoding="utf-8", errors="replace", newline="") as handle:
-                found += problems(name, handle.read())
-    found += workflow_problems()
-    print("\n".join(found[:200]) if found else "check_format: ok")
-    return 1 if found else 0
 
 
 if __name__ == "__main__":

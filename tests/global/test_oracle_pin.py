@@ -18,25 +18,12 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 ROOT = Path(__file__).resolve().parents[2]
+
 sys.path.insert(0, str(ROOT / "scripts" / "ci"))
+
 import check_oracle_pin as pin  # noqa: E402
 
-
-LISTING = "\n".join([
-    "aaa\trefs/tags/oracle-20261107-9c0c5b775",
-    "bbb\trefs/tags/oracle-20261109-b09283d9c",
-    "ccc\trefs/tags/oracle-20261109-f23dcd3c7",
-    "ddd\trefs/tags/v1.0",
-    "eee\trefs/tags/oracle-20261110-0123456ab",
-    "fff\trefs/tags/oracle-20261110-0123456ab^{}"])
-DATES = {"aaa": "2026-11-07T10:00:00Z", "bbb": "2026-11-09T16:16:44Z", "ccc": "2026-11-09T20:35:42Z",
-         "fff": "2026-11-10T08:00:00Z"}
-
-
-# ============================================  MAIN  ============================================ #
 
 class OraclePin(unittest.TestCase):
     def test_the_pin_is_read_from_the_cmake_file(self):
@@ -61,6 +48,20 @@ class OraclePin(unittest.TestCase):
         # the same day, an earlier commit: not newer
         self.assertEqual(pin.newer_than("oracle-20261109-f23dcd3c7", tags, DATES.get),
                          ["oracle-20261110-0123456ab"])
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+LISTING = "\n".join([
+    "aaa\trefs/tags/oracle-20261107-9c0c5b775",
+    "bbb\trefs/tags/oracle-20261109-b09283d9c",
+    "ccc\trefs/tags/oracle-20261109-f23dcd3c7",
+    "ddd\trefs/tags/v1.0",
+    "eee\trefs/tags/oracle-20261110-0123456ab",
+    "fff\trefs/tags/oracle-20261110-0123456ab^{}"])
+
+DATES = {"aaa": "2026-11-07T10:00:00Z", "bbb": "2026-11-09T16:16:44Z", "ccc": "2026-11-09T20:35:42Z",
+         "fff": "2026-11-10T08:00:00Z"}
 
 
 if __name__ == "__main__":

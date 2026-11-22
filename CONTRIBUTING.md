@@ -33,10 +33,21 @@ checks it for all of them (rules in `scripts/ci/layout.py`, tests in `tests/glob
    named by its folder). Then the description (at most 12 lines of prose), the blocks `Syntax`,
    `Inputs`, `Outputs`, `See also` (one line per form and per parameter), the tag `// CORA: <path>.m` or `// CORA.cpp only: <reason>`, `CORA authors:` where CORA
    has them, and the author block (`Authors`, `Written`, `Last update`, `Reviewed`).
-2. `BEGIN CODE`, then `AUXILIARY` (only if code sits above the operation; it holds the `aux_*`
-   helpers), then `MAIN` with two empty lines above it, the operation or the test cases, and
-   `END OF CODE`. A C++ header has only `BEGIN CODE` and `END OF CODE`. Above `BEGIN CODE` stand the
-   header, the includes and `using` declarations, nothing else (Python: imports).
+2. Markers, per language (checked by `scripts/ci/layout.py`):
+   - C++: `BEGIN CODE`, then `AUXILIARY` (only if code sits above the operation; it holds the `aux_*`
+     helpers), then `MAIN` with two empty lines above it, the operation or the test cases, and
+     `END OF CODE`. A C++ header has only `BEGIN CODE` and `END OF CODE`. Above `BEGIN CODE` stand the
+     header, the includes and `using` declarations, nothing else.
+   - Python follows CORA's MATLAB order and has no `MAIN`: `BEGIN CODE`, the operation or the test
+     cases right away, then `AUXILIARY` (only if there are helpers; two empty lines above it) with the
+     helpers below, then `END OF CODE`. An `if __name__ == "__main__":` block stands last, under the
+     helpers. A definition that the operation needs while the module loads (a decorator, a default
+     value, a base class, a statement of a script) stands above the operation, not under `AUXILIARY`.
+     Above `BEGIN CODE` stand the docstring and the imports. `scripts/ci/convert_python_layout.py`
+     moves a file from the old order and checks that its AST is unchanged.
+   - Imports in Python: examples write `from cora import <names>`, so that they read like CORA's
+     MATLAB examples; tests, scripts and library code write `import cora`, so that generic names
+     (`eye`, `plot`, `Tensor`, `norm`) stay apart from numpy's, torch's and matplotlib's.
 3. Comments: one line each, saying why (a longer explanation goes into the header); at least one
    comment per 20 lines of code; a `///` doc comment of a function is at most 3 lines.
 4. Names: classes PascalCase; functions, arguments, variables and files snake_case (docs/naming.md).

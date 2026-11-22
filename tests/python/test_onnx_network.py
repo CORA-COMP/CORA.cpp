@@ -34,6 +34,81 @@ from cora.onnx_network import OnnxNetwork
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+class TorchRun(unittest.TestCase):
+    def test_every_operator_agrees_with_onnxruntime(self):
+        # each graph on 7 rows at once, against onnxruntime one sample at a time
+        for m in (mlp(), conv_net(), residual_net(), maxpool_net()):
+            net = OnnxNetwork(m, dtype=torch.float32)
+            x = RNG.uniform(-1, 1, (7, net.num_inputs)).astype(np.float32)
+            expected = onnxruntime_rows(m, x)
+            np.testing.assert_allclose(net(torch.from_numpy(x)).numpy(), expected, rtol=1e-5, atol=1e-5)
+            # the same graph in float64 is as close
+            y64 = net.cast(torch.float64)(torch.from_numpy(x).double()).numpy()
+            np.testing.assert_allclose(y64, expected, rtol=1e-5, atol=1e-5)
+
+    def test_gradients_flow(self):
+        # autograd through the batched run, as PGD uses it
+        net = OnnxNetwork(conv_net(), dtype=torch.float32)
+        x = torch.zeros(3, net.num_inputs, requires_grad=True)
+        (grad,) = torch.autograd.grad(net(x).sum(), x)
+        self.assertEqual(tuple(grad.shape), (3, 16))
+        self.assertTrue(bool(torch.isfinite(grad).all()))
+
+
+class Lowering(unittest.TestCase):
+    def test_chains_lower_to_the_same_function(self):
+        # the dense layers in float64 equal the graph in float64
+        for m in (mlp(), conv_net()):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            layers, why = net.dense_layers()
+            self.assertIsNone(why)
+            x = RNG.uniform(-1, 1, (9, net.num_inputs))
+            np.testing.assert_allclose(
+                dense_rows(layers, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12
+            )
+
+    def test_activations_and_weights(self):
+        # the chain of the MLP: relu, sigmoid, tanh, identity; the Gemm's weights exactly
+        m = mlp()
+        layers, _ = OnnxNetwork(m).dense_layers()
+        self.assertEqual(layers[1], ["relu", "sigmoid", "tanh", "identity"])
+        W2 = numpy_helper.to_array(m.graph.initializer[3])
+        self.assertTrue(np.array_equal(layers[0][1][0].numpy(), W2.astype(np.float64)))
+
+    def test_neural_network_evaluates_like_the_graph(self):
+        # the cora.NeuralNetwork of the chain at points
+        net = OnnxNetwork(mlp(), dtype=torch.float64)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        x = torch.as_tensor(RNG.uniform(-1, 1, (5, 5)))
+        np.testing.assert_allclose(np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12)
+
+    def test_what_is_no_chain(self):
+        # a residual connection and a max pool, each with the reason
+        for m, reason in ((residual_net(), "residual"), (maxpool_net(), "MaxPool")):
+            nn, why = OnnxNetwork(m).to_neural_network()
+            self.assertIsNone(nn)
+            self.assertIn(reason, why)
+
+    def test_size_cap(self):
+        # max_elements refuses unit-vector batches beyond it
+        _, why = OnnxNetwork(conv_net()).dense_layers(max_elements=100)
+        self.assertIn("max_elements", why)
+
+
+class Loading(unittest.TestCase):
+    def test_shapes_and_operators(self):
+        net = OnnxNetwork(conv_net())
+        self.assertEqual((net.input_shape, net.num_inputs, net.num_outputs), ([1, 1, 4, 4], 16, 4))
+        self.assertIn("Conv", net.op_types())
+        self.assertGreater(net.activation_elements(), 16)
+
+    def test_unknown_operator(self):
+        m = model([helper.make_node("Erf", ["x"], ["y"])], [("x", [1, 2])], [("y", [1, 2])], {})
+        with self.assertRaisesRegex(NotImplementedError, "Erf"):
+            OnnxNetwork(m)(torch.zeros(1, 2))
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 RNG = np.random.default_rng(3)
@@ -154,84 +229,5 @@ def maxpool_net():
         helper.make_node("Flatten", ["p"], ["y"]),
     ]
     return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 9])], {})
-
-
-# ============================================  MAIN  ============================================ #
-
-
-class TorchRun(unittest.TestCase):
-    def test_every_operator_agrees_with_onnxruntime(self):
-        # each graph on 7 rows at once, against onnxruntime one sample at a time
-        for m in (mlp(), conv_net(), residual_net(), maxpool_net()):
-            net = OnnxNetwork(m, dtype=torch.float32)
-            x = RNG.uniform(-1, 1, (7, net.num_inputs)).astype(np.float32)
-            expected = onnxruntime_rows(m, x)
-            np.testing.assert_allclose(net(torch.from_numpy(x)).numpy(), expected, rtol=1e-5, atol=1e-5)
-            # the same graph in float64 is as close
-            y64 = net.cast(torch.float64)(torch.from_numpy(x).double()).numpy()
-            np.testing.assert_allclose(y64, expected, rtol=1e-5, atol=1e-5)
-
-    def test_gradients_flow(self):
-        # autograd through the batched run, as PGD uses it
-        net = OnnxNetwork(conv_net(), dtype=torch.float32)
-        x = torch.zeros(3, net.num_inputs, requires_grad=True)
-        (grad,) = torch.autograd.grad(net(x).sum(), x)
-        self.assertEqual(tuple(grad.shape), (3, 16))
-        self.assertTrue(bool(torch.isfinite(grad).all()))
-
-
-class Lowering(unittest.TestCase):
-    def test_chains_lower_to_the_same_function(self):
-        # the dense layers in float64 equal the graph in float64
-        for m in (mlp(), conv_net()):
-            net = OnnxNetwork(m, dtype=torch.float64)
-            layers, why = net.dense_layers()
-            self.assertIsNone(why)
-            x = RNG.uniform(-1, 1, (9, net.num_inputs))
-            np.testing.assert_allclose(
-                dense_rows(layers, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12
-            )
-
-    def test_activations_and_weights(self):
-        # the chain of the MLP: relu, sigmoid, tanh, identity; the Gemm's weights exactly
-        m = mlp()
-        layers, _ = OnnxNetwork(m).dense_layers()
-        self.assertEqual(layers[1], ["relu", "sigmoid", "tanh", "identity"])
-        W2 = numpy_helper.to_array(m.graph.initializer[3])
-        self.assertTrue(np.array_equal(layers[0][1][0].numpy(), W2.astype(np.float64)))
-
-    def test_neural_network_evaluates_like_the_graph(self):
-        # the cora.NeuralNetwork of the chain at points
-        net = OnnxNetwork(mlp(), dtype=torch.float64)
-        nn, why = net.to_neural_network()
-        self.assertIsNone(why)
-        x = torch.as_tensor(RNG.uniform(-1, 1, (5, 5)))
-        np.testing.assert_allclose(np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12)
-
-    def test_what_is_no_chain(self):
-        # a residual connection and a max pool, each with the reason
-        for m, reason in ((residual_net(), "residual"), (maxpool_net(), "MaxPool")):
-            nn, why = OnnxNetwork(m).to_neural_network()
-            self.assertIsNone(nn)
-            self.assertIn(reason, why)
-
-    def test_size_cap(self):
-        # max_elements refuses unit-vector batches beyond it
-        _, why = OnnxNetwork(conv_net()).dense_layers(max_elements=100)
-        self.assertIn("max_elements", why)
-
-
-class Loading(unittest.TestCase):
-    def test_shapes_and_operators(self):
-        net = OnnxNetwork(conv_net())
-        self.assertEqual((net.input_shape, net.num_inputs, net.num_outputs), ([1, 1, 4, 4], 16, 4))
-        self.assertIn("Conv", net.op_types())
-        self.assertGreater(net.activation_elements(), 16)
-
-    def test_unknown_operator(self):
-        m = model([helper.make_node("Erf", ["x"], ["y"])], [("x", [1, 2])], [("y", [1, 2])], {})
-        with self.assertRaisesRegex(NotImplementedError, "Erf"):
-            OnnxNetwork(m)(torch.zeros(1, 2))
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

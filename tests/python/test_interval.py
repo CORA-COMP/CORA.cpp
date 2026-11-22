@@ -62,13 +62,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-F64 = dict(dtype=torch.float64)
-
-
-# ============================================  MAIN  ============================================ #
-
 class Interval(unittest.TestCase):
     def test_bounds_center_and_rad(self):
         I = cora.Interval(torch.tensor([-1.0, 0.0, 2.0], **F64), torch.tensor([3.0, 0.5, 2.0], **F64))
@@ -351,6 +344,11 @@ class IntervalGradients(unittest.TestCase):
         self.check(lambda I: cora.Interval(I.boundary_point(direction),
                                            I.boundary_point(direction) + 1.0),
                    [0.1, -0.6, 0.2], hi)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+F64 = dict(dtype=torch.float64)
 
 
 if __name__ == "__main__":

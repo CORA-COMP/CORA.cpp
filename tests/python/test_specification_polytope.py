@@ -17,15 +17,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def box(l1, l2, u1, u2):
-    """The box as a polytope of four rows."""
-    return cora.Polytope(np.array([[1.0, 0], [0, 1], [-1, 0], [0, -1]]), np.array([u1, u2, -l1, -l2]))
-
-
-# ============================================  MAIN  ============================================ #
-
 class UnsafePolytope(unittest.TestCase):
     def test_a_zonotope_is_checked_against_the_intersection_of_the_halfspaces(self):
         Z = cora.Zonotope(np.array([2.0, 1.0]), np.eye(2))  # [1, 3] x [0, 2]
@@ -43,6 +34,13 @@ class UnsafePolytope(unittest.TestCase):
         spec = cora.Specification.unsafe_set(box(0, 0, 1, 1))
         self.assertEqual(spec.type, "unsafe_set")
         self.assertEqual(spec.set.A.shape, (4, 2))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def box(l1, l2, u1, u2):
+    """The box as a polytope of four rows."""
+    return cora.Polytope(np.array([[1.0, 0], [0, 1], [-1, 0], [0, -1]]), np.array([u1, u2, -l1, -l2]))
 
 
 if __name__ == "__main__":

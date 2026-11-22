@@ -26,6 +26,30 @@ import types
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--out", help="the package directory the stubs are written to")
+    parser.add_argument("--lacking", action="store_true", help="list the undocumented functions and unnamed parameters")
+    parser.add_argument("--check", help="a package directory whose stubs must equal fresh ones")
+    args = parser.parse_args()
+    if args.lacking:
+        print("\n".join(lacking()))
+    files = generate()
+    for path, text in files.items():
+        if args.out:
+            target = os.path.join(args.out, path)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "w", encoding="utf-8") as f:
+                f.write(text)
+    if args.check:
+        stale = [path for path, text in files.items() if not os.path.exists(os.path.join(args.check, path))
+                 or open(os.path.join(args.check, path), encoding="utf-8").read() != text]
+        if stale:
+            print("stale stubs: " + ", ".join(stale), file=sys.stderr)
+            # stale stubs fail the check
+            sys.exit(1)
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT_MODULE = "cora._cora"
@@ -45,7 +69,9 @@ Array = numpy.typing.NDArray[numpy.float64] | torch.Tensor
 '''
 
 LITERAL = re.compile(r"^(None|True|False|\[\]|-?[\d.]+(e[+-]?\d+)?|'[^']*'|\"[^\"]*\")$")
+
 SIGNATURE = re.compile(r"^(?:\d+\. )?(\w*)\((.*)\) -> (.*)$")
+
 INTERNAL = {"__module__", "__doc__", "__dict__", "__weakref__", "__qualname__", "__init_subclass__"}
 
 
@@ -80,6 +106,7 @@ def class_name(name, module):
 HEADS = {"List": "list", "Dict": "dict", "Tuple": "tuple", "Set": "set", "FrozenSet": "frozenset",
          "Sequence": "collections.abc.Sequence", "Iterable": "collections.abc.Iterable",
          "Iterator": "collections.abc.Iterator", "Callable": "collections.abc.Callable"}
+
 SIMPLE = {"SupportsInt": "int", "SupportsFloat": "float", "object": "Any", "list": "list[Any]",
           "tuple": "tuple[Any, ...]", "Callable": "collections.abc.Callable[..., Any]",
           "collections.abc.Callable": "collections.abc.Callable[..., Any]"}
@@ -276,32 +303,6 @@ def generate():
             walk(getattr(module, sub), os.path.join("_cora", sub + ".pyi"))
     walk(importlib.import_module(ROOT_MODULE), os.path.join("_cora", "__init__.pyi"))
     return files
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--out", help="the package directory the stubs are written to")
-    parser.add_argument("--lacking", action="store_true", help="list the undocumented functions and unnamed parameters")
-    parser.add_argument("--check", help="a package directory whose stubs must equal fresh ones")
-    args = parser.parse_args()
-    if args.lacking:
-        print("\n".join(lacking()))
-    files = generate()
-    for path, text in files.items():
-        if args.out:
-            target = os.path.join(args.out, path)
-            os.makedirs(os.path.dirname(target), exist_ok=True)
-            with open(target, "w", encoding="utf-8") as f:
-                f.write(text)
-    if args.check:
-        stale = [path for path, text in files.items() if not os.path.exists(os.path.join(args.check, path))
-                 or open(os.path.join(args.check, path), encoding="utf-8").read() != text]
-        if stale:
-            print("stale stubs: " + ", ".join(stale), file=sys.stderr)
-            # stale stubs fail the check
-            sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -27,19 +27,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-F64 = dict(dtype=torch.float64)
-
-
-def system(n=3, m=4, seed=0):
-    g = torch.Generator().manual_seed(seed)
-    A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
-    return A, torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
-
-
-# ============================================  MAIN  ============================================ #
-
 class Simulate(unittest.TestCase):
     def test_follows_the_matrix_exponential(self):
         A, c, G = system()
@@ -127,6 +114,17 @@ class SimulateRandom(unittest.TestCase):
         x = cora.LinearSys(A.cuda()).simulate(x0, time_step=0.1, t_final=1.0)
         self.assertEqual(x.device.type, "cuda")
         torch.testing.assert_close(x.cpu(), cora.LinearSys(A).simulate(x0.cpu(), time_step=0.1, t_final=1.0))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+F64 = dict(dtype=torch.float64)
+
+
+def system(n=3, m=4, seed=0):
+    g = torch.Generator().manual_seed(seed)
+    A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
+    return A, torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
 
 
 if __name__ == "__main__":

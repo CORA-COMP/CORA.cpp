@@ -13,7 +13,7 @@ Last update:   ---
 Reviewed:      ---
 """
 
-import cora
+from cora import eye, LinearSys, Polytope, Specification, Tensor, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -21,10 +21,8 @@ import cora
 # Parameters --------------------------------------------------------------------------------
 
 
-# ============================================  MAIN  ============================================ #
-
 t_final = 6.0
-R0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
+R0 = Zonotope(Tensor([1.0, 0.0]), 0.1 * eye(2))
 
 # Reachability Settings ---------------------------------------------------------------------
 
@@ -33,17 +31,17 @@ taylor_terms = 8
 
 # System Dynamics ---------------------------------------------------------------------------
 
-sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
+sys = LinearSys(Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
 
 # Specifications ----------------------------------------------------------------------------
 
 x1 = [[1.0, 0.0]]
 
 # Stay in x1 <= 1.2.
-spec_safe = cora.Specification.safe_set(cora.Polytope(cora.Tensor(x1), cora.Tensor([1.2])))
+spec_safe = Specification.safe_set(Polytope(Tensor(x1), Tensor([1.2])))
 
 # Never touch x1 <= -0.75, a wall on the left.
-spec_unsafe = cora.Specification.unsafe_set(cora.Polytope(cora.Tensor(x1), cora.Tensor([-0.75])))
+spec_unsafe = Specification.unsafe_set(Polytope(Tensor(x1), Tensor([-0.75])))
 
 # Reachability Analysis ---------------------------------------------------------------------
 

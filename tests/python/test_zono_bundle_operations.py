@@ -34,37 +34,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def zonotope(c, G):
-    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-def two_zonotopes():
-    """The box [-2, 2] x [-1, 1] and a hexagon in [-1, 3] x [-1, 1]: their boxes meet in [-1, 2] x [-1, 1]."""
-    return cora.ZonoBundle([zonotope([0.0, 0.0], [[2.0, 0.0], [0.0, 1.0]]),
-                            zonotope([1.0, 0.0], [[1.0, 0.0], [1.0, 1.0]])])
-
-
-def common_point_bundle(rng, n, k, m):
-    """A bundle of k zonotopes that all contain one point (given back)."""
-    x0 = rng.standard_normal(n)
-    members = []
-    for _ in range(k):
-        G = rng.standard_normal((m, n))
-        members.append(zonotope(x0 - rng.uniform(-1, 1, m) @ G, G))
-    return cora.ZonoBundle(members), x0
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class Conversions(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -224,6 +193,31 @@ class QueriesAndSampling(unittest.TestCase):
             zB.unite(zonotope([0.0], [[1.0]]))
         with self.assertRaises(cora.errors.EmptySet):
             cora.ZonoBundle.empty(2).split(0)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def zonotope(c, G):
+    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
+
+
+def two_zonotopes():
+    """The box [-2, 2] x [-1, 1] and a hexagon in [-1, 3] x [-1, 1]: their boxes meet in [-1, 2] x [-1, 1]."""
+    return cora.ZonoBundle([zonotope([0.0, 0.0], [[2.0, 0.0], [0.0, 1.0]]),
+                            zonotope([1.0, 0.0], [[1.0, 0.0], [1.0, 1.0]])])
+
+
+def common_point_bundle(rng, n, k, m):
+    """A bundle of k zonotopes that all contain one point (given back)."""
+    x0 = rng.standard_normal(n)
+    members = []
+    for _ in range(k):
+        G = rng.standard_normal((m, n))
+        members.append(zonotope(x0 - rng.uniform(-1, 1, m) @ G, G))
+    return cora.ZonoBundle(members), x0
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 if __name__ == "__main__":

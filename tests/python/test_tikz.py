@@ -16,17 +16,11 @@ import matplotlib
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 matplotlib.use("Agg")
+
 import cora
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-def read(path):
-    with open(path) as f:
-        return f.read()
 
 
 def latex():
@@ -40,24 +34,9 @@ def latex():
     return path if found.returncode == 0 and found.stdout.strip() else None
 
 
-class Square(cora.ContSet):
-    """A square with many collinear points on each edge, for the thinning."""
-
-    def _dim(self): return 2
-    def _center(self): return cora.Tensor([0.0, 0.0])
-    def _interval(self): return cora.Interval(cora.Tensor([0.0, 0.0]), cora.Tensor([1.0, 1.0]))
-    def _project(self, dims): return self
-    def _vertices(self):
-        t = np.linspace(0, 1, 100, endpoint=False)
-        z, o = np.zeros_like(t), np.ones_like(t)
-        return [np.concatenate([np.stack([t, z], 1), np.stack([o, t], 1), np.stack([1 - t, o], 1),
-                                np.stack([z, 1 - t], 1)])]
-
-
-# ============================================  MAIN  ============================================ #
-
 class Tikz(unittest.TestCase):
     def setUp(self):
+        # every test starts from the same colors, set and reachable set
         cora.use_cora_colors("CORA:default")
         self.X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
         self.sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
@@ -189,6 +168,28 @@ class Tikz(unittest.TestCase):
                 [pdflatex, "-interaction=nonstopmode", "-halt-on-error", "-output-directory", folder,
                  base + ".tex"], capture_output=True, text=True, env=env, timeout=300)
             self.assertEqual(done.returncode, 0, done.stdout[-2000:])
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def read(path):
+    with open(path) as f:
+        return f.read()
+
+
+class Square(cora.ContSet):
+    """A square with many collinear points on each edge, for the thinning."""
+
+    def _dim(self): return 2
+    def _center(self): return cora.Tensor([0.0, 0.0])
+    def _interval(self): return cora.Interval(cora.Tensor([0.0, 0.0]), cora.Tensor([1.0, 1.0]))
+    def _project(self, dims): return self
+    def _vertices(self):
+        t = np.linspace(0, 1, 100, endpoint=False)
+        z, o = np.zeros_like(t), np.ones_like(t)
+        return [np.concatenate([np.stack([t, z], 1), np.stack([o, t], 1), np.stack([1 - t, o], 1),
+                                np.stack([z, 1 - t], 1)])]
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,31 +19,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def plant():
-    """x' = (x2 + u_ext, (1 - x1^2) x2 - x1 + u_nn): the network drives the second input."""
-    return cora.NonlinearSys(lambda x, u: [x[1] + u[1], (1 - x[0] ** 2) * x[1] - x[0] + u[0]], 2, 2)
-
-
-def network():
-    layers = [
-        (np.array([[0.8, -0.5], [0.3, 0.9], [-0.6, 0.4]]), np.array([0.1, -0.2, 0.0])),
-        (np.array([[0.7, -0.4, 0.5]]), np.array([0.05])),
-    ]
-    return cora.NeuralNetwork(layers, ["tanh", "tanh"])
-
-
-def start():
-    return cora.Zonotope(np.array([1.4, 2.3]), np.diag([0.05, 0.04]))
-
-
-def disturbance():
-    return cora.Zonotope(np.array([0.0]), np.array([[0.01]]))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Activations(unittest.TestCase):
     def test_points_follow_the_activations(self):
         # one neuron with the weight 1
@@ -106,6 +81,29 @@ class ClosedLoop(unittest.TestCase):
         sys = cora.NeurNetContrSys(plant(), network(), 0.05)
         with self.assertRaises(cora.errors.WrongValue):
             sys.reach(start(), 0.5, time_step=0.025)  # the external input set is missing
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def plant():
+    """x' = (x2 + u_ext, (1 - x1^2) x2 - x1 + u_nn): the network drives the second input."""
+    return cora.NonlinearSys(lambda x, u: [x[1] + u[1], (1 - x[0] ** 2) * x[1] - x[0] + u[0]], 2, 2)
+
+
+def network():
+    layers = [
+        (np.array([[0.8, -0.5], [0.3, 0.9], [-0.6, 0.4]]), np.array([0.1, -0.2, 0.0])),
+        (np.array([[0.7, -0.4, 0.5]]), np.array([0.05])),
+    ]
+    return cora.NeuralNetwork(layers, ["tanh", "tanh"])
+
+
+def start():
+    return cora.Zonotope(np.array([1.4, 2.3]), np.diag([0.05, 0.04]))
+
+
+def disturbance():
+    return cora.Zonotope(np.array([0.0]), np.array([[0.01]]))
 
 
 if __name__ == "__main__":

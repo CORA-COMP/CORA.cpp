@@ -23,17 +23,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-INF = float("inf")
-
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Functions(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -111,6 +100,15 @@ class Functions(unittest.TestCase):
         for name in ("sin", "sinh", "sign", "round"):
             self.assertEqual(getattr(B, name)().inf.shape, (2, 2), name)
         self.assertEqual(B.power(2).sup.shape, (2, 2))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+INF = float("inf")
+
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
 
 
 if __name__ == "__main__":

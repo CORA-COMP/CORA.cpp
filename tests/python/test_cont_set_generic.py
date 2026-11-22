@@ -55,28 +55,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
-
-
-def zonotope(c, G):
-    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-class Custom(cora.ContSet):
-    """A set that implements only the layer the tests of the base class need."""
-
-    def _dim(self):
-        return 2
-
-    def _center(self):
-        return np.zeros(2)
-
-
-# ============================================  MAIN  ============================================ #
-
 class Generic(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -322,6 +300,26 @@ class Generic(unittest.TestCase):
             _ = C == self.I
         with cora.checks(False):
             self.assertTrue(self.I.is_full_dim(tol=-1.0))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
+
+
+def zonotope(c, G):
+    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
+
+
+class Custom(cora.ContSet):
+    """A set that implements only the layer the tests of the base class need."""
+
+    def _dim(self):
+        return 2
+
+    def _center(self):
+        return np.zeros(2)
 
 
 if __name__ == "__main__":

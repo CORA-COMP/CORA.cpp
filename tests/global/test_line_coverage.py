@@ -22,25 +22,12 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 ROOT = Path(__file__).resolve().parents[2]
+
 sys.path.insert(0, str(ROOT / "scripts" / "coverage"))
+
 import lines  # noqa: E402
 
-
-def gcov(root, name, counts):
-    """One gcov document for the file `name` of `root` with {line: count}."""
-    entry = {"file": f"{root}/{name}", "lines": [{"line_number": n, "count": c} for n, c in counts.items()]}
-    return json.dumps({"current_working_directory": str(root), "files": [entry]})
-
-
-def git(root, *args):
-    subprocess.run(["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@t", *args], check=True,
-                   capture_output=True)
-
-
-# ============================================  MAIN  ============================================ #
 
 class Lines(unittest.TestCase):
     def setUp(self):
@@ -98,6 +85,19 @@ class Lines(unittest.TestCase):
             self.assertEqual(json.loads(lines.BASELINE.read_text())["unit"]["percent"], 80.0)
         finally:
             lines.BASELINE = saved
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def gcov(root, name, counts):
+    """One gcov document for the file `name` of `root` with {line: count}."""
+    entry = {"file": f"{root}/{name}", "lines": [{"line_number": n, "count": c} for n, c in counts.items()]}
+    return json.dumps({"current_working_directory": str(root), "files": [entry]})
+
+
+def git(root, *args):
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@t", *args], check=True,
+                   capture_output=True)
 
 
 if __name__ == "__main__":

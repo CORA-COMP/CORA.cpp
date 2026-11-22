@@ -20,9 +20,6 @@ import sys
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
-# ============================================  MAIN  ============================================ #
-
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 VSCODE = os.path.join(ROOT, ".vscode")
 prefix = sys.prefix

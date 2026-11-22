@@ -18,9 +18,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
-# ============================================  MAIN  ============================================ #
-
 class Verify(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))

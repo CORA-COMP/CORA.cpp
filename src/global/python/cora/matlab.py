@@ -21,9 +21,6 @@ from . import Interval, LinearSys, Tensor, Zonotope
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
-# ============================================  MAIN  ============================================ #
-
 # NOLINTBEGIN(naming): the bridge keeps CORA's names (linearSys, ...), which toPy calls
 def tensor(data):
     """tensor - a Tensor of the current backend from nested lists or a numpy array."""

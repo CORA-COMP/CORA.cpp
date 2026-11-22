@@ -24,9 +24,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
-# ============================================  MAIN  ============================================ #
-
 class Constructors(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("torch"))  # torch is never the default

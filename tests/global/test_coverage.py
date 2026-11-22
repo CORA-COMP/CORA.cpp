@@ -23,47 +23,12 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 ROOT = Path(__file__).resolve().parents[2]
+
 sys.path.insert(0, str(ROOT / "scripts" / "coverage"))
+
 import coverage as cov  # noqa: E402
 
-
-INVENTORY = {"cora_commit": "abc", "groups": {
-    "contSet": {"zonotope": ["center", "plus"]}, "contDynamics": {}, "hybridDynamics": {},
-    "nn": {}, "specification": {}, "others": {}}}
-LEAN = {"coralean_commit": "def", "rows": {
-    "contSet/zonotope/plus": {"status": "float", "decls": ["Zonotope.plus"]},
-    "contSet/zonotope/center": {"status": "float", "decls": ["Zonotope.center"]}}}
-SOURCE = "// plus - the sum\n//\n// Syntax: plus(Z, W)\n//\n// CORA: contSet/@zonotope/plus.m\n\nint x;\n"
-CENTER = SOURCE.replace("plus", "center").replace("Z, W", "Z")
-CPP_TEST = "// test_zonotope_plus - the sum\n//\n// CORA: contSet/@zonotope/plus.m\n\nint main() {}\n"
-PY_TEST = '"""test_zonotope - the class"""\n# CORA: contSet/@zonotope/plus.m\n'
-ORACLE_TEST = ("// test_lean_plus - against CORALean\n//\n// ORACLE: contSet/@zonotope/plus.m\n"
-               '\n#include "oracle_testing.h"\n\nint main() { if (!test::oracle::available()) return 0; }\n')
-
-
-def write(root, name, text):
-    path = root / name
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
-
-
-def make_tree(root, lean=True):
-    """The fake tree of one tagged operation, with its tables generated."""
-    write(root, "coverage/cora-inventory.json", json.dumps(INVENTORY))
-    if lean:
-        write(root, "coverage/coralean-status.json", json.dumps(LEAN))
-    write(root, "src/cont_set/zonotope/plus.cpp", SOURCE)
-    write(root, "tests/cont_set/zonotope/test_zonotope_plus.cpp", CPP_TEST)
-    write(root, "tests/python/test_zonotope.py", PY_TEST)
-    write(root, "tests/global/oracle/test_lean_plus.cpp", ORACLE_TEST)
-    problems, _ = cov.run(root, check=False)
-    assert not problems, problems
-
-
-# ============================================  MAIN  ============================================ #
 
 class Checker(unittest.TestCase):
     def setUp(self):
@@ -251,6 +216,47 @@ class Checker(unittest.TestCase):
         (self.root / "coverage/cora-inventory.json").unlink()
         # a missing inventory
         self.assert_fails("coverage/cora-inventory.json: missing")
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+INVENTORY = {"cora_commit": "abc", "groups": {
+    "contSet": {"zonotope": ["center", "plus"]}, "contDynamics": {}, "hybridDynamics": {},
+    "nn": {}, "specification": {}, "others": {}}}
+
+LEAN = {"coralean_commit": "def", "rows": {
+    "contSet/zonotope/plus": {"status": "float", "decls": ["Zonotope.plus"]},
+    "contSet/zonotope/center": {"status": "float", "decls": ["Zonotope.center"]}}}
+
+SOURCE = "// plus - the sum\n//\n// Syntax: plus(Z, W)\n//\n// CORA: contSet/@zonotope/plus.m\n\nint x;\n"
+
+CENTER = SOURCE.replace("plus", "center").replace("Z, W", "Z")
+
+CPP_TEST = "// test_zonotope_plus - the sum\n//\n// CORA: contSet/@zonotope/plus.m\n\nint main() {}\n"
+
+PY_TEST = '"""test_zonotope - the class"""\n# CORA: contSet/@zonotope/plus.m\n'
+
+ORACLE_TEST = ("// test_lean_plus - against CORALean\n//\n// ORACLE: contSet/@zonotope/plus.m\n"
+               '\n#include "oracle_testing.h"\n\nint main() { if (!test::oracle::available()) return 0; }\n')
+
+
+def write(root, name, text):
+    path = root / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def make_tree(root, lean=True):
+    """The fake tree of one tagged operation, with its tables generated."""
+    write(root, "coverage/cora-inventory.json", json.dumps(INVENTORY))
+    if lean:
+        write(root, "coverage/coralean-status.json", json.dumps(LEAN))
+    write(root, "src/cont_set/zonotope/plus.cpp", SOURCE)
+    write(root, "tests/cont_set/zonotope/test_zonotope_plus.cpp", CPP_TEST)
+    write(root, "tests/python/test_zonotope.py", PY_TEST)
+    write(root, "tests/global/oracle/test_lean_plus.cpp", ORACLE_TEST)
+    problems, _ = cov.run(root, check=False)
+    assert not problems, problems
 
 
 if __name__ == "__main__":

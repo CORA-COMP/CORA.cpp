@@ -25,9 +25,6 @@ from .plot import core_figure
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
-# ============================================  MAIN  ============================================ #
-
 class Figure:
     """The axes of a matplotlib figure and the layers CORA drew on them."""
 

@@ -23,6 +23,17 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main(family):
+    """The instances named on the command line, else all of the family."""
+    for name in sys.argv[1:] or family:
+        # an instance too big for the repository is generated on demand (export_benchmark_data.m)
+        if not os.path.exists(os.path.join(DATA, name + ".json")):
+            print(f"{name}: skipped: no data (too big for git: export_benchmark_data.m {name})",
+                  file=sys.stderr)
+            continue
+        run_instance(name)
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 DATA = os.environ.get("CORACPP_BENCHMARK_DATA") or os.path.join(
@@ -118,18 +129,5 @@ def run_instance(name):
         detail += (f"  (MATLAB: iterations {expected['iterations']}, "
                    f"num_steps {expected['nrSteps']}, time_step {expected['timeStep']:.6g})")
     print(detail, file=sys.stderr)
-
-
-# ============================================  MAIN  ============================================ #
-
-def main(family):
-    """The instances named on the command line, else all of the family."""
-    for name in sys.argv[1:] or family:
-        # an instance too big for the repository is generated on demand (export_benchmark_data.m)
-        if not os.path.exists(os.path.join(DATA, name + ".json")):
-            print(f"{name}: skipped: no data (too big for git: export_benchmark_data.m {name})",
-                  file=sys.stderr)
-            continue
-        run_instance(name)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

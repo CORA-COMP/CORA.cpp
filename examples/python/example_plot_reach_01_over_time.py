@@ -14,13 +14,21 @@ Reviewed:      ---
 """
 import argparse
 
-import cora
+from cora import (
+    eye,
+    LinearSys,
+    plot,
+    plot_over_time,
+    Polytope,
+    Rng,
+    Specification,
+    Tensor,
+    use_cora_colors,
+    Zonotope,
+)
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the figures instead of showing them")
@@ -36,30 +44,30 @@ import matplotlib.pyplot as plt
 
 
 t_final, time_step = 6, 0.1
-X0 = cora.Zonotope(cora.Tensor([1, 0]), 0.1 * cora.eye(2))
-sys = cora.LinearSys(cora.Tensor([[-0.1, 1], [-1, -0.1]]))
+X0 = Zonotope(Tensor([1, 0]), 0.1 * eye(2))
+sys = LinearSys(Tensor([[-0.1, 1], [-1, -0.1]]))
 
 # Reachability Analysis ---------------------------------------------------------------------
 
 R = sys.reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
-x = sys.simulate_random(X0, points=10, time_step=time_step, t_final=t_final, rng=cora.Rng(0))
+x = sys.simulate_random(X0, points=10, time_step=time_step, t_final=t_final, rng=Rng(0))
 
 # Visualization -----------------------------------------------------------------------------
 
 # The phase plane: reachable set, initial set, simulations, then the unsafe set
-cora.use_cora_colors("CORA:contDynamics")
+use_cora_colors("CORA:contDynamics")
 plt.figure()
 R.plot((0, 1), label="reachable set")
 X0.plot((0, 1), label="initial set")
-cora.plot(x, (0, 1), label="simulations")
-wall = cora.Polytope(cora.Tensor([[-1.0, 0.0]]), cora.Tensor([0.5]))
-cora.Specification.unsafe_set(wall).plot((0, 1), label="unsafe set")
+plot(x, (0, 1), label="simulations")
+wall = Polytope(Tensor([[-1.0, 0.0]]), Tensor([0.5]))
+Specification.unsafe_set(wall).plot((0, 1), label="unsafe set")
 plt.legend()
 
 # The first state over time: boxes over the time intervals, and the simulations.
 plt.figure()
 R.plot_over_time(0, label="reachable set")
-cora.plot_over_time(x, 0, time_step=time_step, label="simulations")
+plot_over_time(x, 0, time_step=time_step, label="simulations")
 plt.legend()
 
 if args.save:

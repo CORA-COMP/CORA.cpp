@@ -14,13 +14,10 @@ Reviewed:      ---
 """
 import argparse
 
-import cora
+from cora import Interval, Tensor, zeros, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the figures instead of showing them")
@@ -35,9 +32,9 @@ import matplotlib.pyplot as plt
 # Sets --------------------------------------------------------------------------------------
 
 
-Z = cora.Zonotope(cora.zeros(3),
-                  cora.Tensor([[1, 0, 0], [0, 1, 0], [0.5, 0.5, 1], [0.2, -0.3, 0.4]]))
-I = cora.Interval(cora.Tensor([-1.5, -1, -0.5]), cora.Tensor([0.5, 1.5, 2]))
+Z = Zonotope(zeros(3),
+                  Tensor([[1, 0, 0], [0, 1, 0], [0.5, 0.5, 1], [0.2, -0.3, 0.4]]))
+I = Interval(Tensor([-1.5, -1, -0.5]), Tensor([0.5, 1.5, 2]))
 
 # One Dimension -----------------------------------------------------------------------------
 

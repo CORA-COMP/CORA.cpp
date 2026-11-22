@@ -20,9 +20,6 @@ from cora import Tensor, Zonotope, plot, set_default_backend
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
-# ============================================  MAIN  ============================================ #
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
 args = parser.parse_args()

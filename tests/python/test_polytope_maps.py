@@ -47,22 +47,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-SQUARE_H = (np.vstack([np.eye(2), -np.eye(2)]), np.array([1.0, 1.0, 0.0, 0.0]))
-
-
-def square():
-    return cora.Polytope(*SQUARE_H)
-
-
-def point(*x):
-    return np.array(x, dtype=float)
-
-
-# ============================================  MAIN  ============================================ #
-
-
 class PolytopeMaps(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -148,6 +132,19 @@ class PolytopeMaps(unittest.TestCase):
     def test_empty_and_fullspace_convert(self):
         self.assertTrue(cora.Polytope(cora.EmptySet(2)).representsa("emptySet"))
         self.assertTrue(cora.Polytope(cora.Fullspace(2)).representsa("fullspace"))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+SQUARE_H = (np.vstack([np.eye(2), -np.eye(2)]), np.array([1.0, 1.0, 0.0, 0.0]))
+
+
+def square():
+    return cora.Polytope(*SQUARE_H)
+
+
+def point(*x):
+    return np.array(x, dtype=float)
 
 
 # run the tests

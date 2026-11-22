@@ -29,20 +29,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-F64 = dict(dtype=torch.float64)
-ALGORITHMS = ["standard", "wrapping_free"]
-
-
-def system(n=3, m=4, seed=0):
-    g = torch.Generator().manual_seed(seed)
-    A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
-    return A, torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
-
-
-# ============================================  MAIN  ============================================ #
-
 class ReachSet(unittest.TestCase):
     def test_the_result_is_two_lists_of_zonotopes(self):
         A, c, G = system()
@@ -151,6 +137,19 @@ class Gradients(unittest.TestCase):
         for a, b in zip(*grads, strict=True):
             # the gradients agree
             torch.testing.assert_close(a, b, atol=1e-9, rtol=1e-9)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+F64 = dict(dtype=torch.float64)
+
+ALGORITHMS = ["standard", "wrapping_free"]
+
+
+def system(n=3, m=4, seed=0):
+    g = torch.Generator().manual_seed(seed)
+    A = torch.randn(n, n, generator=g, **F64) * 0.5 - 0.3 * torch.eye(n, **F64)
+    return A, torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
 
 
 if __name__ == "__main__":

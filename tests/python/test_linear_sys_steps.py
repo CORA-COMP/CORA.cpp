@@ -28,26 +28,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-A = np.diag([-1.0, -2.0])
-X = cora.Zonotope(np.array([1.0, 2.0]), np.array([[1.0, 0.0], [0.0, 0.5]]))
-DT, TERMS = 0.1, 10
-
-
-def expm(M):
-    """The matrix exponential of a diagonalizable M."""
-    w, V = np.linalg.eig(M)
-    return (V @ np.diag(np.exp(w)) @ np.linalg.inv(V)).real
-
-
-def flow(t, x, u=0.0):
-    """The state at t of x' = A x + u from x."""
-    return expm(A * t) @ x + np.linalg.inv(A) @ (expm(A * t) - np.eye(2)) @ (np.zeros(2) + u)
-
-
-# ============================================  MAIN  ============================================ #
-
 class Steps(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -135,6 +115,26 @@ class Steps(unittest.TestCase):
         np.testing.assert_allclose((e.d_tilde.inf + e.d_tilde.sup) / 2, n @ remainder @ R0.center, atol=1e-9)
         with self.assertRaises(cora.errors.CORAError):
             sys.trajectory_error(np.zeros(2), np.zeros(2), R0, t, t, t, 0, n)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+A = np.diag([-1.0, -2.0])
+
+X = cora.Zonotope(np.array([1.0, 2.0]), np.array([[1.0, 0.0], [0.0, 0.5]]))
+
+DT, TERMS = 0.1, 10
+
+
+def expm(M):
+    """The matrix exponential of a diagonalizable M."""
+    w, V = np.linalg.eig(M)
+    return (V @ np.diag(np.exp(w)) @ np.linalg.inv(V)).real
+
+
+def flow(t, x, u=0.0):
+    """The state at t of x' = A x + u from x."""
+    return expm(A * t) @ x + np.linalg.inv(A) @ (expm(A * t) - np.eye(2)) @ (np.zeros(2) + u)
 
 
 if __name__ == "__main__":

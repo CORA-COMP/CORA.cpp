@@ -23,32 +23,6 @@ import tokenize
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-BEGIN_MARKER = "// ----------------------------------------  BEGIN CODE  ---------------------------------------- //"
-END_MARKER = "// ---------------------------------------  END OF CODE  ---------------------------------------- //"
-AUX_MARKER = "// ----------------------------------------  AUXILIARY  ----------------------------------------- //"
-MAIN_MARKER = "// ===========================================  MAIN  =========================================== //"
-MAX_DESCRIPTION = 12  # lines of prose in a docstring at the top of a file
-MAX_DOC_LINES = 3  # lines of a docstring ahead of a function
-MAX_CODE_RUN = 20  # lines of code without a comment
-MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September",
-          "October", "November", "December")
-DATE = re.compile(r"^(\d\d)-(" + "|".join(MONTHS) + r")-(\d{4})$")
-MODEL = re.compile(r"^Claude (Opus|Sonnet|Fable|Haiku) \d+(\.\d+)?$")
-PERSON = re.compile(r"^[A-Z][a-z]+( [A-Z][a-z]+)+$")
-REVIEW = re.compile(r"^(\d\d-[A-Za-z]+-\d{4}) \((.+)\)$")
-LABEL = re.compile(r"^([A-Z][A-Za-z.]*(?: [A-Za-z.]+){0,3}):(?:\s+(.*))?$")
-ENTRY_LABELS = ("Syntax", "Inputs", "Outputs", "See also")  # one line per entry
-TAG_LABELS = ("CORA", "CORA.cpp only", "PROPERTY", "ORACLE")  # the tags above the author block
-AUTHOR_LABELS = ("CORA authors", "Authors", "Written", "Last update", "Reviewed")
-FIELD_COLUMN = 15  # the author block's values start here, after the comment sign and a blank
-SECTION = re.compile(r"^\s*(//|#) [A-Z][A-Za-z ]+ -{10,}$")
-INCLUDE_LIKE = re.compile(r"^\s*(#|using\b|extern\b|namespace\s+\w+\s*=)")
-
-
-# ============================================  MAIN  ============================================ #
-
 def language(path):
     """'cpp' for .cpp and .h files, 'py' for .py files, else None."""
     return {".cpp": "cpp", ".h": "cpp", ".py": "py"}.get(os.path.splitext(path)[1])
@@ -370,63 +344,12 @@ def is_import_statement(node):
     return False
 
 
-def python_needs_main(lines):
-    """Whether a Python file has anything to run or to export: a def, a class, an executable
-    statement. A file of imports and constants has no MAIN."""
-    try:
-        tree = ast.parse("\n".join(lines))
-    except SyntaxError:
-        return True
-    for node in tree.body:
-        if is_docstring(node) or is_import_statement(node) or isinstance(node, (ast.Assign, ast.AnnAssign)):
-            continue
-        return True
-    return False
-
-
-def has_executable(nodes):
-    """Whether top-level statements run something: a call, a loop, a with, a branch that is not
-    an import guard or `if __name__ == "__main__"`."""
-    for node in nodes:
-        if isinstance(node, (ast.For, ast.While, ast.With, ast.AugAssign)):
-            return True
-        if isinstance(node, ast.Expr) and not is_docstring(node):
-            return True
-        if isinstance(node, ast.If) and not is_import_statement(node) \
-                and "__name__" not in ast.unparse(node.test):
-            return True
-    return False
-
-
-def first_main_statement(lines, begin, end):
-    """The 0-based line of the first top-level statement between BEGIN and END that belongs to
-    MAIN: the first test class, `def main`, the first statement of a script, or the first
-    public definition."""
-    try:
-        tree = ast.parse("\n".join(lines))
-    except SyntaxError:
-        return None
-    nodes = [n for n in tree.body if begin < n.lineno - 1 < end]
-    definitions = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
-    tests = [n for n in nodes if isinstance(n, ast.ClassDef) and any(
-        ast.unparse(b).endswith("TestCase") for b in n.bases)]
-    mains = [n for n in nodes if isinstance(n, ast.FunctionDef) and n.name == "main"]
-    public = [n for n in nodes if isinstance(n, definitions) and not n.name.startswith("_")]
-    script = [n for n in nodes if not isinstance(n, definitions) and not is_import_statement(n)
-              and not is_docstring(n)]
-    for group in (tests, mains, script if has_executable(nodes) else [], public):
-        if group:
-            first = group[0]
-            return min([first.lineno] + [d.lineno for d in getattr(first, "decorator_list", [])]) - 1
-    return None
-
-
 def check_markers(path, lines, lang, issues):
     """BEGIN CODE ... END OF CODE around the code; AUXILIARY above MAIN iff there is auxiliary
     code; MAIN (not in a header) above the operation, the test cases or `main`."""
     at = marker_lines(lines, lang)
     is_header = path.endswith(".h")
-    needs_main = (not is_header) if lang == "cpp" else python_needs_main(lines)
+    needs_main = lang == "cpp" and not is_header  # Python has no MAIN marker
     required = ["BEGIN", "END"] + (["MAIN"] if needs_main else [])
     for name in required:
         if len(at[name]) != 1:
@@ -441,7 +364,8 @@ def check_markers(path, lines, lang, issues):
     main = at["MAIN"][0] if at["MAIN"] else None
     order = [x for x in (begin, aux, main, end) if x is not None]
     if order != sorted(order):
-        issues.append("the markers should be in the order BEGIN CODE, AUXILIARY, MAIN, END OF CODE")
+        issues.append("the markers should be in the order BEGIN CODE, "
+                      + ("AUXILIARY, END OF CODE" if lang == "py" else "AUXILIARY, MAIN, END OF CODE"))
     if any(line.strip() for line in lines[end + 1:]):
         issues.append("nothing but empty lines should follow END OF CODE")
     # only imports and declarations may precede BEGIN CODE
@@ -457,12 +381,16 @@ def check_markers(path, lines, lang, issues):
             issues.append("a marker line should have an empty line above and below")
             break
     check_auxiliary(lines, lang, begin, aux, main, end, issues)
-    if main is not None and not is_header:
+    if lang == "py":
+        check_python_markers(lines, begin, aux, end, issues)
+    elif main is not None and not is_header:
         check_main_position(lines, lang, main, begin, end, issues)
 
 
 def check_auxiliary(lines, lang, begin, aux, main, end, issues):
     """AUXILIARY stands right under BEGIN CODE and exists iff code lies between it and MAIN."""
+    if lang == "py":
+        return  # check_python_markers
     stop = main if main is not None else end
     code = scan(lines, lang)
     inner = [i for i in range(begin + 1, stop) if code[i][0].strip() and lines[i] not in
@@ -480,19 +408,45 @@ def check_auxiliary(lines, lang, begin, aux, main, end, issues):
         issues.append(f"line {inner[0] + 1}: the AUXILIARY marker comes before the auxiliary code")
 
 
+def check_python_markers(lines, begin, aux, end, issues):
+    """Python follows CORA's order: BEGIN CODE, the operation or the test cases right away, then
+    AUXILIARY with the helpers, then END OF CODE. AUXILIARY needs code below it, and two empty lines
+    above it; the code under BEGIN CODE is not a helper block."""
+    if lines[begin + 1:begin + 2] != [""] or not lines[begin + 2:begin + 3] or not lines[begin + 2].strip():
+        issues.append("the code starts one empty line under BEGIN CODE")
+    if aux is None:
+        return
+    if not has_code(lines, aux + 1, end):
+        issues.append("an AUXILIARY marker without auxiliary code; remove it")
+    if not (aux > 2 and lines[aux - 1] == "" and lines[aux - 2] == "" and lines[aux - 3] != ""):
+        issues.append("the AUXILIARY marker line should have exactly two empty lines above it")
+    if not has_code(lines, begin + 1, aux):
+        issues.append("AUXILIARY comes right under BEGIN CODE: the operation or the test cases go above it, "
+                      "the helpers below it")
+
+
+def has_code(lines, first, last):
+    """Whether lines[first:last] hold a line that is not empty and not a comment."""
+    return any(line.strip() and not line.lstrip().startswith("#") for line in lines[first:last])
+
+
+def check_imports(path, lines, issues):
+    """Examples and docs write `from cora import <names>`; tests, scripts and the library write
+    `import cora`, so that eye, plot, Tensor and norm stay apart from numpy's, torch's and matplotlib's."""
+    top = [line for line in lines if not line.startswith((" ", "\t"))]
+    if path.replace(os.sep, "/").startswith("examples/"):
+        if any(re.match(r"import cora\b", line) for line in top):
+            issues.append("an example writes `from cora import <names>`, not `import cora`")
+    elif any(re.match(r"from cora import\b", line) for line in top):
+        issues.append("tests, scripts and library code write `import cora`, not `from cora import`")
+
+
 def check_main_position(lines, lang, main, begin, end, issues):
-    """MAIN stands right above what the file offers: `int main`, the test classes, `def main`."""
+    """C++: MAIN stands right above what the file offers: `int main` or the test cases."""
     code = scan(lines, lang)
-    skipped = "#" if lang == "py" else "//"  # comments right under MAIN belong to what follows
-    after = next((i for i in range(main + 1, end) if lines[i].strip() and not lines[i].startswith(skipped)), None)
+    after = next((i for i in range(main + 1, end) if lines[i].strip() and not lines[i].startswith("//")), None)
     if after is None:
         issues.append("nothing follows the MAIN marker")
-        return
-    if lang == "py":
-        expected = first_main_statement(lines, begin, end)
-        if expected is not None and expected != after:
-            issues.append(f"line {main + 1}: MAIN belongs right above line {expected + 1}, the first "
-                          "test class, `main`, public function or class, or executable statement")
         return
     below = [i for i in range(main + 1, end) if code[i][0].strip()]
     main_def = next((i for i in below if re.match(r"\s*int\s+main\s*\(", code[i][0])), None)
@@ -622,6 +576,50 @@ def check_file(path, lines):
     if len(at["BEGIN"]) == 1 and len(at["END"]) == 1:
         check_comments(lines, lang, issues, at["BEGIN"][0], at["END"][0])
     check_function_docs(lines, lang, issues)
+    if lang == "py":
+        check_imports(path, lines, issues)
     return issues
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+BEGIN_MARKER = "// ----------------------------------------  BEGIN CODE  ---------------------------------------- //"
+
+END_MARKER = "// ---------------------------------------  END OF CODE  ---------------------------------------- //"
+
+AUX_MARKER = "// ----------------------------------------  AUXILIARY  ----------------------------------------- //"
+
+MAIN_MARKER = "// ===========================================  MAIN  =========================================== //"
+
+MAX_DESCRIPTION = 12  # lines of prose in a docstring at the top of a file
+
+MAX_DOC_LINES = 3  # lines of a docstring ahead of a function
+
+MAX_CODE_RUN = 20  # lines of code without a comment
+
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September",
+          "October", "November", "December")
+
+DATE = re.compile(r"^(\d\d)-(" + "|".join(MONTHS) + r")-(\d{4})$")
+
+MODEL = re.compile(r"^Claude (Opus|Sonnet|Fable|Haiku) \d+(\.\d+)?$")
+
+PERSON = re.compile(r"^[A-Z][a-z]+( [A-Z][a-z]+)+$")
+
+REVIEW = re.compile(r"^(\d\d-[A-Za-z]+-\d{4}) \((.+)\)$")
+
+LABEL = re.compile(r"^([A-Z][A-Za-z.]*(?: [A-Za-z.]+){0,3}):(?:\s+(.*))?$")
+
+ENTRY_LABELS = ("Syntax", "Inputs", "Outputs", "See also")  # one line per entry
+
+TAG_LABELS = ("CORA", "CORA.cpp only", "PROPERTY", "ORACLE")  # the tags above the author block
+
+AUTHOR_LABELS = ("CORA authors", "Authors", "Written", "Last update", "Reviewed")
+
+FIELD_COLUMN = 15  # the author block's values start here, after the comment sign and a blank
+
+SECTION = re.compile(r"^\s*(//|#) [A-Z][A-Za-z ]+ -{10,}$")
+
+INCLUDE_LIKE = re.compile(r"^\s*(#|using\b|extern\b|namespace\s+\w+\s*=)")
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

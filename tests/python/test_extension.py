@@ -23,40 +23,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-class Box(cora.ContSet):
-    """A box c + r [-1, 1]^n written in Python: only the _impl layer."""
-
-    def __init__(self, c, r):
-        super().__init__()
-        self.c, self.r = np.asarray(c, dtype=float), np.asarray(r, dtype=float)
-
-    def _dim(self):
-        return len(self.c)
-
-    def _center(self):
-        return self.c
-
-    def _support_function(self, d):
-        return float(d @ self.c + np.abs(d) @ self.r)
-
-    def _interval(self):
-        return cora.Interval(self.c - self.r, self.c + self.r)
-
-    def _rand_point(self, N, rng):
-        return self.c + self.r * (2 * np.random.default_rng(0).random((N, len(self.c))) - 1)
-
-    def _project(self, dims):
-        return Box(self.c[dims], self.r[dims])
-
-    def _vertices(self):
-        (x, y), (a, b) = self.c, self.r
-        return [np.array([[x - a, y - b], [x + a, y - b], [x + a, y + b], [x - a, y + b]])]
-
-
-# ============================================  MAIN  ============================================ #
-
 class Subclass(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -173,6 +139,38 @@ class ErrorsAndSettings(unittest.TestCase):
                 self.assertTrue(cora.checks_enabled())
             self.assertFalse(cora.checks_enabled())
         self.assertTrue(cora.checks_enabled())
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+class Box(cora.ContSet):
+    """A box c + r [-1, 1]^n written in Python: only the _impl layer."""
+
+    def __init__(self, c, r):
+        super().__init__()
+        self.c, self.r = np.asarray(c, dtype=float), np.asarray(r, dtype=float)
+
+    def _dim(self):
+        return len(self.c)
+
+    def _center(self):
+        return self.c
+
+    def _support_function(self, d):
+        return float(d @ self.c + np.abs(d) @ self.r)
+
+    def _interval(self):
+        return cora.Interval(self.c - self.r, self.c + self.r)
+
+    def _rand_point(self, N, rng):
+        return self.c + self.r * (2 * np.random.default_rng(0).random((N, len(self.c))) - 1)
+
+    def _project(self, dims):
+        return Box(self.c[dims], self.r[dims])
+
+    def _vertices(self):
+        (x, y), (a, b) = self.c, self.r
+        return [np.array([[x - a, y - b], [x + a, y - b], [x + a, y + b], [x - a, y + b]])]
 
 
 if __name__ == "__main__":

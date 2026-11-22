@@ -25,10 +25,35 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    # the pin, the published tags, and the tags that are later than the pin
+    try:
+        pin = pinned((REPO / "scripts" / "coralean.cmake").read_text(encoding="utf-8"))
+        listing = subprocess.run(["git", "ls-remote", "--tags", MIRROR, "oracle-*"], text=True,
+                                 capture_output=True, check=True, timeout=120).stdout
+        tags = tags_of(listing)
+        if pin not in tags:
+            print(f"the pinned oracle {pin} is not a published tag of {MIRROR}")
+            return 2
+        # a later tag means the pin is behind
+        newer = newer_than(pin, tags, commit_date)
+    except (ValueError, OSError, subprocess.SubprocessError, KeyError) as error:
+        print(f"cannot check the oracle pin: {error}")
+        return 2
+    if newer:
+        print(f"the pinned oracle {pin} is behind {newer[0]}: bump CORALEAN_VERSION and "
+              "CORALEAN_ARCHIVE_SHA256 in scripts/coralean.cmake and rerun the oracle tests")
+        return 1
+    print(f"the pinned oracle {pin} is the newest")
+    return 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 REPO = Path(__file__).resolve().parents[2]
+
 MIRROR = os.environ.get("CORACPP_CORALEAN_REPO", "https://github.com/TUMcps/CORALean")
+
 TAG = re.compile(r"^oracle-(\d{8})-[0-9a-f]+$")
 
 
@@ -69,31 +94,6 @@ def commit_date(sha):
         request.add_header("Authorization", "Bearer " + os.environ["GITHUB_TOKEN"])
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.load(response)["commit"]["committer"]["date"]
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    # the pin, the published tags, and the tags that are later than the pin
-    try:
-        pin = pinned((REPO / "scripts" / "coralean.cmake").read_text(encoding="utf-8"))
-        listing = subprocess.run(["git", "ls-remote", "--tags", MIRROR, "oracle-*"], text=True,
-                                 capture_output=True, check=True, timeout=120).stdout
-        tags = tags_of(listing)
-        if pin not in tags:
-            print(f"the pinned oracle {pin} is not a published tag of {MIRROR}")
-            return 2
-        # a later tag means the pin is behind
-        newer = newer_than(pin, tags, commit_date)
-    except (ValueError, OSError, subprocess.SubprocessError, KeyError) as error:
-        print(f"cannot check the oracle pin: {error}")
-        return 2
-    if newer:
-        print(f"the pinned oracle {pin} is behind {newer[0]}: bump CORALEAN_VERSION and "
-              "CORALEAN_ARCHIVE_SHA256 in scripts/coralean.cmake and rerun the oracle tests")
-        return 1
-    print(f"the pinned oracle {pin} is the newest")
-    return 0
 
 
 if __name__ == "__main__":

@@ -33,17 +33,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-INF = float("inf")
-
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo), np.array(hi))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Predicates(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -282,6 +271,15 @@ class Gradients(unittest.TestCase):
         a = torch.tensor(lo, dtype=torch.float64, requires_grad=True)
         b = torch.tensor(hi, dtype=torch.float64, requires_grad=True)
         self.assertTrue(torch.autograd.gradcheck(lambda x, y: cora.Interval(x, y).norm().reshape(1), (a, b)))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+INF = float("inf")
+
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo), np.array(hi))
 
 
 if __name__ == "__main__":

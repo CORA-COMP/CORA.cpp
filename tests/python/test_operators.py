@@ -29,14 +29,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def box():
-    return cora.Zonotope(cora.Tensor([1.0, 2.0]), cora.Tensor([[0.5, 0.0], [0.0, 0.25]]))
-
-
-# ============================================  MAIN  ============================================ #
-
 class ZonotopeOperators(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("torch"))  # torch is never the default
@@ -121,6 +113,12 @@ class IntervalOperators(unittest.TestCase):
                                  torch.ones(2, 2, dtype=torch.float64))
         Z = cora.Zonotope(cora.Tensor([1.0, 2.0]), cora.Tensor([[0.5, 0.0], [0.0, 0.25]]))
         self.assertEqual(tuple((M @ Z).generators.shape), (4, 2))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def box():
+    return cora.Zonotope(cora.Tensor([1.0, 2.0]), cora.Tensor([[0.5, 0.0], [0.0, 0.25]]))
 
 
 if __name__ == "__main__":

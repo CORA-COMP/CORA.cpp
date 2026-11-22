@@ -40,25 +40,17 @@ import matplotlib
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
+# the Agg backend draws without a display; it is chosen before pyplot is imported
 matplotlib.use("Agg")
+
 import cora
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-INF = float("inf")
-
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo), np.array(hi))
-
-
-# ============================================  MAIN  ============================================ #
-
 class EmptySet(unittest.TestCase):
     def setUp(self):
+        # the Eigen backend makes the results independent of an installed torch
         self.enterContext(cora.backend("eigen"))
         self.E = cora.EmptySet(2)
 
@@ -216,6 +208,15 @@ class EmptySet(unittest.TestCase):
         pairs = set(cora.binary_pairs())
         self.assertIn(("plus", "EmptySet", "Zonotope"), pairs)
         self.assertIn(("contains", "EmptySet", "Interval"), pairs)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+INF = float("inf")
+
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo), np.array(hi))
 
 
 if __name__ == "__main__":

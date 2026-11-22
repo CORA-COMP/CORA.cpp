@@ -38,28 +38,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def known():
-    """(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t on the factors a (id 1) and b (id 2)."""
-    return cora.PolyZonotope(
-        np.array([1.0, 0.0]),
-        np.array([[1.0, 1.0], [0.0, 2.0]]),
-        np.array([[0.0, 1.0]]),
-        np.array([[1, 1], [0, 1]]),
-        [1, 2],
-    )
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class Constructor(unittest.TestCase):
     # the forms of the constructor and what they hold
     def test_forms(self):
@@ -153,6 +131,22 @@ class Operations(unittest.TestCase):
         hit = cora.Polytope(np.array([[1.0, 0.0]]), np.array([1.0]))
         self.assertFalse(P.is_intersecting(miss))
         self.assertTrue(P.is_intersecting(hit))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def known():
+    """(1, 0) + a (1, 1) + a b (0, 2) + (0, 1) t on the factors a (id 1) and b (id 2)."""
+    return cora.PolyZonotope(
+        np.array([1.0, 0.0]),
+        np.array([[1.0, 1.0], [0.0, 2.0]]),
+        np.array([[0.0, 1.0]]),
+        np.array([[1, 1], [0, 1]]),
+        [1, 2],
+    )
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 if __name__ == "__main__":

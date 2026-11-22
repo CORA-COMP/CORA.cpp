@@ -34,19 +34,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def zonotope(c, G):
-    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-def example():
-    """CORA's example of split: the center (-4, 1) and three generators."""
-    return zonotope([-4, 1], [[-3, 2], [-2, 3], [-1, 4]])
-
-
-# ============================================  MAIN  ============================================ #
-
 class Origin(unittest.TestCase):
     def test_origin(self):
         Z = cora.Zonotope.origin(3)
@@ -131,7 +118,6 @@ class Embedding(unittest.TestCase):
             # rotation with invalid dims
             with self.assertRaises(cora.errors.WrongValue):
                 Z.rotate(dims, 1.0)
-
 
 
 class QuadMap(unittest.TestCase):
@@ -226,6 +212,10 @@ class Splits(unittest.TestCase):
                 call()
 
 
+def zonotope(c, G):
+    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
+
+
 class ReduceUnderApprox(unittest.TestCase):
     Z = zonotope([1, 0], [[1, 2], [3, -1], [-2, 1], [3, 0], [-1, 3], [0, -2], [2, 1], [3, 2]])
 
@@ -283,6 +273,13 @@ class Unite(unittest.TestCase):
             A.unite(B, "convex")
         with self.assertRaises(cora.errors.DimensionMismatch):
             A.unite(cora.Zonotope.origin(3))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def example():
+    """CORA's example of split: the center (-4, 1) and three generators."""
+    return zonotope([-4, 1], [[-3, 2], [-2, 3], [-1, 4]])
 
 
 if __name__ == "__main__":

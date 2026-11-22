@@ -23,11 +23,31 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    if len(sys.argv) != 2 or not (Path(sys.argv[1]) / "references" / "coverage").is_dir():
+        print(__doc__)
+        return 1
+    lean = Path(sys.argv[1])
+    rows = {}
+    for table in sorted((lean / "references" / "coverage").glob("*/*.md"), key=lambda p: p.as_posix()):
+        rows.update(rows_of(table, table.parent.name, table.stem))
+    commit = subprocess.run(["git", "-C", str(lean), "rev-parse", "HEAD"], capture_output=True, text=True)
+    text = json.dumps({"coralean_commit": commit.stdout.strip() or "unknown",
+                       "rows": dict(sorted(rows.items()))}, indent=1, ensure_ascii=False)
+    OUT.parent.mkdir(exist_ok=True)
+    OUT.write_text(text + "\n", encoding="utf-8")
+    print(f"import_coralean: wrote {OUT.relative_to(ROOT)} ({len(rows)} rows)")
+    return 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 ROOT = Path(__file__).resolve().parents[2]
+
 OUT = ROOT / "coverage" / "coralean-status.json"
+
 STATES = ("proved", "float", "bound", "out-of-scope")
+
 LINK = re.compile(r"\[`([^`]+)`\]\([^)\s]+\.lean\)")
 
 
@@ -46,25 +66,6 @@ def rows_of(table, group, cls):
         decls = list(dict.fromkeys(LINK.findall(cells[2])))
         out[f"{group}/{cls}/{cells[0].strip('`')}"] = {"status": cells[1], "decls": decls}
     return out
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    if len(sys.argv) != 2 or not (Path(sys.argv[1]) / "references" / "coverage").is_dir():
-        print(__doc__)
-        return 1
-    lean = Path(sys.argv[1])
-    rows = {}
-    for table in sorted((lean / "references" / "coverage").glob("*/*.md"), key=lambda p: p.as_posix()):
-        rows.update(rows_of(table, table.parent.name, table.stem))
-    commit = subprocess.run(["git", "-C", str(lean), "rev-parse", "HEAD"], capture_output=True, text=True)
-    text = json.dumps({"coralean_commit": commit.stdout.strip() or "unknown",
-                       "rows": dict(sorted(rows.items()))}, indent=1, ensure_ascii=False)
-    OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(text + "\n", encoding="utf-8")
-    print(f"import_coralean: wrote {OUT.relative_to(ROOT)} ({len(rows)} rows)")
-    return 0
 
 
 if __name__ == "__main__":

@@ -27,15 +27,37 @@ from concurrent.futures import ThreadPoolExecutor
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import affected_tests  # noqa: E402  (the include graph, shared with the test selection)
 
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("what", choices=("format", "tidy", "lint"))
+    parser.add_argument("--base", default="origin/main", help="the revision the change is measured from")
+    parser.add_argument("--all", action="store_true", help="every tracked file, not only the changed ones")
+    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("--build-dir", default=os.path.join(ROOT, "build", "python"))
+    parser.add_argument("-j", "--jobs", type=int, help="parallel clang-tidy runs (default: all CPUs)",
+                        default=int(os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", os.cpu_count() or 1)))
+    args = parser.parse_args()
+    files = candidates(None if args.all else args.base)
+    if args.what == "format":
+        return check_format(files, args.fix)
+    if args.what == "lint":
+        return check_lint(files, args.fix)
+    return check_tidy(files, args.all, args.fix, args.build_dir, args.jobs)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 ROOT = affected_tests.ROOT
+
 CPP = (".cpp", ".h")
+
 LINT_ROOTS = ("scripts/", "tests/", "src/global/python/cora/")
+
 INSTALL = "pip install -r scripts/requirements-quality.txt (scripts/setup_local.sh does it)"
 
 
@@ -167,26 +189,6 @@ def check_tidy(files, everything, fix, build_dir, jobs):
     print("\n".join(findings.values()))
     print(f"check_quality: tidy: {len(units)} files, {len(findings)} findings")
     return 1 if findings else 0
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("what", choices=("format", "tidy", "lint"))
-    parser.add_argument("--base", default="origin/main", help="the revision the change is measured from")
-    parser.add_argument("--all", action="store_true", help="every tracked file, not only the changed ones")
-    parser.add_argument("--fix", action="store_true")
-    parser.add_argument("--build-dir", default=os.path.join(ROOT, "build", "python"))
-    parser.add_argument("-j", "--jobs", type=int, help="parallel clang-tidy runs (default: all CPUs)",
-                        default=int(os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", os.cpu_count() or 1)))
-    args = parser.parse_args()
-    files = candidates(None if args.all else args.base)
-    if args.what == "format":
-        return check_format(files, args.fix)
-    if args.what == "lint":
-        return check_lint(files, args.fix)
-    return check_tidy(files, args.all, args.fix, args.build_dir, args.jobs)
 
 
 if __name__ == "__main__":

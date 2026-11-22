@@ -16,23 +16,6 @@ import cora
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-PACKAGE_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(cora.__file__)))
-
-
-def run(name, code):
-    """Runs a script called `name` that imports cora and then executes `code`; returns the result."""
-    with tempfile.TemporaryDirectory() as folder:
-        path = os.path.join(folder, name)
-        with open(path, "w", encoding="utf-8") as f:
-            f.write("import cora\n" + code + "\n")
-        env = dict(os.environ, PYTHONPATH=PACKAGE_PARENT)
-        return subprocess.run([sys.executable, path], capture_output=True, text=True, env=env)
-
-
-# ============================================  MAIN  ============================================ #
-
 class Banner(unittest.TestCase):
     def test_an_example_prints_header_and_footer(self):
         out = run("example_banner_check.py", "print('body')").stdout
@@ -56,6 +39,21 @@ class Banner(unittest.TestCase):
         self.assertIn("CORA START", result.stdout)
         self.assertNotIn("CORA END", result.stdout)
         self.assertIn("broken on purpose", result.stderr)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+PACKAGE_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(cora.__file__)))
+
+
+def run(name, code):
+    """Runs a script called `name` that imports cora and then executes `code`; returns the result."""
+    with tempfile.TemporaryDirectory() as folder:
+        path = os.path.join(folder, name)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("import cora\n" + code + "\n")
+        env = dict(os.environ, PYTHONPATH=PACKAGE_PARENT)
+        return subprocess.run([sys.executable, path], capture_output=True, text=True, env=env)
 
 
 # the file also runs as a script, not only under ctest
