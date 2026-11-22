@@ -104,20 +104,6 @@ std::pair<Tensor, Tensor> aux_compact(const Tensor &A, const Tensor &b) {
     return {A.take_along_axis(order.expand_dims(-1), 1), b.take_along_axis(order, 1)};
 }
 
-/// The members idx of a recorded propagation, every record's tensors with them.
-ZonoPropagation aux_take(const ZonoPropagation &out, const std::vector<int64_t> &idx) {
-    const auto take = [&](const Tensor &t) { return t.defined() ? t.take(idx, 0) : Tensor(); };
-    ZonoPropagation sub{take(out.c), take(out.dr), take(out.G), {}};
-    for (const ZonoLayerRecord &rec : out.layers) {
-        ZonoLayerRecord r = rec;
-        for (Tensor *t : {&r.c_in, &r.dr_in, &r.G_in, &r.l, &r.u, &r.er, &r.c_out, &r.dr_out,
-                          &r.G_out, &r.slot_neurons, &r.slot_values, &r.grad})
-            *t = take(*t);
-        sub.layers.push_back(r);
-    }
-    return sub;
-}
-
 // Split ids and pieces ----------------------------------------------------------------------------
 
 /// Split-id rows: b's rows below a's, or (side_by_side) b's columns after a's; nonzero ids first in
@@ -288,6 +274,8 @@ class ConZonotopeBounding : public Bounding {
     Tensor aux_excluded(const ZonoPropagation &out, const Tensor &cases) const;
     Tensor aux_excluded_lower(const Tensor &lower, const Tensor &cases) const;
     Tensor aux_dual_margins(const ZonoPropagation &out, const Tensor &si) const;
+    std::vector<int64_t> aux_near(const std::vector<int64_t> &open, const Tensor &gap) const;
+    Tensor aux_gap(const ZonoPropagation &out, const Tensor &lower, const Tensor &excluded) const;
     Tensor aux_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
                               const Tensor &si, const Tensor &excluded) const;
     Artifacts aux_artifacts(const Tensor &xi, const Tensor &ri, const Tensor &si) const;
@@ -400,6 +388,31 @@ Tensor ConZonotopeBounding::aux_dual_margins(const ZonoPropagation &out, const T
     const Tensor dual =
         priv_dual_lower(w, C, d, o_.dual_iterations, o_.dual_step_size, problem_->options().dtype);
     return (base + dual).reshape({B, P_, K_});
+}
+
+std::vector<int64_t> ConZonotopeBounding::aux_near(const std::vector<int64_t> &open,
+                                                   const Tensor &gap) const {
+    // the open sets whose gap is at most optimize_gap (all without a gap)
+    if (!gap.defined()) return open;
+    const std::vector<double> g = gap.data();
+    std::vector<int64_t> near;
+    for (const int64_t i : open)
+        if (g[std::size_t(i)] <= o_.optimize_gap) near.push_back(i);
+    return near;
+}
+
+Tensor ConZonotopeBounding::aux_gap(const ZonoPropagation &out, const Tensor &lower,
+                                    const Tensor &excluded) const {
+    // a row's gap: how far its lower bound is below 0, a share of the row's width (B, P, K)
+    const int64_t B = out.c.shape()[0];
+    Tensor radius = out.G.matmul(AT_).abs().sum(1);
+    if (out.dr.defined()) radius = radius + out.dr.matmul(abs_at_);
+    const Tensor share =
+        lower.negative().divide(radius.reshape({B, P_, K_}).maximum(numerics::kTiny) * 2.0);
+    // per open polytope its best row's, per set the largest of them
+    const Tensor best = share.min(2);
+    return Tensor::where(excluded.greater(excluded.zeros_like()), best.full_like({1}, -kInf), best)
+        .max(1);
 }
 
 // The optimized slopes ----------------------------------------------------------------------------
@@ -589,14 +602,13 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
     const ZonoNet &net = *net_;
     Step step;
     // 1. the check on the whole batch
-    Tensor excluded_all;
+    Tensor excluded_all, gap;
     std::vector<int64_t> open;
     {
         const StepTimer timer(stats_, "check_seconds");
-        // the output zonotope, recorded for the backward bound and the dual certificate
+        // the output zonotope, recorded for the backward bound
         const ZonoInput in = net.input_zonotope(xi_, ri_);
-        const ZonoPropagation out =
-            net.forward(in.c, in.dr, in.G, si_, nullptr, o_.backward_bound || o_.dual_certificate);
+        const ZonoPropagation out = net.forward(in.c, in.dr, in.G, si_, nullptr, o_.backward_bound);
         Tensor lower = aux_margins(out);
         if (o_.backward_bound) {
             // the better of the zonotope's and CROWN's lower bound of every row
@@ -608,29 +620,41 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
         }
         excluded_all = aux_excluded_lower(lower, ci_);
         open = aux_where(1.0 - excluded_all.min(1));
-        if (o_.dual_certificate && !open.empty()) {
-            // the open sets' rows under their splits and ReLU faces (the dual certificate)
-            const StepTimer dual_timer(stats_, "dual_seconds");
-            const Tensor ci = ci_.take(open, 0);
-            const Tensor dual = aux_dual_margins(aux_take(out, open), si_.take(open, 0));
-            const Tensor ex = aux_excluded_lower(lower.take(open, 0).maximum(dual), ci);
-            excluded_all = aux_put_rows(excluded_all, open, ex);
+        if ((alpha_ || o_.dual_certificate) && std::isfinite(o_.optimize_gap))
+            gap = aux_gap(out, lower, excluded_all);
+    }
+    // 1b. the open sets again with optimized ReLU slopes ("zonotope-alpha")
+    if (alpha_ && !open.empty() && o_.alpha_iterations > 0) {
+        // the sets whose gap is at most optimize_gap (all for inf)
+        const std::vector<int64_t> near = aux_near(open, gap);
+        if (!near.empty()) {
+            const StepTimer timer(stats_, "alpha_seconds");
+            (*stats_)["alpha_sets"] += double(near.size());
+            const Tensor ex =
+                aux_alpha_excluded(xi_.take(near, 0), ri_.take(near, 0), ci_.take(near, 0),
+                                   si_.take(near, 0), excluded_all.take(near, 0));
+            excluded_all = aux_put_rows(excluded_all, near, ex);
+            // the sets the slopes verified
+            const std::size_t before = open.size();
+            open = aux_where(1.0 - excluded_all.min(1));
+            (*stats_)["alpha_verified"] += double(before - open.size());
+        }
+    }
+    // 1c. the dual certificate on the open sets near enough
+    if (o_.dual_certificate) {
+        const std::vector<int64_t> near = aux_near(open, gap);
+        if (!near.empty()) {
+            const StepTimer timer(stats_, "dual_seconds");
+            const Tensor ci = ci_.take(near, 0), si = si_.take(near, 0);
+            const ZonoInput in = net.input_zonotope(xi_.take(near, 0), ri_.take(near, 0));
+            const ZonoPropagation out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
+            const Tensor ex = aux_excluded_lower(aux_dual_margins(out, si), ci)
+                                  .maximum(excluded_all.take(near, 0));
+            excluded_all = aux_put_rows(excluded_all, near, ex);
             const std::size_t before = open.size();
             open = aux_where(1.0 - excluded_all.min(1));
             (*stats_)["dual_verified"] += double(before - open.size());
         }
-    }
-    // 1b. the open sets again with optimized ReLU slopes ("zonotope-alpha")
-    if (alpha_ && !open.empty() && o_.alpha_iterations > 0) {
-        const StepTimer timer(stats_, "alpha_seconds");
-        const Tensor ex =
-            aux_alpha_excluded(xi_.take(open, 0), ri_.take(open, 0), ci_.take(open, 0),
-                               si_.take(open, 0), excluded_all.take(open, 0));
-        excluded_all = aux_put_rows(excluded_all, open, ex);
-        // the sets the slopes verified
-        const std::size_t before = open.size();
-        open = aux_where(1.0 - excluded_all.min(1));
-        (*stats_)["alpha_verified"] += double(before - open.size());
     }
     step.verified = xi_.shape()[0] - int64_t(open.size());
     const auto empty = [&] {

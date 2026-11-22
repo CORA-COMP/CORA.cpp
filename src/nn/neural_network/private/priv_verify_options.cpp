@@ -112,6 +112,7 @@ void NnVerifyOptions::validate() const {
     aux_at_least("alpha_iterations", double(alpha_iterations), 0);
     aux_at_least("look_ahead_candidates", double(look_ahead_candidates), 1);
     aux_at_least("alpha_patience", double(alpha_patience), 1);
+    aux_at_least("optimize_gap", optimize_gap, 0);
     aux_at_least("dual_iterations", double(dual_iterations), 0);
     aux_at_least("dual_relu_rows", double(dual_relu_rows), 0);
     if (!(dual_step_size > 0))
