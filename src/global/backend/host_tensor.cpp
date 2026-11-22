@@ -10,7 +10,7 @@
 // CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   18-November-2026
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "global/backend/host_tensor.h"
@@ -224,6 +224,33 @@ void aux_walk(const Shape &out, const std::array<Shape, N> &strides, F f) {
     }
 }
 
+/// Calls f(offsets...) at the start of every row (the last axis) of `out`: the odometer over the
+/// outer axes only, for kernels that run the row themselves.
+template <std::size_t N, class F>
+void aux_walk_rows(const Shape &out, const std::array<Shape, N> &strides, F f) {
+    if (out.numel() == 0) return;
+    if (out.empty()) return aux_walk<N>(out, strides, f); // a scalar: its one entry
+    Shape rows = out;
+    rows.back() = 1;
+    aux_walk<N>(rows, strides, f);
+}
+
+/// out[j] = f(a[j sa], b[j sb]) along a row; the strides 1 and 0 as loops the compiler vectorizes.
+template <class T, class F>
+void aux_binary_row(const T *a, int64_t sa, const T *b, int64_t sb, T *out, int64_t n, F f) {
+    if (sa == 1 && sb == 1) {
+        for (int64_t j = 0; j < n; ++j) out[j] = f(a[j], b[j]);
+    } else if (sa == 1 && sb == 0) {
+        const T s = b[0];
+        for (int64_t j = 0; j < n; ++j) out[j] = f(a[j], s);
+    } else if (sa == 0 && sb == 1) {
+        const T s = a[0];
+        for (int64_t j = 0; j < n; ++j) out[j] = f(s, b[j]);
+    } else {
+        for (int64_t j = 0; j < n; ++j) out[j] = f(a[j * sa], b[j * sb]);
+    }
+}
+
 /// out = f(a, b) elementwise with broadcasting; the common cases without the odometer.
 template <class T, class F>
 void aux_binary_into(const HostTensor<T> &a, const HostTensor<T> &b, T *out, const Shape &shape,
@@ -238,10 +265,14 @@ void aux_binary_into(const HostTensor<T> &a, const HostTensor<T> &b, T *out, con
         const T s = a.p[0];
         for (int64_t i = 0; i < n; ++i) out[i] = f(s, b.p[i]);
     } else {
+        // the outer axes by the odometer, each row as one loop
         const std::array<Shape, 3> st = {aux_broadcast_strides(a.shape, shape),
                                          aux_broadcast_strides(b.shape, shape), strides_of(shape)};
-        aux_walk<3>(shape, st,
-                    [&](int64_t ia, int64_t ib, int64_t io) { out[io] = f(a.p[ia], b.p[ib]); });
+        const int64_t len = shape.empty() ? 1 : shape.back();
+        const int64_t sa = shape.empty() ? 0 : st[0].back(), sb = shape.empty() ? 0 : st[1].back();
+        aux_walk_rows<3>(shape, st, [&](int64_t ia, int64_t ib, int64_t io) {
+            aux_binary_row(a.p + ia, sa, b.p + ib, sb, out + io, len, f);
+        });
     }
 }
 
@@ -542,8 +573,14 @@ Tensor::Ptr HostTensor<T>::where(const Tensor::Impl &a, const Tensor::Impl &b) c
                                      aux_broadcast_strides(a.shape, out),
                                      aux_broadcast_strides(b.shape, out), strides_of(out)};
     const T *pa = of(a).p, *pb = of(b).p;
-    aux_walk<4>(out, st, [&](int64_t ic, int64_t ia, int64_t ib, int64_t io) {
-        r->p[io] = p[ic] != T(0) ? pa[ia] : pb[ib];
+    // the outer axes by the odometer, each row as one loop
+    const int64_t len = out.empty() ? 1 : out.back();
+    const int64_t sc = out.empty() ? 0 : st[0].back(), sa = out.empty() ? 0 : st[1].back(),
+                  sb = out.empty() ? 0 : st[2].back();
+    aux_walk_rows<4>(out, st, [&](int64_t ic, int64_t ia, int64_t ib, int64_t io) {
+        const T *c = p + ic, *x = pa + ia, *y = pb + ib;
+        T *o = r->p + io;
+        for (int64_t j = 0; j < len; ++j) o[j] = c[j * sc] != T(0) ? x[j * sa] : y[j * sb];
     });
     return r;
 }

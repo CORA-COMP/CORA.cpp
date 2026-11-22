@@ -14,22 +14,24 @@
 // Syntax:     NeuralNetwork nn({{W1, b1}, {W2, b2}});   Zonotope Y = nn.evaluate(X);
 //             PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(X));
 // Operations: evaluate, evaluate_with_input, approx_errors (evaluate.cpp), refine (refine.cpp),
-//             sensitivity (sensitivity.cpp)
+//             sensitivity (sensitivity.cpp), verify (verify.cpp, verify.h)
 // See also:   cora/cont_set/zonotope/zonotope.h, cora/cont_set/poly_zonotope/poly_zonotope.h
 //
 // CORA: nn/@neuralNetwork/neuralNetwork.m
 // CORA: nn/@neuralNetwork/refine.m
 // CORA: nn/@neuralNetwork/getRefinableLayers.m
+// CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Tobias Ladner, Lukas Koller
-// Authors:       Tobias Ladner, Claude Sonnet 5.5
+// Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   20-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/nn/neural_network/verify.h"
 
 #include <optional>
 #include <vector>
@@ -162,6 +164,11 @@ class NeuralNetwork {
     /// The Jacobian (out, in) of the network at the point x (in), by the chain rule (CORA's
     /// calcSensitivity of one point, whose mean(abs(S), 1) is the sensitivity of each input).
     Tensor sensitivity(const Tensor &x) const;
+
+    /// CORA's verify of a VNN-COMP property within timeout seconds: "sat" with a counterexample
+    /// that confirm accepts (unset: the float64 output check), "unsat" or "unknown" (verify.h).
+    NnVerifyResult verify(const NnProperty &property, double timeout,
+                          const NnVerifyOptions &options = {}, const ConfirmFn &confirm = {}) const;
 
   private:
     std::vector<Layer> layers_;
