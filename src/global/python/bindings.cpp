@@ -402,6 +402,9 @@ void bind_registry(py::module_ &m) {
 
 Tensor::Norm norm_of(const py::object &type);
 
+/// A set, or points as the interval [p, p], as the operand of a whole space (defined below).
+Set operand_set(const py::object &o);
+
 /// What every set has; bound on the base class, so any set works wherever a set is expected,
 /// including the operators between sets of any classes (through the registry).
 void bind_cont_set(py::module_ &m) {
@@ -433,13 +436,21 @@ void bind_cont_set(py::module_ &m) {
             },
             py::arg("d"), "max of d'x over the set; d (..., n)")
         .def("interval", &ContSet::interval, "The interval hull")
+        // the samplers
         .def(
             "rand_point",
-            [](const ContSet &S, int64_t N, cora::Rng &rng) {
-                // random points as rows
+            [](const ContSet &S, int64_t N, cora::Rng &rng, const std::string &type) {
+                // a class with one sampler answers 'standard' only, as every class takes the type
+                if (type != "standard")
+                    CORA_FAIL(Error::not_supported,
+                              "rand_point: this class samples with type 'standard' only, got '" +
+                                  type + "'");
                 return values(S.rand_point(N, rng));
             },
-            py::arg("N"), py::arg("rng"), "N random points as rows (..., N, n)")
+            py::arg("N"), py::arg("rng"), py::arg("type") = "standard",
+            "N random points as rows (..., N, n); type 'standard' (Zonotope and ConZonotope "
+            "have more)")
+        // the projection onto some dimensions
         .def(
             "project",
             [](const ContSet &S, const std::vector<int64_t> &dims) {
@@ -596,26 +607,43 @@ void bind_cont_set(py::module_ &m) {
                  if (!py::isinstance<ContSet>(S2)) return not_implemented();
                  return binary<&unite>(S1, S2);
              })
-        .def("__contains__", [](const py::object &S1, const py::object &S2) {
-            if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
-            if (py::isinstance<Interval>(S1))
-                return py::cast<const Interval &>(S1).contains(point_of(S2, "the point"));
-            if (py::isinstance<Zonotope>(S1))
-                return py::cast<const Zonotope &>(S1).contains(point_of(S2, "the points"));
-            // contains dispatches on the class of the first set
-            if (py::isinstance<ConZonotope>(S1))
-                return py::cast<const ConZonotope &>(S1).contains(point_of(S2, "the points"));
-            if (py::isinstance<ZonoBundle>(S1))
-                return py::cast<const ZonoBundle &>(S1).contains(point_of(S2, "the points"));
-            if (py::isinstance<Polytope>(S1))
-                return py::cast<const Polytope &>(S1).contains(point_of(S2, "the points"));
-            if (py::isinstance<Ellipsoid>(S1))
-                return py::cast<const Ellipsoid &>(S1).contains(point_of(S2, "the points"));
-            if (py::isinstance<Capsule>(S1))
-                return py::cast<const Capsule &>(S1).contains(point_of(S2, "the points"));
-            CORA_FAIL(Error::not_supported,
-                      "point containment is implemented for intervals, zonotopes, constrained "
-                      "zonotopes, zonotope bundles, polytopes, ellipsoids and capsules only");
+        .def("__contains__",
+             [](const py::object &S1, const py::object &S2) {
+                 if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
+                 if (py::isinstance<Interval>(S1))
+                     return py::cast<const Interval &>(S1).contains(point_of(S2, "the point"));
+                 if (py::isinstance<Zonotope>(S1))
+                     return py::cast<const Zonotope &>(S1).contains(point_of(S2, "the points"));
+                 // contains dispatches on the class of the first set
+                 if (py::isinstance<ConZonotope>(S1))
+                     return py::cast<const ConZonotope &>(S1).contains(point_of(S2, "the points"));
+                 if (py::isinstance<ZonoBundle>(S1))
+                     return py::cast<const ZonoBundle &>(S1).contains(point_of(S2, "the points"));
+                 if (py::isinstance<Polytope>(S1))
+                     return py::cast<const Polytope &>(S1).contains(point_of(S2, "the points"));
+                 if (py::isinstance<Ellipsoid>(S1))
+                     return py::cast<const Ellipsoid &>(S1).contains(point_of(S2, "the points"));
+                 if (py::isinstance<Capsule>(S1))
+                     return py::cast<const Capsule &>(S1).contains(point_of(S2, "the points"));
+                 if (py::isinstance<EmptySet>(S1))
+                     return py::cast<const EmptySet &>(S1).contains(point_of(S2, "the points"));
+                 if (py::isinstance<Fullspace>(S1))
+                     return py::cast<const Fullspace &>(S1).contains(operand_set(S2).get());
+                 CORA_FAIL(
+                     Error::not_supported,
+                     "point containment is implemented for intervals, zonotopes, constrained "
+                     "zonotopes, zonotope bundles, polytopes, ellipsoids, capsules and the empty "
+                     "set and the whole space only");
+             })
+        // A <= B is B.contains(A), A >= B is A.contains(B) (a class with its own <= keeps it)
+        .def("__le__",
+             [](const py::object &S1, const py::object &S2) -> py::object {
+                 if (!py::isinstance<ContSet>(S2)) return not_implemented();
+                 return py::cast(contains(set_of(S2), set_of(S1)));
+             })
+        .def("__ge__", [](const py::object &S1, const py::object &S2) -> py::object {
+            if (!py::isinstance<ContSet>(S2)) return not_implemented();
+            return py::cast(contains(set_of(S1), set_of(S2)));
         });
     bind_registry(m);
 }
@@ -893,12 +921,15 @@ void bind_interval(py::module_ &m) {
              "The n-th derivative of the Dirac delta on the box")
         .def(
             "infimum", [](const Interval &I) { return values(I.infimum()); }, "The lower bound")
+        // the interval matrix of a box
         .def("interval_matrix", &Interval::interval_matrix,
              "The interval matrix [c - r, c + r] of the center and the radius")
+        // the predicates of a box
         .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
         // predicates of the box
         .def("is_full_dim", &Interval::is_full_dim, py::arg("tol") = py::none(),
              "Whether the box has a nonempty interior; tol=None: the repository tolerance")
+        // meeting and equality
         .def(
             "is_intersecting",
             [](const Interval &I, const py::object &other, Tol tol) {
@@ -3092,6 +3123,16 @@ py::object aux_scaled(const T &A, double s) {
     return object_of(static_cast<const ContSet &>(A).times(s));
 }
 
+/// The shift o of a set of dimension n as a point (..., n): an array as it is, a number on every
+/// coordinate (NumPy's broadcast); nothing for anything else.
+std::optional<Tensor> aux_shift_of(const py::object &o, int64_t n, const char *what) {
+    if (is_number(o))
+        return Tensor::from_data(
+            std::vector<double>(static_cast<std::size_t>(n), py::cast<double>(o)), Shape{n});
+    if (as_tensor(o)) return point_of(o, what);
+    return std::nullopt;
+}
+
 void bind_operators(py::module_ &m) {
     const py::object Z = m.attr("Zonotope"), I = m.attr("Interval"), E = m.attr("EmptySet"),
                      F = m.attr("Fullspace");
@@ -3113,15 +3154,15 @@ void bind_operators(py::module_ &m) {
     const auto polytope_sum = [](const Polytope &A, const py::object &o) -> py::object {
         if (py::isinstance<Polytope>(o)) return py::cast(A.plus(py::cast<Polytope>(o)));
         if (py::isinstance<Interval>(o)) return py::cast(A.plus(py::cast<Interval>(o)));
-        // a point (..., n) as it is
-        if (as_tensor(o)) return py::cast(A.plus(point_of(o, "the point")));
+        // a point (..., n) as it is, a number on every coordinate
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A.plus(*v));
         return not_implemented();
     };
     // the sum is commutative; the difference only shifts
     method(P, "__add__", polytope_sum);
     method(P, "__radd__", polytope_sum);
     method(P, "__sub__", [](const Polytope &A, const py::object &o) -> py::object {
-        if (as_tensor(o)) return py::cast(A.minus(point_of(o, "the point")));
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A.minus(*v));
         return not_implemented();
     });
     // a matrix maps the set, a number scales it
@@ -3132,13 +3173,13 @@ void bind_operators(py::module_ &m) {
     // ConZonotope: a point shifts it, a matrix or number maps it
     const auto con_zonotope_sum = [](const ConZonotope &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
-        if (as_tensor(o)) return py::cast(A + point_of(o, "the point"));
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A + *v);
         return not_implemented();
     };
     method(CZ, "__add__", con_zonotope_sum);
     method(CZ, "__radd__", con_zonotope_sum);
     method(CZ, "__sub__", [](const ConZonotope &A, const py::object &o) -> py::object {
-        if (as_tensor(o)) return py::cast(A - point_of(o, "the point"));
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A - *v);
         return not_implemented();
     });
     bind_products<ConZonotope>(
@@ -3152,7 +3193,7 @@ void bind_operators(py::module_ &m) {
     ZB.attr("__array_ufunc__") = py::none();
     const auto bundle_sum = [](const ZonoBundle &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
-        if (as_tensor(o)) return py::cast(A.plus(point_of(o, "the point")));
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A.plus(*v));
         return not_implemented();
     };
     method(ZB, "__add__", bundle_sum);
@@ -3167,13 +3208,13 @@ void bind_operators(py::module_ &m) {
     // Zonotope
     const auto zonotope_sum = [](const Zonotope &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
-        if (as_tensor(o)) return py::cast(A + point_of(o, "the point"));
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A + *v);
         return not_implemented();
     };
     method(Z, "__add__", zonotope_sum);
     method(Z, "__radd__", zonotope_sum);
     method(Z, "__sub__", [](const Zonotope &A, const py::object &o) -> py::object {
-        if (as_tensor(o)) return py::cast(A - point_of(o, "the point"));
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A - *v);
         return not_implemented();
     });
     method(Z, "__neg__", [](const Zonotope &A) { return -A; });
@@ -3207,10 +3248,12 @@ void bind_operators(py::module_ &m) {
     // an interval, a number or a matrix subtracted
     method(I, "__sub__", [array_of](const Interval &A, const py::object &o) -> py::object {
         if (py::isinstance<Interval>(o)) return py::cast(A - py::cast<Interval>(o));
+        if (is_number(o)) return py::cast(A + -py::cast<double>(o));
         if (const std::optional<Tensor> v = array_of(o)) return py::cast(A - *v);
         return not_implemented();
     });
     method(I, "__rsub__", [array_of](const Interval &A, const py::object &o) -> py::object {
+        if (is_number(o)) return py::cast(-A + py::cast<double>(o));
         if (const std::optional<Tensor> v = array_of(o)) return py::cast(*v - A);
         return not_implemented();
     });
@@ -3265,15 +3308,15 @@ void bind_operators(py::module_ &m) {
     // Capsule and Ellipsoid: a vector or a set adds
     const auto capsule_sum = [](const Capsule &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
-        if (as_tensor(o)) return py::cast(A.plus(point_of(o, "the point")));
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A.plus(*v));
         return not_implemented();
     };
     method(m.attr("Capsule"), "__add__", capsule_sum);
     method(m.attr("Capsule"), "__radd__", capsule_sum);
     const auto ellipsoid_sum = [](const Ellipsoid &A, const py::object &o) -> py::object {
         if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
-        // a vector (..., n) as it is
-        if (as_tensor(o)) return py::cast(A.plus(point_of(o, "the vector")));
+        // a vector (..., n) as it is, a number on every coordinate
+        if (const auto v = aux_shift_of(o, A.dim(), "the vector")) return py::cast(A.plus(*v));
         return not_implemented();
     };
     method(m.attr("Ellipsoid"), "__add__", ellipsoid_sum);
@@ -3298,7 +3341,14 @@ void bind_operators(py::module_ &m) {
     };
     method(F, "__add__", fullspace_sum);
     method(F, "__radd__", fullspace_sum);
-    // PolyZonotope: a matrix maps it, a number scales it
+    // PolyZonotope: a point or a number shifts it, a set adds, a matrix maps it, a number scales it
+    const auto poly_zonotope_sum = [](const PolyZonotope &A, const py::object &o) -> py::object {
+        if (py::isinstance<ContSet>(o)) return object_of(plus(A, set_of(o)));
+        if (const auto v = aux_shift_of(o, A.dim(), "the point")) return py::cast(A.plus(*v));
+        return not_implemented();
+    };
+    method(m.attr("PolyZonotope"), "__add__", poly_zonotope_sum);
+    method(m.attr("PolyZonotope"), "__radd__", poly_zonotope_sum);
     bind_products<PolyZonotope>(
         m.attr("PolyZonotope"), "PolyZonotope",
         [](const PolyZonotope &A, const Tensor &M) { return py::cast(A.linear_map(M)); },
@@ -3308,6 +3358,23 @@ void bind_operators(py::module_ &m) {
         [](const Fullspace &A, double s) {
             return object_of(A.linear_map(Tensor::from_data({s}, {1, 1})));
         });
+
+    // S - v shifts by -v and v - S is -S + v, on every class of vectors (a point or a number)
+    for (const char *name : {"Zonotope", "Polytope", "ConZonotope", "ZonoBundle", "Capsule",
+                             "Ellipsoid", "PolyZonotope"}) {
+        const py::object cls = m.attr(name);
+        method(cls, "__rsub__", [](const ContSet &A, const py::object &o) -> py::object {
+            if (!aux_shift_of(o, A.dim(), "the point")) return not_implemented();
+            return object_of(A.uminus()).attr("__add__")(o);
+        });
+        // the classes with a shift of their own keep it
+        if (!py::hasattr(cls, "__sub__"))
+            method(cls, "__sub__", [](const ContSet &A, const py::object &o) -> py::object {
+                if (const auto v = aux_shift_of(o, A.dim(), "the point"))
+                    return object_of(A.minus(*v));
+                return not_implemented();
+            });
+    }
 }
 
 // Dynamics ----------------------------------------------------------------------------------------
@@ -3868,6 +3935,8 @@ void bind_level_set(py::module_ &m) {
         // the equality part and the rest
         .def("split_equality", &LevelSet::split_equality,
              "The equality part and the inequality part, None for a part without constraints");
+    // numpy raises on an operator instead of making an object array
+    m.attr("LevelSet").attr("__array_ufunc__") = py::none();
 }
 
 void bind_taylm(py::module_ &m) {
@@ -3920,7 +3989,16 @@ void bind_taylm(py::module_ &m) {
         .def("__sub__", [](const Taylm &a, const Taylm &b) { return a - b; })
         .def("__mul__", [](const Taylm &a, const Taylm &b) { return a * b; })
         .def("__neg__", [](const Taylm &a) { return -a; })
-        .def("__pow__", &Taylm::power, py::arg("n"));
+        .def("__pow__", &Taylm::power, py::arg("n"))
+        // a number from either side, as NumPy's scalars
+        .def("__add__", [](const Taylm &a, double s) { return a.plus(s); })
+        .def("__radd__", [](const Taylm &a, double s) { return a.plus(s); })
+        .def("__sub__", [](const Taylm &a, double s) { return a.minus(s); })
+        .def("__rsub__", [](const Taylm &a, double s) { return a.uminus().plus(s); })
+        .def("__mul__", [](const Taylm &a, double s) { return a.times(s); })
+        .def("__rmul__", [](const Taylm &a, double s) { return a.times(s); });
+    // numpy defers to the operators above instead of making an object array
+    m.attr("Taylm").attr("__array_ufunc__") = py::none();
 }
 
 /// The dynamics as symbolic expressions: `x` is a list of Expr, `f(x)` a list of Expr or numbers.
