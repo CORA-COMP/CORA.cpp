@@ -31,45 +31,11 @@ import cora
 if not cora.has_torch:
     raise unittest.SkipTest("needs a build with torch") from None
 
-from cora import counterexample, nn_verify
+import cora.counterexample as counterexample
+import cora.nn_verify as nn_verify
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-RNG = np.random.default_rng(11)
-W1, B1 = RNG.standard_normal((16, 2)).astype(np.float32), RNG.standard_normal(16).astype(np.float32)
-W2, B2 = RNG.standard_normal((2, 16)).astype(np.float32), RNG.standard_normal(2).astype(np.float32)
-
-
-def network(path):
-    """y = W2 relu(W1 x + b1) + b2 for x of shape (1, 2)."""
-    nodes = [
-        helper.make_node("Gemm", ["x", "W1", "b1"], ["h"], transB=1),
-        helper.make_node("Relu", ["h"], ["r"]),
-        helper.make_node("Gemm", ["r", "W2", "b2"], ["y"], transB=1),
-    ]
-    init = [numpy_helper.from_array(a, n) for n, a in (("W1", W1), ("b1", B1), ("W2", W2), ("b2", B2))]
-    graph = helper.make_graph(
-        nodes,
-        "g",
-        [helper.make_tensor_value_info("x", TensorProto.FLOAT, [1, 2])],
-        [helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 2])],
-        init,
-    )
-    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
-    m.ir_version = 8
-    onnx.save(m, path)
-
-
-def outputs(x):
-    """The network on the rows x in float64."""
-    return np.maximum(x @ W1.T.astype(np.float64) + B1, 0) @ W2.T.astype(np.float64) + B2
-
-
-# ============================================  MAIN  ============================================ #
-
 
 class Verdicts(unittest.TestCase):
     def setUp(self):
@@ -126,5 +92,38 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(result.status, "unknown")
         self.assertIn("max pool", result.stats["bounding"])
 
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+RNG = np.random.default_rng(11)
+
+W1, B1 = RNG.standard_normal((16, 2)).astype(np.float32), RNG.standard_normal(16).astype(np.float32)
+
+W2, B2 = RNG.standard_normal((2, 16)).astype(np.float32), RNG.standard_normal(2).astype(np.float32)
+
+
+def network(path):
+    """y = W2 relu(W1 x + b1) + b2 for x of shape (1, 2)."""
+    nodes = [
+        helper.make_node("Gemm", ["x", "W1", "b1"], ["h"], transB=1),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("Gemm", ["r", "W2", "b2"], ["y"], transB=1),
+    ]
+    init = [numpy_helper.from_array(a, n) for n, a in (("W1", W1), ("b1", B1), ("W2", W2), ("b2", B2))]
+    graph = helper.make_graph(
+        nodes,
+        "g",
+        [helper.make_tensor_value_info("x", TensorProto.FLOAT, [1, 2])],
+        [helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 2])],
+        init,
+    )
+    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
+    m.ir_version = 8
+    onnx.save(m, path)
+
+
+def outputs(x):
+    """The network on the rows x in float64."""
+    return np.maximum(x @ W1.T.astype(np.float64) + B1, 0) @ W2.T.astype(np.float64) + B2
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #
