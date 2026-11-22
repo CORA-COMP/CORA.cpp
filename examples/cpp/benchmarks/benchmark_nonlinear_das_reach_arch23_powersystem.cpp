@@ -107,12 +107,14 @@ bool aux_run(const std::string &name) {
     for (int i = 5; i < 10; ++i) x_guess[std::size_t(i)] = 377;
     for (int i = 10; i < 15; ++i) x_guess[std::size_t(i)] = 1;
     for (int i = 0; i < 14; ++i) y_guess[std::size_t(i)] = 1;
-    auto [x0, y0_guess] = model.steady_state(column(x_guess), column(y_guess), u_normal);
+    const auto [x0, y_steady] = model.steady_state(
+        Tensor::from_data(x_guess, {15}), Tensor::from_data(y_guess, {27}), u_normal.squeeze(-1));
+    const Tensor y0_guess = y_steady.expand_dims(-1); // the reach problem takes the column
     // the box around it: 0.01 on the angles, 0.1 on the speeds, 0.001 on the voltages
     std::vector<double> radius(15, 0.01);
     for (int i = 5; i < 15; ++i) radius[std::size_t(i)] = i < 10 ? 0.1 : 0.001;
     const Tensor G0 = column(radius).diag();
-    const Zonotope R0(x0.squeeze(-1), G0); // the steady state is a column (n, 1)
+    const Zonotope R0(x0, G0);
     // the four runs
     double total = 0;
     Zonotope R = R0;
