@@ -18,6 +18,12 @@
 //           alg - the options
 // Outputs:  res - verified (false if undecided at min_time_step), the passes, last step size, steps
 // See also: LinearSys::verify, priv_reach_krylov
+// References:
+//    [1] M. Althoff. "Reachability analysis of large linear systems with uncertain inputs in the
+//        Krylov subspace", IEEE TAC 65(2), 2020, pp. 477-492.
+//    [2] T. Jawecki, W. Auzinger, O. Koch. "Computable upper error bounds for Krylov
+//        approximations to matrix exponentials and associated phi-functions", BIT Numerical
+//        Mathematics, 2020.
 //
 // CORA.cpp only: the ARCH-COMP26 AFF scripts rand04-06 call reachSuppFuncsKrylov, which is not in
 // CORA v2026.1.0 (it is in the competition's copy); this follows the same scheme on the

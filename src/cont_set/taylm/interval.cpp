@@ -9,6 +9,13 @@
 // Outputs:  lo, hi - the bounds
 //           I - the box (1, 1)
 // See also: evaluate
+// References:
+//    [1] K. Makino, M. Berz. "Taylor models and other validated functional inclusion methods",
+//        International Journal of Pure and Applied Mathematics, 2003.
+//    [2] M. Althoff, D. Grebenyuk, N. Kochdumper. "Implementation of Taylor models in CORA 2018",
+//        ARCH18.
+//    [3] K. Makino, M. Berz. "Verified global optimization with Taylor model-based range
+//        bounders", 2005.
 //
 // CORA: contSet/@taylm/interval.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper

@@ -12,6 +12,15 @@
 //           tol - relaxes the points' norm and the flatness of Z; default: the repository tolerance
 // Outputs:  res - true if all points (S) are in Z; "approx" says true only when certain
 // See also: boundary_point, Interval::contains
+// References:
+//    [1] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
+//        2019.
+//    [2] A. Kulmburg, M. Althoff. "On the co-NP-completeness of the zonotope containment problem",
+//        European Journal of Control, 2021.
+//    [3] A. Kulmburg, L. Schaefer, M. Althoff. "Approximability of the containment problem for
+//        zonotopes and ellipsotopes", IEEE TAC, 2025.
+//    [4] A. Kulmburg, I. Brkan, M. Althoff. "Search-based and stochastic solutions to the zonotope
+//        and ellipsotope containment problems", ECC 2024.
 //
 // CORA: contSet/@zonotope/contains_.m
 // CORA: matrixSet/@matZonotope/contains.m

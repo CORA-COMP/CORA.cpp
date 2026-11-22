@@ -8,6 +8,9 @@
 // Outputs:  s - (): min s with G beta = p, |beta|_inf <= s; infinity if p is outside the span
 //           beta - the minimizer (m), an empty (0) if s is infinite
 // See also: contains, minnorm
+// References:
+//    [1] A. Kulmburg, M. Althoff. "On the co-NP-completeness of the zonotope containment problem",
+//        European Journal of Control, 2021.
 //
 // CORA: contSet/@zonotope/zonotopeNorm.m
 // CORA authors: Adrian Kulmburg

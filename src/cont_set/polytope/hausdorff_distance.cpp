@@ -12,6 +12,7 @@
 //           points - (N, n), one per row
 // Outputs:  d - the Euclidean Hausdorff distance
 // See also: Polytope::contains, Zonotope::hausdorff_distance_to_box
+// References: none (CORA's one entry cannot be confirmed)
 //
 // CORA: contSet/@polytope/hausdorffDist.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger

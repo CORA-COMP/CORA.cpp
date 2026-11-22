@@ -11,6 +11,7 @@
 //           taylor_terms - order of the series, at least 1 (CORA's Inf is not offered)
 // Outputs:  PU - the origin if U is the origin
 // See also: particular_solution_constant, one_step, expm_remainder
+// References: none (CORA cites only a thesis)
 //
 // CORA: contDynamics/@linearSys/particularSolution_timeVarying.m
 // CORA authors: Mark Wetzlinger

@@ -8,10 +8,10 @@
 // Inputs:   R - the sets of one crossing
 //           guard - the level set guard
 // Outputs:  S - the enclosure; none if the intersection is empty
-// References:
-//    [1] N. Kochdumper and M. Althoff. "Reachability Analysis for Hybrid Systems with Nonlinear
-//        Guard Sets", HSCC, 2020.
 // See also: priv_guard_intersect
+// References:
+//    [1] N. Kochdumper, M. Althoff. "Reachability analysis for hybrid systems with nonlinear guard
+//        sets", HSCC 2020.
 //
 // CORA: hybridDynamics/@location/guardIntersect_levelSet.m
 // CORA authors: Niklas Kochdumper

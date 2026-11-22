@@ -12,6 +12,9 @@
 //           method - "linprog" (default)
 // Outputs:  cZu - a set without constraints that contains the union
 // See also: rescale, Zonotope::unite
+// References:
+//    [1] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
+//        2019.
 //
 // CORA: contSet/@conZonotope/or.m
 // CORA authors: Niklas Kochdumper

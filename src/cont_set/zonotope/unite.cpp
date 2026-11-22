@@ -11,6 +11,9 @@
 //           method - "linprog" (default), "iterative" or "parallelotope"
 // Outputs:  Zu - a zonotope that contains the union. Not a batch
 // See also: enclose, convex_hull, reduce
+// References:
+//    [1] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
+//        2019.
 //
 // CORA: contSet/@zonotope/or.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper

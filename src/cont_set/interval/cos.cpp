@@ -8,6 +8,8 @@
 // Inputs:   -
 // Outputs:  R - [-maxcos(I - pi), maxcos(I)]
 // See also: cosh, exp
+// References:
+//    [1] M. Althoff, D. Grebenyuk. "Implementation of interval arithmetic in CORA 2016", ARCH16.
 //
 // CORA: contSet/@interval/cos.m
 // CORA authors: Matthias Althoff, Dmitry Grebenyuk, Adrian Kulmburg

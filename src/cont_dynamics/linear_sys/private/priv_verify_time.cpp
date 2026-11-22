@@ -7,6 +7,9 @@
 // Inputs:   bounds - the pairs, in order
 // Outputs:  R - the queries of priv_verifyTime.h
 // See also: priv_reach_adaptive, priv_verify_ra_zonotope
+// References:
+//    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
+//        outer-approximations of reachable sets", IEEE TAC, 2023.
 //
 // CORA: global/classes/verifyTime.m
 // CORA authors: Mark Wetzlinger

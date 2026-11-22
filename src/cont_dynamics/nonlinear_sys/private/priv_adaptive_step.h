@@ -16,6 +16,15 @@
 //           state - the state before the step
 // Outputs:  next - the state after the step, its sets unreduced
 // See also: priv_lin_reach_adaptive.cpp, priv_lin_reach_poly_adaptive.cpp
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of nonlinear systems with
+//        uncertain parameters using conservative linearization", CDC 2008.
+//    [2] M. Althoff. "Reachability analysis of nonlinear systems using conservative
+//        polynomialization and non-convex sets", HSCC 2013.
+//    [3] M. Wetzlinger, A. Kulmburg, M. Althoff. "Adaptive parameter tuning for reachability
+//        analysis of nonlinear systems", HSCC 2021.
+//    [4] M. Wetzlinger et al. "Adaptive reachability algorithms for nonlinear systems using
+//        abstraction error analysis", Nonlinear Analysis: Hybrid Systems, 2022.
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger

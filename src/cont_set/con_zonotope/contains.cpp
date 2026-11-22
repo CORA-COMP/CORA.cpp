@@ -13,6 +13,13 @@
 //           tol - relaxes the norm of the points; default: the repository tolerance
 // Outputs:  res - true if all points are in the set
 // See also: is_full_dim, Zonotope::contains
+// References:
+//    [1] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
+//        2019.
+//    [2] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
+//    [3] A. Kulmburg, I. Brkan, M. Althoff. "Search-based and stochastic solutions to the zonotope
+//        and ellipsotope containment problems", ECC 2024.
 //
 // CORA: contSet/@conZonotope/contains_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Matthias Althoff, Adrian Kulmburg, Ivan Brkan

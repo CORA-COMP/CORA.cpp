@@ -8,6 +8,11 @@
 // Inputs:   inner, outer - zonotopes
 // Outputs:  scaling - the least row sum; at most 1 proves that inner is in outer
 // See also: priv_containment_vertex_enumeration
+// References:
+//    [1] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
+//        2019.
+//    [2] A. Kulmburg, L. Schaefer, M. Althoff. "Approximability of the containment problem for
+//        zonotopes and ellipsotopes", IEEE TAC, 2025.
 //
 // CORA: contSet/@zonotope/private/priv_zonotopeContainment_SadraddiniTedrake.m
 // CORA authors: Adrian Kulmburg

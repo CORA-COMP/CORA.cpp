@@ -12,6 +12,9 @@
 //           mode - "outer" (default) or "inner"
 // Outputs:  R - the point as an ellipsoid (Q = 0) if the ellipsoid contains it, else the empty one
 // See also: contains, Zonotope::intersect
+// References:
+//    [1] A. Kurzhanski et al. "Ellipsoidal Toolbox manual", EECS Technical Report
+//        UCB/EECS-2006-46, 2006.
 //
 // CORA: contSet/@ellipsoid/and_.m
 // CORA authors: Victor Gassmann

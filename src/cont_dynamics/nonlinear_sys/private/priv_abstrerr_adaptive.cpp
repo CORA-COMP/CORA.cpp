@@ -12,6 +12,11 @@
 // Inputs:   see the declarations in priv_adaptive.h
 // Outputs:  V - the zonotope of the linearization error
 // See also: priv_lin_reach_adaptive_pass.cpp
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of nonlinear systems with
+//        uncertain parameters using conservative linearization", CDC 2008.
+//    [2] M. Althoff. "Reachability analysis of nonlinear systems using conservative
+//        polynomialization and non-convex sets", HSCC 2013.
 //
 // CORA: contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m
 // CORA authors: Mark Wetzlinger

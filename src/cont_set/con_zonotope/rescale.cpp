@@ -11,6 +11,9 @@
 // Inputs:   method - "exact" (default) or "iter"
 // Outputs:  cZres - the same set with factors in [-1, 1] that take every value of it
 // See also: quad_map, compact
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/rescale.m
 // CORA: contSet/@conZonotope/private/priv_ksi_optimizer.m
@@ -160,6 +163,7 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
     CORA_CHECK(A().numel() != 0, Error::special_error,
                [] { return std::string("rescale: no constraints left!"); });
 
+    // Rescaling -----------------------------------------------------------------------------------
     // the ranges of the factors, of a set whose generators and constraints may be permuted
     Tensor G = G_.matrix_transpose(), A = this->A(), b = priv_b_column(*this);
     std::vector<double> lo, hi;

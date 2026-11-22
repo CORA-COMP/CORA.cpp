@@ -16,6 +16,11 @@
 //           alg - the options of "poly"
 // Outputs:  s - the sets over the step and at its end, and the error bound of this step
 // See also: priv_lin_reach, priv_abstrerr_poly, priv_precomp_stat_error
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of nonlinear systems with
+//        uncertain parameters using conservative linearization", CDC 2008.
+//    [2] M. Althoff. "Reachability analysis of nonlinear systems using conservative
+//        polynomialization and non-convex sets", HSCC 2013.
 //
 // CORA: contDynamics/@contDynamics/linReach.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger

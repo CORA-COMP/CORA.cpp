@@ -10,6 +10,8 @@
 //           mode - "outer" (default) or "inner"
 // Outputs:  Eres - the ellipsoid
 // See also: convex_hull, contains
+// References:
+//    [1] S. Boyd, L. Vandenberghe. "Convex Optimization", Cambridge University Press, 2004.
 //
 // CORA: contSet/@ellipsoid/or.m
 // CORA authors: Victor Gassmann

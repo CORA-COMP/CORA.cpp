@@ -7,6 +7,9 @@
 // Inputs:   M - [c G]' Q [c G] (..., N+1, N+1) for N generators
 // Outputs:  row - the center (..., 1, 1) and the generators (..., 1, N + N(N+1)/2) of the output
 // See also: Zonotope::quad_map, ConZonotope::quad_map
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Avoiding geometric intersection operations in reachability
+//        analysis of hybrid systems", HSCC 2012.
 //
 // CORA: contSet/@zonotope/quadMap.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper

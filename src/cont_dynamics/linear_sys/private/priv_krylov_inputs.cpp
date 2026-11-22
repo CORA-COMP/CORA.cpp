@@ -19,6 +19,9 @@
 // Outputs:  u - the subspace, mapped by C, and the input curvature
 //           RV - the input solution of the first step (n)
 // See also: priv_reach_krylov, priv_krylov_subspace
+// References:
+//    [1] M. Althoff. "Reachability analysis of large linear systems with uncertain inputs in the
+//        Krylov subspace", IEEE TAC 65(2), 2020, pp. 477-492.
 //
 // CORA: contDynamics/@linearSys/private/priv_krylov_R_uTrans.m
 // CORA: contDynamics/@linearSys/private/priv_inputSolution_Krylov.m

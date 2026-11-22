@@ -16,6 +16,9 @@
 //           type - "forwardBackward"
 // Outputs:  J - a box in I that holds every solution in I of all f_i = 0; none if there is none
 // See also: contains, is_intersecting
+// References:
+//    [1] N. Kochdumper, M. Althoff. "Reachability analysis for hybrid systems with nonlinear guard
+//        sets", HSCC 2020.
 //
 // CORA: contSet/@levelSet/tightenDomain.m
 // CORA: specification/syntaxTree.m

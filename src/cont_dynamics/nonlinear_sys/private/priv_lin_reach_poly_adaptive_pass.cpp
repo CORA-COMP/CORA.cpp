@@ -17,6 +17,15 @@
 //           dt - the step size
 // Outputs:  P - the sets and the true error, none if the loop or a linear step fails
 // See also: priv_lin_reach_adaptive_pass.cpp, priv_poly_window.cpp
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of nonlinear systems with
+//        uncertain parameters using conservative linearization", CDC 2008.
+//    [2] M. Althoff. "Reachability analysis of nonlinear systems using conservative
+//        polynomialization and non-convex sets", HSCC 2013.
+//    [3] M. Wetzlinger, A. Kulmburg, M. Althoff. "Adaptive parameter tuning for reachability
+//        analysis of nonlinear systems", HSCC 2021.
+//    [4] M. Wetzlinger et al. "Adaptive reachability algorithms for nonlinear systems using
+//        abstraction error analysis", Nonlinear Analysis: Hybrid Systems, 2022.
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger
@@ -52,11 +61,13 @@ priv_lin_reach_poly_adaptive_pass(const NonlinearSys &sys, const std::optional<Z
     const std::optional<PolySeries> series = PolySeries::make(J.A, dt, alg.taylor_terms);
     if (!series) return std::nullopt;
 
+    // The static error ----------------------------------------------------------------------------
     // the start set relative to x*, and the static error over it
     const PolyZonotope Rdelta = R.plus(xs_t.squeeze(-1) * -1.0);
     const PolyStatic S = priv_precomp_stat_error_adaptive(sys, xs, U, alg.zeta_z, Rdelta);
     const Zonotope Vsz = S.Vstat.zonotope();
 
+    // The error loop ------------------------------------------------------------------------------
     // the error loop: the window with the admissible error as input, the error over its region
     std::optional<Zonotope> Verror;
     const std::optional<Vec> found =

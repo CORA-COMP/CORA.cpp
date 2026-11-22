@@ -10,6 +10,11 @@
 //           max_order - the degree of the polynomial
 // Outputs:  x - one model per coordinate
 // See also: evaluate, interval
+// References:
+//    [1] K. Makino, M. Berz. "Taylor models and other validated functional inclusion methods",
+//        International Journal of Pure and Applied Mathematics, 2003.
+//    [2] M. Althoff, D. Grebenyuk, N. Kochdumper. "Implementation of Taylor models in CORA 2018",
+//        ARCH18.
 //
 // CORA: contSet/@taylm/taylm.m
 // CORA: contSet/@taylm/dim.m

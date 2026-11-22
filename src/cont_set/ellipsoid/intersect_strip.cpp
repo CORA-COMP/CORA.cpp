@@ -18,6 +18,10 @@
 //           sigma_sq - the level to which E2 is scaled
 // Gradients: not differentiable (the weight and the level are host numbers)
 // See also: Zonotope::intersect_strip, ConZonotope::intersect_strip
+// References:
+//    [1] Y. Liu, Y. Zhao, F. Wu. "Ellipsoidal state-bounding-based set-membership estimation for
+//        linear system with unknown-but-bounded disturbances", IET Control Theory & Applications
+//        10(4), 2016, pp. 431-442.
 //
 // CORA: contSet/@ellipsoid/intersectStrip.m
 // CORA authors: Matthias Althoff

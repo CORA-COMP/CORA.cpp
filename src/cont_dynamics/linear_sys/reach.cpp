@@ -13,6 +13,16 @@
 //           alg - alg::Standard, alg::WrappingFree, alg::FromStart, alg::Decomposition, alg::Krylov
 // Outputs:  R - time_interval[k] encloses the states over [k*time_step, (k+1)*time_step]
 // See also: output_set, simulate, correction_matrix_state, private/priv_reach_standard
+// References:
+//    [1] A. Girard. "Reachability of uncertain linear systems using zonotopes", HSCC 2005, LNCS
+//        3414, pp. 291-305.
+//    [2] A. Girard, C. Le Guernic, O. Maler. "Efficient computation of reachable sets of linear
+//        time-invariant systems with inputs", HSCC 2006, LNCS 3927, pp. 257-271.
+//    [3] S. Bogomolov, M. Forets, G. Frehse, A. Podelski, C. Schilling. "Decomposing reach set
+//        computations with low-dimensional sets and high-dimensional matrices", Information and
+//        Computation 289, 2022.
+//    [4] M. Althoff. "Reachability analysis of large linear systems with uncertain inputs in the
+//        Krylov subspace", IEEE TAC 65(2), 2020, pp. 477-492.
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA: contDynamics/@linearSys/private/priv_reach_standard.m

@@ -10,6 +10,9 @@
 // Inputs:   x - the point (in)
 // Outputs:  J - the Jacobian (out, in)
 // See also: cora/nn/neural_network/neural_network.h, evaluate.cpp
+// References:
+//    [1] J. M. Zurada, A. Malinowski, I. Cloete. "Sensitivity analysis for minimization of input
+//        data dimension for feedforward neural network", ISCAS 1994, vol. 6, pp. 447-450.
 //
 // CORA: nn/@neuralNetwork/calcSensitivity.m
 // CORA authors: Tobias Ladner, Lukas Koller

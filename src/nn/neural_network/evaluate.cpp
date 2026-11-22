@@ -19,6 +19,15 @@
 //           Y - a zonotope that contains the outputs of all points of X
 //           XY - the set of the pairs (x, N(x)), dimension in + out
 // See also: cora/nn/neural_network/neural_network.h, Zonotope::interval
+// References:
+//    [1] N. Kochdumper, C. Schilling, M. Althoff, S. Bak. "Open- and closed-loop neural network
+//        verification using polynomial zonotopes", NFM 2023 (arXiv:2207.02715).
+//    [2] T. Ladner, M. Althoff. "Automatic abstraction refinement in neural network verification
+//        using sensitivity analysis", HSCC 2023.
+//    [3] H.-D. Tran et al. "Star-based reachability analysis of deep neural networks", FM 2019,
+//        LNCS 11800, pp. 670-686.
+//    [4] G. Singh, T. Gehr, M. Mirman, M. Puschel, M. Vechev. "Fast and effective robustness
+//        certification", NeurIPS 2018.
 //
 // CORA: nn/@neuralNetwork/evaluate.m
 // CORA: nn/@neuralNetwork/evaluate_.m

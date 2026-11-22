@@ -6,6 +6,7 @@
 // Inputs:   -
 // Outputs:  vol - the volume, (...)
 // See also: semi_axes, Capsule::volume
+// References: none (CORA's one entry cannot be confirmed)
 //
 // CORA: contSet/@ellipsoid/volume_.m
 // CORA authors: Victor Gassmann

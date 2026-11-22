@@ -15,6 +15,10 @@
 //           [(I - lambda C) G, lambda diag(phi)], the constraints of cz and one equality per strip
 //           C G x - phi x_new = y - C c
 // See also: intersect, Zonotope::intersect_strip
+// References:
+//    [1] A. Alanwar, V. Gassmann, X. He, H. Said, H. Sandberg, K. H. Johansson, M. Althoff.
+//        "Privacy-preserving set-based estimation using partially homomorphic encryption",
+//        European Journal of Control, 2023.
 //
 // CORA: contSet/@conZonotope/intersectStrip.m
 // CORA authors: Matthias Althoff

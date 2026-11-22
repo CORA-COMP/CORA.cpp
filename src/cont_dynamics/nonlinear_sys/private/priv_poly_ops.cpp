@@ -14,6 +14,9 @@
 // Inputs:   Z - polynomial zonotope
 // Outputs:  the reduced set
 // See also: priv_poly_adaptive.h, priv_reach_poly_adaptive.cpp
+// References:
+//    [1] M. Wetzlinger, A. Kulmburg, M. Althoff. "Adaptive parameter tuning for reachability
+//        analysis of nonlinear systems", HSCC 2021.
 //
 // CORA: contSet/@polyZonotope/reduce.m
 // CORA: contSet/@polyZonotope/private/priv_reduceAdaptive.m

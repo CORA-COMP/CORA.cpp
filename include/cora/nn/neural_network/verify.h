@@ -13,6 +13,9 @@
 // Syntax:   NnVerifyResult r = nn.verify(property, timeout, vnncomp_options("acasxu_2023"));
 //           register_attack("mine", factory);
 // See also: cora/nn/neural_network/neural_network.h, docs/nn_verification.md
+// References:
+//    [1] L. Koller, T. Ladner, M. Althoff. "Out of the shadows: exploring a latent space for
+//        neural network verification", ICLR 2026 (arXiv:2505.17854).
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Lukas Koller, Tobias Ladner

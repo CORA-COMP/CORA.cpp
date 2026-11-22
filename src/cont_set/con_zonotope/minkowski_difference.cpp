@@ -13,6 +13,10 @@
 //           type - "exact" (default), "inner:vertices" or "inner:Vinod"
 // Outputs:  cZres - {x | x + S in cz}
 // See also: plus, intersect, Zonotope::mink_diff
+// References:
+//    [1] M. Althoff. "On computing the Minkowski difference of zonotopes", arXiv:1512.02794, 2015.
+//    [2] A. P. Vinod, A. Weiss, S. Di Cairano. "Projection-free computation of robust controllable
+//        sets with constrained zonotopes", Automatica 175, 2025.
 //
 // CORA: contSet/@conZonotope/minkDiff.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger

@@ -11,6 +11,10 @@
 //           method - "approx" (default), "inner", "exact", "outer" or "outer:coarse"
 // Outputs:  Zres - the center c - c2 and the generators of Z scaled; not a batch
 // See also: plus, contains
+// References:
+//    [1] M. Althoff. "On computing the Minkowski difference of zonotopes", arXiv:1512.02794, 2015.
+//    [2] V. Raghuraman, J. P. Koeln. "Set operations and order reductions for constrained
+//        zonotopes", Automatica 139, 2022, 110204.
 //
 // CORA: contSet/@zonotope/minkDiff.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Tobias Ladner

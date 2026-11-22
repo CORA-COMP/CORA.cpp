@@ -15,6 +15,9 @@
 //           grid - the steps of CORA's tuning
 // Outputs:  steps - per step the output set and the flags of the specifications
 // See also: priv_verify_zonotope_pass.h, priv_verify_ra_zonotope.cpp
+// References:
+//    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
+//        outer-approximations of reachable sets", IEEE TAC, 2023.
 //
 // CORA.cpp only: the float definitions of CORALean's LinearSys.verifyZonotopePassFloat,
 // verifySpecHoldsFloat, verifyGirardReduceFloat and verifyZonotopeWitnessFloat.

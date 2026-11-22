@@ -9,10 +9,10 @@
 // Syntax:   AdaptiveResult R = priv_reach_adaptive(taylor, params, spec_times, error, verify, sd);
 // Inputs:   see - the declaration below
 // Outputs:  R - the output sets per step with their errors, and the step sizes
+// See also: priv_verify_ra_zonotope
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
 //        outer-approximations of reachable sets", TAC, 2023.
-// See also: priv_verify_ra_zonotope
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026

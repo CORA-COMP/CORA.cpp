@@ -13,6 +13,9 @@
 //           method - "girard", the one reduction of CORA that is ported
 // Outputs:  cZred - a constrained zonotope that encloses cz
 // See also: compact, Zonotope::reduce
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/reduce.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper

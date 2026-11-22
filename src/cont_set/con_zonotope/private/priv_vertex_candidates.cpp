@@ -10,6 +10,11 @@
 // Inputs:   cz - a single constrained zonotope
 // Outputs:  V - the images c + G x (n, K) of the factor vectors x that fix all but rank(A) factors
 // See also: priv_blocks, ConZonotope::isequal
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
+//    [2] C. Lara, J. J. Flores, F. Calderon. "On the hyperbox - hyperplane intersection problem",
+//        INFOCOMP Journal of Computer Science, 2009.
 //
 // CORA: contSet/@conZonotope/private/priv_potVertices.m
 // CORA authors: Niklas Kochdumper

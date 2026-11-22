@@ -14,6 +14,21 @@
 //           order - generators per dimension, at least 1/n
 // Outputs:  Zred - the same center, at most order * n generators, contained in Z; not a batch
 // See also: reduce, compact
+// References:
+//    [1] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
+//        2019.
+//    [2] M. Wetzlinger, A. Kulmburg, M. Althoff. "Adaptive parameter tuning for reachability
+//        analysis of nonlinear systems", HSCC 2021.
+//    [3] F. Alizadeh, D. Goldfarb. "Second-order cone programming", Mathematical Programming
+//        95(1), 2003, pp. 3-51.
+//    [4] L. Yang, N. Ozay. "Scalable zonotopic under-approximation of backward reachable sets for
+//        uncertain linear systems", IEEE Control Systems Letters 6, 2022.
+//    [5] V. Raghuraman, J. P. Koeln. "Set operations and order reductions for constrained
+//        zonotopes", Automatica 139, 2022, 110204.
+//    [6] N. Kochdumper, S. Bak. "Conformant synthesis for Koopman operator linearized control
+//        systems", CDC 2022, pp. 7327-7332.
+//    [7] L. Luetzow, N. Kochdumper, M. Althoff. "Underapproximative methods for the order
+//        reduction of zonotopes", IEEE Control Systems Letters 9, 2025.
 //
 // CORA: contSet/@zonotope/reduceUnderApprox.m
 // CORA authors: Niklas Kochdumper

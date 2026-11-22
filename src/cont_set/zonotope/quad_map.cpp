@@ -9,6 +9,9 @@
 // Inputs:   Q - the matrices of the outputs, Q[i] (n, n); a CORA matZonotope entry is not supported
 // Outputs:  Zres - a zonotope with one dimension per matrix that encloses the image
 // See also: cubic_map, linear_map
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Avoiding geometric intersection operations in reachability
+//        analysis of hybrid systems", HSCC 2012.
 //
 // CORA: contSet/@zonotope/quadMap.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper

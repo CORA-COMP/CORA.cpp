@@ -8,6 +8,8 @@
 // Outputs:  val - the radius () of the largest ball about the center in the zonotope
 //           x - the point (n) of the nearest facet closest to the center
 // See also: norm, contains
+// References:
+//    [1] S. Boyd, L. Vandenberghe. "Convex Optimization", Cambridge University Press, 2004.
 //
 // CORA: contSet/@zonotope/minnorm.m
 // CORA authors: Victor Gassmann

@@ -7,6 +7,9 @@
 //           v - a point (..., n)
 // Outputs:  cZres - exact: the centers add, the generators of both join
 // See also: linear_map, Zonotope::plus
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/plus.m
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper

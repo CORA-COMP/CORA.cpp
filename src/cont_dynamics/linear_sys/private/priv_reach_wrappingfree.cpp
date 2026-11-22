@@ -16,6 +16,9 @@
 //           in - the input solution of one step
 // Outputs:  R - the reachable sets, see LinearSys::reach
 // See also: priv_reach_standard
+// References:
+//    [1] A. Girard, C. Le Guernic, O. Maler. "Efficient computation of reachable sets of linear
+//        time-invariant systems with inputs", HSCC 2006, LNCS 3927, pp. 257-271.
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_wrappingfree.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger

@@ -5,6 +5,13 @@
 // with + 0.0 (a zero slope makes -0 +0), and the box of the offset and the error.
 // Without a record the error rows v_i e_j of a layer wait for the next linear map, which makes
 // them v_i times the row j of W: no (B, dn, n) block and no product with it.
+// References:
+//    [1] L. Koller, T. Ladner, M. Althoff. "Set-based training for neural network verification",
+//        Transactions on Machine Learning Research, 2025.
+//    [2] G. Singh, T. Gehr, M. Mirman, M. Puschel, M. Vechev. "Fast and effective robustness
+//        certification", NeurIPS 2018.
+//    [3] N. Kochdumper, C. Schilling, M. Althoff, S. Bak. "Open- and closed-loop neural network
+//        verification using polynomial zonotopes", NFM 2023 (arXiv:2207.02715).
 //
 // CORA: nn/@neuralNetwork/evaluateZonotopeBatch_.m
 // CORA: nn/@neuralNetwork/prepareForZonoBatchEval.m

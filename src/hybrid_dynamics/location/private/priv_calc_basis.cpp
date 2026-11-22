@@ -16,6 +16,9 @@
 //           U - the input set in the state space (B U + c), whose center drives "flow"
 // Outputs:  B - the bases (n, n), orthonormal columns
 // See also: priv_guard_intersect
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: hybridDynamics/@location/calcBasis.m
 // CORA authors: Niklas Kochdumper

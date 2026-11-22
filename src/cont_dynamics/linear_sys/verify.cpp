@@ -11,6 +11,11 @@
 //           alg - alg::ReachAvoidSupportFunction, alg::ReachAvoidZonotope or alg::ReachAvoidKrylov
 // Outputs:  res - verified, the iterations of the adaptive loop, the last step size and count
 // See also: reach, private/priv_verify_ra_support_function
+// References:
+//    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
+//        outer-approximations of reachable sets", IEEE TAC, 2023.
+//    [2] M. Wetzlinger et al. "Fully automated verification of linear systems using reachability
+//        analysis with support functions", HSCC 2023.
 //
 // CORA: contDynamics/@linearSys/verify.m
 // CORA: contDynamics/@linearSys/private/priv_verifyRA_supportFunc.m

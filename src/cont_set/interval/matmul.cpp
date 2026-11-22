@@ -9,6 +9,7 @@
 //           M - matrix of numbers, its rows the columns of A
 // Outputs:  C - each entry the sum over k of the hull of the corner products
 // See also: linear_map, matrix_power, Zonotope::linear_map
+// References: none (CORA cites only a thesis)
 //
 // CORA: matrixSet/@intervalMatrix/mtimes.m
 // CORA authors: Matthias Althoff

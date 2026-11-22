@@ -14,6 +14,15 @@
 // Inputs:   see the declarations in priv_adaptive.h
 // Outputs:  P - the sets and what the tuning reads of them; none if the loop gives up
 // See also: priv_abstrerr_adaptive.cpp, priv_float_step.h
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of nonlinear systems with
+//        uncertain parameters using conservative linearization", CDC 2008.
+//    [2] M. Althoff. "Reachability analysis of nonlinear systems using conservative
+//        polynomialization and non-convex sets", HSCC 2013.
+//    [3] M. Wetzlinger, A. Kulmburg, M. Althoff. "Adaptive parameter tuning for reachability
+//        analysis of nonlinear systems", HSCC 2021.
+//    [4] M. Wetzlinger et al. "Adaptive reachability algorithms for nonlinear systems using
+//        abstraction error analysis", Nonlinear Analysis: Hybrid Systems, 2022.
 //
 // CORA: contDynamics/@nonlinearSys/linReach_adaptive.m
 // CORA authors: Mark Wetzlinger

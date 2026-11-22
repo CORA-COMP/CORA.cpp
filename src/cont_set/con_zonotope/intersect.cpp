@@ -10,6 +10,9 @@
 // Inputs:   S - a constrained zonotope, a zonotope, a box or a polytope of the same dimension
 // Outputs:  cZres - exact: the factors of both sets stay, each with its constraints
 // See also: con_intersect, compact, Zonotope::intersect
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/and_.m
 // CORA: contSet/@polytope/and_.m

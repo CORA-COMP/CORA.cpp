@@ -9,6 +9,18 @@
 // Inputs:   -
 // Outputs:  Zred - a zonotope with at most n generators that encloses Z
 // See also: reduce, reduce_adaptive
+// References:
+//    [1] A. Girard. "Reachability of uncertain linear systems using zonotopes", HSCC 2005, LNCS
+//        3414, pp. 291-305.
+//    [2] A.-K. Kopetzki, B. Schurmann, M. Althoff. "Methods for order reduction of zonotopes", CDC
+//        2017.
+//    [3] C. Combastel. "A state bounding observer based on zonotopes", ECC 2003.
+//    [4] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
+//    [5] M. Wetzlinger, A. Kulmburg, M. Althoff. "Adaptive parameter tuning for reachability
+//        analysis of nonlinear systems", HSCC 2021.
+//    [6] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
+//        2019.
 //
 // CORA: contSet/@zonotope/reduce.m
 // CORA: contSet/@zonotope/private/priv_reducePCA.m

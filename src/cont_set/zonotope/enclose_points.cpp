@@ -12,6 +12,11 @@
 //           U - an orthogonal frame (n, n), which gives the "stursberg" zonotope for any U
 // Outputs:  Z - a zonotope with every point in it
 // See also: enclose, interval
+// References:
+//    [1] O. Stursberg, B. H. Krogh. "Efficient representation and computation of reachable sets
+//        for hybrid systems", HSCC 2003, LNCS 2623, pp. 482-497.
+//    [2] M. Maiga, N. Ramdani, L. Trave-Massuyes, C. Combastel. "A comprehensive method for
+//        reachability analysis of uncertain nonlinear hybrid systems", IEEE TAC, 2016.
 //
 // CORA: contSet/@zonotope/enclosePoints.m
 // CORA authors: Niklas Kochdumper

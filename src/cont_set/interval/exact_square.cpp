@@ -8,6 +8,9 @@
 // Inputs:   -   (A is square)
 // Outputs:  S - entry (i, j) is the hull of the values of (M * M)(i, j) over the matrices M of A
 // See also: dependent_terms, matmul
+// References:
+//    [1] O. Kosheleva, V. Kreinovich, G. Mayer, H. T. Nguyen. "Computing the cube of an interval
+//        matrix is NP-hard", Proc. ACM Symposium on Applied Computing, 2005, pp. 1449-1453.
 //
 // CORA: matrixSet/@intervalMatrix/exactSquare.m
 // CORA authors: Matthias Althoff

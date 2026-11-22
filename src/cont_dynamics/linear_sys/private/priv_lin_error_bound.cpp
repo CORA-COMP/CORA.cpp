@@ -10,6 +10,9 @@
 //           t_final - time horizon
 // Outputs:  R - the bounds and checks of priv_linErrorBound.h
 // See also: priv_reach_adaptive
+// References:
+//    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
+//        outer-approximations of reachable sets", IEEE TAC, 2023.
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_adaptive.m
 // CORA authors: Mark Wetzlinger

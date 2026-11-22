@@ -12,6 +12,7 @@ Last update:   ---
 Reviewed:      ---
 """
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -165,6 +166,55 @@ import layout  # noqa: E402
 SH = ("#!/usr/bin/env bash\n# run - runs a thing\n#\n# Authors:       Claude Sonnet 5.5\n"
       "# Written:       01-October-2026\n# Last update:   ---\n# Reviewed:      ---\n\n"
       + layout.marker("BEGIN", "py") + "\n\nset -e\necho hi\n\n" + layout.marker("END", "py") + "\n")
+
+
+class References(unittest.TestCase):
+    ENTRY = '//\n// References:\n//    [1] A. Author. "A title", Venue 2020.\n//        and a second line.\n'
+
+    def setUp(self):
+        # the fake file with a block of one entry of two lines
+        self.WITH = CPP_TEST.replace("//\n// CORA:", self.ENTRY + "// CORA:", 1)
+
+    def fails(self, text, message, name="test_plus.cpp"):
+        found = check(text, name)
+        self.assertTrue(any(message in issue for issue in found), found)
+
+    def test_a_block_after_the_entries_passes(self):
+        self.assertEqual(check(self.WITH), [])
+        none = CPP_TEST.replace("//\n// CORA:", "//\n// References: none (CORA cites only a thesis)\n// CORA:", 1)
+        self.assertEqual(check(none), [])
+
+    def test_numbers_and_length_are_checked(self):
+        # a wrong number, a fourth line and a continuation that is not indented
+        self.fails(self.WITH.replace("[1]", "[2]"), "numbered [1], [2]")
+        self.fails(self.WITH.replace("//        and a second line.\n", "//        a\n//        b\n//        c\n"),
+                   "at most 3 lines")
+        self.fails(self.WITH.replace("//        and", "//      and"), "an entry reads")
+
+    def test_a_block_without_entries_says_why(self):
+        self.fails(self.WITH.replace(self.ENTRY.split("\n", 2)[2], ""), "no entries")
+
+    def test_a_file_whose_cora_original_cites_papers_cites_them(self):
+        # a one-line list stands for CORA's: the zonotope's plus cites papers
+        saved = layout.CORA_REFERENCES
+        with tempfile.TemporaryDirectory() as folder:
+            listing = Path(folder) / "list.txt"
+            listing.write_text("contSet/@zonotope/plus.m\n")
+            layout.CORA_REFERENCES = str(listing)
+            try:
+                self.fails(CPP_TEST, "CORA file cites papers", "src/cont_set/zonotope/test_plus.cpp")
+                self.assertEqual(check(self.WITH, "src/cont_set/zonotope/test_plus.cpp"), [])
+                self.assertEqual(check(CPP_TEST, "tests/cont_set/zonotope/test_plus.cpp"), [])
+            finally:
+                layout.CORA_REFERENCES = saved
+
+
+class PythonLoadTimeHelpers(unittest.TestCase):
+    def test_a_helper_the_operation_needs_at_load_time_stands_above_it(self):
+        helper = "def helper(a):\n    # the helper\n    return a\n\n"
+        text = PY_MODULE.replace(f"{PY_BEGIN}\n\ndef plus", f"{PY_BEGIN}\n\n{helper}\ndef plus")
+        text = text.replace(f"{PY_AUX}\n\n{helper}", "")
+        self.assertEqual(check(text, "plus.py"), [])
 
 
 class OtherFiles(unittest.TestCase):

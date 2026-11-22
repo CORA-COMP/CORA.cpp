@@ -7,6 +7,12 @@
 // Syntax:   sys.reach(problem, alg::Standard{.time_step = 0.01, .taylor_terms = 4});
 //           sys.verify(problem, specs, alg::ReachAvoidZonotope{});
 // See also: cont_dynamics/cont_dynamics.h, cont_dynamics/linear_sys/linear_sys.h
+// References:
+//    [1] S. Bogomolov, M. Forets, G. Frehse, A. Podelski, C. Schilling. "Decomposing reach set
+//        computations with low-dimensional sets and high-dimensional matrices", Information and
+//        Computation 289, 2022.
+//    [2] M. Althoff. "Reachability analysis of large linear systems with uncertain inputs in the
+//        Krylov subspace", IEEE TAC 65(2), 2020, pp. 477-492.
 //
 // CORA: contDynamics/@linearSys/reach.m
 // CORA: contDynamics/@linearSys/verify.m

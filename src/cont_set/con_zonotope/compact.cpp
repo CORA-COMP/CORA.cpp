@@ -8,6 +8,9 @@
 //           tol - checked only (CORA's compact_ drops exact zeros); default: the repository one
 // Outputs:  cZres - the set without them; a batch drops what every member drops
 // See also: Zonotope::compact, intersect
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/compact_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger

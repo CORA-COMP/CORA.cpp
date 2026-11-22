@@ -180,7 +180,8 @@ def split_blocks(body):
         if m:
             current = [m.group(1), k, k]
             blocks.append(current)
-        elif line.startswith("    ") and current:
+        elif (line.startswith("    ") or (current and current[0] == REFERENCES and line.startswith("   "))) \
+                and current:
             current[2] = k
         elif line.strip() and current and current[0] is None:
             current[2] = k
@@ -213,6 +214,72 @@ def check_entries(body, blocks, issues, base):
             elif label in ("Inputs", "Outputs") and re.search(r"[;.]\s+[A-Za-z_]\w*(?:, [A-Za-z_]\w*)* - [a-z]", text):
                 issues.append(f"line {base + k + 1}: two entries on one line; one line per "
                               f"{label.lower()[:-1]}put")
+
+
+def check_references(body, blocks, issues, base):
+    """The 'References:' block: after 'See also', numbered [1], [2], ... as in CORA, each entry of
+    at most MAX_REFERENCE_LINES lines, the continuation lines aligned under the entry's text; or
+    'References: none (reason)' where nothing of CORA's list can be cited."""
+    # at most one block, after the entry blocks
+    found = [b for b in blocks if b[0] == REFERENCES]
+    if not found:
+        return
+    if len(found) > 1:
+        issues.append("'References:' appears once")
+    label, first, last = found[0]
+    later = [b[0] for b in blocks if b[1] > first]
+    if any(name in ENTRY_LABELS or name == "Syntax" for name in later):
+        issues.append(f"line {base + first + 1}: 'References:' comes after 'See also' (after Syntax, "
+                      "Inputs and Outputs where there is none)")
+    value = body[first][len(REFERENCES) + 1:].strip()
+    if value:
+        if last > first or not NO_REFERENCES.match(value):
+            issues.append(f"line {base + first + 1}: 'References:' is a line of its own above the "
+                          "entries, or 'References: none (reason)' without entries")
+        return
+    # the entries: each starts '   [n] ' and may continue on up to two aligned lines
+    count, size = 0, 0
+    for k in range(first + 1, last + 1):
+        entry = REFERENCE_ENTRY.match(body[k])
+        if entry:
+            count += 1
+            size = 1
+            if int(entry.group(1)) != count:
+                issues.append(f"line {base + k + 1}: the references are numbered [1], [2], ... in order")
+        elif body[k].startswith("       ") and body[k].strip() and count:
+            size += 1
+        else:
+            issues.append(f"line {base + k + 1}: an entry reads '   [n] text', its continuation is "
+                          "indented under the text")
+            continue
+        # the entry grew past its limit
+        if size > MAX_REFERENCE_LINES:
+            issues.append(f"line {base + k + 1}: a reference takes at most {MAX_REFERENCE_LINES} lines: "
+                          "authors, title, venue and year")
+    if not count:
+        issues.append(f"line {base + first + 1}: 'References:' has no entries; write 'References: none "
+                      "(reason)' if none can be cited")
+
+
+def cora_cites_papers(tags):
+    """Whether one of the CORA files named in the tag lines has references (cora_references.txt)."""
+    try:
+        with open(CORA_REFERENCES) as handle:
+            cited = {line.strip() for line in handle if line.strip()}
+    except OSError:
+        return False
+    return any(m and m.group(1) in cited for m in (re.match(r"^(?:#|//)? ?CORA: (\S+\.m)\b", t) for t in tags))
+
+
+def check_cora_references(path, body, lines, lang, issues):
+    """A library file (src/, include/) whose CORA original cites papers cites them too."""
+    if not path.replace(os.sep, "/").startswith(("src/", "include/")):
+        return
+    tags = body if lang == "cpp" else lines[:80]
+    if cora_cites_papers(tags) and not any(line.startswith(REFERENCES + ":") for line in body):
+        issues.append("the CORA file cites papers: add 'References:' after 'See also' with the "
+                      "ones you can confirm (the original paper, never a thesis), or "
+                      "'References: none (reason)'")
 
 
 def check_author_block(body, blocks, base, issues, lang, has_cora_tag):
@@ -282,13 +349,16 @@ def check_docstring(path, lines, lang, issues):
     if len(body) > 1 and body[1].strip():
         issues.append("an empty line should follow the first docstring line")
     blocks = split_blocks(body)
-    special = ENTRY_LABELS + TAG_LABELS + AUTHOR_LABELS
+    special = ENTRY_LABELS + TAG_LABELS + AUTHOR_LABELS + (REFERENCES,)
     prose = sum(last - first + 1 for label, first, last in blocks if label not in special)
     if prose > MAX_DESCRIPTION:
         issues.append(f"the description is {prose} lines of prose, at most {MAX_DESCRIPTION}: say less, "
                       "or put the detail into a comment of the code")
+    # the blocks, one check each
     check_entries(body, blocks, issues, start)
+    check_references(body, blocks, issues, start)
     check_author_block(body, blocks, start, issues, lang, has_cora_path(body, lines, lang))
+    check_cora_references(path, body, lines, lang, issues)
     for label, first, last in blocks:
         if label in TAG_LABELS and last - first >= 3:
             issues.append(f"line {start + first + 1}: the {label} tag takes at most three lines")
@@ -615,6 +685,11 @@ ENTRY_LABELS = ("Syntax", "Inputs", "Outputs", "See also")  # one line per entry
 TAG_LABELS = ("CORA", "CORA.cpp only", "PROPERTY", "ORACLE")  # the tags above the author block
 
 AUTHOR_LABELS = ("CORA authors", "Authors", "Written", "Last update", "Reviewed")
+REFERENCES = "References"  # papers, after 'See also': numbered entries of at most 3 lines
+REFERENCE_ENTRY = re.compile(r"^   \[(\d+)\] \S")
+MAX_REFERENCE_LINES = 3  # lines of one entry
+NO_REFERENCES = re.compile(r"^none \(\S.*\)$")  # 'References: none (reason)'
+CORA_REFERENCES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cora_references.txt")
 
 FIELD_COLUMN = 15  # the author block's values start here, after the comment sign and a blank
 

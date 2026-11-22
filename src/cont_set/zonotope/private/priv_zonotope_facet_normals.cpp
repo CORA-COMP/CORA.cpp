@@ -13,6 +13,9 @@
 // Inputs:   Z - a single zonotope without zero generators whose generators span the space
 // Outputs:  C - the normals as rows (k, n)
 // See also: Zonotope::minnorm, Zonotope::mink_diff, Zonotope::polytope
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Computing reachable sets of hybrid systems using a
+//        combination of zonotopes and polytopes", Nonlinear Analysis: Hybrid Systems 4(2), 2010.
 //
 // CORA: contSet/@zonotope/polytope.m
 // CORA authors: Niklas Kochdumper, Matthias Althoff

@@ -8,6 +8,7 @@
 //           x - a point
 // Outputs:  d - min over y in H of |y - x|_2
 // See also: Polytope::hausdorff_distance, priv_linear_programs
+// References: none (CORA's one entry cannot be confirmed)
 //
 // CORA: contSet/@polytope/hausdorffDist.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger

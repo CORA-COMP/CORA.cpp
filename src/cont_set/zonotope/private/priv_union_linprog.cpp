@@ -8,6 +8,9 @@
 //           support - the largest support value over the sets along each row of A (k, n): (k, 1)
 // Outputs:  Zu - the generators of the enclosure, unit length, scaled, with the center moved
 // See also: Zonotope::unite, ConZonotope::unite
+// References:
+//    [1] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
+//        2019.
 //
 // CORA: contSet/@zonotope/or.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper

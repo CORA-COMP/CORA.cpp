@@ -8,6 +8,11 @@
 //           order - the order of "reduce"
 // Outputs:  v - (...); 0 if the generators do not span the space (rank below n)
 // See also: is_full_dim, interval
+// References:
+//    [1] E. Gover, N. Krikorian. "Determinants and the volumes of parallelotopes and zonotopes",
+//        Linear Algebra and its Applications 433(1), 2010, pp. 28-40.
+//    [2] J. M. Bravo, T. Alamo, E. F. Camacho. "Bounded error identification of systems with
+//        time-varying parameters", IEEE TAC 51(7), 2006, pp. 1144-1150.
 //
 // CORA: contSet/@zonotope/volume_.m
 // CORA: matrixSet/@matZonotope/volume.m

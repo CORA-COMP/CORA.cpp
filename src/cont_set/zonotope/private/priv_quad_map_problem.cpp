@@ -5,6 +5,9 @@
 //           n - dimension of the sets
 // Outputs:  problem - empty if Q is one or more (n, n) matrices, else what is wrong
 // See also: Zonotope::quad_map, Interval::quad_map
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Avoiding geometric intersection operations in reachability
+//        analysis of hybrid systems", HSCC 2012.
 //
 // CORA: contSet/@zonotope/quadMap.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper

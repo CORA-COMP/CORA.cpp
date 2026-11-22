@@ -8,6 +8,9 @@
 //           M - a matrix (..., n, n): the second set is M bundle + S
 // Outputs:  R - a bundle that encloses the convex hull of the union
 // See also: Zonotope::enclose, intersect
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: contSet/@zonoBundle/enclose.m
 // CORA authors: Matthias Althoff

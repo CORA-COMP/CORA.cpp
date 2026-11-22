@@ -17,6 +17,9 @@
 // Inputs:   pZ - a polynomial zonotope of the dimension of the level set
 // Outputs:  R - a polynomial zonotope that holds the intersection, none if it is empty
 // See also: tighten_domain, PolyZonotope
+// References:
+//    [1] N. Kochdumper, M. Althoff. "Reachability analysis for hybrid systems with nonlinear guard
+//        sets", HSCC 2020.
 //
 // CORA: contSet/@levelSet/and_.m
 // CORA authors: Niklas Kochdumper

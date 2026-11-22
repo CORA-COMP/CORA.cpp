@@ -12,10 +12,10 @@
 // Syntax:   PolyReachSet R = priv_reach_poly_adaptive(sys, problem, alg);
 // Inputs:   see the declarations below
 // Outputs:  R - the sets over and at the end of the steps, and the step times
+// See also: priv_adaptive.h, reach.cpp
 // References:
 //    [1] M. Wetzlinger, A. Kulmburg, A. Le Penven and M. Althoff. "Adaptive Reachability
 //        Algorithms for Nonlinear Systems Using Abstraction Error Analysis", NAHS, 2022.
-// See also: priv_adaptive.h, reach.cpp
 //
 // CORA.cpp only: the declarations of the private functions of the poly-adaptive algorithm.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5

@@ -15,10 +15,10 @@
 // Inputs:   sys - linear system;  params - R0, U, t_final
 //           specs - safe and unsafe sets
 // Outputs:  res - verified, and the run's statistics
+// See also: LinearSys::verify, priv_reach_adaptive
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
-//        outer-approximations of reachable sets", TAC, 2023.
-// See also: LinearSys::verify, priv_reach_adaptive
+//        outer-approximations of reachable sets", IEEE TAC, 2023.
 //
 // CORA: contDynamics/@linearSys/private/priv_verifyRA_zonotope.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger

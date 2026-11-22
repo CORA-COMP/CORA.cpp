@@ -10,6 +10,9 @@
 // Inputs:   activation, l <= u, order >= 1, method
 // Outputs:  coeffs (highest power first, order + 1 entries; fewer where the range is linear), d
 // See also: evaluate.cpp, neural_network.h
+// References:
+//    [1] N. Kochdumper, C. Schilling, M. Althoff, S. Bak. "Open- and closed-loop neural network
+//        verification using polynomial zonotopes", NFM 2023 (arXiv:2207.02715).
 //
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/nnActivationLayer.m
