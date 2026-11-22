@@ -19,6 +19,7 @@ import numpy as np
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 class Parity(unittest.TestCase):
+    # every test runs on the Eigen backend
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
 
@@ -29,12 +30,14 @@ class Parity(unittest.TestCase):
         self.assertEqual(Z.nr_generators, 3)
         self.assertEqual(np.asarray(Z.corners()).shape, (8, 2))
 
+    # a polytope given by halfspaces reports H, not V
     def test_the_representation_of_a_polytope(self):
         P = cora.Polytope(np.array([[1.0, 0.0], [-1.0, 0.0]]), np.array([1.0, 1.0]))
         self.assertTrue(P.is_h_rep())
         self.assertFalse(P.is_v_rep())
 
     def test_the_parts_of_a_polynomial_zonotope(self):
+        # the long names and the CORA names read the same data
         pZ = cora.PolyZonotope(cora.Zonotope(np.zeros(2), np.eye(2)))
         self.assertEqual(pZ.num_dependent, 2)
         self.assertEqual(pZ.num_factors, 2)
