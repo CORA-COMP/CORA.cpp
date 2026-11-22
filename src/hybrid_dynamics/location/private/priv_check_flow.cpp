@@ -19,7 +19,7 @@
 //           certified - a linear flow: orientation by an invariant row, strict drop
 // Outputs:  P - the sets of R that the flow may carry through the guard, in their order
 // See also: priv_guard_intersect
-// References: none (CORA cites only a thesis)
+// References: none (CORA cites only a thesis; the paper behind its chapter has no such check)
 //
 // CORA: hybridDynamics/@location/checkFlow.m
 // CORA authors: Niklas Kochdumper

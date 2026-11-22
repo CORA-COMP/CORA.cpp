@@ -11,7 +11,10 @@
 //           taylor_terms - order of the series, at least 1 (CORA's Inf is not offered)
 // Outputs:  PU - the origin if U is the origin
 // See also: particular_solution_constant, one_step, expm_remainder
-// References: none (CORA cites only a thesis)
+// References:
+//    [1] M. Althoff, B. H. Krogh, O. Stursberg. "Analyzing reachability of linear dynamic systems
+//        with parametric uncertainties", in Modeling, Design, and Simulation of Systems with
+//        Uncertainties, Springer, 2011.
 //
 // CORA: contDynamics/@linearSys/particularSolution_timeVarying.m
 // CORA authors: Mark Wetzlinger
