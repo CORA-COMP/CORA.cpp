@@ -4,7 +4,9 @@
 // Inputs:   Z2 - zonotope of the same dimension
 // Outputs:  Zres - Z + Z2: center c + c2, the generators of both
 // See also: linear_map, linear_combination
-// References: none (CORA cites only a thesis)
+// References:
+//    [1] A. Girard. "Reachability of uncertain linear systems using zonotopes", HSCC 2005, LNCS
+//        3414, pp. 291-305.
 //
 // CORA: contSet/@zonotope/plus.m
 // CORA: matrixSet/@matZonotope/plus.m

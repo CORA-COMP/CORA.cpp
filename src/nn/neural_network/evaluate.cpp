@@ -28,6 +28,10 @@
 //        LNCS 11800, pp. 670-686.
 //    [4] G. Singh, T. Gehr, M. Mirman, M. Puschel, M. Vechev. "Fast and effective robustness
 //        certification", NeurIPS 2018.
+//    [5] L. Koller, T. Ladner, M. Althoff. "Set-based training for neural network verification",
+//        TMLR 2025 (arXiv:2401.14961).
+//    [6] L. Koller, T. Ladner, M. Althoff. "Out of the shadows: exploring a latent space for
+//        neural network verification", ICLR 2026 (arXiv:2505.17854).
 //
 // CORA: nn/@neuralNetwork/evaluate.m
 // CORA: nn/@neuralNetwork/evaluate_.m

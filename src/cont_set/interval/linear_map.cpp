@@ -6,7 +6,7 @@
 // Inputs:   M - matrix (..., n, n)
 // Outputs:  Ires - the interval hull of M * I, as CORA
 // See also: Zonotope::linear_map
-// References: none (CORA cites only a thesis)
+// References: none (CORA cites only a thesis, for the product with a zonotope)
 //
 // CORA: contSet/@interval/mtimes.m
 // CORA authors: Matthias Althoff
