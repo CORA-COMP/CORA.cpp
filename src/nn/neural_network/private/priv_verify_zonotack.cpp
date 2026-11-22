@@ -320,6 +320,8 @@ class ConZonotopeBounding : public Bounding {
     std::unique_ptr<ZonoNet> net_;
     Tensor A_, b_, AT_, abs_at_, abs_a_, real_row_, poly_case_;
     int64_t P_ = 0, K_ = 0, n_relu_ = 0, batch_ = 1;
+    double slot_budget_ = -1;     ///< the error slots per layer the memory budget left (-1: all)
+    double init_gen_budget_ = -1; ///< the input generators it left (-1: as the options say)
     double deadline_ = kInf;
     bool timed_out_ = false;
     AttackResult *found_ = nullptr;
@@ -348,14 +350,33 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     } else {
         n_relu_ = int64_t(o_.num_relu_constraints);
     }
-    // CORA's batch size, at most what the memory budget holds
+    // the entries of one set per generator: every layer's values, and a convolution's patches
     int64_t elements = net_->n0, work = 0;
     for (const int64_t w : net_->widths) elements += w;
-    // a convolution's patches are the largest tensor of a layer's product
     for (const NeuralNetwork::Layer &layer : net_->maps) work = std::max(work, layer.work());
     elements += work;
-    const int64_t box_bytes = 8 * 4 * net_->q * elements;
-    batch_ = std::min(o_.mini_batch_size, std::max<int64_t>(1, problem.memory_budget / box_bytes));
+    // the slot budget: fewer error slots per layer until one set fits (docs/nn_verification.md)
+    double slots = o_.num_approx_err;
+    const auto bytes = [&](const ZonoNet &net) { return 8 * 4 * net.q * elements; };
+    while (bytes(*net_) > problem.memory_budget && net_->q > net_->q0) {
+        int64_t widest = 0;
+        for (const int64_t s : net_->slots) widest = std::max(widest, s);
+        slots = double(widest / 2);
+        net_ = std::make_unique<ZonoNet>(problem.net(), o_.num_init_gens, slots, o_.poly_method,
+                                         o_.approx_error_order);
+    }
+    // then fewer input generators, the rest of the input box in the interval center too
+    double gens = o_.num_init_gens;
+    while (bytes(*net_) > problem.memory_budget && net_->q0 > 1) {
+        gens = double(net_->q0 / 2);
+        net_ = std::make_unique<ZonoNet>(problem.net(), gens, slots, o_.poly_method,
+                                         o_.approx_error_order);
+    }
+    if (slots != o_.num_approx_err) slot_budget_ = slots;
+    if (gens != o_.num_init_gens) init_gen_budget_ = gens;
+    // CORA's batch size, at most what the memory budget holds
+    batch_ =
+        std::min(o_.mini_batch_size, std::max<int64_t>(1, problem.memory_budget / bytes(*net_)));
     return true;
 }
 
@@ -545,6 +566,8 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     deadline_ = deadline;
     found_ = &found;
     stats_ = &stats;
+    if (slot_budget_ >= 0) stats["slot_budget"] = slot_budget_;
+    if (init_gen_budget_ >= 0) stats["init_gen_budget"] = init_gen_budget_;
     Tensor xs = (problem.outer_lo + problem.outer_hi) * 0.5;
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
