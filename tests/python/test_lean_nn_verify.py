@@ -35,18 +35,67 @@ import cora
 if not cora.has_torch:
     raise unittest.SkipTest("needs a build with torch") from None
 
-from cora import nn_verify
-from cora.onnx_network import OnnxNetwork
+import cora.nn_verify
+import cora.onnx_network
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 # Skips without CORACPP_ORACLE; with CORACPP_REQUIRE_ORACLE (CI) the tests run and fail instead.
 needs_oracle = unittest.skipUnless(
     os.environ.get("CORACPP_ORACLE") or os.environ.get("CORACPP_REQUIRE_ORACLE", "0") not in ("", "0"),
     "needs CORACPP_ORACLE")
+
+
+@needs_oracle
+class Layers(unittest.TestCase):
+    def test_every_lowered_layer_type(self):
+        # the dense layers of both graphs, on a box and on a box with one fixed input
+        for m in (dense_graph(), conv_graph()):
+            layers, why = cora.onnx_network.OnnxNetwork(m).dense_layers()
+            self.assertIsNone(why)
+            n = layers[0][0][0].shape[1]
+            for fixed in (False, True):
+                c, r = RNG.uniform(-0.5, 0.5, n), RNG.uniform(0.05, 0.4, n)
+                r[0] = 0.0 if fixed else r[0]
+                check_zonotope(self, layers, c, r, f"{m.graph.node[0].op_type} fixed={fixed}")
+
+
+@needs_oracle
+class EndToEnd(unittest.TestCase):
+    def test_three_verdicts(self):
+        # far below the range of Y_0 unsat, inside sat, just below unknown (one batch)
+        with tempfile.TemporaryDirectory() as folder:
+            path, prop = os.path.join(folder, "net.onnx"), os.path.join(folder, "p.vnnlib")
+            acas_sized(path, 2)
+            net = cora.onnx_network.OnnxNetwork.load(path, dtype=torch.float64)
+            y0 = net(torch.as_tensor(np.random.default_rng(0).uniform(-0.1, 0.1, (4000, 5))))[:, 0]
+            low = float(y0.min())
+            layers = net.dense_layers()[0]
+            # the first set of the bounding, the input box, through the oracle
+            check_zonotope(self, layers, np.zeros(5), np.full(5, 0.1), "the input box")
+            verdicts = []
+            for threshold, timeout, max_iter in ((low - 1.0, 60, 10**9), (low + 0.01, 60, 10**9),
+                                                 (low - 1e-3, 5, 1)):
+                lines = [f"(declare-const X_{i} Real)" for i in range(5)] + \
+                    [f"(declare-const Y_{j} Real)" for j in range(5)]
+                lines += [f"(assert (<= X_{i} 0.1))\n(assert (>= X_{i} -0.1))" for i in range(5)]
+                lines += [f"(assert (<= Y_0 {threshold!r}))"]
+                with open(prop, "w") as out:
+                    out.write("\n".join(lines) + "\n")
+                # CORA's preset on lean (float64, the oracle's order of Fourier-Motzkin)
+                options = cora.vnncomp_options("test", dtype="float64", max_verif_iter=max_iter,
+                                               falsification_order="bound-first",
+                                               falsification_method="center",
+                                               fourier_motzkin_order="coralean")
+                with lean_nearest():
+                    instance = cora.nn_verify.load(path, prop)
+                    verdicts.append(cora.nn_verify.verify(instance, timeout, options).status)
+        self.assertEqual(verdicts, ["unsat", "sat", "unknown"])
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 RNG = np.random.default_rng(5)
 
 
@@ -171,54 +220,5 @@ def acas_sized(path, seed):
             h = f"r{k}"
     nodes[-1].output[0] = "y"
     onnx.save(model(nodes, [("x", [1, 5])], [("y", [1, 5])], init), path)
-
-
-# ============================================  MAIN  ============================================ #
-
-@needs_oracle
-class Layers(unittest.TestCase):
-    def test_every_lowered_layer_type(self):
-        # the dense layers of both graphs, on a box and on a box with one fixed input
-        for m in (dense_graph(), conv_graph()):
-            layers, why = OnnxNetwork(m).dense_layers()
-            self.assertIsNone(why)
-            n = layers[0][0][0].shape[1]
-            for fixed in (False, True):
-                c, r = RNG.uniform(-0.5, 0.5, n), RNG.uniform(0.05, 0.4, n)
-                r[0] = 0.0 if fixed else r[0]
-                check_zonotope(self, layers, c, r, f"{m.graph.node[0].op_type} fixed={fixed}")
-
-
-@needs_oracle
-class EndToEnd(unittest.TestCase):
-    def test_three_verdicts(self):
-        # far below the range of Y_0 unsat, inside sat, just below unknown (one batch)
-        with tempfile.TemporaryDirectory() as folder:
-            path, prop = os.path.join(folder, "net.onnx"), os.path.join(folder, "p.vnnlib")
-            acas_sized(path, 2)
-            net = OnnxNetwork.load(path, dtype=torch.float64)
-            y0 = net(torch.as_tensor(np.random.default_rng(0).uniform(-0.1, 0.1, (4000, 5))))[:, 0]
-            low = float(y0.min())
-            layers = net.dense_layers()[0]
-            # the first set of the bounding, the input box, through the oracle
-            check_zonotope(self, layers, np.zeros(5), np.full(5, 0.1), "the input box")
-            verdicts = []
-            for threshold, timeout, max_iter in ((low - 1.0, 60, 10**9), (low + 0.01, 60, 10**9),
-                                                 (low - 1e-3, 5, 1)):
-                lines = [f"(declare-const X_{i} Real)" for i in range(5)] + \
-                    [f"(declare-const Y_{j} Real)" for j in range(5)]
-                lines += [f"(assert (<= X_{i} 0.1))\n(assert (>= X_{i} -0.1))" for i in range(5)]
-                lines += [f"(assert (<= Y_0 {threshold!r}))"]
-                with open(prop, "w") as out:
-                    out.write("\n".join(lines) + "\n")
-                # CORA's preset on lean (float64, the oracle's order of Fourier-Motzkin)
-                options = cora.vnncomp_options("test", dtype="float64", max_verif_iter=max_iter,
-                                               falsification_order="bound-first",
-                                               falsification_method="center",
-                                               fourier_motzkin_order="coralean")
-                with lean_nearest():
-                    instance = nn_verify.load(path, prop)
-                    verdicts.append(nn_verify.verify(instance, timeout, options).status)
-        self.assertEqual(verdicts, ["unsat", "sat", "unknown"])
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #
