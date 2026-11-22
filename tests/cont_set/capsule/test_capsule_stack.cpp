@@ -32,7 +32,7 @@ void stack_known(const std::string &b) {
     const Capsule mixed = Capsule::stack({A, Capsule::empty(2)});
     const std::vector<uint8_t> flags = mixed.empty_mask().flags(Shape{2});
     check(flags == std::vector<uint8_t>{0, 1} && !mixed.is_empty(), b + ": the second is empty");
-    check(!mixed.contains(vec({1.0, 2.0})), b + ": the empty member contains no point");
+    check(!mixed.contains(vec({1.0, 2.0})).all(), b + ": the empty member contains no point");
     check(Capsule::stack({Capsule::empty(2), Capsule::empty(2)}).is_empty(), b + ": all empty");
 }
 

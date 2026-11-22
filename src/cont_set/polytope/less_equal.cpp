@@ -39,7 +39,7 @@ bool aux_contains_vertices(const ContSet &S, const Polytope &P, double tol) {
     case ClassId::interval:
         return static_cast<const Interval &>(S).contains(points, tol).all();
     case ClassId::zonotope:
-        return static_cast<const Zonotope &>(S).contains(points, "exact", tol);
+        return static_cast<const Zonotope &>(S).contains(points, "exact", tol).all();
     case ClassId::con_zonotope:
         return static_cast<const ConZonotope &>(S).contains(points, "exact", tol);
     case ClassId::zono_bundle:

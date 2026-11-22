@@ -41,13 +41,13 @@ void zonotope_property(const std::string &b) {
     for (int k = 0; k < 3; ++k) {
         const ConZonotope cz = test::random_con_zonotope(rng, 3, 5, 2);
         const Tensor points = test::sample_points(cz, rng, 20);
-        check(cz.zonotope().contains(points.matrix_transpose()),
+        check(cz.zonotope().contains(points.matrix_transpose()).all(),
               b + ": nullSpace contains the points");
-        check(cz.zonotope("reduce").contains(points.matrix_transpose()),
+        check(cz.zonotope("reduce").contains(points.matrix_transpose()).all(),
               b + ": reduce contains the points");
     }
     const Tensor corners = Tensor::from_data({1, 0, 1, -1, 0, -1, -1, 0, -1, 1, 0, 1}, {6, 2});
-    check(test::hexagon().zonotope().contains(corners), b + ": the corners of the hexagon");
+    check(test::hexagon().zonotope().contains(corners).all(), b + ": the corners of the hexagon");
 }
 
 } // namespace

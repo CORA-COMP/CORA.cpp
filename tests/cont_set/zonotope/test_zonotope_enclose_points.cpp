@@ -36,7 +36,7 @@ Tensor cloud(cora::Rng &rng, int n, int N) {
 
 /// Whether every row of the points is in the zonotope.
 bool contains_all(const Zonotope &Z, const Tensor &points) {
-    return Z.contains(points, "exact", 1e-9);
+    return Z.contains(points, "exact", 1e-9).all();
 }
 
 /// Hand-computed: the frame U = I gives the box around the points.

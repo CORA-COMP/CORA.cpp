@@ -1757,12 +1757,14 @@ void bind_zonotope(py::module_ &m) {
         // Minkowski difference
         .def(
             "mink_diff",
-            [](const Zonotope &Z, const py::object &S, const std::string &method) {
-                if (py::isinstance<Zonotope>(S)) return Z.mink_diff(py::cast<Zonotope>(S), method);
-                if (py::isinstance<Interval>(S)) return Z.mink_diff(py::cast<Interval>(S), method);
-                return Z.mink_diff(point_of(S, "the point"), method);
+            [](const Zonotope &Z, const py::object &S2, const std::optional<std::string> &method) {
+                // no method: CORA's default "approx"
+                const std::string m = method.value_or("approx");
+                if (py::isinstance<Zonotope>(S2)) return Z.mink_diff(py::cast<Zonotope>(S2), m);
+                if (py::isinstance<Interval>(S2)) return Z.mink_diff(py::cast<Interval>(S2), m);
+                return Z.mink_diff(point_of(S2, "the point"), m);
             },
-            py::arg("S"), py::arg("method") = "approx",
+            py::arg("S2"), py::arg("method") = py::none(),
             "The Minkowski difference with a zonotope, a box or a point; methods: approx, inner, "
             "exact, outer, outer:coarse")
         .def_static("origin", &Zonotope::origin, py::arg("n"), "The zonotope {0} of n dimensions")
@@ -2695,11 +2697,13 @@ void bind_ellipsoid(py::module_ &m) {
         // differences and unions
         .def(
             "mink_diff",
-            [](const Ellipsoid &E, const py::object &S) {
-                if (py::isinstance<Ellipsoid>(S)) return E.mink_diff(ellipsoid_of(S));
-                return E.mink_diff(point_of(S, "the vector"));
+            [](const Ellipsoid &E, const py::object &S2, const std::optional<std::string> &) {
+                // one algorithm: the method of the base class is accepted and not needed
+                if (py::isinstance<Ellipsoid>(S2)) return E.mink_diff(ellipsoid_of(S2));
+                return E.mink_diff(point_of(S2, "the vector"));
             },
-            py::arg("S"), "The Minkowski difference with a vector or an ellipsoid")
+            py::arg("S2"), py::arg("method") = py::none(),
+            "The Minkowski difference with a vector or an ellipsoid")
         .def(
             "unite",
             [](const Ellipsoid &E, const py::object &S, const std::string &mode) {

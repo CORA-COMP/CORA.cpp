@@ -160,8 +160,8 @@ class Generic(unittest.TestCase):
         X = cora.intersect(self.I, J)
         self.assertEqual((X.inf.tolist(), X.sup.tolist()), ([0.5, 1.0], [1.0, 2.0]))
         Z = zonotope([0.0, 1.0], [[0.5, 0.0], [0.0, 0.5]])
-        self.assertTrue(cora.contains(Z, box([-0.25, 0.75], [0.25, 1.25])))
-        self.assertFalse(cora.contains(Z, J))
+        self.assertTrue(np.all(cora.contains(Z, box([-0.25, 0.75], [0.25, 1.25]))))
+        self.assertFalse(np.all(cora.contains(Z, J)))
         self.assertTrue(cora.is_intersecting(self.I, J))
         self.assertIn(("isequal", "Zonotope", "Interval"), cora.binary_pairs())
 

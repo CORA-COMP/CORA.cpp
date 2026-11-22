@@ -24,24 +24,25 @@ namespace {
 void example_members(const std::string &b) {
     const Zonotope A = test::example();
     const Tensor inside = test::member(A, {0.5, -0.3}), corner = test::member(A, {1, 1});
-    check(A.contains(inside, "exact", 1e-9), b + ": an interior member");
-    check(A.contains(corner, "exact", 1e-9), b + ": a corner");
-    check(!A.contains(test::member(A, {2, 0}), "exact", 1e-9), b + ": outside along a generator");
-    check(!A.contains(A.center() + test::matrix({3, 0, 0, 0}, 2, 2), "exact", 1e-9),
+    check(A.contains(inside, "exact", 1e-9).all(), b + ": an interior member");
+    check(A.contains(corner, "exact", 1e-9).all(), b + ": a corner");
+    check(!A.contains(test::member(A, {2, 0}), "exact", 1e-9).all(),
+          b + ": outside along a generator");
+    check(!A.contains(A.center() + test::matrix({3, 0, 0, 0}, 2, 2), "exact", 1e-9).all(),
           b + ": outside the span of the generators");
-    check(A.contains(Tensor::stack({inside, corner}, 0), "exact", 1e-9), b + ": two members");
-    check(!A.contains(Tensor::stack({inside, test::member(A, {2, 0})}, 0), "exact", 1e-9),
+    check(A.contains(Tensor::stack({inside, corner}, 0), "exact", 1e-9).all(), b + ": two members");
+    check(!A.contains(Tensor::stack({inside, test::member(A, {2, 0})}, 0), "exact", 1e-9).all(),
           b + ": one of two outside");
-    check(A.contains(inside, "approx", 1e-9), b + ": the type approx");
+    check(A.contains(inside, "approx", 1e-9).all(), b + ": the type approx");
 }
 
 /// The tolerance admits a matrix that lies slightly outside; the default is the repository's.
 void tolerance(const std::string &b) {
     const Zonotope A = test::example();
     const Tensor near = test::member(A, {1.0 + 1e-8, 0.0});
-    check(!A.contains(near, "exact", 1e-12), b + ": outside by 1e-8 without slack");
-    check(A.contains(near, "exact", 1e-6), b + ": inside with the tolerance 1e-6");
-    check(A.contains(A.center()), b + ": the default tolerance");
+    check(!A.contains(near, "exact", 1e-12).all(), b + ": outside by 1e-8 without slack");
+    check(A.contains(near, "exact", 1e-6).all(), b + ": inside with the tolerance 1e-6");
+    check(A.contains(A.center()).all(), b + ": the default tolerance");
 }
 
 /// Random members of a random set are inside.
@@ -50,7 +51,7 @@ void random_members(const std::string &b) {
     const Zonotope A = test::random_set(rng, 3, 5, 0.4);
     bool all = true;
     for (int trial = 0; trial < 20; ++trial)
-        all = all && A.contains(test::member(A, test::coefficients(rng, 5)), "exact", 1e-9);
+        all = all && A.contains(test::member(A, test::coefficients(rng, 5)), "exact", 1e-9).all();
     check(all, b + ": members of a random set");
 }
 
@@ -66,9 +67,9 @@ void checks_and_their_switch() {
         "contains: the size of the matrix");
     check(test::raises([&] { test::batch_of(A, A).contains(M); }, Error::not_supported),
           "contains: a batch of sets");
-    const bool on = A.contains(M);
+    const bool on = A.contains(M).all();
     ChecksScope off(false);
-    check(A.contains(M) == on, "contains: the same with the checks off");
+    check(A.contains(M).all() == on, "contains: the same with the checks off");
 }
 
 } // namespace

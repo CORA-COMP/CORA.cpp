@@ -31,31 +31,35 @@ Zonotope diamond() { return Zonotope(vec({0.0, 0.0}), Tensor({{1.0, 1.0}, {1.0, 
 /// Points: inside, on the boundary, outside, and the tolerance that relaxes the boundary.
 void points_in_a_diamond(const std::string &b) {
     const Zonotope Z = diamond();
-    check(Z.contains(vec({0.0, 0.0})), b + ": the center");
-    check(Z.contains(vec({1.0, 1.0})), b + ": the boundary");
-    check(Z.contains(Tensor({{0.5, 0.5}, {2.0, 0.0}, {-1.0, 0.5}})), b + ": three points, all in");
-    check(!Z.contains(Tensor({{0.5, 0.5}, {1.5, 1.5}})), b + ": one of two points is out");
-    check(!Z.contains(vec({1.0 + 1e-10, 1.0})), b + ": just outside, default tol");
-    check(Z.contains(vec({1.0 + 1e-10, 1.0}), "exact", 1e-6), b + ": just outside, tol 1e-6");
-    check(Z.contains(vec({1.0, 1.0}), "exact:venum") && Z.contains(vec({1.0, 1.0}), "approx"),
+    check(Z.contains(vec({0.0, 0.0})).all(), b + ": the center");
+    check(Z.contains(vec({1.0, 1.0})).all(), b + ": the boundary");
+    check(Z.contains(Tensor({{0.5, 0.5}, {2.0, 0.0}, {-1.0, 0.5}})).all(),
+          b + ": three points, all in");
+    check(!Z.contains(Tensor({{0.5, 0.5}, {1.5, 1.5}})).all(), b + ": one of two points is out");
+    check(!Z.contains(vec({1.0 + 1e-10, 1.0})).all(), b + ": just outside, default tol");
+    check(Z.contains(vec({1.0 + 1e-10, 1.0}), "exact", 1e-6).all(), b + ": just outside, tol 1e-6");
+    check(Z.contains(vec({1.0, 1.0}), "exact:venum").all() &&
+              Z.contains(vec({1.0, 1.0}), "approx").all(),
           b + ": the other point methods");
 }
 
 /// The special cases of CORA's contains_: a point, a box, and a flat zonotope.
 void special_zonotopes(const std::string &b) {
     const Zonotope point(vec({1.0, 2.0}), Tensor({{0.0, 0.0}}));
-    check(point.contains(vec({1.0, 2.0})) && !point.contains(vec({1.0, 2.5})), b + ": a point");
+    check(point.contains(vec({1.0, 2.0})).all() && !point.contains(vec({1.0, 2.5})).all(),
+          b + ": a point");
     check(point.contains(Zonotope(vec({1.0, 2.0}), Tensor({{0.0, 0.0}}))),
           b + ": a point holds itself");
     check(!point.contains(diamond()), b + ": a point holds no set");
     const Zonotope box(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    check(box.contains(vec({1.0, -1.0})) && !box.contains(vec({1.1, 0.0})), b + ": a box");
+    check(box.contains(vec({1.0, -1.0})).all() && !box.contains(vec({1.1, 0.0})).all(),
+          b + ": a box");
     check(box.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.0}))), b + ": a box holds a box");
     check(!box.contains(Interval(vec({-0.5, -0.5}), vec({0.5, 1.5}))),
           b + ": a box, not a larger one");
     const Zonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 1.0}}));
-    check(segment.contains(vec({0.5, 0.5})), b + ": a segment holds its points");
-    check(!segment.contains(vec({0.5, 0.6})), b + ": and no other");
+    check(segment.contains(vec({0.5, 0.5})).all(), b + ": a segment holds its points");
+    check(!segment.contains(vec({0.5, 0.6})).all(), b + ": and no other");
 }
 
 /// Sets: a zonotope in a zonotope by both exact methods and by Sadraddini and Tedrake.
@@ -89,8 +93,8 @@ void scaled_copies(const std::string &b) {
             check(Z.contains(inside, method), b + ": 0.9 Z in Z, " + method);
             check(!Z.contains(outside, method), b + ": 1.1 Z not in Z, " + method);
         }
-        check(Z.contains(Z.rand_point(20, rng)), b + ": sampled points are in");
-        check(Z.contains(Z.rand_point(20, rng, "extreme")), b + ": extreme points are in");
+        check(Z.contains(Z.rand_point(20, rng)).all(), b + ": sampled points are in");
+        check(Z.contains(Z.rand_point(20, rng, "extreme")).all(), b + ": extreme points are in");
     }
 }
 

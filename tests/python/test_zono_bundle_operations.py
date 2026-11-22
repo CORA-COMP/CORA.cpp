@@ -61,8 +61,8 @@ class Conversions(unittest.TestCase):
         small = zonotope([0.5, 0.0], [[0.5, 0.0], [0.0, 0.25]])
         self.assertAlmostEqual(cora.ZonoBundle([zB.zonotopes[0], small]).zonotope().center[0], 0.5)
         P = zB.polytope()
-        self.assertTrue(P.contains(np.array([2.0, 0.0])))
-        self.assertFalse(P.contains(np.array([2.5, 0.0])))
+        self.assertTrue(np.all(P.contains(np.array([2.0, 0.0]))))
+        self.assertFalse(np.all(P.contains(np.array([2.5, 0.0]))))
         self.assertTrue(zB.representsa("polytope") and not zB.representsa("origin"))
         self.assertTrue(cora.ZonoBundle.empty(2).representsa("emptySet"))
         self.assertTrue(cora.ZonoBundle([zonotope([0.0, 0.0], np.eye(2))] * 2).representsa("interval"))
@@ -118,7 +118,7 @@ class MapsAndSums(unittest.TestCase):
         big, x0 = common_point_bundle(rng, 2, 3, 7)
         reduced = big.reduce(2)
         self.assertTrue(all(Z.generators.shape[0] <= 4 for Z in reduced.zonotopes))
-        self.assertTrue(reduced.contains(x0))
+        self.assertTrue(np.all(reduced.contains(x0)))
         with self.assertRaises(cora.errors.NotSupported):
             big.reduce(1, "pca")
         W = zonotope([3.0, 3.0], [[1.0, 1.0]])
@@ -134,12 +134,12 @@ class MapsAndSums(unittest.TestCase):
         for _ in range(3):
             zB, x0 = common_point_bundle(rng, 3, 2, 4)
             M = rng.standard_normal((2, 3))
-            self.assertTrue(zB.linear_map(M).contains(M @ x0))
+            self.assertTrue(np.all(zB.linear_map(M).contains(M @ x0)))
             w = rng.standard_normal(3)
-            self.assertTrue(zB.plus(w).contains(x0 + w))
+            self.assertTrue(np.all(zB.plus(w).contains(x0 + w)))
             self.assertTrue(zB.project([2, 0]).contains(x0[[2, 0]]))
             Q = rng.standard_normal((3, 3))
-            self.assertTrue(zB.quad_map([Q]).contains(np.array([x0 @ Q @ x0])))
+            self.assertTrue(np.all(zB.quad_map([Q]).contains(np.array([x0 @ Q @ x0]))))
 
 
 class QueriesAndSampling(unittest.TestCase):
@@ -170,8 +170,8 @@ class QueriesAndSampling(unittest.TestCase):
         for kind in ("standard", "extreme"):
             points = zB.rand_point(6, rng, kind)
             self.assertEqual(points.shape, (6, 2))
-            self.assertTrue(zB.contains(points))
-        self.assertTrue(zB.contains(zB.rand_point(3, rng)))
+            self.assertTrue(np.all(zB.contains(points)))
+        self.assertTrue(np.all(zB.contains(zB.rand_point(3, rng))))
         # the pieces are cut at the middle of the box [-1, 2] x [-1, 1]
         low, high = zB.split(0)
         self.assertEqual((low.parallel_sets, high.parallel_sets), (3, 3))
@@ -182,7 +182,7 @@ class QueriesAndSampling(unittest.TestCase):
         united = zB.unite(zonotope([5.0, 5.0], np.eye(2)))
         self.assertEqual(united.parallel_sets, 1)
         self.assertTrue(united.contains(np.array([5.0, 5.0])) and united.contains(np.array([0.0, 0.0])))
-        self.assertTrue(zB.unite(zB).contains(np.array([2.0, 0.0])))
+        self.assertTrue(np.all(zB.unite(zB).contains(np.array([2.0, 0.0]))))
         self.assertTrue(zB.unite(cora.Interval(np.array([4.0, 4.0]), np.array([5.0, 5.0]))).dim == 2)
         random = cora.ZonoBundle.generate_random(rng, 3, 4)
         self.assertEqual((random.dim, random.parallel_sets), (3, 4))

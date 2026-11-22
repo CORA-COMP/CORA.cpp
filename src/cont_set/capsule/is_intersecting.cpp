@@ -4,11 +4,13 @@
 // a quarter of the right one, which pushes the minimizer to the box and misses intersections
 // (docs/cora-differences.md). An empty capsule meets nothing. Of a batch: every member.
 //
-// Syntax:   res = C.is_intersecting(S);   res = C.is_intersecting(S, tol);   C.is_intersecting(p)
+// Syntax:   res = C.is_intersecting(S);   res = C.is_intersecting(S, tol);
+//           mask = C.is_intersecting(p)
 // Inputs:   S - capsule of the dimension of C
-//           p - points (..., n, N)
+//           p - points (..., N, n), or one point (n)
 //           tol - slack on the sum of the radii; default: the repository tolerance
-// Outputs:  res - true if the axes' distance is at most r + S.r; for points, if all are in C
+// Outputs:  res - true if the axes' distance is at most r + S.r
+//           mask - for points, which of them are in C
 // See also: contains
 //
 // CORA: contSet/@capsule/isIntersecting_.m
@@ -28,7 +30,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Capsule::is_intersecting(const Tensor &p, Tol tol_arg) const {
+Mask Capsule::is_intersecting(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "is_intersecting");
     const detail::Refusal refusal = priv_points_refusal(*this, p);

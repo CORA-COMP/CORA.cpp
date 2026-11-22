@@ -104,7 +104,7 @@ class SimulateRandom(unittest.TestCase):
         I = cora.Interval(torch.tensor([0.9, -0.1, -0.1], **F64), torch.tensor([1.1, 0.1, 0.1], **F64))
         x = cora.LinearSys(A).simulate_random(I, points=5, time_step=0.1, t_final=0.5, rng=cora.Rng(1))
         self.assertEqual(tuple(x.shape), (6, 5, 3))
-        self.assertTrue(bool(I.contains(x[0][0])))
+        self.assertTrue(np.all(bool(I.contains(x[0][0]))))
 
     @unittest.skipUnless(torch.cuda.is_available(), "no CUDA device")
     def test_gpu(self):

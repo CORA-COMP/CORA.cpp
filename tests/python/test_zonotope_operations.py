@@ -187,22 +187,22 @@ class Measures(unittest.TestCase):
 class Containment(unittest.TestCase):
     def test_points_in_a_diamond(self):
         Z = diamond()
-        self.assertTrue(Z.contains(np.array([0.0, 0.0])))
+        self.assertTrue(np.all(Z.contains(np.array([0.0, 0.0]))))
         self.assertTrue(np.array([1.0, 1.0]) in Z)
-        self.assertTrue(Z.contains(np.array([[0.5, 0.5], [2.0, 0.0], [-1.0, 0.5]])))
-        self.assertFalse(Z.contains(np.array([[0.5, 0.5], [1.5, 1.5]])))
-        self.assertFalse(Z.contains(np.array([1.0 + 1e-10, 1.0])))
-        self.assertTrue(Z.contains(np.array([1.0 + 1e-10, 1.0]), tol=1e-6))
+        self.assertTrue(np.all(Z.contains(np.array([[0.5, 0.5], [2.0, 0.0], [-1.0, 0.5]]))))
+        self.assertFalse(np.all(Z.contains(np.array([[0.5, 0.5], [1.5, 1.5]]))))
+        self.assertFalse(np.all(Z.contains(np.array([1.0 + 1e-10, 1.0]))))
+        self.assertTrue(np.all(Z.contains(np.array([1.0 + 1e-10, 1.0]), tol=1e-6)))
 
     def test_sets_in_a_diamond(self):
         Z = diamond()
         small, large = 0.5 * Z, 1.2 * Z
         for method in ("exact", "exact:venum", "exact:polymax", "approx", "approx:st"):
-            self.assertTrue(Z.contains(small, method))
-            self.assertFalse(Z.contains(large, method))
-        self.assertTrue(Z.contains(cora.Interval(np.array([-0.5, -0.5]), np.array([0.5, 0.5]))))
-        self.assertFalse(Z.contains(cora.Interval(np.array([-1.5, -1.5]), np.array([1.5, 1.5]))))
-        self.assertTrue(cora.contains(Z, small))
+            self.assertTrue(np.all(Z.contains(small, method)))
+            self.assertFalse(np.all(Z.contains(large, method)))
+        self.assertTrue(np.all(Z.contains(cora.Interval(np.array([-0.5, -0.5]), np.array([0.5, 0.5])))))
+        self.assertFalse(np.all(Z.contains(cora.Interval(np.array([-1.5, -1.5]), np.array([1.5, 1.5])))))
+        self.assertTrue(np.all(cora.contains(Z, small)))
         with self.assertRaises(cora.errors.NotSupported):
             Z.contains(Z, "approx:stDual")
         # an unknown algorithm

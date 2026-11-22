@@ -61,7 +61,7 @@ class Conversions(unittest.TestCase):
         A = random_set(rng, 3, 4, 0.5)
         box = A.interval()
         for _ in range(20):
-            self.assertTrue(box.contains(member(A, rng.uniform(-1, 1, 4)), tol=1e-12))
+            self.assertTrue(np.all(box.contains(member(A, rng.uniform(-1, 1, 4)), tol=1e-12)))
 
     def test_norm(self):
         self.assertAlmostEqual(EXAMPLE.norm(1), 8.0)
@@ -75,12 +75,12 @@ class Conversions(unittest.TestCase):
 class Predicates(unittest.TestCase):
     # members are contained
     def test_contains(self):
-        self.assertTrue(EXAMPLE.contains(member(EXAMPLE, np.array([0.5, -0.3])), tol=1e-9))
-        self.assertTrue(EXAMPLE.contains(member(EXAMPLE, np.array([1.0, 1.0])), tol=1e-9))
-        self.assertFalse(EXAMPLE.contains(member(EXAMPLE, np.array([2.0, 0.0])), tol=1e-9))
+        self.assertTrue(np.all(EXAMPLE.contains(member(EXAMPLE, np.array([0.5, -0.3])), tol=1e-9)))
+        self.assertTrue(np.all(EXAMPLE.contains(member(EXAMPLE, np.array([1.0, 1.0])), tol=1e-9)))
+        self.assertFalse(np.all(EXAMPLE.contains(member(EXAMPLE, np.array([2.0, 0.0])), tol=1e-9)))
         inside, outside = member(EXAMPLE, np.array([0.1, 0.2])), member(EXAMPLE, np.array([2.0, 0.0]))
-        self.assertTrue(EXAMPLE.contains(np.stack([inside, inside]), tol=1e-9))
-        self.assertFalse(EXAMPLE.contains(np.stack([inside, outside]), tol=1e-9))
+        self.assertTrue(np.all(EXAMPLE.contains(np.stack([inside, inside]), tol=1e-9)))
+        self.assertFalse(np.all(EXAMPLE.contains(np.stack([inside, outside]), tol=1e-9)))
         with self.assertRaises(cora.errors.WrongValue):
             EXAMPLE.contains(inside, "sampling")
         with self.assertRaises(cora.errors.DimensionMismatch):
@@ -156,7 +156,7 @@ class Products(unittest.TestCase):
         later = cora.mat_exp.powers(A, 4, 2, A @ A)
         self.assertEqual(len(later), 3)
         M = member(A, rng.uniform(-1, 1, 2))
-        self.assertTrue(later[2].interval().contains(M @ M @ M @ M, tol=1e-12))
+        self.assertTrue(np.all(later[2].interval().contains(M @ M @ M @ M, tol=1e-12)))
         with self.assertRaises(cora.errors.WrongValue):
             EXAMPLE ** -1
         with self.assertRaises(cora.errors.WrongValue):
@@ -199,7 +199,7 @@ class Exponential(unittest.TestCase):
         R = cora.mat_exp.expm_mixed(A, 1.0, 3, 9)
         box = R.enclosure.interval() + R.enclosure_rest
         for _ in range(20):
-            self.assertTrue(box.contains(exponential(member(A, rng.uniform(-1, 1, 2))), tol=1e-12))
+            self.assertTrue(np.all(box.contains(exponential(member(A, rng.uniform(-1, 1, 2))), tol=1e-12)))
         self.assertEqual((len(R.powers), len(R.powers2)), (3, 6))
         with self.assertRaises(cora.errors.WrongValue):
             cora.mat_exp.expm_mixed(A, 1.0, 1, 9)
@@ -222,7 +222,7 @@ class Exponential(unittest.TestCase):
             coeff = [b ** l if l % 2 else 2 * b ** l - 1 for l in range(1, N + 1)]
             taylor = sum(np.linalg.matrix_power(M, k) * r ** k / math.factorial(k) for k in range(N + 1))
             np.testing.assert_allclose(member(R.enclosure, np.array(coeff)), taylor, atol=1e-12)
-            self.assertTrue(R.remainder.contains(exponential(r * M) - taylor, tol=1e-12))
+            self.assertTrue(np.all(R.remainder.contains(exponential(r * M) - taylor, tol=1e-12)))
         c, g = np.array([1.0, -2.0, 0.5]), np.array([0.3, 0.1, -0.4])
         U = cora.mat_exp.expm_one_param(S, r, N, cora.Zonotope(c, g[None, :]))
         V = cora.mat_exp.expm_one_param(S, r, N, c)

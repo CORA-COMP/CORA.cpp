@@ -71,8 +71,8 @@ class PolytopeMaps(unittest.TestCase):
     def test_the_sum_shifts_and_adds(self):
         P = square()
         shifted = P + point(2.0, 0.0)
-        self.assertTrue(shifted.contains(point(2.5, 0.5)))
-        self.assertFalse(shifted.contains(point(0.5, 0.5)))
+        self.assertTrue(np.all(shifted.contains(point(2.5, 0.5))))
+        self.assertFalse(np.all(shifted.contains(point(0.5, 0.5))))
         back = shifted - point(2.0, 0.0)
         self.assertTrue(back.isequal(P))
         both = P + P
@@ -87,19 +87,19 @@ class PolytopeMaps(unittest.TestCase):
     # a projection keeps the chosen coordinates; the high-dimensional set pads zeros
     def test_projection_and_lifting(self):
         P = square().project([0])
-        self.assertTrue(P.contains(point(0.5)))
-        self.assertFalse(P.contains(point(1.5)))
+        self.assertTrue(np.all(P.contains(point(0.5))))
+        self.assertFalse(np.all(P.contains(point(1.5))))
         high = square().project_high_dim(3, [0, 2])
         self.assertEqual(high.dim, 3)
-        self.assertTrue(high.contains(point(0.5, 0.0, 0.5)))
-        self.assertFalse(high.contains(point(0.5, 1.0, 0.5)))
+        self.assertTrue(np.all(high.contains(point(0.5, 0.0, 0.5))))
+        self.assertFalse(np.all(high.contains(point(0.5, 1.0, 0.5))))
 
     # the intersection test and the equality, the subset operator
     def test_the_intersection_test(self):
         P = square()
-        self.assertTrue(P.is_intersecting(P + point(0.5, 0.5)))
-        self.assertFalse(P.is_intersecting(P + point(3.0, 0.0)))
-        self.assertTrue(P.is_intersecting(point(0.5, 0.5)))
+        self.assertTrue(np.all(P.is_intersecting(P + point(0.5, 0.5))))
+        self.assertFalse(np.all(P.is_intersecting(P + point(3.0, 0.0))))
+        self.assertTrue(np.all(P.is_intersecting(point(0.5, 0.5))))
         self.assertTrue(P.isequal(square()))
         self.assertTrue(square() <= (square() + point(0.0, 0.0)))
 
@@ -117,8 +117,8 @@ class PolytopeMaps(unittest.TestCase):
         self.assertEqual(P.dim, 2)
         points = P.rand_point(5, rng)
         for k in range(5):
-            self.assertTrue(P.contains(points[k], tol=1e-9))
-        self.assertTrue(P.zonotope().contains(points))
+            self.assertTrue(np.all(P.contains(points[k], tol=1e-9)))
+        self.assertTrue(np.all(P.zonotope().contains(points)))
 
     # the pieces of the difference cover what lies outside the subtrahend
     def test_the_difference_pieces_cover_it(self):
@@ -126,7 +126,7 @@ class PolytopeMaps(unittest.TestCase):
         parts = P.set_difference(cora.Polytope(np.vstack([np.eye(2), -np.eye(2)]),
                                                np.array([0.5, 1.0, 0.0, 0.0])))
         self.assertGreaterEqual(len(parts), 1)
-        self.assertTrue(any(p.contains(point(0.75, 0.5)) for p in parts))
+        self.assertTrue(np.all(any(p.contains(point(0.75, 0.5)) for p in parts)))
 
     # the special sets convert to polytopes
     def test_empty_and_fullspace_convert(self):

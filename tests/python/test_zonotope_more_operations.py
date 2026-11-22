@@ -147,18 +147,18 @@ class Intersecting(unittest.TestCase):
             return zonotope([x, 0], [[1, 0], [0, 1]])
 
         Z = square(0)
-        self.assertTrue(Z.is_intersecting(square(1.5)))
-        self.assertTrue(Z.is_intersecting(square(2)))
-        self.assertFalse(Z.is_intersecting(square(3)))
-        self.assertFalse(Z.is_intersecting(square(2 + 1e-6)))
-        self.assertTrue(Z.is_intersecting(square(2 + 1e-6), tol=1e-5))
+        self.assertTrue(np.all(Z.is_intersecting(square(1.5))))
+        self.assertTrue(np.all(Z.is_intersecting(square(2))))
+        self.assertFalse(np.all(Z.is_intersecting(square(3))))
+        self.assertFalse(np.all(Z.is_intersecting(square(2 + 1e-6))))
+        self.assertTrue(np.all(Z.is_intersecting(square(2 + 1e-6), tol=1e-5)))
         diamond = zonotope([0, 0], [[0.5, 0.5], [0.5, -0.5]])
         corner = cora.Interval(np.array([0.6, 0.6]), np.array([1.0, 1.0]))
-        self.assertFalse(diamond.is_intersecting(corner))
-        self.assertTrue(diamond.is_intersecting(corner, "approx"))
+        self.assertFalse(np.all(diamond.is_intersecting(corner)))
+        self.assertTrue(np.all(diamond.is_intersecting(corner, "approx")))
         # intersection with points and sets
-        self.assertTrue(diamond.is_intersecting(np.array([0.5, 0.5])))
-        self.assertFalse(diamond.is_intersecting(np.array([[0.0, 0.0], [0.6, 0.6]])))
+        self.assertTrue(np.all(diamond.is_intersecting(np.array([0.5, 0.5]))))
+        self.assertFalse(np.all(diamond.is_intersecting(np.array([[0.0, 0.0], [0.6, 0.6]]))))
         self.assertTrue(cora.is_intersecting(Z, square(1.5)))
 
     def test_errors(self):

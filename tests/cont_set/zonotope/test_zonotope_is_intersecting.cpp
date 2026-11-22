@@ -47,10 +47,10 @@ void intersecting_known(const std::string &b) {
     check(!diamond.is_intersecting(Zonotope(vec({0.9, 0.9}), Tensor({{0.1, 0.1}}))),
           b + ": a segment beyond the corner");
 
-    check(diamond.is_intersecting(vec({0.5, 0.5})), b + ": a point on the boundary");
+    check(diamond.is_intersecting(vec({0.5, 0.5})).all(), b + ": a point on the boundary");
     // points and registry
-    check(!diamond.is_intersecting(vec({0.6, 0.6})), b + ": a point outside");
-    check(!diamond.is_intersecting(Tensor({{0.0, 0.0}, {0.6, 0.6}})),
+    check(!diamond.is_intersecting(vec({0.6, 0.6})).all(), b + ": a point outside");
+    check(!diamond.is_intersecting(Tensor({{0.0, 0.0}, {0.6, 0.6}})).all(),
           b + ": points: all must be in");
     check(is_intersecting(Z, square_at(1.5)), b + ": through the registry");
     check(!is_intersecting(Z, Interval(vec({3.0, 0.0}), vec({4.0, 1.0}))),
@@ -68,7 +68,7 @@ void intersecting_property(const std::string &b) {
         const Zonotope Z2 = Zonotope::generate_random(rng, 3, std::nullopt, 3) + vec(shift);
         const bool res = Z1.is_intersecting(Z2);
         check(res == Z2.is_intersecting(Z1), b + ": symmetric");
-        if (Z1.contains(Z2.rand_point(5, rng), "exact", 0.0))
+        if (Z1.contains(Z2.rand_point(5, rng), "exact", 0.0).all())
             check(res, b + ": a point of Z2 is in Z1");
         for (int j = 0; j < 100; ++j) {
             const std::vector<double> d = test::random_direction(rng, 3);

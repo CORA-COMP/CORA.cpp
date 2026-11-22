@@ -115,10 +115,10 @@ class Ellipsoid : public ContSet {
     /// ellipsoid. Not a batch.
     Tensor distance(const Tensor &p) const;
 
-    /// Whether the ellipsoid meets the points p (..., n) (all of them in it, as contains) or an
+    /// Whether the ellipsoid meets the points p (..., n) (a mask, as contains) or an
     /// ellipsoid (CORA's isIntersecting_): exact when one is a point; else the distance of two
     /// ellipsoids needs a solver, Error::not_supported. Not a batch.
-    bool is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
     bool is_intersecting(const Ellipsoid &S, Tol tol = std::nullopt) const;
 
     /// Always true: the shape matrix is finite.
@@ -193,8 +193,9 @@ class Ellipsoid : public ContSet {
                                const std::string &mode = "outer");
 
     /// Whether the ellipsoid contains the points p (..., n), a zonotope or a box, up to tol in the
-    /// norm of the ellipsoid (CORA's contains_). Not a batch.
-    bool contains(const Tensor &p, const std::string &method = "exact",
+    /// norm of the ellipsoid (CORA's contains_). The points answer a mask, one flag per point. Not
+    /// a batch.
+    Mask contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
     bool contains(const Zonotope &S, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;

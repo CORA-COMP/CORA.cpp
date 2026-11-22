@@ -63,23 +63,23 @@ class ConZonotopeOperations(unittest.TestCase):
         for kind in ("standard", "extreme"):
             points = H.rand_point(8, rng, kind)
             self.assertEqual(points.shape, (8, 2))
-            self.assertTrue(H.contains(points, tol=1e-8))
-        self.assertTrue(H.contains(H.rand_point(3, rng)))
+            self.assertTrue(np.all(H.contains(points, tol=1e-8)))
+        self.assertTrue(np.all(H.contains(H.rand_point(3, rng))))
         with self.assertRaises(cora.errors.WrongValue):
             H.rand_point(2, rng, "uniform")
         # every conversion contains the corners of the hexagon
         corners = np.array([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]], dtype=float)
         Z = H.zonotope()
         self.assertIsInstance(Z, cora.Zonotope)
-        self.assertTrue(Z.contains(corners))
-        self.assertTrue(H.zonotope("reduce").contains(corners))
+        self.assertTrue(np.all(Z.contains(corners)))
+        self.assertTrue(np.all(H.zonotope("reduce").contains(corners)))
         bundle = H.zono_bundle()
         self.assertIsInstance(bundle, cora.ZonoBundle)
-        self.assertTrue(bundle.contains(corners))
+        self.assertTrue(np.all(bundle.contains(corners)))
         P = H.polytope()
         self.assertIsInstance(P, cora.Polytope)
-        self.assertTrue(P.contains(corners))
-        self.assertFalse(P.contains(np.array([1.0, 1.0])))
+        self.assertTrue(np.all(P.contains(corners)))
+        self.assertFalse(np.all(P.contains(np.array([1.0, 1.0]))))
         with self.assertRaises(cora.errors.EmptySet):
             cora.ConZonotope.empty(2).zonotope()
         with self.assertRaises(cora.errors.WrongValue):

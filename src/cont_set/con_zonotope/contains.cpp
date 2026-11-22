@@ -114,7 +114,8 @@ bool aux_contains_points(const ConZonotope &cz, const Tensor &P, double tol) {
         Tensor::concat({compacted.generators().matrix_transpose(), compacted.A()}, -2);
     const Tensor offsets = priv_b_column(compacted).broadcast_to({p, N});
     return Zonotope(extended_center.squeeze(-1), extended_generators.matrix_transpose())
-        .contains(Tensor::concat({P, offsets}, -2).matrix_transpose(), "exact", tol);
+        .contains(Tensor::concat({P, offsets}, -2).matrix_transpose(), "exact", tol)
+        .all();
 }
 
 } // namespace

@@ -3,14 +3,15 @@
 // tol is a distance to the axis, absolute or relative to r (as within_tol). A capsule is inside
 // if the two balls at the ends of its axis are: their centers are within r - S.r of the axis. A
 // zonotope or a box is inside exactly if its corners are (at most 12 generators). The empty
-// capsule contains only the empty set, and every capsule the empty one. Of a batch: every member.
+// capsule contains only the empty set, and every capsule the empty one. The points answer a mask,
+// one flag per point; of a batch of sets, every member.
 // CORA's second and third outputs (the certificate and the scaling) are not returned.
 //
-// Syntax:   res = C.contains(p);   res = C.contains(S, tol);
-// Inputs:   p - points (..., n, N)
+// Syntax:   mask = C.contains(p);   res = C.contains(S, tol);
+// Inputs:   p - points (..., N, n), or one point (n)
 //           S, Z, I - a capsule, a zonotope or a box of the dimension of C
 //           tol - how far a point may lie outside; default: the repository tolerance
-// Outputs:  res - true if all points are within r of the axis
+// Outputs:  mask - per point, whether it is within r of the axis
 // See also: is_intersecting, Zonotope::contains
 //
 // CORA: contSet/@capsule/contains_.m
@@ -32,6 +33,8 @@ namespace cora {
 
 namespace {
 
+// Sets --------------------------------------------------------------------------------------------
+
 /// Why the set is refused, if it is: another dimension, or a zonotope with too many corners.
 detail::Refusal aux_zonotope_refusal(const Capsule &C, const Zonotope &Z) {
     if (Z.dim() != C.dim())
@@ -45,14 +48,15 @@ detail::Refusal aux_zonotope_refusal(const Capsule &C, const Zonotope &Z) {
     return std::nullopt;
 }
 
-/// Whether the points p (..., n, N) are all within r of the axis of (c, g), the capsule being
-/// nonempty.
-bool aux_points_inside(const Capsule &C, const Tensor &p, double tol) {
-    if (p.size(-1) == 0) return true;
+// Points ------------------------------------------------------------------------------------------
+
+/// Whether each of the points p (..., n, N) is within r of the axis of (c, g), the capsule being
+/// nonempty: the flags (..., 1, N).
+Tensor aux_points_inside(const Capsule &C, const Tensor &p, double tol) {
     const Tensor distance =
         priv_axis_distance(C.c().expand_dims(-1), C.generator().expand_dims(-1), p);
     const Tensor inside = priv_at_most(distance, C.r().expand_dims(-1).expand_dims(-1), tol);
-    return priv_all((1.0 - priv_empty_mask(C)).multiply(inside).min(-1, true));
+    return (1.0 - priv_empty_mask(C)).multiply(inside);
 }
 
 } // namespace
@@ -60,13 +64,16 @@ bool aux_points_inside(const Capsule &C, const Tensor &p, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Capsule::contains(const Tensor &p, Tol tol_arg) const {
+Mask Capsule::contains(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, cc().dtype(), "contains");
     const detail::Refusal refusal = priv_points_refusal(*this, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    // a point, or N points (..., N, n) per member, as CORA's columns (..., n, N)
-    return aux_points_inside(*this, p.ndim() == 1 ? p.expand_dims(-1) : p.matrix_transpose(), tol);
+    // a point, or N points (..., N, n) per member, as CORA's columns (..., n, N): a flag each
+    const Tensor flags =
+        aux_points_inside(*this, p.ndim() == 1 ? p.expand_dims(-1) : p.matrix_transpose(), tol)
+            .squeeze(-2);
+    return Mask(p.ndim() == 1 ? flags.squeeze(-1) : flags);
 }
 
 bool Capsule::contains(const Capsule &S, Tol tol_arg) const {
@@ -91,7 +98,7 @@ bool Capsule::contains(const Zonotope &Z, Tol tol_arg) const {
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
     // a convex set holds a zonotope exactly if it holds its corners
-    return aux_points_inside(*this, Z.compact().corners().matrix_transpose(), tol);
+    return priv_all(aux_points_inside(*this, Z.compact().corners().matrix_transpose(), tol));
 }
 
 bool Capsule::contains(const Interval &I, Tol tol_arg) const {
@@ -108,7 +115,7 @@ bool Capsule::contains(const Interval &I, Tol tol_arg) const {
     const Zonotope Z = I.zonotope();
     const detail::Refusal refusal = aux_zonotope_refusal(*this, Z);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_points_inside(*this, Z.compact().corners().matrix_transpose(), tol);
+    return priv_all(aux_points_inside(*this, Z.compact().corners().matrix_transpose(), tol));
 }
 
 } // namespace cora

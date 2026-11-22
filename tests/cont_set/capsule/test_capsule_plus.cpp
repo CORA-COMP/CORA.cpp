@@ -50,8 +50,8 @@ void plus_property(const std::string &b) {
     for (int k = 0; k < 6; ++k) {
         const Capsule A = test::random_capsule(rng, 3), B = test::random_capsule(rng, 3);
         const Tensor sum = test::sample_points(A, rng, 25) + test::sample_points(B, rng, 25);
-        check(A.plus(B).contains(sum), b + ": the sums are inside");
-        check(B.plus(A).contains(sum), b + ": in the other order too");
+        check(A.plus(B).contains(sum).all(), b + ": the sums are inside");
+        check(B.plus(A).contains(sum).all(), b + ": in the other order too");
     }
 }
 

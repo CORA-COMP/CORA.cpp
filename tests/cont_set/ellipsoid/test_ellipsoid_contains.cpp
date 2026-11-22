@@ -25,14 +25,15 @@ namespace {
 /// Hand-computed with E = {(1, 2) + (x, y) : x^2/4 + y^2 <= 1}.
 void contains_known(const std::string &b) {
     const Ellipsoid E(vec({1.0, 2.0}), Tensor({{4.0, 0.0}, {0.0, 1.0}}));
-    check(E.contains(vec({3.0, 2.0})) && E.contains(vec({1.0, 2.0})),
+    check(E.contains(vec({3.0, 2.0})).all() && E.contains(vec({1.0, 2.0})).all(),
           b + ": the boundary and the center");
-    check(!E.contains(vec({3.0, 3.0})), b + ": a point outside");
-    check(E.contains(Tensor({{1.0, 2.0}, {2.0, 2.0}})) &&
-              !E.contains(Tensor({{1.0, 2.0}, {9.0, 2.0}})),
+    check(!E.contains(vec({3.0, 3.0})).all(), b + ": a point outside");
+    check(E.contains(Tensor({{1.0, 2.0}, {2.0, 2.0}})).all() &&
+              !E.contains(Tensor({{1.0, 2.0}, {9.0, 2.0}})).all(),
           b + ": all points must be inside");
-    check(E.contains(vec({3.0000001, 2.0}), "exact", 1e-6), b + ": the tolerance admits a hair");
-    check(!E.contains(vec({3.0000001, 2.0}), "exact", 0.0), b + ": no tolerance, no hair");
+    check(E.contains(vec({3.0000001, 2.0}), "exact", 1e-6).all(),
+          b + ": the tolerance admits a hair");
+    check(!E.contains(vec({3.0000001, 2.0}), "exact", 0.0).all(), b + ": no tolerance, no hair");
     // zonotopes and boxes
     const Zonotope inside(vec({1.0, 2.0}), Tensor({{1.0, 0.0}, {0.0, 0.5}}));
     const Zonotope sticks_out(vec({1.0, 2.0}), Tensor({{2.5, 0.0}, {0.0, 0.0}}));
@@ -47,11 +48,12 @@ void contains_known(const std::string &b) {
           b + ": a zonotope that is a point");
     // ellipsoids that are points, empty, or contained trivially
     const Ellipsoid point(vec({1.0, 2.0}), Tensor::zeros({2, 2}));
-    check(point.contains(vec({1.0, 2.0})) && !point.contains(vec({1.0, 2.1})), b + ": E a point");
+    check(point.contains(vec({1.0, 2.0})).all() && !point.contains(vec({1.0, 2.1})).all(),
+          b + ": E a point");
     check(point.contains(Ellipsoid(vec({1.0, 2.0}), Tensor::zeros({2, 2}))) && !point.contains(E) &&
               point.contains(Ellipsoid::empty(2)),
           b + ": a point contains the same point and the empty set");
-    check(!Ellipsoid::empty(2).contains(vec({0.0, 0.0})) &&
+    check(!Ellipsoid::empty(2).contains(vec({0.0, 0.0})).all() &&
               Ellipsoid::empty(2).contains(Ellipsoid::empty(2)),
           b + ": the empty ellipsoid contains nothing but the empty set");
     check(E.contains(point) && E.contains(Ellipsoid::empty(2)) &&
@@ -59,7 +61,7 @@ void contains_known(const std::string &b) {
           b + ": E contains a point, the empty set, not a far point");
     // a degenerate E contains points of its segment only
     const Ellipsoid segment(Tensor({{1.0, 0.0}, {0.0, 0.0}}));
-    check(segment.contains(vec({0.5, 0.0})) && !segment.contains(vec({0.5, 0.1})),
+    check(segment.contains(vec({0.5, 0.0})).all() && !segment.contains(vec({0.5, 0.1})).all(),
           b + ": a segment");
 }
 
@@ -78,7 +80,7 @@ void contains_property(const std::string &b) {
             for (int j = 0; j < 4; ++j)
                 v = v +
                     Z.generators().slice(0, j, j + 1).squeeze(0) * ((mask >> j) & 1 ? 1.0 : -1.0);
-            all = all && E.contains(v);
+            all = all && E.contains(v).all();
         }
         check(E.contains(Z) == all, b + ": the search agrees with the vertices");
         // the box of half the generators: its corners decide as well
@@ -92,7 +94,7 @@ void contains_property(const std::string &b) {
             for (int j = 0; j < 3; ++j) sel.push_back(((mask >> j) & 1) ? 1.0 : 0.0);
             const Tensor w = Tensor::like(I.inf(), sel, {3});
             const Tensor corner = I.inf() + (I.sup() - I.inf()).multiply(w);
-            corners = corners && E.contains(corner);
+            corners = corners && E.contains(corner).all();
         }
         check(E.contains(I) == corners, b + ": a box agrees with its corners");
     }
@@ -107,10 +109,11 @@ void checks_and_their_switch() {
           "contains: an unknown method");
     check(test::raises([&] { E.contains(Z, "approx"); }, Error::not_supported),
           "contains: approx needs an SDP solver");
-    check(E.contains(vec({0.0, 0.0}), "approx"), "contains: points are exact whatever the method");
+    check(E.contains(vec({0.0, 0.0}), "approx").all(),
+          "contains: points are exact whatever the method");
     check(test::raises([&] { E.contains(vec({0.0})); }, Error::dimension_mismatch),
           "contains: the points have the dimension of E");
-    check(E.contains(Tensor::zeros({2, 2, 2})), "contains: a batch of points (..., n)");
+    check(E.contains(Tensor::zeros({2, 2, 2})).all(), "contains: a batch of points (..., n)");
     check(test::raises([&] { E.contains(Zonotope(vec({0.0}), Tensor({{1.0}}))); },
                        Error::dimension_mismatch),
           "contains: the zonotope has the dimension of E");

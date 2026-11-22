@@ -89,7 +89,7 @@ bool Zonotope::is_intersecting(const Interval &I, const std::string &type, Tol t
                            : aux_boxes_overlap(*this, I, tol);
 }
 
-bool Zonotope::is_intersecting(const Tensor &p, const std::string &type, Tol tol_arg) const {
+Mask Zonotope::is_intersecting(const Tensor &p, const std::string &type, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     // points are in the set or not: both types decide by containment
