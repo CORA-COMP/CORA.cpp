@@ -6,10 +6,10 @@
 // points (the SDP-based outer and inner approximations, and the polytope and hyperplane cases) is
 // Error::not_supported.
 //
-// Syntax:   Ellipsoid R = E.intersect(p);   Ellipsoid R = E.intersect(S, mode);
+// Syntax:   Ellipsoid R = E.intersect(p);   Ellipsoid R = E.intersect(S, method);
 // Inputs:   p - a point (n)
 //           S - an ellipsoid
-//           mode - "outer" (default) or "inner"
+//           method - "outer" (default) or "inner"
 // Outputs:  R - the point as an ellipsoid (Q = 0) if the ellipsoid contains it, else the empty one
 // See also: contains, Zonotope::intersect
 // References:
@@ -57,14 +57,14 @@ Ellipsoid Ellipsoid::intersect(const Tensor &p) const {
     return empty(dim());
 }
 
-Ellipsoid Ellipsoid::intersect(const Ellipsoid &S, const std::string &mode) const {
+Ellipsoid Ellipsoid::intersect(const Ellipsoid &S, const std::string &method) const {
     detail::Entry entry;
     CORA_CHECK(S.dim() == dim(), Error::dimension_mismatch, [&] {
         return "intersect: the ellipsoids differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(S.dim());
     });
-    CORA_CHECK(mode == "outer" || mode == "inner", Error::wrong_value, [&] {
-        return "intersect: the mode must be 'outer' or 'inner', got '" + mode + "'";
+    CORA_CHECK(method == "outer" || method == "inner", Error::wrong_value, [&] {
+        return "intersect: the method must be 'outer' or 'inner', got '" + method + "'";
     });
     detail::Refusal refusal = priv_unbatched_refusal(*this, "intersect");
     if (!refusal) refusal = priv_unbatched_refusal(S, "intersect");

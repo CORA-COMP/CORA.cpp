@@ -1,6 +1,6 @@
 // convex_hull - an ellipsoid that holds the convex hull of two, as CORA's ellipsoid.convHull_
 //
-// The union of two convex sets is enclosed by their hull's enclosure: unite in mode "outer". CORA
+// The union of two convex sets is enclosed by their hull's enclosure: unite in method "outer". CORA
 // returns nothing for an empty second operand; here it is the first ellipsoid.
 //
 // Syntax:   Eres = E.convex_hull(S);

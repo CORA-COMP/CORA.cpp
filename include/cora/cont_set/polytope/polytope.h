@@ -263,19 +263,19 @@ class Polytope : public ContSet {
     bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
     /// Whether the set meets a polytope, a box, a zonotope, a constrained zonotope, a bundle or
-    /// points (..., n) (CORA's isIntersecting_): type "exact" (default; a linear program) or
+    /// points (..., n) (CORA's isIntersecting_): method "exact" (default; a linear program) or
     /// "approx" (support functions along the rows; not for a polytope). Not a batch.
-    bool is_intersecting(const Polytope &S, const std::string &type = "exact",
+    bool is_intersecting(const Polytope &S, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Interval &I, const std::string &type = "exact",
+    bool is_intersecting(const Interval &I, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Zonotope &Z, const std::string &type = "exact",
+    bool is_intersecting(const Zonotope &Z, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const ConZonotope &S, const std::string &type = "exact",
+    bool is_intersecting(const ConZonotope &S, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const ZonoBundle &S, const std::string &type = "exact",
+    bool is_intersecting(const ZonoBundle &S, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Tensor &p, const std::string &type = "exact",
+    bool is_intersecting(const Tensor &p, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
 
     /// Whether this set is contained in S (CORA's le, P <= S): S contains the set, up to tol.
@@ -339,8 +339,8 @@ class Polytope : public ContSet {
     Polytope reduce(int order, Rng &rng, const std::string &method = "rand") const;
 
     /// The Minkowski difference {x | x + S in this set} (CORA's minkDiff, through
-    /// ContSet::minkowski_difference) of a set with a support function: type "exact" (default; the
-    /// offsets of the rows lowered by the support function of S) or "exact:vertices".
+    /// ContSet::minkowski_difference) of a set with a support function: method "exact" (default;
+    /// the offsets of the rows lowered by the support function of S) or "exact:vertices".
     using ContSet::minkowski_difference;
     Polytope minkowski_difference(const Tensor &p) const;
 
@@ -389,7 +389,7 @@ class Polytope : public ContSet {
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
     Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;
     Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &type) const override;
+                                  const std::optional<std::string> &method) const override;
     std::optional<std::vector<std::string>> compact_methods_impl() const override;
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     Set enclose_impl(const ContSet &S2) const override;

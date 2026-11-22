@@ -4,10 +4,10 @@
 // and a point inside the other ellipsoid is absorbed. The smallest enclosing ellipsoid of two
 // proper ones is an SDP, which CORA.cpp lacks: Error::not_supported.
 //
-// Syntax:   Eres = E.unite(S);   Eres = E.unite(S, mode);   Eres = E.unite(p, mode);
+// Syntax:   Eres = E.unite(S);   Eres = E.unite(S, method);   Eres = E.unite(p, method);
 // Inputs:   S - ellipsoid
 //           p - a point (n)
-//           mode - "outer" (default) or "inner"
+//           method - "outer" (default) or "inner"
 // Outputs:  Eres - the ellipsoid
 // See also: convex_hull, contains
 // References:
@@ -31,16 +31,17 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Ellipsoid Ellipsoid::unite(const Ellipsoid &S, const std::string &mode) const {
+Ellipsoid Ellipsoid::unite(const Ellipsoid &S, const std::string &method) const {
     detail::Entry entry;
-    CORA_CHECK(mode == "outer" || mode == "inner", Error::wrong_value,
-               [&] { return "unite: the mode must be 'outer' or 'inner', got '" + mode + "'"; });
+    CORA_CHECK(method == "outer" || method == "inner", Error::wrong_value, [&] {
+        return "unite: the method must be 'outer' or 'inner', got '" + method + "'";
+    });
     CORA_CHECK(S.dim() == dim(), Error::dimension_mismatch, [&] {
         return "unite: the ellipsoids differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(S.dim());
     });
     if (priv_is_empty(S)) return *this;
-    if (mode == "inner" || priv_is_empty(*this)) return mode == "inner" ? *this : S;
+    if (method == "inner" || priv_is_empty(*this)) return method == "inner" ? *this : S;
     CORA_CHECK(Q_.ndim() == 2 && S.Q_.ndim() == 2, Error::not_supported,
                [] { return std::string("unite: it supports single ellipsoids, not a batch"); });
     // a point inside the other ellipsoid adds nothing
@@ -50,13 +51,13 @@ Ellipsoid Ellipsoid::unite(const Ellipsoid &S, const std::string &mode) const {
               "unite: the smallest ellipsoid around two ellipsoids needs an SDP solver");
 }
 
-Ellipsoid Ellipsoid::unite(const Tensor &p, const std::string &mode) const {
+Ellipsoid Ellipsoid::unite(const Tensor &p, const std::string &method) const {
     detail::Entry entry;
     CORA_CHECK(p.defined() && p.ndim() == 1 && is_vector(p, dim()), Error::dimension_mismatch, [&] {
         return "unite: the point must be a vector (" + std::to_string(dim()) + "), got the shape " +
                (p.defined() ? shape_text(p.shape()) : "()");
     });
-    return unite(Ellipsoid(p, Q_.zeros_like({dim(), dim()}), tol_), mode);
+    return unite(Ellipsoid(p, Q_.zeros_like({dim(), dim()}), tol_), method);
 }
 
 } // namespace cora

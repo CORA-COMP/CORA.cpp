@@ -5,10 +5,10 @@
 // exact. The other modes of CORA need an SDP solver, the sums with boxes and zonotopes the minimal
 // enclosing ellipsoid, and the directions L the intersection of ellipsoids: Error::not_supported.
 //
-// Syntax:   Eres = E.plus(v);   Eres = E.plus(S);   Eres = E.plus(S, mode);
+// Syntax:   Eres = E.plus(v);   Eres = E.plus(S);   Eres = E.plus(S, method);
 // Inputs:   v - vector (..., n)
 //           S - ellipsoid
-//           mode - "outer:halder" (the default of CORA for two ellipsoids)
+//           method - "outer:halder" (the default of CORA for two ellipsoids)
 // Outputs:  Eres - an ellipsoid that holds E + S
 // Gradients: the sum with a vector is differentiable; the weight of Halder is a host number
 // See also: mink_diff, Zonotope::plus
@@ -47,12 +47,13 @@ Ellipsoid Ellipsoid::plus(const Tensor &v) const {
     return {q_ + v, Q_, tol_};
 }
 
-Ellipsoid Ellipsoid::plus(const Ellipsoid &S, const std::string &mode) const {
+Ellipsoid Ellipsoid::plus(const Ellipsoid &S, const std::string &method) const {
     detail::Entry entry;
-    CORA_CHECK(
-        mode == "outer" || mode == "outer:halder" || mode == "inner", Error::wrong_value, [&] {
-            return "plus: the mode must be 'outer', 'outer:halder' or 'inner', got '" + mode + "'";
-        });
+    CORA_CHECK(method == "outer" || method == "outer:halder" || method == "inner",
+               Error::wrong_value, [&] {
+                   return "plus: the method must be 'outer', 'outer:halder' or 'inner', got '" +
+                          method + "'";
+               });
     CORA_CHECK(S.dim() == dim(), Error::dimension_mismatch, [&] {
         return "plus: the ellipsoids differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(S.dim());
@@ -68,8 +69,8 @@ Ellipsoid Ellipsoid::plus(const Ellipsoid &S, const std::string &mode) const {
         const Tensor radius = Q_.sqrt() + S.Q_.sqrt();
         return {q_ + S.q_, radius.square(), std::min(tol_, S.tol_)};
     }
-    CORA_CHECK(mode == "outer:halder", Error::not_supported, [&] {
-        return "plus: the mode '" + mode + "' needs an SDP solver; use 'outer:halder'";
+    CORA_CHECK(method == "outer:halder", Error::not_supported, [&] {
+        return "plus: the method '" + method + "' needs an SDP solver; use 'outer:halder'";
     });
     CORA_CHECK(is_full_dim() && S.is_full_dim(), Error::not_supported, [] {
         return std::string("plus: the enclosure of two degenerate ellipsoids is not supported");

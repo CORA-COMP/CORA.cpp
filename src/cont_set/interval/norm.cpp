@@ -2,7 +2,7 @@
 //
 // For type two (default) the 2-norm of max(|inf|, |sup|) of a column; a matrix is refused, as by
 // CORA's intervalMatrix (CORA's interval takes the spectral norm). Else that norm of
-// |center| + rad. CORA's mode argument is ignored by intervals and not offered.
+// |center| + rad. CORA's method argument is ignored by intervals and not offered.
 //
 // Syntax:   Tensor v = I.norm();   Tensor v = I.norm(type)   with type one, two, inf or fro
 // Inputs:   -

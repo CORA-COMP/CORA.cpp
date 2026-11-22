@@ -5,7 +5,7 @@
 //
 // Syntax:   val = Z.norm();   val = Z.norm(type, "ub");
 // Inputs:   type - 1, 2 (default) or infinity (ContSet::norm also takes fro)
-//           mode - "ub" (default)
+//           method - "ub" (default)
 // Outputs:  val - the bound, (...)
 // See also: interval, minnorm
 //
@@ -30,25 +30,26 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor Zonotope::norm(double type, const std::string &mode) const {
+Tensor Zonotope::norm(double type, const std::string &method) const {
     detail::Entry entry;
     CORA_CHECK(type == 1 || type == 2 || type == std::numeric_limits<double>::infinity(),
                Error::wrong_value, [&] {
                    return "norm: the type must be 1, 2 or infinity, got " + std::to_string(type);
                });
-    CORA_CHECK(mode == "exact" || mode == "ub" || mode == "ub_convex", Error::wrong_value, [&] {
-        return "norm: the mode must be 'exact', 'ub' or 'ub_convex', got '" + mode + "'";
-    });
+    CORA_CHECK(
+        method == "exact" || method == "ub" || method == "ub_convex", Error::wrong_value, [&] {
+            return "norm: the method must be 'exact', 'ub' or 'ub_convex', got '" + method + "'";
+        });
     return norm_impl(type == 1   ? Tensor::Norm::one
                      : type == 2 ? Tensor::Norm::two
                                  : Tensor::Norm::inf,
-                     mode);
+                     method);
 }
 
-Tensor Zonotope::norm_impl(Tensor::Norm type, const std::string &mode) const {
-    if (mode != "ub")
-        CORA_FAIL(Error::not_supported, "norm: the mode '" + mode + "' needs a " +
-                                            (mode == "exact" ? "mixed-integer" : "semidefinite") +
+Tensor Zonotope::norm_impl(Tensor::Norm type, const std::string &method) const {
+    if (method != "ub")
+        CORA_FAIL(Error::not_supported, "norm: the method '" + method + "' needs a " +
+                                            (method == "exact" ? "mixed-integer" : "semidefinite") +
                                             " solver");
     // a matrix zonotope: the norm of its interval matrix (CORA's matZonotope.norm), not the 2-norm
     if (elem_rank_ == 2) {

@@ -1,8 +1,8 @@
 // contains - point containment in a box, as CORA's interval.contains
 //
-// Syntax:   res = I.contains(p);   res = I.contains(p, tol);   res = I.contains(p, type, tol);
+// Syntax:   res = I.contains(p);   res = I.contains(p, tol);   res = I.contains(p, method, tol);
 // Inputs:   p - point (..., n), or a matrix (..., r, c) of an interval matrix
-//           type - 'exact' or 'approx' (CORA's; a box answers both exactly)
+//           method - 'exact' or 'approx' (CORA's; a box answers both exactly)
 //           tol - how far p may lie outside, per coordinate; default: the repository tolerance
 // Outputs:  res - true if inf - tol <= p <= sup + tol, false for an empty member (a mask)
 // See also: Specification::check
@@ -60,10 +60,10 @@ Mask Interval::contains(const Tensor &p, Tol tol_arg) const {
     return Mask(priv_all_entries(inside, *this).minimum(priv_present(*this)));
 }
 
-Mask Interval::contains(const Tensor &p, const std::string &type, Tol tol) const {
+Mask Interval::contains(const Tensor &p, const std::string &method, Tol tol) const {
     detail::Entry entry;
-    CORA_CHECK(type == "exact" || type == "approx", Error::wrong_value, [&] {
-        return "contains: the type must be 'exact' or 'approx', got '" + type + "'";
+    CORA_CHECK(method == "exact" || method == "approx", Error::wrong_value, [&] {
+        return "contains: the method must be 'exact' or 'approx', got '" + method + "'";
     });
     return contains(p, resolve_tol(entry, tol, inf_.dtype(), "contains"));
 }

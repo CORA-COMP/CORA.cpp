@@ -7,10 +7,10 @@
 // the empty set if that exceeds 1; the inner ones take a zonotope or a box. A point translates
 // the set. Not a batch.
 //
-// Syntax:   cZres = cz.minkowski_difference(S);   cZres = cz.minkowski_difference(S, type);
+// Syntax:   cZres = cz.minkowski_difference(S);   cZres = cz.minkowski_difference(S, method);
 //           cZres = cz.minkowski_difference(p);
 // Inputs:   S - a zonotope or a box, or a point p (n)
-//           type - "exact" (default), "inner:vertices" or "inner:Vinod"
+//           method - "exact" (default), "inner:vertices" or "inner:Vinod"
 // Outputs:  cZres - {x | x + S in cz}
 // See also: plus, intersect, Zonotope::mink_diff
 // References:
@@ -97,18 +97,18 @@ ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
 
 // The dispatch ------------------------------------------------------------------------------------
 
-/// The difference of cz and the zonotope S by the type.
-ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::string &type) {
+/// The difference of cz and the zonotope S by the method.
+ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::string &method) {
     // the generic entry has checked the dimension; the rest is this class's own
-    if (type != "exact" && type != "inner:vertices" && type != "inner:Vinod")
-        CORA_FAIL(Error::wrong_value, "minkowski_difference: the type must be exact, "
+    if (method != "exact" && method != "inner:vertices" && method != "inner:Vinod")
+        CORA_FAIL(Error::wrong_value, "minkowski_difference: the method must be exact, "
                                       "inner:vertices or inner:Vinod, got '" +
-                                          type + "'");
+                                          method + "'");
     if (cz.c().ndim() != 1 || S.center().ndim() != 1)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: it supports single sets, not a batch");
-    if (type == "inner:vertices") return aux_inner_vertices(cz, S);
-    if (type == "inner:Vinod") return aux_inner_vinod(cz, S);
+    if (method == "inner:vertices") return aux_inner_vertices(cz, S);
+    if (method == "inner:Vinod") return aux_inner_vinod(cz, S);
     const Zonotope compacted = S.compact();
     if (compacted.nr_generators() > Zonotope::kMaxCornerGenerators)
         CORA_FAIL(Error::not_supported,
@@ -125,8 +125,8 @@ ConZonotope aux_difference(const ConZonotope &cz, const Zonotope &S, const std::
 ConZonotope ConZonotope::minkowski_difference(const Tensor &p) const { return plus(p * -1.0); }
 
 Set ConZonotope::minkowski_difference_impl(const ContSet &S2,
-                                           const std::optional<std::string> &type) const {
-    const std::string method = type.value_or("exact");
+                                           const std::optional<std::string> &method_arg) const {
+    const std::string method = method_arg.value_or("exact");
     if (S2.class_id() == ClassId::zonotope)
         return aux_difference(*this, static_cast<const Zonotope &>(S2), method);
     if (S2.class_id() == ClassId::interval)

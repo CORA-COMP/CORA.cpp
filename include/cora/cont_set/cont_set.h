@@ -186,7 +186,7 @@ class ContSet {
     /// The Minkowski difference {x | x + S2 in this set} (CORA's minkDiff); type picks the
     /// algorithm of the class (default: the class's own), Error::noops for a pair without one.
     Set minkowski_difference(const ContSet &S2,
-                             const std::optional<std::string> &type = std::nullopt) const;
+                             const std::optional<std::string> &method = std::nullopt) const;
 
     /// The projections onto the blocks of coordinates [first, last] (0-based, both inclusive),
     /// one set per block, as CORA's decompose.
@@ -206,9 +206,9 @@ class ContSet {
     Set lift(int64_t N, const std::optional<std::vector<int64_t>> &proj = std::nullopt) const;
 
     /// An upper bound (...) of the norm of the points (CORA's norm): type one, two, inf or
-    /// fro; mode "ub" (default), "exact" or "ub_convex", of which a class offers what its norm_
+    /// fro; method "ub" (default), "exact" or "ub_convex", of which a class offers what its norm_
     /// has. The empty set has norm -Inf.
-    Tensor norm(Tensor::Norm type = Tensor::Norm::two, const std::string &mode = "ub") const;
+    Tensor norm(Tensor::Norm type = Tensor::Norm::two, const std::string &method = "ub") const;
 
     /// A set that encloses this one and S2 (CORA's enclose): the class of this set, which takes
     /// the operand it can (a box and a box, a zonotope and a zonotope); Error::noops otherwise.
@@ -265,13 +265,13 @@ class ContSet {
     /// CORA's enlarge: the generic formula, which a class with a cheaper one overrides.
     virtual Set enlarge_impl(const Tensor &factor) const;
     virtual Set minkowski_difference_impl(const ContSet &S2,
-                                          const std::optional<std::string> &type) const;
+                                          const std::optional<std::string> &method) const;
     /// CORA's projectHighDim_: I(:, proj) * S, which a class with a cheaper one overrides.
     virtual Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const;
     /// CORA's lift_ (proj has one valid position per coordinate); noops for a class without it.
     virtual Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const;
-    /// CORA's norm_ (type and mode are valid); noops for a class without it.
-    virtual Tensor norm_impl(Tensor::Norm type, const std::string &mode) const;
+    /// CORA's norm_ (type and method are valid); noops for a class without it.
+    virtual Tensor norm_impl(Tensor::Norm type, const std::string &method) const;
     /// CORA's enclose of two sets; noops for a class that cannot take the class of S2.
     virtual Set enclose_impl(const ContSet &S2) const;
 

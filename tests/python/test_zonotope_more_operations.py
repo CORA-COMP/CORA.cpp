@@ -91,9 +91,9 @@ class Measures(unittest.TestCase):
         self.assertAlmostEqual(Z.norm(), np.sqrt(13))
         self.assertEqual(Z.norm(1), 5)
         self.assertEqual(Z.norm(float("inf")), 3)
-        for mode in ("exact", "ub_convex"):
+        for method in ("exact", "ub_convex"):
             with self.assertRaises(cora.errors.NotSupported):
-                Z.norm(2, mode)
+                Z.norm(2, method)
         with self.assertRaises(cora.errors.WrongValue):
             Z.norm(3)
 

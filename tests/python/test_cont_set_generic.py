@@ -249,9 +249,9 @@ class Generic(unittest.TestCase):
                      lambda: self.Z.norm(2, "bogus")):
             with self.assertRaises(cora.errors.WrongValue):
                 call()
-        for mode in ("exact", "ub_convex"):
+        for method in ("exact", "ub_convex"):
             with self.assertRaises(cora.errors.NotSupported):
-                self.Z.norm(2, mode)
+                self.Z.norm(2, method)
         with self.assertRaises(cora.errors.Noops):
             cora.Fullspace(2).norm()
         with self.assertRaises(cora.errors.Noops):

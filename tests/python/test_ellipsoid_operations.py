@@ -88,7 +88,7 @@ class Operations(unittest.TestCase):
         np.testing.assert_allclose(A.plus(B).Q, 9 * np.eye(2), atol=1e-9)
         np.testing.assert_allclose((A + B).q, [1, 1])
         with self.assertRaises(cora.errors.NotSupported):
-            A.plus(B, mode="outer")
+            A.plus(B, method="outer")
         # the difference with a vector and with a point
         np.testing.assert_array_equal(self.E.mink_diff(np.array([1.0, 1.0])).q, [0, 1])
         self.assertEqual(self.E.mink_diff(ellipsoid(np.zeros((2, 2)), [1.0, 1.0])).q.tolist(), [0.0, 1.0])

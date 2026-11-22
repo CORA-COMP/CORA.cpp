@@ -9,7 +9,7 @@
 // Syntax:   Ellipsoid R = E.cart_prod(S);   Ellipsoid R = E.cart_prod(p);
 //           Ellipsoid R = Ellipsoid::cart_prod(p, E);
 // Inputs:   S - an ellipsoid, or a point p (..., n2); as the first operand, the point p (..., n1)
-//           mode - "outer" (default); "inner" and "exact" are Error::not_supported, as in CORA
+//           method - "outer" (default); "inner" and "exact" are Error::not_supported, as in CORA
 // Outputs:  R - of dimension n1 + n2, in the order of the operands
 // See also: Interval::cart_prod, Zonotope::cart_prod
 //
@@ -34,14 +34,15 @@ namespace {
 
 // Refusals ----------------------------------------------------------------------------------------
 
-/// The refusal of mode: only "outer" is computed.
-detail::Refusal aux_mode_refusal(const std::string &mode) {
-    if (mode == "outer") return std::nullopt;
-    if (mode == "inner" || mode == "exact")
+/// The refusal of method: only "outer" is computed.
+detail::Refusal aux_mode_refusal(const std::string &method) {
+    if (method == "outer") return std::nullopt;
+    if (method == "inner" || method == "exact")
         return std::pair{Error::not_supported,
-                         "cart_prod supports only mode = 'outer' for ellipsoids, got '" + mode +
+                         "cart_prod supports only method = 'outer' for ellipsoids, got '" + method +
                              "'"};
-    return std::pair{Error::wrong_value, "cart_prod: the mode must be 'exact', 'outer' or 'inner'"};
+    return std::pair{Error::wrong_value,
+                     "cart_prod: the method must be 'exact', 'outer' or 'inner'"};
 }
 
 /// The refusal of operands of different batch shapes or an empty one, if any.
@@ -110,18 +111,18 @@ Interval aux_boxes(const Ellipsoid &E1, const Ellipsoid &E2) {
 
 // Entries -----------------------------------------------------------------------------------------
 
-Ellipsoid Ellipsoid::cart_prod(const Ellipsoid &S, const std::string &mode) const {
+Ellipsoid Ellipsoid::cart_prod(const Ellipsoid &S, const std::string &method) const {
     detail::Entry entry;
-    // the mode and the operands are checked before the boxes are formed
-    detail::Refusal refusal = aux_mode_refusal(mode);
+    // the method and the operands are checked before the boxes are formed
+    detail::Refusal refusal = aux_mode_refusal(method);
     if (!refusal) refusal = aux_operand_refusal(*this, S);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return aux_of_box(aux_boxes(*this, S));
 }
 
-Ellipsoid Ellipsoid::cart_prod(const Tensor &p, const std::string &mode) const {
+Ellipsoid Ellipsoid::cart_prod(const Tensor &p, const std::string &method) const {
     detail::Entry entry;
-    detail::Refusal refusal = aux_mode_refusal(mode);
+    detail::Refusal refusal = aux_mode_refusal(method);
     if (!refusal) refusal = aux_point_refusal(p);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // a point is an ellipsoid without extent
@@ -131,9 +132,9 @@ Ellipsoid Ellipsoid::cart_prod(const Tensor &p, const std::string &mode) const {
     return aux_with_point(*this, point, false);
 }
 
-Ellipsoid Ellipsoid::cart_prod(const Tensor &p, const Ellipsoid &E, const std::string &mode) {
+Ellipsoid Ellipsoid::cart_prod(const Tensor &p, const Ellipsoid &E, const std::string &method) {
     detail::Entry entry;
-    detail::Refusal refusal = aux_mode_refusal(mode);
+    detail::Refusal refusal = aux_mode_refusal(method);
     if (!refusal) refusal = aux_point_refusal(p);
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the point comes first in the product
