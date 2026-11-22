@@ -5,8 +5,9 @@ instance is an ONNX network and a VNN-LIB property, loaded once: the network low
 layers of a cora.NeuralNetwork (cora.onnx_network), the property's input boxes and unsafe
 polytopes stacked (cora.vnnlib), and the scoring's counterexample check, which C++ calls back for
 every candidate (onnxruntime on the float32 point, then VNN-COMP's own check of the written
-counterexample). A network that is no chain of affine maps and activations is "unknown" with the
-reason. The options are cora.NnVerifyOptions; cora.vnncomp_options(category) gives the preset.
+counterexample). A network that C++ cannot take is "unknown" at once, with the reason, and its
+property is not read. The options are cora.NnVerifyOptions; cora.vnncomp_options(category) gives
+the preset.
 
 Syntax:   instance = load("net.onnx", "prop.vnnlib")
           result = verify(instance, 60, cora.vnncomp_options("acasxu_2023"))   result.status
@@ -44,8 +45,9 @@ class VerifyResult:
 
 @dataclass
 class Instance:
-    """An instance loaded once: the cora.NeuralNetwork (None, with why, if the graph is no dense
-    chain), the property and its text, the ONNX file for the counterexample check."""
+    """An instance loaded once: the cora.NeuralNetwork (None, with why, if C++ cannot take the
+    graph; then the property is not read), the property and its text, the ONNX file for the
+    counterexample check."""
 
     onnx_path: str
     network: object
@@ -59,23 +61,27 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     backend of the verifier's network, "eigen" (numpy weights) or "torch" (on device)."""
     import cora
 
+    # the network first: one the C++ verifier cannot take is unknown without reading the property
     net = OnnxNetwork.load(onnx_path)
+    lowered, why = net.layers()
+    if not lowered:
+        return Instance(str(onnx_path), None, why, None, "")
+    layers, activations = lowered
+    convert = (lambda t: t.to(device)) if backend == "torch" else (lambda t: t.numpy())
+
+    def one(layer):
+        # a dense pair, or a conv2d or gather dict whose tensors move
+        if not isinstance(layer, dict):
+            return (convert(layer[0]), convert(layer[1]))
+        return {k: convert(v) if torch.is_tensor(v) else v for k, v in layer.items()}
+
+    try:
+        network = cora.NeuralNetwork([one(layer) for layer in layers], activations)
+    except (ValueError, TypeError, RuntimeError, NotImplementedError) as error:  # C++ refuses
+        return Instance(str(onnx_path), None, f"the C++ network refuses a layer: {error}", None, "")
     text = read_text(vnnlib_path)
     prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
-    lowered, why = net.layers()
-    network = None
-    if lowered:
-        layers, activations = lowered
-        convert = (lambda t: t.to(device)) if backend == "torch" else (lambda t: t.numpy())
-
-        def one(layer):
-            # a dense pair, or a conv2d or gather dict whose tensors move
-            if not isinstance(layer, dict):
-                return (convert(layer[0]), convert(layer[1]))
-            return {k: convert(v) if torch.is_tensor(v) else v for k, v in layer.items()}
-
-        network = cora.NeuralNetwork([one(layer) for layer in layers], activations)
-    return Instance(str(onnx_path), network, why or "", prop, text)
+    return Instance(str(onnx_path), network, "", prop, text)
 
 
 def verify(instance, timeout, options=None):

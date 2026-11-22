@@ -256,12 +256,16 @@ def _read_v2(text, n, m):
     for assertion in query.assertions:
         dnf = assertion.expr.to_dnf()
         conjuncts = [c + list(d) for c in conjuncts for d in dnf]
+    # each atom's linear form once (a box atom is shared by every conjunct of the disjunction)
+    forms = {}
     merged = {}
     for atoms in conjuncts:
         case = _Case1(n)
         for atom in atoms:
-            for op, row, const, kind in _linear_atoms(atom, n, m):
-                _add_atom(case, op, row, const, kind)
+            if id(atom) not in forms:
+                forms[id(atom)] = [_atom_form(*a) for a in _linear_atoms(atom, n, m)]
+            for form in forms[id(atom)]:
+                _add_atom(case, form)
         key = (tuple(case.lo), tuple(case.hi))
         merged.setdefault(key, []).append(
             (np.array(case.rows, dtype=float).reshape(-1, m), np.array(case.rhs, dtype=float))
@@ -301,18 +305,26 @@ def _linear_atoms(atom, n, m):
     return [("<=", row, const, kind), ("<=", -row, -const, kind)]
 
 
-def _add_atom(case, op, row, const, kind):
-    """row . v + const <= 0 into the case: an input bound, or a row of A y <= b."""
+def _atom_form(op, row, const, kind):
+    """row . v + const <= 0 as ("Output", row, rhs) of A y <= b, or ("Input", i, bound, upper)."""
+    del op  # always "<=" (_linear_atoms)
     if kind == "Output":
-        case.rows.append(list(row))
-        case.rhs.append(-const)
-        return
+        return ("Output", list(row), -const)
     nonzero = np.flatnonzero(row)
     if len(nonzero) != 1:
         raise NotImplementedError("vnnlib: input constraints must be box constraints")
     i, a = int(nonzero[0]), float(row[nonzero[0]])
-    bound = -const / a
-    if a > 0:
+    return ("Input", i, -const / a, a > 0)
+
+
+def _add_atom(case, form):
+    """An atom's form into the case: a row of A y <= b, or a bound of an input."""
+    if form[0] == "Output":
+        case.rows.append(form[1])
+        case.rhs.append(form[2])
+        return
+    _, i, bound, upper = form
+    if upper:
         case.hi[i] = min(case.hi[i], bound)
     else:
         case.lo[i] = max(case.lo[i], bound)
