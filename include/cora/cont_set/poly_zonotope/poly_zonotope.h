@@ -12,6 +12,9 @@
 // Operations: one file each in src/cont_set/poly_zonotope/, named as CORA's @polyZonotope; the
 //             constructor checks its input (poly_zonotope.cpp)
 // See also:   cora/cont_set/zonotope/zonotope.h, cora/cont_set/cont_set.h
+// References:
+//    [1] N. Kochdumper, M. Althoff. "Sparse polynomial zonotopes: a novel set representation for
+//        reachability analysis", IEEE TAC, 2021.
 //
 // CORA: contSet/@polyZonotope/polyZonotope.m
 // CORA: contSet/@polyZonotope/dim.m

@@ -6,6 +6,11 @@
 //           type - "standard": c + G b, b ~ U[-1, 1]^m;  "extreme": b in {-1, 1}^m
 // Outputs:  P - points as rows (..., N, n)
 // See also: Interval::rand_point, LinearSys::simulate_random
+// References:
+//    [1] R. L. Smith. "Efficient Monte Carlo procedures for generating points uniformly
+//        distributed over bounded regions", Operations Research, 1984.
+//    [2] B. T. Polyak, E. N. Gryazina. "Billiard walk - a new sampling algorithm for control and
+//        optimization", IFAC Proceedings Volumes, 2014.
 //
 // CORA: contSet/@zonotope/randPoint_.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger, Adrian Kulmburg, Severin Prenitzer

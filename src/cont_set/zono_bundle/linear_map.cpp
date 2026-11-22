@@ -7,6 +7,9 @@
 // Inputs:   M - a matrix (..., k, n)
 // Outputs:  R - the bundle of the images of the members
 // See also: Zonotope::linear_map, plus
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: contSet/@zonoBundle/mtimes.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger

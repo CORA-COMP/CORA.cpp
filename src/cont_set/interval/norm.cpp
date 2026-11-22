@@ -8,6 +8,9 @@
 // Inputs:   -
 // Outputs:  v - (...); -Inf for an empty interval
 // See also: rad, center
+// References:
+//    [1] R. Farhadsefat, J. Rohn, T. Lotfi. "Norms of interval matrices", Institute of Computer
+//        Science, Czech Academy of Sciences.
 //
 // CORA: contSet/@interval/norm_.m
 // CORA: matrixSet/@intervalMatrix/norm.m

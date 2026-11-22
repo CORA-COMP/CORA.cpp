@@ -7,6 +7,9 @@
 // Inputs:   B - a model of the variables of A, or a number s
 // Outputs:  T - the model
 // See also: plus, power
+// References:
+//    [1] K. Makino, M. Berz. "Taylor models and other validated functional inclusion methods",
+//        International Journal of Pure and Applied Mathematics, 2003.
 //
 // CORA: contSet/@taylm/times.m
 // CORA: contSet/@taylm/mtimes.m

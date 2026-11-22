@@ -11,6 +11,9 @@
 // Outputs:  C - the normals as rows (k, n)
 //           d - the offsets (k, 1)
 // See also: priv_zonotope_facet_normals, Zonotope::unite
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Computing reachable sets of hybrid systems using a
+//        combination of zonotopes and polytopes", Nonlinear Analysis: Hybrid Systems 4(2), 2010.
 //
 // CORA: contSet/@zonotope/polytope.m
 // CORA authors: Niklas Kochdumper, Matthias Althoff

@@ -12,6 +12,9 @@
 //           tol - the tolerance
 // Outputs:  res - false if the set and the level set are disjoint
 // See also: contains, fun_han
+// References:
+//    [1] N. Kochdumper, M. Althoff. "Reachability analysis for hybrid systems with nonlinear guard
+//        sets", HSCC 2020.
 //
 // CORA: contSet/@levelSet/isIntersecting_.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger

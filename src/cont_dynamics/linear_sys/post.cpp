@@ -8,6 +8,11 @@
 //           alg - the algorithm and options of init_reach
 // Outputs:  next - time_interval and time_point of the step, and the state for the next
 // See also: init_reach, reach
+// References:
+//    [1] A. Girard, C. Le Guernic, O. Maler. "Efficient computation of reachable sets of linear
+//        time-invariant systems with inputs", HSCC 2006, LNCS 3927, pp. 257-271.
+//    [2] A. Girard. "Reachability of uncertain linear systems using zonotopes", HSCC 2005, LNCS
+//        3414, pp. 291-305.
 //
 // CORA: contDynamics/@linearSys/post.m
 // CORA authors: Mark Wetzlinger, Matthias Althoff

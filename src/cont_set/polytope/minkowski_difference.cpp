@@ -12,6 +12,10 @@
 //           type - "exact" (default) or "exact:vertices"
 // Outputs:  Pres - the difference, in halfspace form
 // See also: Polytope::plus, Polytope::minus, Polytope::intersect
+// References:
+//    [1] M. Althoff. "On computing the Minkowski difference of zonotopes", arXiv:1512.02794, 2015.
+//    [2] M. Wetzlinger, V. Kotsev, A. Kulmburg, M. Althoff. "Implementation of polyhedral
+//        operations in CORA 2024", ARCH24.
 //
 // CORA: contSet/@polytope/minkDiff.m
 // CORA: contSet/@polytope/private/priv_minkDiff.m

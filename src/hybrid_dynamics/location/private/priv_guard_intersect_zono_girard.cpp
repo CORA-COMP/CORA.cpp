@@ -16,6 +16,11 @@
 //           dense - a generator per axis in every box, as CORALean's Interval.zonotope
 // Outputs:  S - the enclosure (a zonotope, or a bundle for several bases); none if empty
 // See also: priv_guard_intersect, priv_calc_basis
+// References:
+//    [1] A. Girard, C. Le Guernic. "Zonotope/hyperplane intersection for hybrid systems
+//        reachability analysis", HSCC 2008.
+//    [2] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: hybridDynamics/@location/guardIntersect_zonoGirard.m
 // CORA authors: Stefan Liu, Niklas Kochdumper

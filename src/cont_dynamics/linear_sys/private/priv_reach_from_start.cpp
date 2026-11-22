@@ -22,6 +22,10 @@
 //           steps - number of steps
 // Outputs:  R - the reachable sets, see LinearSys::reach
 // See also: priv_reach_standard, one_step
+// References:
+//    [1] S. Bogomolov, M. Forets, G. Frehse, A. Podelski, C. Schilling. "Decomposing reach set
+//        computations with low-dimensional sets and high-dimensional matrices", Information and
+//        Computation 289, 2022.
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_fromStart.m
 // CORA: contDynamics/@linearSys/private/priv_reach_decomp.m

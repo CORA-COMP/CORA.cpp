@@ -10,6 +10,9 @@
 //           tol - allowed excess of the outer norm over 1
 // Outputs:  res - true if inner is in outer (up to tol)
 // See also: priv_zonotope_norm
+// References:
+//    [1] A. Kulmburg, I. Brkan, M. Althoff. "Search-based and stochastic solutions to the zonotope
+//        and ellipsotope containment problems", ECC 2024.
 //
 // CORA: contSet/@zonotope/private/priv_zonotopeContainment_vertexEnumeration.m
 // CORA authors: Adrian Kulmburg
@@ -31,6 +34,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// The nodes ---------------------------------------------------------------------------------------
 
 /// A node of the search: the factors assigned so far (0: free) and the outer norm it reaches.
 struct Node {
@@ -77,6 +82,7 @@ bool priv_containment_vertex_enumeration(const HostZonotope &inner, const HostZo
         // the generators in the order of their length
         for (int64_t i = 0; i < n; ++i) sorted[i * k + j] = G[i * k + order[j]];
     }
+    // The search ----------------------------------------------------------------------------------
     // what a node can still add: the lengths of the generators that are not at +-1 yet
     const auto heuristic = [&](const Node &node) {
         double h = node.value;

@@ -9,6 +9,9 @@
 //           p - columns (..., n, 1)
 // Outputs:  res - sqrt(|p' Q^+ p|) (..., 1, 1)
 // See also: priv.h, Ellipsoid::ellipsoid_norm, Ellipsoid::contains
+// References:
+//    [1] A. Kulmburg, M. Althoff. "On the co-NP-completeness of the zonotope containment problem",
+//        European Journal of Control, 2021.
 //
 // CORA: contSet/@ellipsoid/ellipsoidNorm.m
 // CORA authors: Adrian Kulmburg

@@ -6,6 +6,8 @@
 // Inputs:   -
 // Outputs:  R - [tan(inf), tan(sup)] where the entry is narrower than pi and has no pole
 // See also: tanh, sin
+// References:
+//    [1] M. Althoff, D. Grebenyuk. "Implementation of interval arithmetic in CORA 2016", ARCH16.
 //
 // CORA: contSet/@interval/tan.m
 // CORA authors: Daniel Althoff, Dmitry Grebenyuk, Matthias Althoff, Mark Wetzlinger

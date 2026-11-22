@@ -16,6 +16,10 @@
 //           mode - "outer" or "inner" for a box, one of the zonotope modes for a zonotope
 // Outputs:  E - the ellipsoid {x | (x - q)' Q^+ (x - q) <= 1}
 // See also: empty, Zonotope::Zonotope
+// References:
+//    [1] A. A. Kurzhanskiy, P. Varaiya. "Ellipsoidal toolbox (ET)", CDC 2006, pp. 1498-1503.
+//    [2] V. Gassmann, M. Althoff. "Scalable zonotope-ellipsoid conversions using the Euclidean
+//        zonotope norm", ACC 2020.
 //
 // CORA: contSet/@ellipsoid/ellipsoid.m
 // CORA: contSet/@interval/ellipsoid.m

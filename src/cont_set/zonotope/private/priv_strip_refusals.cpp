@@ -8,6 +8,17 @@
 //           aux - the matrices E, F, A, C of an observer
 // Outputs:  r - the identifier and the text of what is wrong, or nothing
 // See also: Zonotope::intersect_strip, ConZonotope::intersect_strip
+// References:
+//    [1] V. T. H. Le, C. Stoica, T. Alamo, E. F. Camacho, D. Dumur. "Zonotope-based set-membership
+//        estimation for multi-output uncertain systems", ISIC 2013, pp. 212-217.
+//    [2] A. Alanwar, J. J. Rath, H. Said, M. Althoff. "Distributed set-based observers using
+//        diffusion strategies", Journal of the Franklin Institute, 2023.
+//    [3] T. Alamo, J. M. Bravo, E. F. Camacho. "Guaranteed state estimation by zonotopes",
+//        Automatica 41(6), 2005, pp. 1035-1043.
+//    [4] Y. Wang, V. Puig, G. Cembrano. "Set-membership approach and Kalman observer based on
+//        zonotopes for discrete-time descriptor systems", Automatica 93, 2018, pp. 435-443.
+//    [5] J. M. Bravo, T. Alamo, E. F. Camacho. "Bounded error identification of systems with
+//        time-varying parameters", IEEE TAC 51(7), 2006, pp. 1144-1150.
 //
 // CORA: contSet/@zonotope/intersectStrip.m
 // CORA authors: Matthias Althoff

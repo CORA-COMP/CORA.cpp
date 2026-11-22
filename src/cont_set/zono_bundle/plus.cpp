@@ -10,6 +10,9 @@
 //           v - a point (..., n)
 // Outputs:  R - an enclosure of the sum: the intersection of the pairwise sums
 // See also: linear_map, Zonotope::plus
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: contSet/@zonoBundle/plus.m
 // CORA authors: Matthias Althoff

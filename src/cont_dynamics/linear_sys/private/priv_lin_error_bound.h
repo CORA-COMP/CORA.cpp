@@ -11,10 +11,10 @@
 // Inputs:   emax - error margin
 //           t_final - time horizon
 // Outputs:  R - the bounds and checks below
+// See also: priv_reach_adaptive
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner-
 //        and outer-approximations of reachable sets", TAC, 2023.
-// See also: priv_reach_adaptive
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026

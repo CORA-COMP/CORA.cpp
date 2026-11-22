@@ -10,6 +10,11 @@
 //           type - "standard" or "extreme"
 // Outputs:  P - points as rows (N, n); none, (0, n), for an empty set
 // See also: support_function, vertices
+// References:
+//    [1] R. L. Smith. "Efficient Monte Carlo procedures for generating points uniformly
+//        distributed over bounded regions", Operations Research, 1984.
+//    [2] B. T. Polyak, E. N. Gryazina. "Billiard walk - a new sampling algorithm for control and
+//        optimization", IFAC Proceedings Volumes, 2014.
 //
 // CORA: contSet/@conZonotope/randPoint_.m
 // CORA authors: Niklas Kochdumper, Severin Prenitzer, Adrian Kulmburg

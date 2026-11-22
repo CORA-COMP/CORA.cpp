@@ -20,6 +20,12 @@
 //           t_final - the final time
 // Outputs:  R - the output sets of each step
 // See also: priv_krylov_subspace, priv_krylov_inputs, LinearSys::reach
+// References:
+//    [1] M. Althoff. "Reachability analysis of large linear systems with uncertain inputs in the
+//        Krylov subspace", IEEE TAC 65(2), 2020, pp. 477-492.
+//    [2] T. Jawecki, W. Auzinger, O. Koch. "Computable upper error bounds for Krylov
+//        approximations to matrix exponentials and associated phi-functions", BIT Numerical
+//        Mathematics, 2020.
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_krylov.m
 // CORA: contDynamics/@linearSys/private/priv_initReach_Krylov.m

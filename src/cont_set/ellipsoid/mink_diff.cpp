@@ -10,6 +10,8 @@
 //           S2 - ellipsoid
 // Outputs:  Eres - {x | x + S2 in E}
 // See also: plus, is_bigger
+// References:
+//    [1] A. A. Kurzhanskiy, P. Varaiya. "Ellipsoidal toolbox (ET)", CDC 2006, pp. 1498-1503.
 //
 // CORA: contSet/@ellipsoid/minkDiff.m
 // CORA authors: Victor Gassmann

@@ -12,6 +12,9 @@
 //           id - the p identifiers
 // Outputs:  pZ - the polynomial zonotope
 // See also: zonotope, exact_plus
+// References:
+//    [1] N. Kochdumper, M. Althoff. "Sparse polynomial zonotopes: a novel set representation for
+//        reachability analysis", IEEE TAC, 2021.
 //
 // CORA: contSet/@polyZonotope/polyZonotope.m
 // CORA: contSet/@zonotope/polyZonotope.m

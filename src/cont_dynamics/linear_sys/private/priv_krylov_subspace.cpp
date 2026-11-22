@@ -17,6 +17,12 @@
 //           like - backend, device and dtype of V and H
 // Outputs:  S - V (n, k), H (k, k), |v|, the order, the bound and whether it meets the tolerance
 // See also: priv_reach_krylov, priv_krylov_float
+// References:
+//    [1] T. Jawecki, W. Auzinger, O. Koch. "Computable upper error bounds for Krylov
+//        approximations to matrix exponentials and associated phi-functions", BIT Numerical
+//        Mathematics, 2020.
+//    [2] M. Althoff. "Reachability analysis of large linear systems with uncertain inputs in the
+//        Krylov subspace", IEEE TAC 65(2), 2020, pp. 477-492.
 //
 // CORA: contDynamics/@linearSys/private/priv_subspace_Krylov_individual_Jawecki.m
 // CORA authors: Matthias Althoff

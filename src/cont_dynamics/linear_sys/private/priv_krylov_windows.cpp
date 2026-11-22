@@ -23,6 +23,12 @@
 // Outputs:  window - V (n, k), H (k, k), |s|, the order, the steps it covers and the error bound
 //           weighted() - whether the Lyapunov carry is in use; certificate() - its certificate
 // See also: priv_krylov_subspace, priv_krylov_float
+// References:
+//    [1] M. Althoff. "Reachability analysis of large linear systems with uncertain inputs in the
+//        Krylov subspace", IEEE TAC 65(2), 2020, pp. 477-492.
+//    [2] T. Jawecki, W. Auzinger, O. Koch. "Computable upper error bounds for Krylov
+//        approximations to matrix exponentials and associated phi-functions", BIT Numerical
+//        Mathematics, 2020.
 //
 // CORA.cpp only: CORA has no restart; its single subspace runs to the final time.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5

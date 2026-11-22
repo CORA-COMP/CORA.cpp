@@ -8,6 +8,9 @@
 //
 // Syntax:   Tensor h = priv_compute_heuristic("least-unstable", in, splits, first_id, true);
 // See also: cora/nn/neural_network/verify.h
+// References:
+//    [1] L. Koller, T. Ladner, M. Althoff. "Out of the shadows: exploring a latent space for
+//        neural network verification", ICLR 2026 (arXiv:2505.17854).
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Lukas Koller

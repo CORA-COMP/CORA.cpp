@@ -16,6 +16,11 @@
 // Operations: evaluate, evaluate_with_input, approx_errors (evaluate.cpp), refine (refine.cpp),
 //             sensitivity (sensitivity.cpp), verify (verify.cpp, verify.h)
 // See also:   cora/cont_set/zonotope/zonotope.h, cora/cont_set/poly_zonotope/poly_zonotope.h
+// References:
+//    [1] T. Ladner, M. Althoff. "Automatic abstraction refinement in neural network verification
+//        using sensitivity analysis", HSCC 2023.
+//    [2] L. Koller, T. Ladner, M. Althoff. "Out of the shadows: exploring a latent space for
+//        neural network verification", ICLR 2026 (arXiv:2505.17854).
 //
 // CORA: nn/@neuralNetwork/neuralNetwork.m
 // CORA: nn/@neuralNetwork/refine.m

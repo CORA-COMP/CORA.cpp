@@ -15,6 +15,9 @@
 // Not ported: conPolyZono (needs ConPolyZono), convHull_, volume_, encloseTight, shrink and
 //             reduceCombined (not yet: through Polytope's vertices and volume, and "methC")
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: contSet/@zonoBundle/zonoBundle.m
 // CORA: contSet/@zonoBundle/dim.m

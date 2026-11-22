@@ -19,6 +19,9 @@
 //           options - the method: "fourier-motzkin" (default) or "exact"
 // Outputs:  r - the box (l, u) (..., n) and the bounds (bl, bu) (..., q) of the factors
 // See also: interval, Koller, ICLR 2026, Prop. 3
+// References:
+//    [1] L. Koller, T. Ladner, M. Althoff. "Out of the shadows: exploring a latent space for
+//        neural network verification", ICLR 2026 (arXiv:2505.17854).
 //
 // CORA: contSet/@conZonotope/approximateBoundsWithGPU.m
 // CORA authors: Lukas Koller

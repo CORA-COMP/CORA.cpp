@@ -18,6 +18,9 @@
 //           zonotope_order - order that bounds the sets
 // Outputs:  R - the reachable sets, see LinearSys::reach
 // See also: priv_reach_wrappingfree
+// References:
+//    [1] A. Girard. "Reachability of uncertain linear systems using zonotopes", HSCC 2005, LNCS
+//        3414, pp. 291-305.
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_standard.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger

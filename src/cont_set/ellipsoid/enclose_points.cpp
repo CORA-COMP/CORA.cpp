@@ -12,6 +12,8 @@
 //           method - "cov" (default) or "min-vol"
 // Outputs:  E - the mean as the center, the points rotated onto the subspace they span
 // See also: Interval::enclose_points, Zonotope::enclose_points
+// References:
+//    [1] S. Boyd, L. Vandenberghe. "Convex Optimization", Cambridge University Press, 2004.
 //
 // CORA: contSet/@ellipsoid/enclosePoints.m
 // CORA authors: Niklas Kochdumper, Victor Gassmann

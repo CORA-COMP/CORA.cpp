@@ -4,6 +4,7 @@
 // Inputs:   Z2 - zonotope of the same dimension
 // Outputs:  Zres - Z + Z2: center c + c2, the generators of both
 // See also: linear_map, linear_combination
+// References: none (CORA cites only a thesis)
 //
 // CORA: contSet/@zonotope/plus.m
 // CORA: matrixSet/@matZonotope/plus.m

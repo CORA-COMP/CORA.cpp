@@ -14,6 +14,9 @@
 //           options - max_order (5), type (layer), heuristic (approx_error), gamma (0.1)
 // Outputs:  orders - one entry per neuron of every layer
 // See also: cora/nn/neural_network/neural_network.h, evaluate.cpp
+// References:
+//    [1] T. Ladner, M. Althoff. "Automatic abstraction refinement in neural network verification
+//        using sensitivity analysis", HSCC 2023.
 //
 // CORA: nn/@neuralNetwork/refine.m
 // CORA: nn/@neuralNetwork/getRefinableLayers.m

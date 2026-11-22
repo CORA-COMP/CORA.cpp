@@ -10,6 +10,13 @@
 //
 // Syntax:   NnProblem problem(nn, property, options, confirm);   Tensor l = problem.loss(y, cases);
 // See also: verify.cpp, priv_verify.h
+// References:
+//    [1] A. Kurakin, I. J. Goodfellow, S. Bengio. "Adversarial machine learning at scale", ICLR
+//        2017.
+//    [2] A. Madry, A. Makelov, L. Schmidt, D. Tsipras, A. Vladu. "Towards deep learning models
+//        resistant to adversarial attacks", ICLR 2018.
+//    [3] L. Koller, T. Ladner, M. Althoff. "Out of the shadows: exploring a latent space for
+//        neural network verification", ICLR 2026 (arXiv:2505.17854).
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA: nn/@neuralNetwork/computePGDAttack.m

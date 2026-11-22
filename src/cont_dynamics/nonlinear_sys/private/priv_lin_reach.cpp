@@ -19,6 +19,11 @@
 //           U - the input set (uncentered), alg - the options of "lin"
 // Outputs:  s - the sets over the step and at its end, and the error bound of this step
 // See also: priv_abstrerr_lin, NonlinearSys::linearize, LinearSys::one_step
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of nonlinear systems with
+//        uncertain parameters using conservative linearization", CDC 2008.
+//    [2] M. Althoff. "Reachability analysis of nonlinear systems using conservative
+//        polynomialization and non-convex sets", HSCC 2013.
 //
 // CORA: contDynamics/@contDynamics/linReach.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper, Mark Wetzlinger

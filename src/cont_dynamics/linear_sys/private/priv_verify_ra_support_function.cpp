@@ -19,6 +19,9 @@
 //           specs - safe and unsafe halfspaces
 // Outputs:  res - verified (false if undecided at a step below 1e-12), and the run's statistics
 // See also: LinearSys::verify
+// References:
+//    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using reachability
+//        analysis with support functions", HSCC 2023.
 //
 // CORA: contDynamics/@linearSys/private/priv_verifyRA_supportFunc.m
 // CORA authors: Mark Wetzlinger

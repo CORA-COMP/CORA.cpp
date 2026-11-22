@@ -15,6 +15,8 @@
 //             zonotope, unite, convex_hull, from_interval, from_zonotope, generate_random, isnan,
 //             display (one file each). dim is ContSet's.
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
+// References:
+//    [1] A. A. Kurzhanskiy, P. Varaiya. "Ellipsoidal toolbox (ET)", CDC 2006, pp. 1498-1503.
 //
 // CORA: contSet/@ellipsoid/ellipsoid.m
 // CORA: contSet/@ellipsoid/dim.m

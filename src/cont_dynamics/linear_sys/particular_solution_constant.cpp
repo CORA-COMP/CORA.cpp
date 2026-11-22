@@ -11,6 +11,7 @@
 //           taylor_terms - order of the series, at least 1 (CORA's Inf is not offered)
 // Outputs:  P - time_point (Ptp), input_curvature (C_input), time_interval (Pti)
 // See also: particular_solution_time_varying, affine_solution, correction_matrix_input
+// References: none (CORA cites only a thesis)
 //
 // CORA: contDynamics/@linearSys/particularSolution_constant.m
 // CORA authors: Mark Wetzlinger

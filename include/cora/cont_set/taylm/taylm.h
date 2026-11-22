@@ -15,6 +15,11 @@
 // Operations: plus, minus, uminus, times, power, interval, evaluate (one file each in
 //             src/cont_set/taylm/); the factories check their input (taylm.cpp)
 // See also:   cora/global/expr.h, cora/cont_set/interval/interval.h
+// References:
+//    [1] K. Makino, M. Berz. "Taylor models and other validated functional inclusion methods",
+//        International Journal of Pure and Applied Mathematics, 2003.
+//    [2] M. Althoff, D. Grebenyuk, N. Kochdumper. "Implementation of Taylor models in CORA 2018",
+//        ARCH18.
 //
 // CORA: contSet/@taylm/taylm.m
 // CORA: contSet/@taylm/dim.m

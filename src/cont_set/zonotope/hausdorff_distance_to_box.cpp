@@ -8,6 +8,13 @@
 // Inputs:   method - "exact" (CORA's default for dim <= 3), "naive", "wgreedy" or "wopt"
 // Outputs:  dH - the number, (...); 2-norm for "naive", "wgreedy" and "wopt"
 // See also: interval, box
+// References:
+//    [1] X. Yang, J. K. Scott. "A comparison of zonotope order reduction techniques", Automatica
+//        95, 2018, pp. 378-384.
+//    [2] M. Wetzlinger, A. Kulmburg, M. Althoff. "Adaptive parameter tuning for reachability
+//        analysis of nonlinear systems", HSCC 2021.
+//    [3] V. Gassmann, M. Althoff. "Scalable zonotope-ellipsoid conversions using the Euclidean
+//        zonotope norm", ACC 2020.
 //
 // CORA: contSet/@zonotope/dH2box.m
 // CORA authors: Mark Wetzlinger

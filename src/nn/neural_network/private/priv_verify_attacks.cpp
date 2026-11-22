@@ -10,6 +10,13 @@
 //
 // Syntax:   auto attack = make_attack("pgd", options);   attack->run(problem, deadline, 3);
 // See also: priv_verify.h, priv_verify_zonotack.cpp (the attack "zonotack")
+// References:
+//    [1] A. Kurakin, I. J. Goodfellow, S. Bengio. "Adversarial machine learning at scale", ICLR
+//        2017.
+//    [2] A. Madry, A. Makelov, L. Schmidt, D. Tsipras, A. Vladu. "Towards deep learning models
+//        resistant to adversarial attacks", ICLR 2018.
+//    [3] I. J. Goodfellow, J. Shlens, C. Szegedy. "Explaining and harnessing adversarial
+//        examples", ICLR 2015.
 //
 // CORA: nn/@neuralNetwork/computePGDAttack.m
 // CORA: nn/@neuralNetwork/computeFGSMAttack.m

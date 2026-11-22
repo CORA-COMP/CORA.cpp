@@ -9,6 +9,9 @@
 //           number_of_generators - positive integer, for the norm modes
 // Outputs:  Z - the zonotope
 // See also: interval, Capsule::zonotope
+// References:
+//    [1] V. Gassmann, M. Althoff. "Scalable zonotope-ellipsoid conversions using the Euclidean
+//        zonotope norm", ACC 2020.
 //
 // CORA: contSet/@ellipsoid/zonotope.m
 // CORA authors: Victor Gassmann

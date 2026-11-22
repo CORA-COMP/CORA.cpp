@@ -8,6 +8,9 @@
 //           M - the matrix (n2, n)
 // Outputs:  cZres - exact: the set {x in cz | M x in cz2}
 // See also: intersect, Zonotope::linear_map
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/conIntersect.m
 // CORA authors: Niklas Kochdumper

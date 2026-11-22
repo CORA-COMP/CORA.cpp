@@ -8,6 +8,9 @@
 //
 // Syntax:   priv_register_builtins();   bool found = priv_confirm_rows(problem, x, loss, result);
 // See also: cora/nn/neural_network/verify.h
+// References:
+//    [1] L. Koller, T. Ladner, M. Althoff. "Out of the shadows: exploring a latent space for
+//        neural network verification", ICLR 2026 (arXiv:2505.17854).
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Lukas Koller, Tobias Ladner

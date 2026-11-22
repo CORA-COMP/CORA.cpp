@@ -7,6 +7,9 @@
 // Inputs:   zonotopes - a nonempty list of zonotopes of one dimension and one batch shape
 // Outputs:  bundle - the intersection of the zonotopes
 // See also: empty, Zonotope::Zonotope
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: contSet/@zonoBundle/zonoBundle.m
 // CORA authors: Matthias Althoff

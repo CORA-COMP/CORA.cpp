@@ -6,6 +6,9 @@
 // Inputs:   -
 // Outputs:  I - the box, empty if the boxes of the members do not meet
 // See also: Zonotope::interval, con_zonotope
+// References:
+//    [1] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: contSet/@zonoBundle/interval.m
 // CORA authors: Matthias Althoff

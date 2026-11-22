@@ -12,6 +12,9 @@
 //           method - "exact:supportFunc" (default) or "exact:vertices"
 // Outputs:  cz - the same set as a constrained zonotope
 // See also: Polytope::interval, ConZonotope::ConZonotope
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@polytope/conZonotope.m
 // CORA: contSet/@polytope/private/priv_conZonotope_supportFunc.m

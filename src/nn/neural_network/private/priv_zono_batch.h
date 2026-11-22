@@ -15,6 +15,11 @@
 // Syntax:   ZonoNet net(nn, q0, dn, "bounds", "length");   auto in = net.input_zonotope(x, r);
 //           ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true);
 // See also: verify.cpp, priv_verify_zonotack.cpp
+// References:
+//    [1] L. Koller, T. Ladner, M. Althoff. "Set-based training for neural network verification",
+//        Transactions on Machine Learning Research, 2025.
+//    [2] G. Singh, T. Gehr, M. Mirman, M. Puschel, M. Vechev. "Fast and effective robustness
+//        certification", NeurIPS 2018.
 //
 // CORA: nn/@neuralNetwork/evaluateZonotopeBatch_.m
 // CORA: nn/@neuralNetwork/prepareForZonoBatchEval.m

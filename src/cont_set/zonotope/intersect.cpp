@@ -10,6 +10,9 @@
 //           method - "conZonotope" (CORA's default) or "averaging"
 // Outputs:  Zres - the intersection (two boxes), the averaging zonotope, or the ConZonotope result
 // See also: enclose, interval
+// References:
+//    [1] A. Alanwar, J. J. Rath, H. Said, M. Althoff. "Distributed set-based observers using
+//        diffusion strategies", Journal of the Franklin Institute, 2023.
 //
 // CORA: contSet/@zonotope/and_.m
 // CORA: contSet/@zonotope/private/priv_andAveraging.m

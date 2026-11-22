@@ -12,6 +12,9 @@
 //           F - factor polytope {x | A x = b}
 // Outputs:  cz - the set {c + G x | |x|_inf <= 1, A x = b}; no constraints give p = 0
 // See also: empty, Zonotope::Zonotope
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/conZonotope.m
 // CORA: contSet/@interval/conZonotope.m

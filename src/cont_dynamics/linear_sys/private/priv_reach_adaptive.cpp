@@ -14,10 +14,10 @@
 //           verify - called from verify
 //           savedata - step sizes and sets of earlier runs
 // Outputs:  R - time-interval and time-point output sets with errors, and the time points
+// See also: priv_verify_ra_zonotope
 // References:
 //    [1] M. Wetzlinger et al. "Fully automated verification of linear systems using inner- and
-//        outer-approximations of reachable sets", TAC, 2023.
-// See also: priv_verify_ra_zonotope
+//        outer-approximations of reachable sets", IEEE TAC, 2023.
 //
 // CORA: contDynamics/@linearSys/private/priv_reach_adaptive.m
 // CORA authors: Mark Wetzlinger

@@ -6,6 +6,9 @@
 // Inputs:   E - an unbatched, nonempty ellipsoid
 // Outputs:  G - (n, r), without columns for Q = 0
 // See also: priv_rank, Ellipsoid::generators
+// References:
+//    [1] V. Gassmann, M. Althoff. "Scalable zonotope-ellipsoid conversions using the Euclidean
+//        zonotope norm", ACC 2020.
 //
 // CORA: contSet/@ellipsoid/zonotope.m
 // CORA authors: Victor Gassmann

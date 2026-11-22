@@ -1,6 +1,11 @@
 // priv_activation_poly - the polynomial that encloses an activation over a range, and its error
 //
 // See also: priv_activation_poly.h
+// References:
+//    [1] N. Kochdumper, C. Schilling, M. Althoff, S. Bak. "Open- and closed-loop neural network
+//        verification using polynomial zonotopes", NFM 2023 (arXiv:2207.02715).
+//    [2] G. Singh, T. Gehr, M. Mirman, M. Puschel, M. Vechev. "Fast and effective robustness
+//        certification", NeurIPS 2018.
 //
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA: nn/layers/nonlinear/nnLeakyReLULayer.m

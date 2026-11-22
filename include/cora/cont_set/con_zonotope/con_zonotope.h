@@ -15,6 +15,9 @@
 //             zono_bundle, polytope, generate_random, cut, interval_tight, interval_cert (one file
 //             each).
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/conZonotope.m
 // CORA: contSet/@conZonotope/dim.m

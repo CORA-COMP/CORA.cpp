@@ -8,6 +8,9 @@
 // Inputs:   p - vectors (..., n), the batch of E broadcast
 // Outputs:  res - sqrt(|p' Q^+ p|) (...)
 // See also: generators, contains
+// References:
+//    [1] A. Kulmburg, M. Althoff. "On the co-NP-completeness of the zonotope containment problem",
+//        European Journal of Control, 2021.
 //
 // CORA: contSet/@ellipsoid/ellipsoidNorm.m
 // CORA authors: Adrian Kulmburg

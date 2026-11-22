@@ -10,6 +10,9 @@
 // Inputs:   -
 // Outputs:  P - the same set as {x | C x <= d}, C = [C0; -C0]
 // See also: Zonotope::simplex, ConZonotope::polytope, ZonoBundle::polytope
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Computing reachable sets of hybrid systems using a
+//        combination of zonotopes and polytopes", Nonlinear Analysis: Hybrid Systems 4(2), 2010.
 //
 // CORA: contSet/@zonotope/polytope.m
 // CORA authors: Niklas Kochdumper, Matthias Althoff

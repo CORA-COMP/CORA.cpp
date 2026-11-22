@@ -11,6 +11,9 @@
 //           PolyZonotope C = priv_poly_construct(Z);
 //           PolyZonotope R = priv_poly_reduce_cora(Z, order);
 // See also: priv_poly_ops.cpp, priv_lin_reach_poly.cpp
+// References:
+//    [1] N. Kochdumper, M. Althoff. "Sparse polynomial zonotopes: a novel set representation for
+//        reachability analysis", IEEE TAC, 2021.
 //
 // CORA: contSet/@polyZonotope/enclose.m
 // CORA: contSet/@polyZonotope/polyZonotope.m

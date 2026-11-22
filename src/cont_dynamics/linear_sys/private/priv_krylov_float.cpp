@@ -24,6 +24,12 @@
 // Outputs:  s - the Arnoldi data
 //           b - the bound of the Krylov error over [0, t]
 // See also: priv_krylov_subspace
+// References:
+//    [1] T. Jawecki, W. Auzinger, O. Koch. "Computable upper error bounds for Krylov
+//        approximations to matrix exponentials and associated phi-functions", BIT Numerical
+//        Mathematics, 2020.
+//    [2] M. Althoff. "Reachability analysis of large linear systems with uncertain inputs in the
+//        Krylov subspace", IEEE TAC 65(2), 2020, pp. 477-492.
 //
 // CORA: global/functions/helper/dynamics/contDynamics/linearSys/arnoldi.m
 // CORA: contDynamics/@linearSys/private/priv_subspace_Krylov_individual_Jawecki.m

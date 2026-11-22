@@ -16,6 +16,19 @@
 //           method - alg::ZonoGirard, alg::NondetGuard or alg::ConZonotopeGuard
 // Outputs:  G - per crossing the transition, the first and the last set index, and the set
 // See also: priv_calc_basis, priv_check_flow, priv_guard_intersect_level_set
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Computing reachable sets of hybrid systems using a
+//        combination of zonotopes and polytopes", Nonlinear Analysis: Hybrid Systems 4(2), 2010.
+//    [2] A. Girard, C. Le Guernic. "Zonotope/hyperplane intersection for hybrid systems
+//        reachability analysis", HSCC 2008.
+//    [3] M. Althoff, B. H. Krogh. "Avoiding geometric intersection operations in reachability
+//        analysis of hybrid systems", HSCC 2012.
+//    [4] S. Bak, S. Bogomolov, M. Althoff. "Time-triggered conversion of guards for reachability
+//        analysis of hybrid automata", FORMATS 2017.
+//    [5] N. Kochdumper, M. Althoff. "Reachability analysis for hybrid systems with nonlinear guard
+//        sets", HSCC 2020.
+//    [6] M. Althoff, B. H. Krogh. "Zonotope bundles for the efficient computation of reachable
+//        sets", CDC 2011.
 //
 // CORA: hybridDynamics/@location/guardIntersect.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper

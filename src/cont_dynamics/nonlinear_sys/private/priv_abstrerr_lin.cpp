@@ -14,6 +14,9 @@
 //           set (none without inputs), alg - tensor_order, error_order and intermediate_order
 // Outputs:  e - the bound l (n, 1) and the error set
 // See also: priv_lin_reach, NonlinearSys::hessian_enclosure, third_order_enclosure
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of nonlinear systems with
+//        uncertain parameters using conservative linearization", CDC 2008.
 //
 // CORA: contDynamics/@contDynamics/private/priv_abstrerr_lin.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper
@@ -143,6 +146,7 @@ Interval priv_with_origin(const Interval &I) {
 std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Interval &IHx0,
                                              const std::optional<Interval> &IHu0,
                                              const Linearized &lin) {
+    // The Hessian region --------------------------------------------------------------------------
     // the boxes joined with the linearization point (CORALean's Hessian-region repair)
     const Interval IHx = priv_with_origin(IHx0);
     std::optional<Interval> IHu;

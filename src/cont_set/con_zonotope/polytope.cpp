@@ -8,6 +8,9 @@
 // Inputs:   -
 // Outputs:  P - the same set as {x | C x <= d}
 // See also: zono_bundle, Polytope::con_zonotope
+// References:
+//    [1] J. K. Scott, D. M. Raimondo, G. R. Marseglia, R. D. Braatz. "Constrained zonotopes: a new
+//        tool for set-based estimation and fault detection", Automatica 69, 2016, pp. 126-136.
 //
 // CORA: contSet/@conZonotope/polytope.m
 // CORA authors: Niklas Kochdumper

@@ -15,6 +15,11 @@
 // Inputs:   xs - the linearization point, U - the input set (none: no input), zeta_z - redFactor
 // Outputs:  the static error with Zdelta, and the dynamic error as a zonotope
 // See also: priv_poly_quad.cpp, priv_abstrerr_adaptive.cpp, priv_lin_reach_poly_adaptive_pass.cpp
+// References:
+//    [1] M. Althoff, O. Stursberg, M. Buss. "Reachability analysis of nonlinear systems with
+//        uncertain parameters using conservative linearization", CDC 2008.
+//    [2] M. Althoff. "Reachability analysis of nonlinear systems using conservative
+//        polynomialization and non-convex sets", HSCC 2013.
 //
 // CORA: contDynamics/@nonlinearSys/private/priv_precompStatError_adaptive.m
 // CORA: contDynamics/@nonlinearSys/private/priv_abstractionError_adaptive.m

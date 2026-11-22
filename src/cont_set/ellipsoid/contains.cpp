@@ -17,6 +17,11 @@
 //           tol - allowed excess of the ellipsoid norm over 1; default: the repository tolerance
 // Outputs:  res - for points, the ellipsoid norm of p - q is at most 1 + tol
 // See also: ellipsoid_norm, Zonotope::contains
+// References:
+//    [1] E. A. Yildirim. "On the minimum volume covering ellipsoid of ellipsoids", SIAM Journal on
+//        Optimization 17(3), 2006, pp. 621-641.
+//    [2] A. Kulmburg, L. Schaefer, M. Althoff. "Approximability of the containment problem for
+//        zonotopes and ellipsotopes", IEEE TAC, 2025.
 //
 // CORA: contSet/@ellipsoid/contains_.m
 // CORA authors: Victor Gassmann, Niklas Kochdumper, Adrian Kulmburg, Mark Wetzlinger

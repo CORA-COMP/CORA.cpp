@@ -15,6 +15,9 @@
 //           alg - error_order and intermediate_order
 // Outputs:  e - the bound (n, 1) and the zonotope of the dynamic error
 // See also: priv_poly_reach, priv_precomp_stat_error, priv_abstrerr_lin
+// References:
+//    [1] M. Althoff. "Reachability analysis of nonlinear systems using conservative
+//        polynomialization and non-convex sets", HSCC 2013.
 //
 // CORA: contDynamics/@contDynamics/private/priv_abstrerr_poly.m
 // CORA authors: Matthias Althoff, Niklas Kochdumper
