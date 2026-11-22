@@ -33,19 +33,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def zonotope(c, G):
-    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-def random_zonotope(rng, n=3, m=4):
-    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (m, n)))
-
-
-# ============================================  MAIN  ============================================ #
-
-
 class ExactPlus(unittest.TestCase):
     def test_by_hand(self):
         Z = zonotope([0, 1], [[1, 0], [2, 1]])
@@ -263,6 +250,7 @@ class Enclosing(unittest.TestCase):
         np.testing.assert_allclose(E.generators, np.diag([1.5, 0.5]))
         np.testing.assert_allclose(inverse, np.eye(2))
 
+
 # the Minkowski difference of squares, by hand
 
 
@@ -308,6 +296,16 @@ class MinkDiff(unittest.TestCase):
             cube.mink_diff(small, "other")
         with self.assertRaises(cora.errors.EmptySet):
             zonotope([0, 0], np.eye(2)).mink_diff(zonotope([0, 0], [[3, 0]]))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def zonotope(c, G):
+    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
+
+
+def random_zonotope(rng, n=3, m=4):
+    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (m, n)))
 
 
 if __name__ == "__main__":

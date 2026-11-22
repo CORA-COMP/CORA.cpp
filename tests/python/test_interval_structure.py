@@ -33,21 +33,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-INF = float("inf")
-
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
-
-
-def matrix(lo, hi):
-    return cora.Interval.matrix(np.array(lo, dtype=float), np.array(hi, dtype=float))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Structure(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -141,6 +126,19 @@ class Structure(unittest.TestCase):
         self.assertEqual(B.tanh().sup.shape, (2, 2))
         self.assertEqual(B.tan().sup.shape, (2, 2))
         self.assertEqual(B.volume().shape, (2,))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+INF = float("inf")
+
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
+
+
+def matrix(lo, hi):
+    return cora.Interval.matrix(np.array(lo, dtype=float), np.array(hi, dtype=float))
 
 
 if __name__ == "__main__":

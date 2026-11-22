@@ -15,13 +15,10 @@ Reviewed:      ---
 import argparse
 import time
 
-import cora
+from cora import eye, LinearSys, ones, plot, Rng, Tensor, use_cora_colors, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the figures instead of showing them")
@@ -37,7 +34,7 @@ import matplotlib.pyplot as plt
 
 
 t_final = 5
-R0 = cora.Zonotope(cora.ones(5), 0.1 * cora.eye(5))
+R0 = Zonotope(ones(5), 0.1 * eye(5))
 
 # Reachability Settings ---------------------------------------------------------------------
 
@@ -46,9 +43,9 @@ taylor_terms = 4
 
 # System Dynamics ---------------------------------------------------------------------------
 
-A = cora.Tensor([[-1, -4, 0, 0, 0], [4, -1, 0, 0, 0], [0, 0, -3, 1, 0], [0, 0, -1, -3, 0],
+A = Tensor([[-1, -4, 0, 0, 0], [4, -1, 0, 0, 0], [0, 0, -3, 1, 0], [0, 0, -1, -3, 0],
                   [0, 0, 0, 0, -2]])
-five_dim_sys = cora.LinearSys(A)
+five_dim_sys = LinearSys(A)
 
 # Reachability Analysis ---------------------------------------------------------------------
 
@@ -60,7 +57,7 @@ print(f"computation time of reachable set: {computation_time:.3f} s")
 
 # Simulation --------------------------------------------------------------------------------
 
-rng = cora.Rng(0)
+rng = Rng(0)
 traj = five_dim_sys.simulate_random(R0, points=25, time_step=time_step, t_final=t_final, rng=rng)
 
 # Visualization -----------------------------------------------------------------------------
@@ -68,18 +65,18 @@ traj = five_dim_sys.simulate_random(R0, points=25, time_step=time_step, t_final=
 # plot different projections
 dims = [(0, 1), (2, 3)]
 
-cora.use_cora_colors("CORA:contDynamics")
+use_cora_colors("CORA:contDynamics")
 for k, proj_dims in enumerate(dims, start=1):
     plt.figure()
 
     # plot reachable sets
-    cora.plot(R, proj_dims, label="Reachable set")
+    plot(R, proj_dims, label="Reachable set")
 
     # plot initial set
-    cora.plot(R0, proj_dims, label="Initial set")
+    plot(R0, proj_dims, label="Initial set")
 
     # plot simulation results
-    cora.plot(traj, proj_dims, label="Simulations")
+    plot(traj, proj_dims, label="Simulations")
 
     # label plot
     plt.xlabel(f"$x_{proj_dims[0] + 1}$")

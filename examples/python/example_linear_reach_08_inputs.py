@@ -15,13 +15,10 @@ Reviewed:      ---
 import argparse
 import time
 
-import cora
+from cora import eye, LinearSys, plot, Rng, Tensor, use_cora_colors, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the figure instead of showing it")
@@ -37,8 +34,8 @@ import matplotlib.pyplot as plt
 
 
 t_final = 5
-R0 = cora.Zonotope(cora.Tensor([0, 0]), 0.2 * cora.eye(2))            # position, velocity
-U = cora.Zonotope(cora.Tensor([0.5]), cora.Tensor([[0.25]]))          # force in [0.25, 0.75]
+R0 = Zonotope(Tensor([0, 0]), 0.2 * eye(2))            # position, velocity
+U = Zonotope(Tensor([0.5]), Tensor([[0.25]]))          # force in [0.25, 0.75]
 
 # Reachability Settings ---------------------------------------------------------------------
 
@@ -48,10 +45,10 @@ zonotope_order = 20
 
 # System Dynamics ---------------------------------------------------------------------------
 
-A = cora.Tensor([[0, 1], [-4, -0.4]])
-B = cora.Tensor([[0], [1]])
-C = cora.Tensor([[1, 0]])                                              # the position
-sys = cora.LinearSys(A, B, C)
+A = Tensor([[0, 1], [-4, -0.4]])
+B = Tensor([[0], [1]])
+C = Tensor([[1, 0]])                                              # the position
+sys = LinearSys(A, B, C)
 
 # Reachability Analysis ---------------------------------------------------------------------
 
@@ -64,7 +61,7 @@ print(f"computation time of reachable set: {computation_time:.3f} s")
 
 # Simulation --------------------------------------------------------------------------------
 
-rng = cora.Rng(0)
+rng = Rng(0)
 traj = sys.simulate_random(R0, points=25, time_step=time_step, t_final=t_final, rng=rng, input_set=U)
 
 # Evaluation --------------------------------------------------------------------------------
@@ -76,11 +73,11 @@ print(f"the output y stays in [{lower:.4f}, {upper:.4f}]")
 
 # Visualization -----------------------------------------------------------------------------
 
-cora.use_cora_colors("CORA:contDynamics")
+use_cora_colors("CORA:contDynamics")
 plt.figure()
-cora.plot(R, (0, 1), label="Reachable set")
-cora.plot(R0, (0, 1), label="Initial set")
-cora.plot(traj, (0, 1), label="Simulations")
+plot(R, (0, 1), label="Reachable set")
+plot(R0, (0, 1), label="Initial set")
+plot(traj, (0, 1), label="Simulations")
 plt.xlabel("position")
 plt.ylabel("velocity")
 plt.legend(loc="upper left")

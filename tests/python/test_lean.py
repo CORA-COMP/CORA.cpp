@@ -17,16 +17,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-# Skips without CORACPP_ORACLE; with CORACPP_REQUIRE_ORACLE (CI) the tests run and fail instead.
-needs_oracle = unittest.skipUnless(
-    os.environ.get("CORACPP_ORACLE") or os.environ.get("CORACPP_REQUIRE_ORACLE", "0") not in ("", "0"),
-    "needs CORACPP_ORACLE")
-
-
-# ============================================  MAIN  ============================================ #
-
 class Crossing(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.lean.dtype("binary64"))
@@ -48,6 +38,12 @@ class Crossing(unittest.TestCase):
         Z = cora.lean.Zonotope(np.array([1.0, 2.0]), np.eye(2))
         with self.assertRaises(ValueError):
             Z.reduce(1, "pca")
+
+
+# Skips without CORACPP_ORACLE; with CORACPP_REQUIRE_ORACLE (CI) the tests run and fail instead.
+needs_oracle = unittest.skipUnless(
+    os.environ.get("CORACPP_ORACLE") or os.environ.get("CORACPP_REQUIRE_ORACLE", "0") not in ("", "0"),
+    "needs CORACPP_ORACLE")
 
 
 @needs_oracle

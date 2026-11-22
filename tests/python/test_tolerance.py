@@ -14,14 +14,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def box(lo, hi, dtype="float64"):
-    return cora.Interval(np.array(lo, dtype=dtype), np.array(hi, dtype=dtype))
-
-
-# ============================================  MAIN  ============================================ #
-
 class ToleranceTest(unittest.TestCase):
     def tearDown(self):
         cora.set_default_tolerance(None)
@@ -114,6 +106,12 @@ class ToleranceTest(unittest.TestCase):
         thread.start()
         thread.join()
         self.assertEqual(seen, [None, 1e-4])
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def box(lo, hi, dtype="float64"):
+    return cora.Interval(np.array(lo, dtype=dtype), np.array(hi, dtype=dtype))
 
 
 # run the tests

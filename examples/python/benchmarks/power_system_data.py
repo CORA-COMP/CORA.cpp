@@ -30,9 +30,26 @@ import scipy.io
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    if len(sys.argv) < 2:
+        raise SystemExit(__doc__)
+    converted = sys.argv[1]
+    cases = sys.argv[2] if len(sys.argv) > 2 else os.path.join(converted, "..", "powerSystems")
+    data = {
+        "format": "cora-benchmark-dae-1",
+        "benchmark": "TSPS25",
+        "models": [model(name, converted, cases) for name in CASES],
+    }
+    os.makedirs(DATA, exist_ok=True)
+    with open(os.path.join(DATA, "TSPS25.json"), "w") as fh:
+        json.dump(data, fh, indent=1)
+        fh.write("\n")
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "benchmarks", "data")
+
 CASES = ["IEEE14", "IEEE14_sub1", "IEEE14_sub2", "IEEE14_fault", "IEEE14_fault_sub1"]
 
 
@@ -63,6 +80,7 @@ def model(name, converted, cases):
     bus = case["bus"]
     generators, loads, inputs = len(vector(bus.generator)), len(vector(bus.load)), len(vector(bus.input))
     total = generators + loads
+    # the generated dynamic and constraint files hold one equation per row
     dyn = equations(os.path.join(converted, name + "_dyn.m"), name)
     con = equations(os.path.join(converted, name + "_con.m"), name)
     sizes = dict(
@@ -76,24 +94,6 @@ def model(name, converted, cases):
     out["bus"] = {k: vector(getattr(bus, k)) for k in ("generator", "load", "slack", "input", "fault")}
     out["VM"] = [float(v) for v in case["VM"].flatten()]
     return out
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    if len(sys.argv) < 2:
-        raise SystemExit(__doc__)
-    converted = sys.argv[1]
-    cases = sys.argv[2] if len(sys.argv) > 2 else os.path.join(converted, "..", "powerSystems")
-    data = {
-        "format": "cora-benchmark-dae-1",
-        "benchmark": "TSPS25",
-        "models": [model(name, converted, cases) for name in CASES],
-    }
-    os.makedirs(DATA, exist_ok=True)
-    with open(os.path.join(DATA, "TSPS25.json"), "w") as fh:
-        json.dump(data, fh, indent=1)
-        fh.write("\n")
 
 
 if __name__ == "__main__":

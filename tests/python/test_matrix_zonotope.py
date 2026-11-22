@@ -35,44 +35,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-# C = [[1, 2], [3, 4]] with the generators [[1, 0], [0, 1]] and [[0, 1], [1, 0]]
-EXAMPLE = cora.Zonotope.matrix(np.array([[1.0, 2.0], [3.0, 4.0]]),
-                               np.array([[[1.0, 0.0], [0.0, 1.0]], [[0.0, 1.0], [1.0, 0.0]]]))
-
-
-def point(C):
-    """The matrix zonotope of the one matrix C."""
-    C = np.asarray(C, dtype=float)
-    return cora.Zonotope.matrix(C, np.zeros((0,) + C.shape))
-
-
-def random_set(rng, n, h, spread):
-    return cora.Zonotope.matrix(0.5 * rng.standard_normal((n, n)),
-                                rng.uniform(-spread, spread, (h, n, n)))
-
-
-def count(A):
-    """The number of generator matrices."""
-    return A.generators.shape[-3]
-
-
-def member(A, b):
-    return A.center + np.tensordot(b, A.generators, axes=1)
-
-
-def exponential(M):
-    """exp(M) by the Taylor series, enough terms for small matrices."""
-    term, total = np.eye(len(M)), np.eye(len(M))
-    for k in range(1, 40):
-        term = term @ M / k
-        total = total + term
-    return total
-
-
-# ============================================  MAIN  ============================================ #
-
 class Construction(unittest.TestCase):
     def test_forms(self):
         self.assertEqual((EXAMPLE.elem_rank, EXAMPLE.center.shape, count(EXAMPLE)), (2, (2, 2), 2))
@@ -324,6 +286,42 @@ class Gradients(unittest.TestCase):
         u = torch.tensor([1.0, 2.0], dtype=torch.float64)
         self.check(lambda A: cora.mat_exp.expm_one_param(A, 0.5, 4, u).constant_input.generators,
                    center, generators)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+# C = [[1, 2], [3, 4]] with the generators [[1, 0], [0, 1]] and [[0, 1], [1, 0]]
+EXAMPLE = cora.Zonotope.matrix(np.array([[1.0, 2.0], [3.0, 4.0]]),
+                               np.array([[[1.0, 0.0], [0.0, 1.0]], [[0.0, 1.0], [1.0, 0.0]]]))
+
+
+def point(C):
+    """The matrix zonotope of the one matrix C."""
+    C = np.asarray(C, dtype=float)
+    return cora.Zonotope.matrix(C, np.zeros((0,) + C.shape))
+
+
+def random_set(rng, n, h, spread):
+    return cora.Zonotope.matrix(0.5 * rng.standard_normal((n, n)),
+                                rng.uniform(-spread, spread, (h, n, n)))
+
+
+def count(A):
+    """The number of generator matrices."""
+    return A.generators.shape[-3]
+
+
+def member(A, b):
+    return A.center + np.tensordot(b, A.generators, axes=1)
+
+
+def exponential(M):
+    """exp(M) by the Taylor series, enough terms for small matrices."""
+    term, total = np.eye(len(M)), np.eye(len(M))
+    for k in range(1, 40):
+        term = term @ M / k
+        total = total + term
+    return total
 
 
 if __name__ == "__main__":

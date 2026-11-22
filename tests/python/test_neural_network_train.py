@@ -22,6 +22,33 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+class SetBasedTraining(unittest.TestCase):
+    def test_one_step_on_the_set_loss_updates_every_weight(self):
+        m = model()
+        before = [p.detach().clone() for p in m.parameters()]
+        optimizer = torch.optim.Adam(m.parameters(), lr=0.01)
+        optimizer.zero_grad()
+        loss = set_loss(m, x, labels, eps=0.05, tau=0.1)
+        loss.backward()
+        optimizer.step()
+        self.assertTrue(torch.isfinite(loss))
+        for old, p in zip(before, m.parameters(), strict=True):
+            self.assertTrue(torch.isfinite(p.grad).all())
+            self.assertFalse(torch.equal(old, p.detach()))
+
+    def test_minimizing_the_set_size_shrinks_the_output_sets(self):
+        m = model()
+        optimizer = torch.optim.SGD(m.parameters(), lr=0.01)
+        sizes = []
+        for _ in range(5):
+            optimizer.zero_grad()
+            loss = set_loss(m, x, labels, eps=0.05, tau=1.0)  # only the size of the output sets
+            sizes.append(loss.item())
+            loss.backward()
+            optimizer.step()
+        self.assertLess(sizes[-1], sizes[0])
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 dtype = torch.float64
@@ -49,36 +76,8 @@ def set_loss(m, x, labels, eps, tau):
 
 
 x = torch.tensor([[0.1, 0.7], [0.6, 0.9], [0.5, 0.5], [0.9, 0.1]], dtype=dtype)
+
 labels = torch.tensor([1, 1, 0, 0])
-
-
-# ============================================  MAIN  ============================================ #
-
-class SetBasedTraining(unittest.TestCase):
-    def test_one_step_on_the_set_loss_updates_every_weight(self):
-        m = model()
-        before = [p.detach().clone() for p in m.parameters()]
-        optimizer = torch.optim.Adam(m.parameters(), lr=0.01)
-        optimizer.zero_grad()
-        loss = set_loss(m, x, labels, eps=0.05, tau=0.1)
-        loss.backward()
-        optimizer.step()
-        self.assertTrue(torch.isfinite(loss))
-        for old, p in zip(before, m.parameters(), strict=True):
-            self.assertTrue(torch.isfinite(p.grad).all())
-            self.assertFalse(torch.equal(old, p.detach()))
-
-    def test_minimizing_the_set_size_shrinks_the_output_sets(self):
-        m = model()
-        optimizer = torch.optim.SGD(m.parameters(), lr=0.01)
-        sizes = []
-        for _ in range(5):
-            optimizer.zero_grad()
-            loss = set_loss(m, x, labels, eps=0.05, tau=1.0)  # only the size of the output sets
-            sizes.append(loss.item())
-            loss.backward()
-            optimizer.step()
-        self.assertLess(sizes[-1], sizes[0])
 
 
 if __name__ == "__main__":

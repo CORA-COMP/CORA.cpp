@@ -32,17 +32,58 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def write_counterexample(x, y, prop):
+    """The counterexample text of the input x and output y (flat, C order) for the property's
+    VNN-LIB version; values are float32 unless the 2.0 query declares another type."""
+    x, y = np.asarray(x).reshape(-1), np.asarray(y).reshape(-1)
+    if prop.version == 1:
+        lines = [f"(X_{i} {_value_text(v, np.float32)})" for i, v in enumerate(x)]
+        lines += [f"(Y_{j} {_value_text(v, np.float32)})" for j, v in enumerate(y)]
+        return "(" + "\n".join(lines) + ")\n"
+    net, out = prop.query.networks[0], []
+    for definitions, values in ((net.inputs, iter(x)), (net.outputs, iter(y))):
+        for d in definitions:
+            key = d.dtype.name
+            dims = ", ".join(str(s) for s in d.shape)
+            out.append(f"{d.name} {TYPE_NAMES.get(key, 'real')} [{dims}]")
+            out += [
+                _value_text(next(values), DTYPES.get(key, np.float64))
+                for _ in range(math.prod(d.shape))
+            ]
+    return "\n".join(out) + "\n"
+
+
+def check_counterexample(onnx_path, vnnlib_path, content, vnnlib_text=None):
+    """(result, why) of the counterexample text for the network and property, as the VNN-COMP 2026
+    scoring decides it; the version comes from the property's header (vnnlib_text: read already)."""
+    from .vnnlib import VERSION_2, read_text
+
+    text = vnnlib_text if vnnlib_text is not None else read_text(vnnlib_path)
+    if not content or len(content.strip()) < 2:
+        return NO_CE, "no counterexample"
+    return (_check_v2 if VERSION_2.search(text) else _check_v1)(onnx_path, text, content)
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 CORRECT = "correct"
+
 CORRECT_UP_TO_TOLERANCE = "correct_up_to_tolerance"
+
 SPEC_NOT_VIOLATED = "spec_not_violated"
+
 NO_CE = "no_ce"
+
 MALFORMED_CE = "malformed_ce"
+
 WRONG_SHAPE = "wrong_shape"
+
 UNSUPPORTED = "unsupported"
+
 COUNTEREXAMPLE_ATOL = 1e-4  # the scoring's input tolerance (Settings.COUNTEREXAMPLE_ATOL)
+
 ASSIGNMENT_HEADER = re.compile(r"^(\S+)\s+(\S+)\s+\[([0-9,\s]*)\]$")
+
 DTYPES = {
     "F16": np.float16,
     "F32": np.float32,
@@ -50,6 +91,7 @@ DTYPES = {
     "Real": np.float64,
     "Unknown": np.float64,
 }
+
 TYPE_NAMES = {
     "F16": "float16",
     "F32": "float32",
@@ -57,6 +99,7 @@ TYPE_NAMES = {
     "Real": "real",
     "Unknown": "real",
 }
+
 ORT_DTYPES = {
     "tensor(float16)": np.float16,
     "tensor(float)": np.float32,
@@ -323,41 +366,5 @@ def _variables(e):
         for child in getattr(e, attr, ()):
             out |= _variables(child)
     return out
-
-
-# ============================================  MAIN  ============================================ #
-
-
-def write_counterexample(x, y, prop):
-    """The counterexample text of the input x and output y (flat, C order) for the property's
-    VNN-LIB version; values are float32 unless the 2.0 query declares another type."""
-    x, y = np.asarray(x).reshape(-1), np.asarray(y).reshape(-1)
-    if prop.version == 1:
-        lines = [f"(X_{i} {_value_text(v, np.float32)})" for i, v in enumerate(x)]
-        lines += [f"(Y_{j} {_value_text(v, np.float32)})" for j, v in enumerate(y)]
-        return "(" + "\n".join(lines) + ")\n"
-    net, out = prop.query.networks[0], []
-    for definitions, values in ((net.inputs, iter(x)), (net.outputs, iter(y))):
-        for d in definitions:
-            key = d.dtype.name
-            dims = ", ".join(str(s) for s in d.shape)
-            out.append(f"{d.name} {TYPE_NAMES.get(key, 'real')} [{dims}]")
-            out += [
-                _value_text(next(values), DTYPES.get(key, np.float64))
-                for _ in range(math.prod(d.shape))
-            ]
-    return "\n".join(out) + "\n"
-
-
-def check_counterexample(onnx_path, vnnlib_path, content, vnnlib_text=None):
-    """(result, why) of the counterexample text for the network and property, as the VNN-COMP 2026
-    scoring decides it; the version comes from the property's header (vnnlib_text: read already)."""
-    from .vnnlib import VERSION_2, read_text
-
-    text = vnnlib_text if vnnlib_text is not None else read_text(vnnlib_path)
-    if not content or len(content.strip()) < 2:
-        return NO_CE, "no counterexample"
-    return (_check_v2 if VERSION_2.search(text) else _check_v1)(onnx_path, text, content)
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -19,20 +19,6 @@ Reviewed:      ---
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-class CORAError(Exception):
-    """An error of CORA.cpp; `identifier` is CORA's ("CORA:dimensionMismatch")."""
-
-    identifier = "CORA:error"
-
-
-class CORAWarning(UserWarning):
-    """A warning of CORA.cpp."""
-
-
-# ============================================  MAIN  ============================================ #
-
 # The C++ name of each identifier (cora::Error::Id), CORA's spelling and the built-in base.
 _IDENTIFIERS = [
     ("wrong_input_in_constructor", "CORA:wrongInputInConstructor", ValueError),
@@ -81,8 +67,21 @@ def _make(name, identifier, base):
 
 
 BY_NAME = {name: _make(name, identifier, base) for name, identifier, base in _IDENTIFIERS}
+
 globals().update({cls.__name__: cls for cls in BY_NAME.values()})
 
 __all__ = ["CORAError", "CORAWarning"] + [cls.__name__ for cls in BY_NAME.values()]
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+class CORAError(Exception):
+    """An error of CORA.cpp; `identifier` is CORA's ("CORA:dimensionMismatch")."""
+
+    identifier = "CORA:error"
+
+
+class CORAWarning(UserWarning):
+    """A warning of CORA.cpp."""
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -32,30 +32,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def zonotope(c, G):
-    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-def diamond():
-    """The set |x| + |y| <= 2."""
-    return zonotope([0, 0], [[1, 1], [1, -1]])
-
-
-def random_zonotope(rng, n=3, m=4):
-    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (m, n)))
-
-
-def support(Z, rng, count=40):
-    """The support function along `count` random directions: (directions, values)."""
-    d = rng.standard_normal((count, Z.dim))
-    return d, np.array([Z.support_function(x) for x in d])
-
-
-# ============================================  MAIN  ============================================ #
-
-
 class Entrywise(unittest.TestCase):
     def test_abs_and_box_and_center(self):
         Z = zonotope([1, -2], [[1, -2], [-3, 0.5], [0.5, 0]])
@@ -64,6 +40,7 @@ class Entrywise(unittest.TestCase):
         np.testing.assert_array_equal(Z.box().center, Z.center)
         np.testing.assert_array_equal(Z.box().generators, [[4.5, 0], [0, 2.5]])
         np.testing.assert_array_equal(Z.center, [1, -2])
+
 
 # zeros and tolerance
 
@@ -241,6 +218,27 @@ class Containment(unittest.TestCase):
             Z.boundary_point(np.array([0.0, 0.0]))
         with self.assertRaises(ValueError):
             Z.boundary_point(np.array([1.0, 0.0]), np.array([5.0, 0.0]))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def zonotope(c, G):
+    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
+
+
+def diamond():
+    """The set |x| + |y| <= 2."""
+    return zonotope([0, 0], [[1, 1], [1, -1]])
+
+
+def random_zonotope(rng, n=3, m=4):
+    return zonotope(10 * rng.standard_normal(n), rng.uniform(-1, 1, (m, n)))
+
+
+def support(Z, rng, count=40):
+    """The support function along `count` random directions: (directions, values)."""
+    d = rng.standard_normal((count, Z.dim))
+    return d, np.array([Z.support_function(x) for x in d])
 
 
 if __name__ == "__main__":

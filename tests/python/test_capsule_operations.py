@@ -33,30 +33,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def capsule(c, g, r):
-    return cora.Capsule(np.array(c, dtype=float), np.array(g, dtype=float), r)
-
-
-def sample(C, rng, count):
-    """Points of a capsule as rows (count, n): a point of the axis plus a point of the ball."""
-    n = C.c.shape[0]
-    t = rng.uniform(-1, 1, count)
-    direction = rng.standard_normal((n, count))
-    direction /= np.linalg.norm(direction, axis=0)
-    return (C.c[:, None] + C.generator[:, None] * t + C.r * rng.uniform(0, 1, count) * direction).T
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class Operations(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -164,6 +140,24 @@ class Operations(unittest.TestCase):
         np.testing.assert_array_equal(R.c, [1, 2, 3, 4])
         self.assertEqual(R.r, 0.25)
         self.assertTrue(1 <= cora.Capsule.generate_random(rng).dim <= 10)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def capsule(c, g, r):
+    return cora.Capsule(np.array(c, dtype=float), np.array(g, dtype=float), r)
+
+
+def sample(C, rng, count):
+    """Points of a capsule as rows (count, n): a point of the axis plus a point of the ball."""
+    n = C.c.shape[0]
+    t = rng.uniform(-1, 1, count)
+    direction = rng.standard_normal((n, count))
+    direction /= np.linalg.norm(direction, axis=0)
+    return (C.c[:, None] + C.generator[:, None] * t + C.r * rng.uniform(0, 1, count) * direction).T
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 if __name__ == "__main__":

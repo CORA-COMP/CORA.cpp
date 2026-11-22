@@ -15,13 +15,20 @@ Reviewed:      ---
 """
 import argparse
 
-import cora
+from cora import (
+    eye,
+    LinearSys,
+    plot,
+    plot_over_time,
+    subplots,
+    Tensor,
+    use_cora_colors,
+    zeros,
+    Zonotope,
+)
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="PREFIX", help="write the TikZ files instead of showing")
@@ -36,29 +43,29 @@ import matplotlib.pyplot as plt
 # Reachability Analysis ---------------------------------------------------------------------
 
 
-X0 = cora.Zonotope(cora.Tensor([1, 0]), 0.1 * cora.eye(2))
-sys = cora.LinearSys(cora.Tensor([[-0.1, 1], [-1, -0.1]]))
+X0 = Zonotope(Tensor([1, 0]), 0.1 * eye(2))
+sys = LinearSys(Tensor([[-0.1, 1], [-1, -0.1]]))
 R = sys.reach(X0, time_step=0.1, t_final=3.0, taylor_terms=6)
 
 # Figures -----------------------------------------------------------------------------------
 
-cora.use_cora_colors("CORA:contDynamics")
-fig = cora.subplots(2, 2, sharex=True, projection={(1, 1): "3d"})
+use_cora_colors("CORA:contDynamics")
+fig = subplots(2, 2, sharex=True, projection={(1, 1): "3d"})
 
 # The phase plane in the first axes, the two states over time in the second and third.
-cora.plot(R, (0, 1), ax=fig[0, 0], label="reachable set")
-cora.plot(X0, (0, 1), ax=fig[0, 0], label="initial set")
+plot(R, (0, 1), ax=fig[0, 0], label="reachable set")
+plot(X0, (0, 1), ax=fig[0, 0], label="initial set")
 fig[0, 0].set_xlabel("$x_1$")
 fig[0, 0].set_ylabel("$x_2$")
-cora.plot_over_time(R, 0, ax=fig[0, 1])
+plot_over_time(R, 0, ax=fig[0, 1])
 fig[0, 1].set_ylabel("$x_1$")
-cora.plot_over_time(R, 1, ax=fig[1, 0])
+plot_over_time(R, 1, ax=fig[1, 0])
 fig[1, 0].set_xlabel("$t$")
 fig[1, 0].set_ylabel("$x_2$")
 
 # A three-dimensional set in the last one, whose axes were made with projection "3d".
-Z = cora.Zonotope(cora.zeros(3), cora.Tensor([[1, 0, 0], [0, 1, 0], [0.5, 0.5, 1]]))
-cora.plot(Z, (0, 1, 2), ax=fig[1, 1], face_color="CORA:blue")
+Z = Zonotope(zeros(3), Tensor([[1, 0, 0], [0, 1, 0], [0.5, 0.5, 1]]))
+plot(Z, (0, 1, 2), ax=fig[1, 1], face_color="CORA:blue")
 fig[1, 1].set_xlabel("$x_1$")
 fig[1, 1].set_ylabel("$x_2$")
 fig[1, 1].set_zlabel("$x_3$")

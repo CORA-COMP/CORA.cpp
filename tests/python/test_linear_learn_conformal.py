@@ -22,27 +22,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-# the problem on torch, which is never the default
-with cora.backend("torch"):
-    X0 = cora.Zonotope(cora.Tensor([1.2, 0.0]), 0.2 * cora.eye(2))
-    PENDULUM = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)
-    MODEL = cora.LinearSys(cora.Tensor([[0.0, 1.0], [-1.0, -0.2]]))  # the linearization at the origin
-
-
-def trajectories(count, seed):
-    return PENDULUM.simulate(X0.rand_point(count, cora.Rng(seed)), time_step=0.1, t_final=2.0)
-
-
-def scores(trajectories, inf, sup):
-    """How far every trajectory (steps + 1, N, 2) leaves the boxes at its worst time."""
-    outside = torch.relu(inf - trajectories) + torch.relu(trajectories - sup)
-    return outside.amax(dim=(0, 2))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Conformal(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("torch"))  # torch is never the default
@@ -61,6 +40,25 @@ class Conformal(unittest.TestCase):
         self.assertLess((test <= 0).double().mean(), 0.7)
         # one calibration set varies by about 0.04 around 1 - alpha
         self.assertGreater((test <= radius).double().mean(), 1 - alpha - 0.1)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+# the problem on torch, which is never the default
+with cora.backend("torch"):
+    X0 = cora.Zonotope(cora.Tensor([1.2, 0.0]), 0.2 * cora.eye(2))
+    PENDULUM = cora.NonlinearSys(lambda x: [x[1], -cora.sin(x[0]) - 0.2 * x[1]], 2)
+    MODEL = cora.LinearSys(cora.Tensor([[0.0, 1.0], [-1.0, -0.2]]))  # the linearization at the origin
+
+
+def trajectories(count, seed):
+    return PENDULUM.simulate(X0.rand_point(count, cora.Rng(seed)), time_step=0.1, t_final=2.0)
+
+
+def scores(trajectories, inf, sup):
+    """How far every trajectory (steps + 1, N, 2) leaves the boxes at its worst time."""
+    outside = torch.relu(inf - trajectories) + torch.relu(trajectories - sup)
+    return outside.amax(dim=(0, 2))
 
 
 if __name__ == "__main__":

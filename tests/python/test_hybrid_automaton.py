@@ -31,26 +31,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-G = 9.81
-
-
-def ball():
-    """x' = v, v' = -g on x >= 0; at x = 0 with v <= 0 the ball bounces, v := -0.75 v."""
-    floor = cora.Polytope(np.array([[-1.0, 0.0]]), np.array([0.0]))
-    guard = cora.Polytope(np.array([[0.0, 1.0]]), np.array([0.0]), np.array([[1.0, 0.0]]), np.array([0.0]))
-    bounce = cora.LinearReset(np.array([[1.0, 0.0], [0.0, -0.75]]))
-    flow = cora.LinearSys(np.array([[0.0, 1.0], [0.0, 0.0]]), np.zeros((2, 1)))
-    fall = cora.Location("fall", floor, [cora.Transition(guard, bounce, 0)], flow, np.array([0.0, -G]))
-    return cora.HybridAutomaton("ball", [fall])
-
-
-DROP = cora.Interval(np.array([1.0, 0.0]), np.array([1.2, 0.0])).zonotope()
-
-
-# ============================================  MAIN  ============================================ #
-
 class HybridAutomaton(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -102,6 +82,24 @@ class HybridAutomaton(unittest.TestCase):
             ball().reach(DROP, t_final=1.0, time_step=[0.1, 0.1])
         with self.assertRaises(cora.errors.WrongValue):
             ball().reach(DROP, t_final=1.0, time_step=0.1, guard_intersect="levelSet")
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+G = 9.81
+
+
+def ball():
+    """x' = v, v' = -g on x >= 0; at x = 0 with v <= 0 the ball bounces, v := -0.75 v."""
+    floor = cora.Polytope(np.array([[-1.0, 0.0]]), np.array([0.0]))
+    guard = cora.Polytope(np.array([[0.0, 1.0]]), np.array([0.0]), np.array([[1.0, 0.0]]), np.array([0.0]))
+    bounce = cora.LinearReset(np.array([[1.0, 0.0], [0.0, -0.75]]))
+    flow = cora.LinearSys(np.array([[0.0, 1.0], [0.0, 0.0]]), np.zeros((2, 1)))
+    fall = cora.Location("fall", floor, [cora.Transition(guard, bounce, 0)], flow, np.array([0.0, -G]))
+    return cora.HybridAutomaton("ball", [fall])
+
+
+DROP = cora.Interval(np.array([1.0, 0.0]), np.array([1.2, 0.0])).zonotope()
 
 
 if __name__ == "__main__":

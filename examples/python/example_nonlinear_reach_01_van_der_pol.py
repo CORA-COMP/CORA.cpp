@@ -16,13 +16,10 @@ Reviewed:      ---
 import argparse
 import time
 
-import cora
+from cora import eye, NonlinearSys, plot, Rng, Tensor, use_cora_colors, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -38,7 +35,7 @@ import matplotlib.pyplot as plt
 
 
 t_final = 6.74
-R0 = cora.Zonotope(cora.Tensor([1.4, 2.3]), 0.05 * cora.eye(2))
+R0 = Zonotope(Tensor([1.4, 2.3]), 0.05 * eye(2))
 
 # Reachability Settings ---------------------------------------------------------------------
 
@@ -49,7 +46,7 @@ zonotope_order = 50
 # System Dynamics ---------------------------------------------------------------------------
 
 mu = 1
-vdp = cora.NonlinearSys(lambda x: [x[1], mu * (1 - x[0] ** 2) * x[1] - x[0]], 2)
+vdp = NonlinearSys(lambda x: [x[1], mu * (1 - x[0] ** 2) * x[1] - x[0]], 2)
 
 # Reachability Analysis ---------------------------------------------------------------------
 
@@ -61,22 +58,22 @@ print(f"computation time of reachable set: {computation_time:.3f} s")
 
 # Simulation --------------------------------------------------------------------------------
 
-rng = cora.Rng(0)
+rng = Rng(0)
 traj = vdp.simulate_random(R0, points=10, time_step=time_step, t_final=t_final, rng=rng)
 
 # Visualization -----------------------------------------------------------------------------
 
-cora.use_cora_colors("CORA:contDynamics")
+use_cora_colors("CORA:contDynamics")
 plt.figure()
 
 # plot reachable sets
-cora.plot(R, (0, 1), label="Reachable set")
+plot(R, (0, 1), label="Reachable set")
 
 # plot initial set
-cora.plot(R0, (0, 1), label="Initial set")
+plot(R0, (0, 1), label="Initial set")
 
 # plot simulation results
-cora.plot(traj, (0, 1), label="Simulations")
+plot(traj, (0, 1), label="Simulations")
 
 # label plot
 plt.xlabel("$x_1$")

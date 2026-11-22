@@ -25,22 +25,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def expm(M):
-    """The matrix exponential of a diagonalizable M."""
-    w, V = np.linalg.eig(M)
-    return (V @ np.diag(np.exp(w)) @ np.linalg.inv(V)).real
-
-
-# a damped oscillator coupled to a decaying state, a set and an input set
-A = np.array([[-0.1, 1.0, 0.0], [-1.0, -0.1, 0.0], [0.0, 0.0, -0.5]])
-X0 = cora.Zonotope(np.array([1.0, 0.5, -1.0]), np.array([[0.2, 0.0, 0.0], [0.0, 0.1, 0.0], [0.1, 0.0, 0.3]]))
-U = cora.Zonotope(np.array([1.0, 2.0, 0.5]), np.array([[0.1, 0.0, 0.1], [0.0, 0.2, 0.1]]))
-
-
-# ============================================  MAIN  ============================================ #
-
 # the plumbing of the class: equality, text, random systems and the conversion
 class Plumbing(unittest.TestCase):
     def setUp(self):
@@ -97,6 +81,22 @@ class Plumbing(unittest.TestCase):
                 self.assertTrue(sets.contains(x[k]))
         with self.assertRaises(cora.errors.CORAError):
             sys.reach(X0, t_final=1.0, alg="decomposition", time_step=0.1)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def expm(M):
+    """The matrix exponential of a diagonalizable M."""
+    w, V = np.linalg.eig(M)
+    return (V @ np.diag(np.exp(w)) @ np.linalg.inv(V)).real
+
+
+# a damped oscillator coupled to a decaying state, a set and an input set
+A = np.array([[-0.1, 1.0, 0.0], [-1.0, -0.1, 0.0], [0.0, 0.0, -0.5]])
+
+X0 = cora.Zonotope(np.array([1.0, 0.5, -1.0]), np.array([[0.2, 0.0, 0.0], [0.0, 0.1, 0.0], [0.1, 0.0, 0.3]]))
+
+U = cora.Zonotope(np.array([1.0, 2.0, 0.5]), np.array([[0.1, 0.0, 0.1], [0.0, 0.2, 0.1]]))
 
 
 if __name__ == "__main__":

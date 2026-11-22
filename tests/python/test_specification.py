@@ -27,30 +27,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-F64 = dict(dtype=torch.float64)
-A = torch.tensor([[-0.1, 1.0], [-1.0, -0.1]], **F64)
-X0 = cora.Zonotope(torch.tensor([1.0, 0.0], **F64), 0.1 * torch.eye(2, **F64))
-OPTIONS = dict(time_step=0.1, t_final=6.0, taylor_terms=8)
-
-
-def x1(value):
-    return torch.tensor([value, 0.0], **F64)
-
-
-def halfspace(offset):
-    """The halfspace x1 <= offset as a polytope on the torch backend."""
-    return cora.Polytope(x1(1.0)[None, :], torch.tensor([offset], **F64))
-
-
-def halfspace_np(offset):
-    """The same on the numpy (Eigen) backend."""
-    return cora.Polytope(np.array([[1.0, 0.0]]), np.array([offset]))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Specification(unittest.TestCase):
     def setUp(self):
         self.R = cora.LinearSys(A).reach(X0, **OPTIONS)
@@ -112,6 +88,31 @@ class Specification(unittest.TestCase):
     def test_backends_do_not_mix(self):
         with self.assertRaises(ValueError):
             cora.Specification.safe_set(halfspace_np(1.5)).check(self.R.time_interval)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+F64 = dict(dtype=torch.float64)
+
+A = torch.tensor([[-0.1, 1.0], [-1.0, -0.1]], **F64)
+
+X0 = cora.Zonotope(torch.tensor([1.0, 0.0], **F64), 0.1 * torch.eye(2, **F64))
+
+OPTIONS = dict(time_step=0.1, t_final=6.0, taylor_terms=8)
+
+
+def x1(value):
+    return torch.tensor([value, 0.0], **F64)
+
+
+def halfspace(offset):
+    """The halfspace x1 <= offset as a polytope on the torch backend."""
+    return cora.Polytope(x1(1.0)[None, :], torch.tensor([offset], **F64))
+
+
+def halfspace_np(offset):
+    """The same on the numpy (Eigen) backend."""
+    return cora.Polytope(np.array([[1.0, 0.0]]), np.array([offset]))
 
 
 # run the tests

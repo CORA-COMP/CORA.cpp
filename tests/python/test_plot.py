@@ -12,34 +12,18 @@ import matplotlib
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
+# the Agg backend draws without a display; it is chosen before pyplot is imported
 matplotlib.use("Agg")
+
 import cora
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import PathPatch
 
 
-def face(patch):
-    """The RGB of the fill of a patch."""
-    return tuple(float(v) for v in patch.get_facecolor()[:3])
-
-
-def paths(ax):
-    """The patches CORA drew for sets: one compound path per layer (specifications are polygons)."""
-    return [p for p in ax.patches if isinstance(p, PathPatch)]
-
-
-def regions(ax):
-    """The patches of specifications."""
-    return [p for p in ax.patches if not isinstance(p, PathPatch)]
-
-
-# ============================================  MAIN  ============================================ #
-
 class Plot(unittest.TestCase):
     def setUp(self):
+        # the CORA colors make the color checks independent of matplotlib's cycle
         cora.use_cora_colors("CORA:default")
         self.fig, self.ax = plt.subplots()
         self.sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))
@@ -296,6 +280,23 @@ class Display(unittest.TestCase):
         (corners,) = box.vertices()
         # the corners
         self.assertEqual(np.asarray(corners).shape, (4, 2))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def face(patch):
+    """The RGB of the fill of a patch."""
+    return tuple(float(v) for v in patch.get_facecolor()[:3])
+
+
+def paths(ax):
+    """The patches CORA drew for sets: one compound path per layer (specifications are polygons)."""
+    return [p for p in ax.patches if isinstance(p, PathPatch)]
+
+
+def regions(ax):
+    """The patches of specifications."""
+    return [p for p in ax.patches if not isinstance(p, PathPatch)]
 
 
 if __name__ == "__main__":

@@ -24,23 +24,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def hexagon():
-    """The set {(a, b) | |a| <= 1, |b| <= 1, |a + b| <= 1}: a cube cut by a plane, in the plane."""
-    return cora.ConZonotope(np.zeros(2), np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]),
-                            np.array([[1.0, 1.0, 1.0]]), np.array([0.0]))
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class ConZonotopeOperations(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -114,6 +97,17 @@ class ConZonotopeOperations(unittest.TestCase):
         self.assertEqual(centered.dim, 2)
         with self.assertRaises(cora.errors.WrongValue):
             cora.ConZonotope.generate_random(rng, dimension=0)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def hexagon():
+    """The set {(a, b) | |a| <= 1, |b| <= 1, |a + b| <= 1}: a cube cut by a plane, in the plane."""
+    return cora.ConZonotope(np.zeros(2), np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]),
+                            np.array([[1.0, 1.0, 1.0]]), np.array([0.0]))
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 if __name__ == "__main__":

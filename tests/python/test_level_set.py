@@ -27,20 +27,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def circle(r=1.0):
-    """The constraint x^2 + y^2 - r^2 of two states."""
-    x, y = cora.Expr.var(0), cora.Expr.var(1)
-    return x ** 2 + y ** 2 - r * r
-
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Constraints(unittest.TestCase):
     # the dimension, the values and the derivative
     def test_values(self):
@@ -116,8 +102,19 @@ class Operations(unittest.TestCase):
         self.assertIn("levelSet", disc.display())
 
 
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def circle(r=1.0):
+    """The constraint x^2 + y^2 - r^2 of two states."""
+    x, y = cora.Expr.var(0), cora.Expr.var(1)
+    return x ** 2 + y ** 2 - r * r
+
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
+
+
 if __name__ == "__main__":
     unittest.main()
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

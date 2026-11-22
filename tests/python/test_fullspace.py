@@ -43,17 +43,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-INF = float("inf")
-
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo), np.array(hi))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Construction(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -257,6 +246,15 @@ class ContSetInterface(unittest.TestCase):
         self.assertEqual(S.is_full_dim(1e-3), S.is_full_dim())
         with self.assertRaises(cora.errors.WrongValue):
             S.is_full_dim(tol=-1.0)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+INF = float("inf")
+
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo), np.array(hi))
 
 
 if __name__ == "__main__":

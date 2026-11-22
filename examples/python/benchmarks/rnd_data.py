@@ -32,9 +32,24 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main(argv):
+    folder = DATA
+    if argv[:1] == ["--folder"]:
+        folder, argv = argv[1], argv[2:]
+    if argv[:1] == ["convert"] and len(argv) == 3:
+        convert(argv[1], argv[2], folder)
+    elif argv[:1] == ["generate"] and len(argv) == 2 and argv[1] == "RND06":
+        generate(argv[1], folder)
+    else:
+        print(__doc__.split("Syntax:")[1].split("See also")[0], file=sys.stderr)
+        return 2
+    return 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "benchmarks", "data")
+
 # the algorithm of the script of each instance; RND02 and RND04-06 differ from CORA's (README.md)
 VERIFY_ALG = {"RND01": "reachavoid:zonotope", "RND02": "reachavoid:krylovSuppFunc",
               "RND03": "reachavoid:zonotope", "RND04": "reachavoid:krylovSuppFunc",
@@ -164,22 +179,6 @@ def generate(name, folder, n=5000, seed=26112026):
                    f"{n} states; own instance like rand05 (sparse, diagonally dominant), seed "
                    f"{seed}; unsafe: y >= {limit:.6g}, the maximum of the support function "
                    f"{h.max():.6g} (on a 2000-point grid) plus a tenth of its rise")
-
-
-# ============================================  MAIN  ============================================ #
-
-def main(argv):
-    folder = DATA
-    if argv[:1] == ["--folder"]:
-        folder, argv = argv[1], argv[2:]
-    if argv[:1] == ["convert"] and len(argv) == 3:
-        convert(argv[1], argv[2], folder)
-    elif argv[:1] == ["generate"] and len(argv) == 2 and argv[1] == "RND06":
-        generate(argv[1], folder)
-    else:
-        print(__doc__.split("Syntax:")[1].split("See also")[0], file=sys.stderr)
-        return 2
-    return 0
 
 
 if __name__ == "__main__":

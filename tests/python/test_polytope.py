@@ -34,38 +34,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-SQUARE = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
-EYE = np.eye(2)
-SQUARE_H = (np.vstack([EYE, -EYE]), np.array([1.0, 1.0, 0.0, 0.0]))
-
-
-def square_vertices():
-    return cora.Polytope(SQUARE)
-
-
-def square_halfspaces():
-    return cora.Polytope(*SQUARE_H)
-
-
-def triangle():
-    return cora.Polytope(np.array([[-1.0, 0.0], [0.0, -1.0], [1.0, 1.0]]), np.array([0.0, 0.0, 2.0]))
-
-
-def point(*x):
-    return np.array(x, dtype=float)
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class Polytope(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -239,6 +207,34 @@ class Polytope(unittest.TestCase):
         self.assertEqual(P.intersect(P).A.shape, (3, 8, 2))
         V = cora.Polytope(np.broadcast_to(SQUARE, (3, 4, 2)).copy())
         self.assertEqual(V.interval().inf.shape, (3, 2))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+SQUARE = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
+
+EYE = np.eye(2)
+
+SQUARE_H = (np.vstack([EYE, -EYE]), np.array([1.0, 1.0, 0.0, 0.0]))
+
+
+def square_vertices():
+    return cora.Polytope(SQUARE)
+
+
+def square_halfspaces():
+    return cora.Polytope(*SQUARE_H)
+
+
+def triangle():
+    return cora.Polytope(np.array([[-1.0, 0.0], [0.0, -1.0], [1.0, 1.0]]), np.array([0.0, 0.0, 2.0]))
+
+
+def point(*x):
+    return np.array(x, dtype=float)
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 # run the tests

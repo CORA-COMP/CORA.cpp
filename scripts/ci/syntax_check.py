@@ -28,9 +28,38 @@ import time
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("build")
+    parser.add_argument("-j", type=int, default=os.cpu_count())
+    parser.add_argument("--under", default="tests/")
+    parser.add_argument("--make-pch", action="store_true")
+    args = parser.parse_args()
+    # the entries of the folder, from the compile database that the configure step wrote
+    with open(os.path.join(args.build, "compile_commands.json"), encoding="utf-8") as stream:
+        entries = json.load(stream)
+    if args.make_pch:
+        print(make_pch(entries, args.build))
+        return 0
+    marker = os.sep + args.under.replace("/", os.sep)
+    entries = [e for e in entries if marker in e["file"]]
+    # parse them side by side; the first failures are printed in full
+    start = time.time()
+    failed = []
+    with concurrent.futures.ThreadPoolExecutor(args.j) as pool:
+        for name, output in pool.map(run, entries):
+            if output:
+                failed.append(name)
+                if len(failed) <= 5:
+                    print(output[:3000])
+    print(f"syntax_check: {len(entries)} files in {time.time() - start:.0f} s, {len(failed)} failed")
+    return 1 if failed else 0
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 DROPPED_WITH_VALUE = ("-o", "-MF", "-MT", "-MQ")
+
 DROPPED = ("-c", "-MD", "-MMD", "-MP")
 
 
@@ -64,36 +93,6 @@ def run(entry):
     """(file, the compiler's output) of one translation unit; the output is empty when it parses."""
     result = subprocess.run(syntax_command(entry), cwd=entry["directory"], capture_output=True, text=True, check=False)
     return entry["file"], ("" if result.returncode == 0 else result.stdout + result.stderr)
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("build")
-    parser.add_argument("-j", type=int, default=os.cpu_count())
-    parser.add_argument("--under", default="tests/")
-    parser.add_argument("--make-pch", action="store_true")
-    args = parser.parse_args()
-    # the entries of the folder, from the compile database that the configure step wrote
-    with open(os.path.join(args.build, "compile_commands.json"), encoding="utf-8") as stream:
-        entries = json.load(stream)
-    if args.make_pch:
-        print(make_pch(entries, args.build))
-        return 0
-    marker = os.sep + args.under.replace("/", os.sep)
-    entries = [e for e in entries if marker in e["file"]]
-    # parse them side by side; the first failures are printed in full
-    start = time.time()
-    failed = []
-    with concurrent.futures.ThreadPoolExecutor(args.j) as pool:
-        for name, output in pool.map(run, entries):
-            if output:
-                failed.append(name)
-                if len(failed) <= 5:
-                    print(output[:3000])
-    print(f"syntax_check: {len(entries)} files in {time.time() - start:.0f} s, {len(failed)} failed")
-    return 1 if failed else 0
 
 
 if __name__ == "__main__":

@@ -25,21 +25,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def linear_system():
-    """x' = -x + y, 0 = y - x/2 - u."""
-    return cora.NonlinDASys(lambda x, y, u: [-1 * x[0] + y[0]],
-                            lambda x, y, u: [y[0] - 0.5 * x[0] - u[0]], 1, inputs=1, constraints=1)
-
-
-def square_system():
-    """x' = y, 0 = y - x^2."""
-    return cora.NonlinDASys(lambda x, y, u: [y[0]], lambda x, y, u: [y[0] - x[0] ** 2], 1)
-
-
-# ============================================  MAIN  ============================================ #
-
 class NonlinDASys(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -77,6 +62,19 @@ class NonlinDASys(unittest.TestCase):
         with self.assertRaises(cora.errors.WrongValue):
             square_system().reach(initial_set=cora.Zonotope(np.array([0.4]), np.array([[0.2]])),
                                   t_final=1.0, time_step=0.01)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def linear_system():
+    """x' = -x + y, 0 = y - x/2 - u."""
+    return cora.NonlinDASys(lambda x, y, u: [-1 * x[0] + y[0]],
+                            lambda x, y, u: [y[0] - 0.5 * x[0] - u[0]], 1, inputs=1, constraints=1)
+
+
+def square_system():
+    """x' = y, 0 = y - x^2."""
+    return cora.NonlinDASys(lambda x, y, u: [y[0]], lambda x, y, u: [y[0] - x[0] ** 2], 1)
 
 
 if __name__ == "__main__":

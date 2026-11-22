@@ -49,42 +49,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def interval_matrix(center, delta=None):
-    """CORA's intervalMatrix: an Interval as it is, a point matrix, or the matrices center +- |delta|."""
-    if isinstance(center, cora.Interval):
-        return center
-    if delta is None:
-        return cora.Interval.matrix(center, center)
-    return cora.Interval.from_center_delta(center, delta)
-
-
-# [[[1, 2], [-1, 1]], [[0, 3], [2, 2]]]
-EXAMPLE = interval_matrix(cora.Interval.matrix(np.array([[1.0, -1.0], [0.0, 2.0]]),
-                                                   np.array([[2.0, 1.0], [3.0, 2.0]])))
-
-
-def random_matrix(rng, n, spread):
-    return interval_matrix(0.5 * rng.standard_normal((n, n)), rng.uniform(0, spread, (n, n)))
-
-
-def member(A, rng):
-    inf, sup = A.inf, A.sup
-    return inf + (sup - inf) * rng.uniform(0, 1, inf.shape)
-
-
-def exponential(M):
-    """exp(M) by the Taylor series, enough terms for small matrices."""
-    term, total = np.eye(len(M)), np.eye(len(M))
-    for k in range(1, 40):
-        term = term @ M / k
-        total = total + term
-    return total
-
-
-# ============================================  MAIN  ============================================ #
-
 class Bounds(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -463,6 +427,40 @@ class Gradients(unittest.TestCase):
             self.check(lambda A, style=style: cora.mat_exp.expm_taylor_horner_scaling(A, 6, style),
                        center, delta)
         self.check(lambda A: cora.mat_exp.expm_independent_mixed(A, 2, 6).enclosure, center, delta)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def interval_matrix(center, delta=None):
+    """CORA's intervalMatrix: an Interval as it is, a point matrix, or the matrices center +- |delta|."""
+    if isinstance(center, cora.Interval):
+        return center
+    if delta is None:
+        return cora.Interval.matrix(center, center)
+    return cora.Interval.from_center_delta(center, delta)
+
+
+# [[[1, 2], [-1, 1]], [[0, 3], [2, 2]]]
+EXAMPLE = interval_matrix(cora.Interval.matrix(np.array([[1.0, -1.0], [0.0, 2.0]]),
+                                                   np.array([[2.0, 1.0], [3.0, 2.0]])))
+
+
+def random_matrix(rng, n, spread):
+    return interval_matrix(0.5 * rng.standard_normal((n, n)), rng.uniform(0, spread, (n, n)))
+
+
+def member(A, rng):
+    inf, sup = A.inf, A.sup
+    return inf + (sup - inf) * rng.uniform(0, 1, inf.shape)
+
+
+def exponential(M):
+    """exp(M) by the Taylor series, enough terms for small matrices."""
+    term, total = np.eye(len(M)), np.eye(len(M))
+    for k in range(1, 40):
+        term = term @ M / k
+        total = total + term
+    return total
 
 
 if __name__ == "__main__":

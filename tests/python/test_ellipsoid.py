@@ -33,39 +33,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def ellipsoid(Q, q=None, tol=None):
-    """The ellipsoid of Q and q (the constructor takes the center first), or of Q around 0."""
-    if q is None:
-        return cora.Ellipsoid(np.array(Q, dtype=float), tol=tol)
-    return cora.Ellipsoid(np.array(q, dtype=float), np.array(Q, dtype=float), tol)
-
-
-def random_ellipsoid(rng, n, rank=None):
-    """Q = A A' (+ I/2 if full rank) and a normal center."""
-    A = rng.standard_normal((n, n if rank is None else rank))
-    Q = A @ A.T + (0.5 * np.eye(n) if rank is None else 0.0)
-    return cora.Ellipsoid(rng.standard_normal(n), 0.5 * (Q + Q.T))
-
-
-def boundary_points(E, rng, count):
-    """Points q + u G of the boundary, one per row, G (rows) without the generators of rounding size."""
-    G = E.generators()
-    G = G[np.linalg.norm(G, axis=1) > 1e-6]
-    U = rng.standard_normal((G.shape[0], count))
-    return E.q + (U / np.linalg.norm(U, axis=0)).T @ G
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class Ellipsoid(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -273,6 +240,33 @@ class Ellipsoid(unittest.TestCase):
             E.enclose(np.eye(2), point)
         with self.assertRaises(cora.errors.EmptySet):
             E.enclose(cora.Ellipsoid.empty(2))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def ellipsoid(Q, q=None, tol=None):
+    """The ellipsoid of Q and q (the constructor takes the center first), or of Q around 0."""
+    if q is None:
+        return cora.Ellipsoid(np.array(Q, dtype=float), tol=tol)
+    return cora.Ellipsoid(np.array(q, dtype=float), np.array(Q, dtype=float), tol)
+
+
+def random_ellipsoid(rng, n, rank=None):
+    """Q = A A' (+ I/2 if full rank) and a normal center."""
+    A = rng.standard_normal((n, n if rank is None else rank))
+    Q = A @ A.T + (0.5 * np.eye(n) if rank is None else 0.0)
+    return cora.Ellipsoid(rng.standard_normal(n), 0.5 * (Q + Q.T))
+
+
+def boundary_points(E, rng, count):
+    """Points q + u G of the boundary, one per row, G (rows) without the generators of rounding size."""
+    G = E.generators()
+    G = G[np.linalg.norm(G, axis=1) > 1e-6]
+    U = rng.standard_normal((G.shape[0], count))
+    return E.q + (U / np.linalg.norm(U, axis=0)).T @ G
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 if __name__ == "__main__":

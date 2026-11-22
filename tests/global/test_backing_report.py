@@ -24,35 +24,12 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 ROOT = Path(__file__).resolve().parents[2]
+
 sys.path.insert(0, str(ROOT / "scripts" / "coverage"))
+
 import benchmarks as bench  # noqa: E402
 
-
-INVENTORY = {"zonotope": ["center", "plus"]}
-GROUPS = {"contSet": INVENTORY, "contDynamics": {}, "hybridDynamics": {}, "nn": {}, "specification": {},
-          "others": {}}
-STATUS = {"contSet/zonotope/plus": "oracle", "contSet/zonotope/center": "property"}
-GCOV = json.dumps({"current_working_directory": "ROOT/build", "files": [
-    {"file": "../src/plus.cpp", "lines": [{"line_number": 3, "count": 0}, {"line_number": 4, "count": 7}]},
-    {"file": "../src/center.cpp", "lines": [{"line_number": 3, "count": 2}]},
-    {"file": "../src/helper.cpp", "lines": [{"line_number": 3, "count": 1}]},
-    {"file": "../src/never.cpp", "lines": [{"line_number": 3, "count": 0}]},
-    {"file": "/usr/include/c++/vector", "lines": [{"line_number": 1, "count": 9}]}]})
-
-
-def make_tree(root):
-    """Sources: plus (one row), center (one row), helper (CORA.cpp only), never (not executed)."""
-    for name, tag in [("plus", "// CORA: contSet/@zonotope/plus.m"),
-                      ("center", "// CORA: contSet/@zonotope/center.m"),
-                      ("helper", "// CORA.cpp only: a helper"), ("never", "// CORA: contSet/@zonotope/plus.m")]:
-        (root / "src").mkdir(exist_ok=True)
-        (root / "src" / f"{name}.cpp").write_text(f"// {name} - x\n//\n{tag}\n\nint x;\n", encoding="utf-8")
-
-
-# ============================================  MAIN  ============================================ #
 
 class BackingReport(unittest.TestCase):
     def setUp(self):
@@ -201,6 +178,32 @@ class BackingReport(unittest.TestCase):
         other = bench.splice(once + "\nafter\n", "| x |")
         self.assertTrue(other.startswith("# Title") and other.endswith("\nafter\n"))
         self.assertNotIn("| A | 1/2 |", other)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+INVENTORY = {"zonotope": ["center", "plus"]}
+
+GROUPS = {"contSet": INVENTORY, "contDynamics": {}, "hybridDynamics": {}, "nn": {}, "specification": {},
+          "others": {}}
+
+STATUS = {"contSet/zonotope/plus": "oracle", "contSet/zonotope/center": "property"}
+
+GCOV = json.dumps({"current_working_directory": "ROOT/build", "files": [
+    {"file": "../src/plus.cpp", "lines": [{"line_number": 3, "count": 0}, {"line_number": 4, "count": 7}]},
+    {"file": "../src/center.cpp", "lines": [{"line_number": 3, "count": 2}]},
+    {"file": "../src/helper.cpp", "lines": [{"line_number": 3, "count": 1}]},
+    {"file": "../src/never.cpp", "lines": [{"line_number": 3, "count": 0}]},
+    {"file": "/usr/include/c++/vector", "lines": [{"line_number": 1, "count": 9}]}]})
+
+
+def make_tree(root):
+    """Sources: plus (one row), center (one row), helper (CORA.cpp only), never (not executed)."""
+    for name, tag in [("plus", "// CORA: contSet/@zonotope/plus.m"),
+                      ("center", "// CORA: contSet/@zonotope/center.m"),
+                      ("helper", "// CORA.cpp only: a helper"), ("never", "// CORA: contSet/@zonotope/plus.m")]:
+        (root / "src").mkdir(exist_ok=True)
+        (root / "src" / f"{name}.cpp").write_text(f"// {name} - x\n//\n{tag}\n\nint x;\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

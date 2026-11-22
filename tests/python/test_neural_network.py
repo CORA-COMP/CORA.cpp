@@ -33,27 +33,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-torch.manual_seed(0)
-
-
-def layers(sizes):
-    return [(torch.randn(o, i, dtype=torch.float64), 0.5 * torch.randn(o, dtype=torch.float64))
-            for i, o in zip(sizes[:-1], sizes[1:], strict=True)]
-
-
-def torch_forward(parameters, x):
-    """The same network in plain torch: x (in, N)."""
-    for k, (W, b) in enumerate(parameters):
-        x = W @ x + b[:, None]
-        if k + 1 < len(parameters):
-            x = torch.relu(x)
-    return x
-
-
-# ============================================  MAIN  ============================================ #
-
 class Evaluate(unittest.TestCase):
     def test_points_agree_with_torch(self):
         # the same network in torch, on 50 points and on one
@@ -141,6 +120,25 @@ class Evaluate(unittest.TestCase):
         net = cora.NeuralNetwork([(W, torch.zeros(2, dtype=torch.float64))])
         with self.assertRaises(ValueError):
             net.evaluate(torch.ones(3, dtype=torch.float64))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+torch.manual_seed(0)
+
+
+def layers(sizes):
+    return [(torch.randn(o, i, dtype=torch.float64), 0.5 * torch.randn(o, dtype=torch.float64))
+            for i, o in zip(sizes[:-1], sizes[1:], strict=True)]
+
+
+def torch_forward(parameters, x):
+    """The same network in plain torch: x (in, N)."""
+    for k, (W, b) in enumerate(parameters):
+        x = W @ x + b[:, None]
+        if k + 1 < len(parameters):
+            x = torch.relu(x)
+    return x
 
 
 if __name__ == "__main__":

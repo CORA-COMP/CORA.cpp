@@ -14,17 +14,16 @@ import matplotlib
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
+# the Agg backend draws without a display; it is chosen before pyplot is imported
 matplotlib.use("Agg")
+
 import cora
 import matplotlib.pyplot as plt
 
 
-# ============================================  MAIN  ============================================ #
-
 class Subplots(unittest.TestCase):
     def setUp(self):
+        # the CORA colors make the color checks independent of matplotlib's cycle
         cora.use_cora_colors("CORA:default")
         self.X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
         self.sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))

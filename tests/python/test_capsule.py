@@ -31,27 +31,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def capsule(c, g, r):
-    return cora.Capsule(np.array(c, dtype=float), np.array(g, dtype=float), r)
-
-
-def empty(n):
-    """The empty capsule on the backend of numpy arrays, which the other capsules here are on."""
-    with cora.backend("eigen"):
-        return cora.Capsule.empty(n)
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class Constructor(unittest.TestCase):
     def test_forms(self):
         point = cora.Capsule(np.array([1.0, 2.0]))
@@ -226,6 +205,21 @@ class Combination(unittest.TestCase):
         with self.assertRaises(cora.errors.NotDefined):
             # lift is not defined
             C.lift(4, [0, 1, 2])
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def capsule(c, g, r):
+    return cora.Capsule(np.array(c, dtype=float), np.array(g, dtype=float), r)
+
+
+def empty(n):
+    """The empty capsule on the backend of numpy arrays, which the other capsules here are on."""
+    with cora.backend("eigen"):
+        return cora.Capsule.empty(n)
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 if __name__ == "__main__":

@@ -18,32 +18,6 @@ from pathlib import Path
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "scripts" / "ci"))
-import layout  # noqa: E402
-
-
-AUTHORS = ("// Authors:       Claude Sonnet 5.5\n// Written:       05-November-2026\n"
-           "// Last update:   ---\n// Reviewed:      ---\n")
-BEGIN, AUX, MAIN, END = (layout.marker(n) for n in ("BEGIN", "AUXILIARY", "MAIN", "END"))
-CPP_TEST = (f"// test_plus - the sum\n//\n// Syntax:   plus(Z, W)\n// Inputs:   Z - a set\n//           W - another\n"
-            f"//\n// CORA: contSet/@zonotope/plus.m\n// CORA authors: Mark Wetzlinger\n{AUTHORS}\n"
-            f'#include "testing.h"\n\n{BEGIN}\n\n{AUX}\n\nnamespace {{\n// a helper\nvoid helper() {{}}\n'
-            f"}} // namespace\n\n\n{MAIN}\n\nint main() {{\n    helper();\n    return 0;\n}}\n\n{END}\n")
-PY_MODULE = ('"""plus - the sum\n\nAuthors:       Claude Sonnet 5.5\nWritten:       05-November-2026\n'
-             'Last update:   06-November-2026\nReviewed:      06-November-2026 (Tobias Ladner)\n"""\n'
-             f"import os\n\n{layout.marker('BEGIN', 'py')}\n\n\n{layout.marker('MAIN', 'py')}\n\n"
-             f"def plus(a, b):\n    # the sum\n    return a + b\n\n{layout.marker('END', 'py')}\n")
-
-
-def check(text, name="test_plus.cpp"):
-    return layout.check_file(name, text.split("\n"))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Accepts(unittest.TestCase):
     def test_a_file_in_the_layout_passes(self):
         self.assertEqual(check(CPP_TEST), [])
@@ -122,13 +96,38 @@ class Markers(unittest.TestCase):
         self.assertEqual(check(header, "plus.h"), [])
         self.fails(header.replace(f"int x;\n\n{END}", f"\n\n{MAIN}\n\nint x;\n\n{END}"), "unexpected MAIN", "plus.h")
 
-    def test_python_main_stands_above_the_first_function(self):
-        self.fails(PY_MODULE.replace("def plus", "def other():\n    return 1\n\n\ndef plus", 1)
-                   .replace(layout.marker("MAIN", "py") + "\n\n", ""), "exactly one MAIN", "plus.py")
-        # MAIN may move
-        moved = PY_MODULE.replace(layout.marker("MAIN", "py") + "\n\n", "").replace(
-            "def plus", f"{layout.marker('MAIN', 'py')}\n\ndef plus", 1)
-        self.assertEqual(check(moved, "plus.py"), [])
+    def test_python_has_the_operation_first_and_no_main(self):
+        # the operation right under BEGIN CODE, the helpers under AUXILIARY, no MAIN marker
+        self.fails(PY_MODULE.replace(f"\n\n\n{PY_AUX}", f"\n\n\n{PY_MAIN}\n\n\n{PY_AUX}"), "unexpected MAIN", "plus.py")
+        # the operation comes first, so an AUXILIARY marker right under BEGIN CODE is refused
+        self.fails(PY_MODULE.replace(f"{PY_BEGIN}\n\ndef plus", f"{PY_BEGIN}\n\n{PY_AUX}\n\ndef plus"),
+                   "right under BEGIN CODE", "plus.py")
+        # AUXILIARY has two empty lines above it, and code below it
+        self.fails(PY_MODULE.replace(f"\n\n\n{PY_AUX}", f"\n\n{PY_AUX}"), "two empty lines", "plus.py")
+        self.fails(PY_MODULE.replace("def helper(a):\n    # the helper\n    return a\n", ""),
+                   "without auxiliary code", "plus.py")
+
+    # a file without helpers has no AUXILIARY marker
+    def test_python_without_helpers_has_no_auxiliary_marker(self):
+        alone = PY_MODULE.replace(f"{PY_AUX}\n\ndef helper(a):\n    # the helper\n    return a\n\n", "")
+        self.assertEqual(check(alone.replace("helper(a)", "a"), "plus.py"), [])
+
+
+class Imports(unittest.TestCase):
+    def test_examples_use_from_cora_import(self):
+        text = PY_MODULE.replace("import os", "import cora")
+        text = text.replace("plus - the sum", "example_plus - the sum")
+        found = check(text, "examples/python/example_plus.py")
+        self.assertTrue(any("from cora import" in issue for issue in found), found)
+        self.assertEqual(check(text.replace("import cora", "from cora import eye"),
+                               "examples/python/example_plus.py"), [])
+
+    def test_tests_and_library_use_import_cora(self):
+        text = PY_MODULE.replace("import os", "from cora import eye")
+        for name in ("tests/python/plus.py", "src/global/python/cora/plus.py", "scripts/plus.py"):
+            found = check(text, name)
+            self.assertTrue(any("import cora" in issue for issue in found), found)
+        self.assertEqual(check(PY_MODULE.replace("import os", "import cora"), "tests/python/plus.py"), [])
 
 
 # the comment rules
@@ -153,6 +152,13 @@ class Comments(unittest.TestCase):
     def test_python_docstrings_have_three_lines(self):
         docstring = '    """a\n    b\n    c\n    d"""\n'
         self.fails(PY_MODULE.replace("    # the sum\n", docstring), "docstring of 4", "plus.py")
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+sys.path.insert(0, str(ROOT / "scripts" / "ci"))
+
+import layout  # noqa: E402
 
 
 # shell, CMake and .def files
@@ -207,6 +213,29 @@ class Waivers(unittest.TestCase):
                  "// NOLINTBEGIN(clones,backend): why", "d", "// NOLINTEND(clones,backend)", "e"]
         self.assertEqual(layout.waived(lines, "backend"), {0, 4, 5, 6})
         self.assertEqual(layout.waived(lines, "naming"), {3})
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+AUTHORS = ("// Authors:       Claude Sonnet 5.5\n// Written:       05-November-2026\n"
+           "// Last update:   ---\n// Reviewed:      ---\n")
+
+BEGIN, AUX, MAIN, END = (layout.marker(n) for n in ("BEGIN", "AUXILIARY", "MAIN", "END"))
+PY_BEGIN, PY_AUX, PY_MAIN, PY_END = (layout.marker(n, "py") for n in ("BEGIN", "AUXILIARY", "MAIN", "END"))
+
+CPP_TEST = (f"// test_plus - the sum\n//\n// Syntax:   plus(Z, W)\n// Inputs:   Z - a set\n//           W - another\n"
+            f"//\n// CORA: contSet/@zonotope/plus.m\n// CORA authors: Mark Wetzlinger\n{AUTHORS}\n"
+            f'#include "testing.h"\n\n{BEGIN}\n\n{AUX}\n\nnamespace {{\n// a helper\nvoid helper() {{}}\n'
+            f"}} // namespace\n\n\n{MAIN}\n\nint main() {{\n    helper();\n    return 0;\n}}\n\n{END}\n")
+
+PY_MODULE = ('"""plus - the sum\n\nAuthors:       Claude Sonnet 5.5\nWritten:       05-November-2026\n'
+             'Last update:   06-November-2026\nReviewed:      06-November-2026 (Tobias Ladner)\n"""\n'
+             f"import os\n\n{PY_BEGIN}\n\ndef plus(a, b):\n    # the sum\n    return helper(a) + b\n\n\n"
+             f"{PY_AUX}\n\ndef helper(a):\n    # the helper\n    return a\n\n{PY_END}\n")
+
+
+def check(text, name="test_plus.cpp"):
+    return layout.check_file(name, text.split("\n"))
 
 
 if __name__ == "__main__":

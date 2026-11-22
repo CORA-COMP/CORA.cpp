@@ -21,25 +21,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-# the problem on torch, which is never the default
-with cora.backend("torch"):
-    X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
-    A_TRUE = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
-
-
-def loss(A, measurements):
-    """How far the measurements (steps + 1, N, 2) leave the boxes around the time-point sets."""
-    R = cora.LinearSys(A).reach(X0, time_step=0.1, t_final=1.0, taylor_terms=6)
-    boxes = [Z.interval() for Z in R.time_point]
-    inf = torch.stack([b.inf for b in boxes])[:, None, :]
-    sup = torch.stack([b.sup for b in boxes])[:, None, :]
-    return (torch.relu(inf - measurements) + torch.relu(measurements - sup)).mean()
-
-
-# ============================================  MAIN  ============================================ #
-
 class LearnDynamics(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("torch"))  # torch is never the default
@@ -65,6 +46,23 @@ class LearnDynamics(unittest.TestCase):
             optimizer.step()
         # the loss decreases
         self.assertLess(loss(A, self.measurements).item(), first)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+# the problem on torch, which is never the default
+with cora.backend("torch"):
+    X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
+    A_TRUE = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
+
+
+def loss(A, measurements):
+    """How far the measurements (steps + 1, N, 2) leave the boxes around the time-point sets."""
+    R = cora.LinearSys(A).reach(X0, time_step=0.1, t_final=1.0, taylor_terms=6)
+    boxes = [Z.interval() for Z in R.time_point]
+    inf = torch.stack([b.inf for b in boxes])[:, None, :]
+    sup = torch.stack([b.sup for b in boxes])[:, None, :]
+    return (torch.relu(inf - measurements) + torch.relu(measurements - sup)).mean()
 
 
 if __name__ == "__main__":

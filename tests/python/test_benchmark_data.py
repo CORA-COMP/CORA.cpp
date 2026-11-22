@@ -18,46 +18,13 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+
 sys.path.insert(0, os.path.join(ROOT, "examples", "python", "benchmarks"))
+
 import benchmark_data  # noqa: E402
 import heat3d_data  # noqa: E402
 
-
-DATA = os.path.join(ROOT, "examples", "benchmarks", "data")
-INSTANCES = ["ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01", "CBC01", "CBC02",
-             "CBC03", "CBF01", "CBF02", "CBF03", "HEAT01", "HEAT02", "RAND01", "RAND02", "HEAT03",
-             "RND01", "RND02", "RND03", "RND04", "RND05", "RND06"]
-OTHER_FORMAT = ["TSPS25"]  # the differential-algebraic equations, read by the C++ benchmark
-REACH = ["HEAT03", "RND05", "RND06"]  # reach (linAlg), not verify; and A too big to load dense here
-NAMES = ["A", "B", "C", "R0c", "R0G", "Uc", "UG"]
-
-
-def write(folder, name, matrices, specs):
-    """Writes an instance the way exportBenchmarkData.m does: coordinates if sparse, else dense."""
-    entries, blob = {}, b""
-    for key, M in matrices.items():
-        i, j = np.nonzero(M)
-        entry = {"shape": list(M.shape), "offset": len(blob)}
-        if len(i) * 16 < M.size * 8:
-            entry.update(storage="coo", nnz=len(i))
-            blob += i.astype("<i4").tobytes() + j.astype("<i4").tobytes() + M[i, j].astype("<f8").tobytes()
-        else:
-            entry.update(storage="dense", nnz=M.size)
-            blob += M.astype("<f8").tobytes()
-        entries[key] = entry
-    meta = {"format": "cora-benchmark-1", "benchmark": "Test", "instance": name, "label": name,
-            "verifyAlg": "reachavoid:supportFunc", "tFinal": 1.5, "data": name + ".bin",
-            "matrices": entries, "specs": specs, "expected": None}
-    with open(os.path.join(folder, name + ".bin"), "wb") as f:
-        f.write(blob)
-    with open(os.path.join(folder, name + ".json"), "w") as f:
-        json.dump(meta, f)
-
-
-# ============================================  MAIN  ============================================ #
 
 class Format(unittest.TestCase):
     def test_dense_and_coordinate_matrices_round_trip(self):
@@ -158,6 +125,43 @@ class Heat3dModel(unittest.TestCase):
         self.assertEqual(meta["matrices"]["R0G"]["shape"], [8000, 135])
         self.assertEqual(meta["matrices"]["C"]["nnz"], 1)
         self.assertEqual(meta["linAlg"], "krylov")
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+DATA = os.path.join(ROOT, "examples", "benchmarks", "data")
+
+INSTANCES = ["ISSC01_ISS02", "ISSC01_ISU02", "ISSF01_ISS01", "ISSF01_ISU01", "CBC01", "CBC02",
+             "CBC03", "CBF01", "CBF02", "CBF03", "HEAT01", "HEAT02", "RAND01", "RAND02", "HEAT03",
+             "RND01", "RND02", "RND03", "RND04", "RND05", "RND06"]
+
+OTHER_FORMAT = ["TSPS25"]  # the differential-algebraic equations, read by the C++ benchmark
+
+REACH = ["HEAT03", "RND05", "RND06"]  # reach (linAlg), not verify; and A too big to load dense here
+
+NAMES = ["A", "B", "C", "R0c", "R0G", "Uc", "UG"]
+
+
+def write(folder, name, matrices, specs):
+    """Writes an instance the way exportBenchmarkData.m does: coordinates if sparse, else dense."""
+    entries, blob = {}, b""
+    for key, M in matrices.items():
+        i, j = np.nonzero(M)
+        entry = {"shape": list(M.shape), "offset": len(blob)}
+        if len(i) * 16 < M.size * 8:
+            entry.update(storage="coo", nnz=len(i))
+            blob += i.astype("<i4").tobytes() + j.astype("<i4").tobytes() + M[i, j].astype("<f8").tobytes()
+        else:
+            entry.update(storage="dense", nnz=M.size)
+            blob += M.astype("<f8").tobytes()
+        entries[key] = entry
+    meta = {"format": "cora-benchmark-1", "benchmark": "Test", "instance": name, "label": name,
+            "verifyAlg": "reachavoid:supportFunc", "tFinal": 1.5, "data": name + ".bin",
+            "matrices": entries, "specs": specs, "expected": None}
+    with open(os.path.join(folder, name + ".bin"), "wb") as f:
+        f.write(blob)
+    with open(os.path.join(folder, name + ".json"), "w") as f:
+        json.dump(meta, f)
 
 
 if __name__ == "__main__":

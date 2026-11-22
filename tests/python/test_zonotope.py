@@ -35,24 +35,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-F64 = dict(dtype=torch.float64)
-
-
-def brute_support(c, G, d):
-    """max over the corners of the generator cube of d'(c + b G), one generator per row of G."""
-    m = G.shape[-2]
-    return max(float(d @ (c + torch.tensor(b, **F64) @ G)) for b in itertools.product([-1, 1], repeat=m))
-
-
-def random_zonotope(n=3, m=4, seed=0):
-    g = torch.Generator().manual_seed(seed)
-    return torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
-
-
-# ============================================  MAIN  ============================================ #
-
 class Construction(unittest.TestCase):
     def test_torch_arrays_stay_torch(self):
         c, G = random_zonotope()
@@ -254,6 +236,22 @@ class Stack(unittest.TestCase):
     def test_an_empty_stack_is_described(self):
         with self.assertRaises(ValueError):
             cora.Zonotope.stack([])
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+F64 = dict(dtype=torch.float64)
+
+
+def brute_support(c, G, d):
+    """max over the corners of the generator cube of d'(c + b G), one generator per row of G."""
+    m = G.shape[-2]
+    return max(float(d @ (c + torch.tensor(b, **F64) @ G)) for b in itertools.product([-1, 1], repeat=m))
+
+
+def random_zonotope(n=3, m=4, seed=0):
+    g = torch.Generator().manual_seed(seed)
+    return torch.randn(n, generator=g, **F64), torch.randn(m, n, generator=g, **F64)
 
 
 if __name__ == "__main__":

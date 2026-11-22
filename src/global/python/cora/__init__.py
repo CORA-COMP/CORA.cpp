@@ -108,9 +108,6 @@ from .tensor import Tensor, cos, default_tol, exp, eye, log, ones, randn, sin, s
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
-# ============================================  MAIN  ============================================ #
-
 # An example prints its CORA START block here and its CORA END block on exit.
 banner.install(current_backend)
 

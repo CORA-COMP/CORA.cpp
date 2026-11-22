@@ -25,24 +25,83 @@ import sys
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
 sys.path.insert(0, os.path.join(ROOT, "scripts", "ci"))
+
 import layout  # noqa: E402  (the layout rules: docstring, author block, markers, comments)
 from layout import BEGIN_MARKER, END_MARKER, MAIN_MARKER, SECTION  # noqa: E402
 
 
+def main():
+    issues_by_file = {}
+    for path in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h"):
+        if rel(path).startswith("src/global/python/"):
+            found = []
+            lines = read_lines(path)
+            found.extend(layout.check_file(rel(path), lines))
+            check_file_name(path, found)
+            code_lines = code_only("\n".join(lines)).split("\n")
+            waiving("naming", check_naming, path, lines, code_lines, found)
+            check_checks(path, code_lines, found)
+            waiving("backend", check_one_code_path, path, lines, code_lines, found)
+            waiving("backend", check_factories, path, lines, code_lines, found)
+            waiving("tolerance", check_tolerance_literals, path, lines, lines, found)
+        else:
+            found = check_source(path)
+        if found:
+            issues_by_file[rel(path)] = found
+    check_tests_exist(issues_by_file)
+    check_test_files(issues_by_file)
+    # shell, CMake and .def files
+    check_layout_of_other_files(issues_by_file)
+    # the Python files, their tests, clones, build jobs and portable types
+    check_python_files(issues_by_file)
+    check_python_tests_cover_the_api(issues_by_file)
+    check_clones(issues_by_file)
+    check_build_jobs(issues_by_file)
+    check_portable_types(issues_by_file)
+    check_nolint(issues_by_file)
+    check_tensor_ops(issues_by_file)
+    # the build: every test labelled, the oracle tests bit-exact
+    check_test_labels(issues_by_file)
+    check_oracle_tests_are_exact(issues_by_file)
+    for path in files("examples/**/example_*.cpp") + files("examples/**/example_*.py"):
+        found = check_example(path)
+        if found:
+            issues_by_file.setdefault(rel(path), []).extend(found)
+    check_layout_of_the_rest(issues_by_file)
+
+    print("Checking the coding conventions of CORA.cpp ..")
+    for path in sorted(issues_by_file):
+        print(f"  {path}")
+        for issue in issues_by_file[path]:
+            print(f"    - {issue}")
+    if issues_by_file:
+        print(f"{sum(len(v) for v in issues_by_file.values())} issues in {len(issues_by_file)} files")
+        return 1
+    # no issue was collected: exit status 0 tells CI that the tree conforms
+    print("all conventions hold")
+    return 0
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 MAX_LINE_LENGTH = 100
+
 CLONE_TOKENS = 100  # this many tokens repeated (literals abstracted) is duplicated code
+
 # Directories whose .cpp files are operations, each in a folder named after its class.
 OPERATION_ROOTS = ("src/cont_set/", "src/matrix_set/", "src/cont_dynamics/", "src/specification/",
                    "src/nn/")
+
 # Folders of the public headers of the set classes, systems and specifications (CORA tag).
 CLASS_HEADER_ROOTS = ("include/cora/cont_set/", "include/cora/matrix_set/",
                       "include/cora/cont_dynamics/", "include/cora/specification/",
                       "include/cora/nn/")
+
 CORA_TAG = re.compile(r"^// (CORA: \S+\.m\b|CORA\.cpp only: \S)")
+
 # Where code may ask which backend, device or dtype a tensor has: folders named backend and tensor.
 BACKEND_FOLDER = re.compile(r"(^|/)(backend|tensor)/")
 
@@ -320,6 +379,7 @@ def check_one_code_path(path, code_lines, issues):
 # A tensor made from raw numbers on the current backend, not like an operand.
 FACTORY = re.compile(r"\bTensor::(zeros|ones|eye|from_data)\s*\(|\bTensor\s*\(\s*\{"
                      r"|\bTensor\s+\w+\s*[({]\s*\{|\bbackend\s*\(\s*\)\s*\.\s*make\s*\(")
+
 # The attribute of a raw-number entry point (random sets, constants without a context).
 FROM_NUMBERS = "CORA_FROM_NUMBERS"
 
@@ -342,9 +402,12 @@ def check_factories(path, code_lines, issues):
 # A floating-point literal with a negative exponent (1e-8, 2.2e-16), or the machine epsilon.
 SMALL_LITERAL = re.compile(r"(?<![\w.])\d+(?:\.\d*)?[eE]-(?:[4-9]|\d\d+)\b|\b(?:DBL|FLT)_EPSILON\b"
                            r"|numeric_limits\s*<[^>]*>\s*::\s*epsilon\s*\(")
+
 # A tolerance or epsilon named thing set from an expression with a nonzero floating-point literal.
 NAMED_LITERAL = re.compile(r"\b\w*(?:[Tt]ol|[Ee]ps)\w*\s*(?:=|\{)\s*([^;,]*)")
+
 FLOAT_LITERAL = re.compile(r"(?<![\w.])(?:\d+\.\d*|\.\d+|\d+[eE][-+]?\d+)(?:[fF])?(?![\w.])")
+
 # The Python default of a tol argument: py::arg("tol") = ..., "tol"_a = ..., def f(tol=...).
 TOL_DEFAULT = re.compile(r"\"\w*tol\w*\"\s*(?:\)\s*|_a\s*)=\s*(py::none\(\)|[^,;)]+)"
                          r"|\bdef\b[^#]*?\b\w*tol\w*\s*=\s*([^,)]+)")
@@ -551,9 +614,13 @@ def check_python_tests_cover_the_api(issues_by_file):
 # --------------------------------------------------------------- tensor operations
 
 OPS_DEF = "include/cora/global/tensor/ops.def"
+
 OP_ROW = re.compile(r'^CORA_TENSOR_OP\((\w+), (\w+), (\w+), (\w+), (\d+), "(.*)"\)$')
+
 GRADCHECK_TEST = "tests/global/tensor/test_tensor_gradcheck_torch.cpp"
+
 TENSOR_DOC = "docs/tensor.md"
+
 DOC_ROW = re.compile(r"^\| `(\w+)` \| (\w+) \| (\w+) \| (\w+)(?: (\d+))? \|")
 
 
@@ -758,60 +825,6 @@ def check_oracle_tests_are_exact(issues_by_file):
                 issues_by_file.setdefault(rel(path), []).append(
                     f"line {i + 1}: a loose comparison in an oracle test; move it to a test "
                     "*_agreement, *_enclosure or *_bound")
-
-
-# ============================================  MAIN  ============================================ #
-
-def main():
-    issues_by_file = {}
-    for path in files("src/**/*.cpp") + files("src/**/*.h") + files("include/**/*.h"):
-        if rel(path).startswith("src/global/python/"):
-            found = []
-            lines = read_lines(path)
-            found.extend(layout.check_file(rel(path), lines))
-            check_file_name(path, found)
-            code_lines = code_only("\n".join(lines)).split("\n")
-            waiving("naming", check_naming, path, lines, code_lines, found)
-            check_checks(path, code_lines, found)
-            waiving("backend", check_one_code_path, path, lines, code_lines, found)
-            waiving("backend", check_factories, path, lines, code_lines, found)
-            waiving("tolerance", check_tolerance_literals, path, lines, lines, found)
-        else:
-            found = check_source(path)
-        if found:
-            issues_by_file[rel(path)] = found
-    check_tests_exist(issues_by_file)
-    check_test_files(issues_by_file)
-    # shell, CMake and .def files
-    check_layout_of_other_files(issues_by_file)
-    # the Python files, their tests, clones, build jobs and portable types
-    check_python_files(issues_by_file)
-    check_python_tests_cover_the_api(issues_by_file)
-    check_clones(issues_by_file)
-    check_build_jobs(issues_by_file)
-    check_portable_types(issues_by_file)
-    check_nolint(issues_by_file)
-    check_tensor_ops(issues_by_file)
-    # the build: every test labelled, the oracle tests bit-exact
-    check_test_labels(issues_by_file)
-    check_oracle_tests_are_exact(issues_by_file)
-    for path in files("examples/**/example_*.cpp") + files("examples/**/example_*.py"):
-        found = check_example(path)
-        if found:
-            issues_by_file.setdefault(rel(path), []).extend(found)
-    check_layout_of_the_rest(issues_by_file)
-
-    print("Checking the coding conventions of CORA.cpp ..")
-    for path in sorted(issues_by_file):
-        print(f"  {path}")
-        for issue in issues_by_file[path]:
-            print(f"    - {issue}")
-    if issues_by_file:
-        print(f"{sum(len(v) for v in issues_by_file.values())} issues in {len(issues_by_file)} files")
-        return 1
-    # no issue was collected: exit status 0 tells CI that the tree conforms
-    print("all conventions hold")
-    return 0
 
 
 if __name__ == "__main__":

@@ -19,59 +19,6 @@ import cora
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-PACKAGE = os.path.dirname(os.path.abspath(cora.__file__))
-
-spec = importlib.util.spec_from_file_location("stubs", os.path.join(ROOT, "scripts", "stubs.py"))
-stubs = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(stubs)
-
-
-def mypy(folder, *files):
-    """The errors of `mypy --strict` on the files and the stubs of the package. A missing mypy fails
-    in CI, which installs it (scripts/requirements-python.txt), and skips elsewhere."""
-    try:
-        import mypy  # noqa: F401
-    except ImportError:
-        if os.environ.get("CI"):
-            raise AssertionError("mypy is not installed: the CI python job must install it") from None
-        raise unittest.SkipTest("mypy is not installed (pip install mypy)") from None
-    env = dict(os.environ, MYPYPATH=os.path.dirname(PACKAGE))
-    result = subprocess.run(
-        [sys.executable, "-m", "mypy", "--strict", "--allow-untyped-calls", "--follow-imports=silent",
-         "--ignore-missing-imports", "--cache-dir", os.path.join(folder, "cache"), *files]
-        + [os.path.join(PACKAGE, "_cora", name) for name in ("__init__.pyi", "lean.pyi")],
-        capture_output=True, text=True, env=env)
-    return [line for line in result.stdout.splitlines() if ": error:" in line]
-
-# one file that must fail the check with exactly these messages: the stubs say what a call takes
-WRONG = """import cora
-Z = cora.Zonotope(cora.Tensor([0.0]), cora.Tensor([[1.0]]))
-Z.reduce("two")
-Z.nonexistent()
-x: int = Z.center
-"""
-
-
-def names_defined(path):
-    """The classes, functions and assignments at the top level of a Python or stub file."""
-    with open(path, encoding="utf-8") as f:
-        tree = ast.parse(f.read())
-    names = set()
-    for node in tree.body:
-        if isinstance(node, (ast.ClassDef, ast.FunctionDef)):
-            names.add(node.name)
-        elif isinstance(node, ast.Assign):
-            names.update(t.id for t in node.targets if isinstance(t, ast.Name))
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-            names.add(node.target.id)
-    return names
-
-
-# ============================================  MAIN  ============================================ #
-
 class Stubs(unittest.TestCase):
     def test_the_package_ships_stubs_and_py_typed(self):
         for name in ("py.typed", os.path.join("_cora", "__init__.pyi"), os.path.join("_cora", "lean.pyi")):
@@ -121,6 +68,61 @@ class Stubs(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             errors = mypy(folder)
         self.assertEqual(errors, [], "\n".join(errors))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+PACKAGE = os.path.dirname(os.path.abspath(cora.__file__))
+
+spec = importlib.util.spec_from_file_location("stubs", os.path.join(ROOT, "scripts", "stubs.py"))
+
+stubs = importlib.util.module_from_spec(spec)
+
+spec.loader.exec_module(stubs)
+
+
+def mypy(folder, *files):
+    """The errors of `mypy --strict` on the files and the stubs of the package. A missing mypy fails
+    in CI, which installs it (scripts/requirements-python.txt), and skips elsewhere."""
+    try:
+        import mypy  # noqa: F401
+    except ImportError:
+        if os.environ.get("CI"):
+            raise AssertionError("mypy is not installed: the CI python job must install it") from None
+        raise unittest.SkipTest("mypy is not installed (pip install mypy)") from None
+    env = dict(os.environ, MYPYPATH=os.path.dirname(PACKAGE))
+    result = subprocess.run(
+        [sys.executable, "-m", "mypy", "--strict", "--allow-untyped-calls", "--follow-imports=silent",
+         "--ignore-missing-imports", "--cache-dir", os.path.join(folder, "cache"), *files]
+        + [os.path.join(PACKAGE, "_cora", name) for name in ("__init__.pyi", "lean.pyi")],
+        capture_output=True, text=True, env=env)
+    return [line for line in result.stdout.splitlines() if ": error:" in line]
+
+
+# one file that must fail the check with exactly these messages: the stubs say what a call takes
+WRONG = """import cora
+Z = cora.Zonotope(cora.Tensor([0.0]), cora.Tensor([[1.0]]))
+Z.reduce("two")
+Z.nonexistent()
+x: int = Z.center
+"""
+
+
+def names_defined(path):
+    """The classes, functions and assignments at the top level of a Python or stub file."""
+    with open(path, encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    names = set()
+    for node in tree.body:
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef)):
+            names.add(node.name)
+        elif isinstance(node, ast.Assign):
+            names.update(t.id for t in node.targets if isinstance(t, ast.Name))
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            names.add(node.target.id)
+    return names
 
 
 if __name__ == "__main__":

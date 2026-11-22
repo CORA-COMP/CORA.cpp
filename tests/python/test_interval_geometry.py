@@ -24,17 +24,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-INF = float("inf")
-
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Geometry(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -79,6 +68,15 @@ class Geometry(unittest.TestCase):
             full.representsa("circle")
         with self.assertRaises(cora.errors.NotSupported):
             full.representsa("polygon")
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+INF = float("inf")
+
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
 
 
 if __name__ == "__main__":

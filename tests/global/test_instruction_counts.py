@@ -17,13 +17,10 @@ import unittest
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ci"))
+
 import instruction_counts as ic  # noqa: E402
 
-
-# ============================================  MAIN  ============================================ #
 
 class InstructionCountsTest(unittest.TestCase):
     def test_callgrind_output(self):

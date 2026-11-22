@@ -18,14 +18,11 @@ Reviewed:      ---
 import os
 import sys
 
-import cora
+from cora import lean, LinearSys, Tensor, Zonotope
 import numpy as np
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 if not os.environ.get("CORACPP_ORACLE"):
     print("set CORACPP_ORACLE to the command that starts the CORALean oracle")
@@ -43,15 +40,15 @@ time_step, t_final = 0.125, 2.0  # a power of two: exact in every dtype
 taylor_terms, zonotope_order = 8, 10
 
 # CORA.cpp's own result, in double without a rounding-error account
-ref = cora.LinearSys(cora.Tensor(A)).reach(cora.Zonotope(cora.Tensor(c), cora.Tensor(G)), time_step=time_step, t_final=t_final, taylor_terms=taylor_terms)
+ref = LinearSys(Tensor(A)).reach(Zonotope(Tensor(c), Tensor(G)), time_step=time_step, t_final=t_final, taylor_terms=taylor_terms)
 last = ref.time_point[-1].interval()
 print(f"CORA.cpp:  x1 in [{float(last.inf[0]):.6f}, {float(last.sup[0]):.6f}]")
 
 # The Oracle --------------------------------------------------------------------------------
 
 for dtype in ("binary64", "ieee:binary32"):
-    with cora.lean.dtype(dtype):  # the lean objects in the block are created in this dtype
-        R = cora.lean.LinearSys(A).reach(cora.lean.Zonotope(c, G), t_final, time_step=time_step, taylor_terms=taylor_terms, zonotope_order=zonotope_order)
+    with lean.dtype(dtype):  # the lean objects in the block are created in this dtype
+        R = lean.LinearSys(A).reach(lean.Zonotope(c, G), t_final, time_step=time_step, taylor_terms=taylor_terms, zonotope_order=zonotope_order)
 
     # the nominal zonotope and the error box that the sound float operations added
     nominal, error = R.time_point[-1].gather()
@@ -71,7 +68,7 @@ for dtype in ("binary64", "ieee:binary32"):
 # Rounding ----------------------------------------------------------------------------------
 
 # 0.1 is not a binary32 number: round_to returns the rounded value and an enclosure of the error
-value, error = cora.lean.Tensor.from_array(np.array([[0.1]])).round_to("ieee:binary32")
+value, error = lean.Tensor.from_array(np.array([[0.1]])).round_to("ieee:binary32")
 inf_, sup_ = error.gather().inf, error.gather().sup
 print(f"0.1 in binary32 is {float(value.gather()[0, 0])}, "
       f"the error lies in [{float(inf_[0]):.3g}, {float(sup_[0]):.3g}]")

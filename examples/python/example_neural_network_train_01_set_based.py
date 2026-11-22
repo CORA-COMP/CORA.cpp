@@ -23,16 +23,13 @@ Reviewed:      ---
 """
 import argparse
 
-import cora
+from cora import NeuralNetwork, Zonotope
 import torch
 from matplotlib.patches import Rectangle
 from torch import nn
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -82,8 +79,8 @@ def new_model():
 
 def output_set(model, x, eps):
     """The output zonotopes of the eps-boxes around all points x: one batch, one call."""
-    net = cora.NeuralNetwork([(m.weight, m.bias) for m in model if isinstance(m, nn.Linear)])
-    return net.evaluate(cora.Zonotope(x, eps * torch.eye(2, dtype=dtype).expand(len(x), 2, 2)))
+    net = NeuralNetwork([(m.weight, m.bias) for m in model if isinstance(m, nn.Linear)])
+    return net.evaluate(Zonotope(x, eps * torch.eye(2, dtype=dtype).expand(len(x), 2, 2)))
 
 
 def f_radius(Y):

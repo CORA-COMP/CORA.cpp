@@ -14,7 +14,7 @@ Last update:   ---
 Reviewed:      ---
 """
 
-import cora
+from cora import eye, LinearSys, Tensor, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -22,15 +22,13 @@ import cora
 # Parameters --------------------------------------------------------------------------------
 
 
-# ============================================  MAIN  ============================================ #
-
 t_final = 3.0
 
 # Four initial sets: different centers, and boxes of different size.
 centers = [[1.0, 0.0], [0.0, 1.0], [-1.0, 0.0], [0.0, -2.0]]
 scales = [0.05, 0.1, 0.2, 0.4]
-singles = [cora.Zonotope(cora.Tensor(c), s * cora.eye(2)) for c, s in zip(centers, scales)]
-batch_r0 = cora.Zonotope.stack(singles)
+singles = [Zonotope(Tensor(c), s * eye(2)) for c, s in zip(centers, scales)]
+batch_r0 = Zonotope.stack(singles)
 
 # Reachability Settings ---------------------------------------------------------------------
 
@@ -39,7 +37,7 @@ taylor_terms = 8
 
 # System Dynamics ---------------------------------------------------------------------------
 
-sys = cora.LinearSys(cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]]))  # one system for all
+sys = LinearSys(Tensor([[-0.1, 1.0], [-1.0, -0.1]]))  # one system for all
 
 # Reachability Analysis ---------------------------------------------------------------------
 

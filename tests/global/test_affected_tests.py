@@ -20,43 +20,10 @@ import unittest
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "ci"))
+
 import affected_tests as at  # noqa: E402
 
-
-TREE = {
-    "include/cora/cont_set/zonotope/zonotope.h": '#include "cora/global/rng.h"\n',
-    "include/cora/cont_set/interval/interval.h": "",
-    "include/cora/global/rng.h": "",
-    "src/cont_set/zonotope/plus.cpp": '#include "cora/cont_set/zonotope/zonotope.h"\n#include "private/priv_sum.h"\n',
-    "src/cont_set/zonotope/private/priv_sum.h": "",
-    "src/cont_set/zonotope/private/priv_sum.cpp": '#include "priv_sum.h"\n',
-    "src/cont_set/interval/plus.cpp": '#include "cora/cont_set/interval/interval.h"\n',
-    "tests/testing.h": "",
-    "tests/cont_set/zonotope/test_zonotope_plus.cpp":
-        '#include "cora/cont_set/zonotope/zonotope.h"\n#include "testing.h"\n',
-    "tests/cont_set/interval/test_interval_plus.cpp":
-        '#include "cora/cont_set/interval/interval.h"\n#include "testing.h"\n',
-    "tests/global/test_coding_conventions.py": "",
-    "tests/global/test_other.py": "",
-    "tests/python/test_zonotope.py": "",
-    "examples/cpp/example_zonotope_01.cpp": '#include "cora/cont_set/zonotope/zonotope.h"\n',
-}
-
-
-def pick(*changed):
-    result = at.select(list(changed), sorted(TREE), TREE.__getitem__)
-    # a selection other than ALL or NONE is a regex that matches exactly the listed names
-    if result in ("ALL", "NONE"):
-        return result
-    prefix, suffix = "^(", ")" + at.BACKEND_COPY + "$"
-    assert result.startswith(prefix) and result.endswith(suffix), result
-    return set(result[len(prefix):-len(suffix)].split("|"))
-
-
-# ============================================  MAIN  ============================================ #
 
 class SelectionTest(unittest.TestCase):
     def test_header_selects_its_includers(self):
@@ -141,6 +108,38 @@ class SelectionTest(unittest.TestCase):
         files = at.list_files()
         self.assertIn("conventions", at.tests_of(files))
         self.assertTrue(any(name.startswith("examples/") for name in at.tests_of(files)))
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+TREE = {
+    "include/cora/cont_set/zonotope/zonotope.h": '#include "cora/global/rng.h"\n',
+    "include/cora/cont_set/interval/interval.h": "",
+    "include/cora/global/rng.h": "",
+    "src/cont_set/zonotope/plus.cpp": '#include "cora/cont_set/zonotope/zonotope.h"\n#include "private/priv_sum.h"\n',
+    "src/cont_set/zonotope/private/priv_sum.h": "",
+    "src/cont_set/zonotope/private/priv_sum.cpp": '#include "priv_sum.h"\n',
+    "src/cont_set/interval/plus.cpp": '#include "cora/cont_set/interval/interval.h"\n',
+    "tests/testing.h": "",
+    "tests/cont_set/zonotope/test_zonotope_plus.cpp":
+        '#include "cora/cont_set/zonotope/zonotope.h"\n#include "testing.h"\n',
+    "tests/cont_set/interval/test_interval_plus.cpp":
+        '#include "cora/cont_set/interval/interval.h"\n#include "testing.h"\n',
+    "tests/global/test_coding_conventions.py": "",
+    "tests/global/test_other.py": "",
+    "tests/python/test_zonotope.py": "",
+    "examples/cpp/example_zonotope_01.cpp": '#include "cora/cont_set/zonotope/zonotope.h"\n',
+}
+
+
+def pick(*changed):
+    result = at.select(list(changed), sorted(TREE), TREE.__getitem__)
+    # a selection other than ALL or NONE is a regex that matches exactly the listed names
+    if result in ("ALL", "NONE"):
+        return result
+    prefix, suffix = "^(", ")" + at.BACKEND_COPY + "$"
+    assert result.startswith(prefix) and result.endswith(suffix), result
+    return set(result[len(prefix):-len(suffix)].split("|"))
 
 
 if __name__ == "__main__":

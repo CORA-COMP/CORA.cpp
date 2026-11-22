@@ -28,21 +28,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def zonotope(c, G):
-    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class ZonotopeConversions(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -124,6 +109,15 @@ class MatrixSets(unittest.TestCase):
         self.assertEqual((len(R.powers), len(R.powers2)), (2, 6))
         with self.assertRaises(cora.errors.WrongValue):
             cora.mat_exp.expm_independent_mixed(A, 0, 8)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def zonotope(c, G):
+    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 if __name__ == "__main__":

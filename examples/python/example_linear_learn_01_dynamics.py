@@ -17,15 +17,12 @@ Reviewed:      ---
 """
 import argparse
 
-import cora
+from cora import eye, LinearSys, plot, Rng, Tensor, use_cora_colors, Zonotope
 import torch
 from torch import nn
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-
-# ============================================  MAIN  ============================================ #
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save", metavar="FILE", help="write the figure instead of showing it")
@@ -42,15 +39,15 @@ import matplotlib.pyplot as plt
 
 time_step = 0.1
 t_final = 2.0
-X0 = cora.Zonotope(cora.Tensor([1.0, 0.0]), 0.1 * cora.eye(2))
+X0 = Zonotope(Tensor([1.0, 0.0]), 0.1 * eye(2))
 
 # The system that produced the data, unknown to the learner.
-A_true = cora.Tensor([[-0.1, 1.0], [-1.0, -0.1]])
+A_true = Tensor([[-0.1, 1.0], [-1.0, -0.1]])
 
 # Twenty noisy trajectories from the initial set: measurements[k] are the points at time k.
 torch.manual_seed(0)
-x0 = X0.rand_point(20, cora.Rng(0))  # the simulation takes the points as rows
-truth = cora.LinearSys(A_true).simulate(x0, time_step=time_step, t_final=t_final)
+x0 = X0.rand_point(20, Rng(0))  # the simulation takes the points as rows
+truth = LinearSys(A_true).simulate(x0, time_step=time_step, t_final=t_final)
 measurements = truth + 0.01 * torch.randn_like(truth)
 
 # Learning ----------------------------------------------------------------------------------
@@ -61,10 +58,10 @@ class LearnedSystem(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.A = nn.Parameter(cora.Tensor([[0.0, 0.5], [-0.5, 0.0]]))
+        self.A = nn.Parameter(Tensor([[0.0, 0.5], [-0.5, 0.0]]))
 
     def forward(self, y):
-        R = cora.LinearSys(self.A).reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
+        R = LinearSys(self.A).reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
         outside, width = 0.0, 0.0
         for k in range(1, len(R.time_point)):
             box = R.time_point[k].interval()
@@ -95,13 +92,13 @@ print("true A:   ", A_true.numpy().round(2).tolist())
 # Visualization -----------------------------------------------------------------------------
 
 with torch.no_grad():
-    R = cora.LinearSys(model.A).reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
+    R = LinearSys(model.A).reach(X0, time_step=time_step, t_final=t_final, taylor_terms=6)
 
-cora.use_cora_colors("CORA:contDynamics")
+use_cora_colors("CORA:contDynamics")
 plt.figure()
-cora.plot(R, label="Learned reachable set")
-cora.plot(X0, label="Initial set")
-cora.plot(measurements.reshape(-1, 2), label="Measurements",
+plot(R, label="Learned reachable set")
+plot(X0, label="Initial set")
+plot(measurements.reshape(-1, 2), label="Measurements",
           color="CORA:red")
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")

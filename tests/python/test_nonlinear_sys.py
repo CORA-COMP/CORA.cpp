@@ -38,18 +38,6 @@ if not cora.has_torch:  # torch is installed, but this build has no torch backen
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def van_der_pol():
-    return cora.NonlinearSys(lambda x: [x[1], (1 - x[0] ** 2) * x[1] - x[0]], 2)
-
-
-def start():
-    return cora.Zonotope(cora.Tensor([1.4, 2.3]), 0.05 * cora.eye(2))
-
-
-# ============================================  MAIN  ============================================ #
-
 class Expressions(unittest.TestCase):
     def test_python_operators_build_expressions(self):
         x = cora.Expr.var(0)
@@ -168,6 +156,16 @@ class ReachSet(unittest.TestCase):
         R = Z.reduce_pca()
         self.assertEqual(np.asarray(R.generators).shape, (2, 2))
         np.testing.assert_allclose(np.abs(np.asarray(R.generators)).sum(axis=1), [4.0, 2.0], atol=1e-12)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def van_der_pol():
+    return cora.NonlinearSys(lambda x: [x[1], (1 - x[0] ** 2) * x[1] - x[0]], 2)
+
+
+def start():
+    return cora.Zonotope(cora.Tensor([1.4, 2.3]), 0.05 * cora.eye(2))
 
 
 if __name__ == "__main__":

@@ -31,26 +31,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# ----------------------------------------  BEGIN CODE  ---------------------------------------- #
-
-# ----------------------------------------  AUXILIARY  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def zonotope(c, G):
-    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
-
-
-def squares():
-    """The squares [-1, 1]^2 and [0, 2]^2, which meet in [0, 1]^2."""
-    return cora.ZonoBundle([zonotope([0.0, 0.0], np.eye(2)), zonotope([1.0, 1.0], np.eye(2))])
-
-
-# ===========================================  MAIN  =========================================== #
-
-
-# ============================================  MAIN  ============================================ #
-
 class ZonoBundle(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -161,6 +141,20 @@ class ZonoBundle(unittest.TestCase):
             zB.is_intersecting(zB, type="fast")
         with self.assertRaises(cora.errors.WrongValue):
             zB.isequal(zB, tol=-1.0)
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def zonotope(c, G):
+    return cora.Zonotope(np.array(c, dtype=float), np.array(G, dtype=float))
+
+
+def squares():
+    """The squares [-1, 1]^2 and [0, 2]^2, which meet in [0, 1]^2."""
+    return cora.ZonoBundle([zonotope([0.0, 0.0], np.eye(2)), zonotope([1.0, 1.0], np.eye(2))])
+
+
+# ===========================================  MAIN  =========================================== #
 
 
 if __name__ == "__main__":

@@ -17,14 +17,6 @@ import numpy as np
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-def box(lo, hi):
-    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
-
-
-# ============================================  MAIN  ============================================ #
-
 class ProjectVertices(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("eigen"))
@@ -39,6 +31,12 @@ class ProjectVertices(unittest.TestCase):
         self.assertEqual(len(V), 1)
         corners = sorted(map(tuple, V[0].tolist()))
         self.assertEqual(corners, [(0.0, 1.0), (0.0, 3.0), (2.0, 1.0), (2.0, 3.0)])
+
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+def box(lo, hi):
+    return cora.Interval(np.array(lo, dtype=float), np.array(hi, dtype=float))
 
 
 if __name__ == "__main__":

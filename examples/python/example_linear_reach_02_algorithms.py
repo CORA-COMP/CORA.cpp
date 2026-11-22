@@ -14,7 +14,7 @@ Last update:   ---
 Reviewed:      ---
 """
 
-import cora
+from cora import LinearSys, Tensor, Zonotope
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -22,11 +22,9 @@ import cora
 # Parameters --------------------------------------------------------------------------------
 
 
-# ============================================  MAIN  ============================================ #
-
 t_final = 2.4
-R0 = cora.Zonotope(cora.Tensor([1.0, 0.5]),
-                   cora.Tensor([[0.15, -0.05], [0.05, 0.1]]))
+R0 = Zonotope(Tensor([1.0, 0.5]),
+                   Tensor([[0.15, -0.05], [0.05, 0.1]]))
 
 # Reachability Settings ---------------------------------------------------------------------
 
@@ -35,7 +33,7 @@ taylor_terms = 8
 
 # System Dynamics ---------------------------------------------------------------------------
 
-sys = cora.LinearSys(cora.Tensor([[-0.1, 3.0], [-3.0, -0.1]]))
+sys = LinearSys(Tensor([[-0.1, 3.0], [-3.0, -0.1]]))
 
 # Reachability Analysis ---------------------------------------------------------------------
 
@@ -45,7 +43,7 @@ RwrappingFree = sys.reach(R0, time_step=time_step, t_final=t_final, taylor_terms
 # Evaluation --------------------------------------------------------------------------------
 
 # The extent of an enclosure along x1 is its support function in the direction (1, 0).
-x1 = cora.Tensor([1.0, 0.0])
+x1 = Tensor([1.0, 0.0])
 print("step   standard   wrapping-free")
 for k, (Zs, Zw) in enumerate(zip(Rstandard.time_interval, RwrappingFree.time_interval)):
     print(f"{k:4d}   {float(Zs.support_function(x1)):8.5f}   {float(Zw.support_function(x1)):8.5f}")

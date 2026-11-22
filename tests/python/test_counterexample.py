@@ -30,75 +30,11 @@ try:
 except ImportError:
     raise unittest.SkipTest("needs onnx, onnxruntime and vnnlib") from None
 
-from cora import counterexample as ce
+import cora.counterexample as ce
 from cora.vnnlib import parse_vnnlib, to_vnnlib2
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
-# -----------------------------------------  AUXILIARY  ------------------------------------------ #
-
-W = np.array([[1.0, 2.0], [-1.0, 0.5]], np.float32)
-B = np.array([0.25, -0.125], np.float32)
-
-
-def network(path):
-    """y = relu(x W^T + b) for x of shape (1, 2), saved to path."""
-    nodes = [
-        helper.make_node("Gemm", ["x", "W", "b"], ["g"], transB=1),
-        helper.make_node("Relu", ["g"], ["y"]),
-    ]
-    graph = helper.make_graph(
-        nodes,
-        "g",
-        [helper.make_tensor_value_info("x", TensorProto.FLOAT, [1, 2])],
-        [helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 2])],
-        [numpy_helper.from_array(W, "W"), numpy_helper.from_array(B, "b")],
-    )
-    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
-    m.ir_version = 8
-    onnx.save(m, path)
-
-
-def output(x):
-    """The network's output in float32."""
-    return np.maximum(np.asarray(x, np.float32) @ W.T + B, 0).astype(np.float32)
-
-
-def prop_text(lo, hi, threshold):
-    """X in [lo, hi]^2 and the unsafe set Y_0 >= threshold."""
-    lines = [
-        "(declare-const X_0 Real)",
-        "(declare-const X_1 Real)",
-        "(declare-const Y_0 Real)",
-        "(declare-const Y_1 Real)",
-    ]
-    for i in range(2):
-        lines += [f"(assert (<= X_{i} {hi!r}))", f"(assert (>= X_{i} {lo!r}))"]
-    return "\n".join(lines + [f"(assert (>= Y_0 {threshold!r}))"]) + "\n"
-
-
-@contextlib.contextmanager
-def official_scoring():
-    """The modules of the official scoring, or None without VNNCOMP_SCORING."""
-    folder = os.environ.get("VNNCOMP_SCORING")
-    if not folder:
-        yield None
-        return
-    sys.path.insert(0, folder)
-    try:
-        import cachier
-        import counterexamples
-        import counterexamples_v2
-
-        cachier.disable_caching()  # its cache keys are file names, which the tests reuse
-        yield counterexamples, counterexamples_v2
-    finally:
-        sys.path.remove(folder)
-
-
-# ============================================  MAIN  ============================================ #
-
 
 class Check(unittest.TestCase):
     def setUp(self):
@@ -196,5 +132,66 @@ class Write(unittest.TestCase):
         values = [float(v.split()[1].rstrip(")")) for v in v1.splitlines()]
         np.testing.assert_array_equal(np.float32(values), np.concatenate([x, y]))
 
+
+# -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+W = np.array([[1.0, 2.0], [-1.0, 0.5]], np.float32)
+
+B = np.array([0.25, -0.125], np.float32)
+
+
+def network(path):
+    """y = relu(x W^T + b) for x of shape (1, 2), saved to path."""
+    nodes = [
+        helper.make_node("Gemm", ["x", "W", "b"], ["g"], transB=1),
+        helper.make_node("Relu", ["g"], ["y"]),
+    ]
+    graph = helper.make_graph(
+        nodes,
+        "g",
+        [helper.make_tensor_value_info("x", TensorProto.FLOAT, [1, 2])],
+        [helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 2])],
+        [numpy_helper.from_array(W, "W"), numpy_helper.from_array(B, "b")],
+    )
+    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
+    m.ir_version = 8
+    onnx.save(m, path)
+
+
+def output(x):
+    """The network's output in float32."""
+    return np.maximum(np.asarray(x, np.float32) @ W.T + B, 0).astype(np.float32)
+
+
+def prop_text(lo, hi, threshold):
+    """X in [lo, hi]^2 and the unsafe set Y_0 >= threshold."""
+    lines = [
+        "(declare-const X_0 Real)",
+        "(declare-const X_1 Real)",
+        "(declare-const Y_0 Real)",
+        "(declare-const Y_1 Real)",
+    ]
+    for i in range(2):
+        lines += [f"(assert (<= X_{i} {hi!r}))", f"(assert (>= X_{i} {lo!r}))"]
+    return "\n".join(lines + [f"(assert (>= Y_0 {threshold!r}))"]) + "\n"
+
+
+@contextlib.contextmanager
+def official_scoring():
+    """The modules of the official scoring, or None without VNNCOMP_SCORING."""
+    folder = os.environ.get("VNNCOMP_SCORING")
+    if not folder:
+        yield None
+        return
+    sys.path.insert(0, folder)
+    try:
+        import cachier
+        import counterexamples
+        import counterexamples_v2
+
+        cachier.disable_caching()  # its cache keys are file names, which the tests reuse
+        yield counterexamples, counterexamples_v2
+    finally:
+        sys.path.remove(folder)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #
