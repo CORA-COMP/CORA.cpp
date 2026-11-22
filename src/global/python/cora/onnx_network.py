@@ -61,7 +61,9 @@ class OnnxNetwork:
                 self.constants[node.output[0]] = self._tensor(numpy_helper.to_array(attrs["value"]))
                 continue
             self.nodes.append((node.op_type, list(node.input), list(node.output), attrs))
-        self.opset = max((o.version for o in model.opset_import if o.domain in ("", "ai.onnx")), default=13)
+        self.opset = max(
+            (o.version for o in model.opset_import if o.domain in ("", "ai.onnx")), default=13
+        )
 
     @classmethod
     def load(cls, path, dtype=torch.float32, device="cpu"):
@@ -84,11 +86,15 @@ class OnnxNetwork:
         """The number of elements of all values of one sample (the memory of a forward pass)."""
         with torch.no_grad():
             values = dict(self.constants)
-            values[self.input_name] = torch.zeros(self.input_shape, dtype=self.dtype, device=self.device)
+            values[self.input_name] = torch.zeros(
+                self.input_shape, dtype=self.dtype, device=self.device
+            )
             total = 0
             for op, ins, outs, attrs in self.nodes:
                 result = self._run(op, [values[name] if name else None for name in ins], attrs)
-                for name, value in zip(outs, result if isinstance(result, tuple) else (result,), strict=False):
+                for name, value in zip(
+                    outs, result if isinstance(result, tuple) else (result,), strict=False
+                ):
                     values[name] = value
                     total += value.numel() if value.is_floating_point() else 0
         return total
@@ -111,7 +117,9 @@ class OnnxNetwork:
         for op, ins, outs, attrs in self.nodes:
             args = [values[name] if name else None for name in ins]
             result = self._run(op, args, attrs)
-            for name, value in zip(outs, result if isinstance(result, tuple) else (result,), strict=False):
+            for name, value in zip(
+                outs, result if isinstance(result, tuple) else (result,), strict=False
+            ):
                 values[name] = value
         return values[self.output_name]
 
@@ -300,7 +308,9 @@ class OnnxNetwork:
         pool = {1: F.avg_pool1d, 2: F.avg_pool2d, 3: F.avg_pool3d}[len(k)]
         if attrs.get("count_include_pad", 0) or not any(pads):
             x = _pool_padding(x, pads, 0.0)
-            return pool(x, k, stride=attrs.get("strides", 1), ceil_mode=bool(attrs.get("ceil_mode", 0)))
+            return pool(
+                x, k, stride=attrs.get("strides", 1), ceil_mode=bool(attrs.get("ceil_mode", 0))
+            )
         if pads[: len(k)] != pads[len(k) :]:
             raise NotImplementedError("OnnxNetwork: AveragePool with asymmetric pads")
         return pool(
@@ -316,7 +326,9 @@ class OnnxNetwork:
         return a[0].mean(dim=tuple(range(2, a[0].dim())), keepdim=True)
 
     def _op_Pad(self, a, attrs):
-        pads = [int(p) for p in (a[1].tolist() if len(a) > 1 and a[1] is not None else attrs["pads"])]
+        pads = [
+            int(p) for p in (a[1].tolist() if len(a) > 1 and a[1] is not None else attrs["pads"])
+        ]
         value = float(a[2]) if len(a) > 2 and a[2] is not None else attrs.get("value", 0.0)
         k = len(pads) // 2
         if any(pads[:2]) or any(pads[k : k + 2]):
@@ -403,7 +415,9 @@ class OnnxNetwork:
             if op in ACTIVATIONS:
                 # the affine map from the chain input `tag` to here is one layer
                 _, lin, zero = args[0]
-                layers.append((lin.reshape(tag_size[tag], -1).T.contiguous(), zero.reshape(-1).clone()))
+                layers.append(
+                    (lin.reshape(tag_size[tag], -1).T.contiguous(), zero.reshape(-1).clone())
+                )
                 activations.append(ACTIVATIONS[op])
                 size = layers[-1][0].shape[0]
                 if size * size > max_elements:  # the unit vectors of the next layer
@@ -453,10 +467,12 @@ class OnnxNetwork:
             parts = [v if t else torch.zeros_like(v) for v, t in zip(lin_args, tagged, strict=True)]
             return self._run_batched(op, parts, tagged, attrs), zero
         if op == "Pad":
-            return self._run_batched(op, lin_args[:2] + [None], tagged[:2] + [False], {**attrs, "value": 0.0}), zero
+            return self._run_batched(
+                op, lin_args[:2] + [None], tagged[:2] + [False], {**attrs, "value": 0.0}
+            ), zero
         return self._run_batched(op, lin_args, tagged, attrs), zero
 
-    # ----------------------------------------------------------------- lowering with convolutions----------------------------------------------------------------
+    # ------------------------------------------------------------------- lowering with convolutions
     def _lower_structured(self):
         """The layers of a chain with convolutions, one per linear node, none made a matrix: a Conv
         (and a BatchNormalization or an AveragePool, as a depthwise one) a conv2d layer, a Gemm or
@@ -489,7 +505,11 @@ class OnnxNetwork:
             if op in STRUCTURE_OPS:
                 # shape arithmetic on the chain: its shape only
                 probes = [
-                    torch.zeros(1, *chain[n][1:], dtype=torch.float64) if n in chain else values.get(n) if n else None
+                    torch.zeros(1, *chain[n][1:], dtype=torch.float64)
+                    if n in chain
+                    else values.get(n)
+                    if n
+                    else None
                     for n in ins
                 ]
                 values[outs[0]] = net._run(op, probes, attrs)
@@ -560,7 +580,8 @@ class OnnxNetwork:
                 moved_args = [idx if n == x_name else values.get(n) if n else None for n in ins]
                 if op == "Concat":
                     moved_args = [
-                        a if n == x_name else torch.zeros_like(a) for a, n in zip(moved_args, ins, strict=True)
+                        a if n == x_name else torch.zeros_like(a)
+                        for a, n in zip(moved_args, ins, strict=True)
                     ]
                 if op == "Pad" and len(moved_args) > 2:
                     moved_args[2] = None
@@ -622,7 +643,11 @@ LINEAR_OPS = {
     "Pad",
 }
 
-STRUCTURED_OPS = {"Conv", "ConvTranspose", "AveragePool"}  # lowered layer by layer, never to a matrix
+STRUCTURED_OPS = {
+    "Conv",
+    "ConvTranspose",
+    "AveragePool",
+}  # lowered layer by layer, never to a matrix
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
 
@@ -653,7 +678,11 @@ def _conv(w, b, shape, attrs, out_shape):
 
 def _gather(index, inputs, bias):
     """The gather dict of cora.NeuralNetwork: output i is input index[i] (negative: 0)."""
-    return {"gather": list(index), "inputs": int(inputs), "bias": bias.to(torch.float64).contiguous()}
+    return {
+        "gather": list(index),
+        "inputs": int(inputs),
+        "bias": bias.to(torch.float64).contiguous(),
+    }
 
 
 def _add_bias(layer, delta):

@@ -9,11 +9,10 @@
 // On a polynomial zonotope the dependency on its factors stays, evaluate_with_input returns the
 // pairs (x, N(x)) of a set, and a neuron may have an order k (NnOptions::orders): its activation
 // is enclosed by a polynomial of that order, evaluated on the powers of its set, and refine
-// raises the orders where the errors are large. Everything is computed on tensors.
+// raises the orders. A layer may be a convolution or a gather (conv2d.cpp), for points and verify.
 //
 // Syntax:     NeuralNetwork nn({{W1, b1}, {W2, b2}});   Zonotope Y = nn.evaluate(X);
 //             PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(X));
-// A layer may be a convolution or a gather (layer.cpp); evaluate at points and verify take them.
 // Operations: evaluate, evaluate_with_input, approx_errors (evaluate.cpp), refine (refine.cpp),
 //             sensitivity (sensitivity.cpp), verify (verify.cpp, verify.h)
 // See also:   cora/cont_set/zonotope/zonotope.h, cora/cont_set/poly_zonotope/poly_zonotope.h
@@ -104,6 +103,8 @@ struct NnOptions {
     bool use_approx_error = true;
 };
 
+// The refinement ----------------------------------------------------------------------------------
+
 /// How refine raises the orders (CORA's neuralNetwork/refine).
 struct RefineOptions {
     int max_order = 5;
@@ -123,11 +124,11 @@ class NeuralNetwork {
         int64_t groups = 1;
     };
 
-    /// The index lists and kernel matrices of a convolution or a gather (layer.cpp).
+    /// The index lists and kernel matrices of a convolution or a gather (conv2d.cpp).
     struct LinearPlan;
 
     /// One layer: the weights W (out, in) and the bias b (out); or, with W undefined, a
-    /// convolution or a gather (plan), which is never made a matrix (layer.cpp).
+    /// convolution or a gather (plan), which is never made a matrix (conv2d.cpp).
     struct Layer {
         Tensor W, b;
         std::shared_ptr<const LinearPlan> plan = nullptr;

@@ -444,8 +444,7 @@ ZonoNet::ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_appr
     int64_t id = 1, widest = 0;
     for (std::size_t k = 0; k < net.layers().size(); ++k) {
         const NeuralNetwork::Layer &layer = net.layers()[k];
-        // the transposed weights, which the rows multiply from the right; a convolution or a
-        // gather keeps its plan
+        // the transposed weights for the rows; a convolution or a gather keeps its plan
         maps.push_back(layer);
         const bool dense = !layer.plan;
         W.push_back(dense ? layer.W.matrix_transpose() : Tensor());
@@ -471,7 +470,10 @@ ZonoNet::ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_appr
     interval_center = q0 < n0 || aux_count(num_approx_err, widest) < widest;
 }
 
+// The linear maps ---------------------------------------------------------------------------------
+
 Tensor ZonoNet::map(std::size_t k, const Tensor &x) const {
+    // a convolution or a gather by its plan, a matrix as one product of the batch's rows
     if (!W[k].defined()) return maps[k].rows(x);
     return x.shape().size() == 3 ? aux_rows_times(x, W[k]) : x.matmul(W[k]);
 }

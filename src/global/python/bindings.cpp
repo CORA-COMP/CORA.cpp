@@ -4802,6 +4802,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(alpha_iterations, "zonotope-alpha: Adam steps on the ReLU slopes");
     CORA_VERIFY_FIELD(alpha_patience, "zonotope-alpha: steps without progress before it stops");
     CORA_VERIFY_FIELD(alpha_method, "zonotope-alpha: 'zonotope' (the lines) or 'crown' (backward)");
+    // which sets Phase 2 optimizes, Adam's step, then the repairs
     CORA_VERIFY_FIELD(
         optimize_gap,
         "zonotope-alpha and dual_certificate: the largest gap of a set they optimize");
@@ -4811,6 +4812,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(remember_point_splits_only, "Repair: split bounds at a point center only");
 // CORA's presets and the registered names
 #undef CORA_VERIFY_FIELD
+    // the preset of the competition, and CORA's own
     m.def(
         "vnncomp_options",
         [](const std::string &category, const py::kwargs &kwargs) {
@@ -4826,6 +4828,7 @@ void bind_verify(py::module_ &m) {
         },
         py::arg("category"),
         "CORA's getDefaultVNNCOMPoptions of the benchmark, with any field given as a keyword");
+    // the registered names of the strategies
     m.def(
         "verify_strategies",
         [] {

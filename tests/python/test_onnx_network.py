@@ -34,7 +34,6 @@ from cora.onnx_network import OnnxNetwork
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
 class TorchRun(unittest.TestCase):
     def test_every_operator_agrees_with_onnxruntime(self):
         # each graph on 7 rows at once, against onnxruntime one sample at a time
@@ -64,7 +63,9 @@ class Lowering(unittest.TestCase):
             layers, why = net.dense_layers()
             self.assertIsNone(why)
             x = RNG.uniform(-1, 1, (9, net.num_inputs))
-            np.testing.assert_allclose(dense_rows(layers, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12)
+            np.testing.assert_allclose(
+                dense_rows(layers, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12
+            )
 
     def test_activations_and_weights(self):
         # the chain of the MLP: relu, sigmoid, tanh, identity; the Gemm's weights exactly
@@ -200,6 +201,7 @@ def structured_rows(layers, activations, x):
     h = torch.as_tensor(x, dtype=torch.float64)
     acts = {"relu": torch.relu, "sigmoid": torch.sigmoid, "tanh": torch.tanh}
     for layer, act in zip(layers, activations, strict=True):
+        # a dense layer, a gather, a ConvTranspose or a convolution
         if not isinstance(layer, dict):
             h = h @ layer[0].T + layer[1]
         elif "gather" in layer:
@@ -208,8 +210,8 @@ def structured_rows(layers, activations, x):
             h = padded[:, index] + layer["bias"]
         elif "conv_transpose2d" in layer:
             c, hh, ww = layer["output"]
-            t, left, b, r = layer["pads"]
             # the transpose of the convolution on the output: by autograd of the convolution
+            t, left, b, r = layer["pads"]
             z0 = torch.zeros(h.shape[0], c, hh, ww, dtype=h.dtype, requires_grad=True)
             z = F.conv2d(
                 F.pad(z0, (left, r, t, b)),
@@ -221,10 +223,13 @@ def structured_rows(layers, activations, x):
             (g,) = torch.autograd.grad(z, z0, h.reshape(z.shape))
             h = g.reshape(h.shape[0], -1) + layer["bias"]
         else:
+            # a convolution: the pads first, as ONNX's may be asymmetric
             c, hh, ww = layer["input"]
             t, left, b, r = layer["pads"]
             z = F.pad(h.reshape(-1, c, hh, ww), (left, r, t, b))
-            z = F.conv2d(z, layer["conv2d"], stride=layer["stride"], dilation=layer["dilation"], groups=layer["groups"])
+            z = F.conv2d(
+                z, layer["conv2d"], stride=layer["stride"], dilation=layer["dilation"], groups=layer["groups"]
+            )
             h = z.reshape(h.shape[0], -1) + layer["bias"]
         h = acts[act](h) if act in acts else h
     return h.numpy()

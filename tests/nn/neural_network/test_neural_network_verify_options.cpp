@@ -72,7 +72,7 @@ void options_and_strategies() {
     o.neuron_split_heuristic = "least-unstable";
     check(test::raises([&] { o.validate(); }, Error::wrong_field_value),
           "neuron splits need the conzonotope bounding");
-    // every other switch refuses an unknown value
+    // every other switch refuses an unknown value, each field set wrong on its own
     for (const std::string field :
          {"order", "dequeue", "enqueue", "refinement", "fm", "position"}) {
         NnVerifyOptions w = vnncomp_options("x");
@@ -88,6 +88,7 @@ void options_and_strategies() {
     for (const std::string field : {"alpha_iterations", "alpha_step_size", "candidates"}) {
         NnVerifyOptions w = vnncomp_options("x");
         w.bounding_method = "zonotope-alpha";
+        // one count out of range
         if (field == "alpha_iterations") w.alpha_iterations = -1;
         if (field == "alpha_step_size") w.alpha_step_size = 0;
         if (field == "candidates") w.look_ahead_candidates = 0;
@@ -98,6 +99,7 @@ void options_and_strategies() {
                           safe = cora_vnncomp_options("safenlp");
     check(cora.bounding_method == "conzonotope" && !cora.backward_bound,
           "CORA's presets stay CORA's");
+    // the competition's preset adds Phase 2's bounds to CORA's
     const NnVerifyOptions ours = vnncomp_options("cora_2024"),
                           acas = vnncomp_options("acasxu_2023");
     check(ours.bounding_method == "zonotope-alpha" && ours.backward_bound &&
