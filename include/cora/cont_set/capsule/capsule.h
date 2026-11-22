@@ -220,6 +220,14 @@ class Capsule : public ContSet {
 /// M * C, as CORA writes it.
 inline Capsule operator*(const Tensor &M, const Capsule &C) { return C.linear_map(M); }
 
+/// C + S sums, and a point v translates, as CORA's plus; C - v translates by -v.
+inline Capsule operator+(const Capsule &C, const Capsule &S) { return C.plus(S); }
+inline Capsule operator+(const Capsule &C, const Interval &I) { return C.plus(I); }
+inline Capsule operator+(const Capsule &C, const Zonotope &Z) { return C.plus(Z); }
+inline Capsule operator+(const Capsule &C, const Tensor &v) { return C.plus(v); }
+inline Capsule operator+(const Tensor &v, const Capsule &C) { return C.plus(v); }
+inline Capsule operator-(const Capsule &C, const Tensor &v) { return C.plus(v * -1.0); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

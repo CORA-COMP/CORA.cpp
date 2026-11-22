@@ -177,6 +177,18 @@ class PolyZonotope : public ContSet {
     std::vector<int64_t> id_;
 };
 
+/// M * PZ maps, PZ + S sums, a point v translates; PZ - v translates by -v.
+inline PolyZonotope operator*(const Tensor &M, const PolyZonotope &PZ) { return PZ.linear_map(M); }
+inline PolyZonotope operator*(const Interval &M, const PolyZonotope &PZ) {
+    return PZ.linear_map(M);
+}
+inline PolyZonotope operator+(const PolyZonotope &PZ, const PolyZonotope &S) { return PZ.plus(S); }
+inline PolyZonotope operator+(const PolyZonotope &PZ, const Zonotope &Z) { return PZ.plus(Z); }
+inline PolyZonotope operator+(const PolyZonotope &PZ, const Interval &I) { return PZ.plus(I); }
+inline PolyZonotope operator+(const PolyZonotope &PZ, const Tensor &v) { return PZ.plus(v); }
+inline PolyZonotope operator+(const Tensor &v, const PolyZonotope &PZ) { return PZ.plus(v); }
+inline PolyZonotope operator-(const PolyZonotope &PZ, const Tensor &v) { return PZ.plus(v * -1.0); }
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
