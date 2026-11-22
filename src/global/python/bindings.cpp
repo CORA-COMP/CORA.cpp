@@ -924,12 +924,12 @@ void bind_interval(py::module_ &m) {
         // the interval matrix of a box
         .def("interval_matrix", &Interval::interval_matrix,
              "The interval matrix [c - r, c + r] of the center and the radius")
-        // the predicates of a batch of boxes answer a bool array, one flag per box
+        // the predicates of a box
         .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
         // predicates of the box
         .def("is_full_dim", &Interval::is_full_dim, py::arg("tol") = py::none(),
              "Whether the box has a nonempty interior; tol=None: the repository tolerance")
-        // meeting and equality, too, answer a mask
+        // meeting and equality
         .def(
             "is_intersecting",
             [](const Interval &I, const py::object &other, Tol tol) {
