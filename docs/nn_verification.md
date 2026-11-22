@@ -174,6 +174,40 @@ is `unsat`; with `drop_dummy_duplicates` off some are.
 `write_counterexample` writes VNN-LIB 1.0 (`((X_i v) … (Y_j v))`) or 2.0 (a `X float32 [1, 5]` header
 per variable, one value per line). Every value is the shortest decimal that parses back to the same float32.
 
+## Instances
+
+**Rule:** all development and tuning use our own dev sets. The official 2026 instances and their score
+come only at the very end.
+
+- **Generation:** `scripts/vnncomp/make_dev_set.py <benchmark> --seed S --out DIR` runs the benchmark's
+  own `generate_properties.py`, from the source commit that the 2026 benchmark repository names, with
+  our seed. It writes VNN-COMP's layout in 1.0 and in 2.0 (`to_vnnlib2`), a `manifest.json` (seed,
+  source, method, the number of instances identical to official ones) and, where the generator knows
+  the verdicts (sat_relu), an `expected.csv`.
+- **Where a generator does not help:**
+  - acasxu's generator is deterministic, so its instances get random sub-boxes of the official
+    properties;
+  - dist_shift's generator is not public. Its structure is reconstructed from the official files: an
+    MNIST test image, the prior's latent mean ± 0.13 standard deviations, unsafe if the runner-up
+    class reaches the top class.
+- **Generator environments:** `--python` picks the Python of a generator, and the manifest records it.
+  sat_relu needs a torch whose ONNX exporter writes the weights inline (torch 2.4; 2.15 writes external
+  data files). safenlp needs NumPy < 1.25 (Python 3.10), because it compares an array with `[]`.
+- **Data:** networks and instances stay outside the repository (e.g. `~/vnncomp/dev_sets`).
+
+## Running
+
+- **Harness:** `scripts/vnncomp/prepare_instance.sh` and `run_instance.sh` are VNN-COMP's tool interface.
+  `run_instance.py` writes the result file and `RESULT.stats.json`.
+- **Runner:** `scripts/vnncomp/run_dev_set.py DIR --out results.csv` runs a dev set as
+  `run_single_instance.sh` does. Its CSV has the scoring's six columns, then ours.
+- **Scoring:** `scripts/vnncomp/score.py results.csv --expected DIR/expected.csv` scores the CSV with the
+  2026 rules for one tool:
+  - +10 for a correct `holds` or `violated`;
+  - −150 for an incorrect one, or for a missing or failing counterexample;
+  - solves over the timeout count as timeouts;
+  - no normalization to a best tool.
+
 ## The oracle
 
 Bit for bit on the lean backend against the CORALean oracle at dtype nearest
