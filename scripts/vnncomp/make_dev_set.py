@@ -83,6 +83,15 @@ SOURCES = {
         "https://github.com/kkaulen/acasxu_2023.git",
         "fb1e1899079f2d25a270c5523798e9fa1fca7750",
     ),
+    # cgan's generator downloads its networks with gdown
+    "cgan2026": (
+        "https://github.com/stanleybak/cgan_benchmark2026",
+        "8d2cecd10ab95c0e15524c4b81571cbd6113fee7",
+    ),
+    "cifar100_2024": (
+        "https://github.com/huanzhang12/vnncomp2024_cifar100_benchmark.git",
+        "2f7b2d202ed58f260c61500b70883c7273030462",
+    ),
     "collins_rul_cnn_2022": (
         "https://github.com/loonwerks/vnncomp2022.git",
         "4422a5f1a472eb7947970a2f0404e5a9e80937a3",
@@ -96,6 +105,11 @@ SOURCES = {
         "https://github.com/toladnertum/dist-shift-vnn-comp.git",
         "5946000bd3e1ba89963e2d3ae341d17b89c8659b",
     ),
+    # metaroom: the commit of the 2026 README, not the repository's head
+    "metaroom_2023": (
+        "https://github.com/HanjiangHu/metaroom_vnn_comp2023",
+        "80233c82c13ae795d0de7a9f87875dcca13e61ff",
+    ),
     "safenlp_2024": (
         "https://github.com/ANTONIONLP/safeNLP.git",
         "a88c5784bf71a9aa3689ae2bd409f356e8af163b",
@@ -104,6 +118,10 @@ SOURCES = {
     "soundnessbench_2026": (
         "https://github.com/Kevinyang555/SoundnessBench_vnncomp2026",
         "3ac608157866bc7409e37d89fcc564757037bc40",
+    ),
+    "tinyimagenet_2024": (
+        "https://github.com/huanzhang12/vnncomp2024_tinyimagenet_benchmark.git",
+        "771377743f16ee30ecb00029268ba62ec7e9e78c",
     ),
 }
 
@@ -149,10 +167,15 @@ def run_generator(args, work):
 
 def generated_rows(args, work):
     """The instances the generator wrote, as (onnx path, vnnlib path, timeout) in work."""
-    if args.benchmark == "collins_rul_cnn_2022":
-        # the generator keeps the file names; the seed changes their content
+    # the generators that write bare file names: the networks' and properties' directories
+    folders = {
+        "collins_rul_cnn_2022": "vnnlib",  # the seed changes the files' content, not their names
+        "cifar100_2024": "generated_vnnlib",
+        "tinyimagenet_2024": "generated_vnnlib",
+    }
+    if args.benchmark in folders:
         return [
-            (f"onnx/{o}", f"vnnlib/{v}", t)
+            (f"onnx/{o}", f"{folders[args.benchmark]}/{v}", t)
             for o, v, t in read_rows(os.path.join(work, "instances.csv"))
         ]
     return read_rows(os.path.join(work, "instances.csv"))
@@ -294,6 +317,8 @@ def write_set(args, work, rows):
         for onnx, prop, _ in read_rows(os.path.join(official, "instances.csv")):
             net = os.path.join(official, onnx)
             net = net if os.path.exists(net) else net + ".gz"
+            if not os.path.exists(net):  # a network the checkout left out matches nothing
+                continue
             official_props.add((sha256(net), sha256(os.path.join(official, prop + ".gz"))))
     shapes, overlap, expected, kept = {}, 0, [], []
     for version in ("1.0", "2.0"):
