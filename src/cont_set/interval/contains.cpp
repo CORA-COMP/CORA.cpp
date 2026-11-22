@@ -4,7 +4,7 @@
 // Inputs:   p - point (..., n), or a matrix (..., r, c) of an interval matrix
 //           type - 'exact' or 'approx' (CORA's; a box answers both exactly)
 //           tol - how far p may lie outside, per coordinate; default: the repository tolerance
-// Outputs:  res - true if inf - tol <= p <= sup + tol; for a batch, if all points are
+// Outputs:  res - true if inf - tol <= p <= sup + tol, false for an empty member (a mask)
 // See also: Specification::check
 //
 // CORA: contSet/@interval/contains_.m
@@ -16,6 +16,7 @@
 // Reviewed:      ---
 
 #include "cont_set/interval/private/priv_broadcastable.h"
+#include "cont_set/interval/private/priv_present.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
@@ -28,15 +29,14 @@ namespace cora {
 
 namespace {
 
-/// Whether every point is inside, coordinate by coordinate as CORA's interval.contains_.
-bool aux_all_inside(const std::vector<double> &lo, const std::vector<double> &x,
-                    const std::vector<double> &hi, double tol) {
-    for (std::size_t i = 0; i < x.size(); ++i) {
-        const bool above = lo[i] < x[i] + tol || within_tol(lo[i], x[i], tol);
-        const bool below = hi[i] > x[i] - tol || within_tol(hi[i], x[i], tol);
-        if (!above || !below) return false;
-    }
-    return true;
+/// 1 where the lower bound lo is below x + tol, or lo and x agree up to tol.
+Tensor aux_above(const Tensor &lo, const Tensor &x, double tol) {
+    return lo.less(x + tol).maximum(within_tol(lo, x, tol));
+}
+
+/// 1 where the upper bound hi is above x - tol, or hi and x agree up to tol.
+Tensor aux_under(const Tensor &hi, const Tensor &x, double tol) {
+    return (x - tol).less(hi).maximum(within_tol(hi, x, tol));
 }
 
 } // namespace
@@ -44,7 +44,7 @@ bool aux_all_inside(const std::vector<double> &lo, const std::vector<double> &x,
 
 // ===========================================  MAIN  =========================================== //
 
-bool Interval::contains(const Tensor &p, Tol tol_arg) const {
+Mask Interval::contains(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "contains");
     // a point of a box, or a matrix of an interval matrix
@@ -52,13 +52,15 @@ bool Interval::contains(const Tensor &p, Tol tol_arg) const {
         return "contains: the point must have the shape " + shape_text(elem_shape()) +
                " of the elements, got " + shape_text(p.shape());
     });
-    if (is_empty()) return false;
     // the bounds and the points broadcast to one shape (a batch of boxes, or of points)
     const Tensor zero = p.zeros_like() + inf_.zeros_like();
-    return aux_all_inside((inf_ + zero).data(), (p + zero).data(), (sup_ + zero).data(), tol);
+    const Tensor x = p + zero;
+    // coordinate by coordinate as CORA's interval.contains_: inf - tol <= x <= sup + tol
+    const Tensor inside = aux_above(inf_ + zero, x, tol).minimum(aux_under(sup_ + zero, x, tol));
+    return Mask(priv_all_entries(inside, *this).minimum(priv_present(*this)));
 }
 
-bool Interval::contains(const Tensor &p, const std::string &type, Tol tol) const {
+Mask Interval::contains(const Tensor &p, const std::string &type, Tol tol) const {
     detail::Entry entry;
     CORA_CHECK(type == "exact" || type == "approx", Error::wrong_value, [&] {
         return "contains: the type must be 'exact' or 'approx', got '" + type + "'";

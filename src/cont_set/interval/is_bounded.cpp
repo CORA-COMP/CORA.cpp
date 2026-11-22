@@ -14,6 +14,7 @@
 // Last update:   ---
 // Reviewed:      ---
 
+#include "cont_set/interval/private/priv_present.h"
 #include "cora/cont_set/interval/interval.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -23,10 +24,13 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Interval::is_bounded() const {
+Mask Interval::is_bounded() const {
     detail::Entry entry;
-    if (is_empty()) return true;
-    return inf_.isinf().maximum(sup_.isinf()).max().item() == 0;
+    const Tensor infinite = inf_.isinf().maximum(sup_.isinf());
+    // no infinite bound, and an empty member is bounded
+    const Tensor finite = priv_all_entries(infinite.ones_like() - infinite, *this);
+    const Tensor present = priv_present(*this);
+    return Mask(finite.maximum(present.ones_like() - present));
 }
 
 bool Interval::is_bounded_impl() const { return is_bounded(); }

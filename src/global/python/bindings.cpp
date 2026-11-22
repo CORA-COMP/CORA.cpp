@@ -608,34 +608,36 @@ void bind_cont_set(py::module_ &m) {
                  if (!py::isinstance<ContSet>(S2)) return not_implemented();
                  return binary<&unite>(S1, S2);
              })
-        .def("__contains__",
-             [](const py::object &S1, const py::object &S2) {
-                 if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
-                 if (py::isinstance<Interval>(S1))
-                     return py::cast<const Interval &>(S1).contains(point_of(S2, "the point"));
-                 if (py::isinstance<Zonotope>(S1))
-                     return py::cast<const Zonotope &>(S1).contains(point_of(S2, "the points"));
-                 // contains dispatches on the class of the first set
-                 if (py::isinstance<ConZonotope>(S1))
-                     return py::cast<const ConZonotope &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<ZonoBundle>(S1))
-                     return py::cast<const ZonoBundle &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<Polytope>(S1))
-                     return py::cast<const Polytope &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<Ellipsoid>(S1))
-                     return py::cast<const Ellipsoid &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<Capsule>(S1))
-                     return py::cast<const Capsule &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<EmptySet>(S1))
-                     return py::cast<const EmptySet &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<Fullspace>(S1))
-                     return py::cast<const Fullspace &>(S1).contains(operand_set(S2).get());
-                 CORA_FAIL(
-                     Error::not_supported,
-                     "point containment is implemented for intervals, zonotopes, constrained "
-                     "zonotopes, zonotope bundles, polytopes, ellipsoids, capsules and the empty "
-                     "set and the whole space only");
-             })
+        .def(
+            "__contains__",
+            [](const py::object &S1, const py::object &S2) {
+                if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
+                // a point is tested by the class of the first set
+                if (py::isinstance<Interval>(S1))
+                    return py::cast<const Interval &>(S1).contains(point_of(S2, "the point")).all();
+                if (py::isinstance<Zonotope>(S1))
+                    return py::cast<const Zonotope &>(S1).contains(point_of(S2, "the points"));
+                // contains dispatches on the class of the first set
+                if (py::isinstance<ConZonotope>(S1))
+                    return py::cast<const ConZonotope &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<ZonoBundle>(S1))
+                    return py::cast<const ZonoBundle &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<Polytope>(S1))
+                    return py::cast<const Polytope &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<Ellipsoid>(S1))
+                    return py::cast<const Ellipsoid &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<Capsule>(S1))
+                    return py::cast<const Capsule &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<EmptySet>(S1))
+                    return py::cast<const EmptySet &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<Fullspace>(S1))
+                    return py::cast<const Fullspace &>(S1).contains(operand_set(S2).get());
+                CORA_FAIL(
+                    Error::not_supported,
+                    "point containment is implemented for intervals, zonotopes, constrained "
+                    "zonotopes, zonotope bundles, polytopes, ellipsoids, capsules and the empty "
+                    "set and the whole space only");
+            })
         // A <= B is B.contains(A), A >= B is A.contains(B) (a class with its own <= keeps it)
         .def("__le__",
              [](const py::object &S1, const py::object &S2) -> py::object {
@@ -925,18 +927,22 @@ void bind_interval(py::module_ &m) {
         // the interval matrix of a box
         .def("interval_matrix", &Interval::interval_matrix,
              "The interval matrix [c - r, c + r] of the center and the radius")
-        // the predicates of a box
-        .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
+        // the predicates of a batch of boxes answer a bool array, one flag per box
+        .def(
+            "is_bounded", [](const Interval &I) { return values(I.is_bounded()); },
+            "Whether no bound is infinite; a bool array of the batch shape for a batch")
         // predicates of the box
-        .def("is_full_dim", &Interval::is_full_dim, py::arg("tol") = py::none(),
-             "Whether the box has a nonempty interior; tol=None: the repository tolerance")
-        // meeting and equality
+        .def(
+            "is_full_dim", [](const Interval &I, Tol tol) { return values(I.is_full_dim(tol)); },
+            py::arg("tol") = py::none(),
+            "Whether the box has a nonempty interior; tol=None: the repository tolerance")
+        // meeting and equality, too, answer a mask
         .def(
             "is_intersecting",
             [](const Interval &I, const py::object &other, Tol tol) {
                 if (py::isinstance<Interval>(other))
-                    return I.is_intersecting(py::cast<Interval>(other), tol);
-                return I.is_intersecting(point_of(other, "the point"), tol);
+                    return values(I.is_intersecting(py::cast<Interval>(other), tol));
+                return values(I.is_intersecting(point_of(other, "the point"), tol));
             },
             py::arg("other"), py::arg("tol") = py::none(),
             "Whether the box meets another box or contains a point, up to tol")
@@ -944,8 +950,8 @@ void bind_interval(py::module_ &m) {
             "isequal",
             [](const Interval &I, const py::object &other, Tol tol) {
                 if (py::isinstance<Interval>(other))
-                    return I.isequal(py::cast<Interval>(other), tol);
-                return I.isequal(point_of(other, "the point"), tol);
+                    return values(I.isequal(py::cast<Interval>(other), tol));
+                return values(I.isequal(point_of(other, "the point"), tol));
             },
             py::arg("other"), py::arg("tol") = py::none(),
             "Whether the bounds agree up to tol; infinite bounds must be the same")
@@ -1085,7 +1091,7 @@ void bind_interval(py::module_ &m) {
         .def(
             "contains",
             [](const Interval &I, const py::object &p, const std::string &type, Tol tol) {
-                return I.contains(point_of(p, "the point"), type, tol);
+                return values(I.contains(point_of(p, "the point"), type, tol));
             },
             py::arg("p"), py::arg("type"), py::arg("tol") = py::none(),
             "Whether p is in the box enlarged by tol; type is 'exact' or 'approx'")
@@ -1093,10 +1099,11 @@ void bind_interval(py::module_ &m) {
             "contains",
             [](const Interval &I, const py::object &p, Tol tol) {
                 // a point (..., n) of a box, or a matrix (..., r, c) of an interval matrix
-                return I.contains(point_of(p, "the point"), tol);
+                return values(I.contains(point_of(p, "the point"), tol));
             },
             py::arg("p"), py::arg("tol") = py::none(),
-            "Whether p (a point, or a matrix of an interval matrix) is in the box enlarged by tol")
+            "Whether p (a point, or a matrix of an interval matrix) is in the box enlarged by tol; "
+            "a bool array of the batch shape for a batch")
         // interval matrices: CORA's intervalMatrix is an Interval of matrix bounds
         .def_static(
             "from_center_delta",

@@ -19,6 +19,7 @@
 // Last update:   19-November-2026
 // Reviewed:      ---
 
+#include "cont_set/interval/private/priv_present.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
@@ -41,29 +42,30 @@ Tensor aux_below(const Tensor &a, const Tensor &b, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Interval::is_intersecting(const Interval &I2, Tol tol_arg) const {
+Mask Interval::is_intersecting(const Interval &I2, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "is_intersecting");
     CORA_CHECK(I2.dim() == dim(), Error::dimension_mismatch, [&] {
         return "is_intersecting: the intervals differ in dimension, " + std::to_string(dim()) +
                " and " + std::to_string(I2.dim());
     });
-    if (is_empty() || I2.is_empty()) return false;
     // the lower bound of the box that starts first lies below the upper bound of the other
     const Tensor first = aux_below(inf_, I2.inf(), tol);
     const Tensor meet =
         Tensor::where(first, aux_below(I2.inf(), sup_, tol), aux_below(inf_, I2.sup(), tol));
-    return meet.min().item() != 0;
+    // an empty member meets nothing
+    return Mask(
+        priv_all_entries(meet, *this).minimum(priv_present(*this)).minimum(priv_present(I2)));
 }
 
-bool Interval::is_intersecting(const Tensor &p, Tol tol_arg) const {
+Mask Interval::is_intersecting(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "is_intersecting");
     CORA_CHECK(elem_rank_ == 1 && is_vector(p, dim()), Error::dimension_mismatch, [&] {
         return "is_intersecting: the point must be a vector of the dimension " +
                std::to_string(dim()) + " of the interval, got the shape " + shape_text(p.shape());
     });
-    return !is_empty() && contains(p, tol);
+    return contains(p, tol);
 }
 
 } // namespace cora

@@ -69,7 +69,8 @@ class ToleranceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             I.contains(np.array([[0.5]]), tol=-1.0)
         with cora.checks(False):
-            self.assertTrue(I.contains(np.array([[0.5], [0.5]]), tol=1e-9))
+            # two points of the box give two flags
+            self.assertTrue(np.all(I.contains(np.array([[0.5], [0.5]]), tol=1e-9)))
 
     def test_a_python_predicate_gets_a_number(self):
         class Ball(cora.ContSet):
