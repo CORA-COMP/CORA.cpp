@@ -84,8 +84,10 @@ SAFETY = 1.0  # seconds kept for writing the result before the timeout
 
 def options_for(category, device):
     """The verify options of a benchmark category: CORA's preset of it (cora.vnncomp_options, CORA's
-    getDefaultVNNCOMPoptions) with the PGD attack around it."""
-    return cora.vnncomp_options(category, device=device)
+    getDefaultVNNCOMPoptions) with the PGD attack around it, and the overrides of the environment
+    variable CORACPP_VNNCOMP_OPTIONS (a JSON object of NnVerifyOptions fields), for experiments."""
+    overrides = json.loads(os.environ.get("CORACPP_VNNCOMP_OPTIONS", "{}"))
+    return cora.vnncomp_options(category, device=device, **overrides)
 
 
 def write_result(path, result):
