@@ -61,7 +61,7 @@ class HybridAutomaton(unittest.TestCase):
         image = reset.evaluate(box).interval()
         np.testing.assert_allclose(image.inf, [1.0, -2.0])
         np.testing.assert_allclose(image.sup, [2.0, -1.0])
-        np.testing.assert_allclose(reset.evaluate(np.array([[0.0], [2.0]])), [[1.0], [-1.0]])
+        np.testing.assert_allclose(reset.evaluate(np.array([[0.0, 2.0]])), [[1.0, -1.0]])
 
     def test_the_ball_bounces_with_every_guard_intersection(self):
         HA = ball()

@@ -78,7 +78,7 @@ void encloses(const std::string &name, const LinParamSys &sys, const Zonotope &U
                           R0.generators().matrix_transpose().matmul(column({b[2], b[3]}));
         const double u = U.center().expand_dims(-1).item() +
                          U.generators().matrix_transpose().abs().sum().item() * b[4];
-        const Tensor v = sys.B()->matmul(column({u})) + sys.c();
+        const Tensor v = sys.B()->matmul(column({u})) + sys.c().expand_dims(-1);
         const auto step = std::size_t(k % 20);
         const double t = (double(step) + 0.5 * (b[5] + 1)) * kDt;
         check(R.time_interval[step].contains(aux_exact(A, v, x0, t).squeeze(-1), "exact", kTol),
@@ -126,7 +126,7 @@ void checks_and_their_switch() {
 // ===========================================  MAIN  =========================================== //
 
 int main() {
-    const Tensor B = Tensor({{0.0}, {1.0}}), c = column({0.5, 0.0});
+    const Tensor B = Tensor({{0.0}, {1.0}}), c = vec({0.5, 0.0});
     const Zonotope U(vec({0.05}), Tensor({{0.25}})), away(vec({0.75}), Tensor({{0.25}}));
     // one generator, two, varying parameters, and inputs that miss the origin
     encloses("one generator", LinParamSys(aux_set(1), B, c), U);

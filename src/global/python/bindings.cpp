@@ -933,7 +933,7 @@ void bind_interval(py::module_ &m) {
             "kron",
             [](const Interval &I, const py::object &other, bool left) {
                 if (py::isinstance<Interval>(other)) return I.kron(py::cast<Interval>(other));
-                const Tensor A = columns_of(other, "the factor");
+                const Tensor A = matrix_of(other, "the factor");
                 return left ? Interval::kron(A, I) : I.kron(A);
             },
             py::arg("other"), py::arg("left") = false,
@@ -1096,7 +1096,7 @@ void bind_interval(py::module_ &m) {
             "matmul",
             [](const Interval &A, const py::object &B) {
                 if (py::isinstance<Interval>(B)) return A.matmul(py::cast<Interval>(B));
-                return A.matmul(columns_of(B, "the matrix"));
+                return A.matmul(matrix_of(B, "the matrix"));
             },
             py::arg("B"), "[A] [B] or [A] M: the product of interval matrices (CORA's mtimes)")
         .def("exact_square", &Interval::exact_square, "The entrywise range of M @ M")
@@ -3543,7 +3543,7 @@ void bind_linear_sys(py::module_ &m) {
 #endif
                      if (custom_backward)
                          CORA_FAIL(Error::install, "custom_backward needs the torch build");
-                     return columns_of(o, what);
+                     return matrix_of(o, what);
                  };
                  if (B.is_none()) return LinearSys(t(A, "A"));
                  // the output matrix is optional
@@ -3632,7 +3632,7 @@ void bind_linear_sys(py::module_ &m) {
             [](const LinearSys &sys, const Zonotope &U, const py::object &u_vec) {
                 return sys.canonical_form(
                     U, u_vec.is_none() ? std::nullopt
-                                       : std::optional<Tensor>(columns_of(u_vec, "u_vec")));
+                                       : std::optional<Tensor>(matrix_of(u_vec, "u_vec")));
             },
             py::arg("U"), py::arg("u_vec") = py::none(),
             "The system with B = I, the centered input set and the constant input per step")
@@ -3713,11 +3713,11 @@ void bind_linear_sys(py::module_ &m) {
                 // one flow value, or the values at the start and the end
                 std::vector<Tensor> flows;
                 if (py::isinstance<py::list>(f) || py::isinstance<py::tuple>(f))
-                    for (const py::handle &x : f) flows.push_back(columns_of(x, "f"));
+                    for (const py::handle &x : f) flows.push_back(point_of(x, "f"));
                 else
-                    flows.push_back(columns_of(f, "f"));
-                return sys.trajectory_error(flows, columns_of(u, "u"), R0, t_min, t_max, t_c, order,
-                                            columns_of(n, "n"));
+                    flows.push_back(point_of(f, "f"));
+                return sys.trajectory_error(flows, point_of(u, "u"), R0, t_min, t_max, t_c, order,
+                                            point_of(n, "n"));
             },
             py::arg("f"), py::arg("u"), py::arg("R0"), py::arg("t_min"), py::arg("t_max"),
             py::arg("t_c"), py::arg("order"), py::arg("n"),
@@ -4832,19 +4832,21 @@ void bind_lin_param_sys(py::module_ &m) {
                             "The linear system x' = A x + B u + c, A in a matrix zonotope.")
         .def(py::init([](const Zonotope &A, const py::object &B, const py::object &c,
                          const std::string &type) {
-                 const auto opt = [](const py::object &o, const char *what) {
-                     return o.is_none() ? std::nullopt : std::optional<Tensor>(columns_of(o, what));
+                 const auto opt = [](const py::object &o, const char *what, bool is_matrix) {
+                     if (o.is_none()) return std::optional<Tensor>();
+                     return std::optional<Tensor>(is_matrix ? matrix_of(o, what)
+                                                            : point_of(o, what));
                  };
                  // constant or varying parameters, as CORA's 'constParam' and 'varParam'
                  if (type != "constant" && type != "varying")
                      CORA_FAIL(Error::wrong_value,
                                "LinParamSys: type is 'constant' or 'varying', got '" + type + "'");
-                 return LinParamSys(A, opt(B, "B"), opt(c, "c"),
+                 return LinParamSys(A, opt(B, "B", true), opt(c, "c", false),
                                     type == "constant" ? ParamType::constant : ParamType::varying);
              }),
              py::arg("A"), py::arg("B") = py::none(), py::arg("c") = py::none(),
              py::arg("type") = "constant",
-             "A a matrix zonotope (n, n), B (n, m) and c (n, 1) optional; type 'constant' or "
+             "A a matrix zonotope (n, n), B (n, m) and c (n) optional; type 'constant' or "
              "'varying'")
         // its parts, and reach
         .def_property_readonly("A", &LinParamSys::A, "The matrix zonotope of the system matrices")
@@ -4874,26 +4876,26 @@ void bind_hybrid(py::module_ &m) {
     // the reset of a transition
     py::class_<LinearReset>(m, "LinearReset", "The reset x+ = A x + B u + c of a transition.")
         .def(py::init([](const Array &A, const py::object &B, const py::object &c) {
-                 const auto opt = [](const py::object &o,
-                                     const char *what) -> std::optional<Tensor> {
+                 const auto opt = [](const py::object &o, const char *what,
+                                     bool is_matrix) -> std::optional<Tensor> {
                      if (o.is_none()) return std::nullopt;
-                     return columns_of(o, what);
+                     return is_matrix ? matrix_of(o, what) : point_of(o, what);
                  };
-                 return LinearReset(tensor_of(A, "A"), opt(B, "B"), opt(c, "c"));
+                 return LinearReset(tensor_of(A, "A"), opt(B, "B", true), opt(c, "c", false));
              }),
              py::arg("A"), py::arg("B") = py::none(), py::arg("c") = py::none(),
-             "x+ = A x + B u + c: A (n+, n), B (n+, m) and c (n+, 1) optional")
+             "x+ = A x + B u + c: A (n+, n), B (n+, m) and c (n+) optional")
         .def_property_readonly(
             "A", [](const LinearReset &r) { return matrix(r.A()); }, "The state map A")
         .def(
             "evaluate",
             [](const LinearReset &r, const py::object &X, const std::optional<Zonotope> &U) {
-                // a set maps to a set, points (n, N) to points
+                // a set maps to a set, points (..., n) to points
                 if (py::isinstance<ContSet>(X)) return object_of(r.evaluate(*set_of(X), U));
-                return py::object(matrix(r.evaluate(columns_of(X, "x"))));
+                return py::object(values(r.evaluate(point_of(X, "x"))));
             },
             py::arg("X"), py::arg("U") = py::none(),
-            "The image A X + B U + c of a zonotope or a bundle, or of points (n, N)");
+            "The image A X + B U + c of a zonotope or a bundle, or of points (..., n)");
     py::class_<Transition>(m, "Transition", "A jump: guard, reset and target location.")
         .def(py::init([](const py::object &guard, const LinearReset &reset, int64_t target) {
                  // a box guard is held as its polytope
@@ -4917,7 +4919,7 @@ void bind_hybrid(py::module_ &m) {
                          const py::object &c) {
                  return Location(name, region_of(inv), trans, flow,
                                  c.is_none() ? std::nullopt
-                                             : std::optional<Tensor>(columns_of(c, "c")));
+                                             : std::optional<Tensor>(point_of(c, "c")));
              }),
              py::arg("name"), py::arg("invariant"), py::arg("transitions"), py::arg("flow"),
              py::arg("c") = py::none(), "x' = A x + B u + c of the flow inside the invariant")
@@ -5087,8 +5089,11 @@ void bind_lean(py::module_ &top) {
     using LI = lean::Interval;
     using LZ = lean::Zonotope;
     using LT = lean::Tensor;
-    // an array converts to a lean tensor in the current dtype
-    const auto tensor = [](const py::handle &x) { return LT::from(columns_of(x, "x")); };
+    // an array converts to a lean tensor in the current dtype, a vector as CORA's column
+    const auto tensor = [](const py::handle &x) {
+        const Tensor t = point_of(x, "x");
+        return LT::from(t.ndim() == 1 ? t.expand_dims(-1) : t);
+    };
 
     // an array (or list) is a lean tensor wherever an operation takes one, in the current dtype
     py::class_<LT>(m, "Tensor", "A matrix of exact values in a dtype")

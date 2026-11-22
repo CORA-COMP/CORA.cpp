@@ -89,7 +89,7 @@ Tensor aux_small(test::oracle::Random &rnd, int64_t n, double scale) {
 /// runs to the horizon. Every stay ends at its invariant.
 std::vector<Spec> aux_specs(test::oracle::Random &rnd, double dt) {
     const Tensor I = Tensor::eye(2);
-    const auto drift = [&](double a, double b) { return Tensor::from_data({a, b}, {2, 1}); };
+    const auto drift = [&](double a, double b) { return Tensor::from_data({a, b}, {2}); };
     std::vector<Spec> specs;
     specs.push_back({aux_small(rnd, 2, 0.1),
                      drift(1.0, 0.25),
@@ -151,7 +151,7 @@ std::pair<std::size_t, std::size_t> aux_compare(const HybridAutomaton &HA,
 /// side).
 std::vector<Spec> aux_flow_specs(double flow, bool bounded) {
     const Tensor I = Tensor::eye(2), Z = Tensor::zeros({2, 2});
-    const auto vec = [](double a) { return Tensor::from_data({a, 0.0}, {2, 1}); };
+    const auto vec = [](double a) { return Tensor::from_data({a, 0.0}, {2}); };
     const double scale = bounded ? 0.5 : 1.0;
     std::vector<Spec> specs;
     specs.push_back({Z,

@@ -46,7 +46,7 @@ int main() {
                 const Location loc("l", Polytope::inf(n), {}, LinearSys(rnd.matrix(n, n)));
                 const Tensor pca =
                     priv_calc_basis(loc, reach, guard, {alg::Enclose::pca},
-                                    Zonotope(loc.c().squeeze(-1), loc.c().zeros_like({0, n})))[0];
+                                    Zonotope(loc.c(), loc.c().zeros_like({0, n})))[0];
                 const std::vector<Tensor> bases = {Tensor::eye(n), rnd.matrix(n, n), pca};
                 const std::optional<Set> mine =
                     priv_guard_intersect_zono_girard(reach, guard, bases, true);

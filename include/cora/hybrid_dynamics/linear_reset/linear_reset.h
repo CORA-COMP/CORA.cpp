@@ -28,7 +28,7 @@ namespace cora {
 
 class LinearReset {
   public:
-    /// x+ = A x + B u + c; A (n+, n), B (n+, m) and c (n+, 1) are optional single matrices.
+    /// x+ = A x + B u + c; A (n+, n), B (n+, m) and c (n+) are optional single matrices.
     explicit LinearReset(Tensor A, std::optional<Tensor> B = std::nullopt,
                          std::optional<Tensor> c = std::nullopt);
 
@@ -45,7 +45,7 @@ class LinearReset {
     /// enters only with B.
     Set evaluate(const ContSet &X, const std::optional<Zonotope> &U = std::nullopt) const;
 
-    /// The images A x + B u + c of the points x (n, N), with the inputs u (m, N) or (m, 1).
+    /// The images A x + B u + c of the points x (..., n), with the inputs u (..., m) or one (m).
     Tensor evaluate(const Tensor &x, const std::optional<Tensor> &u = std::nullopt) const;
 
   private:

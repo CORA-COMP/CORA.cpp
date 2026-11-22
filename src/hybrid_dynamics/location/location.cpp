@@ -32,7 +32,7 @@ namespace cora {
 namespace {
 
 /// The zero constant input of a nonlinear flow, a column of n entries.
-CORA_FROM_NUMBERS Tensor aux_zero_column(int64_t n) { return Tensor::zeros({n, 1}); }
+CORA_FROM_NUMBERS Tensor aux_zero_vector(int64_t n) { return Tensor::zeros({n}); }
 
 /// The invariant and every guard and reset of the dimension of the flow.
 void aux_validate(const Location &loc) {
@@ -63,12 +63,12 @@ Location::Location(std::string name, Region invariant, std::vector<Transition> t
     // one flow without an output map, and c of its states
     const auto &sys = std::get<LinearSys>(flow_);
     const int64_t n = sys.dim();
-    c_ = c ? std::move(*c) : sys.A().zeros_like({n, 1});
+    c_ = c ? std::move(*c) : sys.A().zeros_like({n});
     CORA_CHECK(sys.A().ndim() == 2 && !sys.C(), Error::wrong_input_in_constructor, [] {
         return std::string("Location: the flow must be one system without an output map C");
     });
-    CORA_CHECK(c_.shape() == std::vector<int64_t>({n, 1}), Error::wrong_input_in_constructor, [&] {
-        return "Location: c must be a column (" + std::to_string(n) + ", 1), got the shape " +
+    CORA_CHECK(c_.shape() == std::vector<int64_t>({n}), Error::wrong_input_in_constructor, [&] {
+        return "Location: c must be a vector (" + std::to_string(n) + "), got the shape " +
                shape_text(c_.shape());
     });
     aux_validate(*this);
@@ -88,7 +88,7 @@ Location::Location(std::string name, Region invariant, std::vector<Transition> t
                    NonlinearSys flow)
     : name_(std::move(name)), invariant_(std::move(invariant)),
       transitions_(std::move(transitions)), flow_(std::move(flow)),
-      c_(aux_zero_column(std::get<NonlinearSys>(flow_).dim())) {
+      c_(aux_zero_vector(std::get<NonlinearSys>(flow_).dim())) {
     detail::Entry entry;
     aux_validate(*this);
 }

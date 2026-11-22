@@ -185,7 +185,7 @@ Parts aux_composed(const DaeLinearized &lin, const Zonotope &R, const Zonotope &
         // the subsystem's point and the inputs it reads: its neighbours' y and the voltages
         const Tensor x_star = lin.x_star.expand_dims(-1), y_star = lin.y_star.expand_dims(-1);
         const Tensor p_x = s.X.matmul(x_star), p_y = s.Y.matmul(y_star);
-        const Tensor p_u = s.Uv.matmul(decomposition.v_gen) + s.Uy.matmul(y_star) +
+        const Tensor p_u = s.Uv.matmul(decomposition.v_gen.expand_dims(-1)) + s.Uy.matmul(y_star) +
                            s.Uu.matmul(lin.u_star.expand_dims(-1));
         Zonotope Usub = R_y.linear_map(s.Uy);
         if (U0) Usub = Usub + U0->linear_map(s.Uu);

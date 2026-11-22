@@ -63,7 +63,7 @@ NonlinearSys aux_flow() {
 HybridAutomaton aux_automaton(bool back = false) {
     const NonlinearSys sys = aux_flow();
     const Expr ring = aux_ring();
-    const LinearReset id(Tensor::eye(3), std::nullopt, column({0, 0, 0}));
+    const LinearReset id(Tensor::eye(3), std::nullopt, Tensor::zeros({3}));
     Location outside("outside", LevelSet(-ring, 3, CompOp::le),
                      {Transition(LevelSet(-ring, 3, CompOp::eq), id, 1)}, sys);
     std::vector<Transition> out_of_ring;

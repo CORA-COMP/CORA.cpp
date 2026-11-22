@@ -105,8 +105,8 @@ inline HybridAutomaton automaton(const std::string &name, const Variant &v) {
     const Tensor A2 = flow({-0.5759999431, 0.0002624860794, -19.22997959, 0.008762759318},
                            {-0.0002624860807, -0.5759999402, -0.008762760682, -19.2299766});
     const Tensor A3 = flow({5.758947211E-05, 0, 0, 0.00876276}, {0, 0, -0.00876276, 0});
-    const Tensor B = column({0, 0, 0, 0, 0}), c = column({0, 0, 0, 0, 1});
-    const LinearReset id(Tensor::eye(5), std::nullopt, column({0, 0, 0, 0, 0}));
+    const Tensor B = column({0, 0, 0, 0, 0}), c = vec({0, 0, 0, 0, 1});
+    const LinearReset id(Tensor::eye(5), std::nullopt, Tensor::zeros({5}));
     // the line of sight x >= -100 ends the approach
     const Polytope docking_guard = hyperplane({-1, 0, 0, 0, 0}, 100);
     // the docking region: |x|, |y| <= 100 and |x +- y| <= 141.1

@@ -133,7 +133,9 @@ bool aux_flow_along(const Location &loc, const Tensor &a, double d, const Set &S
         // the fast test at the projected center, then the bound over the reduced projection
         const Tensor P = a.eye_like(a.shape()[0]) - a.matmul(a.matrix_transpose());
         const Tensor c = P.matmul(S->center().expand_dims(-1)) + a * d;
-        if (a.matrix_transpose().matmul(priv_flow_at(loc, c, U_state, "checkFlow")).item() > 0)
+        if (a.matrix_transpose()
+                .matmul(priv_flow_at(loc, c.squeeze(-1), U_state, "checkFlow").expand_dims(-1))
+                .item() > 0)
             return true;
         const Zonotope Z = priv_zonotopes(S).front().linear_map(P) + (a * d).squeeze(-1);
         const Tensor B = priv_basis_of(a);

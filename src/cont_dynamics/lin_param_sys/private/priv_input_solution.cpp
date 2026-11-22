@@ -96,7 +96,7 @@ LinParamInput priv_input_solution(const LinParamSys &sys, const LinParamSeries &
                                   const Zonotope &U, const Tensor &u_trans, double r,
                                   int taylor_terms, int zonotope_order) {
     const int64_t n = sys.dim();
-    const Tensor &c = sys.c();
+    const Tensor c = sys.c().expand_dims(-1); // CORA's column inside the step
     // the centered inputs V = B U and the constant input B u_trans + c (cora-differences.md)
     const Zonotope V = sys.B() ? U.linear_map(*sys.B())
                                : Zonotope(c.zeros_like().squeeze(-1), c.zeros_like({0, n}));

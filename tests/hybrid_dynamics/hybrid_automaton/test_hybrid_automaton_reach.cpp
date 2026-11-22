@@ -72,11 +72,10 @@ HybridAutomaton aux_ball(BallFlow kind = BallFlow::linear) {
     }
     if (kind == BallFlow::parametric) {
         const Zonotope set = Zonotope::matrix(A, Tensor({{0.0, 0.001}, {0.0, 0.0}}).expand_dims(0));
-        const LinParamSys sys(set, Tensor::zeros({2, 1}), column({0.0, -kG}));
+        const LinParamSys sys(set, Tensor::zeros({2, 1}), vec({0.0, -kG}));
         return HybridAutomaton("ball", {Location("fall", floor, trans, sys)});
     }
-    const Location fall("fall", floor, trans, LinearSys(A, Tensor::zeros({2, 1})),
-                        column({0.0, -kG}));
+    const Location fall("fall", floor, trans, LinearSys(A, Tensor::zeros({2, 1})), vec({0.0, -kG}));
     return HybridAutomaton("ball", {fall});
 }
 
@@ -216,9 +215,9 @@ void time_triggered() {
     const Polytope at(Tensor::zeros({0, 2}), Tensor::zeros({0}), Tensor({{0.0, 1.0}}), vec({1.0}));
     const LinearSys decay(Tensor({{-1.0, 0.0}, {0.0, 0.0}}), Tensor::zeros({2, 1}));
     const Location first("first", before, {Transition(at, LinearReset(Tensor::eye(2)), 1)}, decay,
-                         column({0.0, 1.0}));
+                         vec({0.0, 1.0}));
     const Location second("second", Polytope(Tensor({{0.0, -1.0}}), vec({0.0})), {}, decay,
-                          column({0.0, 1.0}));
+                          vec({0.0, 1.0}));
     const HybridAutomaton HA("clock", {first, second});
     // a flat initial clock: the time-point set at t = 1 lies on the guard
     HybridReachProblem p;

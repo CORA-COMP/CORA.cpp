@@ -57,7 +57,7 @@ bool aux_below(const std::vector<Set> &sets) {
 bool aux_brkdc01() {
     const LinearSys sys(aux_A(0), column({0, 0, 0, 0}));
     const Tensor resetA = matrix(4, 4, {1, 0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0, -T_sample, 0, 1});
-    const Tensor resetc = column({0, 0, x0, T_sample * x0});
+    const Tensor resetc = vec({0, 0, x0, T_sample * x0});
     ReachProblem problem{Zonotope(vec({0, 0, 0, 0}), Tensor::zeros({0, 4})), std::nullopt,
                          T_sample};
     const alg::Standard a{T_sample / 5, 5, 20};
@@ -65,7 +65,7 @@ bool aux_brkdc01() {
     for (int k = 0; k < 1000; ++k) {
         const ReachSet Rk = sys.reach(problem, a);
         sets.insert(sets.end(), Rk.time_interval.begin(), Rk.time_interval.end());
-        problem.initial_set = Rk.time_point.back().linear_map(resetA) + resetc.squeeze(-1);
+        problem.initial_set = Rk.time_point.back().linear_map(resetA) + resetc;
     }
     return aux_below(sets);
 }
@@ -84,7 +84,7 @@ Cycle aux_cycle() {
                      vec({T_sample + t_max, -(T_sample + t_min)})),
             LinearReset(matrix(5, 5, {1, 0, 0, 0,         0, 0, 1, 0, 0, 0, 0, -1, 0,
                                       0, 0, 0, -T_sample, 0, 1, 0, 0, 0, 0, 0, 1}),
-                        column({0, 0, 0, 0, 0}), column({0, 0, x0, T_sample * x0, -T_sample}))};
+                        column({0, 0, 0, 0, 0}), vec({0, 0, x0, T_sample * x0, -T_sample}))};
 }
 
 /// The options of both: conZonotope guards of order 5, enclosed by box and pca; the cuts are boxed
@@ -104,7 +104,7 @@ alg::HybridStandard aux_options(int taylor_terms) {
 bool aux_brknc01() {
     const Cycle c = aux_cycle();
     const Location loc("loc1", c.invariant, {Transition(c.guard, c.reset, 0)},
-                       LinearSys(aux_A(1), column({0, 0, 0, 0, 0})), column({0, 0, 0, 0, 1}));
+                       LinearSys(aux_A(1), column({0, 0, 0, 0, 0})), vec({0, 0, 0, 0, 1}));
     const HybridAutomaton HA("brake_BRKNC01", {loc});
     HybridReachProblem problem;
     problem.initial_set = Zonotope(vec({0, 0, 0, 0, 0}), Tensor::eye(5) * 1e-8);

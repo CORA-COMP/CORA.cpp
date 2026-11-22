@@ -71,7 +71,7 @@ DaeDecomposition coupled_decomposition() {
     return {
         {{first, Tensor({{1.0, 0.0}}), Tensor({{1.0, 0.0}}), zero, Tensor({{0.0, 1.0}}), zero},
          {second, Tensor({{0.0, 1.0}}), Tensor({{0.0, 1.0}}), zero, Tensor({{0.0, 0.0}}), zero}},
-        test::column({0.0})};
+        test::vec({0.0})};
 }
 
 /// Whether the row j of the points (N, n) lies in the box of Z, up to `tol`.
@@ -95,8 +95,8 @@ int escapes(const NonlinDASys &sys, const Zonotope &X0, const Tensor &y_guess, c
         for (int j = 0; j < N; ++j) {
             // sampled at half steps: the even samples are the time points
             const DaeTrajectory T =
-                sys.simulate(x0.slice(0, j, j + 1).squeeze(0), y_guess.squeeze(-1), u.squeeze(-1),
-                             t_final, alg::RungeKutta4{.time_step = R.time_step / 2});
+                sys.simulate(x0.slice(0, j, j + 1).squeeze(0), y_guess, u, t_final,
+                             alg::RungeKutta4{.time_step = R.time_step / 2});
             for (std::size_t k = 0; k < R.time_point.size(); ++k)
                 outside += !in_box(R.time_point[k], T.x, int64_t(2 * k), 1e-9);
             for (std::size_t k = 0; k < R.time_interval.size(); ++k)
@@ -110,7 +110,7 @@ int escapes(const NonlinDASys &sys, const Zonotope &X0, const Tensor &y_guess, c
 void a_linear_system_gives_the_linear_result(const std::string &b) {
     const Zonotope X0(test::vec({1.0}), Tensor({{0.1}})), U(test::vec({0.0}), Tensor({{0.1}}));
     const DaeReachSet R = linear_system().reach(
-        {.initial_set = X0, .input_set = U, .y0_guess = test::column({0.0}), .t_final = 1.0},
+        {.initial_set = X0, .input_set = U, .y0_guess = test::vec({0.0}), .t_final = 1.0},
         alg::DaeLinearization{.time_step = 0.05, .taylor_terms = 8});
     const ReachSet linear = LinearSys(Tensor({{-0.5}}), Tensor({{1.0}}))
                                 .reach({.initial_set = X0, .input_set = U, .t_final = 1.0},
@@ -128,9 +128,9 @@ void trajectories_stay_in_the_sets(const std::string &b) {
     const NonlinDASys sys = square_system();
     const Zonotope X0(test::vec({0.4}), Tensor({{0.2}}));
     const DaeReachSet R =
-        sys.reach({.initial_set = X0, .y0_guess = test::column({0.0}), .t_final = 1.0},
+        sys.reach({.initial_set = X0, .y0_guess = test::vec({0.0}), .t_final = 1.0},
                   alg::DaeLinearization{.time_step = 0.01});
-    check(escapes(sys, X0, test::column({0.0}), Tensor::zeros({0, 1}), R, 1.0, 20) == 0,
+    check(escapes(sys, X0, test::vec({0.0}), Tensor::zeros({0}), R, 1.0, 20) == 0,
           b + ": x' = x^2 stays in the enclosures");
 }
 
@@ -141,13 +141,13 @@ void a_decomposition_encloses_the_coupling(const std::string &b) {
     const Zonotope X0(test::vec({0.1, 0.3}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
     const Zonotope U(test::vec({0.0}), Tensor::zeros({0, 1}));
     const alg::DaeLinearization a{.time_step = 0.01, .zonotope_order = 20};
-    const Tensor y_guess = test::column({0.0, 0.0});
+    const Tensor y_guess = test::vec({0.0, 0.0});
     for (const bool composed : {false, true}) {
         DaeReachProblem problem{
             .initial_set = X0, .input_set = U, .y0_guess = y_guess, .t_final = 0.5};
         if (composed) problem.decomposition = coupled_decomposition();
         const DaeReachSet R = sys.reach(problem, a);
-        check(escapes(sys, X0, y_guess, test::column({0.0}), R, 0.5, 20) == 0,
+        check(escapes(sys, X0, y_guess, test::vec({0.0}), R, 0.5, 20) == 0,
               b + (composed ? ": a decomposition" : ": the whole system") + " encloses");
     }
 }
@@ -159,12 +159,12 @@ void the_steps_are_those_of_reach(const std::string &b) {
     const Zonotope X0(test::vec({1.0}), Tensor({{0.1}}));
     const alg::DaeLinearization a{.time_step = 0.05, .taylor_terms = 6};
     const DaeReachProblem problem{.initial_set = X0,
-                                  .u_trans = Tensor({{0.0, 1.0}}),
-                                  .y0_guess = test::column({0.0}),
+                                  .u_trans = Tensor({{0.0}, {1.0}}),
+                                  .y0_guess = test::vec({0.0}),
                                   .t_final = 0.1};
     const DaeReachSet R = sys.reach(problem, a);
     const DaeStep first = sys.init_reach(problem, a);
-    const DaeStep second = sys.post(first, problem, test::column({1.0}), a);
+    const DaeStep second = sys.post(first, problem, test::vec({1.0}), a);
     check(test::close(first.time_point.center(), R.time_point[1].center(), 1e-12) &&
               test::close(second.time_point.center(), R.time_point[2].center(), 1e-12),
           b + ": the steps of reach");
@@ -179,7 +179,7 @@ void wrong_arguments_are_described(const std::string &b) {
     // the problem needs its sets, a step size, the order 2 and an input only for a system with one
     const NonlinDASys sys = square_system();
     const Zonotope X0(test::vec({0.4}), Tensor({{0.2}}));
-    const Tensor y_guess = test::column({0.0});
+    const Tensor y_guess = test::vec({0.0});
     const alg::DaeLinearization a{.time_step = 0.01};
     // a problem without the guess of y
     check(test::raises([&] { sys.reach({.initial_set = X0, .t_final = 1.0}, a); },
@@ -223,7 +223,7 @@ void wrong_arguments_are_described(const std::string &b) {
     check(test::raises(
               [&] {
                   coupled_system().reach({.initial_set = X2,
-                                          .y0_guess = test::column({0.0, 0.0}),
+                                          .y0_guess = test::vec({0.0, 0.0}),
                                           .t_final = 0.1,
                                           .decomposition = dec},
                                          alg::DaeLinearization{.time_step = 0.01});

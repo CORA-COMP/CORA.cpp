@@ -249,8 +249,8 @@ class LinearSys {
                                      std::optional<int> taylor_terms = std::nullopt) const;
 
     /// The error of the trajectories of x' = A x + u from R0 against their linearization at t_c,
-    /// for t in [t_min, t_max] (CORA's trajectoryError); f holds the flow at the start and the end
-    /// (one entry: the same), the series stops at `order` >= 1 and n (dim, 1) is a direction.
+    /// for t in [t_min, t_max] (CORA's trajectoryError); f holds the flow (dim) at the start and
+    /// the end (one entry: the same), the series stops at `order` >= 1; u and n are vectors (dim).
     TrajectoryError trajectory_error(const std::vector<Tensor> &f, const Tensor &u,
                                      const Zonotope &R0, double t_min, double t_max, double t_c,
                                      int order, const Tensor &n) const;

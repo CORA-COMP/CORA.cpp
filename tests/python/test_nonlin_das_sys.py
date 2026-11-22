@@ -57,7 +57,7 @@ class NonlinDASys(unittest.TestCase):
         X0 = cora.Zonotope(np.array([1.0]), np.array([[0.1]]))
         U = cora.Zonotope(np.array([0.0]), np.array([[0.1]]))
         # the constant input 0.2 and the input set [-0.1, 0.1] around it
-        R = linear_system().reach(initial_set=X0, input_set=U, u_trans=np.array([[0.2]]),
+        R = linear_system().reach(initial_set=X0, input_set=U, u_trans=np.array([0.2]),
                                   y0_guess=np.array([0.0]), t_final=1.0, time_step=0.05,
                                   taylor_terms=6)
         self.assertEqual(len(R.time_interval), 20)

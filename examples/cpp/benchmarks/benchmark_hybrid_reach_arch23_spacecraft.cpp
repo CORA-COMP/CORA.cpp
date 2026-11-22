@@ -29,7 +29,6 @@
 namespace {
 
 using namespace cora;
-using cora::bench::column;
 using cora::bench::hyperplane;
 using cora::bench::matrix;
 using cora::bench::vec;
@@ -57,7 +56,7 @@ NonlinearSys aux_flow(const std::array<double, 4> &a, const std::array<double, 4
 }
 
 HybridAutomaton aux_automaton() {
-    const LinearReset id(Tensor::eye(5), std::nullopt, column({0, 0, 0, 0, 0}));
+    const LinearReset id(Tensor::eye(5), std::nullopt, Tensor::zeros({5}));
     // the passive mode is entered in the window t in [120, 150]
     const Polytope window(matrix(2, 5, {0, 0, 0, 0, -1, 0, 0, 0, 0, 1}), vec({-120, 150}));
     const NonlinearSys approach =

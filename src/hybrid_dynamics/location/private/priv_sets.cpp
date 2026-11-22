@@ -112,10 +112,8 @@ const Tensor &priv_flow_matrix(const Location &loc, const char *what) {
 Tensor priv_flow_at(const Location &loc, const Tensor &x, const Zonotope &U_state,
                     const char *what) {
     if (const auto *sys = std::get_if<NonlinearSys>(&loc.flow()))
-        return (sys->input_dim() == 0 ? sys->dynamics(x.squeeze(-1))
-                                      : sys->dynamics(x.squeeze(-1), U_state.center()))
-            .expand_dims(-1);
-    return priv_flow_matrix(loc, what).matmul(x) + U_state.center().expand_dims(-1);
+        return sys->input_dim() == 0 ? sys->dynamics(x) : sys->dynamics(x, U_state.center());
+    return priv_flow_matrix(loc, what).matmul(x.expand_dims(-1)).squeeze(-1) + U_state.center();
 }
 
 } // namespace cora
