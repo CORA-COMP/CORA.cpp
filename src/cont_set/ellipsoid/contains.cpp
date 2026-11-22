@@ -168,7 +168,7 @@ bool Ellipsoid::contains(const Interval &S, const std::string &method, Tol tol_a
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // an empty box is contained anywhere, an unbounded one nowhere (E is bounded)
     if (S.is_empty()) return true;
-    if (!S.is_bounded()) return false;
+    if (!S.is_bounded().all()) return false;
     return contains(S.zonotope(), method, tol_arg);
 }
 

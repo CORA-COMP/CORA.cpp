@@ -88,7 +88,7 @@ bool aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
     if (priv_is_box(compacted, tol)) { // a box: every point by its bounds
         const Interval box = compacted.interval();
         for (int64_t k = 0; k < N; ++k)
-            if (!box.contains(p.slice(-1, k, k + 1).squeeze(-1), tol)) return false;
+            if (!box.contains(p.slice(-1, k, k + 1).squeeze(-1), tol).all()) return false;
         return true;
     }
     return aux_contains_points(priv_host_zonotope(aux_prepared(Z, tol)), p.data(), N, tol);
@@ -119,7 +119,7 @@ bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::stri
     if (compacted.nr_generators() == 0) return false; // a point holds no set
     if (priv_is_box(compacted, tol)) { // a box contains S iff it contains the box around S
         const Interval box = compacted.interval(), around = inner.interval();
-        return box.contains(around.inf(), tol) && box.contains(around.sup(), tol);
+        return box.contains(around.inf(), tol).all() && box.contains(around.sup(), tol).all();
     }
     const Zonotope outer = aux_prepared(Z, tol);
     // "exact" is the vertex search from dimension 4 on, as CORA's aux_exactParser decides

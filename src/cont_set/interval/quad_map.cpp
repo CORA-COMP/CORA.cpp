@@ -27,7 +27,7 @@ namespace cora {
 namespace {
 
 /// Whether the box is a bounded vector, the only one that has a zonotope.
-bool aux_has_zonotope(const Interval &I) { return I.is_bounded() && I.elem_rank() == 1; }
+bool aux_has_zonotope(const Interval &I) { return I.is_bounded().all() && I.elem_rank() == 1; }
 
 } // namespace
 

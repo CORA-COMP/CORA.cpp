@@ -1,10 +1,12 @@
 // mask - what a predicate answers for a batch of sets: one flag per member (#163)
 //
 // A predicate on a batch (contains, is_intersecting, isequal, is_full_dim, is_bounded) says which
-// members have the property, by a mask of the batch shape (0-d for one set). A Mask converts to
-// bool as "every member does", so a call on one set, or a test of a whole batch, reads as before.
+// members have the property, by a mask of the batch shape (0-d for one set). As in NumPy, a Mask
+// converts to bool only for exactly one member (a call on one set); for more it throws, and
+// a batch is tested by all() or any().
 //
-// Syntax:   Mask m = I.contains(p);   bool all = m;   Tensor flags = m.tensor();
+// Syntax:   Mask m = I.contains(p);   bool one = m;   bool every = m.all();
+//           Tensor flags = m.tensor();
 // Outputs:  tensor - 1 for a member that has the property, else 0, of the batch shape
 // See also: cont_set/empty_mask.h
 //
@@ -16,8 +18,10 @@
 
 #pragma once
 
+#include "cora/global/error.h"
 #include "cora/global/tensor/tensor.h"
 
+#include <string>
 #include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -41,9 +45,15 @@ class Mask {
     /// Whether some member has it.
     bool any() const { return flags_.numel() != 0 && flags_.max().item() != 0; }
 
-    /// The answer for one set, "every member" for a batch.
+    /// The answer for one set; throws for a batch (use all() or any()), like NumPy.
     // NOLINTNEXTLINE(google-explicit-constructor): the answer for one set is its bool
-    operator bool() const { return all(); }
+    operator bool() const {
+        if (flags_.numel() != 1)
+            CORA_FAIL(Error::wrong_value, "the truth value of a mask of " +
+                                              std::to_string(flags_.numel()) +
+                                              " members is ambiguous: use all() or any()");
+        return flags_.item() != 0;
+    }
 
   private:
     Tensor flags_;

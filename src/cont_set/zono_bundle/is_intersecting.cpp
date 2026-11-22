@@ -54,7 +54,7 @@ bool ZonoBundle::is_intersecting(const ZonoBundle &S, const std::string &type, T
         *this, S.dim(), (S.zonotopes().front()).center().expand_dims(-1), "is_intersecting");
     if (!r) r = aux_refusal(*this, (S.zonotopes().front()).center().expand_dims(-1), type);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
-    if (type == "approx") return interval().is_intersecting(S.interval(), tol);
+    if (type == "approx") return interval().is_intersecting(S.interval(), tol).all();
     return !priv_bundle_is_empty(intersect(S));
 }
 
@@ -66,7 +66,7 @@ bool ZonoBundle::is_intersecting(const Zonotope &Z, const std::string &type, Tol
     if (!r) r = aux_refusal(*this, Z.center().expand_dims(-1), type);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
     // the boxes, or the emptiness of the bundle of both
-    if (type == "approx") return interval().is_intersecting(Z.interval(), tol);
+    if (type == "approx") return interval().is_intersecting(Z.interval(), tol).all();
     return !priv_bundle_is_empty(intersect(Z));
 }
 
@@ -77,7 +77,7 @@ bool ZonoBundle::is_intersecting(const Interval &I, const std::string &type, Tol
         priv_operand_refusal(*this, I.dim(), I.inf().expand_dims(-1), "is_intersecting");
     if (!r) r = aux_refusal(*this, I.inf().expand_dims(-1), type);
     CORA_CHECK(!r, r->first, [&] { return r->second; });
-    if (type == "approx") return interval().is_intersecting(I, tol);
+    if (type == "approx") return interval().is_intersecting(I, tol).all();
     // the empty box meets nothing; else as for a zonotope
     return !I.is_empty() && !priv_bundle_is_empty(intersect(I));
 }

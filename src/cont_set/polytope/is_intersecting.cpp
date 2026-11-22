@@ -252,7 +252,7 @@ bool aux_meets_set(const Polytope &P, const ContSet &S, const std::string &type,
                    Convert convert) {
     // R^n meets every set that is not empty
     if (priv_is_fullspace(P)) return !S.interval().is_empty();
-    if (P.dim() == 1) return P.interval().is_intersecting(S.interval(), tol);
+    if (P.dim() == 1) return P.interval().is_intersecting(S.interval(), tol).all();
     if (P.representsa("halfspace", tol)) return aux_halfspace_meets(P, S, tol);
     if (type == "approx") return aux_not_beyond(P, S, tol);
     return convert(priv_host_h(P.constraints()));
@@ -288,7 +288,7 @@ bool Polytope::is_intersecting(const Polytope &S, const std::string &type, Tol t
     // the whole space meets every set that is not empty
     if (priv_is_fullspace(*this)) return !S.representsa("emptySet", machine_eps());
     if (priv_is_fullspace(S)) return !representsa("emptySet", machine_eps());
-    if (dim() == 1) return interval().is_intersecting(S.interval(), tol);
+    if (dim() == 1) return interval().is_intersecting(S.interval(), tol).all();
     if (representsa("halfspace", tol)) return aux_halfspace_meets(*this, S, tol);
     return aux_meets_polytope(*this, S);
 }

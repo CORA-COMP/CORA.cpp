@@ -45,7 +45,7 @@ namespace {
 bool aux_origin_contained(const Zonotope &V, const Tensor &v_trans) {
     const Zonotope full = V + v_trans.squeeze(-1);
     const Tensor origin = full.center().zeros_like();
-    if (full.representsa("interval", machine_eps())) return full.interval().contains(origin);
+    if (full.representsa("interval", machine_eps())) return full.interval().contains(origin).all();
     return full.contains(origin);
 }
 
