@@ -93,6 +93,7 @@ void NnVerifyOptions::validate() const {
     aux_one_of("poly_method", poly_method, {"bounds", "singh"});
     aux_one_of("conzonotope_bounding_method", conzonotope_bounding_method,
                {"fourier-motzkin", "dual-iter"});
+    // the switches of the splits, the rows and Phase 2's bounds
     aux_one_of("neuron_split_position", neuron_split_position, {"zero", "middle"});
     aux_one_of("fourier_motzkin_order", fourier_motzkin_order, {"cora", "coralean"});
     aux_one_of("alpha_method", alpha_method, {"zonotope", "crown"});
@@ -110,6 +111,7 @@ void NnVerifyOptions::validate() const {
     aux_at_least("max_candidates", double(max_candidates), 1);
     aux_at_least("pgd_steps", double(pgd_steps), 1);
     aux_at_least("pgd_restarts", double(pgd_restarts), 1);
+    // the counts of Phase 2's steps
     aux_at_least("alpha_iterations", double(alpha_iterations), 0);
     aux_at_least("look_ahead_candidates", double(look_ahead_candidates), 1);
     aux_at_least("alpha_patience", double(alpha_patience), 1);

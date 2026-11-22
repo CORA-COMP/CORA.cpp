@@ -10,9 +10,8 @@
 // to that box and propagated again (refinement_max_iter - 1 times). An empty child is verified.
 // The three repairs of CORA's unsound steps are options (on): project_stale_factors,
 // drop_dummy_duplicates, remember_point_splits_only (docs/nn_verification.md). Running out of
-// memory takes fewer ReLU rows, then half the batch (CORA's catch). "zonotope-alpha" also
-// optimizes the ReLU slopes of the open sets in the check, backward_bound adds CROWN's bound,
-// dual_certificate a Lagrangian bound under the splits and ReLU faces (priv_verify_dual.cpp).
+// memory takes fewer ReLU rows, then half the batch (CORA's catch). Phase 2 adds to the check
+// zonotope-alpha's slopes, CROWN's bound and the dual certificate (priv_verify_dual.cpp).
 //
 // See also: priv_zono_batch.h, priv_verify.h, docs/nn_verification.md
 // References:
@@ -646,6 +645,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
         if (!near.empty()) {
             const StepTimer timer(stats_, "alpha_seconds");
             (*stats_)["alpha_sets"] += double(near.size());
+            // the slopes of the zonotope's lines or CROWN's backward pass
             const Tensor xn = xi_.take(near, 0), rn = ri_.take(near, 0), cn = ci_.take(near, 0),
                          sn = si_.take(near, 0), en = excluded_all.take(near, 0);
             const Tensor ex = o_.alpha_method == "crown"
@@ -662,6 +662,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
     if (o_.dual_certificate) {
         const std::vector<int64_t> near = aux_near(open, gap);
         if (!near.empty()) {
+            // the propagation of these sets, recorded, and their rows' dual bounds
             const StepTimer timer(stats_, "dual_seconds");
             const Tensor ci = ci_.take(near, 0), si = si_.take(near, 0);
             const ZonoInput in = net.input_zonotope(xi_.take(near, 0), ri_.take(near, 0));
@@ -669,6 +670,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
             const Tensor ex = aux_excluded_lower(aux_dual_margins(out, si), ci)
                                   .maximum(excluded_all.take(near, 0));
             excluded_all = aux_put_rows(excluded_all, near, ex);
+            // the sets the dual bound verified
             const std::size_t before = open.size();
             open = aux_where(1.0 - excluded_all.min(1));
             (*stats_)["dual_verified"] += double(before - open.size());

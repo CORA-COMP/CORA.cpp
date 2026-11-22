@@ -69,6 +69,8 @@ Tensor aux_dual(const Tensor &w, const Tensor &C, const Tensor &d, const Tensor 
 
 // ===========================================  MAIN  =========================================== //
 
+// The rows ----------------------------------------------------------------------------------------
+
 std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoNet &net,
                                          const Tensor &splits, int64_t num_relu) {
     const int64_t q = net.q;
@@ -84,6 +86,7 @@ std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoN
         const Tensor j = id.clip(0.0, double(n - 1));
         const Tensor sign = Tensor::where(splits.less(splits.zeros_like()),
                                           splits.full_like({1}, -1.0), splits.ones_like());
+        // the row of each split of this layer, zero for the others
         const Tensor hit = inside.expand_dims(-1);
         const Tensor rows = aux_columns(rec.G_in, j, q).multiply(sign.expand_dims(-1));
         const Tensor off = aux_at(rec.c_in, Tensor(), j, 1.0).multiply(sign.negative()) +
@@ -105,6 +108,7 @@ std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoN
             scores.push_back(Tensor::where(cross, rec->er, rec->er.full_like({1}, -kInf)));
             bounds.emplace_back(lc, uc);
         }
+        // the top neurons over all layers, then each layer's share of them
         const Tensor score = Tensor::concat(scores, 1);
         const int64_t k = std::min(num_relu, score.shape()[1]);
         const auto [best, top] = score.topk(k, 1);
@@ -131,6 +135,7 @@ std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoN
                                         go - gi.multiply(s.expand_dims(-1))};
             const Tensor face_offs[] = {co + ro, co - ci + ro + ri,
                                         s.multiply(ci - l) - co + ro + s.multiply(ri)};
+            // each face a row of the neurons of this layer, zero for the others
             for (int f = 0; f < 3; ++f) {
                 Cs.push_back(
                     Tensor::where(inside.expand_dims(-1), face_rows[f], face_rows[f].zeros_like()));
@@ -142,6 +147,8 @@ std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoN
     if (Cs.empty()) return {};
     return {Tensor::concat(Cs, 1), Tensor::concat(ds, 1)};
 }
+
+// The bound ---------------------------------------------------------------------------------------
 
 Tensor priv_dual_lower(const Tensor &w, const Tensor &C_, const Tensor &d_, int64_t iterations,
                        double step, DType dtype) {

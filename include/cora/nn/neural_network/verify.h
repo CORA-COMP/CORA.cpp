@@ -125,12 +125,11 @@ struct NnVerifyOptions {
     int64_t alpha_iterations = 10; ///< projected Adam steps on the open sets' margins
     double alpha_step_size = 0.3;  ///< Adam's step on the slopes in [0, 1]
     int64_t alpha_patience = 3;    ///< steps without a newly excluded polytope before it stops
-    /// The sets whose slopes or multipliers are optimized: those whose worst open polytope's best
-    /// row is below 0 by at most this share of the row's width (inf: every open set).
-    /// "zonotope": the slopes of the zonotope's lines (both bounds of a neuron, every layer's
-    /// bounds move); "crown": CROWN's lower slopes per row in the backward pass (alpha-CROWN), the
-    /// zonotope's bounds held, so a step costs one backward pass.
+    /// "zonotope": the slopes of the zonotope's lines, every later bound moves; "crown": CROWN's
+    /// lower slopes per row in the backward pass (alpha-CROWN), the zonotope's bounds held.
     std::string alpha_method = "zonotope";
+    /// The open sets whose slopes or multipliers are optimized: their worst polytope's best row is
+    /// below 0 by at most this share of the row's width (inf: all).
     double optimize_gap = std::numeric_limits<double>::infinity();
     // the repairs of CORA's unsound steps (docs/nn_verification.md), on by default
     bool project_stale_factors = true; ///< the split rows keep the input factors after one pass

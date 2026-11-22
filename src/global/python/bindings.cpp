@@ -4766,6 +4766,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(mini_batch_size, "The sets per batch at most");
     CORA_VERIFY_FIELD(exact_backprop, "CORA's exact_backprop: the gradient through the lines");
     CORA_VERIFY_FIELD(fourier_motzkin_order, "'cora' (fast) or 'coralean' (the oracle's)");
+    // Phase 2: the backward bound, the dual certificate, the slopes
     CORA_VERIFY_FIELD(backward_bound, "The check also takes CROWN's backward bound");
     CORA_VERIFY_FIELD(dual_certificate, "The check also takes the Lagrangian bound of the rows");
     CORA_VERIFY_FIELD(dual_iterations, "dual_certificate: Adam steps on the multipliers");
