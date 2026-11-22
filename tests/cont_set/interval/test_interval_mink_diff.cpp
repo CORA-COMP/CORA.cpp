@@ -75,6 +75,11 @@ void checks_and_their_switch() {
           "mink_diff: no exact algorithm for a zonotope");
     check(test::raises([&] { I.mink_diff(Z, std::string("outer")); }, Error::wrong_value),
           "mink_diff: an unknown type");
+    // through the base class, a box takes the exact rule of boxes
+    const Interval J(vec({1.0, 1.0}), vec({2.0, 2.0}));
+    check(close(static_cast<const ContSet &>(I).mink_diff(J).as<Interval>().sup(),
+                I.mink_diff(J).sup(), 0),
+          "mink_diff: a box through the base class");
     const Tensor on = I.mink_diff(Z).sup();
     ChecksScope off(false);
     check(close(I.mink_diff(Z).sup(), on, 0), "mink_diff: the same with the checks off");

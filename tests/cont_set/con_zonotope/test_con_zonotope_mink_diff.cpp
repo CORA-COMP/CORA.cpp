@@ -80,6 +80,14 @@ int main() {
     check(
         test::raises([&] { a.mink_diff(Set(ConZonotope::origin(2))); }, Error::dimension_mismatch),
         "mink_diff: dimension");
+    // a batch of constrained zonotopes is refused
+    check(test::raises(
+              [&] {
+                  ConZonotope(Tensor::zeros({2, 1}), Tensor::ones({2, 1, 1}).matrix_transpose())
+                      .mink_diff(Set(I));
+              },
+              Error::not_supported),
+          "mink_diff: a batch");
     ChecksScope off(false);
     check(a.mink_diff(Set(I)).as<ConZonotope>().dim() == 1, "mink_diff: checks off");
     return test::finish("con_zonotope mink_diff");
