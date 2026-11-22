@@ -234,7 +234,7 @@ void switches(const std::string &b) {
     Rng rng(11);
     const NeuralNetwork nn = aux_network(rng, {3, 6, 6, 2}, Activation::relu);
     const double least = aux_least_output(nn, rng, 3, -0.3, 0.3);
-    for (int variant = 0; variant < 8; ++variant) {
+    for (int variant = 0; variant < 10; ++variant) {
         NnVerifyOptions o = aux_options("conzonotope", b);
         o.falsification_order = "bound-first";
         o.falsification_method = "center";
@@ -251,8 +251,12 @@ void switches(const std::string &b) {
         if (variant == 5) o.verify_enqueue_type = "append";
         if (variant == 6) o.fourier_motzkin_order = "coralean";
         if (variant == 7) o.num_init_gens = 2;
-        const NnVerifyResult r = nn.verify(aux_below(3, 2, -0.3, 0.3, least - 0.5), 20, o);
-        check(r.status == "unsat", b + ": the variant " + std::to_string(variant) + " verifies");
+        if (variant == 8) o.exact_backprop = false;
+        if (variant == 9) o.verify_dequeue_type = "front";
+        // close enough to the outputs that the first box needs the refinement
+        const NnVerifyResult r = nn.verify(aux_below(3, 2, -0.3, 0.3, least - 0.1), 20, o);
+        check(r.status == "unsat" && r.stats.count("artifacts_seconds") == 1,
+              b + ": the variant " + std::to_string(variant) + " verifies after a refinement");
     }
 }
 

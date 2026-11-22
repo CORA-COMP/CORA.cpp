@@ -2,7 +2,8 @@
 //
 // The options refuse unknown strategy names and option values, vnncomp_options gives CORA's
 // presets (the year of a benchmark dropped), the built-in strategies are registered, and a
-// program's own attack is used by its name.
+// program's own attack is used by its name. Every heuristic scores every entry, and an
+// out-of-memory error is recognized.
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Tobias Ladner, Lukas Koller
@@ -14,9 +15,12 @@
 #include "cora/global/rng.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/nn/neural_network/verify.h"
+#include "nn/neural_network/private/priv_verify.h"
 #include "testing.h"
 
 #include <cmath>
+#include <new>
+#include <stdexcept>
 
 using namespace cora;
 using test::check;
@@ -105,6 +109,56 @@ void options_and_strategies() {
     check(nn.verify(aux_below(2, 2, 0, 1, 0), 5, mine).status == "sat", "the registered attack");
 }
 
+/// Every benchmark's preset is valid and has its own changes.
+void presets() {
+    const NnVerifyOptions cgan = vnncomp_options("cgan_2023"), c100 = vnncomp_options("cifar100");
+    const NnVerifyOptions rul = vnncomp_options("collins_rul_cnn_2022");
+    const NnVerifyOptions room = vnncomp_options("metaroom_2023"), fc = vnncomp_options("mnist_fc");
+    const NnVerifyOptions oval = vnncomp_options("oval21"), tiny = vnncomp_options("tinyimagenet");
+    for (const NnVerifyOptions *o : {&cgan, &c100, &rul, &room, &fc, &oval, &tiny}) o->validate();
+    check(cgan.max_verif_iter == 100 && c100.verify_enqueue_type == "append" &&
+              rul.num_approx_err == 100 && room.max_verif_iter == 10 && fc.num_init_gens == 500 &&
+              oval.num_approx_err == 10 && tiny.num_approx_err == 0,
+          "each benchmark's preset");
+    // a share of the timeout beyond the whole
+    NnVerifyOptions share;
+    share.attack_time_share = 2;
+    check(test::raises([&] { share.validate(); }, Error::wrong_field_value),
+          "attack_time_share beyond 1");
+}
+
+/// Every heuristic scores every entry; unknown names and missing inputs fail.
+void heuristics_and_registries() {
+    // the bounds l < 0 < u, positive errors, sensitivities and gradients
+    Rng rng(4);
+    std::vector<double> v(12);
+    rng.uniform(v.data(), v.size(), 0.1, 1.0);
+    const Tensor pos = Tensor::from_data(v, {2, 6});
+    const HeuristicInputs in{pos.negative(), pos * 2.0, pos * 0.5, pos + 1.0, pos - 0.5};
+    for (const std::string &name : heuristic_names()) {
+        const Tensor h = priv_compute_heuristic(name, in, Tensor(), 0, false);
+        check(h.shape() == pos.shape() && h.isfinite().all(1).min().item() > 0,
+              "the heuristic " + name + " scores every entry");
+    }
+    // a heuristic needs what it reads, and unknown names fail
+    const HeuristicInputs bare{pos.negative(), pos, pos, Tensor(), Tensor()};
+    check(test::raises(
+              [&] { priv_compute_heuristic("zono-norm-gradient", bare, Tensor(), 0, false); },
+              Error::wrong_value),
+          "a heuristic without its gradient");
+    const NnVerifyOptions o;
+    check(test::raises([&] { make_attack("nope", o); }, Error::wrong_field_value) &&
+              test::raises([&] { heuristic("nope"); }, Error::wrong_field_value) &&
+              test::raises([&] { priv_make_bounding("nope", o); }, Error::wrong_field_value) &&
+              test::raises([&] { priv_input_split_heuristic("nope"); }, Error::wrong_field_value),
+          "unknown strategy names");
+    // the errors that mean out of memory
+    check(priv_is_oom(std::bad_alloc()) && priv_is_oom(std::runtime_error("CUDA out of memory")) &&
+              priv_is_oom(std::runtime_error("CORA:outOfMemory")) &&
+              !priv_is_oom(std::runtime_error("a shape mismatch")),
+          "out of memory is recognized");
+}
+
 /// The options are the same with the checks off.
 void checks_and_their_switch() {
     NnVerifyOptions o = vnncomp_options("cora");
@@ -122,6 +176,8 @@ void checks_and_their_switch() {
 
 int main() {
     options_and_strategies();
+    presets();
+    heuristics_and_registries();
     checks_and_their_switch();
     return test::finish("neuralNetwork verify options");
 }
