@@ -41,6 +41,12 @@ int64_t aux_count(double option, int64_t n) {
     return std::isinf(option) ? n : std::min<int64_t>(n, int64_t(option));
 }
 
+/// The rows G (B, q, n) times M (n, m) as one product of a (B q, n) matrix, not B of them.
+Tensor aux_rows_times(const Tensor &G, const Tensor &M) {
+    const int64_t B = G.shape()[0], q = G.shape()[1];
+    return G.reshape({B * q, G.shape()[2]}).matmul(M).reshape({B, q, M.shape()[1]});
+}
+
 /// The one-hot rows (..., k, n) of the indices idx (..., k).
 Tensor aux_onehot(const Tensor &idx, int64_t n) {
     return idx.expand_dims(-1).equal(idx.arange_like(n).reshape({1, 1, n}));
@@ -430,7 +436,7 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
     for (std::size_t k = 0; k < W.size(); ++k) {
         // the linear layer, exactly
         c = c.matmul(W[k]) + b[k];
-        G = G.matmul(W[k]);
+        G = aux_rows_times(G, W[k]);
         if (pending_values.defined()) {
             G = Tensor::concat({G, take_pending(W[k])}, 1);
             pending_values = Tensor();
@@ -567,7 +573,7 @@ Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const Zono
             g_dr = dr1.defined() ? g_dr.multiply(m) + g_rad : Tensor();
         }
         // the linear layer; the centers and radii of the first layer's input are not needed
-        g_gen = g_gen.matmul(net.WT[k]);
+        g_gen = aux_rows_times(g_gen, net.WT[k]);
         if (k == 0) break;
         g_c = g_c.matmul(net.WT[k]);
         if (g_dr.defined()) g_dr = g_dr.matmul(net.abs_wT[k]);

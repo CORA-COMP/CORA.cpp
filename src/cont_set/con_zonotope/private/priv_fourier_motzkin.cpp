@@ -31,27 +31,39 @@ namespace cora {
 
 namespace {
 
+// Extremes ----------------------------------------------------------------------------------------
+
 /// CORALean's maximum and minimum of tensors: b where a <= b, else a (and a, else b).
 Tensor aux_vmax(const Tensor &a, const Tensor &b) { return Tensor::where(a.less_equal(b), b, a); }
 Tensor aux_vmin(const Tensor &a, const Tensor &b) { return Tensor::where(a.less_equal(b), a, b); }
 
-/// One pass in CORA's order: the bound of each factor by each row, the tightest over the rows.
-std::pair<Tensor, Tensor> aux_pass_cora(const Tensor &A, const Tensor &b, const Tensor &bl,
-                                        const Tensor &bu) {
+// The order of CORA -------------------------------------------------------------------------------
+
+/// The parts of A that every pass in CORA's order reads: the signs and A with ones for zeros.
+struct CoraParts {
+    Tensor positive, negative, safe;
+};
+
+CoraParts aux_cora_parts(const Tensor &A) {
     const Tensor zero = A.zeros_like();
-    const Tensor positive = A.greater(zero), negative = A.less(zero);
     // a row without a coefficient bounds nothing: divide by one, the quotient is not used
-    const Tensor safe = Tensor::where(A.equal(zero), A.ones_like(), A);
-    const Tensor low = bl.expand_dims(1), up = bu.expand_dims(1);
-    // the least value of each term a_ij x_j and of the others in its row
-    const Tensor terms =
-        A.multiply(Tensor::where(positive, low, Tensor::where(negative, up, zero)));
-    const Tensor others = terms.sum(-1, true) - terms;
-    const Tensor implied = (b.expand_dims(-1) - others).divide(safe).maximum(low).minimum(up);
-    // a negative coefficient gives a lower bound, a positive one an upper bound
-    return {Tensor::where(negative, implied, low).max(1),
-            Tensor::where(positive, implied, up).min(1)};
+    return {A.greater(zero), A.less(zero), Tensor::where(A.equal(zero), A.ones_like(), A)};
 }
+
+/// One pass in CORA's order: the bound of each factor by each row, the tightest over the rows.
+std::pair<Tensor, Tensor> aux_pass_cora(const Tensor &A, const CoraParts &parts, const Tensor &b,
+                                        const Tensor &bl, const Tensor &bu) {
+    const Tensor low = bl.expand_dims(1), up = bu.expand_dims(1);
+    // the least value of each term a_ij x_j (zero for a zero a_ij) and of the others in its row
+    const Tensor terms = A.multiply(Tensor::where(parts.positive, low, up));
+    const Tensor others = terms.sum(-1, true) - terms;
+    const Tensor implied = (b.expand_dims(-1) - others).divide(parts.safe).maximum(low).minimum(up);
+    // a negative coefficient gives a lower bound, a positive one an upper bound
+    return {Tensor::where(parts.negative, implied, low).max(1),
+            Tensor::where(parts.positive, implied, up).min(1)};
+}
+
+// The order of CORALean ---------------------------------------------------------------------------
 
 /// One pass in CORALean's order: each row contracts the starting box (contractHalfspace), the
 /// sum of the other terms nested to the right, and the result is intersected with the running box.
@@ -83,11 +95,12 @@ std::pair<Tensor, Tensor> aux_pass_coralean(const Tensor &A, const Tensor &b, co
 std::pair<Tensor, Tensor> priv_fourier_motzkin(const Tensor &A, const Tensor &b, Tensor bl,
                                                Tensor bu, int64_t passes, FmOrder order,
                                                double tighter) {
+    const CoraParts parts = order == FmOrder::cora ? aux_cora_parts(A) : CoraParts{};
     for (int64_t pass = 0; pass < passes; ++pass) {
         std::pair<Tensor, Tensor> next;
         switch (order) {
         case FmOrder::cora:
-            next = aux_pass_cora(A, b, bl, bu);
+            next = aux_pass_cora(A, parts, b, bl, bu);
             break;
         case FmOrder::coralean:
             next = aux_pass_coralean(A, b, bl, bu);
