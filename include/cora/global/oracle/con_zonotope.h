@@ -12,7 +12,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   ---
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -139,6 +139,10 @@ class ConZonotope {
     std::string dtype_;
     Json json_;
 };
+
+/// The factor box of {x in [-1, 1]^q | C x <= d}, C (p, q), d (p, 1), after k passes of Koller et
+/// al., ICLR 2026, Prop. 3 from the unit box (`conZonotope.fourierMotzkinBounds`).
+Interval fourier_motzkin_bounds(const Tensor &C, const Tensor &d, int64_t k);
 
 } // namespace cora::lean
 

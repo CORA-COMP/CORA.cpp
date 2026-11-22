@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/con_zonotope.h"
@@ -271,6 +271,13 @@ ConZonotope ConZonotope::from_zonotope(const Zonotope &Z) {
 
 ConZonotope ConZonotope::from_interval(const Interval &I) {
     return aux_set(ask("interval.conZonotope", {{"I", I}}));
+}
+
+// the factor bounds of a constraint, the first step of CORA's approximateBoundsWithGPU
+
+Interval fourier_motzkin_bounds(const Tensor &C, const Tensor &d, int64_t k) {
+    return ask("conZonotope.fourierMotzkinBounds", {{"C", C}, {"d", d}, {"k", k}})
+        .get<Interval>("I");
 }
 
 } // namespace cora::lean

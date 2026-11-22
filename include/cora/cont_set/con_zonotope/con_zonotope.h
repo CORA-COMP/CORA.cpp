@@ -22,7 +22,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   20-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -368,6 +368,7 @@ class ConZonotope : public ContSet {
         std::string method = "fourier-motzkin"; ///< or "exact" (a linear program per bound)
         int max_iter = 4;                       ///< passes of the Fourier-Motzkin tightening
         bool batch_union = true;                ///< the union constraints become batch members
+        std::string order = "cora"; ///< Fourier-Motzkin's sums: CORA's, or "coralean" (bit-exact)
     };
 
     /// The bounds of a batch of constrained zonotopes: the box (l, u) (..., n) and the bounds
