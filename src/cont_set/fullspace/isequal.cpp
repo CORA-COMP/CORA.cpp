@@ -32,7 +32,7 @@ bool Fullspace::isequal(const ContSet &S, Tol tol) const {
     if (S.class_id() == ClassId::fullspace) return true;
     if (S.class_id() != ClassId::interval) return false;
     // infinite bounds must agree exactly, so only the box (-Inf, Inf)^n matches
-    return static_cast<const Interval &>(S).isequal(Interval::unbounded(n_), 0.0);
+    return static_cast<const Interval &>(S).isequal(Interval::unbounded(n_), 0.0).all();
 }
 
 } // namespace cora

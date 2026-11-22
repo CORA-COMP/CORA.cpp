@@ -27,43 +27,48 @@ constexpr double kEps = std::numeric_limits<double>::epsilon();
 
 void isequal_compares_the_bounds(const std::string &b) {
     const Interval I(vec({0.0, -1.0}), vec({1.0, 2.0}));
-    check(I.isequal(I), b + ": a box equals itself");
-    check(!I.isequal(Interval(vec({0.0, -1.0}), vec({1.0, 2.5}))), b + ": other bounds");
-    check(I.isequal(Interval(vec({0.0, -1.0}), vec({1.0 + kEps, 2.0}))),
+    check(I.isequal(I).all(), b + ": a box equals itself");
+    check(!I.isequal(Interval(vec({0.0, -1.0}), vec({1.0, 2.5}))).all(), b + ": other bounds");
+    check(I.isequal(Interval(vec({0.0, -1.0}), vec({1.0 + kEps, 2.0}))).all(),
           b + ": within CORA's default tol eps");
-    check(!I.isequal(Interval(vec({0.0, -1.0}), vec({1.0 + 1e-9, 2.0}))),
+    check(!I.isequal(Interval(vec({0.0, -1.0}), vec({1.0 + 1e-9, 2.0}))).all(),
           b + ": 1e-9 apart is more than eps");
-    check(I.isequal(Interval(vec({0.0, -1.0}), vec({1.0 + 1e-9, 2.0})), 1e-8),
+    check(I.isequal(Interval(vec({0.0, -1.0}), vec({1.0 + 1e-9, 2.0})), 1e-8).all(),
           b + ": but not for tol 1e-8");
-    check(!I.isequal(Interval(vec({0.0}), vec({1.0}))), b + ": another dimension is not equal");
-    check(I.isequal(I, 0.0), b + ": tol 0");
+    check(!I.isequal(Interval(vec({0.0}), vec({1.0}))).all(),
+          b + ": another dimension is not equal");
+    check(I.isequal(I, 0.0).all(), b + ": tol 0");
 }
 
 void isequal_with_infinite_bounds_points_and_batches(const std::string &b) {
     const Interval H(vec({0.0, -kInf}), vec({kInf, 1.0}));
-    check(H.isequal(H), b + ": the same infinities");
+    check(H.isequal(H).all(), b + ": the same infinities");
     // infinities against finite bounds
-    check(!H.isequal(Interval(vec({0.0, -kInf}), vec({1e300, 1.0}))), b + ": Inf against finite");
-    check(!H.isequal(Interval(vec({0.0, -1e300}), vec({kInf, 1.0}))), b + ": -Inf against finite");
-    check(Interval::empty(2).isequal(Interval::empty(2)) && !Interval::empty(2).isequal(H),
+    check(!H.isequal(Interval(vec({0.0, -kInf}), vec({1e300, 1.0}))).all(),
+          b + ": Inf against finite");
+    check(!H.isequal(Interval(vec({0.0, -1e300}), vec({kInf, 1.0}))).all(),
+          b + ": -Inf against finite");
+    check(Interval::empty(2).isequal(Interval::empty(2)).all() &&
+              !Interval::empty(2).isequal(H).all(),
           b + ": the empty interval");
-    check(Interval(vec({1.0, 2.0}), vec({1.0, 2.0})).isequal(vec({1.0, 2.0})),
+    check(Interval(vec({1.0, 2.0}), vec({1.0, 2.0})).isequal(vec({1.0, 2.0})).all(),
           b + ": a point is [p, p]");
     const Interval I(vec({0.0}), vec({1.0})), J(vec({0.0}), vec({2.0}));
-    check(Interval::stack({I, J}).isequal(Interval::stack({I, J})) &&
-              !Interval::stack({I, J}).isequal(Interval::stack({I, I})),
+    check(Interval::stack({I, J}).isequal(Interval::stack({I, J})).all() &&
+              !Interval::stack({I, J}).isequal(Interval::stack({I, I})).all(),
           b + ": a batch is equal only if every member is");
 }
 
 /// A negative tol and a point without an element axis are refused; the checks off give the same.
 void checks_and_their_switch() {
     const Interval I(vec({0.0, -1.0}), vec({1.0, 2.0}));
-    check(test::raises([&] { I.isequal(I, -1.0); }, Error::wrong_value), "isequal: a negative tol");
-    check(test::raises([&] { I.isequal(Tensor::from_data({1.0}, {1}).squeeze(0)); },
+    check(test::raises([&] { I.isequal(I, -1.0).all(); }, Error::wrong_value),
+          "isequal: a negative tol");
+    check(test::raises([&] { I.isequal(Tensor::from_data({1.0}, {1}).squeeze(0)).all(); },
                        Error::dimension_mismatch),
           "isequal: a point without an element axis");
     ChecksScope off(false);
-    check(I.isequal(I), "isequal: the same with the checks off");
+    check(I.isequal(I).all(), "isequal: the same with the checks off");
 }
 
 } // namespace

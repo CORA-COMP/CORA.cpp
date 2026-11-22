@@ -87,7 +87,7 @@ Taylm Taylm::from_range(double lo, double hi, int64_t vars, int max_order) {
 std::vector<Taylm> Taylm::from_interval(const Interval &I, int max_order) {
     detail::Entry entry;
     aux_check_order(max_order, "Taylm::from_interval");
-    CORA_CHECK(I.is_bounded() && !I.is_empty() && I.elem_rank() == 1 && I.inf().ndim() == 1,
+    CORA_CHECK(I.is_bounded().all() && !I.is_empty() && I.elem_rank() == 1 && I.inf().ndim() == 1,
                Error::wrong_value,
                [] { return std::string("Taylm::from_interval: the box must be one bounded box"); });
     // one variable per coordinate of the box

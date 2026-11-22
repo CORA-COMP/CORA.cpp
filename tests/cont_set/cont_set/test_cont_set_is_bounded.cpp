@@ -32,7 +32,8 @@ void bounded_or_not(const std::string &b) {
     const Zonotope Z(vec({0.0, 0.0}), Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 2}));
     const ContSet &A = box, &C = ray, &D = Z;
     check(A.is_bounded() && !C.is_bounded() && D.is_bounded(), b + ": bounded or not");
-    check(Interval::stack({box, box}).is_bounded() && !Interval::stack({box, ray}).is_bounded(),
+    check(Interval::stack({box, box}).is_bounded().all() &&
+              !Interval::stack({box, ray}).is_bounded().all(),
           b + ": a batch is bounded only if every member is");
 }
 

@@ -29,7 +29,15 @@ void contains_and_intersecting(const std::string &b) {
     const Interval I = two_boxes();
     const Mask in = I.contains(vec({1.5, 1.5}));
     check(test::close(in.tensor(), {0.0, 1.0}), b + ": contains, one flag per member");
-    check(!in.all() && in.any() && !static_cast<bool>(in), b + ": all, any and the bool of a mask");
+    check(!in.all() && in.any(), b + ": all and any of a mask");
+    // as in NumPy, the truth value of a batch is ambiguous
+    bool refused = false;
+    try {
+        static_cast<void>(static_cast<bool>(in));
+    } catch (const Error &) {
+        refused = true;
+    }
+    check(refused, b + ": the bool of a mask of two members throws");
     // the points of a batch meet the boxes member by member
     const Tensor points({{0.5, 0.5}, {3.0, 3.0}});
     check(test::close(I.contains(points).tensor(), {1.0, 0.0}), b + ": a batch of points");

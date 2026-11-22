@@ -33,7 +33,7 @@ Mask Interval::is_bounded() const {
     return Mask(finite.maximum(present.ones_like() - present));
 }
 
-bool Interval::is_bounded_impl() const { return is_bounded(); }
+bool Interval::is_bounded_impl() const { return is_bounded().all(); }
 
 } // namespace cora
 

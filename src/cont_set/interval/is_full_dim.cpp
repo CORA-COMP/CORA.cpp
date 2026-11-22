@@ -34,7 +34,7 @@ Mask Interval::is_full_dim(Tol tol_arg) const {
     return Mask(priv_all_entries(wide, *this).minimum(priv_present(*this)));
 }
 
-bool Interval::is_full_dim_impl(Tol tol) const { return is_full_dim(tol); }
+bool Interval::is_full_dim_impl(Tol tol) const { return is_full_dim(tol).all(); }
 
 } // namespace cora
 
