@@ -1449,6 +1449,26 @@ void bind_zonotope(py::module_ &m) {
         // the kind of its elements, the stacked matrices, the transpose and the corners
         .def_property_readonly("elem_rank", &Zonotope::elem_rank,
                                "1 for a set of vectors, 2 for a set of matrices")
+        .def_property_readonly(
+            "batch_shape",
+            [](const Zonotope &Z) {
+                const Shape shape = Z.batch_shape();
+                return std::vector<int64_t>(shape.begin(), shape.end());
+            },
+            "The shape of the batch of sets, () for one set")
+        .def_property_readonly(
+            "elem_shape",
+            [](const Zonotope &Z) {
+                const Shape shape = Z.elem_shape();
+                return std::vector<int64_t>(shape.begin(), shape.end());
+            },
+            "The shape of one element: (n) for vectors, (rows, cols) for matrices")
+        .def_property_readonly("nr_generators", &Zonotope::nr_generators,
+                               "The number of generators")
+        .def(
+            // the next step of the same case
+            "corners", [](const Zonotope &Z) { return values(Z.corners()); },
+            "The corners c + G s for every sign vector s in {-1, 1}^m, as rows (..., 2^m, n)")
         .def("stacked", &Zonotope::stacked,
              "The zonotope of the stacked matrices of a matrix zonotope, column by column")
         .def("transpose", &Zonotope::transpose, "The transposed matrices of a matrix zonotope")
@@ -2414,10 +2434,13 @@ void bind_polytope(py::module_ &m) {
             },
             "(A, b, Ae, be): the halfspaces, from the vertices if need be")
         .def("box", &Polytope::box, "The polytope of the tightest box")
+        .def("is_h_rep", &Polytope::is_h_rep, "Whether the halfspace representation is stored")
+        .def("is_v_rep", &Polytope::is_v_rep, "Whether the vertex representation is stored")
         .def(
             "center_by",
             [](const Polytope &P, const std::string &method) { return values(P.center(method)); },
             py::arg("method"),
+            // the next step of the same case
             "The Chebyshev center ('chebyshev') or the mean of the vertices ('avg')")
         .def(
             "compact",
@@ -3054,6 +3077,29 @@ void bind_poly_zonotope(py::module_ &m) {
             "The exponent matrix E (p, h)")
         .def_property_readonly(
             "id", [](const PolyZonotope &P) { return P.ids(); }, "The identifiers (p)")
+        // the C++ names of the same parts (the CORA names above stay as aliases)
+        .def_property_readonly(
+            "center", [](const PolyZonotope &P) { return matrix(P.center()); },
+            "The center (n), as c")
+        .def_property_readonly(
+            "generators", [](const PolyZonotope &P) { return matrix(P.generators()); },
+            "The dependent generators (h, n), one per row, as G")
+        .def_property_readonly(
+            "independent_generators",
+            [](const PolyZonotope &P) { return matrix(P.independent_generators()); },
+            "The independent generators (q, n), one per row, as GI")
+        // the next step of the same case
+        .def_property_readonly(
+            "exponents", [](const py::object &P) -> py::object { return P.attr("E"); },
+            "The exponent matrix (p, h), as E")
+        .def_property_readonly(
+            "ids", [](const PolyZonotope &P) { return P.ids(); }, "The identifiers (p), as id")
+        .def_property_readonly("num_dependent", &PolyZonotope::num_dependent,
+                               "The number h of dependent generators")
+        .def_property_readonly("num_factors", &PolyZonotope::num_factors, "The number p of factors")
+        .def("compact_gens", &PolyZonotope::compact_gens,
+             "The dependent generators of equal exponents added into one")
+        .def_static("origin", &PolyZonotope::origin, py::arg("n"), "The set {0} of n dimensions")
         // the conversion, the sums and the maps
         .def("zonotope", &PolyZonotope::zonotope, "A zonotope that holds the set")
         .def(
