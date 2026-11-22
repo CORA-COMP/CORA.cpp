@@ -8,7 +8,7 @@
 //
 // Syntax:   DaeLinearized lin = sys.linearize(x0, y0, U, u_trans, time_step);
 // Inputs:   x0, y0 - the center of the set and a guess of y there, U - the input set (optional),
-//           u_trans - the constant input (m, 1), time_step - the step size
+//           u_trans - the constant input (m), time_step - the step size
 // Outputs:  lin - the expansion point, the blocks that the error needs, the affine system
 // See also: consistent_initial_state, reach
 //

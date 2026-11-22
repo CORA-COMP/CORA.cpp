@@ -43,12 +43,12 @@ LinParamSys::LinParamSys(Zonotope A, std::optional<Tensor> B, std::optional<Tens
                    return "LinParamSys: B must be a matrix (n, m) with the " + std::to_string(n) +
                           " rows of A, got the shape " + shape_text(B_->shape());
                });
-    CORA_CHECK(!c || c->shape() == std::vector<int64_t>({n, 1}), Error::wrong_input_in_constructor,
+    CORA_CHECK(!c || c->shape() == std::vector<int64_t>({n}), Error::wrong_input_in_constructor,
                [&] {
-                   return "LinParamSys: c must be a column (n, 1) with the " + std::to_string(n) +
+                   return "LinParamSys: c must be a vector (n) with the " + std::to_string(n) +
                           " rows of A, got the shape " + shape_text(c->shape());
                });
-    c_ = c ? *c : A_.center().zeros_like({n, 1});
+    c_ = c ? *c : A_.center().zeros_like({n});
 }
 
 } // namespace cora

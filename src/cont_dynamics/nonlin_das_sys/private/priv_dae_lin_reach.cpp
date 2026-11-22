@@ -68,7 +68,7 @@ DaeStep priv_dae_lin_reach(const NonlinDASys &sys, const Zonotope &R, const Tens
     const int eta = alg.taylor_terms;
     const int64_t n = sys.dim(), p = sys.constraint_dim(), m = sys.input_dim();
     // the affine system and its step from R - x*
-    const DaeLinearized lin = sys.linearize(R.center(), y0.squeeze(-1), U, u_trans.squeeze(-1), dt);
+    const DaeLinearized lin = sys.linearize(R.center(), y0.squeeze(-1), U, u_trans, dt);
     AffineStep step = priv_affine_step(lin.sys, R - lin.x_star, lin.U, lin.u_const, dt, eta);
     const Zonotope &R_ti = step.time_interval;
     // the centered input set (CORA's params.U); without one, the input 0

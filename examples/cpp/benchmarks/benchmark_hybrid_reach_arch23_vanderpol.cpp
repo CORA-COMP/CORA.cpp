@@ -33,7 +33,6 @@
 namespace {
 
 using namespace cora;
-using cora::bench::column;
 using cora::bench::hyperplane;
 using cora::bench::matrix;
 using cora::bench::vec;
@@ -54,7 +53,7 @@ HybridAutomaton aux_automaton() {
     minus_c.reserve(c.size());
     for (const double v : c) minus_c.push_back(-v);
     const NonlinearSys sys(aux_dynamics, 5, 1);
-    const LinearReset id(Tensor::eye(5), std::nullopt, column({0, 0, 0, 0, 0}));
+    const LinearReset id(Tensor::eye(5), std::nullopt, Tensor::zeros({5}));
     Location loc1("loc1", Polytope(matrix(1, 5, c), vec({d})),
                   {Transition(hyperplane(c, d), id, 1)}, sys);
     Location loc2("loc2", Polytope(matrix(1, 5, minus_c), vec({-d})),

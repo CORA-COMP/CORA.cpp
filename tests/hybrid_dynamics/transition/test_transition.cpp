@@ -17,7 +17,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -42,13 +41,13 @@ void construction() {
               loc.input_dim() == 0 && close(loc.c(), {0, 0}, 0),
           "location: its parts, c = 0 by default");
     const Location with_c("fall", inv, {}, LinearSys(Tensor::zeros({2, 2}), Tensor::zeros({2, 1})),
-                          column({0.0, -9.81}));
+                          vec({0.0, -9.81}));
     check(with_c.input_dim() == 1 && close(with_c.c(), {0, -9.81}), "location: B and c");
     // a LinParamSys flow brings its own c
     const Zonotope set =
         Zonotope::matrix(Tensor({{0.0, 1.0}, {0.0, 0.0}}), Tensor::zeros({1, 2, 2}));
     const Location param("param", inv, {},
-                         LinParamSys(set, Tensor::zeros({2, 1}), column({0.0, -1.0})));
+                         LinParamSys(set, Tensor::zeros({2, 1}), vec({0.0, -1.0})));
     check(param.dim() == 2 && param.input_dim() == 1 && close(param.c(), {0, -1}) &&
               std::holds_alternative<LinParamSys>(param.flow()),
           "location: a LinParamSys flow and its c");
@@ -68,7 +67,7 @@ void checks_and_their_switch() {
     check(test::raises([&] { Location("a", Polytope(Tensor({{1.0}}), vec({0.0})), {}, flow); },
                        Error::wrong_input_in_constructor),
           "location: the invariant of another dimension");
-    check(test::raises([&] { Location("a", guard, {}, flow, column({1.0})); },
+    check(test::raises([&] { Location("a", guard, {}, flow, vec({1.0})); },
                        Error::wrong_input_in_constructor),
           "location: c of another dimension");
     check(test::raises(

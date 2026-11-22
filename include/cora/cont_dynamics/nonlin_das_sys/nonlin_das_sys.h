@@ -132,7 +132,7 @@ class NonlinDASys {
                             const Tensor &u_trans, double time_step) const;
 
     /// The reachable sets from problem.initial_set with the piecewise constant inputs
-    /// problem.u_trans (one column per step) and the input set problem.input_set.
+    /// problem.u_trans (one row per step) and the input set problem.input_set.
     DaeReachSet reach(const DaeReachProblem &problem, const alg::DaeReach &alg) const;
 
     /// The first step of reach from R0 (CORA's initReach); post continues from it.
@@ -188,15 +188,15 @@ struct DaeSubsystem {
 /// the sum of the remainders of its parts.
 struct DaeDecomposition {
     std::vector<DaeSubsystem> subsystems;
-    Tensor v_gen; ///< the constant voltages (nv, 1) the inputs of Uv read (CORA's options.Vgen)
+    Tensor v_gen; ///< the constant voltages (nv) the inputs of Uv read (CORA's options.Vgen)
 };
 
 /// What reach is asked (CORA's params of nonlinDASys).
 struct DaeReachProblem {
     std::optional<Zonotope> initial_set = std::nullopt; ///< the initial set X0 (R0), required
     std::optional<Zonotope> input_set = std::nullopt;   ///< the set U of the input; none: {0}
-    std::optional<Tensor> u_trans = std::nullopt;       ///< the constant inputs (m, K) or (m, 1)
-    std::optional<Tensor> y0_guess = std::nullopt; ///< the guess of y at the start (p, 1), required
+    std::optional<Tensor> u_trans = std::nullopt;  ///< the constant inputs: rows (K, m) or one (m)
+    std::optional<Tensor> y0_guess = std::nullopt; ///< the guess of y at the start (p), required
     double t_start = 0;                            ///< the start time (CORA's tStart)
     double t_final = 0;                            ///< the end time, above t_start (CORA's tFinal)
     std::optional<DaeDecomposition> decomposition = std::nullopt; ///< none: the whole system

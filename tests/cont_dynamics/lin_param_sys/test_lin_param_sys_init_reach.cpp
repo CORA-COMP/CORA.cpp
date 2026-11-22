@@ -17,7 +17,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -30,7 +29,7 @@ namespace {
 LinParamSys aux_sys() {
     const Zonotope A = Zonotope::matrix(Tensor({{-1.0, 2.0}, {-2.0, -1.0}}),
                                         Tensor({{0.1, 0.0}, {0.0, 0.1}}).expand_dims(0));
-    return LinParamSys(A, Tensor({{0.0}, {1.0}}), column({0.5, 0.0}));
+    return LinParamSys(A, Tensor({{0.0}, {1.0}}), vec({0.5, 0.0}));
 }
 
 /// The first step: reach's first sets, R_init inside the set over the step.

@@ -17,7 +17,6 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -28,7 +27,7 @@ namespace {
 
 /// The reset (x, v) -> (x, -0.5 v) + (1, 0) of the box [0, 1] x [2, 4]: [1, 2] x [-2, -1].
 void box_by_hand(const std::string &b) {
-    const LinearReset reset(Tensor({{1.0, 0.0}, {0.0, -0.5}}), std::nullopt, column({1.0, 0.0}));
+    const LinearReset reset(Tensor({{1.0, 0.0}, {0.0, -0.5}}), std::nullopt, vec({1.0, 0.0}));
     const Zonotope box = Interval(vec({0.0, 2.0}), vec({1.0, 4.0})).zonotope();
     const Interval I = reset.evaluate(box)->interval();
     check(close(I.inf(), {1, -2}) && close(I.sup(), {2, -1}), b + ": the image of the box");
@@ -38,13 +37,13 @@ void box_by_hand(const std::string &b) {
     const Interval J = input.evaluate(box, U)->interval();
     check(close(J.inf(), {-1, 2}) && close(J.sup(), {2, 4}), b + ": with the input set");
     check(close(reset.evaluate(box, U)->interval().sup(), {2, -1}), b + ": no B, no input");
-    // a bundle maps zonotope by zonotope; points column by column
+    // a bundle maps zonotope by zonotope; points row by row
     const ZonoBundle bundle({box, Zonotope(vec({0.5, 3.0}), Tensor({{1.0, 1.0}}))});
     const Set image = reset.evaluate(bundle);
     check(image.is<ZonoBundle>() && image.as<ZonoBundle>().parallel_sets() == 2,
           b + ": a bundle stays a bundle");
-    const Tensor x = reset.evaluate(Tensor({{0.0, 1.0}, {2.0, 4.0}}));
-    check(close(x, {1, 2, -1, -2}), b + ": two points");
+    const Tensor x = reset.evaluate(Tensor({{0.0, 2.0}, {1.0, 4.0}}));
+    check(close(x, {1, -1, 2, -2}), b + ": two points");
     check(reset.pre_state_dim() == 2 && reset.post_state_dim() == 2 && reset.input_dim() == 0 &&
               input.input_dim() == 1,
           b + ": the dimensions");
@@ -58,7 +57,7 @@ void checks_and_their_switch() {
     check(test::raises([] { LinearReset(Tensor::eye(2), Tensor::eye(3)); },
                        Error::wrong_input_in_constructor),
           "constructor: B with the rows of A");
-    check(test::raises([] { LinearReset(Tensor::eye(2), std::nullopt, column({1.0})); },
+    check(test::raises([] { LinearReset(Tensor::eye(2), std::nullopt, vec({1.0})); },
                        Error::wrong_input_in_constructor),
           "constructor: c with the rows of A");
     // evaluate: zonotopes and points of the pre-state dimension

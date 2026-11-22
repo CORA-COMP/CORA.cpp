@@ -39,7 +39,7 @@ HybridAutomaton aux_gearbox() {
     const Tensor A =
         matrix(5, 5, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0});
     const Tensor B = column({1 / m_s, 0, 0, 0, 0});
-    const Tensor c = column({F_s / m_s, -R_s * T_f / J_g2, 0, 0, 0});
+    const Tensor c = vec({F_s / m_s, -R_s * T_f / J_g2, 0, 0, 0});
     const double tanT = std::tan(Theta), sinT = std::sin(Theta), cosT = std::cos(Theta);
     const double denominator = m_s * cosT * cosT + m_g2 * sinT * sinT;
     // transition 1: the upper tooth flank

@@ -45,11 +45,11 @@ alg::DaeLinearization aux_options(double time_step) {
     return a;
 }
 
-/// A column of a vector made of the parts.
-Tensor aux_column(const std::vector<double> &gen, std::size_t loads) {
+/// An input vector made of the parts.
+Tensor aux_input(const std::vector<double> &gen, std::size_t loads) {
     std::vector<double> u = gen;
     u.resize(gen.size() + loads, 0.0);
-    return column(u);
+    return Tensor::from_data(u, {static_cast<int64_t>(u.size())});
 }
 
 /// The subsystems of a case: the selection matrices into the whole system and the voltages of its
@@ -61,7 +61,7 @@ DaeDecomposition aux_decomposition(const bench::PowerSystemData &data, const std
     vgen.reserve(c.bus.generator.size());
     for (const int g : c.bus.generator) vgen.push_back(c.VM[std::size_t(g - 1)]);
     return {{bench::subsystem_index(data, c, sub1), bench::subsystem_index(data, c, sub2)},
-            column(vgen)};
+            Tensor::from_data(vgen, {static_cast<int64_t>(vgen.size())})};
 }
 
 /// One run of the script: reach from `start`, keeping only the last time-point set; the steps and
@@ -101,15 +101,15 @@ bool aux_run(const std::string &name) {
     const DaeDecomposition faulty =
         aux_decomposition(data, "IEEE14_fault", "IEEE14_fault_sub1", "IEEE14_sub2");
     // the steady state of the normal operation, from the script's guesses
-    const Tensor u_normal = aux_column({2, 0.4, 0, 0, 0}, 14),
-                 u_fault = aux_column({0, 0.4, 0, 0, 0}, 14);
+    const Tensor u_normal = aux_input({2, 0.4, 0, 0, 0}, 14),
+                 u_fault = aux_input({0, 0.4, 0, 0, 0}, 14);
     std::vector<double> x_guess(15, 0.0), y_guess(27, 0.0);
     for (int i = 5; i < 10; ++i) x_guess[std::size_t(i)] = 377;
     for (int i = 10; i < 15; ++i) x_guess[std::size_t(i)] = 1;
     for (int i = 0; i < 14; ++i) y_guess[std::size_t(i)] = 1;
-    const auto [x0, y_steady] = model.steady_state(
-        Tensor::from_data(x_guess, {15}), Tensor::from_data(y_guess, {27}), u_normal.squeeze(-1));
-    const Tensor y0_guess = y_steady.expand_dims(-1); // the reach problem takes the column
+    const auto [x0, y_steady] = model.steady_state(Tensor::from_data(x_guess, {15}),
+                                                   Tensor::from_data(y_guess, {27}), u_normal);
+    const Tensor y0_guess = y_steady;
     // the box around it: 0.01 on the angles, 0.1 on the speeds, 0.001 on the voltages
     std::vector<double> radius(15, 0.01);
     for (int i = 5; i < 15; ++i) radius[std::size_t(i)] = i < 10 ? 0.1 : 0.001;

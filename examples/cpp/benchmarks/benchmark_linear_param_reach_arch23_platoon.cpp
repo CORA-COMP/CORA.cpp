@@ -152,7 +152,7 @@ bool aux_plan() {
     const Zonotope R0 = R.time_interval.back().reduce(400).enlarge(1.01).as<Zonotope>();
     a.zonotope_order = 800;
     const Zonotope U = aux_U();
-    const Tensor u = U.center().expand_dims(-1); // the input center as a column
+    const Tensor &u = U.center(); // the input center
     LinParamStep step = sys.init_reach(R0, U - U.center(), u, a);
     constexpr int kMaxSteps = 1000000; // the script has no bound
     for (int k = 0; k < kMaxSteps; ++k) {

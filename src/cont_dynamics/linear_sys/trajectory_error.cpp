@@ -6,14 +6,14 @@
 // which the error contributes to a halfspace with the normal n, are returned as boxes.
 //
 // Syntax:   TrajectoryError e = sys.trajectory_error({f1, f2}, u, R0, t_min, t_max, t_c, order, n);
-// Inputs:   f - flow at the start and the end of the interval (one value: both)
-//           u - constant input
+// Inputs:   f - flow (dim) at the start and the end of the interval (one value: both)
+//           u - constant input (dim)
 //           R0 - initial set
 //           t_min - start of the time interval
 //           t_max - end of the time interval
 //           t_c - expansion point
 //           order - number of terms of the series, at least 1
-//           n - normal vector (dim, 1)
+//           n - normal vector (dim)
 // Outputs:  e - error (zonotope), c_tilde and d_tilde (boxes)
 // See also: homogeneous_solution, expm_remainder
 //
@@ -78,13 +78,13 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
     });
     CORA_CHECK(f.size() == 1 || f.size() == 2, Error::wrong_value,
                [] { return std::string("trajectory_error: f holds one or two flow values"); });
-    const std::vector<int64_t> column{dim(), 1};
-    CORA_CHECK(R0.dim() == dim() && u.shape() == column && n.shape() == column &&
-                   f[0].shape() == column && f.back().shape() == column,
+    const std::vector<int64_t> vec{dim()};
+    CORA_CHECK(R0.dim() == dim() && u.shape() == vec && n.shape() == vec && f[0].shape() == vec &&
+                   f.back().shape() == vec,
                Error::dimension_mismatch, [&] {
                    return "trajectory_error: R0, f, u and n must match the " +
                           std::to_string(dim()) + " states, with u, n and f of shape (" +
-                          std::to_string(dim()) + ", 1)";
+                          std::to_string(dim()) + ")";
                });
     // the sets of the expansion: the centered set, the start point and the input as a point
     TaylorLinSys taylor(A());
@@ -92,7 +92,9 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
     const Tensor &c0 = R0.center();
     const Zonotope x0(c0, c0.zeros_like({0, dim()})), Y(c0.zeros_like(), R0.generators());
     const Zonotope origin(c0.zeros_like(), c0.zeros_like({0, dim()}));
-    const Zonotope u_set(u.squeeze(-1), u.zeros_like({0, dim()}));
+    const Zonotope u_set(u, u.zeros_like({0, dim()}));
+    // CORA's column of the normal inside
+    const Tensor n_col = n.expand_dims(-1);
     // powers of the expansion point, t_c^i
     std::vector<double> tc(order + 1, 1.0);
     for (int i = 1; i <= order; ++i) tc[i] = tc[i - 1] * t_c;
@@ -125,18 +127,18 @@ TrajectoryError LinearSys::trajectory_error(const std::vector<Tensor> &f, const 
     // the remainder of the series of e^{|A| t_max}
     const Interval E = expm_remainder(t_max, order);
     // the flow gap f1 - f2 enters scaled by the time interval
-    const Zonotope flow_gap((f[0] - f.back()).squeeze(-1), f[0].zeros_like({0, dim()}));
+    const Zonotope flow_gap((f[0] - f.back()), f[0].zeros_like({0, dim()}));
     const Zonotope gap = aux_scale(flow_gap, t.mid[0], t.rad[0]);
     const Zonotope remainder_u = u_set.linear_map(t_max * E);
     E_err = E_err.plus(R0.linear_map(E)).plus(remainder_u).plus(gap);
     u_tilde = u_tilde.plus(remainder_u).plus(gap);
 
     // c_tilde = A_tilde' n: the center maps, each generator keeps its sign, the rest adds up
-    const Tensor center = c_center.matrix_transpose().matmul(n);
-    Tensor radius = E.sup().matrix_transpose().matmul(n.abs());
-    for (const Tensor &G : c_generators) radius = radius + G.matrix_transpose().matmul(n).abs();
+    const Tensor center = c_center.matrix_transpose().matmul(n_col);
+    Tensor radius = E.sup().matrix_transpose().matmul(n_col.abs());
+    for (const Tensor &G : c_generators) radius = radius + G.matrix_transpose().matmul(n_col).abs();
     const Interval c_tilde{(center - radius).squeeze(-1), (center + radius).squeeze(-1)};
-    const Interval d_tilde = (u_tilde.linear_map(n.matrix_transpose()) * -1.0).interval();
+    const Interval d_tilde = (u_tilde.linear_map(n_col.matrix_transpose()) * -1.0).interval();
     return {E_err, c_tilde, d_tilde};
 }
 

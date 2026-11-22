@@ -16,7 +16,7 @@
 using namespace cora;
 using test::check;
 using test::close;
-using test::column;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -36,8 +36,7 @@ void construction() {
     check(plain.dim() == 2 && plain.input_dim() == 0 && !plain.B() && close(plain.c(), {0, 0}, 0),
           "constructor: without B and c");
     check(plain.type() == ParamType::constant, "constructor: constant parameters by default");
-    const LinParamSys full(aux_set(), Tensor({{0.0}, {1.0}}), column({0.5, 0.0}),
-                           ParamType::varying);
+    const LinParamSys full(aux_set(), Tensor({{0.0}, {1.0}}), vec({0.5, 0.0}), ParamType::varying);
     check(full.input_dim() == 1 && close(full.c(), {0.5, 0}) && full.type() == ParamType::varying,
           "constructor: B, c and varying parameters");
     check(close(full.A().center(), {-1, 2, -2, -1}) && full.A().nr_generators() == 1,
@@ -52,7 +51,7 @@ void checks_and_their_switch() {
     check(test::raises([] { LinParamSys(aux_set(), Tensor::zeros({3, 1})); },
                        Error::wrong_input_in_constructor),
           "constructor: B with the rows of A");
-    check(test::raises([] { LinParamSys(aux_set(), std::nullopt, column({1.0})); },
+    check(test::raises([] { LinParamSys(aux_set(), std::nullopt, vec({1.0})); },
                        Error::wrong_input_in_constructor),
           "constructor: c with the rows of A");
     ChecksScope off(false);

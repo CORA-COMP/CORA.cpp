@@ -3,7 +3,7 @@
 // Arrays: a torch tensor runs on the libtorch backend (when the package is built against torch,
 // CORACPP_PYTHON_TORCH), a numpy array on Eigen over the array's own memory, and results come
 // back as numpy arrays over the tensor's memory: no copy either way. A vector is 1-D in Python
-// and in C++ (#163); columns_of gives CORA's column where an entry still takes one. Sets: any
+// and in C++ (#163); matrix_of reads a matrix. Sets: any
 // cora set, a Python subclass of ContSet included, becomes a cora::Set and comes back as the
 // object of its class. Option structs: a problem and an algorithm are filled from keyword
 // arguments through their field lists; a keyword that fits none is refused with the closest name.
@@ -194,11 +194,14 @@ inline Tensor tensor_of(const py::handle &o, const char *what) {
               std::string("cora: ") + what + " must be a numpy array or a torch tensor");
 }
 
-/// CORA's columns for the C++ entries that still take them (the dynamics until #163 moves them,
-/// the oracle client): an array as it is, a 1-D array (n) or a number as the column (n, 1).
-inline Tensor columns_of(const py::handle &o, const char *what) {
+/// A matrix (rows, cols) from Python as it is: a torch tensor, a numpy array or a list of rows.
+/// A vector is no matrix (it is one point, as point_of reads it), so it is refused.
+inline Tensor matrix_of(const py::handle &o, const char *what) {
     const Tensor t = point_of(o, what);
-    return t.ndim() == 1 ? t.expand_dims(-1) : t;
+    if (t.ndim() < 2)
+        CORA_FAIL(Error::wrong_value,
+                  std::string("cora: ") + what + " must be a matrix (rows, cols), not a vector");
+    return t;
 }
 
 // Sets --------------------------------------------------------------------------------------------
@@ -272,15 +275,14 @@ inline py::object object_of(const Set &S) {
 
 // Option structs ----------------------------------------------------------------------------------
 
-/// A value of a field from Python; the tensors of the problems are CORA's columns until #163
-/// moves the dynamics.
+/// A value of a field from Python; the tensors of the problems are points: vectors (n) or rows.
 template <class T>
 T value_of(const py::handle &o, const char *name) {
     if constexpr (std::is_same_v<T, Tensor>) {
-        return columns_of(o, name);
+        return point_of(o, name);
     } else if constexpr (std::is_same_v<T, std::optional<Tensor>>) {
         if (o.is_none()) return std::nullopt;
-        return columns_of(o, name);
+        return point_of(o, name);
     } else if constexpr (std::is_same_v<T, std::optional<Set>>) {
         if (o.is_none()) return std::nullopt;
         return set_of(o);
@@ -313,13 +315,7 @@ S fill(S s, py::dict &kwargs) {
             (([&] {
                  if (!kwargs.contains(f.name)) return;
                  using T = std::decay_t<decltype(s.*(f.member))>;
-                 // the points of a simulation are rows; the other problems still take columns
-                 if constexpr (std::is_same_v<S, SimulationProblem> &&
-                               (std::is_same_v<T, Tensor> ||
-                                std::is_same_v<T, std::optional<Tensor>>))
-                     s.*(f.member) = point_of(kwargs[f.name], f.name);
-                 else
-                     s.*(f.member) = value_of<T>(kwargs[f.name], f.name);
+                 s.*(f.member) = value_of<T>(kwargs[f.name], f.name);
                  PyDict_DelItemString(kwargs.ptr(), f.name);
              }()),
              ...);

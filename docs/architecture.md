@@ -160,8 +160,10 @@ dimensions first:
   shape (...);
 - `simulate` (initial states and inputs as rows, the trajectories (..., N, n)), the constant
   input u of a reach step, the expansion points of `linearize` and the dynamics at points are in
-  this layout; the problem fields, the reset and `Location::c()` still take CORA's columns (n, 1);
-  they move in a later PR of #163;
+  this layout, and so are the problem fields (`u_trans`, `y0_guess`, `v_gen`), the constant c of a
+  `LinParamSys`, a `LinearReset` and a `Location`, and `LinearReset::evaluate`; no public API takes
+  columns (n, 1). A matrix argument (B, A, the matrix of a Kronecker product) is a matrix
+  (rows, cols), and a vector is refused for it (`matrix_of` in Python);
 - CORA's n x h columns appear only where data crosses to CORA: the private MATLAB-data loader and
   the oracle client. An algorithm that is written on CORA's columns (the linear programs of
   `ConZonotope`, the adaptive linear reach) transposes once, explicitly. There is no public

@@ -223,7 +223,8 @@ std::vector<Tensor> priv_calc_basis(const Location &loc, const std::vector<Set> 
                 const auto [a, d] = priv_hyperplane(guard);
                 c = aux_onto_hyperplane(guard, c) + a * d;
             }
-            const Tensor dir = priv_flow_at(loc, c, U_state, "calcBasis 'flow'");
+            const Tensor dir =
+                priv_flow_at(loc, c.squeeze(-1), U_state, "calcBasis 'flow'").expand_dims(-1);
             B.push_back(priv_basis_of(dir / std::sqrt(dir.square().sum().item())));
             break;
         }

@@ -37,11 +37,10 @@ LinearReset::LinearReset(Tensor A, std::optional<Tensor> B, std::optional<Tensor
             return "LinearReset: B must be a matrix (n+, m) with the " + std::to_string(rows) +
                    " rows of A, got the shape " + shape_text(B_->shape());
         });
-    CORA_CHECK(!c_ || c_->shape() == std::vector<int64_t>({rows, 1}),
+    CORA_CHECK(!c_ || c_->shape() == std::vector<int64_t>({rows}),
                Error::wrong_input_in_constructor, [&] {
-                   return "LinearReset: c must be a column (n+, 1) with the " +
-                          std::to_string(rows) + " rows of A, got the shape " +
-                          shape_text(c_->shape());
+                   return "LinearReset: c must be a vector (n+) with the " + std::to_string(rows) +
+                          " rows of A, got the shape " + shape_text(c_->shape());
                });
 }
 

@@ -3,7 +3,7 @@
 // The first step makes the algebraic variables consistent with the center of the initial set and
 // linearizes from there with the error 0; every later step starts from the set at the end of the
 // one before, its error bounds and the algebraic variables over it, and reduces both new sets to
-// zonotope_order (post). The constant input of step k is column k of u_trans.
+// zonotope_order (post). The constant input of step k is row k of u_trans.
 //
 // Syntax:   DaeReachSet R = sys.reach(problem, alg::DaeLinearization{.time_step = 0.005});
 //           DaeStep s = sys.init_reach(problem, alg);   s = sys.post(s, problem, u_trans, alg);
@@ -46,11 +46,10 @@ void aux_validate_decomposition(const NonlinDASys &sys, const DaeDecomposition &
     detail::Validation entry;
     const int64_t n = sys.dim(), p = sys.constraint_dim(), m = sys.input_dim();
     // the subsystems and the voltages
-    CORA_CHECK(!dec.subsystems.empty() && dec.v_gen.defined() && dec.v_gen.shape().size() == 2 &&
-                   dec.v_gen.shape()[1] == 1,
+    CORA_CHECK(!dec.subsystems.empty() && dec.v_gen.defined() && dec.v_gen.ndim() == 1,
                Error::wrong_value, [] {
                    return std::string("reach: a decomposition needs subsystems and the voltages "
-                                      "v_gen as a column (nv, 1)");
+                                      "v_gen as a vector (nv)");
                });
     const int64_t nv = dec.v_gen.shape()[0];
     std::vector<double> owned_x(std::size_t(n), 0.0), owned_y(std::size_t(p), 0.0);
@@ -105,33 +104,35 @@ void aux_validate_problem(const NonlinDASys &sys, const DaeReachProblem &problem
                           std::to_string(n) + "; batches are not supported";
                });
     // the guess of y, the input set and the constant inputs
-    CORA_CHECK(aux_has_shape(*problem.y0_guess, p, 1), Error::dimension_mismatch,
-               [&] { return "reach: y0_guess must be a column (" + std::to_string(p) + ", 1)"; });
+    CORA_CHECK(problem.y0_guess->shape() == std::vector<int64_t>({p}), Error::dimension_mismatch,
+               [&] { return "reach: y0_guess must be a vector (" + std::to_string(p) + ")"; });
     CORA_CHECK(!problem.input_set ||
                    (m > 0 && aux_has_shape(problem.input_set->center().expand_dims(-1), m, 1)),
                Error::dimension_mismatch, [&] {
                    return "reach: the input set must be one zonotope of the " + std::to_string(m) +
                           " inputs (the system has " + (m == 0 ? "none" : "them") + ")";
                });
-    CORA_CHECK(!problem.u_trans || (m > 0 && problem.u_trans->shape().size() == 2 &&
-                                    problem.u_trans->shape()[0] == m),
+    CORA_CHECK(!problem.u_trans ||
+                   (m > 0 && (problem.u_trans->ndim() == 1 || problem.u_trans->ndim() == 2) &&
+                    problem.u_trans->shape().back() == m),
                Error::dimension_mismatch, [&] {
-                   return "reach: u_trans must have the m = " + std::to_string(m) +
-                          " inputs as rows, one column per step";
+                   return "reach: u_trans must be one input (" + std::to_string(m) +
+                          ") or one row per step (K, " + std::to_string(m) + ")";
                });
     // the decomposition against the whole system
     if (problem.decomposition) aux_validate_decomposition(sys, *problem.decomposition);
 }
 
-/// The constant input of step k (0-based): column k of u_trans, its only column, or 0.
+/// The constant input of step k (0-based): row k of u_trans, the one input of a vector, or 0.
 Tensor aux_u_trans(const DaeReachProblem &problem, const Tensor &like, int64_t m, int k) {
-    if (!problem.u_trans) return like.zeros_like({m, 1});
-    const int64_t columns = problem.u_trans->shape()[1];
-    if (k >= columns && columns != 1)
-        CORA_FAIL(Error::dimension_mismatch, "reach: u_trans has " + std::to_string(columns) +
-                                                 " columns, one per step, and step " +
+    if (!problem.u_trans) return like.zeros_like({m});
+    if (problem.u_trans->ndim() == 1) return *problem.u_trans;
+    const int64_t steps = problem.u_trans->shape()[0];
+    if (k >= steps && steps != 1)
+        CORA_FAIL(Error::dimension_mismatch, "reach: u_trans has " + std::to_string(steps) +
+                                                 " rows, one per step, and step " +
                                                  std::to_string(k + 1) + " has none");
-    return columns == 1 ? *problem.u_trans : problem.u_trans->slice(-1, k, k + 1);
+    return problem.u_trans->slice(-2, steps == 1 ? 0 : k, steps == 1 ? 1 : k + 1).squeeze(-2);
 }
 
 } // namespace
@@ -150,12 +151,10 @@ DaeStep NonlinDASys::init_reach(const DaeReachProblem &problem, const alg::DaeRe
     }
     const alg::DaeLinearization &options = std::get<alg::DaeLinearization>(alg);
     const Zonotope &R0 = *problem.initial_set;
-    const Tensor u_trans = aux_u_trans(problem, R0.center().expand_dims(-1), m_, 0);
-    const Tensor u_star =
-        problem.input_set ? problem.input_set->center().expand_dims(-1) + u_trans : u_trans;
+    const Tensor u_trans = aux_u_trans(problem, R0.center(), m_, 0);
+    const Tensor u_star = problem.input_set ? problem.input_set->center() + u_trans : u_trans;
     const Tensor y0 =
-        consistent_initial_state(R0.center(), problem.y0_guess->squeeze(-1), u_star.squeeze(-1))
-            .expand_dims(-1);
+        consistent_initial_state(R0.center(), *problem.y0_guess, u_star).expand_dims(-1);
     return priv_dae_lin_reach(*this, R0, y0, R0.center().expand_dims(-1).zeros_like(),
                               y0.zeros_like(), problem.input_set, u_trans, problem.decomposition,
                               options);
@@ -208,8 +207,7 @@ DaeReachSet NonlinDASys::reach(const DaeReachProblem &problem, const alg::DaeRea
         R.time_point.push_back(step.time_point);
         R.algebraic.push_back(step.algebraic);
         if (k < steps)
-            step = post(step, problem,
-                        aux_u_trans(problem, step.time_point.center().expand_dims(-1), m_, k), alg);
+            step = post(step, problem, aux_u_trans(problem, step.time_point.center(), m_, k), alg);
     }
     return R;
 }

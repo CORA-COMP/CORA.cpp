@@ -34,7 +34,7 @@ int main() {
                 Tensor normal = rnd.vector(n);
                 normal = normal / normal.square().sum().sqrt().item();
                 const double d = rnd.uniform(-1, 1);
-                const Location loc("l", Polytope::inf(n), {}, LinearSys(A, B), c);
+                const Location loc("l", Polytope::inf(n), {}, LinearSys(A, B), c.squeeze(-1));
                 std::vector<Zonotope> sets;
                 std::vector<Set> reach;
                 for (int k = 0; k < 6; ++k) {

@@ -2,7 +2,7 @@
 //
 // A is a matrix zonotope (n, n): every matrix in it is a possible system matrix, constant over
 // time ("constParam", ParamType::constant) or changing arbitrarily ("varParam",
-// ParamType::varying). B (n, m) and c (n, 1) are optional matrices of numbers. reach runs CORA's
+// ParamType::varying). B (n, m) and c (n) are optional matrices of numbers. reach runs CORA's
 // initReach and post step by step; the mappings of one step size are computed once.
 //
 // Syntax:     LinParamSys sys(A, B);   LinParamSys sys(A, B, c, ParamType::varying);
@@ -56,7 +56,7 @@ struct LinParamStep {
 
 class LinParamSys {
   public:
-    /// x' = A x + B u + c for the matrices A (n, n) of the set; B (n, m) and c (n, 1) optional.
+    /// x' = A x + B u + c for the matrices A (n, n) of the set; B (n, m) and c (n) optional.
     explicit LinParamSys(Zonotope A, std::optional<Tensor> B = std::nullopt,
                          std::optional<Tensor> c = std::nullopt,
                          ParamType type = ParamType::constant);

@@ -50,7 +50,7 @@ struct GuardHits {
 /// input of the canonical system x' = A x + u; for a nonlinear flow the input set of f itself.
 Zonotope priv_state_input(const Location &loc, const std::optional<Zonotope> &U);
 
-/// The flow at the point x (n, 1) with the input at the center of U_state (priv_state_input):
+/// The flow at the point x (n) with the input at the center of U_state (priv_state_input):
 /// A x + center of B U + c, or f(x, u).
 /// A LinParamSys flow fails with Error::not_supported, naming `what`.
 Tensor priv_flow_at(const Location &loc, const Tensor &x, const Zonotope &U_state,

@@ -29,7 +29,8 @@ int main() {
             const Zonotope X = rnd.zonotope(n, m), U = rnd.zonotope(2, 2);
             const Tensor A = rnd.matrix(n, n), B = rnd.matrix(n, 2), c = rnd.vector(n);
             const lean::Zonotope point(c, c.zeros_like({n, 0}));
-            const LinearReset plain(A, std::nullopt, c), with_input(A, B, c);
+            const LinearReset plain(A, std::nullopt, c.squeeze(-1)),
+                with_input(A, B, c.squeeze(-1));
             test::oracle::check(plain.evaluate(X).as<Zonotope>(),
                                 lean::Zonotope(X).linear_map(A).plus(point));
             // transition.jump: the point is a zonotope with n zero generators, which CORA.cpp omits

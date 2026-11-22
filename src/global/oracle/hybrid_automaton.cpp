@@ -138,7 +138,9 @@ std::vector<HybridBranch> HybridAutomaton::reach(const cora::HybridAutomaton &HA
         const auto *flow = std::get_if<cora::LinearSys>(&loc.flow());
         const auto *invariant = std::get_if<cora::Polytope>(&loc.invariant());
         aux_require(flow && invariant, "lean reach: linear flows and polytope invariants");
-        HybridLocation out{{flow->A(), loc.B(), loc.c(), std::nullopt}, *invariant, {}, 0};
+        // c and w go to the oracle as CORA's columns
+        HybridLocation out{
+            {flow->A(), loc.B(), loc.c().expand_dims(-1), std::nullopt}, *invariant, {}, 0};
         if (!problem.input_set.empty())
             out.flow.U = problem.input_set[problem.input_set.size() == 1 ? 0 : i];
         out.time_step = alg.time_step[alg.time_step.size() == 1 ? 0 : i];
@@ -147,7 +149,8 @@ std::vector<HybridBranch> HybridAutomaton::reach(const cora::HybridAutomaton &HA
             const auto *guard = std::get_if<cora::Polytope>(&t.guard());
             aux_require(guard && !t.reset().B(),
                         "lean reach: polytope guards, resets x -> W x + w");
-            const cora::Tensor w = t.reset().c() ? *t.reset().c() : loc.c().zeros_like();
+            const cora::Tensor w =
+                (t.reset().c() ? *t.reset().c() : loc.c().zeros_like()).expand_dims(-1);
             out.transitions.push_back({*guard, t.reset().A(), w, t.target()});
         }
         locations.push_back(std::move(out));
