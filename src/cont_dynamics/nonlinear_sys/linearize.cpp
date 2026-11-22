@@ -43,9 +43,14 @@ Linearized NonlinearSys::linearize_impl(const Tensor &center, const std::optiona
     const Tensor &c = center;
     const std::optional<Tensor> u_star =
         m_ == 0 ? std::nullopt : std::optional<Tensor>(U ? U->center() : c.zeros_like({m_}));
-    const Tensor x_star = c + dynamics(c, u_star) * (0.5 * time_step);
-    const Tensor f0 = dynamics(x_star, u_star);
-    const Jacobians J = jacobian(x_star, u_star);
+    // the computation runs on CORA's columns; the point and the input are vectors outside
+    const Tensor c_col = c.expand_dims(-1);
+    const std::optional<Tensor> u_col =
+        u_star ? std::optional<Tensor>(u_star->expand_dims(-1)) : std::nullopt;
+    const Tensor x_col = c_col + dynamics_columns(c_col, u_col) * (0.5 * time_step);
+    const Tensor f0 = dynamics_columns(x_col, u_col).squeeze(-1);
+    const Tensor x_star = x_col.squeeze(-1);
+    const Jacobians J = jacobian_columns(x_col, u_col);
     // the input of the affine system: B (U - u*) around its center, and the constant part
     Zonotope BU = Zonotope(c.zeros_like({n_}), c.zeros_like({0, n_}));
     if (m_ > 0 && U) BU = (*U - *u_star).linear_map(J.B);

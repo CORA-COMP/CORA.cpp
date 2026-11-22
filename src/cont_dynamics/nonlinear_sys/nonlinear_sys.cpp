@@ -182,14 +182,18 @@ Tensor NonlinearSys::dynamics(const Tensor &x, const std::optional<Tensor> &u) c
 }
 
 // A and B are the first n and the last m columns of the Jacobian over z.
+Jacobians NonlinearSys::jacobian_columns(const Tensor &x, const std::optional<Tensor> &u) const {
+    const Tensor J = Expr::eval_matrix(jacobian_, 0, n_, n_ + m_, variables(x, u), x);
+    return {J.slice(-1, 0, n_), m_ == 0 ? x.zeros_like({n_, 0}) : J.slice(-1, n_, n_ + m_)};
+}
+
+// The point and the input are vectors; the Jacobians of the columns are those of the point.
 Jacobians NonlinearSys::jacobian(const Tensor &x, const std::optional<Tensor> &u) const {
     detail::Entry entry;
     if (entry.check()) validate_vectors("jacobian", x, u);
     // the point is one column of CORA's evaluation
-    const Tensor xc = x.expand_dims(-1);
-    const std::optional<Tensor> uc = u ? std::optional<Tensor>(u->expand_dims(-1)) : std::nullopt;
-    const Tensor J = Expr::eval_matrix(jacobian_, 0, n_, n_ + m_, variables(xc, uc), xc);
-    return {J.slice(-1, 0, n_), m_ == 0 ? x.zeros_like({n_, 0}) : J.slice(-1, n_, n_ + m_)};
+    return jacobian_columns(x.expand_dims(-1),
+                            u ? std::optional<Tensor>(u->expand_dims(-1)) : std::nullopt);
 }
 
 // One range per component, joined into a column.

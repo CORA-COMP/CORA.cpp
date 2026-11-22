@@ -193,6 +193,9 @@ class NonlinearSys {
     /// dynamics on the columns of CORA: x (n, N) and u (m, N) or (m, 1), giving (n, N).
     Tensor dynamics_columns(const Tensor &x, const std::optional<Tensor> &u) const;
 
+    /// The Jacobians at the column x (n, 1) and the input column u (m, 1), unchecked.
+    Jacobians jacobian_columns(const Tensor &x, const std::optional<Tensor> &u) const;
+
     /// The variables of the expressions: the entries of x, then those of u.
     std::vector<Tensor> variables(const Tensor &x, const std::optional<Tensor> &u) const;
     std::vector<Range> variables(const Range &x, const std::optional<Range> &u) const;
