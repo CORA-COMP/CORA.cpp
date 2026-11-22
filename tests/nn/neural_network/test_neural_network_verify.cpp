@@ -459,6 +459,40 @@ void switches(const std::string &b) {
     }
 }
 
+/// A deadline that passed stops a pass at its next layer (check_deadline), and verify on a wide
+/// network answers within a second of a short timeout.
+void deadlines(const std::string &b) {
+    Rng rng(9);
+    const NeuralNetwork nn = aux_network(rng, {3, 6, 5, 2}, Activation::relu);
+    ZonoNet net(nn, 2, 2, "bounds", "length");
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}}), r = Tensor({{0.2, 0.1, 0.3}});
+    const ZonoInput in = net.input_zonotope(x, r);
+    const auto stops = [](const auto &f) {
+        try {
+            f();
+        } catch (const Error &error) {
+            return is_deadline(error);
+        }
+        return false;
+    };
+    check(!stops([&] { net.forward(in.c, in.dr, in.G, Tensor(), nullptr, true); }),
+          b + ": no deadline, no stop");
+    net.deadline = now_seconds() - 1.0;
+    check(stops([&] { net.forward(in.c, in.dr, in.G, Tensor(), nullptr, true); }) &&
+              stops([&] { net.sensitivity(x); }) && stops([&] { net.evaluate(x); }),
+          b + ": a passed deadline stops forward, sensitivity and evaluate");
+    if (b == "lean") return; // the wide network is slow on lean
+    // a wide network whose box is not decided quickly: back within a second of the timeout
+    const NeuralNetwork wide = aux_network(rng, {40, 400, 400, 400, 400, 2}, Activation::relu);
+    const double least = aux_least_output(wide, rng, 40, -1.0, 1.0);
+    NnVerifyOptions o = vnncomp_options("test");
+    o.memory_budget = int64_t{1} << 28;
+    const double start = now_seconds();
+    const NnVerifyResult res = wide.verify(aux_below(40, 2, -1.0, 1.0, least - 3.0), 0.5, o);
+    check(res.status != "sat" && now_seconds() - start < 1.5,
+          b + ": verify answers within a second of its timeout");
+}
+
 /// Wrong inputs are refused; the checks off give the same verdict.
 void checks_and_their_switch() {
     Rng rng(2);
@@ -494,6 +528,7 @@ int main() {
         dual_bounds(b);
         fourier_motzkin(b);
         switches(b);
+        deadlines(b);
     });
     checks_and_their_switch();
     return test::finish("neuralNetwork verify");

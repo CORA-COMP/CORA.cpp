@@ -35,6 +35,9 @@ namespace cora {
 
 namespace {
 
+/// The message of check_deadline's error.
+constexpr const char *kDeadlineMessage = "verify: the deadline passed";
+
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
 /// The registries, filled with the built-ins on first use.
@@ -150,6 +153,7 @@ std::unique_ptr<Attack> make_attack(const std::string &name, const NnVerifyOptio
 std::unique_ptr<Bounding> priv_make_bounding(const std::string &name,
                                              const NnVerifyOptions &options) {
     const Registries &r = aux_registries();
+    // the bounding of the name, or an error
     const auto it = r.boundings.find(name);
     if (it == r.boundings.end())
         CORA_FAIL(Error::wrong_field_value,
@@ -168,6 +172,7 @@ const Heuristic &heuristic(const std::string &name) {
 
 const InputSplitHeuristic &priv_input_split_heuristic(const std::string &name) {
     const Registries &r = aux_registries();
+    // the input split heuristic of the name, or an error
     const auto it = r.input_splits.find(name);
     if (it == r.input_splits.end())
         CORA_FAIL(Error::wrong_field_value,
@@ -178,6 +183,16 @@ const InputSplitHeuristic &priv_input_split_heuristic(const std::string &name) {
 double now_seconds() {
     using clock = std::chrono::steady_clock;
     return std::chrono::duration<double>(clock::now().time_since_epoch()).count();
+}
+
+void check_deadline(double deadline) {
+    if (now_seconds() >= deadline) CORA_FAIL(Error::special_error, kDeadlineMessage);
+}
+
+bool is_deadline(const std::exception &error) {
+    // a cora::Error with check_deadline's message
+    const auto *e = dynamic_cast<const Error *>(&error);
+    return e && e->id() == Error::special_error && std::string(kDeadlineMessage) == e->what();
 }
 
 // The heuristics ----------------------------------------------------------------------------------

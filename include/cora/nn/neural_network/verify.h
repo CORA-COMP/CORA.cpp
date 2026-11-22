@@ -195,6 +195,9 @@ class NnProblem {
     Tensor poly_case;   ///< (P), float64
     int64_t memory_budget = 0;
     int64_t checks = 0; ///< confirm calls
+    /// The deadline of the step that runs (verify sets it): objective_gradient and the bounding's
+    /// passes check it once per layer (check_deadline).
+    double deadline = std::numeric_limits<double>::infinity();
 
   private:
     std::shared_ptr<const NeuralNetwork> net_, net32_;
@@ -273,6 +276,14 @@ const Heuristic &heuristic(const std::string &name);
 
 /// The seconds of a steady clock, the time base of the deadlines.
 double now_seconds();
+
+/// Raises Error::special_error ("verify: the deadline passed") once now_seconds() reaches the
+/// deadline: one clock read, cheap enough for once per layer of a pass. verify then answers with
+/// what it has, "unknown" if nothing is decided.
+void check_deadline(double deadline);
+
+/// Whether the error is check_deadline's.
+bool is_deadline(const std::exception &error);
 
 } // namespace cora
 

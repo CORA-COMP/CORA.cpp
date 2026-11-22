@@ -135,6 +135,12 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
   the children in front (`verify_enqueue_type`), at most what `memory_budget` holds; a batch starts
   only if the last one's time fits before the deadline, and the deadline is checked per chunk. Out
   of memory, the ReLU rows and then the batch shrink as in CORA.
+- **Deadline inside the steps:** every pass (the zonotope forward, the sensitivity, the reverse and
+  backward passes, the interval gradient, the attack's gradient) checks the deadline once per layer
+  (`check_deadline`), and candidate points are evaluated in chunks. A pass that reaches it raises
+  `special_error` (`is_deadline` tells it apart): the batch stays open, an attack step finds
+  nothing, and verify answers within about one layer's time of its budget (a cifar100 ResNet: 26.3 s for 26 s, was 39.6 s; tinyimagenet:
+  30.5 s for 30 s, was 114 s). alpha-CROWN returns its best bound instead, once it has one.
 - **Fourier-Motzkin:** `fourier_motzkin_order` `cora` takes a row's sum minus the term (fast);
   `coralean` sums the other terms in CORALean's order (`contractHalfspace`), bit for bit the oracle's
   on lean. `ConZonotope::approximate_bounds` has the same switch (`BoundsOptions::order`).

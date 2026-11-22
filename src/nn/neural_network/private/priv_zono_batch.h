@@ -92,6 +92,9 @@ class ZonoNet {
     std::string poly_method, approx_error_order;
     int64_t n0 = 0, q0 = 0, q = 0, num_outputs = 0, num_neurons = 0;
     bool interval_center = false;
+    /// The deadline of the passes: evaluate, sensitivity, forward and the reverse and backward
+    /// passes check it once per layer (check_deadline raises, is_deadline tells).
+    double deadline = std::numeric_limits<double>::infinity();
 
     /// Layer k's linear map on rows x (..., in) without the bias, |W|, W^T on rows (..., out),
     /// |W|^T.

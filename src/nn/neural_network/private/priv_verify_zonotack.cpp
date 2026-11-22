@@ -163,6 +163,7 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
     // the boxes' centers and radii of each output (mids[j + 1]; 0: the input)
     std::vector<Tensor> lo{x - r}, hi{x + r}, plo, phi, mids, rads;
     for (std::size_t k = 0; k < net.W.size(); ++k) {
+        check_deadline(net.deadline);
         mids.push_back((lo.back() + hi.back()) * 0.5);
         rads.push_back((hi.back() - lo.back()) * 0.5);
         const Tensor mid = net.linear(k, mids) + net.b[k];
@@ -186,6 +187,7 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
     // the gradients of each output's center and radius, summed over the layers that read it
     std::vector<Tensor> g_mids(net.W.size() + 1), g_rads(net.W.size() + 1);
     for (std::size_t k = net.W.size(); k-- > 0;) {
+        check_deadline(net.deadline);
         // the bounds' gradients of output k (the last one's: the seeds)
         if (k + 1 < net.W.size()) {
             const Tensor g_mid = g_mids[k + 1] * 0.5, g_rad = g_rads[k + 1] * 0.5;
@@ -577,6 +579,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
                                                   std::map<std::string, double> &stats,
                                                   AttackResult &found) {
     deadline_ = deadline;
+    net_->deadline = std::min(deadline, problem.deadline);
     found_ = &found;
     stats_ = &stats;
     if (slot_budget_ >= 0) stats["slot_budget"] = slot_budget_;
@@ -600,18 +603,22 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
         rs = rs.take(keep, 0);
         cases = cases.take(keep, 0);
         splits = splits.take(keep, 0);
-        // one batch; out of memory, fewer ReLU rows or a smaller batch
+        // one batch; out of memory, fewer ReLU rows or a smaller batch; the deadline part-way
         Step step;
         try {
             step = aux_iteration(xi, ri, ci, si);
         } catch (const std::exception &error) {
-            if (!priv_is_oom(error) || !aux_back_off())
-                std::rethrow_exception(std::current_exception());
-            xs = Tensor::concat({xi, xs}, 0);
-            rs = Tensor::concat({ri, rs}, 0);
-            cases = Tensor::concat({ci, cases}, 0);
-            splits = aux_cat_splits(si, splits, false);
-            continue;
+            if (is_deadline(error)) {
+                timed_out_ = true;
+            } else {
+                if (!priv_is_oom(error) || !aux_back_off())
+                    std::rethrow_exception(std::current_exception());
+                xs = Tensor::concat({xi, xs}, 0);
+                rs = Tensor::concat({ri, rs}, 0);
+                cases = Tensor::concat({ci, cases}, 0);
+                splits = aux_cat_splits(si, splits, false);
+                continue;
+            }
         }
         if (timed_out_) {
             xs = Tensor::concat({xi, xs}, 0); // the batch stays open: unknown
@@ -1268,6 +1275,7 @@ Children ConZonotopeBounding::aux_naive_children(const Tensor &xi, const Tensor 
 
 bool ConZonotopeBounding::zonotack_attack(NnProblem &problem, AttackResult &found) {
     prepare(problem);
+    net_->deadline = problem.deadline;
     found_ = &found;
     const Tensor x = (problem.outer_lo + problem.outer_hi) * 0.5;
     const Tensor r = (problem.outer_hi - problem.outer_lo) * 0.5;
