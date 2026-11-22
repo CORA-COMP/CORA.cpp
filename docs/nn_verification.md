@@ -134,6 +134,9 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
 - **backward_bound:** the check also bounds every row by CROWN's backward pass over the input box and
   takes the better of it and the zonotope's bound. Its cost is `(B, P K, n)` per layer, so it stays
   cheap on wide layers.
+- **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
+  (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
+  triangle relaxation.
 - **fsb:** the neuron split heuristic filters `look_ahead_candidates` neurons by zono-norm-gradient,
   then splits the one whose worse child has the best backward bound (FSB's look-ahead).
 - **dual-iter:** `conzonotope_bounding_method` `dual-iter` tightens only the box of the inputs, which
@@ -164,6 +167,7 @@ Beyond CORA (Phase 2), every step sound for any choice it optimizes:
 | --- | --- | --- | --- |
 | ReLU slope `alpha` in `[0, 1]` (`zonotope-alpha`) | yes, in the reals | `relu(x) - a x` lies in `[0, max(-a l, (1 - a) u)]` on `[l, u]` for `a` in `[0, 1]` (convex, 0 at 0); not formalized | every iteration's bound is a bound; a polytope excluded once stays excluded |
 | CROWN backward bound (`backward_bound`) | yes, in the reals | the chord above and a slope in `[0, 1]` through 0 below a crossing ReLU; the zonotope line's parallels for sigmoid/tanh; not formalized | float64, `verified_margin`, the clamped bounds of the zonotope |
+| chord rows `ReLU(x) <= u (x - l) / (u - l)` (`relu_constraint_faces` `triangle`) | yes (the true factors satisfy them on the clamped `[l, u]`) | the chord bounds a ReLU on `[l, u]` from above; the offsets add `dr_out + s dr_in`; not formalized | with the other ReLU rows, under `project_stale_factors` |
 | FSB look-ahead (`fsb`) | no claim (it only picks the neuron) | the children are as for any neuron split | the backward bound of both children, the other bounds held |
 
 The repairs are options, on by default. `tests/nn/neural_network/test_neural_network_verify_witness.cpp`

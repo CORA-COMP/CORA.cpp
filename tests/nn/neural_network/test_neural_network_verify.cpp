@@ -109,7 +109,7 @@ void verdicts(const std::string &b) {
                   b + " " + bounding + ": around the least output is sat, with its output");
         }
     }
-    // the look-ahead neuron splits (fsb) and the backward bound, on a ReLU network
+    // the look-ahead neuron splits (fsb), the backward bound and the chord rows, on a ReLU network
     {
         const NeuralNetwork nn = aux_network(rng, {3, 8, 8, 2}, Activation::relu);
         const double least = aux_least_output(nn, rng, 3, -0.2, 0.2);
@@ -118,8 +118,10 @@ void verdicts(const std::string &b) {
         o.neuron_split_heuristic = "fsb";
         o.num_neuron_splits = 1;
         o.backward_bound = true;
+        o.num_relu_constraints = std::numeric_limits<double>::infinity();
+        o.relu_constraint_faces = "triangle";
         NnVerifyResult r = nn.verify(aux_below(3, 2, -0.2, 0.2, least - 0.05), 20, o);
-        check(r.status == "unsat", b + ": fsb splits verify below the outputs");
+        check(r.status == "unsat", b + ": fsb splits and chord rows verify below the outputs");
         r = nn.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
         check(r.status == "sat", b + ": fsb splits falsify around the least output");
     }
