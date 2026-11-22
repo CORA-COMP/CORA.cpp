@@ -34,6 +34,7 @@ from cora.onnx_network import OnnxNetwork
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+
 class TorchRun(unittest.TestCase):
     def test_every_operator_agrees_with_onnxruntime(self):
         # each graph on 7 rows at once, against onnxruntime one sample at a time
@@ -63,9 +64,7 @@ class Lowering(unittest.TestCase):
             layers, why = net.dense_layers()
             self.assertIsNone(why)
             x = RNG.uniform(-1, 1, (9, net.num_inputs))
-            np.testing.assert_allclose(
-                dense_rows(layers, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12
-            )
+            np.testing.assert_allclose(dense_rows(layers, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12)
 
     def test_activations_and_weights(self):
         # the chain of the MLP: relu, sigmoid, tanh, identity; the Gemm's weights exactly
@@ -89,6 +88,19 @@ class Lowering(unittest.TestCase):
             nn, why = OnnxNetwork(m).to_neural_network()
             self.assertIsNone(nn)
             self.assertIn(reason, why)
+
+    def test_convolutions_lower_layer_by_layer(self):
+        # with a Conv the layers are conv2d and gather dicts, never a matrix of the convolution
+        net = OnnxNetwork(conv_net(), dtype=torch.float64)
+        lowered, why = net.layers()
+        self.assertIsNone(why)
+        kinds = [next(iter(layer)) if isinstance(layer, dict) else "dense" for layer in lowered[0]]
+        self.assertIn("conv2d", kinds)
+        self.assertIn("gather", kinds)
+        x = RNG.uniform(-1, 1, (9, net.num_inputs))
+        np.testing.assert_allclose(
+            structured_rows(*lowered, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12
+        )
 
     def test_size_cap(self):
         # max_elements refuses unit-vector batches beyond it
@@ -181,6 +193,43 @@ def mlp():
     return model(nodes, [("x", [1, 1, 1, 5])], [("y", [1, 3])], init)
 
 
+def structured_rows(layers, activations, x):
+    """The layers of OnnxNetwork.layers on the rows x, by torch (the reference)."""
+    import torch.nn.functional as F
+
+    h = torch.as_tensor(x, dtype=torch.float64)
+    acts = {"relu": torch.relu, "sigmoid": torch.sigmoid, "tanh": torch.tanh}
+    for layer, act in zip(layers, activations, strict=True):
+        if not isinstance(layer, dict):
+            h = h @ layer[0].T + layer[1]
+        elif "gather" in layer:
+            padded = torch.cat([h, torch.zeros(h.shape[0], 1, dtype=h.dtype)], 1)
+            index = [i if i >= 0 else h.shape[1] for i in layer["gather"]]
+            h = padded[:, index] + layer["bias"]
+        elif "conv_transpose2d" in layer:
+            c, hh, ww = layer["output"]
+            t, left, b, r = layer["pads"]
+            # the transpose of the convolution on the output: by autograd of the convolution
+            z0 = torch.zeros(h.shape[0], c, hh, ww, dtype=h.dtype, requires_grad=True)
+            z = F.conv2d(
+                F.pad(z0, (left, r, t, b)),
+                layer["conv_transpose2d"],
+                stride=layer["stride"],
+                dilation=layer["dilation"],
+                groups=layer["groups"],
+            )
+            (g,) = torch.autograd.grad(z, z0, h.reshape(z.shape))
+            h = g.reshape(h.shape[0], -1) + layer["bias"]
+        else:
+            c, hh, ww = layer["input"]
+            t, left, b, r = layer["pads"]
+            z = F.pad(h.reshape(-1, c, hh, ww), (left, r, t, b))
+            z = F.conv2d(z, layer["conv2d"], stride=layer["stride"], dilation=layer["dilation"], groups=layer["groups"])
+            h = z.reshape(h.shape[0], -1) + layer["bias"]
+        h = acts[act](h) if act in acts else h
+    return h.numpy()
+
+
 def conv_net():
     """Conv (asymmetric pads), BatchNormalization, Relu, AveragePool, Transpose, Reshape (to a
     constant shape of batch 1), Concat with a constant, Dropout, Identity, MatMul."""
@@ -229,5 +278,6 @@ def maxpool_net():
         helper.make_node("Flatten", ["p"], ["y"]),
     ]
     return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 9])], {})
+
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

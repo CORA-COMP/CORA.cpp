@@ -77,13 +77,21 @@ class ZonoNet {
     ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_approx_err,
             std::string poly_method, std::string approx_error_order);
 
-    std::vector<Tensor> W, b, abs_w; ///< W and abs_w transposed (n_in, n_out), for rows
-    std::vector<Tensor> WT, abs_wT;  ///< as stored (n_out, n_in), for the reverse pass
+    std::vector<Tensor> W, b, abs_w;        ///< W and abs_w transposed (n_in, n_out), for rows
+    std::vector<Tensor> WT, abs_wT;         ///< as stored (n_out, n_in), for the reverse pass
+    std::vector<NeuralNetwork::Layer> maps; ///< the layers (a convolution: W undefined above)
     std::vector<Activation> activations;
     std::vector<int64_t> slots, first_ids, widths;
     std::string poly_method, approx_error_order;
     int64_t n0 = 0, q0 = 0, q = 0, num_outputs = 0, num_neurons = 0;
     bool interval_center = false;
+
+    /// Layer k's linear map on rows x (..., in) without the bias, |W|, W^T on rows (..., out),
+    /// |W|^T.
+    Tensor map(std::size_t k, const Tensor &x) const;
+    Tensor map_abs(std::size_t k, const Tensor &x) const;
+    Tensor map_t(std::size_t k, const Tensor &y) const;
+    Tensor map_abs_t(std::size_t k, const Tensor &y) const;
 
     /// The network at the points (B, n0).
     Tensor evaluate(const Tensor &x) const;

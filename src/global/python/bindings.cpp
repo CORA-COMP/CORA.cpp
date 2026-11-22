@@ -4363,17 +4363,41 @@ py::dict closed_loop_dict(const ClosedLoopReach<S> &R) {
     return out;
 }
 
+/// A layer of the NeuralNetwork constructor: a pair (W, b), or a dict of a conv2d or a gather.
+NeuralNetwork::Layer aux_nn_layer(const py::object &layer) {
+    if (!py::isinstance<py::dict>(layer)) {
+        const auto [W, b] = layer.cast<std::pair<py::object, py::object>>();
+        return {tensor_of(W, "the weights"), point_of(b, "the bias")};
+    }
+    const py::dict d = layer.cast<py::dict>();
+    const Tensor bias = point_of(d["bias"], "the bias");
+    if (d.contains("gather"))
+        return NeuralNetwork::Layer::gather(d["gather"].cast<std::vector<int64_t>>(),
+                                            d["inputs"].cast<int64_t>(), bias);
+    // a convolution with ONNX's attributes
+    NeuralNetwork::Conv2d spec;
+    if (d.contains("stride")) spec.stride = d["stride"].cast<std::array<int64_t, 2>>();
+    if (d.contains("dilation")) spec.dilation = d["dilation"].cast<std::array<int64_t, 2>>();
+    if (d.contains("pads")) spec.pads = d["pads"].cast<std::array<int64_t, 4>>();
+    if (d.contains("groups")) spec.groups = d["groups"].cast<int64_t>();
+    if (d.contains("conv_transpose2d"))
+        return NeuralNetwork::Layer::conv_transpose2d(
+            tensor_of(d["conv_transpose2d"], "the kernel"), bias,
+            d["output"].cast<std::vector<int64_t>>(), spec);
+    return NeuralNetwork::Layer::conv2d(tensor_of(d["conv2d"], "the kernel"), bias,
+                                        d["input"].cast<std::vector<int64_t>>(), spec);
+}
+
 void bind_neural_network(py::module_ &m) {
     // the network: layers, activations, and the evaluation on points and sets
     py::class_<NeuralNetwork>(m, "NeuralNetwork",
                               "Affine layers with an activation after each (a ReLU after each "
                               "but the last by default).")
-        .def(py::init([](const std::vector<std::pair<py::object, py::object>> &layers,
+        .def(py::init([](const std::vector<py::object> &layers,
                          const std::optional<std::vector<std::string>> &activations) {
                  std::vector<NeuralNetwork::Layer> out;
                  out.reserve(layers.size());
-                 for (const auto &[W, b] : layers)
-                     out.push_back({tensor_of(W, "the weights"), point_of(b, "the bias")});
+                 for (const py::object &layer : layers) out.push_back(aux_nn_layer(layer));
                  if (!activations) return NeuralNetwork(out);
                  // one activation per layer
                  std::vector<Activation> acts;
@@ -4381,8 +4405,10 @@ void bind_neural_network(py::module_ &m) {
                  return NeuralNetwork(out, acts);
              }),
              py::arg("layers"), py::arg("activations") = py::none(),
-             "the layers as (W (out, in), b (out,)) pairs, first to last, and optionally the "
-             "activation of each: 'identity', 'relu', 'sigmoid' or 'tanh'")
+             "the layers as (W (out, in), b (out,)) pairs, first to last, or dicts {'conv2d': "
+             "kernel, 'bias', 'input': (C, H, W), 'stride', 'dilation', 'pads', 'groups'} and "
+             "{'gather': index, 'inputs', 'bias'}, and optionally the activation of each: "
+             "'identity', 'relu', 'sigmoid' or 'tanh'")
         .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
         .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")
         // the outputs at points, the enclosure of the outputs over a set, and the pairs
