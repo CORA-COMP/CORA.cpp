@@ -4,7 +4,8 @@ Small graphs of every operator the loader knows, built with onnx.helper: the bat
 equals onnxruntime's (float32) to float32 accuracy; a chain of affine maps and activations lowers
 to dense layers whose network equals the graph in float64, and a plain Gemm keeps its weights bit
 for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
-folded into the convolutions); a product of branches and a max pool do not and say why.
+folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
+padded max pool and a product of branches do not lower and say why.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -86,7 +87,7 @@ class Lowering(unittest.TestCase):
 
     def test_what_does_not_lower(self):
         # a product of two branches and a max pool, each with the reason
-        for m, reason in ((product_net(), "joins two branches"), (maxpool_net(), "MaxPool")):
+        for m, reason in ((product_net(), "joins two branches"), (maxpool_net(pads=1), "MaxPool")):
             nn, why = OnnxNetwork(m).to_neural_network()
             self.assertIsNone(nn)
             self.assertIn(reason, why)
@@ -121,6 +122,28 @@ class Lowering(unittest.TestCase):
         self.assertEqual(acts, ["relu", "relu", "identity"])
         self.assertTrue(all("conv2d" in la for la in layers[:2]))
         self.assertIn("conv2d", layers[1]["residuals"][0]["map"])
+
+    def test_max_pools(self):
+        # the pairwise max pools equal the graph (2 x 2; an odd 3 x 3 of stride 2, two channels)
+        for m in (maxpool_net(), maxpool_net(kernel=3, stride=2, channels=2)):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            nn, why = net.to_neural_network()
+            self.assertIsNone(why)
+            x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+            np.testing.assert_allclose(
+                np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
+            )
+        # verify on the pool's enclosure: a sampled violation is never unsat
+        net = OnnxNetwork(maxpool_net(kernel=3, stride=2, channels=2), dtype=torch.float64)
+        nn, _ = net.to_neural_network()
+        x = RNG.uniform(-1, 1, (4000, net.num_inputs))
+        y = net(torch.as_tensor(x)).numpy()
+        A = np.zeros((1, 1, net.num_outputs))
+        A[0, 0, 0], A[0, 0, 1] = 1.0, -1.0
+        low = float((y @ A[0, 0]).min())
+        lo, hi = -np.ones((1, net.num_inputs)), np.ones((1, net.num_inputs))
+        out = nn.verify(lo, hi, [0], A, np.array([[low + 0.01]]), 20, cora.vnncomp_options("x"))
+        self.assertEqual(out["status"], "sat")
 
     def test_size_cap(self):
         # max_elements refuses unit-vector batches beyond it
@@ -330,13 +353,19 @@ def resnet_block():
     return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 3])], init)
 
 
-def maxpool_net():
-    """A max pool (ONNX's default stride 1), which is no affine map."""
+def maxpool_net(kernel=2, stride=1, channels=1, pads=0):
+    """A max pool of a (channels, 5, 5) input (ONNX's default stride 1), as the output."""
+    out = (5 + 2 * pads - kernel) // stride + 1
+    attrs = {"kernel_shape": [kernel, kernel], "strides": [stride, stride]}
+    if pads:
+        attrs["pads"] = [pads] * 4
     nodes = [
-        helper.make_node("MaxPool", ["x"], ["p"], kernel_shape=[2, 2]),
+        helper.make_node("MaxPool", ["x"], ["p"], **attrs),
         helper.make_node("Flatten", ["p"], ["y"]),
     ]
-    return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 9])], {})
+    return model(
+        nodes, [("x", [1, channels, 5, 5])], [("y", [1, channels * out * out])], {}
+    )
 
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

@@ -7,7 +7,7 @@ maps and element-wise activations lowers to a cora.NeuralNetwork: each affine pa
 dense linear layer, its matrix the image of the unit vectors with the additive constants dropped
 (so a plain Gemm keeps its weights bit for bit), its bias the image of zero. A graph with
 convolutions or two branches joined by an Add (a ResNet) lowers layer by layer, a branch as a
-residual input of a layer.
+residual input of a layer; a MaxPool as max(a, b) = b + relu(a - b), pairwise over its window.
 
 Syntax:   net = OnnxNetwork.load("net.onnx", dtype=torch.float32, device="cpu")
           y = net(x)                       x (B, n) -> y (B, m), batched, autograd on
@@ -545,6 +545,54 @@ class OnnxNetwork:
             maps[-1] = _add_bias(maps[-1], expr.bias)
             return _Expr(expr.shape, [(src, maps)])
 
+        def max_pool(expr, shape, out_shape, attrs):
+            # max(a, b) = b + relu(a - b): the window's items in pairs, round by round; a round is
+            # the differences (a grouped convolution) and their ReLU, then a gather of the ReLUs
+            # plus the second item of each pair (and an odd last one) as a residual convolution
+            c, (kh, kw) = shape[1], attrs["kernel_shape"]
+            ho, wo = out_shape[2], out_shape[3]
+            pixels = ho * wo
+            src, items, first = materialize(single(expr)), kh * kw, True
+
+            def conv(rows, n_in, from_shape, spec):
+                # a grouped convolution: row j of `rows` (out, n_in) per channel
+                m = torch.as_tensor(rows, dtype=torch.float64)
+                k = m.reshape(-1, 1, kh, kw) if first else m.reshape(-1, n_in, 1, 1)
+                k = k.repeat(c, 1, 1, 1)
+                out = (1, c * m.shape[0], ho, wo)
+                return _conv(k, torch.zeros(k.shape[0]), from_shape, spec, out)
+
+            while items > 1 or first:
+                pairs, left = items // 2, items % 2
+                spec = (
+                    {**{a: attrs[a] for a in ("strides", "dilations") if a in attrs}, "group": c}
+                    if first
+                    else {"group": c}
+                )
+                from_shape = shape if first else (1, c * items, ho, wo)
+                if pairs == 0:  # a 1 x 1 window: the selection only
+                    return emit([conv(np.eye(1), items, from_shape, spec)], src)
+                diff, pick = np.zeros((pairs, items)), np.zeros((pairs + left, items))
+                for j in range(pairs):
+                    diff[j, 2 * j], diff[j, 2 * j + 1] = 1.0, -1.0
+                    pick[j, 2 * j + 1] = 1.0
+                if left:
+                    pick[pairs, items - 1] = 1.0
+                relu = emit([conv(diff, items, from_shape, spec)], src)
+                activations[relu] = "relu"
+                # the ReLU of pair j at item j of each channel, 0 at an odd last item
+                index = [
+                    ((ch * pairs + j) * pixels + p) if j < pairs else -1
+                    for ch in range(c)
+                    for j in range(pairs + left)
+                    for p in range(pixels)
+                ]
+                size = c * (pairs + left) * pixels
+                gather = _gather(index, c * pairs * pixels, torch.zeros(size))
+                src = emit([gather], relu, [(src, conv(pick, items, from_shape, spec))])
+                items, first = pairs + left, False
+            return src
+
         for op, ins, outs, attrs in net.nodes:
             linked = [name for name in ins if name in chain]
             if not linked:
@@ -666,6 +714,10 @@ class OnnxNetwork:
                 const = net._run(op, args, attrs)
                 index = (moved.reshape(-1).round().long() - 1).tolist()
                 chain[outs[0]] = then(_gather(index, size, const.reshape(-1)))
+            elif op == "MaxPool" and len(shape) == 4:
+                if attrs.get("ceil_mode", 0) or any(attrs.get("pads", [])):
+                    raise _NotAChain("MaxPool with pads or ceil_mode")
+                chain[outs[0]] = _Expr(out_shape, [(max_pool(expr, shape, out_shape, attrs), [])])
             else:
                 raise _NotAChain(f"{op} on the chain is not a layer yet")
         if self.output_name not in chain:
@@ -726,6 +778,7 @@ STRUCTURED_OPS = {
     "Conv",
     "ConvTranspose",
     "AveragePool",
+    "MaxPool",
 }  # lowered layer by layer, never to a matrix
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
@@ -746,7 +799,7 @@ def _conv(w, b, shape, attrs, out_shape):
     bias = torch.broadcast_to(b.reshape(-1, *([1] * k)), out_shape[1:]).reshape(size)
     return {
         "conv2d": w.reshape(w.shape[0], w.shape[1], w.shape[2], -1).contiguous(),
-        "bias": bias.contiguous(),
+        "bias": bias.to(torch.float64).contiguous(),
         "input": [shape[1], shape[2], shape[3] if k == 2 else 1],
         "stride": stride,
         "dilation": dilation,
