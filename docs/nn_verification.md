@@ -32,6 +32,31 @@ NeuralNetwork (dense layers) + NnProperty (boxes, unsafe polytopes A y <= b) + c
   `device`). The gradients are written out (CORA's backprop), not taken from autograd: library code
   does not ask which backend it runs on, and the same code then runs on lean and eigen too.
 
+## The front end (Python)
+
+```
+onnx file ──> cora.onnx_network.OnnxNetwork ──> dense_layers() ──> cora.NeuralNetwork (eigen or torch)
+vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y : A y <= b}
+                    └── cora.nn_verify.load ──> verify(instance, timeout, cora.vnncomp_options(...))
+                              └── NeuralNetwork.verify (C++), confirm = the scoring's check
+```
+
+- **Network.** `OnnxNetwork` runs the graph node by node on torch (one sample of the declared shape
+  at a time, the rows by `torch.func.vmap`), so ONNX shapes keep their meaning. A graph that is a
+  chain of affine parts and relu/sigmoid/tanh lowers to dense layers: the layer's matrix is the image
+  of the unit vectors with the additive constants dropped (a Gemm keeps its weights bit for bit), its
+  bias the image of zero. A residual connection, a max pool or a layer beyond `max_elements` does not
+  lower; such an instance is `unknown` with the reason, until conv layers come to the C++ side.
+- **Property.** VNN-LIB 1.0 is read with the semantics of the scoring's parser, 2.0 by the
+  reference parser (`vnnlib`), every assertion in DNF and the conjunction multiplied out; the cases'
+  polytopes are stacked and padded with the rows `0 <= +inf`.
+- **Check.** C++ calls the Python check back for every candidate: onnxruntime's output of the
+  float32 point, then VNN-COMP's checker of the written counterexample (`cora.counterexample`); only
+  a `CORRECT` one ends the search.
+- **Backend.** `load(..., backend="eigen")` gives the network numpy weights (Eigen), `"torch"` torch
+  tensors on `device`; `run_instance.py --backend` (or `CORACPP_VNNCOMP_BACKEND`) picks it, CUDA
+  takes torch.
+
 ## Strategies, chosen by name
 
 The option names follow CORA's `options.nn` (`nn/+nnHelper/validateNNoptions.m`,
@@ -126,6 +151,28 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
 The repairs are options, on by default. `tests/nn/neural_network/test_neural_network_verify_witness.cpp`
 runs 60 random 2-input ReLU networks whose properties have unsafe inputs: with the repairs no verdict
 is `unsat`; with `drop_dummy_duplicates` off some are.
+
+## Counterexamples and their check
+
+`cora.counterexample.check_counterexample` replays a counterexample as the VNN-COMP 2026 scoring does
+(`vnncomp2026_results/SCORING`, files `counterexamples.py`, `counterexamples_v2.py`, `vnnlib_v1.py`,
+`settings.py`). Its rules:
+
+- **Versions:** onnxruntime 1.26.0, onnx 1.21.0 and vnnlib 1.0.2 (`scripts/requirements-vnncomp.txt`),
+  on the CPU execution provider. The 1.0 session has 12 intra and 12 inter threads; the 2.0 session has
+  the default threads. Neither uses the CPU memory arena.
+- **Outputs:** the written outputs are ignored. The input is parsed as float64 and cast to the ONNX input
+  type (float32), and onnxruntime computes the output from it.
+- **Input check:** `CORRECT` when the input lies in the box with tolerance 0, and `CORRECT_UP_TO_TOLERANCE`
+  within `COUNTEREXAMPLE_ATOL = 1e-4`. The scoring credits the latter but does not let it establish `sat`.
+- **Output check:** tolerance 0 (`output_tol = 0.0`; `IGNORE_CE_Y`).
+- **Dtypes:** NumPy 2 compares a float32 scalar with a Python float in float32. In VNN-LIB 1.0 the input
+  bounds are therefore compared in float32 and the rows `A·y` in float64. In 2.0 every comparison is
+  in the variables' float32.
+- **When a sat counts:** our `sat` is written only for a `CORRECT` check.
+
+`write_counterexample` writes VNN-LIB 1.0 (`((X_i v) … (Y_j v))`) or 2.0 (a `X float32 [1, 5]` header
+per variable, one value per line). Every value is the shortest decimal that parses back to the same float32.
 
 ## The oracle
 
