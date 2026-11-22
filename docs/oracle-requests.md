@@ -480,6 +480,7 @@ oracle serves the op: the batched zonotope with a slot per error at a point cent
 | `nnLayer.evaluateZonotope` at `poly_method` `"bounds"` | none: CORA's secant line of sigmoid and tanh with the errors at the extreme points of `f(x) - m x` (CORALean has Singh's and the regression lines) | `layer`, `Z` | `Z` |
 | `neuralNetwork.verify` | `SetBasedNet.verify` (`NN/Operations/Verify.lean`) with a logged split sequence | `layers`, `X`, `A`, `b`, `splits` | the verdict and the queued sets |
 | `conZonotope.dualBound` | none: weak duality at given multipliers (the study's `dualCertificate`) | `C`, `d`, `G`, `lambda` | `h` |
+| `neuralNetwork.fradGradient` | none: the gradient of the output's F-radius in each generator's value through the lines' slopes, offsets and errors (CORA's `backpropZonotopeBatch` with `exact_backprop`); CORA.cpp checks it against the central difference | `layers`, `Z`, `dr`, `slots`, `splits` | the gradients |
 
 The ReLU rows and the iterated refinement are not formalized. The coverage rows `verify`,
 `computePGDAttack` and `computeFGSMAttack` are oracle debt until then.
