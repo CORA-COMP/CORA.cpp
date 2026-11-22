@@ -123,7 +123,7 @@ std::vector<Range> NonlinearSys::variables(const Range &x, const std::optional<R
 // Evaluation --------------------------------------------------------------------------------------
 
 // f at the columns of x: every variable is a column of N numbers, evaluated elementwise.
-Tensor NonlinearSys::dynamics(const Tensor &x, const std::optional<Tensor> &u) const {
+Tensor NonlinearSys::dynamics_columns(const Tensor &x, const std::optional<Tensor> &u) const {
     detail::Entry entry;
     CORA_CHECK(aux_is_matrix(x, n_, -1), Error::dimension_mismatch, [&] {
         return "dynamics: the points must be columns (" + std::to_string(n_) + ", N), got " +
@@ -135,6 +135,33 @@ Tensor NonlinearSys::dynamics(const Tensor &x, const std::optional<Tensor> &u) c
                           ", N) or one column (" + std::to_string(m_) + ", 1)";
                });
     return Tensor::concat(Expr::eval_tensor(f_, variables(x, u)), -1).matrix_transpose();
+}
+
+// The rows of the points run through the columns of CORA: a transpose is exact.
+Tensor NonlinearSys::dynamics(const Tensor &x, const std::optional<Tensor> &u) const {
+    detail::Entry entry;
+    CORA_CHECK(x.defined() && (x.shape().size() == 1 || x.shape().size() == 2) &&
+                   x.shape().back() == n_,
+               Error::dimension_mismatch, [&] {
+                   return "dynamics: the points must be rows (N, " + std::to_string(n_) +
+                          ") or a vector (" + std::to_string(n_) + "), got " +
+                          (x.defined() ? shape_text(x.shape()) : std::string("none"));
+               });
+    CORA_CHECK(m_ == 0 ||
+                   (u && u->defined() && (u->shape().size() == 1 || u->shape().size() == 2) &&
+                    u->shape().back() == m_),
+               Error::dimension_mismatch, [&] {
+                   return "dynamics: the inputs must be rows (N, " + std::to_string(m_) +
+                          ") or a vector (" + std::to_string(m_) + ")";
+               });
+    // a vector is one column, the rows of a matrix its columns
+    const bool vector = x.shape().size() == 1;
+    const auto columns = [](const Tensor &t) {
+        return t.shape().size() == 1 ? t.expand_dims(-1) : t.matrix_transpose();
+    };
+    const Tensor f =
+        dynamics_columns(columns(x), u ? std::optional<Tensor>(columns(*u)) : std::nullopt);
+    return vector ? f.squeeze(-1) : f.matrix_transpose();
 }
 
 // A and B are the first n and the last m columns of the Jacobian over z.

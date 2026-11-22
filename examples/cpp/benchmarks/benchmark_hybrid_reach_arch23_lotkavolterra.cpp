@@ -378,19 +378,19 @@ std::vector<Trajectory> aux_witnesses(int count) {
         out[std::size_t(i)].x1 = 1.3 - 0.012 + 0.024 * i / (count - 1);
         starts.insert(starts.end(), {out[std::size_t(i)].x1, 1.0, 0.0});
     }
-    // the start points as columns (3, count); the system has one input, which is 0
-    const Tensor x0 = Tensor::from_data(starts, {count, 3}).matrix_transpose();
-    const std::vector<Tensor> path = aux_flow().simulate(
-        {.initial_state = x0, .input = Tensor::zeros({1, 1}), .t_final = kFinal},
-        alg::RungeKutta4{.time_step = 1e-4, .max_step = 1e-4});
+    // the start points as rows (count, 3); the system has one input, which is 0
+    const Tensor x0 = Tensor::from_data(starts, {count, 3});
+    const std::vector<Tensor> path =
+        aux_flow().simulate({.initial_state = x0, .input = Tensor::zeros({1}), .t_final = kFinal},
+                            alg::RungeKutta4{.time_step = 1e-4, .max_step = 1e-4});
     const auto ring = [](double a, double b) {
         return (a - 1) * (a - 1) + (b - 1) * (b - 1) - kRadius * kRadius;
     };
     std::vector<double> prev(std::size_t(count), 0.0), dip(std::size_t(count), 0.0);
     for (std::size_t k = 0; k < path.size(); ++k) {
-        const std::vector<double> p = path[k].data(); // row-major (3, count)
+        const std::vector<double> p = path[k].data(); // row-major (count, 3)
         for (std::size_t i = 0; i < std::size_t(count); ++i) {
-            const double g = ring(p[i], p[std::size_t(count) + i]);
+            const double g = ring(p[3 * i], p[3 * i + 1]);
             Trajectory &t = out[i];
             const bool crossed = k > 0 && (g > 0) != (prev[i] > 0);
             // the deepest point of the stretch inside the ring ends when it is left
@@ -398,7 +398,7 @@ std::vector<Trajectory> aux_witnesses(int count) {
             if (crossed) ++t.crossings;
             dip[i] = crossed && g <= 0 ? g : std::min(dip[i], g);
             prev[i] = g;
-            if (k + 1 == path.size()) t.end = {p[i], p[std::size_t(count) + i]};
+            if (k + 1 == path.size()) t.end = {p[3 * i], p[3 * i + 1]};
         }
     }
     return out;

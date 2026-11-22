@@ -50,7 +50,7 @@ class Plot(unittest.TestCase):
         plt.close(self.fig)
 
     def test_a_simulation_is_one_line_per_trajectory_and_nothing_else(self):
-        x = self.sys.simulate(self.X0.rand_point(4, cora.Rng(1)).T, time_step=0.1, t_final=2.0)
+        x = self.sys.simulate(self.X0.rand_point(4, cora.Rng(1)), time_step=0.1, t_final=2.0)
         cora.plot(x, ax=self.ax)
         self.assertEqual(len(self.ax.lines), 4)
         self.assertEqual(self.ax.lines[0].get_marker(), "None")
@@ -201,7 +201,7 @@ class Dimensions(unittest.TestCase):
 
     def test_simulations_over_time_need_their_time_step(self):
         _, ax = plt.subplots()
-        x = self.sys.simulate(self.X0.rand_point(3, cora.Rng(1)).T, time_step=0.1, t_final=1.0)
+        x = self.sys.simulate(self.X0.rand_point(3, cora.Rng(1)), time_step=0.1, t_final=1.0)
         cora.plot_over_time(x, 0, ax=ax, time_step=0.1)
         self.assertEqual(len(ax.lines), 3)
         self.assertAlmostEqual(float(ax.lines[0].get_xdata()[-1]), 1.0, places=6)

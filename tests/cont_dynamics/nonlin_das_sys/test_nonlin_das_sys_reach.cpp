@@ -74,11 +74,11 @@ DaeDecomposition coupled_decomposition() {
         test::column({0.0})};
 }
 
-/// Whether the column j of the points (n, N) lies in the box of Z, up to `tol`.
+/// Whether the row j of the points (N, n) lies in the box of Z, up to `tol`.
 bool in_box(const Zonotope &Z, const Tensor &points, int64_t j, double tol) {
     const Interval I = Z.interval();
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
-    const std::vector<double> p = points.slice(-1, j, j + 1).data();
+    const std::vector<double> p = points.slice(0, j, j + 1).data();
     for (std::size_t i = 0; i < lo.size(); ++i)
         if (!(p[i] >= lo[i] - tol && p[i] <= hi[i] + tol)) return false; // a NaN is outside
     return true;
@@ -91,11 +91,12 @@ int escapes(const NonlinDASys &sys, const Zonotope &X0, const Tensor &y_guess, c
     int outside = 0;
     cora::Rng rng(3);
     for (const std::string type : {"standard", "extreme"}) {
-        const Tensor x0 = X0.rand_point(N, rng, type).matrix_transpose(); // columns (n, N)
+        const Tensor x0 = X0.rand_point(N, rng, type); // rows (N, n)
         for (int j = 0; j < N; ++j) {
             // sampled at half steps: the even samples are the time points
-            const DaeTrajectory T = sys.simulate(x0.slice(-1, j, j + 1), y_guess, u, t_final,
-                                                 alg::RungeKutta4{.time_step = R.time_step / 2});
+            const DaeTrajectory T =
+                sys.simulate(x0.slice(0, j, j + 1).squeeze(0), y_guess.squeeze(-1), u.squeeze(-1),
+                             t_final, alg::RungeKutta4{.time_step = R.time_step / 2});
             for (std::size_t k = 0; k < R.time_point.size(); ++k)
                 outside += !in_box(R.time_point[k], T.x, int64_t(2 * k), 1e-9);
             for (std::size_t k = 0; k < R.time_interval.size(); ++k)

@@ -10,7 +10,7 @@
 // CORA.cpp only: CORA plots through MATLAB figures; this draws into a Figure.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   19-November-2026
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cora/global/plot/plot.h"
@@ -120,24 +120,24 @@ std::vector<std::vector<Point3>> aux_faces(const ContSet &S, const std::vector<i
     return faces;
 }
 
-// The values of a point set (n, N) or of x[k] over time, as the plane points of dims.
+// The values of a point set (N, n) or of x[k] over time, as the plane points of dims.
 std::vector<Point> aux_points(const Tensor &points, const std::vector<int64_t> &dims) {
     const std::vector<int64_t> shape = points.shape();
     if (shape.size() != 2)
-        CORA_FAIL(Error::wrong_value, "plot: points must be a matrix (n, N) without batch "
+        CORA_FAIL(Error::wrong_value, "plot: points must be a matrix (N, n) without batch "
                                       "dimensions, but have " +
                                           std::to_string(shape.size()) + " dimensions");
-    if (dims[0] >= shape[0] || dims[1] >= shape[0] || dims[0] < 0 || dims[1] < 0)
+    if (dims[0] >= shape[1] || dims[1] >= shape[1] || dims[0] < 0 || dims[1] < 0)
         CORA_FAIL(Error::wrong_value, "plot: the dimensions " + std::to_string(dims[0]) + " and " +
                                           std::to_string(dims[1]) + " do not exist in " +
-                                          std::to_string(shape[0]) + "-dimensional points");
+                                          std::to_string(shape[1]) + "-dimensional points");
     const std::vector<double> v = points.data();
-    const int64_t N = shape[1];
+    const int64_t N = shape[0], n = shape[1];
     std::vector<Point> out;
     out.reserve(N);
     for (int64_t j = 0; j < N; ++j)
-        out.push_back({v[static_cast<std::size_t>(dims[0] * N + j)],
-                       v[static_cast<std::size_t>(dims[1] * N + j)]});
+        out.push_back({v[static_cast<std::size_t>(j * n + dims[0])],
+                       v[static_cast<std::size_t>(j * n + dims[1])]});
     return out;
 }
 
@@ -390,6 +390,7 @@ void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> 
     std::vector<std::vector<Point>> at; // the points at each time, as plane points
     at.reserve(x.size());
     for (const Tensor &xk : x) at.push_back(aux_points(xk, dims));
+    // a line per trajectory through its points over time
     const Color color = options.color.value_or(cora_color("CORA:simulations"));
     for (std::size_t j = 0; j < at[0].size(); ++j) {
         std::vector<Point> line;
@@ -407,9 +408,7 @@ void plot(Figure &fig, const Tensor &points, const std::vector<int64_t> &dims,
         CORA_FAIL(Error::wrong_value, "plot: points must be a matrix (N, n) without batch "
                                       "dimensions, but have " +
                                           std::to_string(points.ndim()) + " dimensions");
-    // the rows are the points; the trajectories' helper reads columns
-    fig.add_points(aux_points(points.matrix_transpose(), dims),
-                   options.color.value_or(cora_color("CORA:simulations")),
+    fig.add_points(aux_points(points, dims), options.color.value_or(cora_color("CORA:simulations")),
                    options.line_width.value_or(2.0), options.label);
 }
 

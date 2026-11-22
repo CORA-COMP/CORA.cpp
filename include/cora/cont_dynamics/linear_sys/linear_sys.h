@@ -167,8 +167,9 @@ class LinearSys {
     /// The output sets y = C x of every set of R (R itself without C), as CORA's outputSet.
     ReachSet output_set(const ReachSet &R) const;
 
-    /// Trajectories from the points initial_state (..., n, N) at the times k*time_step,
-    /// k = 0..steps: exact for a linear system, with the constant inputs (needs B) if given.
+    /// Trajectories from the points initial_state (..., N, n) at the times k*time_step,
+    /// k = 0..steps, each (..., N, n): exact for a linear system, with the constant inputs (needs
+    /// B) as rows (N, m) or one vector (m) if given.
     std::vector<Tensor> simulate(const SimulationProblem &problem,
                                  const alg::LinearSimulate &alg) const;
 

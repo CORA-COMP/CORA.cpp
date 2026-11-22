@@ -24,7 +24,7 @@ namespace {
 
 using Vars = std::vector<Expr>;
 
-Tensor col(double v) { return test::column({v}); }
+Tensor col(double v) { return test::vec({v}); }
 
 NonlinDASys linear_system() {
     return NonlinDASys(
@@ -38,17 +38,18 @@ void the_trajectory_is_the_closed_form(const std::string &b) {
     const DaeTrajectory T = linear_system().simulate(col(1.0), col(0.0), col(0.2), 1.0,
                                                      alg::RungeKutta4{.time_step = 0.1});
     const double exact = std::exp(-0.5) + 0.4 * (1 - std::exp(-0.5));
-    check(T.x.shape() == std::vector<int64_t>({1, 11}) && T.y.shape() == T.x.shape(),
+    check(T.x.shape() == std::vector<int64_t>({11, 1}) && T.y.shape() == T.x.shape(),
           b + ": 10 steps, 11 samples");
-    check(test::close(T.x.slice(-1, 10, 11), col(exact), 1e-6), b + ": x(1) is exact");
-    check(test::close(T.y.slice(-1, 10, 11), col(0.5 * exact + 0.2), 1e-6), b + ": y = x/2 + u");
+    check(test::close(T.x.slice(0, 10, 11).squeeze(0), col(exact), 1e-6), b + ": x(1) is exact");
+    check(test::close(T.y.slice(0, 10, 11).squeeze(0), col(0.5 * exact + 0.2), 1e-6),
+          b + ": y = x/2 + u");
 }
 
 /// Wrong arguments are described, and the checks can be switched off.
 void wrong_arguments_are_described(const std::string &b) {
     const NonlinDASys sys = linear_system();
     const alg::RungeKutta4 rk{.time_step = 0.1};
-    check(test::raises([&] { sys.simulate(test::column({1.0, 2.0}), col(0.0), col(0.2), 1.0, rk); },
+    check(test::raises([&] { sys.simulate(test::vec({1.0, 2.0}), col(0.0), col(0.2), 1.0, rk); },
                        Error::dimension_mismatch),
           b + ": a state of the wrong size");
     check(test::raises([&] { sys.simulate(col(1.0), col(0.0), col(0.2), 0.0, rk); },

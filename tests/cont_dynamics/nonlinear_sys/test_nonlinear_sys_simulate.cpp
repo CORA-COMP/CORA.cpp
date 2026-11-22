@@ -32,9 +32,9 @@ void follows_the_harmonic_oscillator(const std::string &b) {
     double worst = 0;
     for (std::size_t k = 0; k < x.size(); ++k) {
         const double t = 0.1 * double(k);
-        const std::vector<double> d = x[k].data(); // rows (x1; x2), columns the two start points
-        worst = std::max({worst, std::abs(d[0] - std::cos(t)), std::abs(d[2] + std::sin(t)),
-                          std::abs(d[1] - std::sin(t)), std::abs(d[3] - std::cos(t))});
+        const std::vector<double> d = x[k].data(); // rows the two start points, columns (x1, x2)
+        worst = std::max({worst, std::abs(d[0] - std::cos(t)), std::abs(d[1] + std::sin(t)),
+                          std::abs(d[2] - std::sin(t)), std::abs(d[3] - std::cos(t))});
     }
     check(worst < 1e-9, b + ": a trajectory differs from the solution by " + std::to_string(worst));
 }
@@ -47,7 +47,7 @@ void van_der_pol_stays_on_its_limit_cycle(const std::string &b) {
         },
         2);
     const std::vector<Tensor> x =
-        sys.simulate({.initial_state = Tensor({{1.4}, {2.3}}), .t_final = 20.0},
+        sys.simulate({.initial_state = Tensor({{1.4, 2.3}}), .t_final = 20.0},
                      alg::RungeKutta4{.time_step = 0.05});
     double amplitude = 0;
     for (std::size_t k = x.size() / 2; k < x.size(); ++k)
@@ -61,12 +61,12 @@ void wrong_arguments_are_described(const std::string &b) {
         [](const std::vector<Expr> &x) { return std::vector<Expr>{x[1], -x[0]}; }, 2);
     check(test::throws([&] {
               // a start point of the wrong dimension
-              sys.simulate({.initial_state = Tensor({1.0, 0.0, 1.0}), .t_final = 1.0},
+              sys.simulate({.initial_state = Tensor({{1.0, 0.0, 1.0}}), .t_final = 1.0},
                            alg::RungeKutta4{.time_step = 0.1});
           }),
           b + ": a start point of the wrong dimension");
     check(test::throws([&] {
-              sys.simulate({.initial_state = Tensor({1.0, 0.0}), .t_final = 1.0},
+              sys.simulate({.initial_state = Tensor({{1.0, 0.0}}), .t_final = 1.0},
                            alg::RungeKutta4{.time_step = 0.0});
           }),
           b + ": time step 0");
@@ -87,10 +87,11 @@ void checks_and_their_switch() {
             }
         },
         2);
-    const Tensor x0({{1.0}, {0.0}});
+    const Tensor x0({{1.0, 0.0}});
+    const Tensor u = test::vec({0.0});
     check(test::raises(
               [&] {
-                  sys.simulate({.initial_state = x0, .input = x0, .t_final = 1},
+                  sys.simulate({.initial_state = x0, .input = u, .t_final = 1},
                                alg::RungeKutta4{.time_step = 0.1});
               },
               Error::not_supported),

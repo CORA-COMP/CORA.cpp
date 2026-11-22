@@ -30,11 +30,11 @@ with cora.backend("torch"):
 
 
 def loss(A, measurements):
-    """How far the measurements (steps + 1, 2, N) leave the boxes around the time-point sets."""
+    """How far the measurements (steps + 1, N, 2) leave the boxes around the time-point sets."""
     R = cora.LinearSys(A).reach(X0, time_step=0.1, t_final=1.0, taylor_terms=6)
     boxes = [Z.interval() for Z in R.time_point]
-    inf = torch.stack([b.inf for b in boxes])[:, :, None]
-    sup = torch.stack([b.sup for b in boxes])[:, :, None]
+    inf = torch.stack([b.inf for b in boxes])[:, None, :]
+    sup = torch.stack([b.sup for b in boxes])[:, None, :]
     return (torch.relu(inf - measurements) + torch.relu(measurements - sup)).mean()
 
 
@@ -43,7 +43,7 @@ def loss(A, measurements):
 class LearnDynamics(unittest.TestCase):
     def setUp(self):
         self.enterContext(cora.backend("torch"))  # torch is never the default
-        self.measurements = cora.LinearSys(A_TRUE).simulate(X0.rand_point(10, cora.Rng(0)).T, time_step=0.1,
+        self.measurements = cora.LinearSys(A_TRUE).simulate(X0.rand_point(10, cora.Rng(0)), time_step=0.1,
                                                             t_final=1.0)
 
     def test_a_gradient_step_updates_the_matrix(self):

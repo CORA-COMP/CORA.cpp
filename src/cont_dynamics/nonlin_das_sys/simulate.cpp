@@ -4,17 +4,17 @@
 // solved by Newton's method from the value of the stage before, and the stage's slope is f there.
 // CORA calls ode15s on the mass-matrix form; this is the fixed-step method of NonlinearSys.
 //
-// Syntax:   DaeTrajectory T = sys.simulate(x0, y_guess, u, t_final, alg::RungeKutta4{.time_step =
-// h}); Inputs:   x0 - the start state (n, 1), y_guess - a guess of y at it (p, 1), u - the constant
-//           input (m, 1), t_final - the horizon, alg - the sampling and integration steps
-// Outputs:  T - x (n, K+1) and y (p, K+1) at the sample times k * time_step
+// Syntax:   DaeTrajectory T = sys.simulate(x0, y_guess, u, t_final, alg);
+// Inputs:   x0 - the start state (n), y_guess - a guess of y at it (p), u - the constant input
+//           (m), t_final - the horizon, alg - alg::RungeKutta4: the sampling and integration steps
+// Outputs:  T - x (K+1, n) and y (K+1, p) at the sample times k * time_step
 // See also: NonlinearSys::simulate, consistent_initial_state
 //
 // CORA: contDynamics/@nonlinDASys/simulate.m
 // CORA authors: Matthias Althoff, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   21-November-2026
 // Reviewed:      ---
 
 #include "cont_dynamics/linear_sys/private/priv.h"
@@ -44,11 +44,14 @@ Tensor aux_slope(const NonlinDASys &sys, const Tensor &x, Tensor &y, const Tenso
 DaeTrajectory NonlinDASys::simulate(const Tensor &x0, const Tensor &y_guess, const Tensor &u,
                                     double t_final, const alg::NonlinearSimulate &alg) const {
     detail::Entry entry;
-    if (entry.check()) validate_state("simulate", x0, y_guess);
-    CORA_CHECK(m_ == 0 || (u.defined() && u.shape() == std::vector<int64_t>({m_, 1})),
-               Error::dimension_mismatch, [&] {
-                   return "simulate: the input must be a column (" + std::to_string(m_) + ", 1)";
-               });
+    CORA_CHECK(m_ == 0 || (u.defined() && u.shape() == std::vector<int64_t>({m_})),
+               Error::dimension_mismatch,
+               [&] { return "simulate: the input must be a vector (" + std::to_string(m_) + ")"; });
+    // the recursion runs on the columns of CORA
+    const Tensor x0_col = x0.defined() ? x0.expand_dims(-1) : x0;
+    const Tensor y_col = y_guess.defined() ? y_guess.expand_dims(-1) : y_guess;
+    const Tensor u_col = u.defined() ? u.expand_dims(-1) : u;
+    if (entry.check()) validate_state("simulate", x0_col, y_col);
     CORA_CHECK(t_final > 0 && t_final < 1e300, Error::wrong_value, [&] {
         return "simulate: t_final must be positive and finite, got " + std::to_string(t_final);
     });
@@ -60,21 +63,21 @@ DaeTrajectory NonlinDASys::simulate(const Tensor &x0, const Tensor &y_guess, con
         static_cast<int>(std::ceil(options.time_step / options.max_step - numerics::kStepCount));
     const double h = options.time_step / substeps;
     // the classical method, y solved at the state of every stage
-    Tensor x = x0, y = consistent_initial_state(x0, y_guess, u);
+    Tensor x = x0_col, y = consistent_initial_state(x0_col, y_col, u_col);
     std::vector<Tensor> xs{x}, ys{y};
     for (int k = 0; k < steps; ++k) {
         for (int s = 0; s < substeps; ++s) {
-            const Tensor k1 = aux_slope(*this, x, y, u);
-            const Tensor k2 = aux_slope(*this, x + k1 * (h / 2), y, u);
-            const Tensor k3 = aux_slope(*this, x + k2 * (h / 2), y, u);
-            const Tensor k4 = aux_slope(*this, x + k3 * h, y, u);
+            const Tensor k1 = aux_slope(*this, x, y, u_col);
+            const Tensor k2 = aux_slope(*this, x + k1 * (h / 2), y, u_col);
+            const Tensor k3 = aux_slope(*this, x + k2 * (h / 2), y, u_col);
+            const Tensor k4 = aux_slope(*this, x + k3 * h, y, u_col);
             x = x + (k1 + k2 * 2.0 + k3 * 2.0 + k4) * (h / 6);
         }
-        y = consistent_initial_state(x, y, u);
+        y = consistent_initial_state(x, y, u_col);
         xs.push_back(x);
         ys.push_back(y);
     }
-    return {Tensor::concat(xs, -1), Tensor::concat(ys, -1)};
+    return {Tensor::concat(xs, -1).matrix_transpose(), Tensor::concat(ys, -1).matrix_transpose()};
 }
 
 } // namespace cora

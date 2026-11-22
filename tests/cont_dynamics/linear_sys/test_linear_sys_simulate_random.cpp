@@ -35,7 +35,7 @@ void simulate_random_is_seeded(const std::string &b) {
                                                       alg::Exact{.time_step = 0.1}, 8, second);
     const std::vector<Tensor> d = sys.simulate_random({.initial_set = X0, .t_final = 1.0},
                                                       alg::Exact{.time_step = 0.1}, 8, other);
-    check(a.size() == 11 && a[0].shape() == std::vector<int64_t>({3, 8}), b + ": shapes");
+    check(a.size() == 11 && a[0].shape() == std::vector<int64_t>({8, 3}), b + ": shapes");
     check(close(a.back(), c.back()), b + ": the same seed gives the same trajectories");
     check(!close(a.back(), d.back()), b + ": another seed gives others");
     // The initial set is an interval too: any ContSet works.

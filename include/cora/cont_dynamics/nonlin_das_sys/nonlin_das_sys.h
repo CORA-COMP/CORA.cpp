@@ -85,7 +85,7 @@ struct DaeReachSet {
     double time_step = 0;
 };
 
-/// What simulate returns: the states x (n, K+1) and the algebraic variables y (p, K+1) at the
+/// What simulate returns: the states x (K+1, n) and the algebraic variables y (K+1, p) at the
 /// sample times.
 struct DaeTrajectory {
     Tensor x, y;
@@ -143,7 +143,8 @@ class NonlinDASys {
                  const alg::DaeReach &alg) const;
 
     /// A trajectory from the state x0 with the algebraic variables made consistent from y_guess,
-    /// under the constant input u: the classical Runge-Kutta method, y solved at every stage.
+    /// under the constant input u (vectors n, p, m): the classical Runge-Kutta method, y solved at
+    /// every stage.
     DaeTrajectory simulate(const Tensor &x0, const Tensor &y_guess, const Tensor &u, double t_final,
                            const alg::NonlinearSimulate &alg) const;
 

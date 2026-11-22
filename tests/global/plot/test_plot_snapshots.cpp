@@ -72,7 +72,7 @@ FigureGrid group_figure() {
     grid.at(1, 0).ylabel = "$x_2$";
     const LinearSys sys(Tensor({{-0.1, 1}, {-1, -0.1}}));
     const std::vector<Tensor> x = sys.simulate(
-        {.initial_state = test::column({1, 0}), .t_final = 1.0}, alg::Exact{.time_step = 0.2});
+        {.initial_state = Tensor({{1.0, 0.0}}), .t_final = 1.0}, alg::Exact{.time_step = 0.2});
     plot_over_time(grid.at(1, 1), x, 0, 0.2, {.label = "simulation"});
     grid.at(1, 1).xlabel = "$t$";
     grid.at(1, 1).ylabel = "$x_1$";

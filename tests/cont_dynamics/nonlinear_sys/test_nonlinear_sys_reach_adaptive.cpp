@@ -50,13 +50,12 @@ NonlinearSys robertson() {
         3, 1);
 }
 
-/// Whether the point j of the columns (n, N) lies in the box of Z up to tol.
-bool in_box(const Zonotope &Z, const std::vector<double> &points, int64_t N, int64_t j,
-            double tol) {
+/// Whether the point j of the rows (N, n) lies in the box of Z up to tol.
+bool in_box(const Zonotope &Z, const std::vector<double> &points, int64_t j, double tol) {
     const Interval I = Z.interval();
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
     for (std::size_t i = 0; i < lo.size(); ++i) {
-        const double v = points[i * std::size_t(N) + std::size_t(j)];
+        const double v = points[std::size_t(j) * lo.size() + i];
         if (!(v >= lo[i] - tol && v <= hi[i] + tol)) return false;
     }
     return true;
@@ -95,7 +94,7 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
         const double t = double(s) * h;
         while (k + 1 < R.time_interval.size() && R.time[k + 1] < t) ++k;
         const std::vector<double> d = x[s].data();
-        for (int j = 0; j < 20; ++j) outside += !in_box(R.time_interval[k], d, 20, j, 1e-9);
+        for (int j = 0; j < 20; ++j) outside += !in_box(R.time_interval[k], d, j, 1e-9);
     }
     check(outside == 0,
           b + ": " + std::to_string(outside) + " points left the sets over the steps");
@@ -115,12 +114,12 @@ void a_weak_nonlinearity_and_a_linear_system(const std::string &b) {
     check_times(R, T, b);
     // the corners of the start set, simulated to the end
     cora::Rng rng(5);
-    const Tensor x0 = X0.rand_point(40, rng, "extreme").matrix_transpose(); // columns (n, N)
+    const Tensor x0 = X0.rand_point(40, rng, "extreme"); // rows (N, n)
     const std::vector<Tensor> x =
         sys.simulate({.initial_state = x0, .t_final = T}, alg::RungeKutta4{.time_step = 1e-3});
     int outside = 0;
     for (int j = 0; j < 40; ++j)
-        outside += !in_box(R.time_interval.back(), x.back().data(), 40, j, 1e-9);
+        outside += !in_box(R.time_interval.back(), x.back().data(), j, 1e-9);
     check(outside == 0, b + ": " + std::to_string(outside) + " end points outside");
     // a linear system has no error to tune to: as CORALean's, the loop runs out of fuel
     const NonlinearSys linear(
@@ -152,14 +151,14 @@ void robertson_sums_stay_conserved(const std::string &b) {
     check(hi - lo < 1e-3, b + ": the width of the sum is " + std::to_string(hi - lo));
     // the trajectory of (1, 0, 0), sampled every 1e-3
     const std::vector<Tensor> x = sys.simulate(
-        {.initial_state = Tensor({{1.0}, {0.0}, {0.0}}), .input = Tensor({{0.0}}), .t_final = 1.0},
+        {.initial_state = Tensor({{1.0, 0.0, 0.0}}), .input = test::vec({0.0}), .t_final = 1.0},
         alg::RungeKutta4{.time_step = 1e-5});
     int outside = 0;
     std::size_t k = 0;
     for (std::size_t s = 0; s < x.size(); s += 100) {
         const double t = double(s) * 1e-5;
         while (k + 1 < R.time_interval.size() && R.time[k + 1] < t) ++k;
-        outside += !in_box(R.time_interval[k], x[s].data(), 1, 0, 1e-8);
+        outside += !in_box(R.time_interval[k], x[s].data(), 0, 1e-8);
     }
     check(outside == 0,
           b + ": the trajectory leaves the sets " + std::to_string(outside) + " times");

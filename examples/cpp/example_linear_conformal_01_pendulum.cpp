@@ -57,23 +57,23 @@ int main() {
 
     // Conformal Prediction --------------------------------------------------------------------
 
-    // noisy trajectories from random points of X0: time k holds the 2 x count points
+    // noisy trajectories from random points of X0: time k holds the count x 2 points
     const auto measure = [&](int64_t count, uint64_t seed) {
         cora::Rng rng(seed);
-        std::vector<Tensor> trajectories = pendulum.simulate(
-            {.initial_state = X0.rand_point(count, rng).matrix_transpose(), .t_final = t_final},
-            alg::RungeKutta4{.time_step = time_step});
+        std::vector<Tensor> trajectories =
+            pendulum.simulate({.initial_state = X0.rand_point(count, rng), .t_final = t_final},
+                              alg::RungeKutta4{.time_step = time_step});
         std::vector<double> jitter(2 * count);
         for (Tensor &x : trajectories) {
             rng.normal(jitter.data(), jitter.size(), noise);
-            x = x + Tensor::from_data(jitter, {2, count});
+            x = x + Tensor::from_data(jitter, {count, 2});
         }
         return trajectories;
     };
 
     // how far every trajectory leaves the reachable boxes at its worst time
     const auto scores = [&](const std::vector<Tensor> &trajectories) {
-        const int64_t count = trajectories[0].shape()[1];
+        const int64_t count = trajectories[0].shape()[0];
         std::vector<double> worst(count, 0.0);
         for (std::size_t k = 0; k < trajectories.size(); ++k) {
             const Interval box = R.time_point[k].interval();
@@ -81,8 +81,7 @@ int main() {
                                       x = trajectories[k].data();
             for (int64_t i = 0; i < 2; ++i)
                 for (int64_t j = 0; j < count; ++j)
-                    worst[j] =
-                        std::max({worst[j], lo[i] - x[i * count + j], x[i * count + j] - hi[i]});
+                    worst[j] = std::max({worst[j], lo[i] - x[j * 2 + i], x[j * 2 + i] - hi[i]});
         }
         return worst;
     };

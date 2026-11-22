@@ -27,7 +27,7 @@ namespace {
 /// Two sampling rates give the same state, and an odd horizon ends with a shorter period.
 void the_output_is_held_over_a_period(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
-    const Tensor x0({{1.4, 1.5}, {2.3, 2.1}}), u({{0.0, 0.01}});
+    const Tensor x0({{1.4, 2.3}, {1.5, 2.1}}), u({{0.0}, {0.01}}); // rows
     const ClosedLoopTrajectories fine = sys.simulate(x0, u, 0.1, 0.025);
     const ClosedLoopTrajectories coarse = sys.simulate(x0, u, 0.1, 0.05);
     check(test::close(fine.x[4], coarse.x[2], 1e-6), b + ": the same state after 0.1");
@@ -40,9 +40,8 @@ void the_output_is_held_over_a_period(const std::string &b) {
 /// open loop with that output held is reproduced.
 void a_period_holds_the_output_of_its_start(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
-    const Tensor x0({{1.4}, {2.3}});
-    const Tensor held = Tensor::concat(
-        {network().evaluate(x0.matrix_transpose()).matrix_transpose(), Tensor({{0.0}})}, 0);
+    const Tensor x0({{1.4, 2.3}});
+    const Tensor held = Tensor::concat({network().evaluate(x0), Tensor({{0.0}})}, -1);
     const ClosedLoopTrajectories run = sys.simulate(x0, Tensor({{0.0}}), 0.05, 0.05);
     const Tensor open = plant()
                             .simulate({.initial_state = x0, .input = held, .t_final = 0.05},
@@ -62,14 +61,14 @@ int main() {
         a_period_holds_the_output_of_its_start(b);
     });
     const NeurNetContrSys sys(plant(), network(), 0.05);
-    check(test::raises([&] { sys.simulate(Tensor({{1.0}, {2.0}}), std::nullopt, 0.1, 0.05); },
+    check(test::raises([&] { sys.simulate(Tensor({{1.0, 2.0}}), std::nullopt, 0.1, 0.05); },
                        Error::dimension_mismatch),
           "simulate: the external input is missing");
-    check(test::raises([&] { sys.simulate(Tensor({{1.0}, {2.0}}), Tensor({{0.0}}), -1.0, 0.05); },
+    check(test::raises([&] { sys.simulate(Tensor({{1.0, 2.0}}), Tensor({{0.0}}), -1.0, 0.05); },
                        Error::wrong_value),
           "simulate: a negative horizon");
     ChecksScope off(false);
-    check(sys.simulate(Tensor({{1.0}, {2.0}}), Tensor({{0.0}}), 0.1, 0.05).x.size() == 3,
+    check(sys.simulate(Tensor({{1.0, 2.0}}), Tensor({{0.0}}), 0.1, 0.05).x.size() == 3,
           "simulate: with the checks off");
     return test::finish("neurNetContrSys simulate");
 }

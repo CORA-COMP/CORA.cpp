@@ -109,10 +109,10 @@ void simulations_stay_inside(const std::string &b) {
                                 alg::Exact{.time_step = dt / 2}, 40, rng);
         for (std::size_t k = 0; k < x.size(); ++k) {
             if (k % 2 == 0)
-                check(R.time_point[k / 2].contains(x[k].matrix_transpose()),
+                check(R.time_point[k / 2].contains(x[k]),
                       b + ": time point " + std::to_string(k / 2));
             else
-                check(R.time_interval[k / 2].contains(x[k].matrix_transpose()),
+                check(R.time_interval[k / 2].contains(x[k]),
                       b + ": inside step " + std::to_string(k / 2));
         }
     }

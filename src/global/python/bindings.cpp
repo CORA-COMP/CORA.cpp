@@ -3598,8 +3598,8 @@ void bind_linear_sys(py::module_ &m) {
                         return stack_time(sys.simulate(p, a));
                     });
             },
-            "simulate(initial_state=x0 (..., n, N), t_final=T, time_step=dt, input=u (m, N) or "
-            "(m,)): the states (steps + 1, ..., n, N), time first; exact")
+            "simulate(initial_state=x0 (..., N, n), t_final=T, time_step=dt, input=u (N, m) or "
+            "(m,)): the states (steps + 1, ..., N, n), time first; exact")
         // random trajectories from points of the sets
         .def(
             "simulate_random",
@@ -4061,7 +4061,7 @@ void bind_nonlinear_sys(py::module_ &m) {
                         return stack_time(sys.simulate(p, a));
                     });
             },
-            "simulate(initial_state=x0 (n, N), t_final=T, time_step=dt, max_step=1e-3): the "
+            "simulate(initial_state=x0 (N, n), t_final=T, time_step=dt, max_step=1e-3): the "
             "states (steps + 1, n, N), time first; classical Runge-Kutta")
         .def(
             "simulate_random",
@@ -4156,13 +4156,13 @@ void bind_nonlin_das_sys(py::module_ &m) {
                double t_final, double time_step, const py::object &u, double max_step) {
                 // the Runge-Kutta samples of x and y
                 const DaeTrajectory T = sys.simulate(
-                    columns_of(x0, "x0"), columns_of(y_guess, "y_guess"), columns_of(u, "u"),
-                    t_final, alg::RungeKutta4{.time_step = time_step, .max_step = max_step});
+                    point_of(x0, "x0"), point_of(y_guess, "y_guess"), point_of(u, "u"), t_final,
+                    alg::RungeKutta4{.time_step = time_step, .max_step = max_step});
                 return py::make_tuple(matrix(T.x), matrix(T.y));
             },
             py::arg("x0"), py::arg("y_guess"), py::arg("t_final"), py::arg("time_step"),
             py::arg("u") = py::list(), py::arg("max_step") = 1e-3,
-            "The states (n, steps + 1) and the algebraic variables (p, steps + 1) of a trajectory");
+            "The states (steps + 1, n) and the algebraic variables (steps + 1, p) of a trajectory");
 }
 
 /// The activation of a name: identity, relu, sigmoid or tanh.
@@ -4427,13 +4427,13 @@ void bind_neural_network(py::module_ &m) {
             [](const NeurNetContrSys &sys, const py::object &x0, double t_final, double time_step,
                const py::object &u) {
                 const ClosedLoopTrajectories T = sys.simulate(
-                    columns_of(x0, "x0"),
-                    u.is_none() ? std::nullopt : std::optional<Tensor>(columns_of(u, "u")), t_final,
+                    point_of(x0, "x0"),
+                    u.is_none() ? std::nullopt : std::optional<Tensor>(point_of(u, "u")), t_final,
                     time_step);
                 return py::make_tuple(py::cast(T.time), stack_time(T.x));
             },
             py::arg("x0"), py::arg("t_final"), py::arg("time_step"), py::arg("u") = py::none(),
-            "The times and the states (steps + 1, n, N) of the runs from the columns x0 (n, N)")
+            "The times and the states (steps + 1, N, n) of the runs from the rows x0 (N, n)")
         // CORA's verify: random runs, then the reach, and the verdict as a string
         .def(
             "verify",
@@ -4596,7 +4596,7 @@ py::dict layer_dict(const Figure::Layer &l) {
     return d;
 }
 
-/// The time points of a simulation (steps, n, N) from torch or numpy as one Tensor (n, N) each.
+/// The time points of a simulation (steps, N, n) from torch or numpy as one Tensor (N, n) each.
 std::vector<Tensor> trajectories(const py::object &o) {
     std::vector<Tensor> x;
 #ifdef CORACPP_PYTHON_TORCH
@@ -4649,7 +4649,7 @@ void bind_plot(py::module_ &m) {
             "plot",
             [](Figure &fig, const py::object &data, const std::vector<int64_t> &dims,
                const py::kwargs &kwargs) {
-                // Points (n, N) or the time points of a simulation (steps, n, N).
+                // Points (N, n) or the time points of a simulation (steps, N, n).
                 const py::ssize_t ndim = py::hasattr(data, "ndim")
                                              ? py::cast<py::ssize_t>(data.attr("ndim"))
                                              : py::cast<py::ssize_t>(data.attr("dim")());
@@ -4658,7 +4658,7 @@ void bind_plot(py::module_ &m) {
                 else
                     plot(fig, tensor_of(data, "the points"), dims, options_of(kwargs));
             },
-            py::arg("obj"), py::arg("dims"), "Draws points (N, n) or simulations (steps, n, N)")
+            py::arg("obj"), py::arg("dims"), "Draws points (N, n) or simulations (steps, N, n)")
         .def(
             "plot_over_time",
             [](Figure &fig, const ReachSet &R, int64_t dim, const py::kwargs &kwargs) {
@@ -4673,7 +4673,7 @@ void bind_plot(py::module_ &m) {
                 plot_over_time(fig, trajectories(x), dim, time_step, options_of(kwargs));
             },
             py::arg("obj"), py::arg("dim"), py::arg("time_step"),
-            "Draws a dimension of simulations (steps, n, N) over time")
+            "Draws a dimension of simulations (steps, N, n) over time")
         .def(
             "plot_rand_point",
             [](Figure &fig, const ContSet &S, const std::vector<int64_t> &dims, int64_t N, Rng &rng,

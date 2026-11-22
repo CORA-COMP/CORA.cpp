@@ -53,13 +53,12 @@ NonlinearSys quadratic() {
         3, 1);
 }
 
-/// Whether the point j of the columns (n, N) lies in the box of the set up to tol.
-bool in_box(const PolyZonotope &Z, const std::vector<double> &points, int64_t N, int64_t j,
-            double tol) {
+/// Whether the point j of the rows (N, n) lies in the box of the set up to tol.
+bool in_box(const PolyZonotope &Z, const std::vector<double> &points, int64_t j, double tol) {
     const Interval I = Z.interval();
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
     for (std::size_t i = 0; i < lo.size(); ++i) {
-        const double v = points[i * std::size_t(N) + std::size_t(j)];
+        const double v = points[std::size_t(j) * lo.size() + i];
         if (!(v >= lo[i] - tol && v <= hi[i] + tol)) return false;
     }
     return true;
@@ -92,7 +91,7 @@ int aux_outside(const NonlinearSys &sys, const Zonotope &X0, const std::optional
         const double t = double(s) * h;
         while (k + 1 < R.time_interval.size() && R.time[k + 1] < t) ++k;
         const std::vector<double> d = x[s].data();
-        for (int j = 0; j < 20; ++j) outside += !in_box(R.time_interval[k], d, 20, j, 1e-9);
+        for (int j = 0; j < 20; ++j) outside += !in_box(R.time_interval[k], d, j, 1e-9);
     }
     return outside;
 }

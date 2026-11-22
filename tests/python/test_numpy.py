@@ -48,20 +48,19 @@ class NumpyOnly(unittest.TestCase):
         sys = cora.LinearSys(np.array([[-0.5, 1.0], [-1.0, -0.5]]))
         X0 = cora.Zonotope(np.array([1.0, 0.0]), 0.1 * np.eye(2))
         R = sys.reach(X0, time_step=0.1, t_final=1.0)
-        x = sys.simulate(np.array([[1.0], [0.0]]), time_step=0.1, t_final=1.0)
+        x = sys.simulate(np.array([[1.0, 0.0]]), time_step=0.1, t_final=1.0)
         # the reachable sets contain the simulations
-        self.assertEqual(x.shape, (11, 2, 1))
+        self.assertEqual(x.shape, (11, 1, 2))
         for k, Z in enumerate(R.time_point):
             box = Z.interval()
-            self.assertTrue(np.all(box.inf <= x[k, :, 0] + 1e-9))
-            self.assertTrue(np.all(x[k, :, 0] <= box.sup + 1e-9))
+            self.assertTrue(np.all(box.inf <= x[k, 0] + 1e-9))
+            self.assertTrue(np.all(x[k, 0] <= box.sup + 1e-9))
 
     def test_nonlinear_reach(self):
         sys = cora.NonlinearSys(lambda x: [x[1], -x[0]], 2)
         X0 = cora.Zonotope(np.array([1.0, 0.0]), 0.05 * np.eye(2))
         self.assertEqual(len(sys.reach(X0, time_step=0.05, t_final=0.5).time_interval), 10)
-        self.assertEqual(sys.simulate(np.array([[1.0], [0.0]]), time_step=0.05, t_final=0.5).shape, (11, 2,
-                                                                                                     1))
+        self.assertEqual(sys.simulate(np.array([[1.0, 0.0]]), time_step=0.05, t_final=0.5).shape, (11, 1, 2))
 
     def test_neural_network_and_specification(self):
         W, b = np.array([[1.0, -1.0], [0.5, 2.0]]), np.array([0.1, -0.2])

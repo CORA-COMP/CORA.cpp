@@ -96,17 +96,17 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
             const ReachSet R =
                 sys.reach({.initial_set = in.X0, .input_set = in.U, .t_final = in.t_final()},
                           test::lin::algorithm(algorithm, s.time_step, 6, zonotope_order));
-            Tensor x = in.X0.rand_point(N, rng, "extreme").matrix_transpose(); // columns (n, N)
+            Tensor x = in.X0.rand_point(N, rng, "extreme"); // rows (N, n)
             double worst = -1e9;
             for (int k = 0; k < s.steps; ++k) {
-                const Tensor u = in.U.rand_point(N, rng, "extreme").matrix_transpose();
+                const Tensor u = in.U.rand_point(N, rng, "extreme");
                 for (int r = 1; r <= refine; ++r) {
                     // a point inside the step: the same input from the step's start
                     const double t = s.time_step * r / refine;
                     const Tensor xr = sys.simulate({.initial_state = x, .input = u, .t_final = t},
                                                    alg::Exact{.time_step = t})
                                           .back();
-                    const Eigen::MatrixXd P = host_of(xr);
+                    const Eigen::MatrixXd P = host_of(xr).transpose();
                     for (int i = 0; i < dirs.cols(); ++i)
                         for (int j = 0; j < N; ++j)
                             worst = std::max(worst, dirs.col(i).dot(P.col(j)) -
@@ -115,7 +115,7 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
                 x = sys.simulate({.initial_state = x, .input = u, .t_final = s.time_step},
                                  alg::Exact{.time_step = s.time_step})
                         .back();
-                const Eigen::MatrixXd P = host_of(x);
+                const Eigen::MatrixXd P = host_of(x).transpose();
                 for (int i = 0; i < dirs.cols(); ++i)
                     for (int j = 0; j < N; ++j)
                         worst = std::max(worst, dirs.col(i).dot(P.col(j)) -

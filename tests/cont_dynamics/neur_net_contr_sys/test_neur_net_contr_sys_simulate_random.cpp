@@ -29,12 +29,12 @@ void the_runs_start_in_the_initial_set(const std::string &b) {
     const NeurNetContrSys sys(plant(), network(), 0.05);
     cora::Rng rng(1);
     const ClosedLoopTrajectories runs = sys.simulate_random(X0(), U(), 0.1, 0.05, 10, 0.5, rng);
-    check(runs.x[0].shape() == std::vector<int64_t>({2, 10}), b + ": ten runs in two dimensions");
+    check(runs.x[0].shape() == std::vector<int64_t>({10, 2}), b + ": ten runs in two dimensions");
     // every start in the box of X0, the corners on its boundary
     const std::vector<double> start = runs.x[0].data();
     int inside = 0, corners = 0;
     for (int j = 0; j < 10; ++j) {
-        const double x1 = start[j], x2 = start[10 + j];
+        const double x1 = start[2 * j], x2 = start[2 * j + 1];
         inside += std::abs(x1 - 1.4) <= 0.05 + 1e-12 && std::abs(x2 - 2.3) <= 0.04 + 1e-12;
         corners += std::abs(std::abs(x1 - 1.4) - 0.05) < 1e-12;
     }

@@ -43,13 +43,12 @@ Zonotope van_der_pol_start() {
     return Zonotope(Tensor({1.4, 2.3}), Tensor({{0.05, 0.0}, {0.0, 0.05}}));
 }
 
-/// Whether the column j of the points (n, N) lies in the box of Z, up to `tol`.
-bool in_box(const Zonotope &Z, const std::vector<double> &points, int64_t N, int64_t j,
-            double tol) {
+/// Whether the row j of the points (N, n) lies in the box of Z, up to `tol`.
+bool in_box(const Zonotope &Z, const std::vector<double> &points, int64_t j, double tol) {
     const Interval I = Z.interval();
     const std::vector<double> lo = I.inf().data(), hi = I.sup().data();
     for (std::size_t i = 0; i < lo.size(); ++i) {
-        const double v = points[i * N + j];
+        const double v = points[std::size_t(j) * lo.size() + i];
         if (!(v >= lo[i] - tol && v <= hi[i] + tol)) return false; // a NaN is outside
     }
     return true;
@@ -87,7 +86,7 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
 
     cora::Rng rng(1);
     for (const std::string type : {"standard", "extreme"}) {
-        const Tensor x0 = X0.rand_point(30, rng, type).matrix_transpose(); // columns (n, N)
+        const Tensor x0 = X0.rand_point(30, rng, type); // rows (N, n)
         const std::vector<Tensor> x = sys.simulate({.initial_state = x0, .t_final = 2.0},
                                                    alg::RungeKutta4{.time_step = dt / 5});
         int outside = 0;
@@ -95,9 +94,9 @@ void simulations_stay_in_the_enclosures(const std::string &b) {
             const std::size_t step = std::min(k / 5, R.time_interval.size() - 1);
             const std::vector<double> d = x[k].data();
             for (int j = 0; j < 30; ++j) {
-                outside += !in_box(R.time_interval[step], d, 30, j, 1e-9);
+                outside += !in_box(R.time_interval[step], d, j, 1e-9);
                 // every sampled trajectory stays in its enclosures
-                if (k % 5 == 0) outside += !in_box(R.time_point[k / 5], d, 30, j, 1e-9);
+                if (k % 5 == 0) outside += !in_box(R.time_point[k / 5], d, j, 1e-9);
             }
         }
         check(outside == 0,
@@ -155,7 +154,7 @@ void forced_simulations_stay_in_the_enclosures(const std::string &b) {
         // every sampled state lies in the box of its time-point set
         for (std::size_t k = 0; k < x.size(); ++k) {
             const std::vector<double> d = x[k].data();
-            for (int j = 0; j < 20; ++j) outside += !in_box(R.time_point[k], d, 20, j, 1e-9);
+            for (int j = 0; j < 20; ++j) outside += !in_box(R.time_point[k], d, j, 1e-9);
         }
         check(outside == 0, b + ": tensor order " + std::to_string(order) + ": " +
                                 std::to_string(outside) + " points outside");

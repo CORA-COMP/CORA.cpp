@@ -35,10 +35,10 @@ std::vector<Tensor> LinearSys::simulate_random(const RandomSimulationProblem &pr
     CORA_CHECK(points >= 1, Error::wrong_value, [&] {
         return "simulate_random: needs at least one point, got " + std::to_string(points);
     });
-    // the points as the columns (n, N) of the simulation
-    const Tensor x0 = (*problem.initial_set)->rand_point(points, rng).matrix_transpose();
+    // the points as the rows (N, n) of the simulation
+    const Tensor x0 = (*problem.initial_set)->rand_point(points, rng);
     std::optional<Tensor> u;
-    if (problem.input_set) u = (*problem.input_set)->rand_point(points, rng).matrix_transpose();
+    if (problem.input_set) u = (*problem.input_set)->rand_point(points, rng);
     return simulate({.initial_state = x0, .input = u, .t_final = problem.t_final}, alg);
 }
 

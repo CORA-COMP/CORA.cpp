@@ -29,8 +29,8 @@ namespace {
 
 void follows_the_matrix_exponential(const std::string &b) {
     const Eigen::MatrixXd A = oscillator3();
-    Eigen::MatrixXd x0(3, 4);
-    x0 << 1, 0, -1, 0.5, 0, 1, 0.2, -0.5, 0.3, -0.2, 1, 0;
+    Eigen::MatrixXd x0(4, 3); // the start points as rows (N, n)
+    x0 << 1, 0, 0.3, 0, 1, -0.2, -1, 0.2, 1, 0.5, -0.5, 0;
     const double dt = 0.15;
     const std::vector<Tensor> x = LinearSys(tensor_of(A))
                                       .simulate({.initial_state = tensor_of(x0), .t_final = 1.0},
@@ -40,8 +40,9 @@ void follows_the_matrix_exponential(const std::string &b) {
     check(close(x[0], tensor_of(x0)), b + ": the start is the start");
     double worst = 0.0;
     for (std::size_t k = 0; k < x.size(); ++k)
-        worst = std::max(worst,
-                         (host_of(x[k]) - (A * dt * double(k)).exp() * x0).cwiseAbs().maxCoeff());
+        worst = std::max(
+            worst,
+            (host_of(x[k]) - x0 * (A * dt * double(k)).exp().transpose()).cwiseAbs().maxCoeff());
     check(worst < 1e-12, b + ": a trajectory differs from e^{A t} x0 by " + std::to_string(worst));
 }
 
@@ -49,7 +50,7 @@ void follows_the_matrix_exponential(const std::string &b) {
 void a_stable_system_decays(const std::string &b) {
     const Tensor A({{-1.0, 0.0}, {0.0, -2.0}});
     const std::vector<Tensor> x = LinearSys(A).simulate(
-        {.initial_state = Tensor({{1.0}, {1.0}}), .t_final = 3.0}, alg::Exact{.time_step = 0.1});
+        {.initial_state = Tensor({{1.0, 1.0}}), .t_final = 3.0}, alg::Exact{.time_step = 0.1});
     const Eigen::MatrixXd last = host_of(x.back());
     check(std::abs(last(0, 0) - std::exp(-3.0)) < 1e-12 &&
               std::abs(last(1, 0) - std::exp(-6.0)) < 1e-12,
@@ -74,14 +75,13 @@ void simulations_stay_in_the_reachable_set(const std::string &b) {
         const ReachSet R = sys.reach({.initial_set = X0, .t_final = t_final},
                                      test::lin::algorithm(algorithm, dt, 8));
         for (const bool extreme : {false, true}) {
-            // the start points as the columns (n, N) of the simulation
-            const Tensor start =
-                X0.rand_point(N, rng, extreme ? "extreme" : "standard").matrix_transpose();
+            // the start points as the rows (N, n) of the simulation
+            const Tensor start = X0.rand_point(N, rng, extreme ? "extreme" : "standard");
             const std::vector<Tensor> x = sys.simulate({.initial_state = start, .t_final = t_final},
                                                        alg::Exact{.time_step = dt / refine});
             double worst = 1e9;
             for (std::size_t j = 0; j < x.size(); ++j) {
-                const Eigen::MatrixXd points = host_of(x[j]);
+                const Eigen::MatrixXd points = host_of(x[j]).transpose(); // (n, N)
                 const std::size_t step = std::min(j / refine, R.time_interval.size() - 1);
                 // the trajectories stay inside the sets
                 for (int i = 0; i < 40; ++i) {
@@ -108,12 +108,12 @@ void checks_and_their_switch() {
     const LinearSys sys = LinearSys(Tensor({{-1.0, 0.5}, {-0.5, -1.0}}));
     check(test::raises(
               [&] {
-                  sys.simulate({.initial_state = Tensor({{1.0}, {0.0}, {0.0}}), .t_final = 1},
+                  sys.simulate({.initial_state = Tensor({{1.0, 0.0, 0.0}}), .t_final = 1},
                                alg::Exact{.time_step = 0.1});
               },
               Error::dimension_mismatch),
           "simulate: a start point of three dimensions");
-    const SimulationProblem problem{.initial_state = Tensor({{1.0}, {0.0}}), .t_final = 1};
+    const SimulationProblem problem{.initial_state = Tensor({{1.0, 0.0}}), .t_final = 1};
     const Tensor on = sys.simulate(problem, alg::Exact{.time_step = 0.1}).back();
     ChecksScope off(false);
     check(test::close(sys.simulate(problem, alg::Exact{.time_step = 0.1}).back(), on, 0),

@@ -52,8 +52,8 @@ Figure every_layer() {
     plot(fig, shifted(0), {0, 1}, {.label = "set"});
     plot(fig, Specification::unsafe_set(test::halfspace(test::column({-1, 0}), -0.5)), {0, 1},
          {.label = "unsafe"});
-    plot(fig, Tensor({{-1, 0, 1}, {0, 1, 0}}), {0, 1}, {.label = "points"});
-    plot(fig, std::vector<Tensor>{Tensor({{-1}, {-1}}), Tensor({{1}, {0.5}})}, {0, 1},
+    plot(fig, Tensor({{-1, 0}, {0, 1}, {1, 0}}), {0, 1}, {.label = "points"});
+    plot(fig, std::vector<Tensor>{Tensor({{-1, -1}}), Tensor({{1, 0.5}})}, {0, 1},
          {.label = "line"});
     return fig;
 }

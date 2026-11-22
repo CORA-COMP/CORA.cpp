@@ -137,11 +137,11 @@ class ReachWithInputs(unittest.TestCase):
         for lin_alg in ("standard", "wrapping_free"):
             order = {"zonotope_order": 2} if lin_alg == "standard" else {}  # wrapping_free has none
             R = sys.reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg=lin_alg, input_set=U, **order)
-            x = X0.rand_point(30, rng, "extreme").T
+            x = X0.rand_point(30, rng, "extreme")
             for k in range(5):
-                x = sys.simulate(x, time_step=0.2, t_final=0.2, input=U.rand_point(30, rng, "extreme").T)[-1]
+                x = sys.simulate(x, time_step=0.2, t_final=0.2, input=U.rand_point(30, rng, "extreme"))[-1]
                 for d in np.random.default_rng(k).normal(size=(10, 3)):
-                    self.assertLessEqual((d @ x).max(), R.time_point[k + 1].support_function(d) + 1e-9)
+                    self.assertLessEqual((x @ d).max(), R.time_point[k + 1].support_function(d) + 1e-9)
 
     def test_outputs_and_properties(self):
         sys = cora.LinearSys(A, B, C)
@@ -157,23 +157,23 @@ class ReachWithInputs(unittest.TestCase):
                                       R.time_interval[2].generators)
 
     def test_simulate_with_inputs_follows_the_closed_form(self):
-        x0 = np.array([[1.0, 0.0], [0.0, 1.0], [0.5, -0.5]])
-        u = np.array([[0.4, -1.0], [-0.2, 0.5]])
+        x0 = np.array([[1.0, 0.0, 0.5], [0.0, 1.0, -0.5]])  # rows
+        u = np.array([[0.4, -0.2], [-1.0, 0.5]])
         x = cora.LinearSys(A, B).simulate(x0, time_step=0.15, t_final=1.0, input=u)
-        self.assertEqual(x.shape, (8, 3, 2))
+        self.assertEqual(x.shape, (8, 2, 3))
         for k in range(8):
             E = expm(A * 0.15 * k)
-            np.testing.assert_allclose(x[k], E @ x0 + np.linalg.inv(A) @ (E - np.eye(3)) @ B @ u,
-                                       atol=1e-12)
+            np.testing.assert_allclose(
+                x[k], (E @ x0.T + np.linalg.inv(A) @ (E - np.eye(3)) @ B @ u.T).T, atol=1e-12)
         one = cora.LinearSys(A, B).simulate(x0, time_step=0.15, t_final=1.0, input=np.array([0.4, -0.2]))
-        both = cora.LinearSys(A, B).simulate(x0, time_step=0.15, t_final=1.0, input=np.tile([[0.4], [-0.2]],
-                                                                                            (1, 2)))
+        both = cora.LinearSys(A, B).simulate(x0, time_step=0.15, t_final=1.0, input=np.tile([0.4, -0.2],
+                                                                                            (2, 1)))
         np.testing.assert_allclose(one, both, atol=1e-14)
 
     def test_simulate_random_draws_the_inputs_from_the_set(self):
         x = cora.LinearSys(A, B).simulate_random(X0, points=6, time_step=0.1, t_final=0.5, rng=cora.Rng(4),
                                                  input_set=U)
-        self.assertEqual(x.shape, (6, 3, 6))
+        self.assertEqual(x.shape, (6, 6, 3))
 
     def test_errors(self):
         # an input set needs B
@@ -187,7 +187,7 @@ class ReachWithInputs(unittest.TestCase):
             cora.LinearSys(A, B).reach(X0, time_step=0.2, t_final=1.0, taylor_terms=6, alg="unknown",
                                        input_set=U)
         with self.assertRaises(cora.errors.CORAError):
-            cora.LinearSys(A).simulate(np.zeros((3, 2)), time_step=0.1, t_final=0.5, input=np.zeros((2, 2)))
+            cora.LinearSys(A).simulate(np.zeros((2, 3)), time_step=0.1, t_final=0.5, input=np.zeros((2, 2)))
 
 
 def expm(M):

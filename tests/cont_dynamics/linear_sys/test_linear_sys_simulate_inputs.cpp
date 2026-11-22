@@ -30,10 +30,10 @@ namespace {
 /// x(t) = e^{At} x0 + A^{-1} (e^{At} - I) B u for an invertible A.
 void follows_the_closed_form(const std::string &b) {
     const Eigen::MatrixXd A = oscillator3();
-    Eigen::MatrixXd B(3, 2), x0(3, 4), u(2, 4);
+    Eigen::MatrixXd B(3, 2), x0(4, 3), u(4, 2); // the points and inputs as rows
     B << 1, 0, 0.5, -1, 0, 0.3;
-    x0 << 1, 0, -1, 0.5, 0, 1, 0.2, -0.5, 0.3, -0.2, 1, 0;
-    u << 0.4, -1, 0, 2, -0.2, 0.5, 1, 0;
+    x0 << 1, 0, 0.3, 0, 1, -0.2, -1, 0.2, 1, 0.5, -0.5, 0;
+    u << 0.4, -0.2, -1, 0.5, 0, 1, 2, 0;
     const double dt = 0.15;
     const std::vector<Tensor> x =
         LinearSys(tensor_of(A), tensor_of(B))
@@ -46,7 +46,9 @@ void follows_the_closed_form(const std::string &b) {
     for (std::size_t k = 0; k < x.size(); ++k) {
         const Eigen::MatrixXd E = (A * dt * double(k)).exp();
         const Eigen::MatrixXd exact =
-            E * x0 + A.inverse() * (E - Eigen::MatrixXd::Identity(3, 3)) * B * u;
+            (E * x0.transpose() +
+             A.inverse() * (E - Eigen::MatrixXd::Identity(3, 3)) * B * u.transpose())
+                .transpose();
         worst = std::max(worst, (host_of(x[k]) - exact).cwiseAbs().maxCoeff());
     }
     // the trajectory agrees with the closed form
@@ -54,11 +56,11 @@ void follows_the_closed_form(const std::string &b) {
           b + ": a trajectory differs from the closed form by " + std::to_string(worst));
 }
 
-/// x' = -x + u from 0 with u = 1 is 1 - e^{-t}; a single input column serves every trajectory.
+/// x' = -x + u from 0 with u = 1 is 1 - e^{-t}; a single input vector serves every trajectory.
 void one_input_serves_all_trajectories(const std::string &b) {
     const LinearSys sys(Tensor({{-1.0}}), Tensor({{1.0}}));
     const std::vector<Tensor> x = sys.simulate(
-        {.initial_state = Tensor({{0.0, 0.0, 0.0}}), .input = Tensor({{1.0}}), .t_final = 2.0},
+        {.initial_state = Tensor({{0.0}, {0.0}, {0.0}}), .input = test::vec({1.0}), .t_final = 2.0},
         alg::Exact{.time_step = 0.5});
     for (std::size_t k = 0; k < x.size(); ++k)
         check(close(x[k], std::vector<double>(3, 1 - std::exp(-0.5 * double(k))), 1e-12),
@@ -76,29 +78,29 @@ void random_inputs_come_from_the_set(const std::string &b) {
     cora::Rng rng(3), same(3);
     const std::vector<Tensor> x = sys.simulate_random(
         {.initial_set = X0, .input_set = U, .t_final = 0.5}, alg::Exact{.time_step = 0.1}, 7, rng);
-    const Tensor x0 = X0.rand_point(7, same).matrix_transpose();
-    const std::vector<Tensor> y = sys.simulate(
-        {.initial_state = x0, .input = U.rand_point(7, same).matrix_transpose(), .t_final = 0.5},
-        alg::Exact{.time_step = 0.1});
+    const Tensor x0 = X0.rand_point(7, same);
+    const std::vector<Tensor> y =
+        sys.simulate({.initial_state = x0, .input = U.rand_point(7, same), .t_final = 0.5},
+                     alg::Exact{.time_step = 0.1});
     check(x.size() == y.size() && close(x.back(), y.back(), 1e-14),
           b + ": simulate_random with inputs");
-    check(x[0].shape() == std::vector<int64_t>({3, 7}), b + ": one trajectory per point");
+    check(x[0].shape() == std::vector<int64_t>({7, 3}), b + ": one trajectory per point");
 }
 
 void reports_errors(const std::string &b) {
     const Tensor A = tensor_of(oscillator3());
     const Tensor B = Tensor::from_data({1, 0, 0.5, -1, 0, 0.3}, {3, 2});
     // an input of the wrong dimension is refused
-    const Tensor x0 = Tensor::zeros({3, 4});
+    const Tensor x0 = Tensor::zeros({4, 3});
     check(throws([&] {
               LinearSys(A).simulate(
-                  {.initial_state = x0, .input = Tensor::zeros({2, 4}), .t_final = 0.5},
+                  {.initial_state = x0, .input = Tensor::zeros({4, 2}), .t_final = 0.5},
                   alg::Exact{.time_step = 0.1});
           }),
           b + ": inputs without B are refused");
     check(throws([&] {
               LinearSys(A, B).simulate(
-                  {.initial_state = x0, .input = Tensor::zeros({2, 3}), .t_final = 0.5},
+                  {.initial_state = x0, .input = Tensor::zeros({3, 2}), .t_final = 0.5},
                   alg::Exact{.time_step = 0.1});
           }),
           b + ": one input per trajectory, or one for all");

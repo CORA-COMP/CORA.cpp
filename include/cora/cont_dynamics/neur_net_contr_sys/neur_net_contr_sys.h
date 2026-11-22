@@ -72,7 +72,7 @@ struct ClosedLoopOptions {
     NnOptions nn;
 };
 
-/// The trajectories of simulate: x[k] holds the states (n, N) at time[k].
+/// The trajectories of simulate: x[k] holds the states (N, n) at time[k].
 struct ClosedLoopTrajectories {
     std::vector<Tensor> x;
     std::vector<double> time;
@@ -87,9 +87,9 @@ struct ClosedLoopVerdict {
     int pieces_reached = 0;  ///< the pieces of the split initial set that were reached
     int pieces_verified = 0; ///< the leaves of the split that verified
     int max_splits = 0;      ///< the most splits along the way to a leaf, or to the failed piece
-    std::optional<Tensor> violating_start; ///< the start (n, 1) of the simulation that violates
+    std::optional<Tensor> violating_start; ///< the start (n) of the simulation that violates
     double violation_time = 0;             ///< when it first violates the specification
-    std::optional<Tensor> violating_state; ///< its state (n, 1) then
+    std::optional<Tensor> violating_state; ///< its state (n) then
     int simulations = 0;                   ///< the number of simulated runs
     double time_reached = 0;               ///< the time up to which the reach was computed
     bool exploded = false;                 ///< the reach stopped because its sets exploded
@@ -145,7 +145,7 @@ class NeurNetContrSys {
                                         double t_final, const ClosedLoopOptions &options,
                                         const TimedSpecifications &specs) const;
 
-    /// The runs from the points x0 (n, N) with a constant external input u (n_ext, N) or (n_ext, 1)
+    /// The runs from the points x0 (N, n) with a constant external input u (N, n_ext) or (n_ext)
     /// per run, sampled every time_step (at most dt) with the network output held over a period.
     ClosedLoopTrajectories simulate(const Tensor &x0, const std::optional<Tensor> &u,
                                     double t_final, double time_step) const;

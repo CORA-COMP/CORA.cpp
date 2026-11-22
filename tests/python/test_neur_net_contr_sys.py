@@ -68,12 +68,12 @@ class ClosedLoop(unittest.TestCase):
         sys = cora.NeurNetContrSys(plant(), network(), 0.05)
         R = sys.reach(start(), 0.5, time_step=0.025, input_set=disturbance(), zonotope_order=20)
         self.assertTrue(R["completed"])
-        times, x = sys.simulate(np.array([[1.4], [2.3]]), 0.5, 0.025, u=np.array([[0.005]]))
+        times, x = sys.simulate(np.array([[1.4, 2.3]]), 0.5, 0.025, u=np.array([0.005]))
         # the run lies in the box of the set at every sample
         for k in range(1, len(times)):
             box = R["time_point"][k].interval()
             lo, hi = np.asarray(box.inf), np.asarray(box.sup)
-            self.assertTrue(np.all(x[k, :, 0] >= lo - 1e-9) and np.all(x[k, :, 0] <= hi + 1e-9))
+            self.assertTrue(np.all(x[k, 0] >= lo - 1e-9) and np.all(x[k, 0] <= hi + 1e-9))
 
     def test_the_polynomial_zonotope_start_completes(self):
         sys = cora.NeurNetContrSys(plant(), network(), 0.05)
