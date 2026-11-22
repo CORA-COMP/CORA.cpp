@@ -68,7 +68,8 @@ class ZonoNet {
     ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_approx_err,
             std::string poly_method, std::string approx_error_order);
 
-    std::vector<Tensor> W, b, abs_w;
+    std::vector<Tensor> W, b, abs_w; ///< W and abs_w transposed (n_in, n_out), for rows
+    std::vector<Tensor> WT, abs_wT;  ///< as stored (n_out, n_in), for the reverse pass
     std::vector<Activation> activations;
     std::vector<int64_t> slots, first_ids, widths;
     std::string poly_method, approx_error_order;
@@ -97,9 +98,11 @@ class ZonoNet {
 };
 
 /// The F-radius sqrt(sum G^2) of the output and its gradient with respect to each generator's
-/// value, the slopes held (CORA's backprop with exact_backprop off): |G_g|^2 / (v_g F) per row g.
-/// Sets the records' grad and returns the input generators' (B, q0).
-Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in);
+/// value (the input's and every slot's). exact (CORA's exact_backprop): the reverse pass through
+/// the slopes, offsets and errors, which depend on l and u and so on G and dr; otherwise the
+/// slopes held, |G_g|^2 / (v_g F) per row g. Sets the records' grad, returns the input's (B, q0).
+Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const ZonoNet &net,
+                           const Tensor &splits, bool exact);
 
 /// The line of CORA's poly_method "bounds" (aux_imgEncBatch) or CORALean's "singh" over [l, u].
 PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &u,

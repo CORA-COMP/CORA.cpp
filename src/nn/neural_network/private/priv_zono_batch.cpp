@@ -112,6 +112,181 @@ PrivLine aux_bounds_line(Activation activation, const Tensor &l, const Tensor &u
     return {m, (hi + lo) * 0.5, (hi - lo) * 0.5};
 }
 
+// The reverse pass ---------------------------------------------------------------------------
+
+/// The neurons (B, n) of the layer from first_id that an earlier split held at least 0 (-id) and
+/// at most 0 (+id).
+std::pair<Tensor, Tensor> aux_split_masks(int64_t first_id, const Tensor &l, const Tensor &splits) {
+    const int64_t n = l.shape()[1];
+    const Tensor ids = (l.arange_like(n) + double(first_id)).reshape({1, 1, n});
+    const Tensor hit = splits.abs().expand_dims(-1).equal(ids);
+    const Tensor lower = hit.multiply(splits.less(splits.zeros_like()).expand_dims(-1)).any(1);
+    const Tensor upper = hit.multiply(splits.greater(splits.zeros_like()).expand_dims(-1)).any(1);
+    return {lower, upper};
+}
+
+/// The clamped bounds and their partial derivatives: lc = lc_l l + lc_u u, uc = uc_l l + uc_u u
+/// locally (the branch each min and max takes).
+struct ClampJacobian {
+    Tensor lc, uc, lc_l, lc_u, uc_l, uc_u;
+};
+
+ClampJacobian aux_clamp_jacobian(int64_t first_id, const Tensor &l, const Tensor &u,
+                                 const Tensor &splits) {
+    const Tensor zero = l.zeros_like(), one = l.ones_like();
+    if (!splits.defined() || splits.shape()[1] == 0) return {l, u, one, zero, zero, one};
+    const auto [lower, upper] = aux_split_masks(first_id, l, splits);
+    // lc = max(l, min(u, 0)) where held at least 0
+    const Tensor inner = u.minimum(zero);
+    const Tensor take_l = l.greater_equal(inner);
+    const Tensor lc = Tensor::where(lower, l.maximum(inner), l);
+    const Tensor lc_l = Tensor::where(lower, take_l, one);
+    const Tensor lc_u = Tensor::where(lower, (1.0 - take_l).multiply(u.less(zero)), zero);
+    // uc = min(u, max(lc, 0)) where held at most 0
+    const Tensor inner2 = lc.maximum(zero);
+    const Tensor take_u = u.less_equal(inner2);
+    const Tensor uc = Tensor::where(upper, u.minimum(inner2), u);
+    const Tensor via_lc = Tensor::where(upper, (1.0 - take_u).multiply(lc.greater(zero)), zero);
+    return {lc,
+            uc,
+            lc_l,
+            lc_u,
+            via_lc.multiply(lc_l),
+            Tensor::where(upper, take_u, one) + via_lc.multiply(lc_u)};
+}
+
+/// The partial derivatives of a line's slope m, offset o and radius r in l and u.
+struct LineJacobian {
+    Tensor m_l, m_u, o_l, o_u, r_l, r_u;
+};
+
+/// A ReLU's line (both methods): exact outside the crossing, else m = u / (u - l) and the offset
+/// and radius -u l / (2 (u - l)).
+LineJacobian aux_relu_jacobian(const Tensor &l, const Tensor &u) {
+    const Tensor zero = l.zeros_like();
+    const Tensor cross = u.greater(zero).multiply(l.less(zero));
+    const Tensor w2 = (u - l).maximum(numerics::kTiny).square();
+    const Tensor m_l = Tensor::where(cross, u.divide(w2), zero);
+    const Tensor m_u = Tensor::where(cross, l.negative().divide(w2), zero);
+    const Tensor o_l = Tensor::where(cross, u.square().divide(w2) * -0.5, zero);
+    const Tensor o_u = Tensor::where(cross, l.square().divide(w2) * 0.5, zero);
+    return {m_l, m_u, o_l, o_u, o_l, o_u};
+}
+
+/// The first and second derivative of the sigmoid or tanh.
+std::pair<Tensor, Tensor> aux_derivatives(Activation activation, const Tensor &x) {
+    if (activation == Activation::sigmoid) {
+        const Tensor s = x.sigmoid(), d = s.multiply(1.0 - s);
+        return {d, d.multiply(1.0 - s * 2.0)};
+    }
+    const Tensor t = x.tanh(), d = 1.0 - t.square();
+    return {d, d.multiply(t) * -2.0};
+}
+
+/// CORA's "bounds" line: m the secant (f'(c) on a point), lo and hi the least and largest f(x) - m
+/// x over the candidates; at an extreme point d/dm = -x (f'(x) = m), at an end also f'(x) - m.
+LineJacobian aux_bounds_jacobian(Activation activation, const Tensor &l, const Tensor &u) {
+    const auto f = [&](const Tensor &x) { return aux_apply(activation, x); };
+    const Tensor width = u - l, center = (u + l) * 0.5, zero = l.zeros_like(), one = l.ones_like();
+    const double eps = machine_eps(l.dtype());
+    const Tensor equal = width.less_equal(center.abs().maximum(1.0) * eps);
+    const Tensor w = Tensor::where(equal, one, width);
+    const auto [dl, ddl] = aux_derivatives(activation, l);
+    const auto [du, ddu] = aux_derivatives(activation, u);
+    const Tensor half_dd = aux_derivatives(activation, center).second * 0.5;
+    const Tensor m =
+        Tensor::where(equal, aux_derivatives(activation, center).first, (f(u) - f(l)).divide(w));
+    const Tensor m_l = Tensor::where(equal, half_dd, (m - dl).divide(w));
+    const Tensor m_u = Tensor::where(equal, half_dd, (du - m).divide(w));
+    const Tensor xu = aux_extreme_point(activation, m);
+    // the least and the largest candidate, with its x and its direct derivatives
+    Tensor lo = l.full_like(l.shape(), kInf), hi = l.full_like(l.shape(), -kInf);
+    Tensor lo_x = zero, hi_x = zero, lo_dl = zero, lo_du = zero, hi_dl = zero, hi_du = zero;
+    const Tensor cands[] = {xu.negative(), xu, l, u};
+    for (int i = 0; i < 4; ++i) {
+        const Tensor &x = cands[i];
+        const Tensor d = f(x) - m.multiply(x);
+        const Tensor inside = x.greater_equal(l).multiply(x.less_equal(u));
+        const Tensor dir_l = i == 2 ? dl - m : zero, dir_u = i == 3 ? du - m : zero;
+        const Tensor below = inside.multiply(d.less(lo)), above = inside.multiply(d.greater(hi));
+        lo = Tensor::where(below, d, lo);
+        lo_x = Tensor::where(below, x, lo_x);
+        lo_dl = Tensor::where(below, dir_l, lo_dl);
+        lo_du = Tensor::where(below, dir_u, lo_du);
+        hi = Tensor::where(above, d, hi);
+        hi_x = Tensor::where(above, x, hi_x);
+        hi_dl = Tensor::where(above, dir_l, hi_dl);
+        hi_du = Tensor::where(above, dir_u, hi_du);
+    }
+    const Tensor lo_l = lo_dl - lo_x.multiply(m_l), lo_u = lo_du - lo_x.multiply(m_u);
+    const Tensor hi_l = hi_dl - hi_x.multiply(m_l), hi_u = hi_du - hi_x.multiply(m_u);
+    return {m_l,
+            m_u,
+            (hi_l + lo_l) * 0.5,
+            (hi_u + lo_u) * 0.5,
+            (hi_l - lo_l) * 0.5,
+            (hi_u - lo_u) * 0.5};
+}
+
+/// The sigmoid's Singh line: m = min(f'(l), f'(u)), lo = f(l) - m l, hi = f(u) - m u.
+LineJacobian aux_sigmoid_singh_jacobian(const Tensor &l, const Tensor &u) {
+    const Tensor zero = l.zeros_like();
+    const auto [dl, ddl] = aux_derivatives(Activation::sigmoid, l);
+    const auto [du, ddu] = aux_derivatives(Activation::sigmoid, u);
+    const Tensor use_l = dl.less_equal(du);
+    const Tensor m = dl.minimum(du);
+    const Tensor m_l = Tensor::where(use_l, ddl, zero), m_u = Tensor::where(use_l, zero, ddu);
+    const Tensor lo_l = dl - m - l.multiply(m_l), lo_u = l.multiply(m_u).negative();
+    const Tensor hi_l = u.multiply(m_l).negative(), hi_u = du - m - u.multiply(m_u);
+    const Tensor sign =
+        Tensor::where((u.sigmoid() - m.multiply(u)).greater_equal(l.sigmoid() - m.multiply(l)),
+                      l.ones_like(), l.full_like(l.shape(), -1.0));
+    return {m_l,
+            m_u,
+            (hi_l + lo_l) * 0.5,
+            (hi_u + lo_u) * 0.5,
+            sign.multiply(hi_l - lo_l) * 0.5,
+            sign.multiply(hi_u - lo_u) * 0.5};
+}
+
+/// The partial derivatives of priv_verify_line in l and u.
+LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Tensor &u,
+                               const std::string &poly_method) {
+    if (activation == Activation::relu) return aux_relu_jacobian(l, u);
+    if (poly_method == "bounds") return aux_bounds_jacobian(activation, l, u);
+    if (activation == Activation::sigmoid) return aux_sigmoid_singh_jacobian(l, u);
+    // tanh: the sigmoid's line at the doubled range, the slope times 4, the rest times 2
+    const LineJacobian s = aux_sigmoid_singh_jacobian(l + l, u + u);
+    return {s.m_l * 8.0, s.m_u * 8.0, s.o_l * 4.0, s.o_u * 4.0, s.r_l * 4.0, s.r_u * 4.0};
+}
+
+/// The gradients with the slopes held: the F-radius is linear in each generator's value.
+Tensor aux_held_gradients(ZonoPropagation &out, const ZonoInput &in) {
+    // the squared length of every generator row and the F-radius of the output
+    const Tensor rows = out.G.square().sum(-1);
+    const Tensor frad = (rows.sum(-1, true) + numerics::kFradSmoothing).sqrt();
+    const auto gradient = [&](int64_t start, const Tensor &values) {
+        const int64_t count = values.shape()[1];
+        const Tensor part = rows.slice(1, start, start + count);
+        const Tensor zero = values.zeros_like();
+        return Tensor::where(values.equal(zero), zero, part.divide(values.multiply(frad)));
+    };
+    const int64_t q0 = in.values.shape()[1];
+    int64_t start = q0;
+    for (ZonoLayerRecord &rec : out.layers) {
+        const int64_t n = rec.l.shape()[1];
+        if (!rec.slot_values.defined()) {
+            rec.grad = rec.l.zeros_like();
+            continue;
+        }
+        // the gradient of each slot, scattered to its neuron
+        const Tensor g = gradient(start, rec.slot_values);
+        rec.grad = aux_onehot(rec.slot_neurons, n).multiply(g.expand_dims(-1)).sum(1);
+        start += rec.slot_values.shape()[1];
+    }
+    return gradient(0, in.values);
+}
+
 } // namespace
 
 
@@ -142,6 +317,8 @@ ZonoNet::ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_appr
         // the transposed weights, which the rows multiply from the right
         W.push_back(layer.W.matrix_transpose());
         abs_w.push_back(W.back().abs());
+        WT.push_back(layer.W);
+        abs_wT.push_back(layer.W.abs());
         b.push_back(layer.b);
         // a slot count and the first global id per activation layer
         const int64_t n = layer.W.shape()[0];
@@ -219,13 +396,9 @@ ZonoInput ZonoNet::input_zonotope(const Tensor &x, const Tensor &r, const Tensor
 
 std::pair<Tensor, Tensor> ZonoNet::clamp(int64_t first_id, const Tensor &l, const Tensor &u,
                                          const Tensor &splits) const {
-    const int64_t n = l.shape()[1];
-    const Tensor ids = (l.arange_like(n) + double(first_id)).reshape({1, 1, n});
-    const Tensor hit = splits.abs().expand_dims(-1).equal(ids);
+    const auto [lower, upper] = aux_split_masks(first_id, l, splits);
     const Tensor zero = l.zeros_like();
     // -id: the neuron is at least 0; +id: at most 0
-    const Tensor lower = hit.multiply(splits.less(splits.zeros_like()).expand_dims(-1)).any(1);
-    const Tensor upper = hit.multiply(splits.greater(splits.zeros_like()).expand_dims(-1)).any(1);
     const Tensor lc = Tensor::where(lower, l.maximum(u.minimum(zero)), l);
     const Tensor uc = Tensor::where(upper, u.minimum(lc.maximum(zero)), u);
     return {lc, uc};
@@ -317,30 +490,61 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
 
 // Gradients ---------------------------------------------------------------------------------------
 
-Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in) {
-    // the squared length of every generator row and the F-radius of the output
-    const Tensor rows = out.G.square().sum(-1);
-    const Tensor frad = (rows.sum(-1, true) + numerics::kFradSmoothing).sqrt();
-    const auto gradient = [&](int64_t start, const Tensor &values) {
-        const int64_t count = values.shape()[1];
-        const Tensor part = rows.slice(1, start, start + count);
-        const Tensor zero = values.zeros_like();
-        return Tensor::where(values.equal(zero), zero, part.divide(values.multiply(frad)));
-    };
-    const int64_t q0 = in.values.shape()[1];
-    int64_t start = q0;
-    for (ZonoLayerRecord &rec : out.layers) {
-        const int64_t n = rec.l.shape()[1];
-        if (!rec.slot_values.defined()) {
-            rec.grad = rec.l.zeros_like();
-            continue;
+Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const ZonoNet &net,
+                           const Tensor &splits, bool exact) {
+    if (!exact) return aux_held_gradients(out, in);
+    // d F / d G at the output, then back through every layer
+    const Tensor frad = (out.G.square().sum(-1).sum(-1, true) + numerics::kFradSmoothing).sqrt();
+    Tensor gG = out.G.divide(frad.expand_dims(-1));
+    Tensor gc = out.c.zeros_like(), gdr = out.dr.defined() ? out.dr.zeros_like() : Tensor();
+    std::size_t next = out.layers.size();
+    for (std::size_t k = net.W.size(); k-- > 0;) {
+        if (net.activations[k] != Activation::identity) {
+            ZonoLayerRecord &rec = out.layers[--next];
+            const Tensor &c1 = rec.c_in, &G1 = rec.G_in, &dr1 = rec.dr_in;
+            const int64_t n = rec.l.shape()[1], qk = G1.shape()[1];
+            // the errors: the slot generators' values and the rest in dr are the reach
+            Tensor g_reach;
+            if (rec.slot_values.defined()) {
+                const Tensor &neurons = rec.slot_neurons;
+                const int64_t dn = neurons.shape()[1];
+                const Tensor hot = aux_onehot(neurons, n);
+                const Tensor gv = gG.slice(1, qk, qk + dn)
+                                      .take_along_axis(neurons.expand_dims(-1), 2)
+                                      .squeeze(-1);
+                rec.grad = hot.multiply(gv.expand_dims(-1)).sum(1);
+                g_reach = rec.grad;
+                if (dn < n && gdr.defined()) g_reach = g_reach + gdr.multiply(1.0 - hot.max(1));
+                gG = gG.slice(1, 0, qk);
+            } else {
+                rec.grad = rec.l.zeros_like();
+                g_reach = gdr.defined() ? gdr : rec.l.zeros_like();
+            }
+            // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = m dr1 + reach
+            const ClampJacobian cl = aux_clamp_jacobian(rec.first_id, rec.l, rec.u, splits);
+            const Tensor m =
+                priv_verify_line(net.activations[k], cl.lc, cl.uc, net.poly_method).slope;
+            const LineJacobian J =
+                aux_line_jacobian(net.activations[k], cl.lc, cl.uc, net.poly_method);
+            Tensor g_m = gc.multiply(c1) + gG.multiply(G1).sum(1);
+            if (dr1.defined()) g_m = g_m + gdr.multiply(dr1);
+            const Tensor g_lc = g_m.multiply(J.m_l) + gc.multiply(J.o_l) + g_reach.multiply(J.r_l);
+            const Tensor g_uc = g_m.multiply(J.m_u) + gc.multiply(J.o_u) + g_reach.multiply(J.r_u);
+            const Tensor g_l = g_lc.multiply(cl.lc_l) + g_uc.multiply(cl.uc_l);
+            const Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
+            // l = c1 - sum |G1| - dr1, u = c1 + sum |G1| + dr1
+            const Tensor g_rad = g_u - g_l;
+            gc = gc.multiply(m) + g_l + g_u;
+            gG = m.expand_dims(1).multiply(gG) + G1.sign().multiply(g_rad.expand_dims(1));
+            gdr = dr1.defined() ? gdr.multiply(m) + g_rad : Tensor();
         }
-        // the gradient of each slot, scattered to its neuron
-        const Tensor g = gradient(start, rec.slot_values);
-        rec.grad = aux_onehot(rec.slot_neurons, n).multiply(g.expand_dims(-1)).sum(1);
-        start += rec.slot_values.shape()[1];
+        // the linear layer; the centers and radii of the first layer's input are not needed
+        gG = gG.matmul(net.WT[k]);
+        if (k == 0) break;
+        gc = gc.matmul(net.WT[k]);
+        if (gdr.defined()) gdr = gdr.matmul(net.abs_wT[k]);
     }
-    return gradient(0, in.values);
+    return gG.take_along_axis(in.dims.expand_dims(-1), 2).squeeze(-1);
 }
 
 } // namespace cora

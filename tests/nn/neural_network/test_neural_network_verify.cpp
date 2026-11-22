@@ -5,7 +5,7 @@
 // whose output lies in it. The batched zonotope with every slot is the output zonotope of
 // NeuralNetwork::evaluate, and with few slots (an interval center) it still holds sampled outputs;
 // Fourier-Motzkin in both orders holds the feasible points of random systems; the three repairs and
-// every switch of CORA's verify run.
+// every switch of CORA's verify run. exact_backprop's F-radius gradient is the difference quotient.
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA: nn/@neuralNetwork/evaluateZonotopeBatch_.m
@@ -22,6 +22,7 @@
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/rng.h"
+#include "cora/global/tensor/tolerance.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/nn/neural_network/verify.h"
 #include "nn/neural_network/private/priv_zono_batch.h"
@@ -155,6 +156,50 @@ void batched_zonotopes(const std::string &b) {
     }
 }
 
+/// The F-radius of the output of the batch's set i, the input zonotope with G.
+double aux_frad(const ZonoNet &net, const ZonoInput &in, const Tensor &G, const Tensor &splits,
+                int64_t i) {
+    const ZonoPropagation out = net.forward(in.c, in.dr, G, splits, nullptr, false);
+    const std::vector<double> rows = out.G.square().sum(-1).sum(-1).data();
+    return std::sqrt(rows[std::size_t(i)] + numerics::kFradSmoothing);
+}
+
+/// exact_backprop's reverse pass is the central difference of the F-radius in every input
+/// generator's value, for each activation and line, with splits and an interval center.
+void frad_gradients(const std::string &b) {
+    Rng rng(11);
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
+                 r = Tensor({{0.4, 0.3, 0.5}, {0.25, 0.4, 0.3}});
+    const Tensor splits = Tensor({{-3.0, 5.0}, {0.0, 2.0}});
+    for (const Activation a : {Activation::relu, Activation::sigmoid, Activation::tanh}) {
+        const NeuralNetwork nn = aux_network(rng, {3, 6, 5, 2}, a);
+        for (const std::string method : {"bounds", "singh"}) {
+            const ZonoNet net(nn, 2, 3, method, "length");
+            const ZonoInput in = net.input_zonotope(x, r);
+            ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true);
+            const std::vector<double> g = priv_frad_gradients(out, in, net, splits, true).data();
+            // the difference quotient at each generator's value
+            const std::vector<double> dims = in.dims.data();
+            bool close = true;
+            for (int64_t i = 0; i < 2; ++i) {
+                for (int64_t s = 0; s < net.q0; ++s) {
+                    const double h = 1e-6;
+                    std::vector<double> e(std::size_t(2 * net.q0 * 3), 0.0);
+                    e[std::size_t((i * net.q0 + s) * 3) +
+                      std::size_t(dims[std::size_t(i * net.q0 + s)])] = h;
+                    const Tensor E = Tensor::like(in.G, e, {2, net.q0, 3});
+                    const double fd = (aux_frad(net, in, in.G + E, splits, i) -
+                                       aux_frad(net, in, in.G - E, splits, i)) /
+                                      (2 * h);
+                    const double exact = g[std::size_t(i * net.q0 + s)];
+                    close = close && std::abs(fd - exact) <= 1e-5 * std::max(1.0, std::abs(fd));
+                }
+            }
+            check(close, b + " " + method + ": the exact gradient is the difference quotient");
+        }
+    }
+}
+
 /// Fourier-Motzkin in both orders holds the feasible points, and the orders agree closely.
 void fourier_motzkin(const std::string &b) {
     Rng rng(9);
@@ -240,6 +285,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         verdicts(b);
         batched_zonotopes(b);
+        frad_gradients(b);
         fourier_motzkin(b);
         switches(b);
     });

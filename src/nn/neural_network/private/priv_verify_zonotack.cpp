@@ -525,7 +525,8 @@ Artifacts ConZonotopeBounding::aux_artifacts(const Tensor &xi, const Tensor &ri,
     art.in = net.input_zonotope(xi, ri, dims);
     art.out = net.forward(art.in.c, art.in.dr, art.in.G, si,
                           art.has_sens ? &art.sens.layer_sum : nullptr, true);
-    if (need_grad) art.input_grad = priv_frad_gradients(art.out, art.in);
+    if (need_grad)
+        art.input_grad = priv_frad_gradients(art.out, art.in, net, si, o_.exact_backprop);
     return art;
 }
 

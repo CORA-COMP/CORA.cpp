@@ -100,6 +100,9 @@ struct NnVerifyOptions {
     std::string relu_constraint_heuristic = "most-sensitive-approx-error";
     std::string input_generator_heuristic = "most-sensitive-input-radius";
     int64_t mini_batch_size = 1024;
+    /// The heuristics' F-radius gradient through the slopes, offsets and errors of the lines
+    /// (CORA's options.nn.train.exact_backprop); false holds the slopes.
+    bool exact_backprop = true;
     /// "cora": a row's bound of a factor is the row's sum minus its term (fast); "coralean": the
     /// sum of the other terms in CORALean's order (contractHalfspace, bit-exact on lean).
     std::string fourier_motzkin_order = "cora";

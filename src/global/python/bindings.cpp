@@ -4689,6 +4689,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(relu_constraint_heuristic, "CORA's relu_constraint_heuristic");
     CORA_VERIFY_FIELD(input_generator_heuristic, "CORA's input_generator_heuristic");
     CORA_VERIFY_FIELD(mini_batch_size, "The sets per batch at most");
+    CORA_VERIFY_FIELD(exact_backprop, "CORA's exact_backprop: the gradient through the lines");
     CORA_VERIFY_FIELD(fourier_motzkin_order, "'cora' (fast) or 'coralean' (the oracle's)");
     CORA_VERIFY_FIELD(project_stale_factors, "Repair: the split rows keep the input factors");
     CORA_VERIFY_FIELD(drop_dummy_duplicates, "Repair: a dummy split drops its duplicate only");

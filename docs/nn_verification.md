@@ -92,11 +92,15 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
   `coralean` sums the other terms in CORALean's order (`contractHalfspace`), bit for bit the oracle's
   on lean. `ConZonotope::approximate_bounds` has the same switch (`BoundsOptions::order`).
 - **Gradients** (`zono-norm-gradient`, `least-unstable-gradient`): the gradient of the output's
-  F-radius with respect to each generator's value, the slopes held (CORA's backprop with
-  `exact_backprop` off), which is `|G_g|^2 / (v_g F)` for the row `g` of the value `v_g`. CORA's
-  default `exact_backprop` also differentiates the slopes; the Python reference of Phase 1 did that
-  by autograd. The input generators' heuristic (`num_init_gens` below the input dimension) takes the
-  gradient through the interval propagation, written out.
+  F-radius with respect to each generator's value. With `exact_backprop` (CORA's default, on) it is a
+  hand-written reverse pass through every layer: the slopes, offsets and errors of the lines depend
+  on `l` and `u`, and so on `G` and `dr`, through the split clamps too (the Python reference of
+  Phase 1 did this by autograd). The pass is written on the Tensor operations, so it runs on every
+  backend; libtorch's autograd would tie it to torch, and no code outside the backends branches on
+  one (docs/architecture.md). With `exact_backprop` off the slopes are held, which is
+  `|G_g|^2 / (v_g F)` for the row `g` of the value `v_g`. The input generators' heuristic
+  (`num_init_gens` below the input dimension) takes the gradient through the interval propagation,
+  written out.
 - **dual-iter:** `conzonotope_bounding_method` `dual-iter` tightens only the box of the inputs, which
   the refinement does not read (it rescales by the factor box), so it never decides; it is accepted
   and does the same as `fourier-motzkin`.
