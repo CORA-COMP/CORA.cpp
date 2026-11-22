@@ -58,6 +58,11 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of
   zonotopes `(B, q, n)` are just more rows, so the propagation, the reverse pass, CROWN's bound and
   the attacks run unchanged on them; the set operations other than `verify` take dense layers.
+- **Slot budget.** When one set of the batch does not fit `memory_budget` (a wide convolutional
+  net with an error slot per neuron), the conzonotope bounding halves the error slots per layer,
+  then the input generators, until it fits; the errors without a slot go to the interval center
+  (sound, looser) and the backward bound keeps the margin. `stats` reports `slot_budget` and
+  `init_gen_budget`.
 - **Property.** VNN-LIB 1.0 is read with the semantics of the scoring's parser, 2.0 by the
   reference parser (`vnnlib`), every assertion in DNF and the conjunction multiplied out; the cases'
   polytopes are stacked and padded with the rows `0 <= +inf`.

@@ -168,6 +168,14 @@ void networks(const std::string &b) {
         p.A = Tensor::from_data({1.0, 0.0}, {1, 1, 2});
         p.b = Tensor::from_data({t}, {1, 1});
         const NnVerifyOptions o = vnncomp_options("x");
+        // a memory budget of a few sets: fewer slots and input generators, the same verdict
+        NnVerifyOptions tight = o;
+        tight.memory_budget = 20000;
+        const NnVerifyResult small = conv.verify(p, 20, tight);
+        // (a sat verdict may come from the attack, before the bounding is prepared)
+        check(small.status == dense.verify(p, 20, o).status &&
+                  (small.status == "sat" || small.stats.count("slot_budget") == 1),
+              b + ": the slot budget keeps the verdict");
         check(conv.verify(p, 20, o).status == dense.verify(p, 20, o).status,
               b + ": verify gives the dense network's verdict");
     }
