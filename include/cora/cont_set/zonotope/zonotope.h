@@ -270,22 +270,22 @@ class Zonotope : public ContSet {
     bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
     /// Whether the zonotope and a zonotope, a box or points (..., n) (a mask, one flag per point)
-    /// intersect, with S enlarged by tol (default: the repository tolerance). type "exact" decides
-    /// by a linear program, "approx" tests the boxes around the sets. Not a batch.
-    bool is_intersecting(const Zonotope &S, const std::string &type = "exact",
+    /// intersect, with S enlarged by tol (default: the repository tolerance). method "exact"
+    /// decides by a linear program, "approx" tests the boxes around the sets. Not a batch.
+    bool is_intersecting(const Zonotope &S, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Interval &I, const std::string &type = "exact",
+    bool is_intersecting(const Interval &I, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    Mask is_intersecting(const Tensor &p, const std::string &type = "exact",
+    Mask is_intersecting(const Tensor &p, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
 
     /// The zonotope in N dimensions whose state dims[i] is state i (a permutation: new dimensions
     /// would be unbounded). CORA's lift_ projects onto dims, the inverse permutation.
     Zonotope lift(int64_t N, const std::vector<int64_t> &dims) const;
 
-    /// An upper bound (...) of the norm (type 1, 2 or infinity) of the points: mode "ub"
+    /// An upper bound (...) of the norm (type 1, 2 or infinity) of the points: method "ub"
     /// (default) is the norm of the box around the set; "exact" and "ub_convex" are not supported.
-    Tensor norm(double type = 2, const std::string &mode = "ub") const;
+    Tensor norm(double type = 2, const std::string &method = "ub") const;
 
     /// The distance from the center to the boundary () (the largest ball about the center in
     /// the set; 0 if the set is flat) and the nearest point of the boundary (n). Not a batch.
@@ -462,13 +462,13 @@ class Zonotope : public ContSet {
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     std::optional<std::vector<std::string>> compact_methods_impl() const override;
     Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &type) const override;
+                                  const std::optional<std::string> &method) const override;
     bool is_bounded_impl() const override;
     bool is_full_dim_impl(Tol tol) const override;
     Set reduce_impl(int order) const override;
     Set linear_map_impl(const Tensor &M) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &method) const override;
     Set enclose_impl(const ContSet &S2) const override;
 
   private:

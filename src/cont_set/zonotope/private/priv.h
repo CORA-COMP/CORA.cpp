@@ -34,12 +34,13 @@ using Refusal = std::optional<std::pair<Error::Id, std::string>>;
 Tensor priv_select_generators(const Tensor &G, const std::vector<int64_t> &columns, int axis = -2);
 
 
-/// Why is_intersecting refuses a call, if it does: a type other than "exact" and "approx", or a
+/// Why is_intersecting refuses a call, if it does: a method other than "exact" and "approx", or a
 /// batch (a linear program per pair); c and other are the centers of the two sets.
-Refusal priv_intersecting_refusal(const std::string &type, const Tensor &c, const Tensor &other);
+Refusal priv_intersecting_refusal(const std::string &method, const Tensor &c, const Tensor &other);
 
 /// The same for points p (..., n) of a set of center c (..., n): p must have n coordinates.
-Refusal priv_intersecting_points_refusal(const std::string &type, const Tensor &c, const Tensor &p);
+Refusal priv_intersecting_points_refusal(const std::string &method, const Tensor &c,
+                                         const Tensor &p);
 
 /// The generators (..., keep + r, r) after Girard's reduction of the rows G (..., m, r): the keep
 /// generators of the largest score ||g||_1 - ||g||_inf, then a box generator per dimension.

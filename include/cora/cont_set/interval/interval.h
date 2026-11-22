@@ -101,9 +101,9 @@ class Interval : public ContSet {
     /// for an empty member. tol default: the repository tolerance (docs/architecture.md).
     Mask contains(const Tensor &p, Tol tol = std::nullopt) const;
 
-    /// The same with CORA's type, 'exact' or 'approx' (both answer exactly, as CORA's
+    /// The same with CORA's method, 'exact' or 'approx' (both answer exactly, as CORA's
     /// intervalMatrix does for a box).
-    Mask contains(const Tensor &p, const std::string &type, Tol tol = std::nullopt) const;
+    Mask contains(const Tensor &p, const std::string &method, Tol tol = std::nullopt) const;
 
     // Interval matrices ---------------------------------------------------------------------------
 
@@ -290,7 +290,7 @@ class Interval : public ContSet {
     Interval minkowski_difference(const Interval &S) const;
     Interval minkowski_difference(const Tensor &p) const;
     Interval minkowski_difference(const ContSet &S,
-                                  const std::optional<std::string> &type = std::nullopt) const;
+                                  const std::optional<std::string> &method = std::nullopt) const;
 
     /// The smallest box around this and I2 (CORA's or); an empty operand returns the other. With
     /// a point p, the box grown to contain p.
@@ -452,10 +452,10 @@ class Interval : public ContSet {
     Set uplus_impl() const override;
     Set times_impl(const Tensor &factor) const override;
     Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &type) const override;
+                                  const std::optional<std::string> &method) const override;
     Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &method) const override;
     Set enclose_impl(const ContSet &S2) const override;
 
   private:

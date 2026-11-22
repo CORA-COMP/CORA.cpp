@@ -124,7 +124,7 @@ class ZonoBundle(unittest.TestCase):
         self.assertTrue(np.all(cora.contains(zB, zonotope([0.5, 0.5], 0.25 * np.eye(2)))))
         self.assertTrue(np.all(zB.is_intersecting(zonotope([0.5, 0.5], 0.25 * np.eye(2)))))
         self.assertFalse(np.all(zB.is_intersecting(zonotope([-0.75, -0.75], 0.25 * np.eye(2)))))
-        self.assertTrue(np.all(zB.is_intersecting(zB, type="approx")))
+        self.assertTrue(np.all(zB.is_intersecting(zB, method="approx")))
         self.assertTrue(np.all(zB.is_intersecting(np.array([0.5, 0.5]))))
         self.assertTrue(cora.is_intersecting(zB, cora.Interval(np.array([0.9, 0.9]), np.array([3.0, 3.0]))))
         # equal bundles: the members in any order
@@ -138,7 +138,7 @@ class ZonoBundle(unittest.TestCase):
         with self.assertRaises(cora.errors.NoSpecificAlg):
             zB.contains(np.array([0.5, 0.5]), method="nothing")
         with self.assertRaises(cora.errors.WrongValue):
-            zB.is_intersecting(zB, type="fast")
+            zB.is_intersecting(zB, method="fast")
         with self.assertRaises(cora.errors.WrongValue):
             zB.isequal(zB, tol=-1.0)
 

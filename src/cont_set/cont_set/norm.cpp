@@ -1,11 +1,11 @@
 // norm - an upper bound on the norm of the points of a set, as CORA's contSet.norm
 //
-// Which types and modes a class offers is its own (a box ignores the mode). Error::noops for a
+// Which types and modes a class offers is its own (a box ignores the method). Error::noops for a
 // class without it.
 //
-// Syntax:   val = S.norm();   val = S.norm(type, mode);
+// Syntax:   val = S.norm();   val = S.norm(type, method);
 // Inputs:   S - set
-//           type - one, two (default), inf or fro; mode - "ub" (default), "exact" or "ub_convex"
+//           type - one, two (default), inf or fro; method - "ub" (default), "exact" or "ub_convex"
 // Outputs:  val - the bound, (...); -Inf for the empty set
 // See also: Interval::norm, Zonotope::norm
 //
@@ -27,13 +27,14 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor ContSet::norm(Tensor::Norm type, const std::string &mode) const {
+Tensor ContSet::norm(Tensor::Norm type, const std::string &method) const {
     detail::Entry entry;
-    CORA_CHECK(mode == "exact" || mode == "ub" || mode == "ub_convex", Error::wrong_value, [&] {
-        return "norm: the mode must be 'exact', 'ub' or 'ub_convex', got '" + mode + "'";
-    });
+    CORA_CHECK(
+        method == "exact" || method == "ub" || method == "ub_convex", Error::wrong_value, [&] {
+            return "norm: the method must be 'exact', 'ub' or 'ub_convex', got '" + method + "'";
+        });
     entry.release();
-    return norm_impl(type, mode);
+    return norm_impl(type, method);
 }
 
 Tensor ContSet::norm_impl(Tensor::Norm, const std::string &) const { priv_noops("norm", *this); }

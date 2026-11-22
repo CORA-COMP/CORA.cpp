@@ -9,7 +9,7 @@
 //
 // Syntax:   Pres = P.minkowski_difference(S);   Pres = P.minkowski_difference(S, "exact:vertices");
 // Inputs:   S - a set with a support function, or a point (n)
-//           type - "exact" (default) or "exact:vertices"
+//           method - "exact" (default) or "exact:vertices"
 // Outputs:  Pres - the difference, in halfspace form
 // See also: Polytope::plus, Polytope::minus, Polytope::intersect
 // References:
@@ -109,18 +109,18 @@ Polytope aux_by_vertices(const Polytope &P, const ContSet &S) {
 Polytope Polytope::minkowski_difference(const Tensor &p) const { return plus(-p); }
 
 Set Polytope::minkowski_difference_impl(const ContSet &S2,
-                                        const std::optional<std::string> &type_arg) const {
-    const std::string type = type_arg.value_or("exact");
-    // the generic entry checks only the dimension: the type and the batch are this class's
-    if (type != "exact" && type != "exact:vertices")
+                                        const std::optional<std::string> &method_arg) const {
+    const std::string method = method_arg.value_or("exact");
+    // the generic entry checks only the dimension: the method and the batch are this class's
+    if (method != "exact" && method != "exact:vertices")
         CORA_FAIL(Error::wrong_value,
-                  "minkowski_difference: the type must be exact or exact:vertices, got '" + type +
-                      "'");
+                  "minkowski_difference: the method must be exact or exact:vertices, got '" +
+                      method + "'");
     if ((is_h_rep() ? A_ : V_).ndim() != 2)
         CORA_FAIL(Error::not_supported,
                   "minkowski_difference: it supports a single polytope, not a batch");
     if (priv_is_fullspace(*this)) return inf(dim());
-    return type == "exact" ? aux_exact(*this, S2) : aux_by_vertices(*this, S2);
+    return method == "exact" ? aux_exact(*this, S2) : aux_by_vertices(*this, S2);
 }
 
 } // namespace cora

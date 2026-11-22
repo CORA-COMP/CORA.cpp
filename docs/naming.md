@@ -31,6 +31,11 @@ changed, and the reasons are listed below.
 - **Overrides:** a method of a `ContSet` subclass accepts every argument that `ContSet`'s method
   accepts (it may add keyword arguments with defaults); `tests/python/test_stubs.py` checks it by
   type-checking the stubs with mypy.
+- **One selector name:** `method` names every algorithm selector, whatever CORA calls it (`type`,
+  `mode`, `alg`, `method`): `contains`, `is_intersecting`, `minkowski_difference`, `compact`,
+  `reduce`, `rescale`, the conversions, and every Ellipsoid operation. `type` stays only where
+  CORA names the kind of question: `representsa(type)`, the order of `norm(type, method)`,
+  `rand_point(N, rng, type)` and `round(type)`. The option values are CORA's strings.
 - **Options** have the same names in C++ (struct fields) and in Python (keywords):
   - `time_step`, `t_final`, `taylor_terms`, `zonotope_order`;
   - the problem: `initial_set`, `input_set`, `initial_state`, `input`.
@@ -53,7 +58,7 @@ changed, and the reasons are listed below.
 | `intervalMatrix` | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
 | `interval(inf, sup)` of matrix bounds | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
 | `intervalMatrix(C, D)`, `intervalMatrix(C)` | `Interval::from_center_delta(C, D)`, `Interval::matrix(C, C)` | `cora.Interval.from_center_delta(C, D)`, `cora.Interval.matrix(C, C)` |
-| `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs().sup()`, `A.center()`, `A.infimum()`, `A.contains(M, type, tol)` | `A.abs().sup`, `A.center`, `A.inf`, `A.contains(M, type, tol)` |
+| `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs().sup()`, `A.center()`, `A.infimum()`, `A.contains(M, method, tol)` | `A.abs().sup`, `A.center`, `A.inf`, `A.contains(M, method, tol)` |
 | `mtimes(A, B)`, `A * B` | `A.matmul(B)`, `A * B`, `M * A`, `A * M`, `s * A`, `A * Z` | `A @ B`, `M @ A`, `A @ M`, `s * A`, `A @ Z` |
 | `mpower(A, k)`, `dim(A, rc)` | `A.matrix_power(k)`, `A.dim(rc)` | `A.matrix_power(k)` (`A ** k` is elementwise) |
 | `plus(A, B)`, `A + B` | `A.plus(B)`, `A + B`, `A + M`, `M + A`, `A + s`, `s + A` | `A + B`, `A + M`, `s + A`, `A.plus(B)` |
@@ -85,13 +90,13 @@ changed, and the reasons are listed below.
 | `isBounded(S)`, `isFullDim(S, tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` |
 | `enlarge(S, factor)` | `S.enlarge(factor)` | `S.enlarge(factor)` |
 | `minus(S, p)`, `minus(p, S)` | `S.minus(p)`, `ContSet::minus(p, S)` | `S.minus(p)` |
-| `minkDiff(S, S2, type)` | `S.minkowski_difference(S2, type)` | `S.minkowski_difference(S2, type)` |
+| `minkDiff(S, S2, type)` | `S.minkowski_difference(S2, method)` | `S.minkowski_difference(S2, method)` |
 | `mldivide(P, S)` | `P.set_difference(S)` (all pieces) | `P.set_difference(S)` |
 | `isequal(S1, S2, tol)`, `eq`, `ne` | `isequal(S1, S2, tol)`, `eq`, `ne`, `S1 == S2` | `cora.isequal`, `cora.eq`, `cora.ne`, `S1 == S2` |
 | `decompose(S, blocks)` | `S.decompose(blocks)` (0-based, inclusive) | `S.decompose(blocks)` |
 | `projectHighDim(S, N, proj)` | `S.project_high_dim(N, proj)` | `S.project_high_dim(N, proj)` |
 | `lift(S, N, proj)` | `S.lift(N, proj)` | `S.lift(N, proj)` |
-| `norm(S, type, mode)` | `S.norm(type, mode)` | `S.norm(type, mode)` |
+| `norm(S, type, mode)` | `S.norm(type, method)` | `S.norm(type, method)` |
 | `enclose(S1, S2)`, `enclose(Z, M, Zplus)` | `S1.enclose(S2)`, `Z.enclose(M, Zplus)` | `S1.enclose(S2)`, `Z.enclose(M, Zplus)` |
 | `projectOnHyperplane(S, hyp)` | `S.project_on_hyperplane(c, d)` (the constraint) | `S.project_on_hyperplane(c, d)` |
 | `contSet.generateRandom(...)` | `ContSet::generate_random(rng, dimension, admissible)` | `cora.generate_random(rng, dimension, admissible)` |
@@ -153,7 +158,7 @@ changed, and the reasons are listed below.
 | `kron(I1, I2)` | `I.kron(I2)`, `Interval::kron(A, I)` | `I.kron(I2)`, `I.kron(A, left=True)` |
 | `mpower(I, k)` | `I.matrix_power(k)` | `I.matrix_power(k)` |
 | `max(I, Y)`, `min(I, Y)` | `I.max(Y)`, `I.min(Y)`, `I.max()` (the bound) | the same |
-| `minkDiff(I, S, type)` | `I.minkowski_difference(S, type)` | `I.minkowski_difference(S, type)` |
+| `minkDiff(I, S, type)` | `I.minkowski_difference(S, method)` | `I.minkowski_difference(S, method)` |
 | `or(I, S)` | `I.unite(S)` | `I.unite(S)` |
 | `norm_(I, type)` | `I.norm(type)` | `I.norm(type)` |
 | `lift_(I, N, proj)` | `I.lift(N, dims)` | `I.lift(N, dims)` |

@@ -123,7 +123,7 @@ class EmptySet : public detail::DimensionSet {
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     bool is_full_dim_impl(Tol tol) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &method) const override;
 };
 
 // Operators, as CORA writes them: a matrix or a number times the empty set.

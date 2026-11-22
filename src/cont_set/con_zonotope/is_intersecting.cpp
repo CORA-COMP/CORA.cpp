@@ -7,7 +7,7 @@
 // Syntax:   res = cz.is_intersecting(S);   res = cz.is_intersecting(S, "approx");
 //           res = cz.is_intersecting(points, "exact", tol);
 // Inputs:   S - a constrained zonotope, a zonotope, a box, or points (..., n), one per row
-//           type - "exact" (default) or "approx"
+//           method - "exact" (default) or "approx"
 //           tol - for points, the tolerance of contains; default: the repository tolerance
 // Outputs:  res - "exact": the intersection is not empty (a linear program); "approx": a bound
 // See also: intersect, contains
@@ -38,17 +38,18 @@ bool aux_boxes_overlap(const Interval &a, const Interval &b) {
     return a.inf().subtract(b.sup()).maximum(b.inf().subtract(a.sup())).max().item() <= 0;
 }
 
-/// Whether a constrained zonotope and a set meet, by the type (the checks are the caller's).
-bool aux_meets(const ConZonotope &cz, const ConZonotope &S, const std::string &type) {
+/// Whether a constrained zonotope and a set meet, by the method (the checks are the caller's).
+bool aux_meets(const ConZonotope &cz, const ConZonotope &S, const std::string &method) {
     // the exact test: the intersection has a point; the approximate one: the boxes overlap
-    if (type == "approx") return aux_boxes_overlap(cz.interval(), S.interval());
+    if (method == "approx") return aux_boxes_overlap(cz.interval(), S.interval());
     return !priv_is_empty(priv_host_con_zonotope(cz.intersect(S)));
 }
 
-/// Why two sets are refused: the type and batch, then the dimension.
-detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &S, const std::string &type) {
+/// Why two sets are refused: the method and batch, then the dimension.
+detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &S,
+                            const std::string &method) {
     if (const Refusal r =
-            priv_intersecting_refusal(type, cz.c().expand_dims(-1), S.c().expand_dims(-1)))
+            priv_intersecting_refusal(method, cz.c().expand_dims(-1), S.c().expand_dims(-1)))
         return r;
     return priv_pair_refusal("is_intersecting", cz, S, true);
 }
@@ -58,27 +59,27 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &S, const s
 
 // ===========================================  MAIN  =========================================== //
 
-bool ConZonotope::is_intersecting(const ConZonotope &S, const std::string &type, Tol tol) const {
+bool ConZonotope::is_intersecting(const ConZonotope &S, const std::string &method, Tol tol) const {
     detail::Entry entry;
     // CORA compares the sets without a tolerance; it is only checked
     static_cast<void>(resolve_tol(entry, tol, c_.dtype(), "is_intersecting"));
-    const detail::Refusal refusal = aux_refusal(*this, S, type);
+    const detail::Refusal refusal = aux_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
-    return aux_meets(*this, S, type);
+    return aux_meets(*this, S, method);
 }
 
 // a zonotope is a set without constraints
-bool ConZonotope::is_intersecting(const Zonotope &Z, const std::string &type, Tol tol) const {
+bool ConZonotope::is_intersecting(const Zonotope &Z, const std::string &method, Tol tol) const {
     detail::Entry entry;
     static_cast<void>(resolve_tol(entry, tol, c_.dtype(), "is_intersecting"));
     const ConZonotope S(Z);
-    const detail::Refusal refusal = aux_refusal(*this, S, type);
+    const detail::Refusal refusal = aux_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
-    return aux_meets(*this, S, type);
+    return aux_meets(*this, S, method);
 }
 
 // a box is a set without constraints; an empty box meets nothing
-bool ConZonotope::is_intersecting(const Interval &I, const std::string &type, Tol tol) const {
+bool ConZonotope::is_intersecting(const Interval &I, const std::string &method, Tol tol) const {
     detail::Entry entry;
     static_cast<void>(resolve_tol(entry, tol, c_.dtype(), "is_intersecting"));
     CORA_CHECK(I.elem_rank() == 1, Error::dimension_mismatch, [&] {
@@ -87,16 +88,16 @@ bool ConZonotope::is_intersecting(const Interval &I, const std::string &type, To
     });
     if (I.is_empty()) return false;
     const ConZonotope S(I);
-    const detail::Refusal refusal = aux_refusal(*this, S, type);
+    const detail::Refusal refusal = aux_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
-    return aux_meets(*this, S, type);
+    return aux_meets(*this, S, method);
 }
 
-bool ConZonotope::is_intersecting(const Tensor &p, const std::string &type, Tol tol_arg) const {
+bool ConZonotope::is_intersecting(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     // points are in the set or not: both types decide by containment, after the checks on p
-    const Refusal refusal = priv_intersecting_points_refusal(type, c_, p);
+    const Refusal refusal = priv_intersecting_points_refusal(method, c_, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     return contains(p, "exact", tol);
 }

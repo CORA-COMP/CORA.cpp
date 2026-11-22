@@ -63,10 +63,11 @@ Ellipsoid Ellipsoid::mink_diff(const Ellipsoid &S2) const {
 
 Set Ellipsoid::minkowski_difference_impl(const ContSet &S2,
                                          const std::optional<std::string> &type) const {
-    const std::string mode = type.value_or("outer");
-    if (mode != "outer" && mode != "inner")
+    const std::string method = type.value_or("outer");
+    if (method != "outer" && method != "inner")
         CORA_FAIL(Error::wrong_value,
-                  "minkowski_difference: the type must be 'outer' or 'inner', got '" + mode + "'");
+                  "minkowski_difference: the type must be 'outer' or 'inner', got '" + method +
+                      "'");
     if (S2.class_id() != ClassId::ellipsoid)
         CORA_FAIL(Error::noops,
                   "minkowski_difference is not implemented for Ellipsoid and " + S2.class_name());

@@ -207,7 +207,7 @@ class Ellipsoid(unittest.TestCase):
             E.intersect(ellipsoid(np.eye(2)))
         # intersection and Cartesian product
         with self.assertRaises(cora.errors.WrongValue):
-            E.intersect(E, mode="exact")
+            E.intersect(E, method="exact")
         one = ellipsoid([[4.0]], [1.0])
         product = one.cart_prod(np.array([5.0, 6.0]))
         np.testing.assert_array_equal(product.q, [1.0, 5.0, 6.0])
@@ -215,9 +215,9 @@ class Ellipsoid(unittest.TestCase):
         both = one.cart_prod(ellipsoid([[1.0]]))
         np.testing.assert_allclose(both.Q, np.diag([8.0, 2.0]), atol=1e-12)
         np.testing.assert_allclose(both.q, [1.0, 0.0], atol=1e-12)
-        for mode in ("inner", "exact"):
+        for method in ("inner", "exact"):
             with self.assertRaises(cora.errors.NotSupported):
-                one.cart_prod(one, mode=mode)
+                one.cart_prod(one, method=method)
         self.assertEqual(cora.cart_prod(one, one).dim, 2)
         self.assertTrue(np.all(E.contains(np.array([3.0, 2.0]))))
         self.assertTrue(np.array([1.0, 2.0]) in E)

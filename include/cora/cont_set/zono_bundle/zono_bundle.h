@@ -107,13 +107,13 @@ class ZonoBundle : public ContSet {
     /// Whether the bundle meets a bundle, a zonotope, a box or points (..., n) (all inside). Type
     /// "exact" asks whether the bundle of both is empty; "approx" tests the boxes, S's enlarged by
     /// tol. Not a batch; tol is used for points and "approx" only (as CORA).
-    bool is_intersecting(const ZonoBundle &S, const std::string &type = "exact",
+    bool is_intersecting(const ZonoBundle &S, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Zonotope &Z, const std::string &type = "exact",
+    bool is_intersecting(const Zonotope &Z, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Interval &I, const std::string &type = "exact",
+    bool is_intersecting(const Interval &I, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Tensor &p, const std::string &type = "exact",
+    bool is_intersecting(const Tensor &p, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
 
     /// Whether the bundles are the same set: the members agree one by one, else each contains the
