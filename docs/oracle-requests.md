@@ -647,4 +647,3 @@ the standard method equal to the abstract one at the rate 1, and sampled soundne
 |---|---|---|
 | `neuralNetwork.explain` | `layers`, `x`, `label`, `epsilon`, `method`, `featOrder`, `refineSteps`, `outputThreshold` | the freed features, the order tried |
 | `neuralNetwork.fgsmAttack` | `layers`, `x`, `t`, `epsilon`, `mask` | the moved points `x - alpha sign(grad)` |
-
