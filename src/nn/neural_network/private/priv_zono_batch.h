@@ -202,9 +202,10 @@ Tensor priv_dual_lower_signs(const Tensor &w, const Tensor &R, const Tensor &c, 
                              const Tensor &start = Tensor(), Tensor *best = nullptr);
 
 /// The certificate (B, R) of lambda (B, R, p): -|w + lambda C|_1 - lambda d at max(lambda, 0), at
-/// least -|w|_1, on the rows as given (weak duality, CORALean's ConZonotope.dualBound).
+/// least -|w|_1, on the rows as given (weak duality, CORALean's ConZonotope.dualBound); w (B, R,
+/// q) or (R, q), C (B, p, q), d (B, p); sum gets w + lambda C (its minimizer: -sign).
 Tensor priv_dual_certificate(const Tensor &w, const Tensor &C, const Tensor &d,
-                             const Tensor &lambda);
+                             const Tensor &lambda, Tensor *sum = nullptr);
 
 /// priv_dual_lower_signs with the phases: inactive (s = 1) y = 0, active (-1) y = z, unsplit (0)
 /// the triangle's faces over [l, u]; t: the d neurons' rows, start (N, K, 3d); minimizer: the

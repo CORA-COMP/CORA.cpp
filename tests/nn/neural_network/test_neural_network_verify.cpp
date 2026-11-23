@@ -965,6 +965,7 @@ int main() {
         frad_gradients(b);
         alpha_gradients(b);
         backward_bounds(b);
+        // the dual certificates, on rows of very different norms too
         dual_bounds(b);
         dual_unscaled_rows(b);
         relu_chord_both_ends(b);

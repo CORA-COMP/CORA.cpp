@@ -290,11 +290,14 @@ Tensor priv_dual_lower_signs(const Tensor &w, const Tensor &R_, const Tensor &c_
                    off32.expand_dims(1);
         });
     if (best_out) *best_out = best;
-    // the certificate: the best lambda / scale on the unscaled rows (the scaled ones are rounded)
-    const Tensor unscaled = best.to(w.dtype()).maximum(0.0).divide(scale);
-    const Tensor at_best =
-        dual(w, R_, s.multiply(c_.negative()) + dr_, s.to(w.dtype()), unscaled, nullptr);
-    return at_best.maximum(w.abs().sum(-1).negative().expand_dims(0));
+    // the certificate: lambda / scale on the unscaled rows R, -R of a node's signs (s = 0: none)
+    const Tensor sw = s.to(w.dtype()), lam = best.to(w.dtype()).maximum(0.0).divide(scale);
+    const Tensor pos = sw.greater(sw.zeros_like()), neg = sw.less(sw.zeros_like());
+    const Tensor C = Tensor::concat({R_, R_.negative()}, 0);
+    const Tensor d_ = Tensor::concat({pos.multiply(dr_ - c_), neg.multiply(dr_ + c_)}, 1);
+    const Tensor l =
+        Tensor::concat({lam.multiply(pos.expand_dims(1)), lam.multiply(neg.expand_dims(1))}, 2);
+    return priv_dual_certificate(w, C, d_, l);
 }
 
 // The bound of the nodes with the phases of their splits ------------------------------------------
@@ -322,7 +325,9 @@ Tensor priv_dual_lower_phases(const Tensor &w, const PrivSplitTable &t, const Te
     const Tensor k_dr[3] = {split, a + f, a + f.multiply(sg)};
     const Tensor k_co[3] = {f, a.negative() + f - (split - a), (split - a) + a - f};
     const Tensor k_dro[3] = {f, one, one};
-    const Tensor k_l[3] = {f.zeros_like(), f.zeros_like(), f.multiply(sg).negative()};
+    // the chord's offset max(-sigma l, u - sigma u), holding at both ends (CORALean !971)
+    const Tensor chord =
+        t.l.defined() ? f.multiply(row(priv_relu_chord_offset(t.l, t.u, sigma))) : Tensor();
     // each row's 1-norm (its multiplier's unit; a zero row keeps 1)
     const auto unit = [](const Tensor &n) {
         return Tensor::where(n.greater(n.zeros_like()), n, n.ones_like());
@@ -349,7 +354,7 @@ Tensor priv_dual_lower_phases(const Tensor &w, const PrivSplitTable &t, const Te
             x.n[b] = norms[b].to(to);
             Tensor o = k_c[b].multiply(row(t.c)) + k_dr[b].multiply(row(t.dr)) +
                        k_co[b].multiply(row(t.c_out)) + k_dro[b].multiply(row(t.dr_out));
-            if (t.l.defined()) o = o + k_l[b].multiply(row(t.l));
+            if (b == 2 && chord.defined()) o = o + chord;
             x.off[b] = o.to(to);
         }
         return x;
@@ -366,7 +371,7 @@ Tensor priv_dual_lower_phases(const Tensor &w, const PrivSplitTable &t, const Te
         const auto l = lambdas(x, nu);
         Tensor P, Q, offs;
         for (int b = 0; b < 3; ++b) {
-            const Tensor lb = l[std::size_t(b)];
+            const Tensor &lb = l[std::size_t(b)];
             const Tensor p = lb.multiply(x.al[b].expand_dims(1)),
                          qq = lb.multiply(x.ga[b].expand_dims(1));
             const Tensor o = lb.multiply(x.off[b].expand_dims(1));
@@ -396,6 +401,7 @@ Tensor priv_dual_lower_phases(const Tensor &w, const PrivSplitTable &t, const Te
             const Tensor g = tt.sign().negative();
             const Tensor gi = g.matmul(GinT), go = g.matmul(GoutT); // (N, K, d)
             std::vector<Tensor> parts;
+            parts.reserve(3);
             for (int b = 0; b < 3; ++b)
                 parts.push_back((gi.multiply(d32.al[b].expand_dims(1)) +
                                  go.multiply(d32.ga[b].expand_dims(1)) - d32.off[b].expand_dims(1))
@@ -403,12 +409,30 @@ Tensor priv_dual_lower_phases(const Tensor &w, const PrivSplitTable &t, const Te
             return std::pair{v, Tensor::concat(parts, 2)};
         });
     if (best_out) *best_out = best;
-    // the certificate: lambda = nu / norm >= 0 on the table's unscaled rows, in its dtype (float64)
-    const Data d64 = data(t.rows.dtype());
+    // the certificate: nu / norm in float64 on the 7 unscaled rows the nodes share (the docs)
+    const DType dt = t.rows.dtype();
+    const Data d64 = data(dt);
+    const Tensor &Gi = d64.Gin, &Go = d64.Gout;
+    const Tensor C = Tensor::concat({Gi, Gi.negative(), Go, Go.negative(), Go - Gi, Gi - Go,
+                                     Go - Gi.multiply(sigma.to(dt).expand_dims(-1))},
+                                    0);
+    // the blocks' rows: inactive G_in, G_out, -G_out; active -G_in, G_out - G_in, G_in - G_out
+    const Tensor in = (split - a).to(dt), ac = a.to(dt), un = f.to(dt); // unsplit -G_out, ...
+    const auto l = lambdas(d64, best.to(w.dtype()).maximum(0.0));
+    const auto on = [](const Tensor &m, const Tensor &v) { return v.multiply(m.expand_dims(1)); };
+    const Tensor lambda =
+        Tensor::concat({on(in, l[0]), on(ac, l[0]), on(in, l[1]), on(in, l[2]) + on(un, l[0]),
+                        on(ac, l[1]), on(ac, l[2]) + on(un, l[1]), on(un, l[2])},
+                       2);
+    const Tensor *o = d64.off;
+    const Tensor off = Tensor::concat({in.multiply(o[0]), ac.multiply(o[0]), in.multiply(o[1]),
+                                       in.multiply(o[2]) + un.multiply(o[0]), ac.multiply(o[1]),
+                                       ac.multiply(o[2]) + un.multiply(o[1]), un.multiply(o[2])},
+                                      1);
     Tensor tt;
-    const Tensor at_best = value(d64, best.to(w.dtype()).maximum(0.0), &tt);
+    const Tensor at_best = priv_dual_certificate(w, C, off, lambda, minimizer ? &tt : nullptr);
     if (minimizer) *minimizer = tt.sign().negative(); // (N, K, q): the Lagrangian's minimizer
-    return at_best.maximum(w.abs().sum(-1).negative().expand_dims(0));
+    return at_best;
 }
 
 // The bound ---------------------------------------------------------------------------------------
@@ -440,9 +464,9 @@ Tensor priv_dual_lower(const Tensor &w, const Tensor &C_, const Tensor &d_, int6
 // The certificate ---------------------------------------------------------------------------------
 
 Tensor priv_dual_certificate(const Tensor &w, const Tensor &C, const Tensor &d,
-                             const Tensor &lambda) {
+                             const Tensor &lambda, Tensor *sum) {
     // weak duality at every lambda >= 0, and at least lambda = 0's bound
-    const Tensor at = aux_dual(w, C, d, lambda.maximum(0.0), nullptr);
+    const Tensor at = aux_dual(w, C, d, lambda.maximum(0.0), sum);
     return at.maximum(w.abs().sum(-1).negative());
 }
 
