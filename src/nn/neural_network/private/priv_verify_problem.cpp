@@ -122,6 +122,8 @@ NnProblem::NnProblem(const NeuralNetwork &net, const NnProperty &property,
     net_ = aux_network(net, DType::float64, options.device); // NOLINT(backend): the bounds
     net32_ = aux_network(net, options.dtype, options.device);
     memory_budget = options.memory_budget > 0 ? options.memory_budget : kBudget;
+    batch_memory_budget =
+        options.batch_memory_budget > 0 ? options.batch_memory_budget : memory_budget;
     aux_set_property(property);
 }
 
@@ -218,7 +220,8 @@ NnProblem NnProblem::subproblem(const std::vector<int64_t> &cases) const {
 }
 
 NnProblem::NnProblem(const NnProblem &parent, const NnProperty &property)
-    : memory_budget(parent.memory_budget), deadline(parent.deadline), net_(parent.net_),
+    : memory_budget(parent.memory_budget), batch_memory_budget(parent.batch_memory_budget),
+      deadline(parent.deadline), net_(parent.net_),
       net32_(parent.net32_), options_(parent.options_), confirm_(parent.confirm_) {
     aux_set_property(property);
 }

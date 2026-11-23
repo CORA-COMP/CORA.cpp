@@ -4931,7 +4931,8 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(verify_enqueue_type, "'prepend' or 'append'");
     CORA_VERIFY_FIELD(max_verif_iter, "The batches of the branch and bound at most");
     CORA_VERIFY_FIELD(verified_margin, "The margin of a verified row");
-    CORA_VERIFY_FIELD(memory_budget, "Bytes per batch; 0: 1 GiB");
+    CORA_VERIFY_FIELD(memory_budget, "Bytes per set; 0: 1 GiB");
+    CORA_VERIFY_FIELD(batch_memory_budget, "Bytes per batch of sets; 0: memory_budget");
     CORA_VERIFY_FIELD(device, "Where the network goes ('cpu', 'cuda'); empty: its own");
     // CORA's verify
     CORA_VERIFY_FIELD(refinement_method, "'zonotack' or 'naive'");

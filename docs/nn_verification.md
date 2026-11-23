@@ -143,7 +143,9 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   net with an error slot per neuron), the conzonotope bounding halves the error slots per layer,
   then the input generators, until it fits; the errors without a slot go to the interval center
   (sound, looser) and the backward bound keeps the margin. `stats` reports `slot_budget` and
-  `init_gen_budget`.
+  `init_gen_budget`. How many sets go into one batch is `batch_memory_budget` (0: `memory_budget`):
+  on a GPU, run_instance.py sets it to 0.8 of the free memory, so the batch grows and one set's cuts
+  stay those of the 1 GiB default (the larger sets cost more per box than the batch saves).
 - **Memory check.** The front end builds a Gemm's matrix after a convolution from chunks of unit
   vectors (malbeware's identity of 61504 entries alone was 29 GiB). `run_dev_set.py
   --one-per-network` runs the first instance of each network of a dev set, and `score.py
@@ -237,9 +239,11 @@ way), and instance 0 closes as unsat in 250 s.
      only: the same children and boxes as CORA's fixed count, with fewer propagations; lsnc_relu
      instance 0 needs half the Fourier-Motzkin and propagation time).
 - **Queue:** `mini_batch_size` sets per batch (`half-half`: half from the front, half from the back),
-  the children in front (`verify_enqueue_type`), at most what `memory_budget` holds; a batch starts
+  the children in front (`verify_enqueue_type`), at most what `batch_memory_budget` holds; a batch starts
   only if the last one's time fits before the deadline, and the deadline is checked per chunk. Out
-  of memory, the ReLU rows and then the batch shrink as in CORA.
+  of memory, the ReLU rows and then the batch shrink as in CORA. `stats`: `batch_size` (at the
+  start), `queue_peak`, and `verified_sets` as the sum of `check_verified` (boxes the check decides),
+  `empty_children` and `point_children` (children of the refinement that are empty or points).
 - **Deadline inside the steps:** every pass (the zonotope forward, the sensitivity, the reverse and
   backward passes, the interval gradient, the attack's gradient) checks the deadline once per layer
   (`check_deadline`), and candidate points are evaluated in chunks. A pass that reaches it raises

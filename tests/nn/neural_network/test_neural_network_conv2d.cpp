@@ -178,6 +178,27 @@ void networks(const std::string &b) {
               b + ": the slot budget keeps the verdict");
         check(conv.verify(p, 20, o).status == dense.verify(p, 20, o).status,
               b + ": verify gives the dense network's verdict");
+        // a larger batch budget: more sets per batch, the same cuts of one set
+        if (small.status == "sat") continue;
+        NnVerifyOptions batched = tight;
+        batched.batch_memory_budget = int64_t{1} << 30;
+        const NnVerifyResult wide = conv.verify(p, 20, batched);
+        const auto cut = [](const NnVerifyResult &r, const std::string &key) {
+            return r.stats.count(key) ? r.stats.at(key) : -1.0;
+        };
+        check(wide.status == small.status &&
+                  cut(wide, "slot_budget") == cut(small, "slot_budget") &&
+                  cut(wide, "init_gen_budget") == cut(small, "init_gen_budget"),
+              b + ": the batch budget keeps the verdict and the cuts of one set");
+        check(small.stats.at("batch_size") == 1 &&
+                  wide.stats.at("batch_size") == double(o.mini_batch_size),
+              b + ": the batch budget sets the boxes of a batch");
+        // the verified sets are the sum of their three kinds
+        check(wide.stats.at("verified_sets") == wide.stats.at("check_verified") +
+                                                    wide.stats.at("empty_children") +
+                                                    wide.stats.at("point_children") &&
+                  wide.stats.at("queue_peak") >= 1,
+              b + ": the verified sets by kind and the queue's peak");
     }
 }
 

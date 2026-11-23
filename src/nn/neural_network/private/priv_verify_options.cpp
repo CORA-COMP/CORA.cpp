@@ -106,6 +106,7 @@ void NnVerifyOptions::validate() const {
     aux_at_least("num_init_gens", num_init_gens, 1);
     aux_at_least("num_approx_err", num_approx_err, 0);
     aux_at_least("mini_batch_size", double(mini_batch_size), 1);
+    aux_at_least("batch_memory_budget", double(batch_memory_budget), 0);
     aux_at_least("refinement_max_iter", double(refinement_max_iter), 1);
     aux_at_least("polytope_bound_approx_max_iter", double(polytope_bound_approx_max_iter), 0);
     aux_at_least("max_candidates", double(max_candidates), 1);

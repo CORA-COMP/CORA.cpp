@@ -84,9 +84,9 @@ void options_and_strategies() {
         if (field == "position") w.neuron_split_position = "x";
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "an unknown " + field);
     }
-    // the counts of Phase 2 (slopes, step size, look-ahead candidates) and PGD's least steps
-    for (const std::string field :
-         {"alpha_iterations", "alpha_step_size", "candidates", "pgd_min_steps"}) {
+    // the counts of Phase 2 (slopes, step size, candidates), PGD's steps, the batch's budget
+    for (const std::string field : {"alpha_iterations", "alpha_step_size", "candidates",
+                                    "pgd_min_steps", "batch_memory_budget"}) {
         NnVerifyOptions w = vnncomp_options("x");
         w.bounding_method = "zonotope-alpha";
         // one count out of range
@@ -94,6 +94,7 @@ void options_and_strategies() {
         if (field == "alpha_step_size") w.alpha_step_size = 0;
         if (field == "candidates") w.look_ahead_candidates = 0;
         if (field == "pgd_min_steps") w.pgd_min_steps = 0;
+        if (field == "batch_memory_budget") w.batch_memory_budget = -1;
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "a wrong " + field);
     }
     vnncomp_options("cora_2024").validate();

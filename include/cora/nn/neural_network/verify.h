@@ -8,7 +8,8 @@
 // Bounding (its own branch and bound), a neuron heuristic (CORA's computeHeuristic) or an input
 // split heuristic. The search runs in NnVerifyOptions::dtype (float32) inside the float32 boxes,
 // the bounds in float64 over the outer boxes; a box is verified when, for every polytope of its
-// case, some row's lower bound exceeds verified_margin. Batches follow memory_budget (bytes).
+// case, some row's lower bound exceeds verified_margin. One set fits memory_budget (bytes: fewer
+// error slots and input generators otherwise), and a batch of sets batch_memory_budget.
 //
 // Syntax:   NnVerifyResult r = nn.verify(property, timeout, vnncomp_options("acasxu_2023"));
 //           register_attack("mine", factory);
@@ -86,9 +87,10 @@ struct NnVerifyOptions {
     std::string verify_enqueue_type = "prepend"; ///< or "append"
     int64_t max_verif_iter = std::numeric_limits<int64_t>::max();
     double verified_margin = numerics::kVerifiedMargin; ///< float32 net vs float64 bounds
-    int64_t memory_budget = 0;                          ///< bytes per batch; 0: 1 GiB
-    std::string device;           ///< where the network goes ("cpu", "cuda"); empty: its own
-    DType dtype = DType::float32; // NOLINT(backend): the search dtype, an option of verify
+    int64_t memory_budget = 0;                          ///< bytes per set; 0: 1 GiB
+    int64_t batch_memory_budget = 0; ///< bytes per batch of sets; 0: memory_budget
+    std::string device;              ///< where the network goes ("cpu", "cuda"); empty: its own
+    DType dtype = DType::float32;    // NOLINT(backend): the search dtype, an option of verify
     // CORA's verify (bounding_method "conzonotope"), CORA's names
     std::string refinement_method = "zonotack";        ///< or "naive"
     std::string bab_falsification_method = "zonotack"; ///< or "center", "fgsm"
@@ -203,7 +205,8 @@ class NnProblem {
     Tensor A, b;        ///< the polytopes in float64
     Tensor poly_case;   ///< (P), float64
     int64_t memory_budget = 0;
-    int64_t checks = 0; ///< confirm calls
+    int64_t batch_memory_budget = 0; ///< the boxes of one batch (options, else memory_budget)
+    int64_t checks = 0;              ///< confirm calls
     /// The deadline of the step that runs (verify sets it): objective_gradient and the bounding's
     /// passes check it once per layer (check_deadline).
     double deadline = std::numeric_limits<double>::infinity();
