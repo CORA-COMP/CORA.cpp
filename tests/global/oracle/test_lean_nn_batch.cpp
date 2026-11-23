@@ -95,8 +95,9 @@ int main() {
         const NeuralNetwork cnn(
             {Layer::conv2d(K.reshape({2, 1, 2, 2}), bc, {1, 4, 4}, {}), {W4, b4}},
             {Activation::relu, Activation::identity});
-        const std::vector<lean::NnLayer> cl{lean::NnLayer::conv(K.reshape({2, 1, 2, 2}), bc, {1, 4, 4}, {}),
-                                            lean::NnLayer::relu(), lean::NnLayer::linear(W4, b4)};
+        const std::vector<lean::NnLayer> cl{
+            lean::NnLayer::conv(K.reshape({2, 1, 2, 2}), bc, {1, 4, 4}, {}), lean::NnLayer::relu(),
+            lean::NnLayer::linear(W4, b4)};
         oracle::check("conv relu", aux_batch(cnn, X),
                       aux_without_bias(lean::evaluate_network(cl, lean::Zonotope(X), "singh"), 3,
                                        cl, {18, 18, 3}));
