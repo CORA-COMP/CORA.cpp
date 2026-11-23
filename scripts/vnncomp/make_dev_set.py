@@ -31,13 +31,7 @@ import shutil
 import subprocess
 import sys
 
-try:
-    import numpy as np
-except ImportError:  # the generators have their own Python (--python); this script needs NumPy too
-    raise SystemExit(
-        f"make_dev_set: {sys.executable} has no NumPy; run it with the Python of the built cora "
-        "package (e.g. .venv/bin/python with PYTHONPATH=build/python)"
-    ) from None
+import numpy as np
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
