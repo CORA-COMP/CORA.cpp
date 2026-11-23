@@ -4502,10 +4502,11 @@ Activation activation_of(const std::string &name) {
     if (name == "root") return Activation::root;
     if (name == "inv_sqrt_root") return Activation::inv_sqrt_root;
     if (name == "group_sort") return Activation::group_sort;
-    CORA_FAIL(Error::wrong_value, "NeuralNetwork: the activation must be identity, relu, sigmoid, "
-                                  "tanh, square, sign, exp, reciprocal, product, floor, cube, "
-                                  "inverse, sin, cos, softplus, root, inv_sqrt_root or group_sort, got " +
-                                      name);
+    CORA_FAIL(Error::wrong_value,
+              "NeuralNetwork: the activation must be identity, relu, sigmoid, "
+              "tanh, square, sign, exp, reciprocal, product, floor, cube, "
+              "inverse, sin, cos, softplus, root, inv_sqrt_root or group_sort, got " +
+                  name);
 }
 
 /// The error of the regression line from its name.

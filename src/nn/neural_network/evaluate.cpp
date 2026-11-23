@@ -192,6 +192,7 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         return priv_cube_line(l, u);
     case Activation::inverse:
         return priv_inverse_line(l, u);
+    // sin and cos (ml4acopf)
     case Activation::sin:
     case Activation::cos:
         return priv_trig_line(l, u, activation == Activation::cos);

@@ -142,7 +142,7 @@ class NonlinearLayers(unittest.TestCase):
             "sigmoid", 0.05, 2, -6.0, 6.0, [0.0], 0.0025, [1.0], 0.0025)
         self.assertEqual(regions[0]["l"], -np.inf)
         self.assertEqual(regions[-1]["u"], np.inf)
-        for a, b in zip(regions, regions[1:]):
+        for a, b in zip(regions, regions[1:], strict=False):
             self.assertEqual(a["u"], b["l"])
         self.assertTrue(all(r["d"] <= 0.05 + 1e-12 for r in regions))
         # a network with neurons that settle near 0 loses them, and the output set stays sound
