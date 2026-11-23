@@ -178,14 +178,17 @@ double aux_f(Activation a, double x) {
         return std::exp(x);
     case Activation::reciprocal:
         return 1.0 / std::max(x, 1.0);
+    case Activation::product:
+        break;
     }
-    CORA_FAIL(Error::wrong_value, "computeApproxPoly: an unknown activation");
+    CORA_FAIL(Error::not_supported, "computeApproxPoly: a product layer is not neuron by neuron; "
+                                    "only NeuralNetwork::verify takes it");
 }
 
 /// The i-th derivative of the activation at x, i >= 0: a sigmoid's and a tanh's are polynomials in
 /// the value s, with d/dx P(s) = P'(s) s (1 - s) for the sigmoid and P'(s) (1 - s^2) for the tanh.
 double aux_df(Activation a, int i, double x) {
-    if (i == 0) return aux_f(a, x);
+    if (i == 0 || a == Activation::product) return aux_f(a, x);
     if (a == Activation::identity) return i == 1 ? 1.0 : 0.0;
     if (a == Activation::relu) return i == 1 && x > 0 ? 1.0 : 0.0;
     if (a == Activation::square) return i == 1 ? 2.0 * x : i == 2 ? 2.0 : 0.0;

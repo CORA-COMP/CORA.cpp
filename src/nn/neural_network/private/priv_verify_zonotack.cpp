@@ -180,6 +180,17 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             hi.push_back(sl.maximum(su));
             continue;
         }
+        if (a == Activation::product) {
+            // a b in a_m b_m +- (|a_m| r_b + |b_m| r_a + r_a r_b), then zeros
+            const Tensor pm = (plo.back() + phi.back()) * 0.5, pr = (phi.back() - plo.back()) * 0.5;
+            const auto [am, bm] = priv_halves(pm);
+            const auto [ar, br] = priv_halves(pr);
+            const Tensor mid = am.multiply(bm);
+            const Tensor rad = am.abs().multiply(br) + bm.abs().multiply(ar) + ar.multiply(br);
+            lo.push_back(Tensor::concat({mid - rad, mid.zeros_like()}, -1));
+            hi.push_back(Tensor::concat({mid + rad, mid.zeros_like()}, -1));
+            continue;
+        }
         if (a == Activation::reciprocal) {
             // 1 / max(x, 1) falls: lo is the upper end's, hi the lower end's
             lo.push_back(phi.back().ones_like().divide(phi.back().maximum(1.0)));
@@ -236,6 +247,8 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                 return Tensor::where(z.greater(z.ones_like()), y.square().negative(),
                                      z.zeros_like());
             }
+            case Activation::product:
+                break;
             }
             CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
         };
@@ -250,6 +263,17 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             g_hi = g_hi.multiply(1.0 - left).multiply(d_hi) +
                    g_lo.multiply(open).multiply(left).multiply(d_hi);
             g_lo = g_l;
+        } else if (net.activations[k] == Activation::product) {
+            // the box's middle a_m b_m and radius |a_m| r_b + |b_m| r_a + r_a r_b, differentiated
+            const Tensor pm = (plo[k] + phi[k]) * 0.5, pr = (phi[k] - plo[k]) * 0.5;
+            const Activation p = Activation::product;
+            const Tensor g_pm = priv_slope_times_t(p, priv_derivative(p, pm), g_lo + g_hi);
+            const auto [am, bm] = priv_halves(pm);
+            const auto [ar, br] = priv_halves(pr);
+            const Tensor d_r = Tensor::concat({bm.abs() + br, am.abs() + ar}, -1);
+            const Tensor g_pr = priv_slope_times_t(p, d_r, g_hi - g_lo);
+            g_lo = (g_pm - g_pr) * 0.5;
+            g_hi = (g_pm + g_pr) * 0.5;
         } else if (net.activations[k] == Activation::reciprocal) {
             // falling: the output's lo is the input's hi, and back
             const Tensor g_l = g_hi.multiply(slope(plo[k]));

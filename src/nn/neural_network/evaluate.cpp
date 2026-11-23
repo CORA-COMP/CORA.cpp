@@ -57,6 +57,7 @@
 #include "nn/neural_network/private/priv_layers.h"
 
 #include <algorithm>
+#include <tuple>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -70,9 +71,25 @@ namespace {
 
 using Line = PrivLine;
 
-/// The values of the activation at the points.
-Tensor aux_apply(Activation activation, const Tensor &x) {
+/// A product layer's halves along the axis.
+std::pair<Tensor, Tensor> aux_halves(const Tensor &x, int axis) {
+    const int a = axis < 0 ? int(x.ndim()) + axis : axis;
+    const int64_t n = x.shape()[std::size_t(a)];
+    if (n % 2 != 0)
+        CORA_FAIL(Error::dimension_mismatch,
+                  "a product layer needs an even number of outputs, got " + std::to_string(n));
+    return {x.slice(a, 0, n / 2), x.slice(a, n / 2, n)};
+}
+
+/// The values of the activation at the points, the neurons along the axis.
+Tensor aux_apply(Activation activation, const Tensor &x, int axis = -1) {
     switch (activation) {
+    case Activation::product: {
+        // [a o b; 0]
+        const auto [a, b] = aux_halves(x, axis);
+        const Tensor ab = a.multiply(b);
+        return Tensor::concat({ab, ab.zeros_like()}, axis);
+    }
     case Activation::identity:
         return x;
     case Activation::relu:
@@ -150,8 +167,11 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         return priv_exp_line(l, u);
     case Activation::reciprocal:
         return priv_reciprocal_line(l, u);
+    case Activation::product:
+        break;
     }
-    CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
+    CORA_FAIL(Error::not_supported, "evaluate: a product layer has no line of its bounds; only "
+                                    "NeuralNetwork::verify takes it (priv_product_line)");
 }
 
 // The regression line, CORALean's ----------------------------------------------------------------
@@ -586,9 +606,109 @@ std::pair<Tensor, Tensor> priv_bounds(const PrivRows &r) {
     return aux_bounds(r);
 }
 
-Tensor priv_apply(Activation activation, const Tensor &x) {
+Tensor priv_apply(Activation activation, const Tensor &x, int axis) {
     detail::Entry entry;
-    return aux_apply(activation, x);
+    return aux_apply(activation, x, axis);
+}
+
+// The product of the halves -----------------------------------------------------------------------
+
+std::pair<Tensor, Tensor> priv_halves(const Tensor &x, int axis) {
+    detail::Entry entry;
+    // [a; b] along the axis
+    return aux_halves(x, axis);
+}
+
+Tensor priv_slope_times(Activation activation, const Tensor &m, const Tensor &x) {
+    detail::Entry entry;
+    // neuron by neuron: the slope times x
+    if (activation != Activation::product) return m.multiply(x);
+    // [m_a a + m_b b; 0]
+    const auto [ma, mb] = aux_halves(m, -1);
+    const auto [a, b] = aux_halves(x, -1);
+    const Tensor y = ma.multiply(a) + mb.multiply(b);
+    return Tensor::concat({y, y.zeros_like()}, -1);
+}
+
+Tensor priv_slope_times_t(Activation activation, const Tensor &m, const Tensor &g) {
+    detail::Entry entry;
+    // neuron by neuron: the slope times g
+    if (activation != Activation::product) return m.multiply(g);
+    // [m_a g_a; m_b g_a]: the second half's outputs are 0
+    const auto [ma, mb] = aux_halves(m, -1);
+    const Tensor ga = aux_halves(g, -1).first;
+    return Tensor::concat({ma.multiply(ga), mb.multiply(ga)}, -1);
+}
+
+Tensor priv_derivative(Activation activation, const Tensor &x) {
+    detail::Entry entry;
+    // f'(x) neuron by neuron; a product's two partial derivatives
+    switch (activation) {
+    case Activation::identity:
+        return x.ones_like();
+    case Activation::relu:
+        return x.greater(x.zeros_like());
+    case Activation::sigmoid: {
+        const Tensor s = x.sigmoid();
+        return s.multiply(1.0 - s);
+    }
+    case Activation::tanh:
+        return 1.0 - x.tanh().square();
+    case Activation::square:
+        return x + x;
+    case Activation::sign:
+        return x.zeros_like();
+    case Activation::exp:
+        return x.exp();
+    case Activation::reciprocal: {
+        // -1 / x^2 above 1, else 0
+        const Tensor y = x.ones_like().divide(x.maximum(1.0));
+        return Tensor::where(x.greater(x.ones_like()), y.square().negative(), x.zeros_like());
+    }
+    case Activation::product: {
+        // d(a b) / da = b, d(a b) / db = a
+        const auto [a, b] = aux_halves(x, -1);
+        return Tensor::concat({b, a}, -1);
+    }
+    }
+    CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
+}
+
+PrivLine priv_product_line(const Tensor &c, const Tensor &G, const Tensor &dr) {
+    detail::Entry entry;
+    const auto [ca, cb] = aux_halves(c, -1);
+    const auto [Ga, Gb] = aux_halves(G, -1);
+    Tensor ra, rb;
+    if (dr.defined()) std::tie(ra, rb) = aux_halves(dr, -1);
+    // the L1 radii of the rests x = G_a beta and y = G_b beta (the interval center's own factors)
+    const auto plus = [&](const Tensor &t, const Tensor &r) { return r.defined() ? t + r : t; };
+    const Tensor A = plus(Ga.abs().sum(1), ra), Bn = plus(Gb.abs().sum(1), rb);
+    const Tensor zero = A.zeros_like(), one = A.ones_like();
+    const Tensor both = A.greater(zero).multiply(Bn.greater(zero));
+    const Tensor lam = Tensor::where(both, Bn.divide(Tensor::where(both, A, one)).sqrt(), one)
+                           .maximum(numerics::kTiny);
+    // x y = ((lam x + y / lam)^2 - (lam x - y / lam)^2) / 4 in [-D^2 / 4, S^2 / 4] for each lam
+    const auto ends = [&](const Tensor &k) {
+        const Tensor ke = k.expand_dims(1), inv = one.divide(k);
+        Tensor S = (Ga.multiply(ke) + Gb.divide(ke)).abs().sum(1);
+        Tensor D = (Ga.multiply(ke) - Gb.divide(ke)).abs().sum(1);
+        if (dr.defined()) {
+            const Tensor rest = ra.multiply(k) + rb.multiply(inv);
+            S = S + rest;
+            D = D + rest;
+        }
+        return std::pair{D.square() * -0.25, S.square() * 0.25};
+    };
+    const auto [lo1, hi1] = ends(one);
+    const auto [lo2, hi2] = ends(lam);
+    const Tensor lo = lo1.maximum(lo2), hi = hi1.minimum(hi2);
+    // the rounding: 2 q + 16 ulps of the largest end (sums, squares), 16 of the centers' product
+    const double q = double(G.shape()[1]) + 2.0, eps = machine_eps(c.dtype());
+    const Tensor big = hi.maximum(lo.negative()), cc = ca.multiply(cb);
+    const Tensor widen = big * ((2.0 * q + 16.0) * eps) + cc.abs() * (16.0 * eps);
+    const Tensor offset = (lo + hi) * 0.5 - cc, radius = (hi - lo) * 0.5 + widen;
+    return {Tensor::concat({cb, ca}, -1), Tensor::concat({offset, offset.zeros_like()}, -1),
+            Tensor::concat({radius, radius.zeros_like()}, -1)};
 }
 
 PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
@@ -700,7 +820,7 @@ Tensor NeuralNetwork::evaluate(const Tensor &x) const {
             const Tensor &hr = outs[std::size_t(r.source + 1)];
             z = z + (r.map ? apply(*r.map, hr) : hr);
         }
-        h = aux_apply(activations_[k], z + L.b.expand_dims(-1));
+        h = aux_apply(activations_[k], z + L.b.expand_dims(-1), 0);
         if (!outs.empty()) outs[k + 1] = h;
     }
     return h.matrix_transpose();

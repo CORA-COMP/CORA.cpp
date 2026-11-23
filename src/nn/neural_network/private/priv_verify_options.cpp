@@ -218,6 +218,8 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.backward_bound = false;
         o.attack_time_share = 0.05;
     }
+    // vit's 3072 inputs: all a generator (16 GiB estimated, 2.5 GiB measured; docs/nn_verification)
+    if (name == "vit") o.memory_budget = int64_t(16) << 30;
     return o;
 }
 

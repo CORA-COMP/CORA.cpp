@@ -605,7 +605,7 @@ class OnnxNetwork:
             maps[-1] = _add_bias(maps[-1], expr.bias)
             return _Expr(expr.shape, [(src, maps)])
 
-        def squares(expr, activation="square"):
+        def activate(expr, activation):
             # the expression as a layer with the activation (a fresh layer: no other reader)
             before = len(layers)
             k = materialize(expr)
@@ -618,19 +618,17 @@ class OnnxNetwork:
             return k
 
         def products(a, b, ia, ib, out_shape):
-            # the sums over t of a[ia[t, o]] b[ib[t, o]] (index lists (K, O)): the halves
-            # (a + b) / 2 and (a - b) / 2 of every product by gathers with factors, their squares,
-            # then the difference of the squares summed over t by a 1 x 1 convolution
+            # the sums over t of a[ia[t, o]] b[ib[t, o]] (index lists (K, O)): the factors [a; b]
+            # of every product by two gathers, a product layer ([a o b; 0]), then its first half
+            # summed over t by a 1 x 1 convolution
             K, O = ia.shape
             ka, kb = materialize(single(a)), materialize(single(b))
             na, nb = math.prod(a.shape[1:]), math.prod(b.shape[1:])
-            half = torch.full((2 * K * O,), 0.5, dtype=torch.float64)
-            signs = torch.cat([half[: K * O], -half[K * O :]])
-            ga = _gather(torch.cat([ia.reshape(-1)] * 2).tolist(), na, torch.zeros(2 * K * O), half)
-            gb = _gather(torch.cat([ib.reshape(-1)] * 2).tolist(), nb, torch.zeros(2 * K * O),
-                         signs)
-            k = squares(_Expr((1, 2 * K * O), [(ka, [ga]), (kb, [gb])]))
-            w = torch.cat([torch.ones(K), -torch.ones(K)]).to(torch.float64).reshape(1, 2 * K, 1, 1)
+            none = torch.full((K * O,), -1, dtype=torch.int64)
+            ga = _gather(torch.cat([ia.reshape(-1), none]).tolist(), na, torch.zeros(2 * K * O))
+            gb = _gather(torch.cat([none, ib.reshape(-1)]).tolist(), nb, torch.zeros(2 * K * O))
+            k = activate(_Expr((1, 2 * K * O), [(ka, [ga]), (kb, [gb])]), "product")
+            w = torch.cat([torch.ones(K), torch.zeros(K)]).to(torch.float64).reshape(1, 2 * K, 1, 1)
             total = _conv(w, torch.zeros(1), (1, 2 * K, O, 1), {}, (1, 1, O, 1))
             return _Expr(out_shape, [(k, [total])])
 
@@ -651,10 +649,10 @@ class OnnxNetwork:
             minus = torch.full((M * n,), -1.0, dtype=torch.float64)
             dt = _gather(it.reshape(-1).tolist(), n, zero)
             dq = _gather(iq.reshape(-1).tolist(), n, zero, minus)
-            ke = squares(_Expr((1, M * n), [(kx, [dt]), (kx, [dq])]), "exp")
+            ke = activate(_Expr((1, M * n), [(kx, [dt]), (kx, [dq])]), "exp")
             w = torch.ones(1, M, 1, 1, dtype=torch.float64)
             total = _conv(w, torch.zeros(1), (1, M, n, 1), {}, (1, 1, n, 1))
-            return _Expr(shape, [(squares(_Expr((1, n), [(ke, [total])]), "reciprocal"), [])])
+            return _Expr(shape, [(activate(_Expr((1, n), [(ke, [total])]), "reciprocal"), [])])
 
         def max_pool(expr, shape, out_shape, attrs):
             # max(a, b) = b + relu(a - b): the window's items in pairs, round by round; a round is
@@ -795,22 +793,23 @@ class OnnxNetwork:
                 chain[outs[0]] = softmax(expr, axis)
                 continue
             if op == "Mul" and len(ins) == 2 and len(linked) == 2:
-                # a product of two values: ((a + b)^2 - (a - b)^2) / 4, the squares a layer
+                # a product of two values: a product layer of [a; b] ([a o b; 0]), its first half
                 a, b = chain[ins[0]], chain[ins[1]]
                 if a.shape != b.shape:
                     raise _NotAChain("Mul of two values of other shapes")
                 n = math.prod(a.shape[1:])
                 if n > MAX_PRODUCT:
                     raise _NotAChain(f"Mul of two values of {n} entries exceeds {MAX_PRODUCT}")
-                half = torch.eye(n, dtype=torch.float64) * 0.5
+                eye = torch.eye(n, dtype=torch.float64)
+                zero_n = torch.zeros(n, n, dtype=torch.float64)
                 (ta, ba), (tb, bb) = terms(a), terms(b)
-                ta, ba = _scaled_terms(ta, ba, torch.cat([half, half]))
-                tb, bb = _scaled_terms(tb, bb, torch.cat([half, -half]))
+                ta, ba = _scaled_terms(ta, ba, torch.cat([eye, zero_n]))
+                tb, bb = _scaled_terms(tb, bb, torch.cat([zero_n, eye]))
                 bias = ba if bb is None else bb if ba is None else ba + bb
-                k = squares(_Expr((1, 2 * n), ta + tb, bias))
-                diff = torch.cat([torch.eye(n), -torch.eye(n)], 1).to(torch.float64)
+                k = activate(_Expr((1, 2 * n), ta + tb, bias), "product")
+                first = torch.cat([torch.eye(n), torch.zeros(n, n)], 1).to(torch.float64)
                 zero = torch.zeros(n, dtype=torch.float64)
-                chain[outs[0]] = _Expr(a.shape, [(k, [(diff, zero)])])
+                chain[outs[0]] = _Expr(a.shape, [(k, [(first, zero)])])
                 continue
             if len(set(linked)) > 1 or len(linked) > 1:
                 raise _NotAChain(f"{op} joins two branches")

@@ -78,8 +78,9 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
         case Activation::sign:
         case Activation::exp:
         case Activation::reciprocal:
-            throw std::invalid_argument(
-                "aux_lean_layers: the oracle has no square, sign, exp or reciprocal layer");
+        case Activation::product:
+            throw std::invalid_argument("aux_lean_layers: the oracle has no square, sign, exp, "
+                                        "reciprocal or product layer");
         }
     }
     return layers;
