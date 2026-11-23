@@ -101,8 +101,10 @@ NeuralNetwork::input_neuron_order(const std::string &method, const Tensor &x,
     Tensor S = sensitivity(x).abs().mean(0);
     if (!input_size.empty()) S = S.reshape(input_size).mean(0).reshape({pixels});
     const std::vector<double> s = S.data();
-    std::stable_sort(order.begin(), order.end(),
-                     [&](int64_t a, int64_t b) { return s[size_t(a)] < s[size_t(b)]; });
+    // ascending, ties by the index (MATLAB's sort is stable)
+    std::sort(order.begin(), order.end(), [&](int64_t a, int64_t b) {
+        return s[size_t(a)] < s[size_t(b)] || (s[size_t(a)] == s[size_t(b)] && a < b);
+    });
     return order;
 }
 
