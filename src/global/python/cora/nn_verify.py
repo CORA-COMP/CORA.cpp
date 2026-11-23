@@ -31,7 +31,6 @@ from .vnnlib import parse_vnnlib, read_text
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
 @dataclass
 class VerifyResult:
     """The verdict and, for sat, the counterexample (rows x, y) with its text; stats for the CSV."""
@@ -133,6 +132,5 @@ class _Confirm:
             self.instance.onnx_path, None, text, self.instance.vnnlib_text
         )
         return y.astype(np.float64) if result == counterexample.CORRECT else None
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #
