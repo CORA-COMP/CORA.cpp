@@ -1242,23 +1242,28 @@ std::pair<Children, int64_t> ConZonotopeBounding::aux_refine(const Tensor &ci, c
     Tensor cy = art.out.c.take(parent, 0), Gy = art.out.G.take(parent, 0);
     Tensor dry = art.out.dr.defined() ? art.out.dr.take(parent, 0) : Tensor();
     // the members: (child, polytope) for the polytopes the parent did not exclude
-    const std::vector<int64_t> member = aux_where(1.0 - excluded.take(parent, 0));
-    Tensor empty = cx.zeros_like({n_ch});
+    std::vector<int64_t> member = aux_where(1.0 - excluded.take(parent, 0));
+    // the children still refined (act, ascending) and the input sets of those that are done
+    std::vector<int64_t> act(static_cast<std::size_t>(n_ch));
+    for (int64_t i = 0; i < n_ch; ++i) act[std::size_t(i)] = i;
+    std::vector<double> empty(static_cast<std::size_t>(n_ch), 0.0);
+    Tensor cx_all = cx, Gx_all = Gx;
+    Tensor splits_a = splits, drx_a = drx;
     const bool has_rows = C.shape()[1] > 0;
-    for (int64_t it = 1; it < o_.refinement_max_iter; ++it) {
+    for (int64_t it = 1; it < o_.refinement_max_iter && !act.empty(); ++it) {
         if (aux_late()) return {};
         std::tuple<Tensor, Tensor, Tensor> bounds;
         {
             const StepTimer timer(stats_, "fourier_motzkin_seconds");
-            bounds = aux_bound_children(cy, Gy, dry, C, d, member, n_ch);
+            bounds = aux_bound_children(cy, Gy, dry, C, d, member, int64_t(act.size()));
         }
         const auto &[bl, bu, child_empty] = bounds;
         if (timed_out_) return {};
-        empty = empty.maximum(child_empty);
         const Tensor bc = (bu + bl) * 0.5, br = (bu - bl) * 0.5;
         // the input set and the rows to the new box (aux_scaleAndOffsetZonotope)
-        cx = cx + bc.slice(1, 0, q0).expand_dims(1).matmul(Gx).squeeze(1);
-        Gx = Gx.multiply(br.slice(1, 0, q0).expand_dims(-1));
+        const Tensor bc0 = bc.slice(1, 0, q0), br0 = br.slice(1, 0, q0);
+        cx = cx + bc0.expand_dims(1).matmul(Gx).squeeze(1);
+        Gx = Gx.multiply(br0.expand_dims(-1));
         if (has_rows) {
             d = d - C.matmul(bc.expand_dims(-1)).squeeze(-1);
             C = C.multiply(br.expand_dims(1));
@@ -1268,23 +1273,74 @@ std::pair<Children, int64_t> ConZonotopeBounding::aux_refine(const Tensor &ci, c
                 C = Tensor::concat({C.slice(2, 0, q0), C.slice(2, q0, q).zeros_like()}, 2);
             }
         }
-        // the refined input set through the network again
-        if (it + 1 < o_.refinement_max_iter) {
-            const StepTimer timer(stats_, "refine_forward_seconds");
-            const ZonoPropagation prop =
-                net.forward(cx, drx, Gx, splits, art.has_sens ? &layer_sens : nullptr, false);
-            cy = prop.c;
-            Gy = prop.G;
-            dry = prop.dr;
+        // the empty children are verified, whatever a later pass would give
+        const std::vector<double> gone = child_empty.data();
+        for (std::size_t i = 0; i < act.size(); ++i)
+            if (gone[i] > 0) empty[std::size_t(act[i])] = 1.0;
+        if (it + 1 >= o_.refinement_max_iter) break;
+        // done: an empty child, or one whose input box did not move (a pass would repeat it)
+        const std::vector<double> same =
+            bc0.equal(bc0.zeros_like()).multiply(br0.equal(br0.ones_like())).all(1).data();
+        std::vector<int64_t> stay, done;
+        for (std::size_t i = 0; i < act.size(); ++i)
+            (gone[i] > 0 || same[i] > 0 ? done : stay).push_back(int64_t(i));
+        if (!done.empty()) {
+            // their input sets are final
+            std::vector<int64_t> at;
+            at.reserve(done.size());
+            for (const int64_t i : done) at.push_back(act[std::size_t(i)]);
+            cx_all = aux_put_rows(cx_all, at, cx.take(done, 0));
+            Gx_all = aux_put_rows(Gx_all, at, Gx.take(done, 0));
+            if (stay.empty()) {
+                act.clear();
+                break;
+            }
+            // the rest only: their sets, rows, members, splits and sensitivities
+            std::vector<int64_t> pos(act.size(), -1), next;
+            for (std::size_t j = 0; j < stay.size(); ++j) {
+                pos[std::size_t(stay[j])] = int64_t(j);
+                next.push_back(act[std::size_t(stay[j])]);
+            }
+            // their members, renumbered, then their tensors
+            std::vector<int64_t> kept;
+            for (const int64_t m : member)
+                if (const int64_t j = pos[std::size_t(m / P_)]; j >= 0)
+                    kept.push_back(j * P_ + m % P_);
+            member = kept;
+            act = next;
+            cx = cx.take(stay, 0);
+            Gx = Gx.take(stay, 0);
+            if (has_rows) {
+                C = C.take(stay, 0);
+                d = d.take(stay, 0);
+            }
+            splits_a = splits_a.take(stay, 0);
+            if (drx_a.defined()) drx_a = drx_a.take(stay, 0);
+            for (Tensor &s : layer_sens)
+                if (s.defined()) s = s.take(stay, 0);
         }
+        // the refined input set through the network again
+        const StepTimer timer(stats_, "refine_forward_seconds");
+        const ZonoPropagation prop =
+            net.forward(cx, drx_a, Gx, splits_a, art.has_sens ? &layer_sens : nullptr, false);
+        cy = prop.c;
+        Gy = prop.G;
+        dry = prop.dr;
     }
+    if (!act.empty()) {
+        cx_all = aux_put_rows(cx_all, act, cx);
+        Gx_all = aux_put_rows(Gx_all, act, Gx);
+    }
+    (*stats_)["refined_children"] += double(n_ch);
     // the boxes of the refined input sets; an empty or crossed one is verified
-    Tensor rad = Gx.abs().sum(1);
+    Tensor rad = Gx_all.abs().sum(1);
     if (drx.defined()) rad = rad + drx;
-    const Tensor lo = cx - rad, hi = cx + rad;
-    empty =
-        empty.maximum(lo.greater(hi).any(1)).maximum(lo.isnan().any(1)).maximum(hi.isnan().any(1));
-    const std::vector<int64_t> live = aux_where(1.0 - empty);
+    const Tensor lo = cx_all - rad, hi = cx_all + rad;
+    const Tensor empty_t = Tensor::like(lo, empty, {n_ch})
+                               .maximum(lo.greater(hi).any(1))
+                               .maximum(lo.isnan().any(1))
+                               .maximum(hi.isnan().any(1));
+    const std::vector<int64_t> live = aux_where(1.0 - empty_t);
     const int64_t n_empty = n_ch - int64_t(live.size());
     Children out{((hi + lo) * 0.5).take(live, 0), ((hi - lo) * 0.5).take(live, 0),
                  cases.take(live, 0), splits.take(live, 0)};
