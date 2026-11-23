@@ -221,8 +221,8 @@ NnProblem NnProblem::subproblem(const std::vector<int64_t> &cases) const {
 
 NnProblem::NnProblem(const NnProblem &parent, const NnProperty &property)
     : memory_budget(parent.memory_budget), batch_memory_budget(parent.batch_memory_budget),
-      deadline(parent.deadline), net_(parent.net_),
-      net32_(parent.net32_), options_(parent.options_), confirm_(parent.confirm_) {
+      deadline(parent.deadline), net_(parent.net_), net32_(parent.net32_),
+      options_(parent.options_), confirm_(parent.confirm_) {
     aux_set_property(property);
 }
 
