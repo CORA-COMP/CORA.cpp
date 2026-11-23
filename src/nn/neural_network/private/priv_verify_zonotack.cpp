@@ -30,6 +30,7 @@
 #include "nn/neural_network/private/priv_verify.h"
 #include "nn/neural_network/private/priv_zono_batch.h"
 
+#include <algorithm>
 #include <cmath>
 #include <exception>
 #include <limits>
@@ -407,7 +408,16 @@ class ConZonotopeBounding : public Bounding {
     std::vector<int64_t> aux_near(const std::vector<int64_t> &open, const Tensor &gap) const;
     Tensor aux_gap(const ZonoPropagation &out, const Tensor &lower, const Tensor &excluded) const;
     Tensor aux_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
-                              const Tensor &si, const Tensor &excluded) const;
+                              const Tensor &si, const Tensor &excluded,
+                              std::vector<Tensor> *slopes = nullptr, int64_t steps = -1) const;
+    // the ReLU-split branch and bound on a frozen zonotope (refinement_method "relu-bab")
+    std::string aux_relu_bab(NnProblem &problem, std::map<std::string, double> &stats);
+    void aux_relu_bab_slots(NnProblem &problem, const Tensor &xi, const Tensor &ri,
+                            std::map<std::string, double> &stats);
+    int aux_relu_bab_polytope(NnProblem &problem, int64_t p, const ZonoPropagation &out,
+                              const ZonoInput &in, const PrivSplitTable &table,
+                              const std::vector<int64_t> &order, const Tensor &ci,
+                              std::map<std::string, double> &stats);
     Artifacts aux_artifacts(const Tensor &xi, const Tensor &ri, const Tensor &si) const;
     Tensor aux_input_dims(const Tensor &xi, const Tensor &ri, const Artifacts &art) const;
     std::pair<Tensor, Tensor> aux_zonotack_candidates(const Tensor &cx, const Tensor &Gx,
@@ -617,7 +627,8 @@ Tensor ConZonotopeBounding::aux_gap(const ZonoPropagation &out, const Tensor &lo
 
 Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &ri_,
                                                const Tensor &ci_, const Tensor &si_,
-                                               const Tensor &excluded_) const {
+                                               const Tensor &excluded_, std::vector<Tensor> *slopes,
+                                               int64_t steps) const {
     const ZonoNet &net = *net_;
     const Tensor A = A_.reshape({P_ * K_, A_.shape()[2]}), abs_a = A.abs();
     // the open sets; a set leaves the loop once every polytope of its case is excluded
@@ -632,8 +643,10 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
     // the steps stop after alpha_patience of them without a newly excluded polytope
     double count = excluded.sum().item();
     int64_t gained = 0;
-    for (int64_t t = 1; t <= o_.alpha_iterations && now_seconds() < deadline_; ++t) {
-        if (t - gained > o_.alpha_patience) break;
+    // steps >= 0: that many, without patience
+    const int64_t iterations = steps >= 0 ? steps : o_.alpha_iterations;
+    for (int64_t t = 1; t <= iterations && now_seconds() < deadline_; ++t) {
+        if (steps < 0 && t - gained > o_.alpha_patience) break;
         // the ascent of the sum over the open polytopes of their best row's lower bound
         const Tensor lower = aux_margins(out);
         const int64_t B = lower.shape()[0];
@@ -683,6 +696,8 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
         }
         out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha);
     }
+    // the slopes of the last step (one set: never dropped while it is open)
+    if (slopes) *slopes = alpha;
     return result;
 }
 
@@ -728,6 +743,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     stats_ = &stats;
     if (slot_budget_ >= 0) stats["slot_budget"] = slot_budget_;
     if (init_gen_budget_ >= 0) stats["init_gen_budget"] = init_gen_budget_;
+    if (o_.refinement_method == "relu-bab") return aux_relu_bab(problem, stats);
     Tensor xs = (problem.outer_lo + problem.outer_hi) * 0.5;
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
@@ -806,6 +822,308 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     stats["verified_sets"] = double(verified);
     if (unresolved > 0) stats["out_of_range_sets"] = double(unresolved);
     return xs.shape()[0] == 0 && unresolved == 0 ? "unsat" : "unknown";
+}
+
+// The ReLU-split branch and bound on a frozen zonotope --------------------------------------------
+
+// sound: a split only intersects with true facts of its phase (nn_verification.md, relu-bab)
+
+std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
+                                              std::map<std::string, double> &stats) {
+    const int64_t boxes = problem.outer_lo.shape()[0];
+    std::string status = "unsat";
+    for (int64_t i = 0; i < boxes; ++i) {
+        const Tensor lo = problem.outer_lo.slice(0, i, i + 1),
+                     hi = problem.outer_hi.slice(0, i, i + 1);
+        const Tensor xi = (lo + hi) * 0.5, ri = (hi - lo) * 0.5;
+        const Tensor ci = problem.box_case.slice(0, i, i + 1), si = xi.zeros_like({1, 0});
+        // 0. a slot for every crossing neuron's error, as the root's budget allows (a new net_)
+        if (i == 0) aux_relu_bab_slots(problem, xi, ri, stats);
+        const ZonoNet &net = *net_;
+        // 1. the root once: the zonotope, its ReLU slopes optimized ("zonotope-alpha")
+        Tensor excluded;
+        ZonoInput in;
+        ZonoPropagation out;
+        {
+            const StepTimer timer(&stats, "relu_bab_root_seconds");
+            in = net.input_zonotope(xi, ri);
+            out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
+            excluded = aux_excluded(out, ci);
+            if (alpha_ && o_.relu_bab_alpha_iterations > 0 && excluded.min().item() == 0) {
+                std::vector<Tensor> alpha;
+                excluded = aux_alpha_excluded(xi, ri, ci, si, excluded, &alpha,
+                                              o_.relu_bab_alpha_iterations);
+                out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha);
+                excluded = excluded.maximum(aux_excluded(out, ci));
+            }
+        }
+        const std::vector<double> ex = excluded.data();
+        // 2. the crossing neurons, split in the order of their lines' errors (largest first)
+        const PrivSplitTable table = priv_split_table(out, net);
+        const std::vector<double> er = table.er.data();
+        std::vector<int64_t> order(er.size());
+        for (std::size_t j = 0; j < order.size(); ++j) order[j] = int64_t(j);
+        std::stable_sort(order.begin(), order.end(), [&](int64_t a, int64_t b) {
+            return er[std::size_t(a)] > er[std::size_t(b)];
+        });
+        stats["relu_bab_crossing"] = std::max(stats["relu_bab_crossing"], double(order.size()));
+        stats["relu_bab_slotless"] = std::max(stats["relu_bab_slotless"], double(table.slotless));
+        stats["relu_bab_dual_steps"] = double(o_.relu_bab_dual_steps);
+        // 3. every open polytope on its own frontier, the weakest first (one open: unknown)
+        const std::vector<double> root = aux_margins(out).max(2).squeeze(0).data();
+        std::vector<int64_t> open;
+        for (int64_t p = 0; p < P_; ++p)
+            if (ex[std::size_t(p)] == 0) open.push_back(p);
+        std::stable_sort(open.begin(), open.end(), [&](int64_t a, int64_t b) {
+            return root[std::size_t(a)] < root[std::size_t(b)];
+        });
+        stats["relu_bab_open_polytopes"] += double(open.size());
+        for (const int64_t p : open) {
+            const int res = aux_relu_bab_polytope(problem, p, out, in, table, order, ci, stats);
+            if (res == 2) return "sat";
+            if (res == 0 || aux_late()) return "unknown";
+        }
+    }
+    return status;
+}
+
+// The root of the ReLU splits ---------------------------------------------------------------------
+
+void ConZonotopeBounding::aux_relu_bab_slots(NnProblem &problem, const Tensor &xi, const Tensor &ri,
+                                             std::map<std::string, double> &stats) {
+    // the crossing neurons per layer of the first box's zonotope by a net
+    const auto crossing = [&](const ZonoNet &net) {
+        const ZonoInput in = net.input_zonotope(xi, ri);
+        const ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, xi.zeros_like({1, 0}), nullptr, true);
+        std::vector<int64_t> per(net.slots.size(), 0);
+        for (const ZonoLayerRecord &rec : out.layers) {
+            if (net.activations[std::size_t(rec.index)] != Activation::relu) continue;
+            const Tensor cross =
+                rec.l.less(rec.l.zeros_like()).multiply(rec.u.greater(rec.u.zeros_like()));
+            per[std::size_t(rec.index)] = int64_t(cross.max(0).sum().item());
+        }
+        return per;
+    };
+    // a net of gens input generators and per[k] slots in layer k (the largest errors: the crossing)
+    const auto make = [&](double gens, const std::vector<int64_t> &per) {
+        auto net = std::make_unique<ZonoNet>(problem.net(), gens, kInf, o_.poly_method, "length");
+        net->q = net->q0;
+        for (std::size_t k = 0; k < per.size(); ++k) {
+            net->slots[k] = std::min(net->slots[k], per[k]);
+            net->q += net->slots[k];
+        }
+        return net;
+    };
+    int64_t elements = net_->n0, work = 0;
+    for (const int64_t w : net_->widths) elements += w;
+    for (const NeuralNetwork::Layer &layer : net_->maps) work = std::max(work, layer.work());
+    elements += work;
+    const int64_t budget = o_.relu_bab_memory_budget > 0 ? o_.relu_bab_memory_budget
+                                                         : problem.batch_memory_budget / 4 * 3;
+    const auto fits = [&](const ZonoNet &net) { return 8 * 4 * net.q * elements <= budget; };
+    // the crossing neurons of the batch's net, then fewer of a net with a slot for each of them
+    std::vector<int64_t> per = crossing(*net_);
+    double gens = std::max(o_.relu_bab_init_gens, double(net_->q0));
+    auto net = make(gens, per);
+    while (16 * net->q * elements > problem.batch_memory_budget && net->q > net->q0) {
+        for (int64_t &v : per) v /= 2;
+        net = make(gens, per);
+    }
+    per = crossing(*net);
+    net = make(gens, per);
+    // fewer slots first (halved per layer), then fewer input generators, down to the batch's net
+    while (!fits(*net) && net->q > net->q0) {
+        for (int64_t &v : per) v /= 2;
+        net = make(gens, per);
+    }
+    while (!fits(*net) && net->q0 > net_->q0) {
+        gens = std::max(double(net_->q0), std::floor(double(net->q0) / 2));
+        net = make(gens, per);
+    }
+    double slots = 0;
+    for (const int64_t v : per) slots += double(v);
+    stats["relu_bab_slots"] = slots;
+    stats["relu_bab_init_gens"] = double(net->q0);
+    if (fits(*net) || net->q > net_->q) net_ = std::move(net);
+    net_->deadline = std::min(deadline_, problem.deadline);
+}
+
+// The nodes of the ReLU splits --------------------------------------------------------------------
+
+int ConZonotopeBounding::aux_relu_bab_polytope(NnProblem &problem, int64_t p,
+                                               const ZonoPropagation &out, const ZonoInput &in,
+                                               const PrivSplitTable &table,
+                                               const std::vector<int64_t> &order_, const Tensor &ci,
+                                               std::map<std::string, double> &stats) {
+    const DType dtype = problem.options().dtype;
+    const int64_t q = net_->q, U = int64_t(order_.size()), n0 = in.c.shape()[1];
+    // the polytope's rows a_k y - b_k as base_k + w_k beta, beta in [-1, 1]^q, y's dr at its worst
+    const Tensor A = A_.slice(0, p, p + 1).squeeze(0), b = b_.slice(0, p, p + 1).squeeze(0);
+    const Tensor real = real_row_.slice(0, p, p + 1).squeeze(0);
+    const Tensor w = out.G.squeeze(0).matmul(A.matrix_transpose()).matrix_transpose(); // (K, q)
+    Tensor base = out.c.matmul(A.matrix_transpose()).squeeze(0) - b;
+    if (out.dr.defined()) base = base - out.dr.matmul(A.abs().matrix_transpose()).squeeze(0);
+    base = Tensor::where(real, base, base.full_like({1}, -kInf)); // a padding row decides nothing
+    const Tensor zero_w = w.zeros_like({1, q});
+    // "output": the largest slack of an error factor in a row first, |w_k| at its slot
+    std::vector<int64_t> order = order_;
+    if (o_.relu_bab_order == "output") {
+        const std::vector<double> col = table.col.data(), wa = w.abs().max(0).data();
+        std::vector<double> score(col.size(), -1); // no slot: after all, as the error orders
+        for (std::size_t j = 0; j < col.size(); ++j)
+            if (col[j] >= 0) score[j] = wa[std::size_t(col[j])];
+        std::stable_sort(order.begin(), order.end(), [&](int64_t a, int64_t b) {
+            return score[std::size_t(a)] > score[std::size_t(b)];
+        });
+    }
+    // the root's bound: the best row's, the weakest open polytope's (below 0: open)
+    const double root = (base - w.abs().sum(-1)).max().item();
+    stats["relu_bab_root_margin"] =
+        std::min(stats.count("relu_bab_root_margin") ? stats["relu_bab_root_margin"] : kInf, root);
+    // the rows of a node of depth d: its d splits, then the faces of the next M(d) neurons
+    const auto faces = [&](int64_t d) { return std::min<int64_t>(o_.relu_bab_faces, U - d); };
+    const auto subset = [&](int64_t n) {
+        const std::vector<int64_t> j(order.begin(), order.begin() + n);
+        // the table's rows of the first n neurons of the order
+        PrivSplitTable t;
+        t.rows = table.rows.take(j, 0);
+        t.c = table.c.take(j, 0);
+        t.dr = table.dr.take(j, 0);
+        t.rows_out = table.rows_out.take(j, 0);
+        t.c_out = table.c_out.take(j, 0);
+        t.dr_out = table.dr_out.take(j, 0);
+        t.l = table.l.take(j, 0);
+        t.u = table.u.take(j, 0);
+        return t;
+    };
+    // the nodes' signs, 0 for the faces' neurons
+    const auto signs = [&](const Tensor &sg, int64_t m) {
+        return m == 0 ? sg : Tensor::concat({sg, sg.zeros_like({sg.shape()[0], m})}, 1);
+    };
+    // the bound of the nodes of signs sg (N, d) from multipliers l0 (N, K, 3 (d + M)); 1: verified
+    const auto bound = [&](const PrivSplitTable &sub, const Tensor &sg, int64_t m, const Tensor &l0,
+                           Tensor *best, int64_t steps) {
+        const StepTimer timer(&stats, "relu_bab_bound_seconds");
+        return base.expand_dims(0) + priv_dual_lower_phases(w, sub, signs(sg, m), steps,
+                                                            o_.dual_step_size, dtype, l0, best);
+    };
+    // the root: no split, the faces only, with more steps
+    Tensor S = w.zeros_like({1, 0}), L;
+    Tensor lows;
+    {
+        const int64_t m = faces(0);
+        if (m > 0) {
+            lows = bound(subset(m), S, m, w.zeros_like({1, K_, 3 * m}), &L, o_.relu_bab_root_steps);
+            L = L.to(S.dtype());
+        } else {
+            lows = (base - w.abs().sum(-1)).expand_dims(0);
+            L = w.zeros_like({1, K_, 0});
+        }
+        // decided at the root: no split
+        stats["relu_bab_root_faces_margin"] = lows.max(1).min().item();
+        if (lows.max(1).min().item() > o_.verified_margin) {
+            stats["relu_bab_polytopes_verified"] += 1;
+            return 1;
+        }
+    }
+    // breadth first, the open nodes at most cap bytes
+    const int64_t cap = o_.relu_bab_frontier_bytes > 0 ? o_.relu_bab_frontier_bytes
+                                                       : 8 * problem.batch_memory_budget;
+    for (int64_t d = 0; d < U; ++d) {
+        if (aux_late()) return 0;
+        // the children split neuron order[d]: s = +1: inactive, z <= 0; -1: active, z >= 0
+        const int64_t m0 = faces(d), m1 = faces(d + 1), D1 = d + 1 + m1;
+        const PrivSplitTable sub = subset(D1);
+        const int64_t F = S.shape()[0];
+        const Tensor plus = S.ones_like({F, 1});
+        const Tensor S2 = Tensor::concat(
+            {Tensor::concat({S, plus}, 1), Tensor::concat({S, plus.negative()}, 1)}, 0);
+        // the parents' multipliers: the splits', 0 for the new split, the faces left, 0 for a new
+        const Tensor z1 = L.zeros_like({F, K_, 1});
+        const int64_t D0 = d + m0;
+        std::vector<Tensor> blocks;
+        for (int64_t k = 0; k < 3; ++k) {
+            blocks.push_back(L.slice(2, k * D0, k * D0 + d));
+            blocks.push_back(z1);
+            if (m0 > 1) blocks.push_back(L.slice(2, k * D0 + d + 1, (k + 1) * D0));
+            const int64_t fresh = m1 - std::max<int64_t>(m0 - 1, 0);
+            if (fresh > 0) blocks.push_back(L.zeros_like({F, K_, fresh}));
+        }
+        const Tensor L1 = Tensor::concat(blocks, 2);
+        const Tensor L2 = Tensor::concat({L1, L1}, 0);
+        // the children in chunks of a quarter of the batch's memory (the root holds the rest)
+        const int64_t per_node = 8 * (4 * K_ * q + 30 * K_ * D1 + 2 * q);
+        const int64_t chunk =
+            std::max<int64_t>(1, problem.batch_memory_budget / 4 / std::max<int64_t>(1, per_node));
+        std::vector<Tensor> keep_s, keep_l, keep_low;
+        for (int64_t at = 0; at < 2 * F; at += chunk) {
+            if (aux_late()) return 0;
+            // one chunk of the children: their bounds from their parents' multipliers
+            const int64_t to = std::min(2 * F, at + chunk);
+            const Tensor s = S2.slice(0, at, to), l0 = L2.slice(0, at, to);
+            Tensor best;
+            const Tensor low = bound(sub, s, m1, l0, &best, o_.relu_bab_dual_steps);
+            // verified: some row's float64 bound above the margin
+            const Tensor margin = low.max(1); // (N)
+            const Tensor done = margin.greater(margin.full_like({1}, o_.verified_margin));
+            std::vector<int64_t> kept = aux_where(1.0 - done);
+            stats["relu_bab_nodes"] += double(to - at);
+            stats["relu_bab_verified_nodes"] += double((to - at) - int64_t(kept.size()));
+            if (kept.empty()) continue;
+            // infeasible (Farkas over the box) among the rest: min_beta mu^T (C beta - d) > 0
+            std::vector<int64_t> open = kept;
+            if (o_.relu_bab_farkas_steps > 0) {
+                const Tensor farkas =
+                    priv_dual_lower_phases(zero_w, sub, signs(s.take(kept, 0), m1),
+                                           o_.relu_bab_farkas_steps, o_.dual_step_size, dtype)
+                        .squeeze(1);
+                const Tensor empty = farkas.greater(farkas.full_like({1}, o_.verified_margin));
+                open = aux_where(1.0 - empty);
+                stats["relu_bab_infeasible_nodes"] += double(kept.size() - open.size());
+                for (int64_t &v : open) v = kept[std::size_t(v)];
+            }
+            if (open.empty()) continue;
+            // the open children stay, with their multipliers and bounds
+            keep_s.push_back(s.take(open, 0));
+            keep_l.push_back(best.to(S.dtype()).take(open, 0));
+            keep_low.push_back(low.take(open, 0));
+        }
+        stats["relu_bab_depth"] = std::max(stats["relu_bab_depth"], double(d + 1));
+        if (keep_s.empty()) {
+            stats["relu_bab_polytopes_verified"] += 1;
+            return 1;
+        }
+        S = Tensor::concat(keep_s, 0);
+        L = Tensor::concat(keep_l, 0);
+        lows = Tensor::concat(keep_low, 0);
+        stats["relu_bab_open_margin"] = lows.max(1).min().item(); // the weakest open node's
+        stats["relu_bab_frontier_peak"] =
+            std::max(stats["relu_bab_frontier_peak"], double(S.shape()[0]));
+        // witnesses: the factors minimizing the row nearest to deciding, at the weakest nodes
+        if (o_.relu_bab_witnesses > 0) {
+            const StepTimer timer(&stats, "relu_bab_witness_seconds");
+            const int64_t M = std::min<int64_t>(o_.relu_bab_witnesses, S.shape()[0]);
+            const Tensor pick = lows.max(1).negative().topk(M, 0).second;
+            const Tensor sp = S.take(pick, 0), lp = L.take(pick, 0);
+            // the Lagrangian's minimizer for the row k* nearest to deciding (all rows must hold)
+            const Tensor hot = aux_onehot(lows.take(pick, 0).argmax(1, true), K_).squeeze(1);
+            Tensor mins;
+            priv_dual_lower_phases(w, sub, signs(sp, m1), 0, o_.dual_step_size, dtype, lp, nullptr,
+                                   &mins);
+            const Tensor beta = mins.multiply(hot.expand_dims(-1)).sum(1); // (M, q)
+            const int64_t q0 = in.G.shape()[1];
+            const Tensor x = in.c + beta.slice(1, 0, q0).matmul(in.G.squeeze(0));
+            if (priv_check_points(problem, x.reshape({M, n0}), ci.broadcast_to({M}), *found_))
+                return 2;
+        }
+        // the frontier's bytes: the signs and the multipliers
+        if (8 * S.shape()[0] * (d + 1 + 3 * K_ * D1) > cap) {
+            stats["relu_bab_frontier_cut"] = 1;
+            return 0;
+        }
+    }
+    return 0; // every crossing neuron split, still open: the frozen lines cannot decide
 }
 
 // One batch ---------------------------------------------------------------------------------------
