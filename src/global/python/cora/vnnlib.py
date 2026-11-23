@@ -23,6 +23,7 @@ Reviewed:      ---
 import gzip
 import re
 from dataclasses import dataclass, field
+from decimal import Decimal
 
 import numpy as np
 
@@ -116,7 +117,21 @@ def to_vnnlib2(text, input_shape, output_shape, input_type="float32", output_typ
         else re.sub(r"(?<=[\s(])(-?\d+)(?=[\s)])", r"\1.0", line)
         for line in body
     ]
-    return "\n".join(head + body) + "\n"
+    return positional("\n".join(head + body) + "\n")
+
+
+def positional(text):
+    """The text with every number in exponent form (2.1e-05) written positionally (0.000021), the
+    same digits (Decimal, no rounding), as VNN-COMP's 2.0 files write it; comment lines kept."""
+
+    def plain(match):
+        out = format(Decimal(match.group(0)), "f")
+        return out if "." in out else out + ".0"
+
+    lines = text.split("\n")
+    return "\n".join(
+        line if line.lstrip().startswith(";") else EXPONENT.sub(plain, line) for line in lines
+    )
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -128,6 +143,8 @@ DECLARE = re.compile(r"^\(declare-const (X|Y)_(\S+) Real\)$")
 SIMPLE_ASSERT = re.compile(r"^\(assert " + COMPARISON + r"\)$")
 
 DNF_ASSERT = re.compile(r"^\(assert \(or (\(and ?(" + COMPARISON + r")+\))+\)\)$")
+
+EXPONENT = re.compile(r"(?<![\w.\[,])-?\d+(\.\d*)?[eE][-+]?\d+(?![\w.])")
 
 VERSION_2 = re.compile(r"\(\s*vnnlib-version\s*<\s*2\.0\s*>\s*\)")
 
@@ -249,7 +266,8 @@ def _read_v2(text, n, m):
     multiplied out, and every conjunct split into its input box and its output polytope."""
     import vnnlib
 
-    query = vnnlib.parse_query_string(text)
+    # the reference parser refuses an exponent (1e-05): positional, as VNN-COMP's own 2.0 files
+    query = vnnlib.parse_query_string(positional(text))
     if len(query.networks) != 1 or query.networks[0].hidden:
         raise NotImplementedError("vnnlib: one network without hidden variables is supported")
     conjuncts = [[]]
