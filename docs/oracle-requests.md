@@ -567,3 +567,21 @@ requests carry the identifiers and the oracle maps them.
 | `polyZonotope.replaceId`, `restoreId`, `rmId`, `noIndep` | `ReplaceId.lean`, `PadBack.lean`, `RmId.lean`, `NoIndep.lean` | `pZ`, `id` / `idOld`, `idNew` | exact: nothing rounds; `rmId` adds the columns of equal exponents in order |
 | `polyZonotope.onlyId` | `PolyZonotope.onlyId` | `pZ`, `id` | the two parts (`pZId`, `pZr`) |
 | `polyZonotope.isequal`, `isFullDim`, `isBounded`, `representsa` | `Isequal.lean` (structural, tolerance 0), `IsFullDim.lean` (certified true only), `Basic.lean` | `pZ`, `S`, `tol` | a Boolean; CORA.cpp's `isequal` compares up to order after `compact`, CORALean's in order, so the two agree on `true` only |
+
+## NN nonlinear layers, gradients and forms (PR "nn/port-rest-2", batch 2)
+
+`NeuralNetwork::exp_layer`, `softmax_layer` (1 / sum_j exp(x_j - x_i), two layers; CORA's exp(x - max)
+/ sum is the same function but not the same floating-point steps), `max_pool2d_layer` (b + relu(a - b)
+over the window's pairs), `evaluate_zonotope_batch`, `backprop`, `backprop_interval_batch`,
+`propagate_bounds`, `input_neuron_order` and `normal_form` are tested by hand-computed cases, samples
+and the Jacobian of `sensitivity`. CORALean has float models of the activations and of
+`neuralNetwork.backwardBound`, but no op for the gradient passes or the forms, so their rows are
+oracle debt.
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.backprop` | `layers`, `x`, `gradOut` | the input gradient |
+| `neuralNetwork.backpropIntervalBatch` | `layers`, `l`, `u`, `gl`, `gu` | `gl`, `gu` (Gowal et al. 2019) |
+| `neuralNetwork.propagateBounds` | `layers`, per-layer `l`, `u`, `i` | the bounds per layer |
+| `neuralNetwork.normalForm` | `layers` | the merged layers |
+| `neuralNetwork.evaluateZonotopeBatch` | `layers`, `c`, `G`, `numApproxErr`, `polyMethod` | `c`, `G`, `dr` |

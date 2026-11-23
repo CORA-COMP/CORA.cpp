@@ -4685,6 +4685,98 @@ void bind_neural_network(py::module_ &m) {
                 return matrix(nn.sensitivity(point.reshape({point.numel()})));
             },
             py::arg("x"), "The Jacobian (out, in) of the network at the point x (in,)")
+        // CORA's exp, softmax and max-pool layers, as the networks of their blocks
+        .def_static(
+            "exp_layer", [](int64_t n) { return NeuralNetwork(NeuralNetwork::exp_layer(n)); },
+            py::arg("n"), "The network of CORA's nnExpLayer on n values")
+        .def_static(
+            "softmax_layer",
+            [](int64_t n) { return NeuralNetwork(NeuralNetwork::softmax_layer(n)); }, py::arg("n"),
+            "The network of CORA's nnSoftmaxLayer on n values: 1 / sum_j exp(x_j - x_i), two "
+            "layers")
+        .def_static(
+            "max_pool2d_layer",
+            [](const std::array<int64_t, 2> &pool, const std::vector<int64_t> &input,
+               const std::array<int64_t, 2> &stride) {
+                return NeuralNetwork(NeuralNetwork::max_pool2d_layer(pool, input, stride));
+            },
+            py::arg("pool"), py::arg("input"), py::arg("stride") = std::array<int64_t, 2>{0, 0},
+            "The network of CORA's nnMaxPool2DLayer on the input (C, H, W): max(a, b) = b + "
+            "relu(a - b) over each window, round by round")
+        // a batch of zonotopes through the network
+        .def(
+            "evaluate_zonotope_batch",
+            [](const NeuralNetwork &nn, const py::object &c, const py::object &G,
+               double num_approx_err, const std::string &poly_method,
+               const std::string &approx_error_order) {
+                // the options by name
+                ZonotopeBatchOptions o;
+                o.num_approx_err = num_approx_err;
+                o.poly_method = poly_method;
+                o.approx_error_order = approx_error_order;
+                const ZonotopeBatch Y =
+                    nn.evaluate_zonotope_batch(point_of(c, "the centers"), tensor_of(G, "G"), o);
+                return py::make_tuple(matrix(Y.c), matrix(Y.G),
+                                      Y.dr.defined() ? py::object(matrix(Y.dr)) : py::none());
+            },
+            py::arg("c"), py::arg("G"),
+            py::arg("num_approx_err") = std::numeric_limits<double>::infinity(),
+            py::arg("poly_method") = "bounds", py::arg("approx_error_order") = "sequential",
+            "CORA's evaluateZonotopeBatch: the centers (B, n) and generators (B, q, n) of a batch "
+            "of zonotopes through the network, as (c, G, dr); dr is None unless an error has no "
+            "generator (num_approx_err)")
+        // the gradient at points, and its bounds over a box
+        .def(
+            "backprop",
+            [](const NeuralNetwork &nn, const py::object &x, const py::object &grad_out) {
+                return matrix(
+                    nn.backprop(point_of(x, "the points"), point_of(grad_out, "grad_out")));
+            },
+            py::arg("x"), py::arg("grad_out"),
+            "CORA's backprop: the gradient (B, in) at the input for the gradient grad_out (B, out) "
+            "at the output, at the points x (B, in)")
+        .def(
+            "backprop_interval_batch",
+            [](const NeuralNetwork &nn, const py::object &l, const py::object &u,
+               const py::object &gl, const py::object &gu) {
+                const auto [lo, hi] = nn.backprop_interval_batch(
+                    point_of(l, "l"), point_of(u, "u"), point_of(gl, "gl"), point_of(gu, "gu"));
+                return py::make_tuple(matrix(lo), matrix(hi));
+            },
+            py::arg("l"), py::arg("u"), py::arg("gl"), py::arg("gu"),
+            "CORA's backpropIntervalBatch: the bounds (gl, gu) of the input gradient over the box "
+            "[l, u] from the bounds at the output")
+        // the bounds of the activation layers, the order of the inputs and the normal form
+        .def(
+            "propagate_bounds",
+            [](const NeuralNetwork &nn, const py::list &bounds, int64_t i) {
+                // one (l, u) or None per layer
+                std::vector<NnBounds> in;
+                for (const py::handle h : bounds)
+                    in.push_back(h.is_none() ? NnBounds{}
+                                             : NnBounds{point_of(h.cast<py::tuple>()[0], "l"),
+                                                        point_of(h.cast<py::tuple>()[1], "u")});
+                // the bounds after, one pair or None per layer
+                py::list out;
+                for (const NnBounds &b : nn.propagate_bounds(in, i))
+                    out.append(b.l.defined() ? py::object(py::make_tuple(values(b.l), values(b.u)))
+                                             : py::none());
+                return out;
+            },
+            py::arg("bounds"), py::arg("i"),
+            "CORA's propagateBounds: the bounds per layer ((l, u) or None) after those of layer i "
+            "went to the next activation layer")
+        .def(
+            "input_neuron_order",
+            [](const NeuralNetwork &nn, const std::string &method, const py::object &x,
+               const std::vector<int64_t> &input_size) {
+                return nn.input_neuron_order(method, point_of(x, "x"), input_size);
+            },
+            py::arg("method"), py::arg("x"), py::arg("input_size") = std::vector<int64_t>{},
+            "CORA's getInputNeuronOrder ('in-order', 'snake', 'sensitivity'; 0-based; "
+            "input_size (C, H, W))")
+        .def("normal_form", &NeuralNetwork::normal_form,
+             "CORA's getNormalForm: the same function with the linear layers merged")
         // the pairs (x, N(x)) of a set, the input rows kept
         .def(
             "evaluate_with_input",

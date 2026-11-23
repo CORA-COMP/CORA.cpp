@@ -14,7 +14,7 @@
 // Syntax:     NeuralNetwork nn({{W1, b1}, {W2, b2}});   Zonotope Y = nn.evaluate(X);
 //             PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(X));
 // Operations: evaluate, evaluate_with_input, approx_errors (evaluate.cpp), refine (refine.cpp),
-//             sensitivity (sensitivity.cpp), verify (verify.cpp, verify.h)
+//             sensitivity, verify, evaluate_zonotope_batch, backprop (one file each), layers
 // See also:   cora/cont_set/zonotope/zonotope.h, cora/cont_set/poly_zonotope/poly_zonotope.h
 // References:
 //    [1] T. Ladner, M. Althoff. "Automatic abstraction refinement in neural network verification
@@ -33,6 +33,15 @@
 // CORA: nn/layers/linear/nnBatchNormLayer.m
 // CORA: nn/layers/linear/nnAvgPool2DLayer.m
 // CORA: nn/layers/linear/nnLipConstrLinearLayer.m
+// CORA: nn/layers/nonlinear/nnExpLayer.m
+// CORA: nn/layers/nonlinear/nnSoftmaxLayer.m
+// CORA: nn/layers/nonlinear/nnMaxPool2DLayer.m
+// CORA: nn/@neuralNetwork/evaluateZonotopeBatch.m
+// CORA: nn/@neuralNetwork/backprop.m
+// CORA: nn/@neuralNetwork/backpropIntervalBatch.m
+// CORA: nn/@neuralNetwork/propagateBounds.m
+// CORA: nn/@neuralNetwork/getInputNeuronOrder.m
+// CORA: nn/@neuralNetwork/getNormalForm.m
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
@@ -47,6 +56,7 @@
 #include "cora/nn/neural_network/verify.h"
 
 #include <array>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -140,6 +150,31 @@ struct RefineOptions {
     double gamma = 0.1;
 };
 
+// The batches -------------------------------------------------------------------------------------
+
+/// The options of evaluate_zonotope_batch (CORA's options.nn of evaluateZonotopeBatch).
+struct ZonotopeBatchOptions {
+    /// The most approximation errors per activation layer that get a generator; the rest go to
+    /// the radius dr of the interval center (CORA's num_approx_err; inf: all).
+    double num_approx_err = std::numeric_limits<double>::infinity();
+    /// The line of an activation: "bounds" (CORA's batch default) or "singh".
+    std::string poly_method = "bounds";
+    /// Which errors get a generator: "sequential", "length" or "sensitivity*length".
+    std::string approx_error_order = "sequential";
+};
+
+/// A batch of B zonotopes in rows: the centers c (B, n), the generators G (B, q, n), and the
+/// radius dr (B, n) of the interval center (undefined when every error has a generator).
+struct ZonotopeBatch {
+    Tensor c, G, dr;
+};
+
+/// The input boxes of an activation layer's neurons (CORA's layer.l and layer.u): undefined, or
+/// with a NaN, for none.
+struct NnBounds {
+    Tensor l, u;
+};
+
 // The network -------------------------------------------------------------------------------------
 
 class NeuralNetwork {
@@ -228,6 +263,31 @@ class NeuralNetwork {
         Tensor aux_product(const Tensor &x, bool absolute, bool transposed) const;
     };
 
+    /// CORA's nonlinear layers that this port lowers to several layers (as the ONNX front end
+    /// does), with their activations: a network of the block, or the layers after layer `previous`
+    /// of a larger one (their sources are absolute: -1 is the network's input).
+    struct Block {
+        std::vector<Layer> layers;
+        std::vector<Activation> activations;
+    };
+
+    /// CORA's nnExpLayer on n values: exp of each, after the layer `previous`.
+    static Block exp_layer(int64_t n, int64_t previous = -1);
+    /// CORA's nnSoftmaxLayer on n values, exp(x_i - max x) / sum_j exp(x_j - max x): as
+    /// 1 / sum_j exp(x_j - x_i), the differences exp layer then the sums and 1 / max(s, 1), which
+    /// is the same function (two layers).
+    static Block softmax_layer(int64_t n, int64_t previous = -1);
+    /// CORA's nnMaxPool2DLayer on the input (channels, height, width) in C order, for a pool
+    /// (kh, kw): max(a, b) = b + relu(a - b) over the window's items in pairs, round by round (an
+    /// empty stride is the pool size, as CORA's).
+    static Block max_pool2d_layer(const std::array<int64_t, 2> &pool,
+                                  const std::vector<int64_t> &input,
+                                  const std::array<int64_t, 2> &stride = {0, 0},
+                                  int64_t previous = -1);
+
+    /// The network of a block.
+    explicit NeuralNetwork(const Block &block) : NeuralNetwork(block.layers, block.activations) {}
+
     /// The network of the layers, first to last; each layer's inputs must match the outputs of
     /// its source and residuals, and every layer but the last must be read by a later one. Every
     /// layer but the last is followed by a ReLU.
@@ -276,6 +336,36 @@ class NeuralNetwork {
     /// The same for a polynomial zonotope: the factors and the exponents of X stay, the outputs
     /// are exact linear images in them, and the errors of the activations are added by options.
     PolyZonotope evaluate_with_input(const PolyZonotope &X, const NnOptions &options = {}) const;
+
+    /// A batch of zonotopes through the network, an activation by its line (CORA's
+    /// evaluateZonotopeBatch): the sets (B, n) and (B, q, n), a graph or a chain, any layer.
+    ZonotopeBatch evaluate_zonotope_batch(const Tensor &c, const Tensor &G,
+                                          const ZonotopeBatchOptions &options = {}) const;
+
+    /// The gradient of the loss at the input (B, in) for the loss's gradient grad_out (B, out) at
+    /// the output of the network at the points x (B, in) (CORA's backprop; the weights are not
+    /// updated). A chain of any layers but a product.
+    Tensor backprop(const Tensor &x, const Tensor &grad_out) const;
+
+    /// The bounds [gl, gu] (B, in) of the gradients at the input over the box [l, u] (B, in)
+    /// from the bounds (B, out) at the output (CORA's backpropIntervalBatch, Gowal et al. 2019):
+    /// each layer's input box is that of interval arithmetic.
+    std::pair<Tensor, Tensor> backprop_interval_batch(const Tensor &l, const Tensor &u,
+                                                      const Tensor &gl, const Tensor &gu) const;
+
+    /// CORA's propagateBounds as a function: the bounds (one per layer; those of a layer without
+    /// an activation are never read) after the bounds of layer i's activation input went through
+    /// the layers up to the next activation, whose bounds are set or intersected.
+    std::vector<NnBounds> propagate_bounds(std::vector<NnBounds> bounds, int64_t i) const;
+
+    /// CORA's getInputNeuronOrder (0-based, a pixel is y * W + x): "in-order", "snake" or
+    /// "sensitivity" (the least mean absolute Jacobian at x first); input_size is (C, H, W).
+    std::vector<int64_t> input_neuron_order(const std::string &method, const Tensor &x,
+                                            const std::vector<int64_t> &input_size = {}) const;
+
+    /// The same function with the linear layers merged, so that every activation follows one
+    /// linear layer (CORA's getNormalForm); a chain of dense layers or convolutions.
+    NeuralNetwork normal_form() const;
 
     /// The layers that refine can raise: those with an activation other than the identity (CORA's
     /// getRefinableLayers), as indices into layers().
