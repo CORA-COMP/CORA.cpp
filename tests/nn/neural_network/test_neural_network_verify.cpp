@@ -25,6 +25,7 @@
 #include "cora/global/tensor/tolerance.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/nn/neural_network/verify.h"
+#include "nn/neural_network/private/priv_verify.h"
 #include "nn/neural_network/private/priv_zono_batch.h"
 #include "testing.h"
 
@@ -459,6 +460,24 @@ void switches(const std::string &b) {
     }
 }
 
+/// An attack and a bounding that are always late (check_deadline of a passed time).
+class LateAttack : public Attack {
+  public:
+    AttackResult run(NnProblem &, double, int64_t) override {
+        check_deadline(now_seconds() - 1.0);
+        return {};
+    }
+};
+class LateBounding : public Bounding {
+  public:
+    bool prepare(NnProblem &) override { return true; }
+    std::string branch_and_bound(NnProblem &, double, std::map<std::string, double> &,
+                                 AttackResult &) override {
+        check_deadline(now_seconds() - 1.0);
+        return "unsat";
+    }
+};
+
 /// A deadline that passed stops a pass at its next layer (check_deadline), and verify on a wide
 /// network answers within a second of a short timeout.
 void deadlines(const std::string &b) {
@@ -481,6 +500,33 @@ void deadlines(const std::string &b) {
     check(stops([&] { net.forward(in.c, in.dr, in.G, Tensor(), nullptr, true); }) &&
               stops([&] { net.sensitivity(x); }) && stops([&] { net.evaluate(x); }),
           b + ": a passed deadline stops forward, sensitivity and evaluate");
+    // a strategy that is late leaves the verdict open
+    register_attack("late", [](const NnVerifyOptions &) { return std::make_unique<LateAttack>(); });
+    register_bounding("late",
+                      [](const NnVerifyOptions &) { return std::make_unique<LateBounding>(); });
+    NnVerifyOptions late = aux_options("conzonotope", b);
+    late.falsification_method = late.bounding_method = "late";
+    const NnVerifyResult open = nn.verify(aux_below(3, 2, -0.2, 0.2, -100.0), 5, late);
+    check(open.status == "unknown" && open.stats.at("attack_cut") == 2 &&
+              open.stats.at("bab_cut") == 1,
+          b + ": a late attack and bounding leave the verdict open");
+    // the candidates in chunks of one (a memory budget of one byte)
+    NnVerifyOptions tiny = aux_options("conzonotope", b);
+    tiny.memory_budget = 1;
+    const Tensor pts = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.1, 0.0}, {-0.1, 0.2, 0.1}});
+    const Tensor cases = pts.zeros_like({3});
+    for (const double t : {-1000.0, 1000.0}) {
+        NnProblem problem(nn, aux_below(3, 2, -0.2, 0.2, t), tiny, ConfirmFn{});
+        AttackResult found;
+        check(priv_check_points(problem, pts, cases, found) == (t > 0),
+              b + ": the candidates in chunks, a counterexample only below +1000");
+    }
+    // and a passed deadline between them
+    NnProblem past(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), tiny, ConfirmFn{});
+    past.deadline = now_seconds() - 1.0;
+    AttackResult none;
+    check(stops([&] { priv_check_points(past, pts, cases, none); }),
+          b + ": a passed deadline stops the chunks");
     if (b == "lean") return; // the wide network is slow on lean
     // a wide network whose box is not decided quickly: back within a second of the timeout
     const NeuralNetwork wide = aux_network(rng, {40, 400, 400, 400, 400, 2}, Activation::relu);

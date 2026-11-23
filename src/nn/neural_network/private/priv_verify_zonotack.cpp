@@ -592,7 +592,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     double last = 0;
     while (xs.shape()[0] > 0) {
         // a batch starts only if the last one's time still fits before the deadline
-        if (iteration >= o_.max_verif_iter || now_seconds() + last >= deadline) break;
+        if (iteration >= o_.max_verif_iter || now_seconds() + last >= net_->deadline) break;
         const double started = now_seconds();
         // the next batch out of the queue
         const std::vector<int64_t> take = aux_pop(xs.shape()[0]);
@@ -603,22 +603,18 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
         rs = rs.take(keep, 0);
         cases = cases.take(keep, 0);
         splits = splits.take(keep, 0);
-        // one batch; out of memory, fewer ReLU rows or a smaller batch; the deadline part-way
+        // one batch; out of memory (fewer ReLU rows, a smaller batch) or late, back into the queue
         Step step;
         try {
             step = aux_iteration(xi, ri, ci, si);
         } catch (const std::exception &error) {
-            if (is_deadline(error)) {
-                timed_out_ = true;
-            } else {
-                if (!priv_is_oom(error) || !aux_back_off())
-                    std::rethrow_exception(std::current_exception());
-                xs = Tensor::concat({xi, xs}, 0);
-                rs = Tensor::concat({ri, rs}, 0);
-                cases = Tensor::concat({ci, cases}, 0);
-                splits = aux_cat_splits(si, splits, false);
-                continue;
-            }
+            if (!is_deadline(error) && (!priv_is_oom(error) || !aux_back_off()))
+                std::rethrow_exception(std::current_exception());
+            xs = Tensor::concat({xi, xs}, 0);
+            rs = Tensor::concat({ri, rs}, 0);
+            cases = Tensor::concat({ci, cases}, 0);
+            splits = aux_cat_splits(si, splits, false);
+            continue;
         }
         if (timed_out_) {
             xs = Tensor::concat({xi, xs}, 0); // the batch stays open: unknown
