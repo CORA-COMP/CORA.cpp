@@ -367,7 +367,9 @@ void relu_chord_both_ends(const std::string &b) {
     const long double old = chord.multiply(l).negative().item();
     check(s * uv + o >= (long double)uv && s * lv + o >= 0.0L,
           b + ": the ReLU's chord above holds at both ends at the witness");
-    check(s * uv + old < (long double)uv, b + ": -chord l alone is short at the witness");
+    // Only an extended long double sees the 1.9e-19 shortfall (MSVC's long double is double).
+    if (sizeof(long double) > sizeof(double))
+        check(s * uv + old < (long double)uv, b + ": -chord l alone is short at the witness");
 }
 
 /// The certificate on rows of very different norms is at most the program's optimum: min w beta
