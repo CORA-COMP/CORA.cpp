@@ -285,6 +285,13 @@ way), and instance 0 closes as unsat in 250 s.
   `lambda >= 0`, `min a^T y >= a^T c - |a| dr - |G a + C^T lambda|_1 - lambda^T d` (beta-CROWN's
   bound in the latent space); `dual_iterations` projected Adam steps choose `lambda` in the search
   dtype, and the bound of the best `lambda` is evaluated again in float64.
+- **Frozen zonotope (the groundwork of a ReLU-split branch and bound):** `priv_split_table` takes one
+  propagation's crossing ReLU neurons once (their input generators, centers and error radii). Split
+  in a fixed order, the nodes of one depth share these rows `R` and differ in their signs `s`: node
+  `n` holds `s_j G_j beta <= -s_j c_j + dr_j` (`s_j = -1`: the input at least 0, `+1`: at most 0,
+  as the splits above), so `lambda C` costs `(lambda * s) R` and no node needs its own matrix
+  (`priv_dual_lower_signs`; a child starts at its parent's multipliers, 0 for its new row). The bound
+  is the same weak duality, sound for any `lambda >= 0`, evaluated again in float64.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
   triangle relaxation.

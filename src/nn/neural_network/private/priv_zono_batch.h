@@ -176,6 +176,26 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
 std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoNet &net,
                                          const Tensor &splits, int64_t num_relu);
 
+// The split rows of a frozen zonotope -------------------------------------------------------------
+
+/// The split rows of one recorded propagation (B = 1), once for every neuron it can split: the
+/// ReLU neurons whose input crosses 0. A branch and bound on this frozen zonotope splits them in a
+/// fixed order, so the nodes of one depth share the rows and differ in their signs only.
+struct PrivSplitTable {
+    Tensor rows;  ///< (U, q): the neuron's input generators, G_in's column padded to q
+    Tensor c, dr; ///< (U): its input's center and the radius of its error term
+    Tensor ids;   ///< (U): its global id
+};
+
+/// The table of the crossing ReLU neurons of out (B = 1), in global id order.
+PrivSplitTable priv_split_table(const ZonoPropagation &out, const ZonoNet &net);
+
+/// The Lagrangian lower bound (N, K) of w (K, q) on the nodes of signs s (N, d) over table rows
+/// (R, c, dr) (priv_verify_dual.cpp): Adam from start (N, K, d; undefined: 0), best gets lambda.
+Tensor priv_dual_lower_signs(const Tensor &w, const Tensor &R, const Tensor &c, const Tensor &dr,
+                             const Tensor &s, int64_t iterations, double step, DType dtype,
+                             const Tensor &start = Tensor(), Tensor *best = nullptr);
+
 /// The Lagrangian lower bound (B, R) of w (B, R, q) times beta over [-1, 1]^q with C beta <= d,
 /// lambda by `iterations` projected Adam steps in dtype; evaluated again in w's dtype.
 Tensor priv_dual_lower(const Tensor &w, const Tensor &C, const Tensor &d, int64_t iterations,
