@@ -138,6 +138,11 @@ SOURCES = {
         "https://github.com/Kevinyang555/SoundnessBench_vnncomp2026",
         "3ac608157866bc7409e37d89fcc564757037bc40",
     ),
+    # traffic_signs: binarized networks; the generator reads the GTSRB test images of its tree
+    "traffic_signs_recognition_2023": (
+        "https://github.com/apostovan21/vnncomp2023.git",
+        "3587d3b11dc4ebffcf9784a93fb35a943eec5656",
+    ),
     "tinyimagenet_2024": (
         "https://github.com/huanzhang12/vnncomp2024_tinyimagenet_benchmark.git",
         "771377743f16ee30ecb00029268ba62ec7e9e78c",
