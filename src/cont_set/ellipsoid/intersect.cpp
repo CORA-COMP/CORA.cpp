@@ -6,10 +6,10 @@
 // points (the SDP-based outer and inner approximations, and the polytope and hyperplane cases) is
 // Error::not_supported.
 //
-// Syntax:   Ellipsoid R = E.intersect(p);   Ellipsoid R = E.intersect(S, mode);
+// Syntax:   Ellipsoid R = E.intersect(p);   Ellipsoid R = E.intersect(S, method);
 // Inputs:   p - a point (n)
 //           S - an ellipsoid
-//           mode - "outer" (default) or "inner"
+//           method - "outer" (default) or "inner"
 // Outputs:  R - the point as an ellipsoid (Q = 0) if the ellipsoid contains it, else the empty one
 // See also: contains, Zonotope::intersect
 // References:
@@ -53,18 +53,18 @@ Ellipsoid Ellipsoid::intersect(const Tensor &p) const {
     const detail::Refusal refusal = priv_unbatched_refusal(*this, "intersect");
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     // the machine epsilon is CORA's tolerance of this test
-    if (contains(p, "exact", machine_eps(Q_.dtype()))) return aux_point(*this, p);
+    if (contains(p, "exact", machine_eps(Q_.dtype())).all()) return aux_point(*this, p);
     return empty(dim());
 }
 
-Ellipsoid Ellipsoid::intersect(const Ellipsoid &S, const std::string &mode) const {
+Ellipsoid Ellipsoid::intersect(const Ellipsoid &S, const std::string &method) const {
     detail::Entry entry;
     CORA_CHECK(S.dim() == dim(), Error::dimension_mismatch, [&] {
         return "intersect: the ellipsoids differ in dimension, " + std::to_string(dim()) + " and " +
                std::to_string(S.dim());
     });
-    CORA_CHECK(mode == "outer" || mode == "inner", Error::wrong_value, [&] {
-        return "intersect: the mode must be 'outer' or 'inner', got '" + mode + "'";
+    CORA_CHECK(method == "outer" || method == "inner", Error::wrong_value, [&] {
+        return "intersect: the method must be 'outer' or 'inner', got '" + method + "'";
     });
     detail::Refusal refusal = priv_unbatched_refusal(*this, "intersect");
     if (!refusal) refusal = priv_unbatched_refusal(S, "intersect");
@@ -73,8 +73,9 @@ Ellipsoid Ellipsoid::intersect(const Ellipsoid &S, const std::string &mode) cons
     const double eps = machine_eps(Q_.dtype());
     // a point intersects an ellipsoid in itself or in nothing
     if (priv_is_point(*this))
-        return S.contains(q_, "exact", eps) ? aux_point(*this, q_) : empty(dim());
-    if (priv_is_point(S)) return contains(S.q(), "exact", eps) ? aux_point(S, S.q()) : empty(dim());
+        return S.contains(q_, "exact", eps).all() ? aux_point(*this, q_) : empty(dim());
+    if (priv_is_point(S))
+        return contains(S.q(), "exact", eps).all() ? aux_point(S, S.q()) : empty(dim());
     // the other cases need a solver
     CORA_FAIL(Error::not_supported,
               "intersect: two ellipsoids that are no points are intersected by SDP solvers, which "

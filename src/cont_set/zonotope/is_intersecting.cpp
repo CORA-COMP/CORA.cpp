@@ -5,7 +5,7 @@
 //
 // Syntax:   res = Z.is_intersecting(S);   res = Z.is_intersecting(S, "approx", tol);
 // Inputs:   S - a zonotope, a box, or points (..., n), one per row, of the dimension of Z
-//           type - "exact" (default) decides by a linear program, "approx" tests the boxes only
+//           method - "exact" (default) decides by a linear program, "approx" tests the boxes only
 //           tol - S enlarged by tol in every coordinate; default: the repository tolerance
 // Outputs:  res - true if the sets intersect; for points all of them must lie in Z
 // See also: contains, intersect
@@ -57,7 +57,7 @@ bool aux_overlap_exact(const Zonotope &Z, const Zonotope &S, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Zonotope::is_intersecting(const Zonotope &S, const std::string &type, Tol tol_arg) const {
+bool Zonotope::is_intersecting(const Zonotope &S, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     // two zonotopes: a program on the sum, or the boxes around them
@@ -66,13 +66,13 @@ bool Zonotope::is_intersecting(const Zonotope &S, const std::string &type, Tol t
                " and " + std::to_string(S.dim());
     });
     const Refusal refusal =
-        priv_intersecting_refusal(type, c_.expand_dims(-1), S.center().expand_dims(-1));
+        priv_intersecting_refusal(method, c_.expand_dims(-1), S.center().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
-    return type == "exact" ? aux_overlap_exact(*this, S, tol)
-                           : aux_boxes_overlap(*this, S.interval(), tol);
+    return method == "exact" ? aux_overlap_exact(*this, S, tol)
+                             : aux_boxes_overlap(*this, S.interval(), tol);
 }
 
-bool Zonotope::is_intersecting(const Interval &I, const std::string &type, Tol tol_arg) const {
+bool Zonotope::is_intersecting(const Interval &I, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     // a box is the zonotope of its axes
     CORA_CHECK(I.dim() == dim() && I.elem_rank() == 1, Error::dimension_mismatch, [&] {
@@ -82,18 +82,18 @@ bool Zonotope::is_intersecting(const Interval &I, const std::string &type, Tol t
     });
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     const Refusal refusal =
-        priv_intersecting_refusal(type, c_.expand_dims(-1), I.inf().expand_dims(-1));
+        priv_intersecting_refusal(method, c_.expand_dims(-1), I.inf().expand_dims(-1));
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     if (I.is_empty()) return false;
-    return type == "exact" ? aux_overlap_exact(*this, I.zonotope(), tol)
-                           : aux_boxes_overlap(*this, I, tol);
+    return method == "exact" ? aux_overlap_exact(*this, I.zonotope(), tol)
+                             : aux_boxes_overlap(*this, I, tol);
 }
 
-bool Zonotope::is_intersecting(const Tensor &p, const std::string &type, Tol tol_arg) const {
+Mask Zonotope::is_intersecting(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "is_intersecting");
     // points are in the set or not: both types decide by containment
-    const Refusal refusal = priv_intersecting_points_refusal(type, c_, p);
+    const Refusal refusal = priv_intersecting_points_refusal(method, c_, p);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     return contains(p, "exact", tol);
 }

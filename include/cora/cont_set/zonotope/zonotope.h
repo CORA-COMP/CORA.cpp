@@ -45,9 +45,23 @@ namespace cora {
 
 class Polytope;
 
+class Capsule;
+class ConZonotope;
+class Ellipsoid;
+class ZonoBundle;
+class PolyZonotope;
 class Zonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::zonotope;
+
+    /// The zonotope of another set class, as the member of that class (CORA's zonotope(S)).
+    explicit Zonotope(const Interval &I);
+    explicit Zonotope(const Capsule &C);
+    explicit Zonotope(const ConZonotope &cz, const std::string &method = "nullSpace");
+    explicit Zonotope(const Ellipsoid &E, const std::string &method = "outer:box");
+    explicit Zonotope(const Polytope &P, const std::string &method = "outer");
+    explicit Zonotope(const ZonoBundle &bundle);
+    explicit Zonotope(const PolyZonotope &poly);
     /// The most generators whose corners a containment test enumerates one by one.
     static constexpr int64_t kMaxCornerGenerators = 12;
 
@@ -198,8 +212,9 @@ class Zonotope : public ContSet {
                                std::optional<int> filter_length2 = std::nullopt) const;
 
     /// Whether the zonotope contains the points p (..., n), a zonotope or a box, up to tol; method
-    /// "exact", "exact:venum", "approx" or "approx:st". Not a batch.
-    bool contains(const Tensor &p, const std::string &method = "exact",
+    /// "exact", "exact:venum", "approx" or "approx:st". The points answer a mask, one flag per
+    /// point (..., a 0-d mask for one point). Not a batch.
+    Mask contains(const Tensor &p, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
     bool contains(const Zonotope &S, const std::string &method = "exact",
                   Tol tol = std::nullopt) const;
@@ -268,23 +283,19 @@ class Zonotope : public ContSet {
     bool isequal(const Interval &I, Tol tol = std::nullopt) const;
     bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
-    /// Whether the zonotope and a zonotope, a box or points (..., n) (all of them) intersect, with
-    /// S enlarged by tol (default: the repository tolerance). type "exact" decides by a linear
-    /// program, "approx" tests the boxes around the sets. Not a batch.
-    bool is_intersecting(const Zonotope &S, const std::string &type = "exact",
+    /// Whether the zonotope and a zonotope, a box or points (..., n) (a mask, one flag per point)
+    /// intersect, with S enlarged by tol (default: the repository tolerance). method "exact"
+    /// decides by a linear program, "approx" tests the boxes around the sets. Not a batch.
+    bool is_intersecting(const Zonotope &S, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Interval &I, const std::string &type = "exact",
+    bool is_intersecting(const Interval &I, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Tensor &p, const std::string &type = "exact",
+    Mask is_intersecting(const Tensor &p, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
 
     /// The zonotope in N dimensions whose state dims[i] is state i (a permutation: new dimensions
     /// would be unbounded). CORA's lift_ projects onto dims, the inverse permutation.
     Zonotope lift(int64_t N, const std::vector<int64_t> &dims) const;
-
-    /// An upper bound (...) of the norm (type 1, 2 or infinity) of the points: mode "ub"
-    /// (default) is the norm of the box around the set; "exact" and "ub_convex" are not supported.
-    Tensor norm(double type = 2, const std::string &mode = "ub") const;
 
     /// The distance from the center to the boundary () (the largest ball about the center in
     /// the set; 0 if the set is flat) and the nearest point of the boundary (n). Not a batch.
@@ -317,6 +328,7 @@ class Zonotope : public ContSet {
     /// The Minkowski difference with a zonotope, a box or a point, by scaling the generators:
     /// method "approx" (default), "inner", "exact" (two dimensions, or aligned generators),
     /// "outer", "outer:coarse"; an empty result is an error (no empty set yet). Not a batch.
+    using ContSet::mink_diff;
     Zonotope mink_diff(const Zonotope &subtrahend, const std::string &method = "approx") const;
     Zonotope mink_diff(const Interval &subtrahend, const std::string &method = "approx") const;
     Zonotope mink_diff(const Tensor &p, const std::string &method = "approx") const;
@@ -460,14 +472,13 @@ class Zonotope : public ContSet {
     Set translate_impl(const Tensor &v) const override;
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     std::optional<std::vector<std::string>> compact_methods_impl() const override;
-    Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &type) const override;
+    Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const override;
     bool is_bounded_impl() const override;
     bool is_full_dim_impl(Tol tol) const override;
     Set reduce_impl(int order) const override;
     Set linear_map_impl(const Tensor &M) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &method) const override;
     Set enclose_impl(const ContSet &S2) const override;
 
   private:

@@ -57,7 +57,7 @@ void zonotope_property(const std::string &b) {
     Rng rng(113);
     for (int k = 0; k < 4; ++k) {
         const Ellipsoid E = test::random_ellipsoid(rng, 3);
-        check(E.zonotope().contains(test::ellipsoid_points(E, rng, 12, true), "exact", 1e-8),
+        check(E.zonotope().contains(test::ellipsoid_points(E, rng, 12, true), "exact", 1e-8).all(),
               b + ": outer holds the points");
         const Zonotope inner = E.zonotope("inner:box");
         check(test::all_inside(E, inner.rand_point(30, rng, "extreme"), 1e-8),

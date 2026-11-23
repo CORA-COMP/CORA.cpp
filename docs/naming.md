@@ -31,6 +31,38 @@ changed, and the reasons are listed below.
 - **Overrides:** a method of a `ContSet` subclass accepts every argument that `ContSet`'s method
   accepts (it may add keyword arguments with defaults); `tests/python/test_stubs.py` checks it by
   type-checking the stubs with mypy.
+- **One selector name:** `method` names every algorithm selector, whatever CORA calls it (`type`,
+  `mode`, `alg`, `method`): `contains`, `is_intersecting`, `mink_diff`, `compact`,
+  `reduce`, `rescale`, the conversions, and every Ellipsoid operation. `type` stays only where
+  CORA names the kind of question: `representsa(type)`, the order of `norm(type, method)`,
+  `rand_point(N, rng, type)` and `round(type)`. The option values are CORA's strings.
+- **One predicate signature:** `contains` and `is_intersecting` take `(S, method, tol)` on every
+  class, with `method` "exact" or "approx" (CORA's types). A class with one algorithm validates
+  the method and ignores it. Where `method` has a default it is "exact"; the older `(S, tol)` form
+  stays beside `(S, method, tol)` on the classes that had no method.
+- **Masks:** a predicate of points or of a batch of sets answers a `Mask` (one flag per point or
+  member, of the batch shape; NumPy semantics: its bool is allowed for exactly one member, for more
+  use `all()` or `any()`). In Python it is a bool for one set and a bool array for a batch.
+- **Kept CORA spellings:** `isequal`, `isnan` and `representsa` keep CORA's run-together spelling
+  against `is_intersecting`, `is_bounded`, `is_full_dim` and `is_empty`: they name the function of
+  the same name in CORA, which the file headers cite, and renaming them would break that lookup.
+- **Constructors and factories:** `empty(n)`, `inf(n)` and `origin(n)` take the dimension, with no
+  default; `Interval::unbounded(n)` is the unbounded box (`inf` is its lower bound), and
+  `generate_random(rng, dimension, center, ...)` takes the center third on every class.
+- **`reduce`:** `reduce(order, method)` takes CORA's method strings; the zonotope's
+  `reduce_adaptive`, `reduce_pca` and `reduce_under_approx` stay separate names because their
+  arguments are not a method of one signature (CORA's `reduce(Z, 'adaptive', ...)`).
+- **`norm`:** `norm(Tensor::Norm type, method)` on every class; Python takes 1, 2, inf or 'fro'.
+- **Python-only names:** `Interval.power_of` and `rdivide_of` (the static two-interval forms of
+  `power` and `rdivide`) and `Polytope.center_by` (C++ `center(method)`, as `center` is a property)
+  are kept; a polynomial zonotope's `c`, `G`, `GI`, `E` and `id` are aliases of `center`,
+  `generators`, `independent_generators`, `exponents` and `ids`.
+- **Conversions:** one spelling per arrow, the constructor of the target, `Zonotope(P, method)`,
+  `Polytope(Z)`, `Ellipsoid(C, method)`; the member of the source (`P.zonotope(method)`, CORA's
+  `zonotope(P)`) stays and the constructor forwards to it. Every arrow that CORA defines has the
+  constructor; those CORA computes by an algorithm that is not ported (into `PolyZonotope` from
+  the other classes, and `Polytope(PolyZonotope)`, `Ellipsoid(PolyZonotope)`) raise
+  `Error::not_supported` and name the CORA file.
 - **Options** have the same names in C++ (struct fields) and in Python (keywords):
   - `time_step`, `t_final`, `taylor_terms`, `zonotope_order`;
   - the problem: `initial_set`, `input_set`, `initial_state`, `input`.
@@ -53,7 +85,7 @@ changed, and the reasons are listed below.
 | `intervalMatrix` | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
 | `interval(inf, sup)` of matrix bounds | `Interval` of matrix bounds | `cora.Interval.matrix(inf, sup)` |
 | `intervalMatrix(C, D)`, `intervalMatrix(C)` | `Interval::from_center_delta(C, D)`, `Interval::matrix(C, C)` | `cora.Interval.from_center_delta(C, D)`, `cora.Interval.matrix(C, C)` |
-| `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs().sup()`, `A.center()`, `A.infimum()`, `A.contains(M, type, tol)` | `A.abs().sup`, `A.center`, `A.inf`, `A.contains(M, type, tol)` |
+| `abs(A)`, `center(A)`, `infimum(A)`, `contains(A, M, type, tol)` | `A.abs().sup()`, `A.center()`, `A.infimum()`, `A.contains(M, method, tol)` | `A.abs().sup`, `A.center`, `A.inf`, `A.contains(M, method, tol)` |
 | `mtimes(A, B)`, `A * B` | `A.matmul(B)`, `A * B`, `M * A`, `A * M`, `s * A`, `A * Z` | `A @ B`, `M @ A`, `A @ M`, `s * A`, `A @ Z` |
 | `mpower(A, k)`, `dim(A, rc)` | `A.matrix_power(k)`, `A.dim(rc)` | `A.matrix_power(k)` (`A ** k` is elementwise) |
 | `plus(A, B)`, `A + B` | `A.plus(B)`, `A + B`, `A + M`, `M + A`, `A + s`, `s + A` | `A + B`, `A + M`, `s + A`, `A.plus(B)` |
@@ -85,13 +117,13 @@ changed, and the reasons are listed below.
 | `isBounded(S)`, `isFullDim(S, tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` | `S.is_bounded()`, `S.is_full_dim(tol)` |
 | `enlarge(S, factor)` | `S.enlarge(factor)` | `S.enlarge(factor)` |
 | `minus(S, p)`, `minus(p, S)` | `S.minus(p)`, `ContSet::minus(p, S)` | `S.minus(p)` |
-| `minkDiff(S, S2, type)` | `S.minkowski_difference(S2, type)` | `S.minkowski_difference(S2, type)` |
+| `minkDiff(S, S2, type)` | `S.mink_diff(S2, method)` | `S.mink_diff(S2, method)` |
 | `mldivide(P, S)` | `P.set_difference(S)` (all pieces) | `P.set_difference(S)` |
 | `isequal(S1, S2, tol)`, `eq`, `ne` | `isequal(S1, S2, tol)`, `eq`, `ne`, `S1 == S2` | `cora.isequal`, `cora.eq`, `cora.ne`, `S1 == S2` |
 | `decompose(S, blocks)` | `S.decompose(blocks)` (0-based, inclusive) | `S.decompose(blocks)` |
 | `projectHighDim(S, N, proj)` | `S.project_high_dim(N, proj)` | `S.project_high_dim(N, proj)` |
 | `lift(S, N, proj)` | `S.lift(N, proj)` | `S.lift(N, proj)` |
-| `norm(S, type, mode)` | `S.norm(type, mode)` | `S.norm(type, mode)` |
+| `norm(S, type, mode)` | `S.norm(type, method)` | `S.norm(type, method)` |
 | `enclose(S1, S2)`, `enclose(Z, M, Zplus)` | `S1.enclose(S2)`, `Z.enclose(M, Zplus)` | `S1.enclose(S2)`, `Z.enclose(M, Zplus)` |
 | `projectOnHyperplane(S, hyp)` | `S.project_on_hyperplane(c, d)` (the constraint) | `S.project_on_hyperplane(c, d)` |
 | `contSet.generateRandom(...)` | `ContSet::generate_random(rng, dimension, admissible)` | `cora.generate_random(rng, dimension, admissible)` |
@@ -153,7 +185,7 @@ changed, and the reasons are listed below.
 | `kron(I1, I2)` | `I.kron(I2)`, `Interval::kron(A, I)` | `I.kron(I2)`, `I.kron(A, left=True)` |
 | `mpower(I, k)` | `I.matrix_power(k)` | `I.matrix_power(k)` |
 | `max(I, Y)`, `min(I, Y)` | `I.max(Y)`, `I.min(Y)`, `I.max()` (the bound) | the same |
-| `minkDiff(I, S, type)` | `I.minkowski_difference(S, type)` | `I.minkowski_difference(S, type)` |
+| `minkDiff(I, S, type)` | `I.mink_diff(S, method)` | `I.mink_diff(S, method)` |
 | `or(I, S)` | `I.unite(S)` | `I.unite(S)` |
 | `norm_(I, type)` | `I.norm(type)` | `I.norm(type)` |
 | `lift_(I, N, proj)` | `I.lift(N, dims)` | `I.lift(N, dims)` |
@@ -283,8 +315,9 @@ changed, and the reasons are listed below.
   - `infNorm` is `infinity_norm` and `expmInd` is `expm_independent` (`Ind` is *independent*; `Inf` is
     also the unbounded box), as words, not abbreviations. `expm` is a term of art.
   - `le` and `lt` (operators of MATLAB) are `less_equal` and `less`, as Tensor names them;
-    `mrdivide` (the division by a number) is `divide`, `mpower` is `matrix_power`, and `minkDiff`
-    is `minkowski_difference`: words, not abbreviations.
+    `mrdivide` (the division by a number) is `divide` and `mpower` is `matrix_power`: words, not
+    abbreviations. The one exception is `minkDiff`, which is `mink_diff` (CORA's name, in snake
+    case) on every class, as it is the name users know.
   - `timeInt` is `time_interval`, `tComp` is `computation_time`, `nrSteps` is `num_steps` and
     `fals` is `falsification`, for the same reason.
   - `Reach` is `ReachSet`, as CORA's `reachSet`.

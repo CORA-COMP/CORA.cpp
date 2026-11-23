@@ -6,11 +6,12 @@
 // and "opt" are not supported. A zonotope that is not full-dimensional is enlarged by tol. Not for
 // a batch.
 //
-// Syntax:   res = Z.contains(p);   res = Z.contains(S, "approx", tol);
+// Syntax:   mask = Z.contains(p);   res = Z.contains(S, "approx", tol);
 // Inputs:   p, S, I - points (..., n), one per row, a zonotope or a box of the dimension of Z
 //           method - "exact" (default), "exact:venum", "exact:polymax", "approx" or "approx:st"
 //           tol - relaxes the points' norm and the flatness of Z; default: the repository tolerance
-// Outputs:  res - true if all points (S) are in Z; "approx" says true only when certain
+// Outputs:  mask - one flag per point, of the shape of p without its last axis (0-d for one point)
+//           res - for a zonotope or a box, true if S is in Z; "approx" says true only when certain
 // See also: boundary_point, Interval::contains
 // References:
 //    [1] S. Sadraddini, R. Tedrake. "Linear encodings for polytope containment problems", CDC
@@ -50,17 +51,18 @@ namespace {
 
 // Points ------------------------------------------------------------------------------------------
 
-/// Whether the points (n x N, column by column on the host) are in the zonotope: the norm of
-/// p - c is at most 1 (CORA's priv_zonotopeContainment_pointContainment, 'exact:venum').
-bool aux_contains_points(const HostZonotope &Z, const std::vector<double> &p, int64_t N,
-                         double tol) {
+/// Whether each of the points (n x N, column by column on the host) is in the zonotope: the norm
+/// of p - c is at most 1 (CORA's priv_zonotopeContainment_pointContainment, 'exact:venum').
+std::vector<double> aux_contains_points(const HostZonotope &Z, const std::vector<double> &p,
+                                        int64_t N, double tol) {
+    std::vector<double> flags(N, 1.0);
     for (int64_t k = 0; k < N; ++k) {
         std::vector<double> shifted(Z.n);
         for (int64_t i = 0; i < Z.n; ++i) shifted[i] = p[i * N + k] - Z.c[i];
         const double scaling = priv_zonotope_norm(Z, shifted);
-        if (!(scaling <= 1 || within_tol(scaling, 1, tol))) return false;
+        if (!(scaling <= 1 || within_tol(scaling, 1, tol))) flags[k] = 0.0;
     }
-    return true;
+    return flags;
 }
 
 /// The zonotope as CORA's contains_ prepares it: without zero generators, and enlarged by tol if
@@ -74,22 +76,24 @@ Zonotope aux_prepared(const Zonotope &Z, double tol) {
     return compacted.plus(Interval(r.negative(), r));
 }
 
-/// Whether the zonotope contains the points of the matrix p (n, N); `exact` picks the program.
-bool aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
+/// Whether the zonotope contains each point of the matrix p (n, N), as flags; `exact` picks the
+/// program.
+std::vector<double> aux_contains_matrix(const Zonotope &Z, const Tensor &p, double tol) {
     const int64_t N = p.shape().back();
     const Zonotope compacted = Z.compact();
+    std::vector<double> flags(N, 1.0);
     if (compacted.nr_generators() == 0) { // a point
         const std::vector<double> c = compacted.center().data(), x = p.data();
         for (int64_t i = 0; i < Z.dim(); ++i)
             for (int64_t k = 0; k < N; ++k)
-                if (!within_tol(x[i * N + k], c[i], tol)) return false;
-        return true;
+                if (!within_tol(x[i * N + k], c[i], tol)) flags[k] = 0.0;
+        return flags;
     }
     if (priv_is_box(compacted, tol)) { // a box: every point by its bounds
         const Interval box = compacted.interval();
         for (int64_t k = 0; k < N; ++k)
-            if (!box.contains(p.slice(-1, k, k + 1).squeeze(-1), tol)) return false;
-        return true;
+            if (!box.contains(p.slice(-1, k, k + 1).squeeze(-1), tol).all()) flags[k] = 0.0;
+        return flags;
     }
     return aux_contains_points(priv_host_zonotope(aux_prepared(Z, tol)), p.data(), N, tol);
 }
@@ -114,12 +118,12 @@ bool aux_contains_zonotope(const Zonotope &Z, const Zonotope &S, const std::stri
                            double tol) {
     const Zonotope inner = S.compact();
     if (inner.nr_generators() == 0)
-        return aux_contains_matrix(Z, inner.center().expand_dims(-1), tol);
+        return aux_contains_matrix(Z, inner.center().expand_dims(-1), tol)[0] != 0.0;
     const Zonotope compacted = Z.compact();
     if (compacted.nr_generators() == 0) return false; // a point holds no set
     if (priv_is_box(compacted, tol)) { // a box contains S iff it contains the box around S
         const Interval box = compacted.interval(), around = inner.interval();
-        return box.contains(around.inf(), tol) && box.contains(around.sup(), tol);
+        return box.contains(around.inf(), tol).all() && box.contains(around.sup(), tol).all();
     }
     const Zonotope outer = aux_prepared(Z, tol);
     // "exact" is the vertex search from dimension 4 on, as CORA's aux_exactParser decides
@@ -156,12 +160,14 @@ std::optional<std::pair<Error::Id, std::string>> aux_refusal(bool batch, const s
 
 /// Whether the matrices M (rows, cols) or (p, rows, cols) are in the matrix zonotope Z: their
 /// stacked columns in the stacked zonotope (CORA's matZonotope.contains), type "exact" or "approx".
-bool aux_contains_matrices(const Zonotope &Z, const Tensor &M, const std::string &type,
+/// One flag per matrix, a 0-d mask for one matrix.
+Mask aux_contains_matrices(const Zonotope &Z, const Tensor &M, const std::string &type,
                            double tol) {
     // the points are the stacked matrices, one per row
     const Tensor matrices = M.ndim() == 2 ? M.expand_dims(0) : M;
     const Tensor points = priv_stack_columns(matrices).squeeze(-1);
-    return Z.stacked().contains(points, type, tol);
+    const Mask flags = Z.stacked().contains(points, type, tol);
+    return M.ndim() == 2 ? Mask(flags.tensor().reshape(Shape{})) : flags;
 }
 
 } // namespace
@@ -169,7 +175,7 @@ bool aux_contains_matrices(const Zonotope &Z, const Tensor &M, const std::string
 
 // ===========================================  MAIN  =========================================== //
 
-bool Zonotope::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
+Mask Zonotope::contains(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, c_.dtype(), "contains");
     // matrices in a matrix zonotope: one set, matrices of its shape, CORA's types
@@ -197,8 +203,11 @@ bool Zonotope::contains(const Tensor &p, const std::string &method, Tol tol_arg)
     });
     const auto refusal = aux_refusal(c_.ndim() != 1, method, true);
     CORA_CHECK(!refusal, refusal->first, [&] { return "contains: " + refusal->second; });
-    return aux_contains_matrix(*this, p.reshape({p.numel() / dim(), dim()}).matrix_transpose(),
-                               tol);
+    Shape batch = p.shape();
+    batch.pop_back();
+    const std::vector<double> flags =
+        aux_contains_matrix(*this, p.reshape({p.numel() / dim(), dim()}).matrix_transpose(), tol);
+    return Mask(Tensor::like(c_, flags, batch));
 }
 
 bool Zonotope::contains(const Zonotope &S, const std::string &method, Tol tol_arg) const {

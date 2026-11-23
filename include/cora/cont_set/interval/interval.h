@@ -27,6 +27,7 @@
 #pragma once
 
 #include "cora/cont_set/cont_set.h"
+#include "cora/cont_set/mask.h"
 #include "cora/cont_set/set.h"
 #include "cora/global/within_tol.h"
 
@@ -96,13 +97,13 @@ class Interval : public ContSet {
     static Interval stack(const std::vector<Interval> &Is);
 
     /// Whether the point p (..., n), or the matrix p (..., r, c) of an interval matrix, is in
-    /// the box enlarged by tol in every entry (as within_tol); for a batch, whether all are. tol
-    /// default: the repository tolerance (docs/architecture.md).
-    bool contains(const Tensor &p, Tol tol = std::nullopt) const;
+    /// the box enlarged by tol in every entry (as within_tol): a mask of the batch shape, false
+    /// for an empty member. tol default: the repository tolerance (docs/architecture.md).
+    Mask contains(const Tensor &p, Tol tol = std::nullopt) const;
 
-    /// The same with CORA's type, 'exact' or 'approx' (both answer exactly, as CORA's
+    /// The same with CORA's method, 'exact' or 'approx' (both answer exactly, as CORA's
     /// intervalMatrix does for a box).
-    bool contains(const Tensor &p, const std::string &type, Tol tol = std::nullopt) const;
+    Mask contains(const Tensor &p, const std::string &method, Tol tol = std::nullopt) const;
 
     // Interval matrices ---------------------------------------------------------------------------
 
@@ -206,26 +207,35 @@ class Interval : public ContSet {
     /// intervalMatrix(center(I), rad(I))): an interval matrix, a box as its one column.
     Interval interval_matrix() const;
 
-    /// Whether no bound is infinite (an empty interval is bounded); for a batch, whether all are.
-    bool is_bounded() const;
+    /// Whether no bound is infinite (an empty interval is bounded): a mask of the batch shape.
+    Mask is_bounded() const;
 
     // Comparison and predicates -------------------------------------------------------------------
 
     /// Whether no coordinate has a width within tol of zero (as within_tol); false for an empty
-    /// interval; for a batch, whether all members are. tol default: the repository tolerance.
-    bool is_full_dim(Tol tol = std::nullopt) const;
+    /// interval: a mask of the batch shape. tol default: the repository tolerance.
+    Mask is_full_dim(Tol tol = std::nullopt) const;
 
     /// Whether the boxes meet (CORA's isIntersecting_): per coordinate the bounds overlap, up to
-    /// tol as within_tol; false if one is empty. With a point p, whether p is in the box. For a
-    /// batch, whether all members do. tol default: the repository tolerance.
-    bool is_intersecting(const Interval &I2, Tol tol = std::nullopt) const;
-    bool is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    /// tol as within_tol; false if one is empty. With a point p, whether p is in the box. A mask
+    /// of the batch shape. tol default: the repository tolerance.
+    Mask is_intersecting(const Interval &I2, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Interval &I2, const std::string &method,
+                         Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(I2, tol);
+    }
+    Mask is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Tensor &p, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(p, tol);
+    }
 
     /// Whether the boxes have the same bounds, up to tol as within_tol; infinite bounds must
-    /// agree exactly. Boxes of different shape are not equal. A point p is the box [p, p]. tol
-    /// default: the repository tolerance.
-    bool isequal(const Interval &I2, Tol tol = std::nullopt) const;
-    bool isequal(const Tensor &p, Tol tol = std::nullopt) const;
+    /// agree exactly. Boxes of different shape are not equal. A point p is the box [p, p]. A mask
+    /// of the batch shape (two empty members are equal). tol default: the repository tolerance.
+    Mask isequal(const Interval &I2, Tol tol = std::nullopt) const;
+    Mask isequal(const Tensor &p, Tol tol = std::nullopt) const;
 
     /// Whether this box lies in I2 (CORA's le, I <= I2): inf2 <= inf and sup <= sup2 everywhere.
     bool less_equal(const Interval &I2) const;
@@ -286,10 +296,10 @@ class Interval : public ContSet {
     /// The Minkowski difference {x | x + S in I}: [inf - inf2, sup - sup2] for a box S, a shift
     /// for a point, the support function for another set. An empty difference is the empty
     /// interval.
-    Interval minkowski_difference(const Interval &S) const;
-    Interval minkowski_difference(const Tensor &p) const;
-    Interval minkowski_difference(const ContSet &S,
-                                  const std::optional<std::string> &type = std::nullopt) const;
+    Interval mink_diff(const Interval &S) const;
+    Interval mink_diff(const Tensor &p) const;
+    Interval mink_diff(const ContSet &S,
+                       const std::optional<std::string> &method = std::nullopt) const;
 
     /// The smallest box around this and I2 (CORA's or); an empty operand returns the other. With
     /// a point p, the box grown to contain p.
@@ -299,7 +309,7 @@ class Interval : public ContSet {
     /// The norm (batch...) of the largest member: type two is the 2-norm of max(|inf|, |sup|) of a
     /// box (refused for a matrix, as CORA's intervalMatrix), else the norm of |center| +
     /// half_width (one, inf, fro); -Inf for an empty interval.
-    Tensor norm(Tensor::Norm type = Tensor::Norm::two) const;
+    Tensor norm(Tensor::Norm type = Tensor::Norm::two, const std::string &method = "ub") const;
 
     // Embedding -----------------------------------------------------------------------------------
 
@@ -450,11 +460,10 @@ class Interval : public ContSet {
     Set compact_impl(const std::optional<std::string> &method, Tol tol) const override;
     Set uplus_impl() const override;
     Set times_impl(const Tensor &factor) const override;
-    Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &type) const override;
+    Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const override;
     Set project_high_dim_impl(int64_t N, const std::vector<int64_t> &proj) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-    Tensor norm_impl(Tensor::Norm type, const std::string &mode) const override;
+    Tensor norm_impl(Tensor::Norm type, const std::string &method) const override;
     Set enclose_impl(const ContSet &S2) const override;
 
   private:

@@ -58,7 +58,6 @@ class EmptySet(unittest.TestCase):
         self.assertEqual(self.E.dim, 2)
         self.assertEqual(self.E.class_name, "EmptySet")
         self.assertEqual(cora.EmptySet.empty(4).dim, 4)
-        self.assertEqual(cora.EmptySet.empty().dim, 0)
         self.assertIn("2-dimensional empty set", repr(self.E))
         with self.assertRaises(cora.errors.NoInputInSetConstructor):
             cora.EmptySet()
@@ -94,7 +93,7 @@ class EmptySet(unittest.TestCase):
         self.assertTrue(self.E.is_bounded())
         self.assertFalse(self.E.is_full_dim())
         Z = cora.Zonotope(np.zeros(2), np.eye(2))
-        self.assertFalse(self.E.is_intersecting(Z))
+        self.assertFalse(np.all(self.E.is_intersecting(Z)))
         self.assertFalse(cora.is_intersecting(Z, self.E))
         # equality with empty sets
         self.assertTrue(self.E.isequal(cora.EmptySet(2)))
@@ -106,12 +105,12 @@ class EmptySet(unittest.TestCase):
 
     def test_containment(self):
         Z = cora.Zonotope(np.zeros(2), np.eye(2))
-        self.assertTrue(self.E.contains(cora.EmptySet(2)))
-        self.assertTrue(self.E.contains(cora.Interval.empty(2)))
-        self.assertFalse(self.E.contains(Z))
-        self.assertTrue(cora.contains(self.E, cora.Interval.empty(2)))
-        self.assertTrue(self.E.contains(np.zeros((0, 2))))
-        self.assertFalse(self.E.contains(np.zeros((1, 2))))
+        self.assertTrue(np.all(self.E.contains(cora.EmptySet(2))))
+        self.assertTrue(np.all(self.E.contains(cora.Interval.empty(2))))
+        self.assertFalse(np.all(self.E.contains(Z)))
+        self.assertTrue(np.all(cora.contains(self.E, cora.Interval.empty(2))))
+        self.assertTrue(np.all(self.E.contains(np.zeros((0, 2)))))
+        self.assertFalse(np.all(self.E.contains(np.zeros((1, 2)))))
         with self.assertRaises(cora.errors.DimensionMismatch):
             self.E.contains(cora.EmptySet(3))
 
@@ -192,8 +191,8 @@ class EmptySet(unittest.TestCase):
         self.assertIsInstance(F + self.E, cora.EmptySet)
         self.assertIsInstance(self.E & F, cora.EmptySet)
         self.assertIsInstance(cora.convex_hull(self.E, F), cora.Fullspace)
-        self.assertFalse(cora.contains(self.E, F))
-        self.assertTrue(cora.contains(F, self.E))
+        self.assertFalse(np.all(cora.contains(self.E, F)))
+        self.assertTrue(np.all(cora.contains(F, self.E)))
         self.assertFalse(cora.is_intersecting(F, self.E))
         self.assertIn(("plus", "EmptySet", "Fullspace"), set(cora.binary_pairs()))
 

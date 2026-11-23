@@ -1,4 +1,4 @@
-// test_con_zonotope_minkowski_difference - ConZonotope::minkowski_difference: {x | x + S in cz}
+// test_con_zonotope_mink_diff - ConZonotope::mink_diff: {x | x + S in cz}
 //
 // CORA: contSet/@conZonotope/minkDiff.m
 // PROPERTY: contSet/@conZonotope/minkDiff.m
@@ -22,45 +22,41 @@ using test::vec;
 namespace {
 
 /// Hand-computed: [-2, 2]^2 minus [-1, 1]^2 is [-1, 1]^2 by every type; a point translates.
-void minkowski_difference_known(const std::string &b) {
+void mink_diff_known(const std::string &b) {
     const ConZonotope big(vec({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 2.0}}));
     const Interval small(vec({-1.0, -1.0}), vec({1.0, 1.0}));
     const ConZonotope expected(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     for (const char *type : {"exact", "inner:vertices", "inner:Vinod"}) {
-        const ConZonotope r = big.minkowski_difference(Set(small), type).as<ConZonotope>();
+        const ConZonotope r = big.mink_diff(Set(small), type).as<ConZonotope>();
         check(r.isequal(expected), b + ": the box difference (" + type + ")");
     }
     const Zonotope Z(vec({1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
-    check(big.minkowski_difference(Set(Z)).as<ConZonotope>().isequal(
+    check(big.mink_diff(Set(Z)).as<ConZonotope>().isequal(
               ConZonotope(vec({-1.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}))),
           b + ": a zonotope with a center");
-    check(close(big.minkowski_difference(vec({1.0, 1.0})).c().expand_dims(-1), {-1, -1}, 0),
-          b + ": a point");
+    check(close(big.mink_diff(vec({1.0, 1.0})).c().expand_dims(-1), {-1, -1}, 0), b + ": a point");
     // a subtrahend that does not fit: the exact difference has no point, the Vinod scaling is empty
     const Interval wide(vec({-3.0, -3.0}), vec({3.0, 3.0}));
-    check(big.minkowski_difference(Set(wide), "inner:Vinod")
-              .as<ConZonotope>()
-              .representsa("emptySet"),
+    check(big.mink_diff(Set(wide), "inner:Vinod").as<ConZonotope>().representsa("emptySet"),
           b + ": too big for the Vinod scaling");
-    check(big.minkowski_difference(Set(wide)).as<ConZonotope>().representsa("emptySet"),
+    check(big.mink_diff(Set(wide)).as<ConZonotope>().representsa("emptySet"),
           b + ": too big for the exact difference");
 }
 
 /// Stated property: the exact difference plus S is inside the set, for sampled points of S.
-void minkowski_difference_property(const std::string &b) {
+void mink_diff_property(const std::string &b) {
     cora::Rng rng(49);
     for (int k = 0; k < 3; ++k) {
         const ConZonotope cz =
             test::random_con_zonotope(rng, 2, 4, 1)
                 .plus(ConZonotope(vec({0.0, 0.0}), Tensor({{4.0, 0.0}, {0.0, 4.0}})));
         const Zonotope S(vec({0.0, 0.0}), Tensor({{0.2, 0.0}, {0.1, 0.2}}));
-        const ConZonotope r = cz.minkowski_difference(Set(S)).as<ConZonotope>();
+        const ConZonotope r = cz.mink_diff(Set(S)).as<ConZonotope>();
         if (r.representsa("emptySet")) continue;
         const Interval sum = r.plus(S).interval(), box = cz.interval();
         check(test::inside_box(sum.inf(), box) && test::inside_box(sum.sup(), box),
               b + ": the difference plus S is inside");
-        const Interval inner =
-            cz.minkowski_difference(Set(S), "inner:vertices").as<ConZonotope>().interval();
+        const Interval inner = cz.mink_diff(Set(S), "inner:vertices").as<ConZonotope>().interval();
         const Interval hull = r.interval();
         check(test::inside_box(inner.inf(), hull) && test::inside_box(inner.sup(), hull),
               b + ": the inner difference is inside the exact one");
@@ -74,20 +70,27 @@ void minkowski_difference_property(const std::string &b) {
 
 int main() {
     test::for_each_backend([](const std::string &b) {
-        minkowski_difference_known(b);
-        minkowski_difference_property(b);
+        mink_diff_known(b);
+        mink_diff_property(b);
     });
     const ConZonotope a(vec({0.0}), Tensor({{1.0}}));
     const Interval I(vec({0.0}), vec({1.0}));
-    check(test::raises([&] { a.minkowski_difference(Set(I), "other"); }, Error::wrong_value),
-          "minkowski_difference: type");
-    check(test::raises([&] { a.minkowski_difference(Set(ConZonotope::origin(2))); },
-                       Error::dimension_mismatch),
-          "minkowski_difference: dimension");
+    check(test::raises([&] { a.mink_diff(Set(I), "other"); }, Error::wrong_value),
+          "mink_diff: type");
+    check(
+        test::raises([&] { a.mink_diff(Set(ConZonotope::origin(2))); }, Error::dimension_mismatch),
+        "mink_diff: dimension");
+    // a batch of constrained zonotopes is refused
+    check(test::raises(
+              [&] {
+                  ConZonotope(Tensor::zeros({2, 1}), Tensor::ones({2, 1, 1}).matrix_transpose())
+                      .mink_diff(Set(I));
+              },
+              Error::not_supported),
+          "mink_diff: a batch");
     ChecksScope off(false);
-    check(a.minkowski_difference(Set(I)).as<ConZonotope>().dim() == 1,
-          "minkowski_difference: checks off");
-    return test::finish("con_zonotope minkowski_difference");
+    check(a.mink_diff(Set(I)).as<ConZonotope>().dim() == 1, "mink_diff: checks off");
+    return test::finish("con_zonotope mink_diff");
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

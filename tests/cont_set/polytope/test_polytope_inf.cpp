@@ -30,7 +30,6 @@ void whole_space(const std::string &b) {
     check(box.inf().min().item() == -std::numeric_limits<double>::infinity() &&
               box.sup().max().item() == std::numeric_limits<double>::infinity(),
           b + ": its box is unbounded");
-    check(Polytope::inf().dim() == 0, b + ": the default dimension is 0");
 }
 
 /// A negative dimension is refused; with the checks off the dimension is still valid.

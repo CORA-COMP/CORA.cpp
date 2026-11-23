@@ -52,7 +52,7 @@ class Steps(unittest.TestCase):
         np.testing.assert_allclose(H.time_point.center, expm(A * DT) @ X.center, atol=1e-14)
         for x in ([2.0, 2.5], [0.0, 1.5]):
             for t in (0.0, 0.05, DT):
-                self.assertTrue(H.time_interval.contains(flow(t, np.array(x))))
+                self.assertTrue(np.all(H.time_interval.contains(flow(t, np.array(x)))))
 
     def test_particular_solutions(self):
         # the terms of the series stay apart for u(t), the closed form holds for a constant u
@@ -62,7 +62,7 @@ class Steps(unittest.TestCase):
         P = self.sys.particular_solution_constant(cora.Zonotope(np.ones(2), np.zeros((0, 2))), DT, TERMS)
         expected = [1 - np.exp(-DT), (1 - np.exp(-2 * DT)) / 2]
         np.testing.assert_allclose(P.time_point.center, expected, atol=1e-14)
-        self.assertTrue(P.time_interval.contains(P.time_point.center))
+        self.assertTrue(np.all(P.time_interval.contains(P.time_point.center)))
 
     def test_affine_solution_and_one_step_agree(self):
         u = np.array([1.0, -1.0])
@@ -72,7 +72,7 @@ class Steps(unittest.TestCase):
         step = self.sys.one_step(X, U, u, DT, TERMS)
         PU = self.sys.particular_solution_time_varying(U, DT, TERMS)
         np.testing.assert_allclose(step.time_point.center, S.time_point.center + PU.center, atol=1e-14)
-        self.assertTrue(step.time_interval.contains(step.time_point.center))
+        self.assertTrue(np.all(step.time_interval.contains(step.time_point.center)))
 
     def test_init_reach_and_post_enclose_the_trajectories(self):
         # the end of the step k under a constant input of the sets, from a corner
@@ -83,8 +83,8 @@ class Steps(unittest.TestCase):
             step = sys.init_reach(X, U, u, alg=alg, time_step=DT, taylor_terms=TERMS)
             for k in range(1, 4):
                 x = flow(k * DT, np.array([2.0, 2.5]), u + np.array([0.1, 0.05]))
-                self.assertTrue(step.time_point.contains(x))
-                self.assertTrue(step.time_interval.contains(x))
+                self.assertTrue(np.all(step.time_point.contains(x)))
+                self.assertTrue(np.all(step.time_interval.contains(x)))
                 step = sys.post(step.state, alg=alg, time_step=DT, taylor_terms=TERMS)
         with self.assertRaises(cora.errors.CORAError):
             sys.init_reach(X, alg="from_start", time_step=DT)

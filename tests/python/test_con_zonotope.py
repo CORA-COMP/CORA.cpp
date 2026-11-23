@@ -89,7 +89,6 @@ class ConZonotope(unittest.TestCase):
         self.assertTrue(np.isnan(E.center).all())
         self.assertTrue(E.is_bounded())
         self.assertTrue(segment().is_bounded())
-        self.assertEqual(cora.ConZonotope.empty().dim, 0)
         with self.assertRaises(cora.errors.WrongValue):
             cora.ConZonotope.empty(-1)
 
@@ -177,14 +176,14 @@ class ConZonotope(unittest.TestCase):
     # contains points
     def test_contains(self):
         S = segment()
-        self.assertTrue(S.contains(np.array([0.5, 0.5])))
-        self.assertTrue(S.contains(np.array([[0.5, 0.5], [1.0, 0.0]])))
-        self.assertFalse(S.contains(np.array([0.5, 0.6])))
-        self.assertTrue(S.contains(cora.Zonotope(np.array([0.5, 0.5]), np.array([[0.25, -0.25]]))))
-        self.assertFalse(S.contains(cora.Interval(np.array([0.0, 0.0]), np.array([1.0, 1.0]))))
+        self.assertTrue(np.all(S.contains(np.array([0.5, 0.5]))))
+        self.assertTrue(np.all(S.contains(np.array([[0.5, 0.5], [1.0, 0.0]]))))
+        self.assertFalse(np.all(S.contains(np.array([0.5, 0.6]))))
+        self.assertTrue(np.all(S.contains(cora.Zonotope(np.array([0.5, 0.5]), np.array([[0.25, -0.25]])))))
+        self.assertFalse(np.all(S.contains(cora.Interval(np.array([0.0, 0.0]), np.array([1.0, 1.0])))))
         self.assertTrue(np.array([0.5, 0.5]) in S)
-        self.assertTrue(S.contains(np.array([0.5, 0.5 + 1e-9]), tol=1e-6))
-        self.assertFalse(cora.ConZonotope.empty(2).contains(np.array([0.0, 0.0])))
+        self.assertTrue(np.all(S.contains(np.array([0.5, 0.5 + 1e-9]), tol=1e-6)))
+        self.assertFalse(np.all(cora.ConZonotope.empty(2).contains(np.array([0.0, 0.0]))))
         with self.assertRaises(cora.errors.NoSpecificAlg):
             S.contains(np.array([0.5, 0.5]), method="nothing")
         for method in ("approx", "exact:polymax", "sampling"):
@@ -281,7 +280,7 @@ class ConZonotope(unittest.TestCase):
         A = random_set(rng, 3, 4, 2)
         B = random_set(rng, 3, 4, 1)
         total = A.plus(B)
-        self.assertTrue(total.contains(sample(A, rng, 10) + sample(B, rng, 10), tol=1e-7))
+        self.assertTrue(np.all(total.contains(sample(A, rng, 10) + sample(B, rng, 10), tol=1e-7)))
         self.assertEqual(A.linear_map(np.ones((2, 3))).dim, 2)
 
     # projection, lift and reduce
@@ -310,7 +309,7 @@ class ConZonotope(unittest.TestCase):
         A = random_set(rng, 2, 7, 2)
         R = A.reduce(2)
         self.assertEqual(R.generators.shape, (6, 2))
-        self.assertTrue(R.contains(sample(A, rng, 10), tol=1e-7))
+        self.assertTrue(np.all(R.contains(sample(A, rng, 10), tol=1e-7)))
 
     def test_quad_map_and_rescale(self):
         unit = con_zonotope([0.0], [[1.0]])
@@ -326,7 +325,7 @@ class ConZonotope(unittest.TestCase):
         # the points as columns (n, count) for the images, which are rows again
         x, y = sample(A, rng, 10).T, sample(B, rng, 10).T
         image = np.vstack([np.sum(x * (Qi @ x), axis=0) for Qi in Q]).T
-        self.assertTrue(A.quad_map(Q).contains(image, tol=1e-7))
+        self.assertTrue(np.all(A.quad_map(Q).contains(image, tol=1e-7)))
         cross = np.vstack([np.sum(x * (Qi @ y), axis=0) for Qi in Q]).T
         # quadratic maps and rescale
         self.assertTrue(A.quad_map(B, Q).contains(cross, tol=1e-7))
@@ -369,17 +368,17 @@ class ConZonotope(unittest.TestCase):
             S.isequal(S, tol=-1.0)
         meets = cora.Interval(np.array([0.4, 0.4]), np.array([2.0, 2.0]))
         misses = cora.Interval(np.array([0.6, 0.6]), np.array([2.0, 2.0]))
-        self.assertTrue(S.is_intersecting(meets))
-        self.assertFalse(S.is_intersecting(misses))
+        self.assertTrue(np.all(S.is_intersecting(meets)))
+        self.assertFalse(np.all(S.is_intersecting(misses)))
         # intersection
-        self.assertTrue(S.is_intersecting(misses, "approx"))
-        self.assertTrue(S.is_intersecting(np.array([0.5, 0.5])))
-        self.assertFalse(S.is_intersecting(S.plus(np.array([2.0, 0.0]))))
+        self.assertTrue(np.all(S.is_intersecting(misses, "approx")))
+        self.assertTrue(np.all(S.is_intersecting(np.array([0.5, 0.5]))))
+        self.assertFalse(np.all(S.is_intersecting(S.plus(np.array([2.0, 0.0])))))
         self.assertTrue(cora.is_intersecting(S, meets))
         with self.assertRaises(cora.errors.WrongValue):
             S.is_intersecting(meets, "fast")
 
-    def test_split_unite_and_minkowski_difference(self):
+    def test_split_unite_and_mink_diff(self):
         S = segment()
         low, high = S.split(0)
         np.testing.assert_allclose(low.interval().sup, [0.5, 1.0], atol=1e-9)
@@ -394,7 +393,7 @@ class ConZonotope(unittest.TestCase):
         u = left.unite(right)
         self.assertEqual(u.A.shape[0], 0)
         # union
-        self.assertTrue(u.contains(np.array([0.0, 0.0])))
+        self.assertTrue(np.all(u.contains(np.array([0.0, 0.0]))))
         self.assertTrue(left.unite([right, left]).contains(np.array([2.0, 0.0])))
         self.assertTrue(left.unite(np.array([5.0, 5.0])).contains(np.array([5.0, 5.0])))
         self.assertIsInstance(left | right, cora.ConZonotope)
@@ -407,10 +406,10 @@ class ConZonotope(unittest.TestCase):
         small = cora.Interval(-np.ones(2), np.ones(2))
         expected = con_zonotope([0.0, 0.0], np.eye(2))
         for kind in ("exact", "inner:vertices", "inner:Vinod"):
-            self.assertTrue(big.minkowski_difference(small, kind).isequal(expected))
-        np.testing.assert_array_equal(big.minkowski_difference(np.array([1.0, 1.0])).c, [-1.0, -1.0])
+            self.assertTrue(big.mink_diff(small, kind).isequal(expected))
+        np.testing.assert_array_equal(big.mink_diff(np.array([1.0, 1.0])).c, [-1.0, -1.0])
         with self.assertRaises(cora.errors.WrongValue):
-            big.minkowski_difference(small, "other")
+            big.mink_diff(small, "other")
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #

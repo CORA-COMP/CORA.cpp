@@ -1,12 +1,12 @@
-// minkowski_difference - the Minkowski difference of two sets, as CORA's contSet.minkDiff
+// mink_diff - the Minkowski difference of two sets, as CORA's contSet.minkDiff
 //
 // Interval takes "inner" and "exact"; Zonotope "approx", "inner", "outer", ...
 //
-// Syntax:   R = S.minkowski_difference(S2);   R = S.minkowski_difference(S2, type);
+// Syntax:   R = S.mink_diff(S2);   R = S.mink_diff(S2, method);
 // Inputs:   S, S2 - sets of one dimension
-//           type - the algorithm of the class of S; default: the class's own
+//           method - the algorithm of the class of S; default: the class's own
 // Outputs:  R - {x | x + S2 in S}, or an inner or outer approximation as the class defines
-// See also: minus, Interval::minkowski_difference, Zonotope::mink_diff
+// See also: minus, Interval::mink_diff, Zonotope::mink_diff
 //
 // CORA: contSet/@contSet/minkDiff.m
 // CORA authors: Mark Wetzlinger
@@ -26,18 +26,18 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Set ContSet::minkowski_difference(const ContSet &S2, const std::optional<std::string> &type) const {
+Set ContSet::mink_diff(const ContSet &S2, const std::optional<std::string> &method) const {
     detail::Entry entry;
     CORA_CHECK(S2.dim() == dim(), Error::dimension_mismatch, [&] {
-        return "minkowski_difference: the sets differ in dimension, " + std::to_string(dim()) +
-               " and " + std::to_string(S2.dim());
+        return "mink_diff: the sets differ in dimension, " + std::to_string(dim()) + " and " +
+               std::to_string(S2.dim());
     });
     entry.release();
-    return minkowski_difference_impl(S2, type);
+    return mink_diff_impl(S2, method);
 }
 
-Set ContSet::minkowski_difference_impl(const ContSet &, const std::optional<std::string> &) const {
-    priv_noops("minkowski_difference", *this);
+Set ContSet::mink_diff_impl(const ContSet &, const std::optional<std::string> &) const {
+    priv_noops("mink_diff", *this);
 }
 
 } // namespace cora

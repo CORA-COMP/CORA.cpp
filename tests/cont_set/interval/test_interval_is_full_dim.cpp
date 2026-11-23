@@ -22,30 +22,32 @@ using test::vec;
 namespace {
 
 void is_full_dim_looks_for_flat_coordinates(const std::string &b) {
-    check(Interval(vec({0.0, 1.0}), vec({1.0, 3.0})).is_full_dim(), b + ": a box");
-    check(!Interval(vec({0.0, 1.0}), vec({1.0, 1.0})).is_full_dim(),
+    check(Interval(vec({0.0, 1.0}), vec({1.0, 3.0})).is_full_dim().all(), b + ": a box");
+    check(!Interval(vec({0.0, 1.0}), vec({1.0, 1.0})).is_full_dim().all(),
           b + ": a zero-width coordinate");
     // CORA's withinTol default, 1e-8, by the scope
     const ToleranceScope cora_default(1e-8);
-    check(!Interval(vec({0.0, 1.0}), vec({1.0, 1.0 + 1e-9})).is_full_dim(),
+    check(!Interval(vec({0.0, 1.0}), vec({1.0, 1.0 + 1e-9})).is_full_dim().all(),
           b + ": a width within 1e-8 counts as zero, as CORA's withinTol");
-    check(Interval(vec({0.0, 1.0}), vec({1.0, 1.0 + 1e-6})).is_full_dim(),
+    check(Interval(vec({0.0, 1.0}), vec({1.0, 1.0 + 1e-6})).is_full_dim().all(),
           b + ": a width of 1e-6 does not");
-    check(Interval::unbounded(2).is_full_dim(), b + ": the whole space");
-    check(!Interval::empty(2).is_full_dim(), b + ": the empty interval");
+    check(Interval::unbounded(2).is_full_dim().all(), b + ": the whole space");
+    check(!Interval::empty(2).is_full_dim().all(), b + ": the empty interval");
     const Interval full(vec({0.0}), vec({1.0})), flat(vec({1.0}), vec({1.0}));
-    check(Interval::stack({full, full}).is_full_dim() &&
-              !Interval::stack({full, flat}).is_full_dim(),
+    check(Interval::stack({full, full}).is_full_dim().all() &&
+              !Interval::stack({full, flat}).is_full_dim().all(),
           b + ": a batch is full-dimensional only if every member is");
 }
 
 /// tol relaxes the width test and must not be negative; with the checks off it is not looked at.
 void checks_and_their_switch() {
     const Interval I(vec({0.0, 1.0}), vec({1.0, 3.0})), thin(vec({0.0}), vec({1e-4}));
-    check(thin.is_full_dim() && !thin.is_full_dim(1e-3), "is_full_dim: tol widens the zero");
-    check(test::raises([&] { I.is_full_dim(-1.0); }, Error::wrong_value), "is_full_dim: tol -1");
+    check(thin.is_full_dim().all() && !thin.is_full_dim(1e-3).all(),
+          "is_full_dim: tol widens the zero");
+    check(test::raises([&] { I.is_full_dim(-1.0).all(); }, Error::wrong_value),
+          "is_full_dim: tol -1");
     ChecksScope off(false);
-    check(I.is_full_dim(-1.0), "is_full_dim: the same with the checks off");
+    check(I.is_full_dim(-1.0).all(), "is_full_dim: the same with the checks off");
 }
 
 } // namespace

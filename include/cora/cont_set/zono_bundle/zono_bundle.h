@@ -50,6 +50,10 @@ class ZonoBundle : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::zono_bundle;
 
+    /// The bundle of a constrained zonotope or a polytope (CORA's zonoBundle(S)).
+    explicit ZonoBundle(const ConZonotope &cz);
+    explicit ZonoBundle(const Polytope &P);
+
     /// The intersection of the zonotopes (CORA's zonoBundle(list)): at least one, of one dimension
     /// and one batch shape.
     explicit ZonoBundle(std::vector<Zonotope> zonotopes);
@@ -107,13 +111,13 @@ class ZonoBundle : public ContSet {
     /// Whether the bundle meets a bundle, a zonotope, a box or points (..., n) (all inside). Type
     /// "exact" asks whether the bundle of both is empty; "approx" tests the boxes, S's enlarged by
     /// tol. Not a batch; tol is used for points and "approx" only (as CORA).
-    bool is_intersecting(const ZonoBundle &S, const std::string &type = "exact",
+    bool is_intersecting(const ZonoBundle &S, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Zonotope &Z, const std::string &type = "exact",
+    bool is_intersecting(const Zonotope &Z, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Interval &I, const std::string &type = "exact",
+    bool is_intersecting(const Interval &I, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Tensor &p, const std::string &type = "exact",
+    bool is_intersecting(const Tensor &p, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
 
     /// Whether the bundles are the same set: the members agree one by one, else each contains the
@@ -234,6 +238,12 @@ inline ZonoBundle operator+(const ZonoBundle &ZB, const Interval &I) { return ZB
 inline ZonoBundle operator+(const ZonoBundle &ZB, const Tensor &v) { return ZB.plus(v); }
 inline ZonoBundle operator+(const Tensor &v, const ZonoBundle &ZB) { return ZB.plus(v); }
 inline ZonoBundle operator-(const ZonoBundle &ZB, const Tensor &v) { return ZB.plus(v * -1.0); }
+
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline ZonoBundle operator*(double s, const ZonoBundle &S) {
+    return static_cast<const ContSet &>(S).times(s).as<ZonoBundle>();
+}
+inline ZonoBundle operator*(const ZonoBundle &S, double s) { return s * S; }
 
 } // namespace cora
 

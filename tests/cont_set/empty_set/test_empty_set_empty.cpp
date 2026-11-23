@@ -21,7 +21,6 @@ namespace {
 
 void empty_makes_the_set_of_n_dimensions(const std::string &b) {
     check(EmptySet::empty(4).dim() == 4, b + ": 4 dimensions");
-    check(EmptySet::empty().dim() == 0, b + ": the default is dimension 0, as CORA's nargin == 0");
 }
 
 /// A negative dimension is refused; with the checks off the result is the same.

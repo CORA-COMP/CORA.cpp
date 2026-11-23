@@ -67,7 +67,7 @@ class ZonoBundle(unittest.TestCase):
         box = cz.interval()
         np.testing.assert_allclose(box.inf, [0.0, 0.0], atol=1e-9)
         np.testing.assert_allclose(box.sup, [1.0, 1.0], atol=1e-9)
-        self.assertTrue(squares().contains(squares().center))
+        self.assertTrue(np.all(squares().contains(squares().center)))
 
     def test_interval_and_the_set_interface(self):
         box = squares().interval()
@@ -113,19 +113,19 @@ class ZonoBundle(unittest.TestCase):
 
     def test_contains_intersection_tests_and_equality(self):
         zB = squares()
-        self.assertTrue(zB.contains(np.array([0.5, 0.5])))
-        self.assertFalse(zB.contains(np.array([-0.5, -0.5])))
+        self.assertTrue(np.all(zB.contains(np.array([0.5, 0.5]))))
+        self.assertFalse(np.all(zB.contains(np.array([-0.5, -0.5]))))
         self.assertTrue(np.array([0.5, 0.5]) in zB)
-        self.assertTrue(zB.contains(np.array([[0.5, 0.5], [0.25, 0.75]])))
-        self.assertTrue(zB.contains(zonotope([0.5, 0.5], 0.25 * np.eye(2))))
-        self.assertTrue(zB.contains(cora.Interval(np.array([0.25, 0.25]), np.array([0.75, 0.75]))))
+        self.assertTrue(np.all(zB.contains(np.array([[0.5, 0.5], [0.25, 0.75]]))))
+        self.assertTrue(np.all(zB.contains(zonotope([0.5, 0.5], 0.25 * np.eye(2)))))
+        self.assertTrue(np.all(zB.contains(cora.Interval(np.array([0.25, 0.25]), np.array([0.75, 0.75])))))
         # containment and intersection of a bundle
-        self.assertTrue(zB.contains(zB.intersect(zonotope([0.5, 0.5], 0.25 * np.eye(2)))))
-        self.assertTrue(cora.contains(zB, zonotope([0.5, 0.5], 0.25 * np.eye(2))))
-        self.assertTrue(zB.is_intersecting(zonotope([0.5, 0.5], 0.25 * np.eye(2))))
-        self.assertFalse(zB.is_intersecting(zonotope([-0.75, -0.75], 0.25 * np.eye(2))))
-        self.assertTrue(zB.is_intersecting(zB, type="approx"))
-        self.assertTrue(zB.is_intersecting(np.array([0.5, 0.5])))
+        self.assertTrue(np.all(zB.contains(zB.intersect(zonotope([0.5, 0.5], 0.25 * np.eye(2))))))
+        self.assertTrue(np.all(cora.contains(zB, zonotope([0.5, 0.5], 0.25 * np.eye(2)))))
+        self.assertTrue(np.all(zB.is_intersecting(zonotope([0.5, 0.5], 0.25 * np.eye(2)))))
+        self.assertFalse(np.all(zB.is_intersecting(zonotope([-0.75, -0.75], 0.25 * np.eye(2)))))
+        self.assertTrue(np.all(zB.is_intersecting(zB, method="approx")))
+        self.assertTrue(np.all(zB.is_intersecting(np.array([0.5, 0.5]))))
         self.assertTrue(cora.is_intersecting(zB, cora.Interval(np.array([0.9, 0.9]), np.array([3.0, 3.0]))))
         # equal bundles: the members in any order
         self.assertTrue(zB.isequal(cora.ZonoBundle(list(reversed(zB.zonotopes)))))
@@ -138,7 +138,7 @@ class ZonoBundle(unittest.TestCase):
         with self.assertRaises(cora.errors.NoSpecificAlg):
             zB.contains(np.array([0.5, 0.5]), method="nothing")
         with self.assertRaises(cora.errors.WrongValue):
-            zB.is_intersecting(zB, type="fast")
+            zB.is_intersecting(zB, method="fast")
         with self.assertRaises(cora.errors.WrongValue):
             zB.isequal(zB, tol=-1.0)
 

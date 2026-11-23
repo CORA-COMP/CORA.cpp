@@ -1,7 +1,7 @@
 """test_cont_set_generic - the operations every set has (ContSet) on a box, a zonotope and a set
 
 written in Python: center, dim, is_bounded, is_full_dim, reduce, linear_map, enlarge, minus,
-minkowski_difference, isequal, eq, ne, decompose, project_high_dim, project_on_hyperplane,
+mink_diff, isequal, eq, ne, decompose, project_high_dim, project_on_hyperplane,
 generate_random, lift, norm, enclose and the unchecked and_, contains_ and isIntersecting_ forms.
 
 CORA authors: Tobias Ladner, Mark Wetzlinger, Niklas Kochdumper
@@ -86,7 +86,7 @@ class Generic(unittest.TestCase):
         self.assertEqual(cora.ContSet.enlarge(self.I, 2.0).sup.tolist(), [2.0, 3.0])
         m = cora.ContSet.minus(self.Z, np.array([1.0, 1.0]))
         self.assertEqual(m.center.tolist(), [0.0, -1.0])
-        d = cora.ContSet.minkowski_difference(self.I, box([-0.5, 0.0], [0.5, 0.5]))
+        d = cora.ContSet.mink_diff(self.I, box([-0.5, 0.0], [0.5, 0.5]))
         self.assertEqual((d.inf.tolist(), d.sup.tolist()), ([-0.5, 0.0], [0.5, 1.5]))
         with self.assertRaises(cora.errors.DimensionMismatch):
             cora.ContSet.linear_map(self.I, np.ones((1, 3)))
@@ -160,8 +160,8 @@ class Generic(unittest.TestCase):
         X = cora.intersect(self.I, J)
         self.assertEqual((X.inf.tolist(), X.sup.tolist()), ([0.5, 1.0], [1.0, 2.0]))
         Z = zonotope([0.0, 1.0], [[0.5, 0.0], [0.0, 0.5]])
-        self.assertTrue(cora.contains(Z, box([-0.25, 0.75], [0.25, 1.25])))
-        self.assertFalse(cora.contains(Z, J))
+        self.assertTrue(np.all(cora.contains(Z, box([-0.25, 0.75], [0.25, 1.25]))))
+        self.assertFalse(np.all(cora.contains(Z, J)))
         self.assertTrue(cora.is_intersecting(self.I, J))
         self.assertIn(("isequal", "Zonotope", "Interval"), cora.binary_pairs())
 
@@ -249,9 +249,9 @@ class Generic(unittest.TestCase):
                      lambda: self.Z.norm(2, "bogus")):
             with self.assertRaises(cora.errors.WrongValue):
                 call()
-        for mode in ("exact", "ub_convex"):
+        for method in ("exact", "ub_convex"):
             with self.assertRaises(cora.errors.NotSupported):
-                self.Z.norm(2, mode)
+                self.Z.norm(2, method)
         with self.assertRaises(cora.errors.Noops):
             cora.Fullspace(2).norm()
         with self.assertRaises(cora.errors.Noops):

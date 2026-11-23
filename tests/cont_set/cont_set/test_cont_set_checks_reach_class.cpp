@@ -105,9 +105,8 @@ class ProbeSet : public test::UnregisteredSet {
     }
     // the operations with an argument
     Set enlarge_impl(const Tensor &) const override { return other("enlarge"); }
-    Set minkowski_difference_impl(const ContSet &,
-                                  const std::optional<std::string> &) const override {
-        return other("minkowski_difference");
+    Set mink_diff_impl(const ContSet &, const std::optional<std::string> &) const override {
+        return other("mink_diff");
     }
     // the dimension changes
     Set project_high_dim_impl(int64_t, const std::vector<int64_t> &) const override {
@@ -160,7 +159,7 @@ void every_operation_hands_over_to_checking_class() {
     static_cast<void>(P.times(2.0));
     // compact, difference and the dimension changes
     static_cast<void>(P.compact());
-    static_cast<void>(P.minkowski_difference(P));
+    static_cast<void>(P.mink_diff(P));
     static_cast<void>(P.project_high_dim(3, {0, 1}));
     static_cast<void>(P.lift(3));
     static_cast<void>(P.norm());
@@ -168,7 +167,7 @@ void every_operation_hands_over_to_checking_class() {
     std::istringstream hooks(
         "center interval display is_bounded is_full_dim support_function rand_point project "
         "vertices reduce linear_map enlarge translate uminus uplus times compact "
-        "minkowski_difference project_high_dim lift norm enclose");
+        "mink_diff project_high_dim lift norm enclose");
     std::string hook;
     while (hooks >> hook)
         check(seen().count(hook) == 1, hook + ": the class checks when it is reached");

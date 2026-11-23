@@ -66,6 +66,10 @@ constexpr void aux_add_set(Table &table, F) {
     };
 }
 
+/// The answer of a predicate as one bool: a mask of a batch is "every member".
+inline bool aux_every(bool answer) { return answer; }
+inline bool aux_every(const Mask &answer) { return answer.all(); }
+
 /// Registers F(A, B, tol) -> bool for the operation Op.
 template <BinaryOp Op, class A, class B, class F>
 constexpr void aux_add_predicate(Table &table, F) {
@@ -73,7 +77,8 @@ constexpr void aux_add_predicate(Table &table, F) {
                   "a commutative pair is registered with the class of lower precedence first");
     table.predicate[static_cast<int>(Op)][static_cast<int>(A::kClassId)][static_cast<int>(
         B::kClassId)] = [](const ContSet &S1, const ContSet &S2, Tol tol) -> bool {
-        return F{}(static_cast<const A &>(S1), static_cast<const B &>(S2), tol);
+        // a batch is "every member": the generic entry answers one bool
+        return aux_every(F{}(static_cast<const A &>(S1), static_cast<const B &>(S2), tol));
     };
 }
 

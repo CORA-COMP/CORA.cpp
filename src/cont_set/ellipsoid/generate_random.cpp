@@ -6,7 +6,7 @@
 // N(0, 1)^n.
 //
 // Syntax:   E = Ellipsoid::generate_random(rng);
-//           E = Ellipsoid::generate_random(rng, n, is_degenerate, center);
+//           E = Ellipsoid::generate_random(rng, n, center, is_degenerate);
 // Inputs:   rng - the generator of the random numbers
 //           n, is_degenerate, center - optional: CORA's Dimension, IsDegenerate, Center (n)
 // Outputs:  E - the ellipsoid
@@ -37,8 +37,8 @@ namespace cora {
 // ===========================================  MAIN  =========================================== //
 
 CORA_FROM_NUMBERS Ellipsoid Ellipsoid::generate_random(Rng &rng, std::optional<int64_t> dimension,
-                                                       bool is_degenerate,
-                                                       const std::optional<Tensor> &center) {
+                                                       const std::optional<Tensor> &center,
+                                                       bool is_degenerate) {
     detail::Entry entry;
     CORA_CHECK(!dimension || *dimension >= 1, Error::wrong_value, [&] {
         return "generate_random: the dimension must be at least 1, got " +

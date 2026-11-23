@@ -6,14 +6,15 @@
 // Also the ellipsoids of a box (radii widened to 5e-3, n times its generators' ellipsoid) and of a
 // zonotope of n independent generators (the SDP-based modes are not supported).
 //
-// Syntax:   Ellipsoid E(Q);   Ellipsoid E(q, Q);   Ellipsoid E(q, Q, tol);   Ellipsoid E(I, mode);
-//           Ellipsoid E(Z, mode);
+// Syntax:   Ellipsoid E(Q);   Ellipsoid E(q, Q);   Ellipsoid E(q, Q, tol);   Ellipsoid E(I,
+// method);
+//           Ellipsoid E(Z, method);
 // Inputs:   q - center (..., n), finite, default 0
 //           Q - shape matrix (..., n, n), finite, symmetric and positive semidefinite up to tol
 //           tol - bound of the asymmetry and the negative eigenvalues; default: the repository one
 //           I - box
 //           Z - zonotope (n) with generators (m, n), not a batch
-//           mode - "outer" or "inner" for a box, one of the zonotope modes for a zonotope
+//           method - "outer" or "inner" for a box, one of the zonotope modes for a zonotope
 // Outputs:  E - the ellipsoid {x | (x - q)' Q^+ (x - q) <= 1}
 // See also: empty, Zonotope::Zonotope
 // References:
@@ -31,6 +32,9 @@
 // Reviewed:      ---
 
 #include "cora/cont_set/ellipsoid/ellipsoid.h"
+#include "cora/cont_set/capsule/capsule.h"
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
@@ -106,14 +110,15 @@ Ellipsoid::Ellipsoid(const Tensor &Q, Tol tol) : Ellipsoid(aux_default_center(Q)
 
 // Conversions -------------------------------------------------------------------------------------
 
-Ellipsoid::Ellipsoid(const Interval &I, const std::string &mode) : Ellipsoid(Ellipsoid::empty(0)) {
+Ellipsoid::Ellipsoid(const Interval &I, const std::string &method)
+    : Ellipsoid(Ellipsoid::empty(0)) {
     detail::Entry entry;
-    // only the mode "outer" is available, and only for a nonempty box
-    CORA_CHECK(mode == "outer" || mode == "inner", Error::wrong_value, [&] {
-        return "Ellipsoid: the mode must be 'outer' or 'inner', got '" + mode + "'";
+    // only the method "outer" is available, and only for a nonempty box
+    CORA_CHECK(method == "outer" || method == "inner", Error::wrong_value, [&] {
+        return "Ellipsoid: the method must be 'outer' or 'inner', got '" + method + "'";
     });
-    CORA_CHECK(mode == "outer", Error::not_supported,
-               [] { return std::string("Ellipsoid: the mode 'inner' needs an SDP solver"); });
+    CORA_CHECK(method == "outer", Error::not_supported,
+               [] { return std::string("Ellipsoid: the method 'inner' needs an SDP solver"); });
     CORA_CHECK(!I.is_empty(), Error::empty_set,
                [] { return std::string("Ellipsoid: the box is empty"); });
     // radii below the minimum are widened to it, unless they are 0
@@ -131,11 +136,12 @@ Ellipsoid::Ellipsoid(const Interval &I, const std::string &mode) : Ellipsoid(Ell
     *this = Ellipsoid(I.center(), widened.expand_dims(-1).square().diag() * n);
 }
 
-Ellipsoid::Ellipsoid(const Zonotope &Z, const std::string &mode) : Ellipsoid(Ellipsoid::empty(0)) {
+Ellipsoid::Ellipsoid(const Zonotope &Z, const std::string &method)
+    : Ellipsoid(Ellipsoid::empty(0)) {
     detail::Entry entry;
-    CORA_CHECK(mode == "outer:exact" || mode == "outer:norm" || mode == "outer:norm_bnd" ||
-                   mode == "inner:exact" || mode == "inner:norm",
-               Error::wrong_value, [&] { return "Ellipsoid: unknown mode '" + mode + "'"; });
+    CORA_CHECK(method == "outer:exact" || method == "outer:norm" || method == "outer:norm_bnd" ||
+                   method == "inner:exact" || method == "inner:norm",
+               Error::wrong_value, [&] { return "Ellipsoid: unknown method '" + method + "'"; });
     CORA_CHECK(Z.center().ndim() == 1, Error::not_supported, [] {
         return std::string("Ellipsoid: a zonotope converts one at a time, not as a batch");
     });
@@ -152,9 +158,22 @@ Ellipsoid::Ellipsoid(const Zonotope &Z, const std::string &mode) : Ellipsoid(Ell
             "Ellipsoid: only a zonotope of n independent generators converts without an SDP");
     });
     // the ellipsoid through the corners is n times larger than the inscribed one
-    const double factor = mode.rfind("outer", 0) == 0 ? static_cast<double>(n) : 1.0;
+    const double factor = method.rfind("outer", 0) == 0 ? static_cast<double>(n) : 1.0;
     *this = Ellipsoid(c, G.matrix_transpose().matmul(G) * factor);
 }
+
+// Conversions from the other set classes ----------------------------------------------------------
+
+Ellipsoid::Ellipsoid(const Polytope &P, const std::string &method)
+    : Ellipsoid(P.ellipsoid(method)) {}
+
+Ellipsoid::Ellipsoid(const Capsule &C, const std::string &method)
+    : Ellipsoid(C.ellipsoid(method)) {}
+
+Ellipsoid::Ellipsoid(const PolyZonotope &)
+    : Ellipsoid(detail::refuse_conversion<Ellipsoid>(
+          "Ellipsoid(PolyZonotope): CORA bounds the radius by a global optimization of the "
+          "support function (contSet/@polyZonotope/ellipsoid.m)")) {}
 
 } // namespace cora
 

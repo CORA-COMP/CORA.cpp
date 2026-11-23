@@ -43,7 +43,7 @@ void zonotope_property(const std::string &b) {
     Rng rng(67);
     for (int k = 0; k < 3; ++k) {
         const Capsule C = test::random_capsule(rng, 3);
-        check(C.zonotope().contains(test::sample_points(C, rng, 12), "exact", 1e-9),
+        check(C.zonotope().contains(test::sample_points(C, rng, 12), "exact", 1e-9).all(),
               b + ": the points are inside");
     }
 }

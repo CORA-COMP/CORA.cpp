@@ -72,7 +72,7 @@ class Capsule : public ContSet {
 
     /// The empty capsule of n >= 0 dimensions (CORA's capsule.empty): flagged in empty_mask(), with
     /// the center and generator 0 (n) and the radius 0 (CORA's has a center without columns).
-    static Capsule empty(int64_t n = 0);
+    static Capsule empty(int64_t n);
 
     /// The capsule that is the origin of R^n, n >= 1 (CORA's capsule.origin).
     static Capsule origin(int64_t n);
@@ -124,16 +124,42 @@ class Capsule : public ContSet {
     bool isequal(const Capsule &S, Tol tol = std::nullopt) const;
 
     /// Whether the capsule contains the points p (..., N, n), a capsule, a zonotope or a box, up
-    /// to tol in the distance to the axis; for a batch, every member.
-    bool contains(const Tensor &p, Tol tol = std::nullopt) const;
+    /// to tol in the distance to the axis; the points answer a mask, one flag per point (a point
+    /// (n) a flag per member); a set, for a batch, every member.
+    Mask contains(const Tensor &p, Tol tol = std::nullopt) const;
+    Mask contains(const Tensor &p, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(p, tol);
+    }
     bool contains(const Capsule &S, Tol tol = std::nullopt) const;
+    bool contains(const Capsule &S, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(S, tol);
+    }
     bool contains(const Zonotope &Z, Tol tol = std::nullopt) const;
+    bool contains(const Zonotope &Z, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(Z, tol);
+    }
     bool contains(const Interval &I, Tol tol = std::nullopt) const;
+    bool contains(const Interval &I, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(I, tol);
+    }
 
-    /// Whether the capsule meets the points p (all of them in it) or a capsule: the least
+    /// Whether the capsule meets the points p (a mask, as contains) or a capsule: the least
     /// distance of the two axes is at most the sum of the radii, up to tol. Exact.
-    bool is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Tensor &p, Tol tol = std::nullopt) const;
+    Mask is_intersecting(const Tensor &p, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(p, tol);
+    }
     bool is_intersecting(const Capsule &S, Tol tol = std::nullopt) const;
+    bool is_intersecting(const Capsule &S, const std::string &method,
+                         Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(S, tol);
+    }
 
     // Combining with other sets -------------------------------------------------------------------
 
@@ -227,6 +253,12 @@ inline Capsule operator+(const Capsule &C, const Zonotope &Z) { return C.plus(Z)
 inline Capsule operator+(const Capsule &C, const Tensor &v) { return C.plus(v); }
 inline Capsule operator+(const Tensor &v, const Capsule &C) { return C.plus(v); }
 inline Capsule operator-(const Capsule &C, const Tensor &v) { return C.plus(v * -1.0); }
+
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline Capsule operator*(double s, const Capsule &S) {
+    return static_cast<const ContSet &>(S).times(s).as<Capsule>();
+}
+inline Capsule operator*(const Capsule &S, double s) { return s * S; }
 
 } // namespace cora
 

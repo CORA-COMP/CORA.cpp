@@ -20,7 +20,7 @@ using test::Inputs;
 int main() {
     const BackendScope backend_scope("torch");
     torch::manual_seed(40);
-    for (const double type : {1.0, 2.0}) {
+    for (const Tensor::Norm type : {Tensor::Norm::one, Tensor::Norm::two}) {
         test::gradcheck(
             "norm", [type](const Inputs &x) { return Inputs{Zonotope(x[0], x[1]).norm(type)}; },
             test::random_zonotope_rows(3, 4));

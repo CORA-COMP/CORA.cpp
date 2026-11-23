@@ -27,6 +27,8 @@
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cont_set/con_zonotope/private/priv.h"
+#include "cora/cont_set/polytope/polytope.h"
+#include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "global/blocks.h"
 #include "global/format.h"
 
@@ -151,6 +153,14 @@ ConZonotope ConZonotope::from_matrix(const Tensor &Z, const std::optional<Tensor
     if (A) return {c, G.matrix_transpose(), *A, *b};
     return {c, G.matrix_transpose()};
 }
+
+// Conversions from the other set classes ----------------------------------------------------------
+
+ConZonotope::ConZonotope(const Polytope &P, const std::string &method,
+                         const std::optional<Interval> &box)
+    : ConZonotope(P.con_zonotope(method, box)) {}
+
+ConZonotope::ConZonotope(const ZonoBundle &bundle) : ConZonotope(bundle.con_zonotope()) {}
 
 } // namespace cora
 

@@ -452,6 +452,15 @@ inline bool agree(const std::string &what, bool a, const lean::Certified &b) {
     return agree(what, a, b.value);
 }
 
+/// A predicate of one set answers a 0-d mask, which is the oracle's bool.
+inline bool agree(const std::string &what, const cora::Mask &a, bool b) {
+    return agree(what, static_cast<bool>(a), b);
+}
+
+inline bool agree(const std::string &what, const cora::Mask &a, const lean::Certified &b) {
+    return agree(what, static_cast<bool>(a), b.value);
+}
+
 inline bool agree(const std::string &what, const std::vector<int64_t> &a,
                   const std::vector<int64_t> &b) {
     if (a != b) std::cerr << "  " << what << ": the indices differ\n";

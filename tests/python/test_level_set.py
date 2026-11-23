@@ -58,13 +58,13 @@ class Queries(unittest.TestCase):
     # points, boxes, and the box of another set
     def test_contains_and_intersecting(self):
         disc = cora.LevelSet(circle(), 2, "<=")
-        self.assertTrue(disc.contains(np.array([0.5, 0.0])))
-        self.assertFalse(disc.contains(np.array([[2.0, 0.0]])))
-        self.assertTrue(disc.contains(box([-0.5, -0.5], [0.5, 0.5])))
-        self.assertFalse(disc.contains(box([0, 0], [1, 1])))
+        self.assertTrue(np.all(disc.contains(np.array([0.5, 0.0]))))
+        self.assertFalse(np.all(disc.contains(np.array([[2.0, 0.0]]))))
+        self.assertTrue(np.all(disc.contains(box([-0.5, -0.5], [0.5, 0.5]))))
+        self.assertFalse(np.all(disc.contains(box([0, 0], [1, 1]))))
         circ = cora.LevelSet(circle(), 2, "==")
-        self.assertTrue(circ.is_intersecting(box([0, 0], [2, 2])))
-        self.assertFalse(circ.is_intersecting(cora.Zonotope(np.array([3.0, 3.0]), 0.5 * np.eye(2))))
+        self.assertTrue(np.all(circ.is_intersecting(box([0, 0], [2, 2]))))
+        self.assertFalse(np.all(circ.is_intersecting(cora.Zonotope(np.array([3.0, 3.0]), 0.5 * np.eye(2)))))
 
 
 class Operations(unittest.TestCase):

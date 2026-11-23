@@ -23,6 +23,11 @@
 
 #include "cora/cont_set/polytope/polytope.h"
 #include "cont_set/polytope/private/priv.h"
+#include "cora/cont_set/capsule/capsule.h"
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/zono_bundle/zono_bundle.h"
+#include "cora/cont_set/zonotope/zonotope.h"
 #include "global/blocks.h"
 #include "global/format.h"
 
@@ -234,6 +239,21 @@ const Tensor &Polytope::V() const {
     });
     return V_;
 }
+
+// Conversions from the other set classes ----------------------------------------------------------
+
+Polytope::Polytope(const Zonotope &Z) : Polytope(Z.polytope()) {}
+
+Polytope::Polytope(const ConZonotope &cz) : Polytope(cz.polytope()) {}
+
+Polytope::Polytope(const ZonoBundle &bundle) : Polytope(bundle.polytope()) {}
+
+Polytope::Polytope(const Capsule &C, const std::string &method) : Polytope(C.polytope(method)) {}
+
+Polytope::Polytope(const PolyZonotope &)
+    : Polytope(detail::refuse_conversion<Polytope>(
+          "Polytope(PolyZonotope): CORA bounds the support function along template "
+          "directions by a branch and bound (contSet/@polyZonotope/polytope.m)")) {}
 
 } // namespace cora
 

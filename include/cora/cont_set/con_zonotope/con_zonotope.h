@@ -11,7 +11,7 @@
 //             compact, cart_prod, intersect, con_intersect, enclose, convex_hull, cubic_map,
 //             intersect_strip, contains, approximate_bounds, display, origin, plus, linear_map,
 //             lift, reduce, quad_map, rescale, representsa, isequal, is_intersecting, split, unite,
-//             minkowski_difference, project, support_function, vertices, rand_point, zonotope,
+//             mink_diff, project, support_function, vertices, rand_point, zonotope,
 //             zono_bundle, polytope, generate_random, cut, interval_tight, interval_cert (one file
 //             each).
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/zonotope/zonotope.h
@@ -51,6 +51,11 @@ class ZonoBundle;
 class ConZonotope : public ContSet {
   public:
     static constexpr ClassId kClassId = ClassId::con_zonotope;
+
+    /// The constrained zonotope of a polytope or a bundle (CORA's conZonotope(S)).
+    explicit ConZonotope(const Polytope &P, const std::string &method = "exact:supportFunc",
+                         const std::optional<Interval> &box = std::nullopt);
+    explicit ConZonotope(const ZonoBundle &bundle);
 
     /// The constrained zonotope of the center c (..., n), the generators G (..., m, n), one per
     /// row (#163), and the constraints A x = b (A (..., p, m), b (..., p)); without A and b no
@@ -96,7 +101,7 @@ class ConZonotope : public ContSet {
     /// The empty set of n dimensions (CORA's conZonotope.empty): no generators and the constraint
     /// 0 = 1, so that every operation on it stays an enclosure (CORA's has a center without
     /// columns, which and_ and cartProd_ mishandle; docs/cora-differences.md).
-    static ConZonotope empty(int64_t n = 0);
+    static ConZonotope empty(int64_t n);
 
     // Conversions ---------------------------------------------------------------------------------
 
@@ -330,14 +335,14 @@ class ConZonotope : public ContSet {
     bool isequal(const Interval &I, Tol tol = std::nullopt) const;
 
     /// Whether the set and a constrained zonotope, a zonotope, a box or points (..., n) intersect:
-    /// type "exact" (a linear program) or "approx" (the boxes overlap). Not a batch.
-    bool is_intersecting(const ConZonotope &S, const std::string &type = "exact",
+    /// method "exact" (a linear program) or "approx" (the boxes overlap). Not a batch.
+    bool is_intersecting(const ConZonotope &S, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Zonotope &Z, const std::string &type = "exact",
+    bool is_intersecting(const Zonotope &Z, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Interval &I, const std::string &type = "exact",
+    bool is_intersecting(const Interval &I, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
-    bool is_intersecting(const Tensor &p, const std::string &type = "exact",
+    bool is_intersecting(const Tensor &p, const std::string &method = "exact",
                          Tol tol = std::nullopt) const;
 
     /// The two halves of the set cut at the center of coordinate N (0-based) of its box (CORA's
@@ -360,9 +365,9 @@ class ConZonotope : public ContSet {
                       std::optional<int> order = std::nullopt) const;
 
     /// The Minkowski difference {x | x + S in this set} (CORA's minkDiff) with a zonotope, a box
-    /// or a point (n): type "exact" (default), "inner:vertices" or "inner:Vinod". Not a batch.
-    using ContSet::minkowski_difference;
-    ConZonotope minkowski_difference(const Tensor &p) const;
+    /// or a point (n): method "exact" (default), "inner:vertices" or "inner:Vinod". Not a batch.
+    using ContSet::mink_diff;
+    ConZonotope mink_diff(const Tensor &p) const;
 
     // Bounds of batches ---------------------------------------------------------------------------
 
@@ -407,8 +412,7 @@ class ConZonotope : public ContSet {
     Set linear_map_impl(const Tensor &M) const override;
     Set reduce_impl(int order) const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
-    Set minkowski_difference_impl(const ContSet &S2,
-                                  const std::optional<std::string> &type) const override;
+    Set mink_diff_impl(const ContSet &S2, const std::optional<std::string> &method) const override;
     bool is_bounded_impl() const override;
     bool is_full_dim_impl(Tol tol) const override;
 
@@ -430,6 +434,12 @@ inline ConZonotope operator+(const Interval &I, const ConZonotope &cz) { return 
 inline ConZonotope operator+(const ConZonotope &cz, const Tensor &v) { return cz.plus(v); }
 inline ConZonotope operator+(const Tensor &v, const ConZonotope &cz) { return cz.plus(v); }
 inline ConZonotope operator-(const ConZonotope &cz, const Tensor &v) { return cz.plus(v * -1.0); }
+
+/// The set scaled by the number s from either side (ContSet::times), in its own class.
+inline ConZonotope operator*(double s, const ConZonotope &S) {
+    return static_cast<const ContSet &>(S).times(s).as<ConZonotope>();
+}
+inline ConZonotope operator*(const ConZonotope &S, double s) { return s * S; }
 
 } // namespace cora
 

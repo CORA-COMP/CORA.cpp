@@ -14,6 +14,12 @@
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
+#include "cora/cont_set/capsule/capsule.h"
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
+#include "cora/cont_set/ellipsoid/ellipsoid.h"
+#include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/polytope/polytope.h"
+#include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "global/format.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -83,6 +89,23 @@ int64_t Zonotope::dim_impl() const {
     for (int64_t i = c_.ndim() - elem_rank_; i < c_.ndim(); ++i) n *= c_.shape()[i];
     return n;
 }
+
+// Conversions from the other set classes ----------------------------------------------------------
+
+Zonotope::Zonotope(const Interval &I) : Zonotope(I.zonotope()) {}
+
+Zonotope::Zonotope(const Capsule &C) : Zonotope(C.zonotope()) {}
+
+Zonotope::Zonotope(const ConZonotope &cz, const std::string &method)
+    : Zonotope(cz.zonotope(method)) {}
+
+Zonotope::Zonotope(const Ellipsoid &E, const std::string &method) : Zonotope(E.zonotope(method)) {}
+
+Zonotope::Zonotope(const Polytope &P, const std::string &method) : Zonotope(P.zonotope(method)) {}
+
+Zonotope::Zonotope(const ZonoBundle &bundle) : Zonotope(bundle.zonotope()) {}
+
+Zonotope::Zonotope(const PolyZonotope &poly) : Zonotope(poly.zonotope()) {}
 
 } // namespace cora
 

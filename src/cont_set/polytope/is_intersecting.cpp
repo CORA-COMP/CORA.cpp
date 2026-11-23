@@ -11,7 +11,7 @@
 //
 // Syntax:   res = P.is_intersecting(S);   res = P.is_intersecting(S, "approx", tol);
 // Inputs:   S - a polytope, a box, a zonotope, a constrained zonotope, a bundle, or points (..., n)
-//           type - "exact" (default) or "approx"
+//           method - "exact" (default) or "approx"
 //           tol - for points and halfspaces, as for contains; default: the repository tolerance
 // Outputs:  res - whether the sets have a common point (all points must be in P for points)
 // See also: Polytope::intersect, Polytope::contains
@@ -248,20 +248,20 @@ bool aux_halfspace_meets(const Polytope &P, const ContSet &S, double tol) {
 
 /// The answer for a set S that is not a polytope and not points, after the checks.
 template <class Convert>
-bool aux_meets_set(const Polytope &P, const ContSet &S, const std::string &type, double tol,
+bool aux_meets_set(const Polytope &P, const ContSet &S, const std::string &method, double tol,
                    Convert convert) {
     // R^n meets every set that is not empty
     if (priv_is_fullspace(P)) return !S.interval().is_empty();
-    if (P.dim() == 1) return P.interval().is_intersecting(S.interval(), tol);
+    if (P.dim() == 1) return P.interval().is_intersecting(S.interval(), tol).all();
     if (P.representsa("halfspace", tol)) return aux_halfspace_meets(P, S, tol);
-    if (type == "approx") return aux_not_beyond(P, S, tol);
+    if (method == "approx") return aux_not_beyond(P, S, tol);
     return convert(priv_host_h(P.constraints()));
 }
 
-/// Why a call is refused: the type, a batch, a dimension.
-detail::Refusal aux_refusal(const Polytope &P, const ContSet &S, const std::string &type) {
+/// Why a call is refused: the method, a batch, a dimension.
+detail::Refusal aux_refusal(const Polytope &P, const ContSet &S, const std::string &method) {
     const Tensor &like = P.is_h_rep() ? P.A() : P.V();
-    if (const Refusal r = priv_intersecting_refusal(type, like, like)) return r;
+    if (const Refusal r = priv_intersecting_refusal(method, like, like)) return r;
     if (like.ndim() != 2)
         return std::pair{Error::not_supported,
                          std::string("a linear program per set: single sets")};
@@ -279,31 +279,31 @@ detail::Refusal aux_refusal(const Polytope &P, const ContSet &S, const std::stri
 
 // Polytopes ---------------------------------------------------------------------------------------
 
-bool Polytope::is_intersecting(const Polytope &S, const std::string &type, Tol tol_arg) const {
+bool Polytope::is_intersecting(const Polytope &S, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol =
         resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "is_intersecting");
-    const detail::Refusal refusal = aux_refusal(*this, S, type);
+    const detail::Refusal refusal = aux_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     // the whole space meets every set that is not empty
     if (priv_is_fullspace(*this)) return !S.representsa("emptySet", machine_eps());
     if (priv_is_fullspace(S)) return !representsa("emptySet", machine_eps());
-    if (dim() == 1) return interval().is_intersecting(S.interval(), tol);
+    if (dim() == 1) return interval().is_intersecting(S.interval(), tol).all();
     if (representsa("halfspace", tol)) return aux_halfspace_meets(*this, S, tol);
     return aux_meets_polytope(*this, S);
 }
 
 // Boxes, zonotopes, constrained zonotopes and bundles ---------------------------------------------
 
-bool Polytope::is_intersecting(const ConZonotope &S, const std::string &type, Tol tol_arg) const {
+bool Polytope::is_intersecting(const ConZonotope &S, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     // the tolerance is checked; the exact test needs none
     static_cast<void>(
         resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "is_intersecting"));
-    const detail::Refusal refusal = aux_refusal(*this, S, type);
+    const detail::Refusal refusal = aux_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
     // the bounds of "approx" are support functions, which a constrained zonotope does not have yet
-    CORA_CHECK(type == "exact", Error::not_supported, [] {
+    CORA_CHECK(method == "exact", Error::not_supported, [] {
         return std::string("is_intersecting: 'approx' needs the support function of a constrained "
                            "zonotope, which is not ported");
     });
@@ -312,17 +312,17 @@ bool Polytope::is_intersecting(const ConZonotope &S, const std::string &type, To
     return aux_meets_con_zonotope(priv_host_h(constraints()), S);
 }
 
-bool Polytope::is_intersecting(const Zonotope &Z, const std::string &type, Tol tol_arg) const {
+bool Polytope::is_intersecting(const Zonotope &Z, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol =
         resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "is_intersecting");
-    const detail::Refusal refusal = aux_refusal(*this, Z, type);
+    const detail::Refusal refusal = aux_refusal(*this, Z, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
-    return aux_meets_set(*this, Z, type, tol,
+    return aux_meets_set(*this, Z, method, tol,
                          [&](const HostH &H) { return aux_meets_con_zonotope(H, ConZonotope(Z)); });
 }
 
-bool Polytope::is_intersecting(const Interval &I, const std::string &type, Tol tol_arg) const {
+bool Polytope::is_intersecting(const Interval &I, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol =
         resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "is_intersecting");
@@ -332,30 +332,30 @@ bool Polytope::is_intersecting(const Interval &I, const std::string &type, Tol t
     });
     // an empty box meets nothing
     if (I.is_empty()) return false;
-    const detail::Refusal refusal = aux_refusal(*this, I, type);
+    const detail::Refusal refusal = aux_refusal(*this, I, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
-    return aux_meets_set(*this, I, type, tol,
+    return aux_meets_set(*this, I, method, tol,
                          [&](const HostH &H) { return aux_meets_con_zonotope(H, ConZonotope(I)); });
 }
 
-bool Polytope::is_intersecting(const ZonoBundle &S, const std::string &type, Tol tol_arg) const {
+bool Polytope::is_intersecting(const ZonoBundle &S, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const double tol =
         resolve_tol(entry, tol_arg, (is_h_rep() ? A_ : V_).dtype(), "is_intersecting");
-    const detail::Refusal refusal = aux_refusal(*this, S, type);
+    const detail::Refusal refusal = aux_refusal(*this, S, method);
     CORA_CHECK(!refusal, refusal->first, [&] { return "is_intersecting: " + refusal->second; });
-    return aux_meets_set(*this, S, type, tol,
+    return aux_meets_set(*this, S, method, tol,
                          [&](const HostH &H) { return aux_meets_bundle(H, S); });
 }
 
 // Points ------------------------------------------------------------------------------------------
 
-bool Polytope::is_intersecting(const Tensor &p, const std::string &type, Tol tol_arg) const {
+bool Polytope::is_intersecting(const Tensor &p, const std::string &method, Tol tol_arg) const {
     detail::Entry entry;
     const Tensor &like = is_h_rep() ? A_ : V_;
     const double tol = resolve_tol(entry, tol_arg, like.dtype(), "is_intersecting");
-    CORA_CHECK(type == "exact" || type == "approx", Error::wrong_value, [&] {
-        return "is_intersecting: the type must be 'exact' or 'approx', got '" + type + "'";
+    CORA_CHECK(method == "exact" || method == "approx", Error::wrong_value, [&] {
+        return "is_intersecting: the method must be 'exact' or 'approx', got '" + method + "'";
     });
     CORA_CHECK(p.defined() && is_vector(p, dim()), Error::dimension_mismatch, [&] {
         return "is_intersecting: the points must be (..., " + std::to_string(dim()) +
@@ -364,7 +364,7 @@ bool Polytope::is_intersecting(const Tensor &p, const std::string &type, Tol tol
     CORA_CHECK(like.ndim() == 2, Error::not_supported,
                [] { return std::string("is_intersecting: it supports single sets, not a batch"); });
     // points are in the set or not: all of them
-    return contains(p, type, tol);
+    return contains(p, method, tol);
 }
 
 } // namespace cora

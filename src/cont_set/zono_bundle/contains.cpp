@@ -65,11 +65,15 @@ detail::Refusal aux_points_refusal(const ZonoBundle &bundle, const Tensor &p) {
 
 // Members -----------------------------------------------------------------------------------------
 
+/// The answer of a member's test as one bool: a mask of points is "every point".
+bool aux_every(bool answer) { return answer; }
+bool aux_every(const Mask &answer) { return answer.all(); }
+
 /// Whether every member contains the set S (by the member's own exact test).
 template <class S>
 bool aux_all_members(const ZonoBundle &bundle, const S &set, double tol) {
     for (const Zonotope &Z : bundle.zonotopes())
-        if (!Z.contains(set, "exact", tol)) return false;
+        if (!aux_every(Z.contains(set, "exact", tol))) return false;
     return true;
 }
 

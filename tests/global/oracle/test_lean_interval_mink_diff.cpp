@@ -1,4 +1,4 @@
-// test_lean_interval_minkowski_difference - Interval::minkowski_difference against the CORALean
+// test_lean_interval_mink_diff - Interval::mink_diff against the CORALean
 //
 // oracle (its `minkDiff`), bit for bit at nearest
 //
@@ -25,12 +25,12 @@ int main() {
         for (const int n : {2, 5, 20}) {
             // S narrower than I, so the difference is not empty
             const Interval I = rnd.box(n), S = I.enlarge(0.3);
-            const Interval R = I.minkowski_difference(S);
+            const Interval R = I.mink_diff(S);
             const lean::Interval O = lean::Interval(I).mink_diff(lean::Interval(S));
             test::oracle::check(R, O);
         }
     });
-    return test::finish("lean interval minkowski_difference");
+    return test::finish("lean interval mink_diff");
 }
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

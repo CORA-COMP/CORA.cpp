@@ -489,11 +489,11 @@ void bind_cont_set(py::module_ &m) {
             "0..dim-1)")
         .def(
             "norm",
-            [](const ContSet &S, const py::object &type, const std::string &mode) {
+            [](const ContSet &S, const py::object &type, const std::string &method) {
                 // the norm bound
-                return values(S.norm(norm_of(type), mode));
+                return values(S.norm(norm_of(type), method));
             },
-            py::arg("type") = 2, py::arg("mode") = "ub",
+            py::arg("type") = 2, py::arg("method") = "ub",
             "An upper bound of the norm (1, 2, inf or 'fro') of the points; -inf for the empty "
             "set")
         .def(
@@ -543,11 +543,11 @@ void bind_cont_set(py::module_ &m) {
         .def(
             "__pos__", [](const ContSet &S) { return object_of(S.uplus()); }, "S itself")
         .def(
-            "minkowski_difference",
-            [](const ContSet &S, const py::object &S2, const std::optional<std::string> &type) {
-                return object_of(S.minkowski_difference(set_of(S2), type));
+            "mink_diff",
+            [](const ContSet &S, const py::object &S2, const std::optional<std::string> &method) {
+                return object_of(S.mink_diff(set_of(S2), method));
             },
-            py::arg("S2"), py::arg("type") = py::none(),
+            py::arg("S2"), py::arg("method") = py::none(),
             "The Minkowski difference {x | x + S2 in S}")
         .def(
             "decompose",
@@ -608,34 +608,42 @@ void bind_cont_set(py::module_ &m) {
                  if (!py::isinstance<ContSet>(S2)) return not_implemented();
                  return binary<&unite>(S1, S2);
              })
-        .def("__contains__",
-             [](const py::object &S1, const py::object &S2) {
-                 if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
-                 if (py::isinstance<Interval>(S1))
-                     return py::cast<const Interval &>(S1).contains(point_of(S2, "the point"));
-                 if (py::isinstance<Zonotope>(S1))
-                     return py::cast<const Zonotope &>(S1).contains(point_of(S2, "the points"));
-                 // contains dispatches on the class of the first set
-                 if (py::isinstance<ConZonotope>(S1))
-                     return py::cast<const ConZonotope &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<ZonoBundle>(S1))
-                     return py::cast<const ZonoBundle &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<Polytope>(S1))
-                     return py::cast<const Polytope &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<Ellipsoid>(S1))
-                     return py::cast<const Ellipsoid &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<Capsule>(S1))
-                     return py::cast<const Capsule &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<EmptySet>(S1))
-                     return py::cast<const EmptySet &>(S1).contains(point_of(S2, "the points"));
-                 if (py::isinstance<Fullspace>(S1))
-                     return py::cast<const Fullspace &>(S1).contains(operand_set(S2).get());
-                 CORA_FAIL(
-                     Error::not_supported,
-                     "point containment is implemented for intervals, zonotopes, constrained "
-                     "zonotopes, zonotope bundles, polytopes, ellipsoids, capsules and the empty "
-                     "set and the whole space only");
-             })
+        .def(
+            "__contains__",
+            [](const py::object &S1, const py::object &S2) {
+                if (py::isinstance<ContSet>(S2)) return contains(set_of(S1), set_of(S2));
+                // a point is tested by the class of the first set
+                if (py::isinstance<Interval>(S1))
+                    return py::cast<const Interval &>(S1).contains(point_of(S2, "the point")).all();
+                // a zonotope answers a mask: one flag per point
+                if (py::isinstance<Zonotope>(S1))
+                    return py::cast<const Zonotope &>(S1)
+                        .contains(point_of(S2, "the points"))
+                        .all();
+                // contains dispatches on the class of the first set
+                if (py::isinstance<ConZonotope>(S1))
+                    return py::cast<const ConZonotope &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<ZonoBundle>(S1))
+                    return py::cast<const ZonoBundle &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<Polytope>(S1))
+                    return py::cast<const Polytope &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<Ellipsoid>(S1))
+                    return py::cast<const Ellipsoid &>(S1)
+                        .contains(point_of(S2, "the points"))
+                        .all();
+                // the batch tests answer all() of the mask
+                if (py::isinstance<Capsule>(S1))
+                    return py::cast<const Capsule &>(S1).contains(point_of(S2, "the points")).all();
+                if (py::isinstance<EmptySet>(S1))
+                    return py::cast<const EmptySet &>(S1).contains(point_of(S2, "the points"));
+                if (py::isinstance<Fullspace>(S1))
+                    return py::cast<const Fullspace &>(S1).contains(operand_set(S2).get());
+                CORA_FAIL(
+                    Error::not_supported,
+                    "point containment is implemented for intervals, zonotopes, constrained "
+                    "zonotopes, zonotope bundles, polytopes, ellipsoids, capsules and the empty "
+                    "set and the whole space only");
+            })
         // A <= B is B.contains(A), A >= B is A.contains(B) (a class with its own <= keeps it)
         .def("__le__",
              [](const py::object &S1, const py::object &S2) -> py::object {
@@ -709,18 +717,20 @@ void bind_fullspace(py::module_ &m) {
         // the queries take points or boxes
         .def(
             "contains",
-            [](const Fullspace &F, const py::object &S, Tol tol) {
-                return F.contains(operand_set(S).get(), tol);
+            [](const Fullspace &F, const py::object &S, const std::string &method, Tol tol) {
+                return F.contains(operand_set(S).get(), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(), "Whether the set contains S: always")
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the set contains S: always")
         // the box of any set decides the intersection
         .def(
             "is_intersecting",
-            [](const Fullspace &F, const py::object &S, Tol tol) {
+            [](const Fullspace &F, const py::object &S, const std::string &method, Tol tol) {
                 // the whole space meets every set unless it is empty
-                return F.is_intersecting(operand_set(S).get(), tol);
+                return F.is_intersecting(operand_set(S).get(), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(), "Whether the set meets S: unless S is empty")
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether the set meets S: unless S is empty")
         .def(
             "isequal",
             [](const Fullspace &F, const py::object &S, Tol tol) {
@@ -925,27 +935,31 @@ void bind_interval(py::module_ &m) {
         // the interval matrix of a box
         .def("interval_matrix", &Interval::interval_matrix,
              "The interval matrix [c - r, c + r] of the center and the radius")
-        // the predicates of a box
-        .def("is_bounded", &Interval::is_bounded, "Whether no bound is infinite")
+        // the predicates of a batch of boxes answer a bool array, one flag per box
+        .def(
+            "is_bounded", [](const Interval &I) { return values(I.is_bounded()); },
+            "Whether no bound is infinite; a bool array of the batch shape for a batch")
         // predicates of the box
-        .def("is_full_dim", &Interval::is_full_dim, py::arg("tol") = py::none(),
-             "Whether the box has a nonempty interior; tol=None: the repository tolerance")
-        // meeting and equality
+        .def(
+            "is_full_dim", [](const Interval &I, Tol tol) { return values(I.is_full_dim(tol)); },
+            py::arg("tol") = py::none(),
+            "Whether the box has a nonempty interior; tol=None: the repository tolerance")
+        // meeting and equality, too, answer a mask
         .def(
             "is_intersecting",
-            [](const Interval &I, const py::object &other, Tol tol) {
+            [](const Interval &I, const py::object &other, const std::string &method, Tol tol) {
                 if (py::isinstance<Interval>(other))
-                    return I.is_intersecting(py::cast<Interval>(other), tol);
-                return I.is_intersecting(point_of(other, "the point"), tol);
+                    return values(I.is_intersecting(py::cast<Interval>(other), method, tol));
+                return values(I.is_intersecting(point_of(other, "the point"), method, tol));
             },
-            py::arg("other"), py::arg("tol") = py::none(),
+            py::arg("other"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the box meets another box or contains a point, up to tol")
         .def(
             "isequal",
             [](const Interval &I, const py::object &other, Tol tol) {
                 if (py::isinstance<Interval>(other))
-                    return I.isequal(py::cast<Interval>(other), tol);
-                return I.isequal(point_of(other, "the point"), tol);
+                    return values(I.isequal(py::cast<Interval>(other), tol));
+                return values(I.isequal(point_of(other, "the point"), tol));
             },
             py::arg("other"), py::arg("tol") = py::none(),
             "Whether the bounds agree up to tol; infinite bounds must be the same")
@@ -995,15 +1009,14 @@ void bind_interval(py::module_ &m) {
             py::arg("other") = py::none(),
             "The elementwise smaller of two boxes; without an argument the lower bound")
         .def(
-            "minkowski_difference",
-            [](const Interval &I, const py::object &S, const std::optional<std::string> &type) {
-                if (py::isinstance<Interval>(S))
-                    return I.minkowski_difference(py::cast<Interval>(S));
+            "mink_diff",
+            [](const Interval &I, const py::object &S, const std::optional<std::string> &method) {
+                if (py::isinstance<Interval>(S)) return I.mink_diff(py::cast<Interval>(S));
                 if (py::isinstance<ContSet>(S))
-                    return I.minkowski_difference(py::cast<const ContSet &>(S), type);
-                return I.minkowski_difference(point_of(S, "the point"));
+                    return I.mink_diff(py::cast<const ContSet &>(S), method);
+                return I.mink_diff(point_of(S, "the point"));
             },
-            py::arg("S"), py::arg("type") = py::none(),
+            py::arg("S"), py::arg("method") = py::none(),
             "The box of x with x + S in the box; empty if there is none")
         .def(
             "unite",
@@ -1081,22 +1094,23 @@ void bind_interval(py::module_ &m) {
              "The box itself: an interval has no generators to reduce")
         .def("representsa", &Interval::representsa, py::arg("type"), py::arg("tol") = py::none(),
              "Whether the box is also a set of the CORA type, e.g. 'point', 'origin', 'zonotope'")
-        // CORA's type first ('exact' or 'approx'), then without it
+        // CORA's method first ('exact' or 'approx'), then without it
         .def(
             "contains",
-            [](const Interval &I, const py::object &p, const std::string &type, Tol tol) {
-                return I.contains(point_of(p, "the point"), type, tol);
+            [](const Interval &I, const py::object &p, const std::string &method, Tol tol) {
+                return values(I.contains(point_of(p, "the point"), method, tol));
             },
-            py::arg("p"), py::arg("type"), py::arg("tol") = py::none(),
-            "Whether p is in the box enlarged by tol; type is 'exact' or 'approx'")
+            py::arg("p"), py::arg("method"), py::arg("tol") = py::none(),
+            "Whether p is in the box enlarged by tol; method is 'exact' or 'approx'")
         .def(
             "contains",
             [](const Interval &I, const py::object &p, Tol tol) {
                 // a point (..., n) of a box, or a matrix (..., r, c) of an interval matrix
-                return I.contains(point_of(p, "the point"), tol);
+                return values(I.contains(point_of(p, "the point"), tol));
             },
             py::arg("p"), py::arg("tol") = py::none(),
-            "Whether p (a point, or a matrix of an interval matrix) is in the box enlarged by tol")
+            "Whether p (a point, or a matrix of an interval matrix) is in the box enlarged by tol; "
+            "a bool array of the batch shape for a batch")
         // interval matrices: CORA's intervalMatrix is an Interval of matrix bounds
         .def_static(
             "from_center_delta",
@@ -1335,7 +1349,7 @@ void bind_empty_set(py::module_ &m) {
                  return EmptySet(*n);
              }),
              py::arg("n") = py::none(), "The empty set of n >= 0 dimensions")
-        .def_static("empty", &EmptySet::empty, py::arg("n") = 0, "The empty set of n dimensions")
+        .def_static("empty", &EmptySet::empty, py::arg("n"), "The empty set of n dimensions")
         .def("is_bounded", &EmptySet::is_bounded, "Whether the set is bounded: always")
         .def("intersect", &EmptySet::intersect, py::arg("S"), "The intersection with S: empty")
         .def(
@@ -1353,16 +1367,22 @@ void bind_empty_set(py::module_ &m) {
             },
             py::arg("S"), "The convex hull with S: S itself")
         .def(
+            // the next step of the same case
             "contains",
-            [](const EmptySet &E, const py::object &S, Tol tol) {
+            [](const EmptySet &E, const py::object &S, const std::string &method, Tol tol) {
                 if (py::isinstance<ContSet>(S))
-                    return E.contains(py::cast<const ContSet &>(S), tol);
-                return E.contains(point_of(S, "the points"), tol);
+                    return E.contains(py::cast<const ContSet &>(S), method, tol);
+                return E.contains(point_of(S, "the points"), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether S (a set, or points (N, n)) is contained: only if it is empty")
-        .def("is_intersecting", &EmptySet::is_intersecting, py::arg("S"),
-             py::arg("tol") = py::none(), "Whether S meets the set: never")
+        .def(
+            "is_intersecting",
+            [](const EmptySet &E, const py::object &S, const std::string &method, Tol tol) {
+                return E.is_intersecting(set_of(S).get(), method, tol);
+            },
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
+            "Whether S meets the set: never")
         // the set is empty and the sum equals the other
         .def("isequal", &EmptySet::isequal, py::arg("S"), py::arg("tol") = py::none(),
              "Whether S is the empty set of the same dimension")
@@ -1401,8 +1421,19 @@ std::vector<std::vector<Tensor>> matrices_of(const py::list &T) {
 
 using Indices = std::vector<std::vector<int64_t>>;
 
+// the next step of the same case
 void bind_zonotope(py::module_ &m) {
     py::class_<Zonotope, ContSet>(m, "Zonotope", "The zonotope {c + G b : |b|_inf <= 1}.")
+        .def(py::init<const Interval &>(), py::arg("I"), "A box as a zonotope")
+        .def(py::init<const Capsule &>(), py::arg("C"), "A zonotope that holds a capsule")
+        .def(py::init<const ConZonotope &, const std::string &>(), py::arg("cz"),
+             py::arg("method") = "nullSpace", "A zonotope that holds a constrained zonotope")
+        .def(py::init<const Ellipsoid &, const std::string &>(), py::arg("E"),
+             py::arg("method") = "outer:box", "A zonotope that holds or lies in an ellipsoid")
+        .def(py::init<const Polytope &, const std::string &>(), py::arg("P"),
+             py::arg("method") = "outer", "A zonotope that holds a polytope")
+        .def(py::init<const ZonoBundle &>(), py::arg("zB"), "The member of least volume")
+        .def(py::init<const PolyZonotope &>(), py::arg("pZ"), "A zonotope that holds the set")
         .def(py::init([](const Array &c, const Array &G) {
                  return Zonotope(point_of(c, "the center"), tensor_of(G, "the generators"));
              }),
@@ -1430,6 +1461,26 @@ void bind_zonotope(py::module_ &m) {
         // the kind of its elements, the stacked matrices, the transpose and the corners
         .def_property_readonly("elem_rank", &Zonotope::elem_rank,
                                "1 for a set of vectors, 2 for a set of matrices")
+        .def_property_readonly(
+            "batch_shape",
+            [](const Zonotope &Z) {
+                const Shape shape = Z.batch_shape();
+                return std::vector<int64_t>(shape.begin(), shape.end());
+            },
+            "The shape of the batch of sets, () for one set")
+        .def_property_readonly(
+            "elem_shape",
+            [](const Zonotope &Z) {
+                const Shape shape = Z.elem_shape();
+                return std::vector<int64_t>(shape.begin(), shape.end());
+            },
+            "The shape of one element: (n) for vectors, (rows, cols) for matrices")
+        .def_property_readonly("nr_generators", &Zonotope::nr_generators,
+                               "The number of generators")
+        .def(
+            // the next step of the same case
+            "corners", [](const Zonotope &Z) { return values(Z.corners()); },
+            "The corners c + G s for every sign vector s in {-1, 1}^m, as rows (..., 2^m, n)")
         .def("stacked", &Zonotope::stacked,
              "The zonotope of the stacked matrices of a matrix zonotope, column by column")
         .def("transpose", &Zonotope::transpose, "The transposed matrices of a matrix zonotope")
@@ -1629,15 +1680,20 @@ void bind_zonotope(py::module_ &m) {
         // containment and norm minimizers
         .def(
             "contains",
-            [](const Zonotope &Z, const py::object &S, const std::string &method, Tol tol) {
+            [](const Zonotope &Z, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
                 if (py::isinstance<Zonotope>(S))
-                    return Z.contains(py::cast<Zonotope>(S), method, tol);
+                    return py::bool_(Z.contains(py::cast<Zonotope>(S), method, tol));
                 if (py::isinstance<Interval>(S))
-                    return Z.contains(py::cast<Interval>(S), method, tol);
-                return Z.contains(point_of(S, "the points"), method, tol);
+                    return py::bool_(Z.contains(py::cast<Interval>(S), method, tol));
+                return values(Z.contains(point_of(S, "the points"), method, tol));
             },
+            // the next step of the same case
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
-            "Whether the zonotope contains the point(s) (n,) or (N, n), a zonotope or a box")
+            "Whether the zonotope contains the points (..., n), a zonotope or a box; a bool array "
+            "of the "
+            "points' shape for points")
+        // the point where a ray leaves the zonotope
         .def(
             "boundary_point",
             [](const Zonotope &Z, const py::object &dir, const std::optional<py::object> &start) {
@@ -1671,26 +1727,29 @@ void bind_zonotope(py::module_ &m) {
             },
             py::arg("tol") = py::none(),
             "(res, subspace): is_full_dim and a basis (n, r) of the span")
+        // equality with a zonotope, a box or a point
         .def(
             "isequal",
             [](const Zonotope &Z, const py::object &S, Tol tol) {
                 if (py::isinstance<Zonotope>(S)) return Z.isequal(py::cast<Zonotope>(S), tol);
                 if (py::isinstance<Interval>(S)) return Z.isequal(py::cast<Interval>(S), tol);
                 return Z.isequal(point_of(S, "the point"), tol);
+                // the next step of the same case
             },
             py::arg("S"), py::arg("tol") = py::none(),
             "Whether S (a zonotope, a box or a point) is the same set, up to tol")
         .def(
             "is_intersecting",
-            [](const Zonotope &Z, const py::object &S, const std::string &type, Tol tol) {
+            [](const Zonotope &Z, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
                 if (py::isinstance<Zonotope>(S))
-                    return Z.is_intersecting(py::cast<Zonotope>(S), type, tol);
+                    return py::bool_(Z.is_intersecting(py::cast<Zonotope>(S), method, tol));
                 if (py::isinstance<Interval>(S))
-                    return Z.is_intersecting(py::cast<Interval>(S), type, tol);
+                    return py::bool_(Z.is_intersecting(py::cast<Interval>(S), method, tol));
                 // intersection with sets or points
-                return Z.is_intersecting(point_of(S, "the points"), type, tol);
+                return values(Z.is_intersecting(point_of(S, "the points"), method, tol));
             },
-            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether Z and a zonotope, a box or points intersect; 'exact' (default) or 'approx'")
         .def(
             "minnorm",
@@ -1750,12 +1809,14 @@ void bind_zonotope(py::module_ &m) {
         // Minkowski difference
         .def(
             "mink_diff",
-            [](const Zonotope &Z, const py::object &S, const std::string &method) {
-                if (py::isinstance<Zonotope>(S)) return Z.mink_diff(py::cast<Zonotope>(S), method);
-                if (py::isinstance<Interval>(S)) return Z.mink_diff(py::cast<Interval>(S), method);
-                return Z.mink_diff(point_of(S, "the point"), method);
+            [](const Zonotope &Z, const py::object &S2, const std::optional<std::string> &method) {
+                // no method: CORA's default "approx"
+                const std::string m = method.value_or("approx");
+                if (py::isinstance<Zonotope>(S2)) return Z.mink_diff(py::cast<Zonotope>(S2), m);
+                if (py::isinstance<Interval>(S2)) return Z.mink_diff(py::cast<Interval>(S2), m);
+                return Z.mink_diff(point_of(S2, "the point"), m);
             },
-            py::arg("S"), py::arg("method") = "approx",
+            py::arg("S2"), py::arg("method") = py::none(),
             "The Minkowski difference with a zonotope, a box or a point; methods: approx, inner, "
             "exact, outer, outer:coarse")
         .def_static("origin", &Zonotope::origin, py::arg("n"), "The zonotope {0} of n dimensions")
@@ -1867,6 +1928,10 @@ void bind_con_zonotope(py::module_ &m) {
             "center c (..., n), generators G (..., m, n), one per row, and the constraints A x = b")
         // the conversions of the other sets
         .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope as a constrained zonotope")
+        .def(py::init<const Polytope &, const std::string &, const std::optional<Interval> &>(),
+             py::arg("P"), py::arg("method") = "exact:supportFunc", py::arg("box") = py::none(),
+             "The constrained zonotope of a polytope")
+        .def(py::init<const ZonoBundle &>(), py::arg("zB"), "The constrained zonotope of a bundle")
         .def(py::init<const Interval &>(), py::arg("I"), "A box as a constrained zonotope")
         .def_static(
             "from_matrix",
@@ -1882,7 +1947,7 @@ void bind_con_zonotope(py::module_ &m) {
             py::arg("Z"), py::arg("A") = py::none(), py::arg("b") = py::none(),
             "CORA's legacy form: Z = [c G] (..., n, 1 + m)")
         // the empty set is a constrained zonotope without generators
-        .def_static("empty", &ConZonotope::empty, py::arg("n") = 0,
+        .def_static("empty", &ConZonotope::empty, py::arg("n"),
                     "The empty set of n dimensions: no generators and the constraint 0 = 1")
         // the stored data, one generator per row
         .def_property_readonly(
@@ -1990,13 +2055,13 @@ void bind_con_zonotope(py::module_ &m) {
             "Whether S (a constrained zonotope, a zonotope or a box) is the same set, up to tol")
         .def(
             "is_intersecting",
-            [](const ConZonotope &Z, const py::object &S, const std::string &type, Tol tol) {
+            [](const ConZonotope &Z, const py::object &S, const std::string &method, Tol tol) {
                 // intersection with sets or points
                 if (py::isinstance<ContSet>(S))
-                    return Z.is_intersecting(con_zonotope_of(S), type, tol);
-                return Z.is_intersecting(point_of(S, "the points"), type, tol);
+                    return Z.is_intersecting(con_zonotope_of(S), method, tol);
+                return Z.is_intersecting(point_of(S, "the points"), method, tol);
             },
-            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether Z and a set or points (N, n) intersect; 'exact' (default) or 'approx'")
         .def("split", py::overload_cast<>(&ConZonotope::split, py::const_),
              "One pair of halves of the set cut at the box center per coordinate")
@@ -2018,13 +2083,13 @@ void bind_con_zonotope(py::module_ &m) {
             py::arg("S"), py::arg("method") = "linprog", py::arg("order") = py::none(),
             "A set without constraints that contains the union with S (a set, a point or a list)")
         .def(
-            "minkowski_difference",
-            [](const ConZonotope &Z, const py::object &S2, const std::optional<std::string> &type) {
-                if (py::isinstance<ContSet>(S2))
-                    return object_of(Z.minkowski_difference(set_of(S2), type));
-                return py::cast(Z.minkowski_difference(point_of(S2, "the point")));
+            "mink_diff",
+            [](const ConZonotope &Z, const py::object &S2,
+               const std::optional<std::string> &method) {
+                if (py::isinstance<ContSet>(S2)) return object_of(Z.mink_diff(set_of(S2), method));
+                return py::cast(Z.mink_diff(point_of(S2, "the point")));
             },
-            py::arg("S2"), py::arg("type") = py::none(),
+            py::arg("S2"), py::arg("method") = py::none(),
             "The Minkowski difference {x | x + S2 in Z} with a zonotope, a box or a point")
         .def("compact", &ConZonotope::compact, py::arg("method") = py::none(),
              py::arg("tol") = py::none(),
@@ -2160,6 +2225,8 @@ std::vector<Zonotope> zonotopes_of(const py::handle &list) {
 void bind_zono_bundle(py::module_ &m) {
     py::class_<ZonoBundle, ContSet>(m, "ZonoBundle",
                                     "The intersection of a list of zonotopes (a zonotope bundle).")
+        .def(py::init<const ConZonotope &>(), py::arg("cz"), "The bundle of a constrained zonotope")
+        .def(py::init<const Polytope &>(), py::arg("P"), "The bundle of a polytope")
         .def(py::init([](const py::object &zonotopes) {
                  // a zonotope or a box is a bundle of one member
                  if (py::isinstance<Zonotope>(zonotopes))
@@ -2270,16 +2337,16 @@ void bind_zono_bundle(py::module_ &m) {
             "Whether the bundle contains the points (N, n), a zonotope, a box or a bundle")
         .def(
             "is_intersecting",
-            [](const ZonoBundle &Z, const py::object &S, const std::string &type, Tol tol) {
+            [](const ZonoBundle &Z, const py::object &S, const std::string &method, Tol tol) {
                 if (py::isinstance<Zonotope>(S))
-                    return Z.is_intersecting(py::cast<Zonotope>(S), type, tol);
+                    return Z.is_intersecting(py::cast<Zonotope>(S), method, tol);
                 if (py::isinstance<Interval>(S))
-                    return Z.is_intersecting(py::cast<Interval>(S), type, tol);
+                    return Z.is_intersecting(py::cast<Interval>(S), method, tol);
                 if (py::isinstance<ZonoBundle>(S))
-                    return Z.is_intersecting(py::cast<ZonoBundle>(S), type, tol);
-                return Z.is_intersecting(point_of(S, "the points"), type, tol);
+                    return Z.is_intersecting(py::cast<ZonoBundle>(S), method, tol);
+                return Z.is_intersecting(point_of(S, "the points"), method, tol);
             },
-            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the bundle and the points, zonotope, box or bundle S intersect")
         .def("isequal", &ZonoBundle::isequal, py::arg("S"), py::arg("tol") = py::none(),
              "Whether the bundles are the same set, up to tol")
@@ -2348,14 +2415,22 @@ Polytope polytope_arg(const py::handle &o) {
 void bind_polytope(py::module_ &m) {
     py::class_<Polytope, ContSet>(
         m, "Polytope", "The polytope {x : A x <= b, Ae x = be} or the hull of vertices V.")
+        .def(py::init<const Zonotope &>(), py::arg("Z"), "The polytope of a zonotope")
+        .def(py::init<const ConZonotope &>(), py::arg("cz"),
+             // the next step of the same case
+             "The polytope of a constrained zonotope")
+        .def(py::init<const ZonoBundle &>(), py::arg("zB"), "The polytope of a bundle")
+        .def(py::init<const Capsule &, const std::string &>(), py::arg("C"),
+             py::arg("method") = "exact", "The polytope of a capsule")
+        .def(py::init<const PolyZonotope &>(), py::arg("pZ"), "Not supported, see the message")
         .def(py::init([](const py::object &first, const py::object &b, const py::object &Ae,
                          const py::object &be) { return polytope_of(first, b, Ae, be); }),
              py::arg("A"), py::arg("b") = py::none(), py::arg("Ae") = py::none(),
              py::arg("be") = py::none(),
              "Polytope(V): vertices (p, n); Polytope(A, b[, Ae, be]): halfspaces; Polytope(I): a "
              "box")
-        .def_static("empty", &Polytope::empty, py::arg("n") = 0, "The empty set of n dimensions")
-        .def_static("inf", &Polytope::inf, py::arg("n") = 0, "R^n")
+        .def_static("empty", &Polytope::empty, py::arg("n"), "The empty set of n dimensions")
+        .def_static("inf", &Polytope::inf, py::arg("n"), "R^n")
         .def_static(
             "enclose_points",
             [](const py::object &points) {
@@ -2385,10 +2460,13 @@ void bind_polytope(py::module_ &m) {
             },
             "(A, b, Ae, be): the halfspaces, from the vertices if need be")
         .def("box", &Polytope::box, "The polytope of the tightest box")
+        .def("is_h_rep", &Polytope::is_h_rep, "Whether the halfspace representation is stored")
+        .def("is_v_rep", &Polytope::is_v_rep, "Whether the vertex representation is stored")
         .def(
             "center_by",
             [](const Polytope &P, const std::string &method) { return values(P.center(method)); },
             py::arg("method"),
+            // the next step of the same case
             "The Chebyshev center ('chebyshev') or the mean of the vertices ('avg')")
         .def(
             "compact",
@@ -2493,20 +2571,20 @@ void bind_polytope(py::module_ &m) {
         // the intersection test by the class of the operand
         .def(
             "is_intersecting",
-            [](const Polytope &P, const py::object &S, const std::string &type, Tol tol) {
+            [](const Polytope &P, const py::object &S, const std::string &method, Tol tol) {
                 if (py::isinstance<Polytope>(S))
-                    return P.is_intersecting(py::cast<Polytope>(S), type, tol);
+                    return P.is_intersecting(py::cast<Polytope>(S), method, tol);
                 if (py::isinstance<Interval>(S))
-                    return P.is_intersecting(py::cast<Interval>(S), type, tol);
+                    return P.is_intersecting(py::cast<Interval>(S), method, tol);
                 if (py::isinstance<Zonotope>(S))
-                    return P.is_intersecting(py::cast<Zonotope>(S), type, tol);
+                    return P.is_intersecting(py::cast<Zonotope>(S), method, tol);
                 if (py::isinstance<ConZonotope>(S))
-                    return P.is_intersecting(py::cast<ConZonotope>(S), type, tol);
+                    return P.is_intersecting(py::cast<ConZonotope>(S), method, tol);
                 if (py::isinstance<ZonoBundle>(S))
-                    return P.is_intersecting(py::cast<ZonoBundle>(S), type, tol);
-                return P.is_intersecting(point_of(S, "the point"), type, tol);
+                    return P.is_intersecting(py::cast<ZonoBundle>(S), method, tol);
+                return P.is_intersecting(point_of(S, "the point"), method, tol);
             },
-            py::arg("S"), py::arg("type") = "exact", py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the polytope and a set or a point intersect; type 'exact' or 'approx'")
         // containment in a set, as a method and as the operator
         .def("less_equal", &Polytope::less_equal, py::arg("S"), py::arg("tol") = py::none(),
@@ -2539,13 +2617,12 @@ void bind_polytope(py::module_ &m) {
              py::arg("type") = "outer", "Drops the constraints that are inactive on the box dom")
         .def(
             "reduce",
-            [](const Polytope &P, int order, std::optional<std::reference_wrapper<cora::Rng>> rng,
-               const std::string &method) {
+            [](const Polytope &P, int order, const std::string &method,
+               std::optional<std::reference_wrapper<cora::Rng>> rng) {
                 // without a generator, a fixed seed gives the same directions every time
-                cora::Rng fallback(0);
-                return P.reduce(order, rng ? rng->get() : fallback, method);
+                return P.reduce(order, method, rng ? &rng->get() : nullptr);
             },
-            py::arg("order") = 1, py::arg("rng") = py::none(), py::arg("method") = "rand",
+            py::arg("order") = 1, py::arg("method") = "rand", py::arg("rng") = py::none(),
             "An enclosing polytope with at most order * dim constraints")
         .def(
             "set_difference",
@@ -2594,11 +2671,16 @@ void bind_ellipsoid(py::module_ &m) {
                                    "The ellipsoid {x : (x - q)' Q^+ (x - q) <= 1} of the shape "
                                    "matrix Q and the center q.")
         .def(py::init<const Interval &, const std::string &>(), py::arg("I"),
-             py::arg("mode") = "outer", "An ellipsoid that holds a box; mode 'outer'")
+             py::arg("method") = "outer", "An ellipsoid that holds a box; method 'outer'")
         .def(py::init<const Zonotope &, const std::string &>(), py::arg("Z"),
-             py::arg("mode") = "outer:norm_bnd",
+             py::arg("method") = "outer:norm_bnd",
              "An ellipsoid that holds a zonotope of n independent generators")
         // a shape matrix alone is centered at 0 (an array as tol fails here: the next form)
+        .def(py::init<const Polytope &, const std::string &>(), py::arg("P"),
+             py::arg("method") = "outer", "An ellipsoid that holds (or lies in) a polytope")
+        .def(py::init<const Capsule &, const std::string &>(), py::arg("C"),
+             py::arg("method") = "exact", "An ellipsoid that holds a capsule")
+        .def(py::init<const PolyZonotope &>(), py::arg("pZ"), "Not supported, see the message")
         .def(py::init(
                  [](const py::object &Q, Tol tol) { return Ellipsoid(tensor_of(Q, "Q"), tol); }),
              py::arg("Q"), py::arg("tol") = py::none(), "shape matrix Q (..., n, n) around 0")
@@ -2609,22 +2691,23 @@ void bind_ellipsoid(py::module_ &m) {
              py::arg("q"), py::arg("Q"), py::arg("tol") = py::none(),
              "center q (..., n) and shape matrix Q (..., n, n); tol bounds the asymmetry and the "
              "negative eigenvalues of Q")
-        .def_static("empty", &Ellipsoid::empty, py::arg("n") = 0,
-                    "The empty ellipsoid of n dimensions")
+        .def_static("empty", &Ellipsoid::empty, py::arg("n"), "The empty ellipsoid of n dimensions")
         .def_static("origin", &Ellipsoid::origin, py::arg("n"),
                     "The ellipsoid that is the origin of R^n")
         // a random ellipsoid
         .def_static(
             "generate_random",
-            [](cora::Rng &rng, const std::optional<int64_t> &dimension, bool is_degenerate,
-               const py::object &center) {
+            [](cora::Rng &rng, const std::optional<int64_t> &dimension, const py::object &center,
+               bool is_degenerate) {
                 return Ellipsoid::generate_random(
-                    rng, dimension, is_degenerate,
+                    rng, dimension,
                     center.is_none() ? std::nullopt
-                                     : std::optional<Tensor>(point_of(center, "center")));
+                                     : std::optional<Tensor>(point_of(center, "center")),
+                    is_degenerate);
             },
-            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("is_degenerate") = false,
-            py::arg("center") = py::none(),
+            // the next step of the same case
+            py::arg("rng"), py::arg("dimension") = py::none(), py::arg("center") = py::none(),
+            py::arg("is_degenerate") = false,
             "A random ellipsoid: the dimension (default that of center, else random in 1..30), "
             "whether Q is singular, and the center")
         .def(
@@ -2669,42 +2752,46 @@ void bind_ellipsoid(py::module_ &m) {
         // meeting points or an ellipsoid
         .def(
             "is_intersecting",
-            [](const Ellipsoid &E, const py::object &S, Tol tol) {
-                if (py::isinstance<Ellipsoid>(S)) return E.is_intersecting(ellipsoid_of(S), tol);
-                return E.is_intersecting(point_of(S, "the points"), tol);
+            [](const Ellipsoid &E, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
+                if (py::isinstance<Ellipsoid>(S))
+                    return py::bool_(E.is_intersecting(ellipsoid_of(S), method, tol));
+                return values(E.is_intersecting(point_of(S, "the points"), method, tol));
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the ellipsoid meets an ellipsoid (one a point) or contains the points (..., "
             "n)")
         // the Minkowski sum
         .def(
             "plus",
-            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
-                if (py::isinstance<Ellipsoid>(S)) return E.plus(ellipsoid_of(S), mode);
+            [](const Ellipsoid &E, const py::object &S, const std::string &method) {
+                if (py::isinstance<Ellipsoid>(S)) return E.plus(ellipsoid_of(S), method);
                 return E.plus(point_of(S, "the vector"));
             },
-            py::arg("S"), py::arg("mode") = "outer:halder",
+            py::arg("S"), py::arg("method") = "outer:halder",
             "The Minkowski sum with a vector or an ellipsoid (the enclosure of Halder)")
         // differences and unions
         .def(
             "mink_diff",
-            [](const Ellipsoid &E, const py::object &S) {
-                if (py::isinstance<Ellipsoid>(S)) return E.mink_diff(ellipsoid_of(S));
-                return E.mink_diff(point_of(S, "the vector"));
+            [](const Ellipsoid &E, const py::object &S2, const std::optional<std::string> &) {
+                // one algorithm: the method of the base class is accepted and not needed
+                if (py::isinstance<Ellipsoid>(S2)) return E.mink_diff(ellipsoid_of(S2));
+                return E.mink_diff(point_of(S2, "the vector"));
             },
-            py::arg("S"), "The Minkowski difference with a vector or an ellipsoid")
+            py::arg("S2"), py::arg("method") = py::none(),
+            "The Minkowski difference with a vector or an ellipsoid")
         .def(
             "unite",
-            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
-                if (py::isinstance<Ellipsoid>(S)) return E.unite(ellipsoid_of(S), mode);
-                return E.unite(point_of(S, "the point"), mode);
+            [](const Ellipsoid &E, const py::object &S, const std::string &method) {
+                if (py::isinstance<Ellipsoid>(S)) return E.unite(ellipsoid_of(S), method);
+                return E.unite(point_of(S, "the point"), method);
             },
-            py::arg("S"), py::arg("mode") = "outer",
+            py::arg("S"), py::arg("method") = "outer",
             "An ellipsoid that holds the union with an ellipsoid or a point")
         .def("convex_hull", &Ellipsoid::convex_hull, py::arg("S"),
              "An ellipsoid that holds the convex hull with S")
         // the parallelotope around or inside the ellipsoid
-        .def("zonotope", &Ellipsoid::zonotope, py::arg("mode") = "outer:box",
+        .def("zonotope", &Ellipsoid::zonotope, py::arg("method") = "outer:box",
              py::arg("number_of_generators") = py::none(),
              "A zonotope that holds ('outer:box') or lies in ('inner:box') the ellipsoid")
         .def_property_readonly(
@@ -2765,33 +2852,37 @@ void bind_ellipsoid(py::module_ &m) {
             "(method 'Liu2016')")
         .def(
             "intersect",
-            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
-                if (py::isinstance<Ellipsoid>(S)) return E.intersect(ellipsoid_of(S), mode);
+            [](const Ellipsoid &E, const py::object &S, const std::string &method) {
+                if (py::isinstance<Ellipsoid>(S)) return E.intersect(ellipsoid_of(S), method);
                 return E.intersect(point_of(S, "the point"));
             },
-            py::arg("S"), py::arg("mode") = "outer",
+            py::arg("S"), py::arg("method") = "outer",
             "The intersection with an ellipsoid or a point (an ellipsoid with Q = 0 or empty)")
         .def(
             "cart_prod",
-            [](const Ellipsoid &E, const py::object &S, const std::string &mode) {
-                if (py::isinstance<Ellipsoid>(S)) return E.cart_prod(ellipsoid_of(S), mode);
+            [](const Ellipsoid &E, const py::object &S, const std::string &method) {
+                if (py::isinstance<Ellipsoid>(S)) return E.cart_prod(ellipsoid_of(S), method);
                 // Cartesian product with an ellipsoid or a point
-                return E.cart_prod(point_of(S, "the point"), mode);
+                return E.cart_prod(point_of(S, "the point"), method);
             },
-            py::arg("S"), py::arg("mode") = "outer",
+            py::arg("S"), py::arg("method") = "outer",
             "The Cartesian product with an ellipsoid (of the bounding boxes) or a point (exact)")
         .def(
             "contains",
-            [](const Ellipsoid &E, const py::object &S, const std::string &method, Tol tol) {
+            [](const Ellipsoid &E, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
                 if (py::isinstance<Zonotope>(S))
-                    return E.contains(py::cast<Zonotope>(S), method, tol);
+                    return py::bool_(E.contains(py::cast<Zonotope>(S), method, tol));
+                // the next step of the same case
                 if (py::isinstance<Interval>(S))
-                    return E.contains(py::cast<Interval>(S), method, tol);
-                if (py::isinstance<Ellipsoid>(S)) return E.contains(ellipsoid_of(S), method, tol);
-                return E.contains(point_of(S, "the points"), method, tol);
+                    return py::bool_(E.contains(py::cast<Interval>(S), method, tol));
+                if (py::isinstance<Ellipsoid>(S))
+                    return py::bool_(E.contains(ellipsoid_of(S), method, tol));
+                return values(E.contains(point_of(S, "the points"), method, tol));
             },
             py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the ellipsoid contains the points (..., n), a zonotope, a box or an ellipsoid")
+        // the ellipsoid enclosing an ellipsoid or a set
         .def(
             "enclose",
             [](const Ellipsoid &E, const ContSet &S2) {
@@ -2829,7 +2920,7 @@ void bind_capsule(py::module_ &m) {
              }),
              py::arg("c"), py::arg("g") = py::none(), py::arg("r") = py::none(),
              "center c (..., n), generator g (..., n; default 0) and radius r (default 0)")
-        .def_static("empty", &Capsule::empty, py::arg("n") = 0,
+        .def_static("empty", &Capsule::empty, py::arg("n"),
                     "The empty capsule of n dimensions, flagged in empty_mask")
         .def_static("origin", &Capsule::origin, py::arg("n"),
                     "The capsule that is the origin of R^n")
@@ -2905,25 +2996,32 @@ void bind_capsule(py::module_ &m) {
             "isequal",
             [](const Capsule &C, const Capsule &S, Tol tol) { return C.isequal(S, tol); },
             py::arg("S"), py::arg("tol") = py::none(),
+            // the next step of the same case
             "Whether the capsules are equal up to tol, or both empty")
         .def(
             "contains",
-            [](const Capsule &C, const py::object &S, Tol tol) {
-                if (py::isinstance<Capsule>(S)) return C.contains(py::cast<Capsule>(S), tol);
-                if (py::isinstance<Zonotope>(S)) return C.contains(py::cast<Zonotope>(S), tol);
-                if (py::isinstance<Interval>(S)) return C.contains(py::cast<Interval>(S), tol);
+            [](const Capsule &C, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
+                if (py::isinstance<Capsule>(S))
+                    return py::bool_(C.contains(py::cast<Capsule>(S), method, tol));
+                if (py::isinstance<Zonotope>(S))
+                    return py::bool_(C.contains(py::cast<Zonotope>(S), method, tol));
+                if (py::isinstance<Interval>(S))
+                    return py::bool_(C.contains(py::cast<Interval>(S), method, tol));
                 // containment of points or sets
-                return C.contains(point_of(S, "the points"), tol);
+                return values(C.contains(point_of(S, "the points"), method, tol));
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the capsule contains the points (N, n), a capsule, a zonotope or a box")
         .def(
             "is_intersecting",
-            [](const Capsule &C, const py::object &S, Tol tol) {
-                if (py::isinstance<Capsule>(S)) return C.is_intersecting(py::cast<Capsule>(S), tol);
-                return C.is_intersecting(point_of(S, "the points"), tol);
+            [](const Capsule &C, const py::object &S, const std::string &method,
+               Tol tol) -> py::object {
+                if (py::isinstance<Capsule>(S))
+                    return py::bool_(C.is_intersecting(py::cast<Capsule>(S), method, tol));
+                return values(C.is_intersecting(point_of(S, "the points"), method, tol));
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether the capsule meets a capsule or contains the points (N, n), up to tol")
         .def("convex_hull", &Capsule::convex_hull, py::arg("S"),
              "A capsule that encloses the capsule and S");
@@ -2965,6 +3063,11 @@ void bind_poly_zonotope(py::module_ &m) {
         "+ GI b with factors a_i, b in [-1, 1].")
         .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope: its generators are dependent")
         .def(py::init<const Interval &>(), py::arg("I"), "A box: a dependent generator per axis")
+        .def(py::init<const ConZonotope &>(), py::arg("cz"), "Not supported, see the message")
+        .def(py::init<const Capsule &>(), py::arg("C"), "Not supported, see the message")
+        .def(py::init<const Ellipsoid &>(), py::arg("E"), "Not supported, see the message")
+        .def(py::init<const Polytope &>(), py::arg("P"), "Not supported, see the message")
+        .def(py::init<const ZonoBundle &>(), py::arg("zB"), "Not supported, see the message")
         .def(py::init([](const py::object &c, const py::object &G, const py::object &GI,
                          const py::object &E, const py::object &id) {
                  const Tensor center = point_of(c, "the center");
@@ -3010,6 +3113,29 @@ void bind_poly_zonotope(py::module_ &m) {
             "The exponent matrix E (p, h)")
         .def_property_readonly(
             "id", [](const PolyZonotope &P) { return P.ids(); }, "The identifiers (p)")
+        // the C++ names of the same parts (the CORA names above stay as aliases)
+        .def_property_readonly(
+            "center", [](const PolyZonotope &P) { return matrix(P.center()); },
+            "The center (n), as c")
+        .def_property_readonly(
+            "generators", [](const PolyZonotope &P) { return matrix(P.generators()); },
+            "The dependent generators (h, n), one per row, as G")
+        .def_property_readonly(
+            "independent_generators",
+            [](const PolyZonotope &P) { return matrix(P.independent_generators()); },
+            "The independent generators (q, n), one per row, as GI")
+        // the next step of the same case
+        .def_property_readonly(
+            "exponents", [](const py::object &P) -> py::object { return P.attr("E"); },
+            "The exponent matrix (p, h), as E")
+        .def_property_readonly(
+            "ids", [](const PolyZonotope &P) { return P.ids(); }, "The identifiers (p), as id")
+        .def_property_readonly("num_dependent", &PolyZonotope::num_dependent,
+                               "The number h of dependent generators")
+        .def_property_readonly("num_factors", &PolyZonotope::num_factors, "The number p of factors")
+        .def("compact_gens", &PolyZonotope::compact_gens,
+             "The dependent generators of equal exponents added into one")
+        .def_static("origin", &PolyZonotope::origin, py::arg("n"), "The set {0} of n dimensions")
         // the conversion, the sums and the maps
         .def("zonotope", &PolyZonotope::zonotope, "A zonotope that holds the set")
         .def(
@@ -3076,10 +3202,10 @@ void bind_poly_zonotope(py::module_ &m) {
         // CORA's approximate test: False is certain
         .def(
             "is_intersecting",
-            [](const PolyZonotope &P, const Polytope &S, Tol tol) {
-                return P.is_intersecting(S, tol);
+            [](const PolyZonotope &P, const Polytope &S, const std::string &method, Tol tol) {
+                return P.is_intersecting(S, method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "False if the set certainly misses the polytope, else True");
     m.attr("PolyZonotope").attr("__array_ufunc__") = py::none();
 }
@@ -3882,8 +4008,8 @@ void bind_level_set(py::module_ &m) {
              }),
              py::arg("eq"), py::arg("n"), py::arg("op"), "One constraint eq op 0 on n states")
         // the two constants, the constraints and the queries
-        .def_static("empty", &LevelSet::empty, py::arg("n") = 0, "The empty set of n dimensions")
-        .def_static("inf", &LevelSet::inf, py::arg("n") = 0, "The whole space of n dimensions")
+        .def_static("empty", &LevelSet::empty, py::arg("n"), "The empty set of n dimensions")
+        .def_static("inf", &LevelSet::inf, py::arg("n"), "The whole space of n dimensions")
         .def_property_readonly("num_equations", &LevelSet::num_equations,
                                "The number of constraints")
         .def_property_readonly(
@@ -3908,19 +4034,20 @@ void bind_level_set(py::module_ &m) {
         // contains takes points or a box
         .def(
             "contains",
-            [](const LevelSet &L, const py::object &S, Tol tol) {
-                if (py::isinstance<Interval>(S)) return L.contains(py::cast<Interval>(S), tol);
-                return L.contains(point_of(S, "the points"), tol);
+            [](const LevelSet &L, const py::object &S, const std::string &method, Tol tol) {
+                if (py::isinstance<Interval>(S))
+                    return L.contains(py::cast<Interval>(S), method, tol);
+                return L.contains(point_of(S, "the points"), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "Whether all points (N, n), or the box S, satisfy every constraint")
         // is_intersecting goes through the box of the other set
         .def(
             "is_intersecting",
-            [](const LevelSet &L, const py::object &S, Tol tol) {
-                return L.is_intersecting(set_of(S).get(), tol);
+            [](const LevelSet &L, const py::object &S, const std::string &method, Tol tol) {
+                return L.is_intersecting(set_of(S).get(), method, tol);
             },
-            py::arg("S"), py::arg("tol") = py::none(),
+            py::arg("S"), py::arg("method") = "exact", py::arg("tol") = py::none(),
             "False if the box of S shows that S and the level set are disjoint")
         // the contractor, the complement and the split
         .def("tighten_domain", &LevelSet::tighten_domain, py::arg("I"),

@@ -28,27 +28,27 @@ class ToleranceTest(unittest.TestCase):
 
     def test_order_of_resolution(self):
         I, p = box([0.0], [1.0]), np.array([[1.0 + 1e-10]])
-        self.assertFalse(I.contains(p))  # the dtype's default
-        self.assertTrue(I.contains(p, tol=1e-9))  # an argument
+        self.assertFalse(np.all(I.contains(p)))  # the dtype's default
+        self.assertTrue(np.all(I.contains(p, tol=1e-9)))  # an argument
         self.assertTrue(I.contains(p, 1e-9) and not I.contains(p, tol=None))
         with cora.tolerance(1e-9):
             self.assertEqual(cora.current_tolerance(), 1e-9)
-            self.assertTrue(I.contains(p))  # a scope
-            self.assertFalse(I.contains(p, tol=0.0))  # an argument beats it
+            self.assertTrue(np.all(I.contains(p)))  # a scope
+            self.assertFalse(np.all(I.contains(p, tol=0.0)))  # an argument beats it
             with cora.tolerance(1e-12):
-                self.assertFalse(I.contains(p))  # the innermost scope
-            self.assertTrue(I.contains(p))
+                self.assertFalse(np.all(I.contains(p)))  # the innermost scope
+            self.assertTrue(np.all(I.contains(p)))
         self.assertIsNone(cora.current_tolerance())
         cora.set_default_tolerance(1e-9)  # the process default
-        self.assertTrue(I.contains(p))
+        self.assertTrue(np.all(I.contains(p)))
         with cora.tolerance(1e-12):
-            self.assertFalse(I.contains(p))  # a scope beats it
+            self.assertFalse(np.all(I.contains(p)))  # a scope beats it
         cora.set_default_tolerance(None)
-        self.assertFalse(I.contains(p))
+        self.assertFalse(np.all(I.contains(p)))
 
     def test_float32_has_its_own_default(self):
         I = box([0.0], [1.0], "float32")
-        self.assertTrue(I.contains(np.array([[1.0 + 1e-6]], dtype="float32")))
+        self.assertTrue(np.all(I.contains(np.array([[1.0 + 1e-6]], dtype="float32"))))
         self.assertFalse(box([0.0], [1.0]).contains(np.array([[1.0 + 1e-6]])))
 
     def test_functions_and_methods_take_it(self):
@@ -63,13 +63,14 @@ class ToleranceTest(unittest.TestCase):
         with cora.tolerance(1e-10):
             self.assertEqual(Z.compact().generators.shape[-2], 2)
             with cora.tolerance(1e-8):
-                self.assertTrue(cora.contains(Z, Z))
-        self.assertTrue(Z.contains(Z))
+                self.assertTrue(np.all(cora.contains(Z, Z)))
+        self.assertTrue(np.all(Z.contains(Z)))
         # a negative tolerance
         with self.assertRaises(ValueError):
             I.contains(np.array([[0.5]]), tol=-1.0)
         with cora.checks(False):
-            self.assertTrue(I.contains(np.array([[0.5], [0.5]]), tol=1e-9))
+            # two points of the box give two flags
+            self.assertTrue(np.all(I.contains(np.array([[0.5], [0.5]]), tol=1e-9)))
 
     def test_a_python_predicate_gets_a_number(self):
         class Ball(cora.ContSet):

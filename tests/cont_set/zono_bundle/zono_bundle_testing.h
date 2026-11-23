@@ -48,7 +48,7 @@ inline cora::ZonoBundle two_zonotopes() {
 /// Whether the points p (..., n) lie in every member of the bundle.
 inline bool in_every_member(const cora::ZonoBundle &bundle, const cora::Tensor &p) {
     for (const cora::Zonotope &Z : bundle.zonotopes())
-        if (!Z.contains(p)) return false;
+        if (!Z.contains(p).all()) return false;
     return true;
 }
 

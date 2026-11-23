@@ -52,8 +52,8 @@ void convex_hull_property(const std::string &b) {
         const Capsule C1 = test::random_capsule(rng, 3), C2 = test::random_capsule(rng, 3);
         const Capsule H = C1.convex_hull(C2);
         const Tensor p1 = test::sample_points(C1, rng, 20), p2 = test::sample_points(C2, rng, 20);
-        check(H.contains(p1) && H.contains(p2), b + ": both capsules are inside");
-        check(H.contains((p1 + p2) * 0.5), b + ": so are the midpoints of pairs");
+        check(H.contains(p1).all() && H.contains(p2).all(), b + ": both capsules are inside");
+        check(H.contains((p1 + p2) * 0.5).all(), b + ": so are the midpoints of pairs");
         check(H.contains(C1) && H.contains(C2), b + ": as capsules");
     }
 }

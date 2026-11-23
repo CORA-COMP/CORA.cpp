@@ -71,7 +71,7 @@ class Operations(unittest.TestCase):
         rng = np.random.default_rng(3)
         A = capsule([0.0, 1.0, 2.0], [1.0, 0.0, 1.0], 0.4)
         B = capsule([1.0, 0.0, 0.0], [0.0, 2.0, 0.0], 0.6)
-        self.assertTrue(A.plus(B).contains(sample(A, rng, 20) + sample(B, rng, 20)))
+        self.assertTrue(np.all(A.plus(B).contains(sample(A, rng, 20) + sample(B, rng, 20))))
 
     def test_project_support_function_and_samples(self):
         C3 = capsule([1.0, 2.0, 3.0], [4.0, 5.0, 6.0], 0.5)
@@ -84,10 +84,10 @@ class Operations(unittest.TestCase):
         # random points: standard ones inside, extreme ones on the boundary
         rng = cora.Rng(5)
         points = self.C.rand_point(30, rng)
-        self.assertTrue(self.C.contains(points))
+        self.assertTrue(np.all(self.C.contains(points)))
         extreme = self.C.rand_point(10, rng, type="extreme")
         self.assertEqual(extreme.shape, (10, 2))
-        self.assertTrue(self.C.contains(extreme))
+        self.assertTrue(np.all(self.C.contains(extreme)))
         with self.assertRaises(cora.errors.NoSpecificAlg):
             self.C.rand_point(3, rng, type="gaussian")
 
@@ -110,15 +110,15 @@ class Operations(unittest.TestCase):
         # the zonotope holds the capsule, and a ball is the ellipsoid r^2 I
         Z = self.C.zonotope()
         self.assertEqual(Z.generators.shape, (3, 2))
-        self.assertTrue(Z.contains(sample(self.C, rng, 10)))
+        self.assertTrue(np.all(Z.contains(sample(self.C, rng, 10))))
         ball = capsule([1.0, 2.0], [0.0, 0.0], 3.0)
         np.testing.assert_array_equal(ball.ellipsoid().Q, [[9, 0], [0, 9]])
         with self.assertRaises(cora.errors.NoExactAlg):
             self.C.ellipsoid()
         # a segment is a polytope, a proper capsule has an outer one
         segment = capsule([1.0, 1.0], [1.0, 1.0], 0.0)
-        self.assertTrue(segment.polytope().contains(np.array([1.5, 1.5])))
-        self.assertFalse(segment.polytope().contains(np.array([1.0, 1.5])))
+        self.assertTrue(np.all(segment.polytope().contains(np.array([1.5, 1.5]))))
+        self.assertFalse(np.all(segment.polytope().contains(np.array([1.0, 1.5]))))
         self.assertTrue(self.C.polytope("outer").contains(sample(self.C, rng, 10)))
         # the capsules of a box and of a zonotope
         box = cora.Interval(np.array([0.0, 0.0, 0.0]), np.array([4.0, 2.0, 1.0]))
@@ -127,7 +127,7 @@ class Operations(unittest.TestCase):
         np.testing.assert_array_equal(from_box.generator, [2, 0, 0])
         self.assertAlmostEqual(from_box.r, np.sqrt(1.0 + 0.25))
         zonotope = cora.Zonotope(np.array([1.0, 2.0, 3.0]), rng.standard_normal((4, 3)))
-        self.assertTrue(cora.Capsule(zonotope).contains(zonotope))
+        self.assertTrue(np.all(cora.Capsule(zonotope).contains(zonotope)))
 
     def test_vertices_and_random(self):
         # the outline has two half circles of 500 points, closed by the first

@@ -26,9 +26,10 @@ void rand_point_property(const std::string &b) {
     Rng rng(61);
     for (int k = 0; k < 4; ++k) {
         const Capsule C = test::random_capsule(rng, 3);
-        check(C.contains(C.rand_point(30, rng)), b + ": standard points are inside");
+        check(C.contains(C.rand_point(30, rng)).all(), b + ": standard points are inside");
         const Tensor P = C.rand_point(20, rng, "extreme");
-        check(P.shape() == Shape({20, 3}) && C.contains(P), b + ": extreme points are inside");
+        check(P.shape() == Shape({20, 3}) && C.contains(P).all(),
+              b + ": extreme points are inside");
         bool boundary = true;
         const std::vector<double> x = P.data();
         for (int j = 0; j < 20; ++j)

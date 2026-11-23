@@ -2,7 +2,8 @@
 //
 // For type two (default) the 2-norm of max(|inf|, |sup|) of a column; a matrix is refused, as by
 // CORA's intervalMatrix (CORA's interval takes the spectral norm). Else that norm of
-// |center| + rad. CORA's mode argument is ignored by intervals and not offered.
+// |center| + rad. A box answers every method of CORA alike ("exact", "ub", "ub_convex"), so method
+// is only checked.
 //
 // Syntax:   Tensor v = I.norm();   Tensor v = I.norm(type)   with type one, two, inf or fro
 // Inputs:   -
@@ -31,8 +32,12 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-Tensor Interval::norm(Tensor::Norm type) const {
+Tensor Interval::norm(Tensor::Norm type, const std::string &method) const {
     detail::Entry entry;
+    CORA_CHECK(
+        method == "exact" || method == "ub" || method == "ub_convex", Error::wrong_value, [&] {
+            return "norm: the method must be 'exact', 'ub' or 'ub_convex', got '" + method + "'";
+        });
     const bool column = elem_rank_ == 1 || inf_.size(-1) == 1;
     CORA_CHECK(type != Tensor::Norm::two || column, Error::wrong_value, [] {
         return std::string("norm: the 2-norm of an interval matrix is not supported, "
@@ -51,7 +56,9 @@ Tensor Interval::norm(Tensor::Norm type) const {
     return largest.vector_norm(Tensor::Norm::two, -2).squeeze(-1);
 }
 
-Tensor Interval::norm_impl(Tensor::Norm type, const std::string &) const { return norm(type); }
+Tensor Interval::norm_impl(Tensor::Norm type, const std::string &method) const {
+    return norm(type, method);
+}
 
 
 } // namespace cora

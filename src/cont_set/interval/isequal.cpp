@@ -16,6 +16,7 @@
 // Last update:   19-November-2026
 // Reviewed:      ---
 
+#include "cont_set/interval/private/priv_present.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/within_tol.h"
 #include "global/format.h"
@@ -28,10 +29,10 @@ namespace cora {
 
 namespace {
 
-/// Whether the bounds a and b are equal: the same infinities, finite entries up to tol.
-bool aux_same(const Tensor &a, const Tensor &b, double tol) {
+/// 1 where the bounds a and b are equal: the same infinities, finite entries up to tol.
+Tensor aux_same(const Tensor &a, const Tensor &b, double tol) {
     const Tensor infinite = a.isinf().maximum(b.isinf());
-    return Tensor::where(infinite, a.equal(b), within_tol(a, b, tol)).min().item() != 0;
+    return Tensor::where(infinite, a.equal(b), within_tol(a, b, tol));
 }
 
 } // namespace
@@ -39,17 +40,20 @@ bool aux_same(const Tensor &a, const Tensor &b, double tol) {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Interval::isequal(const Interval &I2, Tol tol_arg) const {
+Mask Interval::isequal(const Interval &I2, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, inf_.dtype(), "isequal");
     // CORA answers false for a different dimension, it does not raise
-    if (inf_.shape() != I2.inf().shape() || elem_rank_ != I2.elem_rank_) return false;
-    if (!(empty_ == I2.empty_)) return false;
-    return is_empty() || inf_.numel() == 0 ||
-           (aux_same(inf_, I2.inf(), tol) && aux_same(sup_, I2.sup(), tol));
+    if (inf_.shape() != I2.inf().shape() || elem_rank_ != I2.elem_rank_) return Mask(false, inf_);
+    const Tensor mine = priv_present(*this), other = priv_present(I2);
+    // two empty members are equal, a member that is empty and one that is not are not
+    const Tensor both_empty = (mine.ones_like() - mine).minimum(other.ones_like() - other);
+    const Tensor same = priv_all_entries(
+        aux_same(inf_, I2.inf(), tol).minimum(aux_same(sup_, I2.sup(), tol)), *this);
+    return Mask(Tensor::where(mine.minimum(other), same, both_empty));
 }
 
-bool Interval::isequal(const Tensor &p, Tol tol) const {
+Mask Interval::isequal(const Tensor &p, Tol tol) const {
     detail::Entry entry;
     CORA_CHECK(p.ndim() >= elem_rank_, Error::dimension_mismatch, [&] {
         return "isequal: the point must be a vector or a matrix, got the shape " +

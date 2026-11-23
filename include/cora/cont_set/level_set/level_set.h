@@ -55,8 +55,8 @@ class LevelSet : public detail::DimensionSet {
 
     /// The empty set (the constraint 1 <= 0) and the whole space (0 x - 1 <= 0) of n dimensions,
     /// as CORA's levelSet.empty and levelSet.Inf.
-    static LevelSet empty(int64_t n = 0);
-    static LevelSet inf(int64_t n = 0);
+    static LevelSet empty(int64_t n);
+    static LevelSet inf(int64_t n);
 
     const std::vector<Expr> &equations() const noexcept { return eq_; }
     const std::vector<CompOp> &comp_ops() const noexcept { return ops_; }
@@ -76,14 +76,27 @@ class LevelSet : public detail::DimensionSet {
     /// Whether all points (..., n) satisfy every constraint: f_i < tol for '<' and '<=' (up to
     /// within_tol), |f_i| <= tol for '=='. tol default: the repository tolerance.
     bool contains(const Tensor &points, Tol tol = std::nullopt) const;
+    bool contains(const Tensor &points, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(points, tol);
+    }
 
     /// Whether the box I is in the set by the interval evaluation of f over it: the upper bound
     /// of f_i below 0, for '==' both bounds within tol of 0. True is certain, false says nothing.
     bool contains(const Interval &I, Tol tol = std::nullopt) const;
+    bool contains(const Interval &I, const std::string &method, Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "contains");
+        return contains(I, tol);
+    }
 
     /// Whether the set may meet S (CORA's isIntersecting_ with type "approx"): the interval
     /// evaluation of f over the box of S. False is certain, true says nothing.
     bool is_intersecting(const ContSet &S, Tol tol = std::nullopt) const;
+    bool is_intersecting(const ContSet &S, const std::string &method,
+                         Tol tol = std::nullopt) const {
+        detail::check_predicate_method(method, "is_intersecting");
+        return is_intersecting(S, tol);
+    }
 
     // Operations ----------------------------------------------------------------------------------
 

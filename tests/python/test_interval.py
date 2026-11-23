@@ -84,9 +84,9 @@ class Interval(unittest.TestCase):
 
     def test_contains(self):
         I = cora.Interval(torch.tensor([0.0, -1.0], **F64), torch.tensor([2.0, 1.0], **F64))
-        self.assertTrue(I.contains(torch.tensor([1.0, 0.0], **F64)))
-        self.assertTrue(I.contains(torch.tensor([0.0, 1.0], **F64)))  # a corner belongs to the box
-        self.assertFalse(I.contains(torch.tensor([2.1, 0.0], **F64)))
+        self.assertTrue(np.all(I.contains(torch.tensor([1.0, 0.0], **F64))))
+        self.assertTrue(np.all(I.contains(torch.tensor([0.0, 1.0], **F64))))  # a corner belongs to the box
+        self.assertFalse(np.all(I.contains(torch.tensor([2.1, 0.0], **F64))))
 
     def test_mtimes_is_the_hull_of_the_image(self):
         I = cora.Interval(torch.tensor([-1.0, 0.0, 1.0], **F64), torch.tensor([1.0, 2.0, 3.0], **F64))
@@ -94,7 +94,7 @@ class Interval(unittest.TestCase):
         image = I.linear_map(M)
         for _ in range(50):
             x = I.inf + torch.rand(3, **F64) * (I.sup - I.inf)
-            self.assertTrue(image.contains(M @ x))
+            self.assertTrue(np.all(image.contains(M @ x)))
 
     def test_plus_adds_the_bounds(self):
         S = cora.Interval(torch.tensor([0.0, 1.0], **F64), torch.tensor([1.0, 3.0], **F64)).plus(

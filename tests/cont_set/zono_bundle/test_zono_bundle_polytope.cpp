@@ -52,9 +52,10 @@ int main() {
         polytope_property(b);
     });
     const Zonotope Z(vec({0.0}), Tensor({{1.0}}));
-    check(test::raises([&] { ZonoBundle({Zonotope::stack({Z, Z})}).polytope(); },
-                       Error::not_supported),
-          "polytope: a batch");
+    check(
+        test::raises([&] { ZonoBundle(std::vector<Zonotope>{Zonotope::stack({Z, Z})}).polytope(); },
+                     Error::not_supported),
+        "polytope: a batch");
     ChecksScope off(false);
     check(test::two_zonotopes().polytope().dim() == 2, "polytope: the same with the checks off");
     return test::finish("zono_bundle polytope");

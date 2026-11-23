@@ -5,7 +5,7 @@
 // Inputs:   I2 - interval of the shape of I
 //           v - a number, or an array of the shape of the bounds
 // Outputs:  R - [inf - sup2, sup - inf2]; [inf - v, sup - v]; [v - sup, v - inf]
-// See also: plus, minkowski_difference
+// See also: plus, mink_diff
 //
 // CORA: contSet/@interval/minus.m
 // CORA authors: Matthias Althoff

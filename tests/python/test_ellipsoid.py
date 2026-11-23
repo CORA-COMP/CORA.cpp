@@ -61,7 +61,6 @@ class Ellipsoid(unittest.TestCase):
         # the empty ellipsoid is flagged and keeps its shapes
         E = cora.Ellipsoid.empty(3)
         self.assertEqual(E.dim, 3)
-        self.assertEqual(cora.Ellipsoid.empty().dim, 0)
         self.assertTrue(E.is_empty())
         self.assertEqual(E.Q.shape, (3, 3))
         self.assertEqual(E.q.shape, (3,))
@@ -207,7 +206,7 @@ class Ellipsoid(unittest.TestCase):
             E.intersect(ellipsoid(np.eye(2)))
         # intersection and Cartesian product
         with self.assertRaises(cora.errors.WrongValue):
-            E.intersect(E, mode="exact")
+            E.intersect(E, method="exact")
         one = ellipsoid([[4.0]], [1.0])
         product = one.cart_prod(np.array([5.0, 6.0]))
         np.testing.assert_array_equal(product.q, [1.0, 5.0, 6.0])
@@ -215,21 +214,21 @@ class Ellipsoid(unittest.TestCase):
         both = one.cart_prod(ellipsoid([[1.0]]))
         np.testing.assert_allclose(both.Q, np.diag([8.0, 2.0]), atol=1e-12)
         np.testing.assert_allclose(both.q, [1.0, 0.0], atol=1e-12)
-        for mode in ("inner", "exact"):
+        for method in ("inner", "exact"):
             with self.assertRaises(cora.errors.NotSupported):
-                one.cart_prod(one, mode=mode)
+                one.cart_prod(one, method=method)
         self.assertEqual(cora.cart_prod(one, one).dim, 2)
-        self.assertTrue(E.contains(np.array([3.0, 2.0])))
+        self.assertTrue(np.all(E.contains(np.array([3.0, 2.0]))))
         self.assertTrue(np.array([1.0, 2.0]) in E)
-        self.assertFalse(E.contains(np.array([3.0, 3.0])))
+        self.assertFalse(np.all(E.contains(np.array([3.0, 3.0]))))
         inner = cora.Zonotope(np.array([1.0, 2.0]), np.array([[1.0, 0.0], [0.0, 0.5]]))
         outer = cora.Zonotope(np.array([1.0, 2.0]), np.array([[2.5, 0.0], [0.0, 0.0]]))
-        self.assertTrue(E.contains(inner))
-        self.assertFalse(E.contains(outer))
+        self.assertTrue(np.all(E.contains(inner)))
+        self.assertFalse(np.all(E.contains(outer)))
         # containment of sets and points
-        self.assertTrue(cora.contains(E, inner))
-        self.assertTrue(E.contains(cora.Interval(np.array([0.0, 1.5]), np.array([2.0, 2.5]))))
-        self.assertTrue(point.contains(ellipsoid(np.zeros((2, 2)), [1.0, 2.5])))
+        self.assertTrue(np.all(cora.contains(E, inner)))
+        self.assertTrue(np.all(E.contains(cora.Interval(np.array([0.0, 1.5]), np.array([2.0, 2.5])))))
+        self.assertTrue(np.all(point.contains(ellipsoid(np.zeros((2, 2)), [1.0, 2.5]))))
         with self.assertRaises(cora.errors.NotSupported):
             E.contains(inner, method="approx")
         with self.assertRaises(cora.errors.NotSupported):

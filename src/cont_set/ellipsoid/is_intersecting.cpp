@@ -4,7 +4,7 @@
 // one is a point (up to tol) the other contains it; two proper ellipsoids need the distance of
 // ellipsoids, a solver: Error::not_supported (CORA: noExactAlg).
 //
-// Syntax:   res = E.is_intersecting(p);   res = E.is_intersecting(S, tol);
+// Syntax:   mask = E.is_intersecting(p);   res = E.is_intersecting(S, tol);
 // Inputs:   p - points (..., n), one per row
 //           S - ellipsoid
 //           tol - default: the repository tolerance (docs/architecture.md)
@@ -30,14 +30,14 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-bool Ellipsoid::is_intersecting(const Tensor &p, Tol tol_arg) const {
+Mask Ellipsoid::is_intersecting(const Tensor &p, Tol tol_arg) const {
     detail::Entry entry;
     const double tol = resolve_tol(entry, tol_arg, Q_.dtype(), "is_intersecting");
     CORA_CHECK(p.defined() && is_vector(p, dim()), Error::dimension_mismatch, [&] {
         return "is_intersecting: the points must be (..., " + std::to_string(dim()) +
                "), one per row, got the shape " + (p.defined() ? shape_text(p.shape()) : "()");
     });
-    // points meet the ellipsoid if all of them lie in it
+    // a point meets the ellipsoid if it lies in it
     return contains(p, "exact", tol);
 }
 
@@ -56,8 +56,8 @@ bool Ellipsoid::is_intersecting(const Ellipsoid &S, Tol tol_arg) const {
     const auto is_point = [&](const Ellipsoid &E) {
         return within_tol(E.Q_, E.Q_.zeros_like(), tol).min().item() != 0.0;
     };
-    if (is_point(*this)) return S.contains(q_, "exact", tol);
-    if (is_point(S)) return contains(S.q_, "exact", tol);
+    if (is_point(*this)) return S.contains(q_, "exact", tol).all();
+    if (is_point(S)) return contains(S.q_, "exact", tol).all();
     CORA_FAIL(Error::not_supported,
               "is_intersecting: the distance of two ellipsoids needs a solver");
 }
