@@ -94,6 +94,16 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   the largest term. A bound beyond the float range (an exp that overflows) has no line: that batch
   stays open (`out_of_range_sets`), the instance is never unsat for it, and the attack goes on.
   cGAN's `small_transformer` lowers to 90 layers and gives onnxruntime's output to 4e-7.
+- **Vision transformers (Phase 4, vit_2023).** The graph builds its class token from the batch
+  size (Shape, Gather, Unsqueeze, Concat, ConstantOfShape), which folds as shape arithmetic; the
+  token joins the patches as a Concat with a constant. Slice takes its bounds from the attributes
+  before opset 10. A BatchNormalization of a token sequence `(C, L)` is a gather with factors, and
+  ReduceMean (the mean over the tokens) a dense layer of `1 / count`. Both networks lower (71 and
+  100 layers) and give onnxruntime's output to 4e-7. With the 1 GiB batch budget the slot budget
+  keeps 768 of the 3072 input generators and boxes the rest, and an exp's bound then overflows; an
+  8 GiB budget keeps them all (2.6 GiB peak) and finishes a first iteration, but the margin's
+  lower bound stays below -20 where the network's linearization varies by 0.33 over the box: the
+  products and the softmax's lines are far too loose to verify yet.
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of

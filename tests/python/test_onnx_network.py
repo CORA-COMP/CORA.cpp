@@ -10,7 +10,8 @@ and a slice of the input concatenated with a branch lower; a product of two valu
 layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
 builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
 backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
-layers, its output Softmax dropped for a property that only compares outputs.
+layers, its output Softmax dropped for a property that only compares outputs; vit_2023's
+vision transformer at opset 9 lowers and equals the graph.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -251,6 +252,20 @@ class Lowering(unittest.TestCase):
         out = nn.verify(lo, hi, [0], A, np.array([[low + 0.01]]), 20, cora.vnncomp_options("x"))
         self.assertEqual(out["status"], "sat")
 
+    def test_vision_transformer(self):
+        # vit_2023's graph (vit_net): the torch run as onnxruntime, then the layers as the graph
+        m = vit_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        x = RNG.uniform(-1, 1, (5, net.num_inputs))
+        expected = onnxruntime_rows(m, x.astype(np.float32))
+        np.testing.assert_allclose(net(torch.as_tensor(x)).numpy(), expected, rtol=1e-5, atol=1e-5)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        np.testing.assert_allclose(
+            np.asarray(nn.evaluate(torch.as_tensor(x))), net(torch.as_tensor(x)).numpy(), rtol=1e-10,
+            atol=1e-12,
+        )
+
     def test_backend_by_network(self):
         # torch for a convolution (or a GPU), eigen for a dense network (cora.nn_verify.load)
         from cora.nn_verify import choose_backend
@@ -290,8 +305,8 @@ def weight(*shape):
     return RNG.standard_normal(shape).astype(np.float32)
 
 
-def model(nodes, inputs, outputs, initializers):
-    """A model of the nodes with float32 inputs and outputs (name, shape)."""
+def model(nodes, inputs, outputs, initializers, opset=13):
+    """A model of the nodes with float32 inputs and outputs (name, shape), of the opset."""
     graph = helper.make_graph(
         nodes,
         "g",
@@ -299,7 +314,7 @@ def model(nodes, inputs, outputs, initializers):
         [helper.make_tensor_value_info(n, TensorProto.FLOAT, s) for n, s in outputs],
         [numpy_helper.from_array(a, name) for name, a in initializers.items()],
     )
-    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
+    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", opset)])
     m.ir_version = 8
     onnx.checker.check_model(m)
     return m
@@ -473,6 +488,56 @@ def attention_net():
             "s3": np.array([1, 2, 2, 2], np.int64), "sigma": np.array([0.7], np.float32),
             "W": weight(3, 8), "b": weight(3)}
     return model(nodes, [("x", [1, 2, 2, 2])], [("y", [1, 3])], init)
+
+
+def vit_net():
+    """vit_2023's shapes at opset 9 on a (2, 4, 4) image: 2 x 2 patches by a Conv into 4 tokens of
+    3, a class token (ConstantOfShape of the batch, plus the token) and positions, a batch norm of
+    the tokens, one attention head with a residual, the mean of the tokens, a batch norm, a Gemm."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wc", "bc"], ["p"], kernel_shape=[2, 2], strides=[2, 2]),
+        helper.make_node("Shape", ["p"], ["ps"]),
+        helper.make_node("Slice", ["ps"], ["pb"], starts=[0], ends=[2], axes=[0]),
+        helper.make_node("Concat", ["pb", "minus1"], ["s"], axis=0),
+        helper.make_node("Reshape", ["p", "s"], ["pr"]),
+        helper.make_node("Transpose", ["pr"], ["tok"], perm=[0, 2, 1]),
+        # the class token: zeros of (batch, 1, 3) plus the learned token
+        helper.make_node("Shape", ["x"], ["xs"]),
+        helper.make_node("Gather", ["xs", "zero"], ["n"], axis=0),
+        helper.make_node("Unsqueeze", ["n"], ["n1"], axes=[0]),
+        helper.make_node("Concat", ["n1", "one", "three"], ["cs"], axis=0),
+        helper.make_node("ConstantOfShape", ["cs"], ["c0"]),
+        helper.make_node("Add", ["c0", "cls"], ["c"]),
+        helper.make_node("Concat", ["c", "tok"], ["t"], axis=1),
+        helper.make_node("Add", ["t", "pos"], ["e"]),
+        # a batch norm of the tokens' features, between two transposes
+        helper.make_node("Transpose", ["e"], ["et"], perm=[0, 2, 1]),
+        helper.make_node("BatchNormalization", ["et", "g1", "b1", "m1", "v1"], ["en"]),
+        helper.make_node("Transpose", ["en"], ["h"], perm=[0, 2, 1]),
+        # one head: softmax(q k^T / sqrt(3)) v, then the residual
+        helper.make_node("MatMul", ["h", "Wq"], ["q"]),
+        helper.make_node("MatMul", ["h", "Wk"], ["k"]),
+        helper.make_node("MatMul", ["h", "Wv"], ["v"]),
+        helper.make_node("Transpose", ["k"], ["kt"], perm=[0, 2, 1]),
+        helper.make_node("MatMul", ["q", "kt"], ["qk"]),
+        helper.make_node("Mul", ["qk", "scale"], ["qs"]),
+        helper.make_node("Softmax", ["qs"], ["a"], axis=2),
+        helper.make_node("MatMul", ["a", "v"], ["o"]),
+        helper.make_node("Add", ["o", "e"], ["r"]),
+        helper.make_node("ReduceMean", ["r"], ["mean"], axes=[1], keepdims=0),
+        helper.make_node("BatchNormalization", ["mean", "g2", "b2", "m2", "v2"], ["mn"]),
+        helper.make_node("Gemm", ["mn", "W", "b"], ["y"], transB=1),
+    ]
+    var = lambda n: RNG.uniform(0.5, 2, n).astype(np.float32)  # noqa: E731
+    init = {"Wc": weight(3, 2, 2, 2), "bc": weight(3), "minus1": np.array([-1], np.int64),
+            "zero": np.array(0, np.int64), "one": np.array([1], np.int64),
+            "three": np.array([3], np.int64), "cls": weight(1, 1, 3), "pos": weight(1, 5, 3),
+            "g1": weight(3), "b1": weight(3), "m1": weight(3), "v1": var(3),
+            "Wq": weight(3, 3), "Wk": weight(3, 3), "Wv": weight(3, 3),
+            "scale": np.array(1 / np.sqrt(3), np.float32),
+            "g2": weight(3), "b2": weight(3), "m2": weight(3), "v2": var(3),
+            "W": weight(2, 3), "b": weight(2)}
+    return model(nodes, [("x", [1, 2, 4, 4])], [("y", [1, 2])], init, opset=9)
 
 
 def sign_net():
