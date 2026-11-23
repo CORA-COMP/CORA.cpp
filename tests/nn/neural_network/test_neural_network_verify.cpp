@@ -500,7 +500,7 @@ void switches(const std::string &b) {
     Rng rng(11);
     const NeuralNetwork nn = aux_network(rng, {3, 6, 6, 2}, Activation::relu);
     const double least = aux_least_output(nn, rng, 3, -0.3, 0.3);
-    for (int variant = 0; variant < 10; ++variant) {
+    for (int variant = 0; variant < 11; ++variant) {
         NnVerifyOptions o = aux_options("conzonotope", b);
         o.falsification_order = "bound-first";
         o.falsification_method = "center";
@@ -519,6 +519,7 @@ void switches(const std::string &b) {
         if (variant == 7) o.num_init_gens = 2;
         if (variant == 8) o.exact_backprop = false;
         if (variant == 9) o.verify_dequeue_type = "front";
+        if (variant == 10) o.refinement_min_move = 0.05;
         // close enough to the outputs that the first box needs the refinement
         const NnVerifyResult r = nn.verify(aux_below(3, 2, -0.3, 0.3, least - 0.1), 20, o);
         check(r.status == "unsat" && r.stats.count("artifacts_seconds") == 1,

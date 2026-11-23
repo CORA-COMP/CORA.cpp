@@ -4945,6 +4945,9 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(conzonotope_bounding_method, "'fourier-motzkin' or 'dual-iter'");
     CORA_VERIFY_FIELD(polytope_bound_approx_max_iter, "The Fourier-Motzkin passes");
     CORA_VERIFY_FIELD(refinement_max_iter, "The propagations of Prop. 2 per set, plus one");
+    CORA_VERIFY_FIELD(
+        refinement_min_move,
+        "A child leaves Prop. 2's passes once its box moves by at most this; 0: none");
     CORA_VERIFY_FIELD(num_neuron_splits, "The neurons split per set");
     // the neuron splits, the ReLU rows, the batches and the repairs
     CORA_VERIFY_FIELD(neuron_split_position, "'zero' or 'middle'");

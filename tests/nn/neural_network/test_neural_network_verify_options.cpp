@@ -84,9 +84,10 @@ void options_and_strategies() {
         if (field == "position") w.neuron_split_position = "x";
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "an unknown " + field);
     }
-    // the counts of Phase 2 (slopes, step size, candidates), PGD's steps, the batch's budget
+    // the counts of Phase 2 (slopes, step size, candidates), PGD's steps, the batch's budget and
+    // the refinement's least move
     for (const std::string field : {"alpha_iterations", "alpha_step_size", "candidates",
-                                    "pgd_min_steps", "batch_memory_budget"}) {
+                                    "pgd_min_steps", "batch_memory_budget", "min_move"}) {
         NnVerifyOptions w = vnncomp_options("x");
         w.bounding_method = "zonotope-alpha";
         // one count out of range
@@ -95,6 +96,7 @@ void options_and_strategies() {
         if (field == "candidates") w.look_ahead_candidates = 0;
         if (field == "pgd_min_steps") w.pgd_min_steps = 0;
         if (field == "batch_memory_budget") w.batch_memory_budget = -1;
+        if (field == "min_move") w.refinement_min_move = -0.1;
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "a wrong " + field);
     }
     vnncomp_options("cora_2024").validate();
@@ -126,7 +128,11 @@ void options_and_strategies() {
               vnncomp_options("soundnessbench_2026").alpha_iterations == 0 &&
               vnncomp_options("cifar100_2024").alpha_iterations == ours.alpha_iterations,
           "the wide conv nets' preset: no alpha-CROWN steps, except cifar100");
-    check(vnncomp_options("lsnc_relu").alpha_iterations == 0, "lsnc_relu's preset: no alpha steps");
+    // lsnc_relu's preset
+    check(vnncomp_options("lsnc_relu").alpha_iterations == 0 &&
+              vnncomp_options("lsnc_relu").refinement_min_move == 0.03 &&
+              ours.refinement_min_move == 0,
+          "lsnc_relu's preset: no alpha steps, a refinement tolerance");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");

@@ -108,6 +108,7 @@ void NnVerifyOptions::validate() const {
     aux_at_least("mini_batch_size", double(mini_batch_size), 1);
     aux_at_least("batch_memory_budget", double(batch_memory_budget), 0);
     aux_at_least("refinement_max_iter", double(refinement_max_iter), 1);
+    aux_at_least("refinement_min_move", refinement_min_move, 0);
     aux_at_least("polytope_bound_approx_max_iter", double(polytope_bound_approx_max_iter), 0);
     aux_at_least("max_candidates", double(max_candidates), 1);
     aux_at_least("pgd_min_steps", double(pgd_min_steps), 1);
@@ -211,8 +212,11 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
     // the wide conv nets whose alpha-CROWN steps cost more than they decide (the dev sets)
     if (name == "metaroom" || name == "soundnessbench" || name == "tinyimagenet")
         o.alpha_iterations = 0;
-    // lsnc_relu's Lyapunov boxes: the refinement decides them, the slopes none (the dev sets)
-    if (name == "lsnc_relu") o.alpha_iterations = 0;
+    // lsnc_relu: the refinement decides its boxes, the slopes none; children leave it at 0.03
+    if (name == "lsnc_relu") {
+        o.alpha_iterations = 0;
+        o.refinement_min_move = 0.03;
+    }
     // traffic_signs' binarized networks: the bounds rarely decide, the attack finds more
     if (name == "traffic_signs_recognition") o.attack_time_share = 0.9;
     // nn4sys: CORA's bounding of lindex' many small cases, the attack only briefly (dev seed 1001)
