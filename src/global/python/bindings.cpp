@@ -5044,6 +5044,57 @@ void bind_neural_network(py::module_ &m) {
             "input_size (C, H, W))")
         .def("normal_form", &NeuralNetwork::normal_form,
              "CORA's getNormalForm: the same function with the linear layers merged")
+        // the explanation of a classification, and the attack it uses
+        .def(
+            "explain",
+            [](const NeuralNetwork &nn, const py::object &x, int64_t label, double epsilon,
+               const std::string &method, const std::string &feat_order_method,
+               const std::vector<int64_t> &feat_order, const std::string &refine_method,
+               const std::vector<int64_t> &input_size, const std::vector<double> &refine_steps,
+               const std::string &bucket_type, double output_threshold, double timeout,
+               uint64_t seed) {
+                // the options by name
+                ExplainOptions o;
+                o.method = method;
+                o.feat_order_method = feat_order_method;
+                o.feat_order = feat_order;
+                // the refinement, the threshold and the seed
+                o.refine_method = refine_method;
+                o.input_size = input_size;
+                o.refine_steps = refine_steps;
+                o.bucket_type = bucket_type;
+                o.output_threshold = output_threshold;
+                o.timeout = timeout;
+                o.seed = seed;
+                // the explanation as (freed, order, times)
+                const Tensor point = point_of(x, "x");
+                const Explanation e = nn.explain(point.reshape({point.numel()}), label, epsilon, o);
+                return py::make_tuple(e.freed, e.feat_order, e.times);
+            },
+            // the arguments with CORA's defaults
+            py::arg("x"), py::arg("label"), py::arg("epsilon"), py::arg("method") = "standard",
+            py::arg("feat_order_method") = "sensitivity",
+            py::arg("feat_order") = std::vector<int64_t>{}, py::arg("refine_method") = "all",
+            py::arg("input_size") = std::vector<int64_t>{},
+            py::arg("refine_steps") = std::vector<double>{}, py::arg("bucket_type") = "static",
+            py::arg("output_threshold") = 0.0,
+            py::arg("timeout") = std::numeric_limits<double>::infinity(), py::arg("seed") = 1,
+            "CORA's explain: (freed features, order tried, seconds per feature) of the point x of "
+            "class label (0-based) within epsilon; method 'standard' or 'abstract+refine'")
+        .def(
+            "compute_fgsm_attack",
+            [](const NeuralNetwork &nn, const py::object &x, const py::object &t, double epsilon,
+               const std::optional<py::object> &mask) {
+                // the mask as a vector
+                Tensor m;
+                if (mask) m = point_of(*mask, "mask");
+                return matrix(
+                    nn.compute_fgsm_attack(point_of(x, "x"), point_of(t, "t"), epsilon,
+                                           m.defined() ? m.reshape({m.numel()}) : Tensor()));
+            },
+            py::arg("x"), py::arg("t"), py::arg("epsilon"), py::arg("mask") = py::none(),
+            "CORA's computeFGSMAttack: the points x (B, in) moved by epsilon along the sign of the "
+            "gradient of the loss with derivative softmax(y) - t (B, out); mask: 1 moves a feature")
         // the pairs (x, N(x)) of a set, the input rows kept
         .def(
             "evaluate_with_input",

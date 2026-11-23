@@ -9,6 +9,8 @@ Reviewed:      ---
 # CORA: nn/layers/nonlinear/@nnActivationLayer/evaluateTaylm.m
 # CORA: nn/layers/nonlinear/@nnActivationLayer/evaluateConZonotope.m
 # CORA: nn/@neuralNetwork/nonlinearSysDT.m
+# CORA: nn/@neuralNetwork/explain.m
+# CORA: nn/@neuralNetwork/computeFGSMAttack.m
 
 import unittest
 
@@ -65,6 +67,22 @@ class SetEvaluation(unittest.TestCase):
         np.testing.assert_array_equal(sys.next_state(x, np.zeros(5)), x)
         np.testing.assert_allclose(sys.output_jacobian_x(x), nn.sensitivity(x))
         self.assertEqual(np.asarray(sys.output_jacobian_u(x, np.zeros(5))).shape, (2, 5))
+
+    # the explanation of a linear classifier, and the attack that moves each input by epsilon
+    def test_explain(self):
+        nn = cora.NeuralNetwork(
+            [([[3.0, 0.5, 0.1], [0.0, 0.0, 0.0]], [0.0, 0.0])], ["identity"]
+        )
+        x = np.array([1.0, 1.0, 1.0])
+        freed, order, times = nn.explain(x, 0, 1.2)
+        self.assertEqual((list(freed), list(order)), ([2, 1], [2, 1, 0]))
+        self.assertEqual(len(times), 3)
+        freed, _, _ = nn.explain(x, 0, 1.2, method="abstract+refine", refine_steps=[1.0])
+        self.assertEqual(list(freed), [2, 1])
+        z = nn.compute_fgsm_attack([[1.0, 1.0, 1.0]], [[1.0, 0.0]], 0.25, mask=[1.0, 0.0, 1.0])
+        np.testing.assert_allclose(z, [[0.75, 1.0, 0.75]])
+        with self.assertRaisesRegex(Exception, "class below"):
+            nn.explain(x, 5, 1.2)
 
 
 if __name__ == "__main__":

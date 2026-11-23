@@ -48,6 +48,10 @@ bool priv_is_oom(const std::exception &error);
 bool priv_confirm_rows(NnProblem &problem, const Tensor &x, const Tensor &loss,
                        AttackResult &result);
 
+/// One sign step of size alpha (broadcast to x) against the gradient g: x - alpha sign(g). PGD
+/// and FGSM of verify take it, and so does NeuralNetwork::compute_fgsm_attack (alpha < 0 ascends).
+Tensor priv_sign_step(const Tensor &x, const Tensor &g, const Tensor &alpha);
+
 /// The candidates x (S, n) of the cases (S), clamped into their search boxes, checked.
 bool priv_check_points(NnProblem &problem, const Tensor &x, const Tensor &cases,
                        AttackResult &result);

@@ -209,6 +209,40 @@ struct ReduceOptions {
     uint64_t seed = 1;
 };
 
+/// CORA's explain name-value pairs (no verbose output, no plots). A set of freed features keeps
+/// the class if the network on their box as a zonotope (poly_method regression, CORA's default)
+/// has every logit difference at most 0; a regression network: output radius <= output_threshold.
+struct ExplainOptions {
+    /// "standard" (the network itself) or "abstract+refine" (reduced networks, refined on failure).
+    std::string method = "standard";
+    /// "sensitivity", "in-order" or "snake" (input_neuron_order); feat_order, if set, is used.
+    std::string feat_order_method = "sensitivity";
+    std::vector<int64_t> feat_order = {};
+    /// "all" (the next reduction rate of refine_steps) or "rand" (a random rate); CORA's
+    /// "sensitivity" is not supported there either.
+    std::string refine_method = "all";
+    /// The input (C, H, W): a feature is a pixel, freed in all channels at once; empty: a value.
+    std::vector<int64_t> input_size = {};
+    /// The reduction rates of abstract+refine, ascending (1: the original network); empty: CORA's
+    /// 0.1, 0.2, ..., 1.
+    std::vector<double> refine_steps = {};
+    /// "static" or "dynamic" buckets of the reduction.
+    std::string bucket_type = "static";
+    /// A regression network is verified if the radius of its output box is at most this.
+    double output_threshold = 0.0;
+    /// Seconds: stop when freeing the next feature would take longer in total (CORA's rule).
+    double timeout = std::numeric_limits<double>::infinity();
+    /// The seed of the random rate and of the reduction.
+    uint64_t seed = 1;
+};
+
+/// The features that can be freed (in the order they were tried), the order itself, and the seconds
+/// to try each feature (NaN for those not reached).
+struct Explanation {
+    std::vector<int64_t> freed, feat_order;
+    std::vector<double> times;
+};
+
 struct ReducedNetwork;
 class NetworkSystemDT;
 
@@ -451,6 +485,18 @@ class NeuralNetwork {
     /// the set X through the reduced network is in the result (a chain of ReLU, sigmoid, tanh).
     ReducedNetwork compute_reduced_network(const Zonotope &X,
                                            const ReduceOptions &options = {}) const;
+
+    /// CORA's computeFGSMAttack: the points x (B, in) moved by epsilon along the sign of the
+    /// gradient of the loss whose derivative at the output is softmax(y) - t (t (B, out)). A mask
+    /// (in) of 0 and 1 keeps the features with 0 in place (CORA moves all of them).
+    Tensor compute_fgsm_attack(const Tensor &x, const Tensor &t, double epsilon,
+                               const Tensor &mask = Tensor()) const;
+
+    /// CORA's explain: a minimal abductive explanation of the point x (in) of class label within
+    /// the noise radius epsilon, as the features that can be freed (Bassan et al., ICML 2025).
+    /// The network needs to be a chain of dense layers or convolutions (normal_form).
+    Explanation explain(const Tensor &x, int64_t label, double epsilon,
+                        const ExplainOptions &options = {}) const;
 
     /// The layers that refine can raise: those with an activation other than the identity (CORA's
     /// getRefinableLayers), as indices into layers().

@@ -635,3 +635,16 @@ by properties: the sampled outputs lie in the result, exact cases by hand.
 |---|---|---|
 | `neuralNetwork.evaluateTaylm` | `layers`, `x` (one model per input), `polyMethod`, `orders` | one model per output |
 | `neuralNetwork.evaluateConZonotope` | `layers` (identity, ReLU), `c`, `G`, `A`, `b`, `boundApprox` | `c`, `G`, `A`, `b` of the output set |
+
+## Explanation of a classification (PR "nn/port-explain", batch 5)
+
+`NeuralNetwork::explain` and `compute_fgsm_attack` have no op in the oracle (newest tag
+oracle-20261123-feef03ae2). `explain` is a loop over `neuralNetwork.evaluate` on zonotopes (served) and
+`computeReducedNetwork` (requested above), so it is tested by properties: a hand-computed linear case,
+the standard method equal to the abstract one at the rate 1, and sampled soundness of the freed set.
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.explain` | `layers`, `x`, `label`, `epsilon`, `method`, `featOrder`, `refineSteps`, `outputThreshold` | the freed features, the order tried |
+| `neuralNetwork.fgsmAttack` | `layers`, `x`, `t`, `epsilon`, `mask` | the moved points `x - alpha sign(grad)` |
+
