@@ -15,7 +15,7 @@ See also: scripts/vnncomp/run_instance.sh, scripts/vnncomp/run_dev_set.py, cora.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -37,8 +37,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--prepare", action="store_true")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    parser.add_argument("--backend", default=os.environ.get("CORACPP_VNNCOMP_BACKEND", "eigen"),
-                        help="the Tensor backend of the verifier: eigen or torch (cuda: torch)")
+    parser.add_argument("--backend", default=os.environ.get("CORACPP_VNNCOMP_BACKEND", "auto"),
+                        help="the Tensor backend of the verifier: eigen, torch (cuda: torch) or "
+                        "auto (torch for a network with a convolution, else eigen)")
     parser.add_argument("category")
     parser.add_argument("onnx")
     parser.add_argument("vnnlib")
@@ -47,10 +48,11 @@ def main():
     args = parser.parse_args()
     start = float(os.environ.get("VNNCOMP_START", time.time() - time.process_time()))
     backend = "torch" if args.device.startswith("cuda") else args.backend
-    options = options_for(args.category, args.device if backend == "torch" else "")
     load_start = time.monotonic()
     instance = cora.nn_verify.load(args.onnx, args.vnnlib, backend=backend, device=args.device)
     load_seconds = time.monotonic() - load_start
+    # the options after the load: a torch network's device
+    options = options_for(args.category, args.device if instance.backend == "torch" else "")
     if args.prepare:
         return 0
     # the budget: the timeout less the start and a safety margin
@@ -67,6 +69,7 @@ def main():
     stats.update(
         status=result.status,
         load_seconds=load_seconds,
+        backend=instance.backend,
         budget=budget,
         seconds=time.time() - start,
         peak_rss_mib=rss,

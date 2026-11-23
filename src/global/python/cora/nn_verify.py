@@ -46,18 +46,20 @@ class VerifyResult:
 class Instance:
     """An instance loaded once: the cora.NeuralNetwork (None, with why, if C++ cannot take the
     graph; then the property is not read), the property and its text, the ONNX file for the
-    counterexample check."""
+    counterexample check, and the Tensor backend of the network."""
 
     onnx_path: str
     network: object
     why: str
     prop: object
     vnnlib_text: str
+    backend: str = "eigen"
 
 
 def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     """The instance of the files; the network and the property are read once. backend: the Tensor
-    backend of the verifier's network, "eigen" (numpy weights) or "torch" (on device)."""
+    backend of the verifier's network, "eigen" (numpy weights), "torch" (on device) or "auto"
+    (choose_backend)."""
     import cora
 
     # the network first: one the C++ verifier cannot take is unknown without reading the property
@@ -66,6 +68,8 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     if not lowered:
         return Instance(str(onnx_path), None, why, None, "")
     layers, activations = lowered
+    if backend == "auto":
+        backend = choose_backend(layers, device)
     convert = (lambda t: t.to(device)) if backend == "torch" else (lambda t: t.numpy())
 
     def one(layer):
@@ -85,7 +89,22 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
         return Instance(str(onnx_path), None, f"the C++ network refuses a layer: {error}", None, "")
     text = read_text(vnnlib_path)
     prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
-    return Instance(str(onnx_path), network, "", prop, text)
+    return Instance(str(onnx_path), network, "", prop, text, backend)
+
+
+def choose_backend(layers, device="cpu"):
+    """The faster Tensor backend of a lowered network, as measured on the dev sets: torch for a
+    network with a convolution (its GEMMs about twice Eigen's at CORACPP_NATIVE=OFF) or on a GPU,
+    eigen for dense networks; eigen if the module has no torch."""
+    import cora
+
+    if not cora.has_torch:
+        return "eigen"
+    if device.startswith("cuda"):
+        return "torch"
+    conv = any(isinstance(la, dict) and ("conv2d" in la or "conv_transpose2d" in la)
+               for la in layers)
+    return "torch" if conv else "eigen"
 
 
 def verify(instance, timeout, options=None):

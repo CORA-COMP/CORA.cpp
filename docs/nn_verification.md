@@ -95,7 +95,9 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   a `CORRECT` one ends the search.
 - **Backend.** `load(..., backend="eigen")` gives the network numpy weights (Eigen), `"torch"` torch
   tensors on `device`; `run_instance.py --backend` (or `CORACPP_VNNCOMP_BACKEND`) picks it, CUDA
-  takes torch.
+  takes torch. The default `"auto"` (`choose_backend`) takes torch for a network with a convolution
+  and eigen for a dense one. At `CORACPP_NATIVE=OFF`, one BaB iteration of a cifar100 ResNet takes
+  160 s on eigen and 61 s on torch, and of a tinyimagenet one 562 s and 273 s (2 threads).
 
 ## Strategies, chosen by name
 
