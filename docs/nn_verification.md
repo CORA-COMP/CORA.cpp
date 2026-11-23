@@ -332,12 +332,13 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     `|w_k|` at the neuron's slot factor first (its error's slack in the polytope's row), or `error`,
     the largest line error first; breadth first. Each node is a sign vector, its bound
     `priv_dual_lower_phases` (`relu_bab_dual_steps` steps from its parent's multipliers; the root
-    `relu_bab_root_steps`), in chunks of the batch budget, the open nodes at most
+    `relu_bab_root_steps`), in chunks of a quarter of the batch budget, the open nodes at most
     `relu_bab_frontier_bytes`. Besides its splits a node holds the triangle faces of the next
     `relu_bab_faces` neurons of the order. A node is verified when some row's float64 bound exceeds
     `verified_margin`; it is dropped as infeasible when Farkas' certificate holds
-    (`relu_bab_farkas_steps`), some `mu >= 0` with `min_beta mu^T (C beta - d) > verified_margin`
-    over the box (the same bound with `w = 0`). The weakest nodes' Lagrangian minimizers go to the
+    (`relu_bab_farkas_steps`, 0: off; on cifar100 it pruned almost no node at the cost of a second
+    ascent per node), some `mu >= 0` with `min_beta mu^T (C beta - d) > verified_margin` over the
+    box (the same bound with `w = 0`; an infeasible node's own bound grows too). The weakest nodes' Lagrangian minimizers go to the
     confirm check (`relu_bab_witnesses`).
   - **Rows of split j:** `s_j = +1` (inactive, `y = 0`): `G_in beta <= -c_in + dr_in` and
     `|G_out beta + c_out| <= dr_out`; `s_j = -1` (active, `y = z`): `-G_in beta <= c_in + dr_in`

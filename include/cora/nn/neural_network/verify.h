@@ -135,8 +135,8 @@ struct NnVerifyOptions {
     double relu_bab_init_gens = std::numeric_limits<double>::infinity(); ///< the root's at most
     std::string relu_bab_order = "output"; ///< the splits: "output" (|w| at the slot), "error"
     int64_t relu_bab_faces = 64; ///< the next unsplit neurons' triangle faces as rows of a node
-    int64_t relu_bab_root_steps = 100;  ///< dual steps of the root's faces
-    int64_t relu_bab_farkas_steps = 10; ///< dual steps of Farkas' certificate per node (0: none)
+    int64_t relu_bab_root_steps = 100; ///< dual steps of the root's faces
+    int64_t relu_bab_farkas_steps = 0; ///< dual steps of Farkas' certificate per node (0: none)
     int64_t relu_bab_alpha_iterations = 50; ///< the root's slope steps (no patience)
     /// The candidates of a look-ahead neuron split heuristic ("fsb") per set.
     int64_t look_ahead_candidates = 8;

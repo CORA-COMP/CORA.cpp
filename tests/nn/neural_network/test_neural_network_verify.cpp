@@ -859,6 +859,7 @@ void relu_bab_verdicts(const std::string &b) {
         plain.num_approx_err = 1; // the root's own net: a slot per crossing neuron
         plain.relu_bab_order = "error";
         plain.relu_bab_alpha_iterations = 0; // the slopes may make more neurons cross
+        plain.relu_bab_farkas_steps = 10;
         for (const double t : {least - 0.5, least - 0.02, least + 0.02}) {
             // the wide margin with time to spare: its verdict depends on the nodes, not the load
             const double timeout = t == least - 0.5 ? 120 : 3;
