@@ -7,7 +7,8 @@
 # whose tree is the tree of its pull request's head, which passed `ci-gate`, is not built again: that run tested
 # this very tree (the usual case, a pull request rebased onto main right before it is queued). Any other group
 # (several pull requests, or one based on an older main) runs every test of the group on the main it lands on.
-# `torch-syntax` parses every test against libtorch's headers; `torch-tests` (backend-torch and gradcheck),
+# `torch-syntax` parses every test against libtorch's headers; `torch-tests` (backend-torch, gradcheck and the
+# examples, the ones that need libtorch included),
 # `python-torch-tests` (the Python tests on libtorch), each about an hour, run on every change but documentation,
 # benchmarks and scripts, and the Windows build (`windows-core`, as linux-core) run beside the gate.
 # `instructions` compares the micro-benchmarks with the
@@ -182,8 +183,8 @@ jobs:
     with:
       preset: torch
       tests: ${{ needs.checks.outputs.tests }}
-      labels: backend-torch gradcheck
-      build_labels: backend-torch gradcheck
+      labels: backend-torch gradcheck example
+      build_labels: backend-torch gradcheck example
 
   # The Python tests on libtorch (the bindings take torch tensors only there): the `python` target of the
   # python-torch preset, built and run against the oracle, in parallel to torch-tests. Not in `ci-gate`.
