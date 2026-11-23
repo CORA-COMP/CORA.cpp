@@ -17,7 +17,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Sonnet 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -53,6 +53,10 @@ std::pair<Tensor, Tensor> priv_bounds(const PrivRows &r);
 /// The line of the activation over the ranges by the method of the options (singh or regression).
 PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
                    const NnOptions &options);
+
+/// The line of x^2 over [l, u]: the secant slope l + u, half way between the chord and the parallel
+/// tangent, the radius (u - l)^2 / 8 widened by the rounding (sound in floats).
+PrivLine priv_square_line(const Tensor &l, const Tensor &u);
 
 /// The mask (1, h) of the generators whose exponents are all even.
 Tensor priv_even_mask(const Tensor &like, const Exponents &E);

@@ -1,11 +1,12 @@
 // neural_network - a feed-forward network of affine layers and activations, on points and sets
 //
-// Layer k maps h -> a_k(W_k h + b_k) with the activation a_k (identity, ReLU, sigmoid or tanh);
-// without activations given, every layer but the last is followed by max(., 0). A set that goes
-// through the network comes out as a zonotope (or polynomial zonotope) that contains the outputs
-// of all its points: an affine layer maps it exactly, and an activation is enclosed neuron by
-// neuron by one line and an error (CORA's poly_method "singh", order 1: the tightest
-// parallelogram of a ReLU, [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and tanh).
+// Layer k maps h -> a_k(W_k h + b_k) with the activation a_k (identity, ReLU, sigmoid, tanh or
+// x^2); without activations given, every layer but the last is followed by max(., 0). A set that
+// goes through the network comes out as a zonotope (or polynomial zonotope) that contains the
+// outputs of all its points: an affine layer maps it exactly, and an activation is enclosed neuron
+// by neuron by one line and an error (CORA's poly_method "singh", order 1: the tightest
+// parallelogram of a ReLU, [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and tanh;
+// for x^2 the secant slope l + u, between the chord and the parallel tangent).
 // On a polynomial zonotope the factors stay, evaluate_with_input returns the pairs (x, N(x)),
 // and a neuron may have an order k (NnOptions::orders), raised by refine. For points and verify,
 // a layer may be a convolution or a gather (conv2d.cpp) and form a graph (a ResNet's residuals).
@@ -28,7 +29,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -49,8 +50,9 @@ namespace cora {
 
 // The options -------------------------------------------------------------------------------------
 
-/// The function applied to the output of a layer.
-enum class Activation { identity, relu, sigmoid, tanh };
+/// The function applied to the output of a layer (square: x^2, CORA's nnSquareLayer; the ONNX front
+/// end writes a product of two values as ((a + b)^2 - (a - b)^2) / 4).
+enum class Activation { identity, relu, sigmoid, tanh, square };
 
 /// The polynomial over a neuron's range (CORA's poly_method): at order 1 singh or regression; of
 /// higher order (polynomial zonotopes only) any, singh only for a ReLU of order 2.

@@ -23,7 +23,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -174,6 +174,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         h = a == Activation::relu      ? pre.back().maximum(0.0)
             : a == Activation::sigmoid ? pre.back().sigmoid()
             : a == Activation::tanh    ? pre.back().tanh()
+            : a == Activation::square  ? pre.back().square()
                                        : pre.back();
         outs.push_back(h);
     }
@@ -211,6 +212,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         if (a == Activation::relu) g = g.multiply(z.greater(z.zeros_like()));
         if (a == Activation::sigmoid) g = g.multiply(z.sigmoid().multiply(1.0 - z.sigmoid()));
         if (a == Activation::tanh) g = g.multiply(1.0 - z.tanh().square());
+        if (a == Activation::square) g = g.multiply(z + z);
         for (const NeuralNetwork::Residual &r : layers[k].residuals)
             add(r.source, r.map ? r.map->rows_t(g) : g);
         add(net.source(k), layers[k].rows_t(g));

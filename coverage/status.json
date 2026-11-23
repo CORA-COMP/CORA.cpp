@@ -1197,7 +1197,7 @@
   "nn/layers/nnSigmoidLayer": "oracle",
   "nn/layers/nnSoftPlusLayer": "todo",
   "nn/layers/nnSoftmaxLayer": "todo",
-  "nn/layers/nnSquareLayer": "todo",
+  "nn/layers/nnSquareLayer": "untested",
   "nn/layers/nnTanhLayer": "oracle",
   "nn/layers/nnVisualizationLayer": "todo",
   "nn/neuralNetwork/addVisualizationLayers": "todo",

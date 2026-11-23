@@ -5,9 +5,10 @@ equals onnxruntime's (float32) to float32 accuracy; a chain of affine maps and a
 to dense layers whose network equals the graph in float64, and a plain Gemm keeps its weights bit
 for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
 folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
-padded max pool and a product of branches do not lower and say why; a batch norm of features
-and a slice of the input concatenated with a branch lower; a Gemm after a wide convolution builds
-its matrix in chunks of unit vectors, far below the identity's memory.
+padded max pool and a quotient of two values do not lower and say why; a batch norm of features
+and a slice of the input concatenated with a branch lower; a product of two values lowers to x^2
+layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
+builds its matrix in chunks of unit vectors, far below the identity's memory.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -45,7 +46,7 @@ from cora.onnx_network import OnnxNetwork
 class TorchRun(unittest.TestCase):
     def test_every_operator_agrees_with_onnxruntime(self):
         # each graph on 7 rows at once, against onnxruntime one sample at a time
-        for m in (mlp(), conv_net(), residual_net(), resnet_block(), maxpool_net()):
+        for m in (mlp(), conv_net(), residual_net(), resnet_block(), maxpool_net(), lyapunov_net()):
             net = OnnxNetwork(m, dtype=torch.float32)
             x = RNG.uniform(-1, 1, (7, net.num_inputs)).astype(np.float32)
             expected = onnxruntime_rows(m, x)
@@ -92,8 +93,8 @@ class Lowering(unittest.TestCase):
         np.testing.assert_allclose(np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12)
 
     def test_what_does_not_lower(self):
-        # a product of two branches and a max pool, each with the reason
-        for m, reason in ((product_net(), "joins two branches"), (maxpool_net(pads=1), "MaxPool")):
+        # a quotient of two values and a padded max pool, each with the reason
+        for m, reason in ((quotient_net(), "Div joins two branches"), (maxpool_net(pads=1), "MaxPool")):
             nn, why = OnnxNetwork(m).to_neural_network()
             self.assertIsNone(nn)
             self.assertIn(reason, why)
@@ -128,6 +129,19 @@ class Lowering(unittest.TestCase):
         self.assertEqual(acts, ["relu", "relu", "identity"])
         self.assertTrue(all("conv2d" in la for la in layers[:2]))
         self.assertIn("conv2d", layers[1]["residuals"][0]["map"])
+
+    def test_products_and_differences(self):
+        # products, a quadratic form, differences, scalings: the network equals the graph
+        for m in (product_net(), lyapunov_net()):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            nn, why = net.to_neural_network()
+            self.assertIsNone(why)
+            x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+            np.testing.assert_allclose(
+                np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
+            )
+        (layers, acts), _ = OnnxNetwork(product_net()).layers()
+        self.assertIn("square", acts)
 
     def test_features_and_branches(self):
         # a batch norm of features (CNN-7), and a slice of the input concatenated with a branch
@@ -369,6 +383,39 @@ def product_net():
         helper.make_node("Mul", ["r", "x"], ["y"]),
     ]
     return model(nodes, [("x", [1, 3])], [("y", [1, 3])], {"W1": weight(3, 3)})
+
+
+def quotient_net():
+    """A quotient of two values, which is no affine map: y = x / (relu(W1 x) + 1)."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W1"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("Add", ["r", "one"], ["d"]),
+        helper.make_node("Div", ["x", "d"], ["y"]),
+    ]
+    init = {"W1": weight(3, 3), "one": np.ones((1, 3), np.float32)}
+    return model(nodes, [("x", [1, 3])], [("y", [1, 3])], init)
+
+
+def lyapunov_net():
+    """lsnc_relu's shapes: V = sum(x * (x P)) by ReduceSum, beside -((c - (relu(x W) - x)) * s) / t,
+    concatenated."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "P"], ["xp"]),
+        helper.make_node("Mul", ["x", "xp"], ["q"]),
+        helper.make_node("ReduceSum", ["q", "axes"], ["v"], keepdims=1),
+        helper.make_node("MatMul", ["x", "W"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("Sub", ["r", "x"], ["d"]),
+        helper.make_node("Sub", ["c", "d"], ["e"]),
+        helper.make_node("Mul", ["e", "s"], ["f"]),
+        helper.make_node("Div", ["f", "t"], ["g"]),
+        helper.make_node("Neg", ["g"], ["n"]),
+        helper.make_node("Concat", ["v", "n"], ["y"], axis=1),
+    ]
+    init = {"P": weight(3, 3), "axes": np.array([-1], np.int64), "W": weight(3, 3),
+            "c": weight(1, 3), "s": weight(1, 3), "t": np.array(2.0, np.float32)}
+    return model(nodes, [("x", [1, 3])], [("y", [1, 4])], init)
 
 
 def resnet_block():

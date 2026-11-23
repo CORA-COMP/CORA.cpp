@@ -40,12 +40,13 @@
 // CORA: nn/layers/nonlinear/nnSigmoidLayer.m
 // CORA: nn/layers/nonlinear/nnTanhLayer.m
 // CORA: nn/layers/nonlinear/nnSShapeLayer.m
+// CORA: nn/layers/nonlinear/nnSquareLayer.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -78,6 +79,8 @@ Tensor aux_apply(Activation activation, const Tensor &x) {
         return x.sigmoid();
     case Activation::tanh:
         return x.tanh();
+    case Activation::square:
+        return x.square();
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
@@ -130,6 +133,8 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         const Tensor four = (s.slope + s.slope) + (s.slope + s.slope);
         return {four, (s.offset + s.offset) + (-1.0), s.radius + s.radius};
     }
+    case Activation::square:
+        return priv_square_line(l, u);
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
@@ -567,6 +572,17 @@ PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
                    const NnOptions &options) {
     detail::Entry entry;
     return aux_line(activation, l, u, options);
+}
+
+PrivLine priv_square_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    // x^2 - (l + u) x is (l - x)(u - x) - l u: -l u at the ends, -m^2 at the middle m
+    const Tensor slope = l + u, m = slope * 0.5, lu = l.multiply(u), m2 = m.square();
+    const Tensor offset = (lu + m2) * -0.5;
+    // the radius (m^2 - l u) / 2 = (u - l)^2 / 8, widened by the rounding (8 ulps of max x^2)
+    const Tensor big = l.square().maximum(u.square());
+    const Tensor radius = (u - l).square() * 0.125 + big * (8.0 * machine_eps(l.dtype()));
+    return {slope, offset, radius};
 }
 
 Tensor priv_even_mask(const Tensor &like, const Exponents &E) {

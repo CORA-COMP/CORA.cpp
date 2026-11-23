@@ -20,7 +20,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "nn/neural_network/private/priv_zono_batch.h"
@@ -87,6 +87,8 @@ Tensor aux_apply(Activation activation, const Tensor &x) {
         return x.sigmoid();
     case Activation::tanh:
         return x.tanh();
+    case Activation::square:
+        return x.square();
     }
     CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
 }
@@ -104,6 +106,8 @@ Tensor aux_derivative(Activation activation, const Tensor &x) {
     }
     case Activation::tanh:
         return 1.0 - x.tanh().square();
+    case Activation::square:
+        return x + x;
     }
     CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
 }
@@ -281,10 +285,17 @@ LineJacobian aux_sigmoid_singh_jacobian(const Tensor &l, const Tensor &u) {
             sign.multiply(hi_u - lo_u) * 0.5};
 }
 
+/// The line of x^2 (priv_square_line): m = l + u, o = -(l u + m^2 / 4) / 2, r = (u - l)^2 / 8.
+LineJacobian aux_square_jacobian(const Tensor &l, const Tensor &u) {
+    const Tensor one = l.ones_like(), mid = (l + u) * 0.5, quarter = (u - l) * 0.25;
+    return {one, one, (u + mid) * -0.5, (l + mid) * -0.5, quarter.negative(), quarter};
+}
+
 /// The partial derivatives of priv_verify_line in l and u.
 LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Tensor &u,
                                const std::string &poly_method) {
     if (activation == Activation::relu) return aux_relu_jacobian(l, u);
+    if (activation == Activation::square) return aux_square_jacobian(l, u);
     if (poly_method == "bounds") return aux_bounds_jacobian(activation, l, u);
     if (activation == Activation::sigmoid) return aux_sigmoid_singh_jacobian(l, u);
     // tanh: the sigmoid's line at the doubled range, the slope times 4, the rest times 2
@@ -481,7 +492,8 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
 
 PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &u,
                           const std::string &poly_method) {
-    // a ReLU's line is CORALean's in both methods (the same line in the reals)
+    // a ReLU's line is CORALean's in both methods (the same line in the reals); x^2 has one line
+    if (activation == Activation::square) return priv_square_line(l, u);
     if (activation == Activation::relu || poly_method == "singh")
         return priv_line(activation, l, u, NnOptions{});
     if (poly_method == "bounds") return aux_bounds_line(activation, l, u);
