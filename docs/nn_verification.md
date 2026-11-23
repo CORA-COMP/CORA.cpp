@@ -215,6 +215,7 @@ come only at the very end.
 - **Generator environments:** `--python` picks the Python of a generator, and the manifest records it.
   sat_relu needs a torch whose ONNX exporter writes the weights inline (torch 2.4; 2.15 writes external
   data files). safenlp needs NumPy < 1.25 (Python 3.10), because it compares an array with `[]`.
+  linearizenn needs h5py.
 - **Data:** networks and instances stay outside the repository (e.g. `~/vnncomp/dev_sets`).
 
 ## Running

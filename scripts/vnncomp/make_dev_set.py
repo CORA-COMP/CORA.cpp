@@ -17,7 +17,7 @@ See also: scripts/vnncomp/run_dev_set.py, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -105,11 +105,17 @@ SOURCES = {
         "https://github.com/toladnertum/dist-shift-vnn-comp.git",
         "5946000bd3e1ba89963e2d3ae341d17b89c8659b",
     ),
+    # linearizenn's generator reads its models with h5py
+    "linearizenn_2024": (
+        "https://github.com/aliabigdeli/LinearizeNN_benchmark2024.git",
+        "d695230914a0894da859c31d9f8b0dff141406e3",
+    ),
     # metaroom: the commit of the 2026 README, not the repository's head
     "metaroom_2023": (
         "https://github.com/HanjiangHu/metaroom_vnn_comp2023",
         "80233c82c13ae795d0de7a9f87875dcca13e61ff",
     ),
+    # the text benchmark, the SAT encodings and the hidden counterexamples
     "safenlp_2024": (
         "https://github.com/ANTONIONLP/safeNLP.git",
         "a88c5784bf71a9aa3689ae2bd409f356e8af163b",
