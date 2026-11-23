@@ -5,7 +5,7 @@
 // CORA.cpp only: the class's construction and checks (the header names the CORA file).
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
@@ -106,6 +106,13 @@ NeuralNetwork::NeuralNetwork(std::vector<Layer> layers, std::vector<Activation> 
                        "), one entry per output, got " + shape_text(b);
             });
         }
+        // a product pairs the halves of its outputs
+        CORA_CHECK(activations_[k] != Activation::product || layers_[k].outputs() % 2 == 0,
+                   Error::wrong_input_in_constructor, [&] {
+                       return "NeuralNetwork: the product layer " + std::to_string(k) +
+                              " needs an even number of outputs, got " +
+                              std::to_string(layers_[k].outputs());
+                   });
         // its source and residuals
         check_inputs(k);
     }

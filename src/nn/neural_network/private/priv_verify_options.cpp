@@ -212,6 +212,8 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.alpha_iterations = 0;
     // traffic_signs' binarized networks: the bounds rarely decide, the attack finds more
     if (name == "traffic_signs_recognition") o.attack_time_share = 0.9;
+    // vit's 3072 inputs: all a generator (16 GiB estimated, 2.5 GiB measured; docs/nn_verification)
+    if (name == "vit") o.memory_budget = int64_t(16) << 30;
     return o;
 }
 

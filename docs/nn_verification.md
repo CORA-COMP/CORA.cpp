@@ -63,16 +63,25 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   convolution of the second items, per round). What does not lower, or what C++ refuses, is
   `unknown` at once with the reason, before the property is read.
 - **Products (Phase 4).** A product of two values (lsnc_relu's Lyapunov terms `x P x`) lowers to
-  `((a + b)^2 - (a - b)^2) / 4`: a dense map to `[(a + b) / 2; (a - b) / 2]`, a layer of
-  `Activation::square`, a dense map `[I, -I]` (at most 4096 entries). A difference of branches takes
-  `-I`, a constant minus a value and a scaling by constants (Mul, Div, Neg, Cast) fold into the map
-  before or become a diagonal layer, and ReduceSum is a dense layer of ones. A graph without a
-  convolution that is no chain (a product, a join) lowers the same way. The square's line on `[l, u]`
-  is the parallelogram between the chord and the parallel tangent: slope `l + u`, radius
-  `(u - l)^2 / 8` widened by the rounding (CORA.cpp only; CORALean's `squareRelaxation` is the
-  derivative-bracket line, whose radius is `(u - l)^2`; see docs/oracle-requests.md). Its interval
-  is `[0, max(l^2, u^2)]` across 0, the backward bound takes the line's two parallels, and the
-  gradients take `2 x`. CORA's `nnSquareLayer` has no zonotope method.
+  a layer of `Activation::product`: a dense map to `[a; b]`, the product `[a o b; 0]`, a dense map
+  that takes the first half (at most 4096 entries). A difference of branches takes `-I`, a
+  constant minus a value and a scaling by constants (Mul, Div, Neg, Cast) fold into the map before
+  or become a diagonal layer, and ReduceSum is a dense layer of ones. A graph without a
+  convolution that is no chain (a product, a join) lowers the same way. verify encloses the
+  product on the zonotope itself, not on the bounds (`priv_product_line`): with `a = c_a + x`,
+  `b = c_b + y`, `x = G_a beta`, `y = G_b beta` (the interval center's radii as factors of their
+  own), `a b = c_a c_b + c_b x + c_a y + x y`, the linear part exact (slopes `[c_b; c_a]`) and the
+  rest `x y = ((lambda x + y / lambda)^2 - (lambda x - y / lambda)^2) / 4` in
+  `[-D^2 / 4, S^2 / 4]` with `S, D = |lambda G_a +- G_b / lambda|_1`, intersected over `lambda = 1`
+  (the squares of `(a +- b) / 2`, exact for `a = b`) and `lambda = sqrt(|G_b|_1 / |G_a|_1)` (at
+  most `|G_a|_1 |G_b|_1`, the bilinear bound), widened by the rounding. When one factor varies far
+  less than the other (a softmax's weights times the values, `x` times a constant-like `P x`) the
+  rest is that much smaller than the squares': on lsnc_relu's first box the products' errors drop
+  from 17 and 82 to 6.1 and 5.2. The interval gradient takes `a_m b_m +- (|a_m| r_b + |b_m| r_a +
+  r_a r_b)`, the backward bound the line's two parallels through the transposed slopes, the
+  gradients `[b; a]`; the set operations outside verify refuse the layer. `Activation::square`
+  (slope `l + u`, radius `(u - l)^2 / 8` widened by the rounding) stays for `x^2`. A negative slope
+  (x^2 left of 0, the reciprocal) maps the interval center's radius by its absolute value.
 - **Sign (Phase 4, traffic_signs).** `Activation::sign` (CORA.cpp only): on `[l, u]` the line of
   slope 0 between `sign(l)` and `sign(u)` (exact: the values are halves), the interval `[sign(l),
   sign(u)]`, the derivative 0 in the bounds' heuristics; the attack's gradient takes the
@@ -85,10 +94,11 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   `1 / sum_t exp(x_t - x_q)`: the differences by two gathers of the same layer (one with the
   factor -1), a layer of `Activation::exp`, their sums by a 1 x 1 convolution, then a layer of
   `Activation::reciprocal`, `1 / max(x, 1)`, which is `1 / x` there because the term `t = q` is
-  exactly 1. A MatMul of two values (`theta^T phi`, `g attn^T`) is a sum of products, each
-  `((a + b)^2 - (a - b)^2) / 4`: gathers with factors `+-1/2` (`Layer::gather`'s `scale`) into one
-  layer of `Activation::square`, then a 1 x 1 convolution of `+1, -1` over the products of each
-  entry; nothing is dense. The lines (CORA.cpp only): exp takes the chord's slope `m`, the range of
+  exactly 1. A MatMul of two values (`theta^T phi`, `g attn^T`) is a sum of products: two gathers
+  into one product layer `[a; b]`, then a 1 x 1 convolution of ones over the first half; nothing
+  is dense. A reciprocal layer that reads an exp layer alone (the sums of a softmax) also bounds
+  its input by the image of the exps' box `[e^l, e^u]` (at least 1, as the term `t = q` is), so the
+  reciprocal's chord spans the sums' true range, not the zonotope's. The lines (CORA.cpp only): exp takes the chord's slope `m`, the range of
   `exp(x) - m x` at the ends and at `log m`; the reciprocal the chord's slope on `[max(l, 1),
   max(u, 1)]`, the range of `f(x) - m x` at `l`, `u`, 1 and `sqrt(l u)`; both widened by 16 ulps of
   the largest term. A bound beyond the float range (an exp that overflows) has no line: that batch

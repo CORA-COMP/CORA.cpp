@@ -6,12 +6,12 @@ to dense layers whose network equals the graph in float64, and a plain Gemm keep
 for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
 folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
 padded max pool and a quotient of two values do not lower and say why; a batch norm of features
-and a slice of the input concatenated with a branch lower; a product of two values lowers to x^2
-layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
-builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
-backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
-layers, its output Softmax dropped for a property that only compares outputs; vit_2023's
-vision transformer at opset 9 lowers and equals the graph.
+and a slice of the input concatenated with a branch lower; a product of two values lowers to a
+product layer, and a ReduceSum, a difference of branches and scalings lower; a Gemm after a wide
+convolution builds its matrix in chunks of unit vectors, far below the identity's memory; the
+verifier's backend is torch for a convolution, eigen for a dense network; a binarized network
+lowers to sign layers, its output Softmax dropped for a property that only compares outputs;
+vit_2023's vision transformer at opset 9 lowers and equals the graph.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -144,7 +144,7 @@ class Lowering(unittest.TestCase):
                 np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
             )
         (layers, acts), _ = OnnxNetwork(product_net()).layers()
-        self.assertIn("square", acts)
+        self.assertIn("product", acts)
 
     def test_features_and_branches(self):
         # a batch norm of features (CNN-7), and a slice of the input concatenated with a branch
@@ -241,7 +241,7 @@ class Lowering(unittest.TestCase):
         )
         (_, acts), _ = OnnxNetwork(attention_net()).layers()
         self.assertEqual([a for a in acts if a != "identity"],
-                         ["square", "exp", "reciprocal", "square"])
+                         ["product", "exp", "reciprocal", "product"])
         # verify on its enclosure: a sampled violation is never unsat
         x = RNG.uniform(-1, 1, (4000, net.num_inputs))
         y = net(torch.as_tensor(x)).numpy()

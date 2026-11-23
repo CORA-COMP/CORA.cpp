@@ -4369,7 +4369,7 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "The states (steps + 1, n) and the algebraic variables (steps + 1, p) of a trajectory");
 }
 
-/// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp or reciprocal.
+/// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp, reciprocal, product.
 Activation activation_of(const std::string &name) {
     if (name == "identity") return Activation::identity;
     if (name == "relu") return Activation::relu;
@@ -4379,8 +4379,9 @@ Activation activation_of(const std::string &name) {
     if (name == "sign") return Activation::sign;
     if (name == "exp") return Activation::exp;
     if (name == "reciprocal") return Activation::reciprocal;
+    if (name == "product") return Activation::product;
     CORA_FAIL(Error::wrong_value, "NeuralNetwork: the activation must be identity, relu, sigmoid, "
-                                  "tanh, square, sign, exp or reciprocal, got " +
+                                  "tanh, square, sign, exp, reciprocal or product, got " +
                                       name);
 }
 
@@ -4566,7 +4567,8 @@ void bind_neural_network(py::module_ &m) {
              "the optional graph keys "
              "'source' (the layer it reads, -1 the input) and 'residuals' ([{'source', 'map': a "
              "layer or None for the identity}], added), and optionally the activation of each: "
-             "'identity', 'relu', 'sigmoid', 'tanh', 'square', 'sign', 'exp' or 'reciprocal'")
+             "'identity', 'relu', 'sigmoid', 'tanh', 'square', 'sign', 'exp', 'reciprocal' or "
+             "'product' (the halves' products, then zeros; for verify)")
         .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
         .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")
         // the outputs at points, the enclosure of the outputs over a set, and the pairs

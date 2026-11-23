@@ -8,10 +8,10 @@
 // generator is a factor of its own (ICLR 2026, Sec. 3), so output constraints constrain the input.
 // A graph's layer reads an earlier output and adds residuals: their rows are the first factors of
 // the layer's (generators add row by row). A ReLU takes CORALean's line, sigmoid and tanh CORA's
-// "bounds" or CORALean's "singh", x^2 its chord-tangent parallelogram. splits (B, s) hold signed
-// neuron ids of earlier splits (-id: at least 0, +id: at most 0) that clamp the bounds. Sums nest
-// to the right on lean. One reverse pass gives the exact F-radius gradient (exact_backprop) and a
-// margin's gradient in free ReLU slopes alpha; CROWN's backward bound runs over the records.
+// "bounds" or CORALean's "singh", x^2 its chord-tangent parallelogram, a product its line on the
+// set (priv_product_line), a softmax's sums also the exps' box; dr maps by |slope|. splits (B, s)
+// hold signed neuron ids of earlier splits (-id: >= 0, +id: <= 0) that clamp the bounds; sums nest
+// right on lean. One reverse pass gives the F-radius and margin gradients; CROWN reads the records.
 //
 // Syntax:   ZonoNet net(nn, q0, dn, "bounds", "length");   auto in = net.input_zonotope(x, r);
 //           ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true);

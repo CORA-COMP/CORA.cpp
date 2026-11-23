@@ -83,6 +83,9 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
             h = one.divide(z.maximum(1.0));
             derivative = Tensor::where(z.greater(one), h.multiply(h).negative(), zero);
             break;
+        case Activation::product:
+            CORA_FAIL(Error::not_supported, "sensitivity: a product layer is not neuron by "
+                                            "neuron; only NeuralNetwork::verify takes it");
         }
         // the chain rule: diag(a'(z)) W J
         J = derivative.multiply(layers_[k].W.matmul(J));
