@@ -114,6 +114,11 @@ SOURCES = {
         "https://github.com/aliabigdeli/LinearizeNN_benchmark2024.git",
         "d695230914a0894da859c31d9f8b0dff141406e3",
     ),
+    # lsnc_relu: a Lyapunov ring c1 < V(x) < c2 of a quadrotor's neural controller and dynamics
+    "lsnc_relu": (
+        "https://github.com/xiangruzh/LSNC-ReLU.git",
+        "3f1cb43f393cb2ef160815cf2ae1e87675499db7",
+    ),
     "malbeware": (
         "https://github.com/pkrobinette/MalBeWare.git",
         "fc044fe46f4a6ed7ad7f22341e59bbf99e616c5f",
