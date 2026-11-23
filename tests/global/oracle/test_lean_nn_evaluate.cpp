@@ -74,7 +74,8 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
         case Activation::identity:
             break;
         case Activation::square:
-            throw std::invalid_argument("aux_lean_layers: the oracle has no square layer");
+        case Activation::sign:
+            throw std::invalid_argument("aux_lean_layers: the oracle has no square or sign layer");
         }
     }
     return layers;

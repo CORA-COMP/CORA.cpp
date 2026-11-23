@@ -51,8 +51,9 @@ namespace cora {
 // The options -------------------------------------------------------------------------------------
 
 /// The function applied to the output of a layer (square: x^2, CORA's nnSquareLayer; the ONNX front
-/// end writes a product of two values as ((a + b)^2 - (a - b)^2) / 4).
-enum class Activation { identity, relu, sigmoid, tanh, square };
+/// end writes a product of two values as ((a + b)^2 - (a - b)^2) / 4; sign: -1, 0, 1, a binarized
+/// network's activation).
+enum class Activation { identity, relu, sigmoid, tanh, square, sign };
 
 /// The polynomial over a neuron's range (CORA's poly_method): at order 1 singh or regression; of
 /// higher order (polynomial zonotopes only) any, singh only for a ReLU of order 2.

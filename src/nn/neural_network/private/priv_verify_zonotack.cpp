@@ -181,10 +181,12 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             continue;
         }
         lo.push_back(a == Activation::identity  ? plo.back()
+                     : a == Activation::sign    ? plo.back().sign()
                      : a == Activation::relu    ? plo.back().maximum(0.0)
                      : a == Activation::sigmoid ? plo.back().sigmoid()
                                                 : plo.back().tanh());
         hi.push_back(a == Activation::identity  ? phi.back()
+                     : a == Activation::sign    ? phi.back().sign()
                      : a == Activation::relu    ? phi.back().maximum(0.0)
                      : a == Activation::sigmoid ? phi.back().sigmoid()
                                                 : phi.back().tanh());
@@ -216,6 +218,8 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                 return 1.0 - z.tanh().square();
             case Activation::square:
                 return z + z;
+            case Activation::sign:
+                return z.zeros_like();
             }
             CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
         };

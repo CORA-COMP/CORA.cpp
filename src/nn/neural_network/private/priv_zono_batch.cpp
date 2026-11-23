@@ -89,6 +89,8 @@ Tensor aux_apply(Activation activation, const Tensor &x) {
         return x.tanh();
     case Activation::square:
         return x.square();
+    case Activation::sign:
+        return x.sign();
     }
     CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
 }
@@ -108,6 +110,8 @@ Tensor aux_derivative(Activation activation, const Tensor &x) {
         return 1.0 - x.tanh().square();
     case Activation::square:
         return x + x;
+    case Activation::sign:
+        return x.zeros_like();
     }
     CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
 }
@@ -296,6 +300,11 @@ LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Ten
                                const std::string &poly_method) {
     if (activation == Activation::relu) return aux_relu_jacobian(l, u);
     if (activation == Activation::square) return aux_square_jacobian(l, u);
+    if (activation == Activation::sign) {
+        // a step: the line does not move with the bounds
+        const Tensor zero = l.zeros_like();
+        return {zero, zero, zero, zero, zero, zero};
+    }
     if (poly_method == "bounds") return aux_bounds_jacobian(activation, l, u);
     if (activation == Activation::sigmoid) return aux_sigmoid_singh_jacobian(l, u);
     // tanh: the sigmoid's line at the doubled range, the slope times 4, the rest times 2
@@ -494,6 +503,7 @@ PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &
                           const std::string &poly_method) {
     // a ReLU's line is CORALean's in both methods (the same line in the reals); x^2 has one line
     if (activation == Activation::square) return priv_square_line(l, u);
+    if (activation == Activation::sign) return priv_sign_line(l, u);
     if (activation == Activation::relu || poly_method == "singh")
         return priv_line(activation, l, u, NnOptions{});
     if (poly_method == "bounds") return aux_bounds_line(activation, l, u);

@@ -175,6 +175,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
             : a == Activation::sigmoid ? pre.back().sigmoid()
             : a == Activation::tanh    ? pre.back().tanh()
             : a == Activation::square  ? pre.back().square()
+            : a == Activation::sign    ? pre.back().sign()
                                        : pre.back();
         outs.push_back(h);
     }
@@ -213,6 +214,8 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         if (a == Activation::sigmoid) g = g.multiply(z.sigmoid().multiply(1.0 - z.sigmoid()));
         if (a == Activation::tanh) g = g.multiply(1.0 - z.tanh().square());
         if (a == Activation::square) g = g.multiply(z + z);
+        // sign: the straight-through estimator (1 on [-1, 1]), so that the attack moves
+        if (a == Activation::sign) g = g.multiply(z.abs().less_equal(z.ones_like()));
         for (const NeuralNetwork::Residual &r : layers[k].residuals)
             add(r.source, r.map ? r.map->rows_t(g) : g);
         add(net.source(k), layers[k].rows_t(g));

@@ -64,7 +64,7 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
 
     # the network first: one the C++ verifier cannot take is unknown without reading the property
     net = OnnxNetwork.load(onnx_path)
-    lowered, why = net.layers()
+    lowered, why = net.layers(drop_output_softmax=True)
     if not lowered:
         return Instance(str(onnx_path), None, why, None, "")
     layers, activations = lowered
@@ -89,6 +89,9 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
         return Instance(str(onnx_path), None, f"the C++ network refuses a layer: {error}", None, "")
     text = read_text(vnnlib_path)
     prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
+    if net.dropped_softmax and not _compares_outputs(prop):
+        why = "a Softmax output with a property that is not only comparisons of outputs"
+        return Instance(str(onnx_path), None, why, None, "")
     return Instance(str(onnx_path), network, "", prop, text, backend)
 
 
@@ -130,6 +133,13 @@ def verify(instance, timeout, options=None):
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+
+def _compares_outputs(prop):
+    """Whether every row of the property is y_i - y_j <= 0 like (sum 0, offset 0, or padding)."""
+    _, A, b = prop.stacked()
+    real = np.isfinite(b)
+    return bool(np.all(np.abs(A.sum(-1)[real]) == 0) and np.all(b[real] == 0))
 
 
 class _Confirm:

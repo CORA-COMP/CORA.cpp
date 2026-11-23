@@ -41,6 +41,7 @@
 // CORA: nn/layers/nonlinear/nnTanhLayer.m
 // CORA: nn/layers/nonlinear/nnSShapeLayer.m
 // CORA: nn/layers/nonlinear/nnSquareLayer.m
+// CORA.cpp only: the sign activation (no CORA layer)
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
@@ -81,6 +82,8 @@ Tensor aux_apply(Activation activation, const Tensor &x) {
         return x.tanh();
     case Activation::square:
         return x.square();
+    case Activation::sign:
+        return x.sign();
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
@@ -135,6 +138,8 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
     }
     case Activation::square:
         return priv_square_line(l, u);
+    case Activation::sign:
+        return priv_sign_line(l, u);
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
@@ -572,6 +577,15 @@ PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
                    const NnOptions &options) {
     detail::Entry entry;
     return aux_line(activation, l, u, options);
+}
+
+// The lines of sign and the square ----------------------------------------------------------------
+
+PrivLine priv_sign_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    // slope 0 between sign(l) and sign(u) (exact: the values are halves)
+    const Tensor lo = l.sign(), hi = u.sign();
+    return {l.zeros_like(), (lo + hi) * 0.5, (hi - lo) * 0.5};
 }
 
 PrivLine priv_square_line(const Tensor &l, const Tensor &u) {

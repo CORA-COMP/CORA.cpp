@@ -73,6 +73,14 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   derivative-bracket line, whose radius is `(u - l)^2`; see docs/oracle-requests.md). Its interval
   is `[0, max(l^2, u^2)]` across 0, the backward bound takes the line's two parallels, and the
   gradients take `2 x`. CORA's `nnSquareLayer` has no zonotope method.
+- **Sign (Phase 4, traffic_signs).** `Activation::sign` (CORA.cpp only): on `[l, u]` the line of
+  slope 0 between `sign(l)` and `sign(u)` (exact: the values are halves), the interval `[sign(l),
+  sign(u)]`, the derivative 0 in the bounds' heuristics; the attack's gradient takes the
+  straight-through estimator (1 on `[-1, 1]`), so that PGD moves on a binarized network. The
+  weights' Sign folds as a constant. A Softmax that makes the output is dropped when the property
+  only compares outputs (`y_i - y_j <= 0`: it keeps their order); with any other property the
+  instance is `unknown` with the reason. traffic_signs' three networks lower and give onnxruntime's
+  probabilities to 7e-8.
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of
