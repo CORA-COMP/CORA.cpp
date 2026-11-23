@@ -938,12 +938,15 @@ class OnnxNetwork:
                 # convolution, as malbeware's 61504 entries, the identity alone is 30 GB)
                 zero = torch.zeros(1, *shape[1:], dtype=torch.float64)
                 bias = net._run(op, [zero] + args[1:], attrs)
-                lin = _chunked_images(
-                    lambda unit, op=op, args=args, attrs=attrs: net._run_batched(
-                        op, [unit] + args[1:2], [True, False], attrs
-                    ),
-                    size, shape, bias.numel(),
-                )
+                # a row times a constant matrix: its weights (vggnet16's 25088 x 4096 at once)
+                lin = _constant_matrix(op, args, attrs, shape)
+                if lin is None:
+                    lin = _chunked_images(
+                        lambda unit, op=op, args=args, attrs=attrs: net._run_batched(
+                            op, [unit] + args[1:2], [True, False], attrs
+                        ),
+                        size, shape, bias.numel(),
+                    )
                 chain[outs[0]] = then((lin, bias.reshape(-1)))
             elif op in ("Add", "Sub") and len(ins) == 2:
                 other = args[1] if ins[0] == x_name else args[0]
@@ -1093,6 +1096,24 @@ def _scaled_terms(terms, bias, M):
     zero = torch.zeros(M.shape[0], dtype=torch.float64)
     terms = [(src, list(maps) + [(M.contiguous(), zero)]) for src, maps in terms]
     return terms, (None if bias is None else M @ bias.to(torch.float64))
+
+
+def _constant_matrix(op, args, attrs, shape):
+    """The matrix (out, in) of a row (1, in) times a constant matrix, a Gemm's alpha B' or a
+    MatMul's B, transposed: the images of the unit vectors without computing them (bit for bit
+    the same: each image is a row of B' times 1 plus zeros); None for another shape or transA."""
+    B = args[1]
+    if len(shape) != 2 or shape[0] != 1 or B is None or B.dim() != 2:
+        return None
+    if op == "Gemm":
+        if attrs.get("transA", 0):
+            return None
+        B = B.T if attrs.get("transB", 0) else B
+        alpha = attrs.get("alpha", 1.0)
+        B = alpha * B if alpha != 1.0 else B
+    if not torch.isfinite(B).all():  # 0 * inf of the unit vectors is nan, not the weight
+        return None
+    return B.to(torch.float64).T.contiguous()
 
 
 def _chunked_images(image, size, shape, rows):
