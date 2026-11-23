@@ -530,3 +530,18 @@ gather (a permutation, a pad, a nearest upsample) is exact.
 
 The ReLU rows and the iterated refinement are not formalized. The coverage rows `verify`,
 `computePGDAttack` and `computeFGSMAttack` are oracle debt until then.
+
+## NN linear layers (PR "nn/port-rest", batch 1)
+
+The oracle (`oracle-20261123-722cbe1e7`) serves the layer kinds `linear`, `relu`, `leakyRelu`, `sigmoid`,
+`tanh` and `poly`, and no other linear layer. CORALean has float definitions of the layers below
+(`NN/Layers/Definitions/`: `BatchNormLayer`, `AvgPoolLayer`, `WeightLayerFloat`); CORA.cpp's
+`NeuralNetwork::Layer::identity`, `elementwise_affine`, `batch_norm` (inference, folded into one map),
+`avg_pool2d` and `lip_constr_linear` are tested by hand-computed cases only, so their rows are oracle debt.
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `nnLayer.evaluateZonotope`, layer kind `elementwiseAffine` | `scale`, `offset`, `Z` | `Z` |
+| layer kind `batchNorm` (inference) | `scale`, `offset`, `mean`, `var`, `epsilon`, `shape` (C, H, W), `Z` | `Z`; CORALean's order of the three steps decides whether CORA.cpp's folded map is bit-exact |
+| layer kind `avgPool` | `pool`, `stride`, `pads`, `shape`, `Z` | `Z` |
+| layer kind `lipLinear` | `W`, `b`, `lambda`, `Z` | `Z` |
