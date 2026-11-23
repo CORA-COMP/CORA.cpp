@@ -581,3 +581,23 @@ requests carry the identifiers and the oracle maps them.
 | `polyZonotope.convHull` | `PolyZonotope.convHull` (`Float/Operations/ConvHull.lean`) | `pZ1`, `pZ2` | `linComb(linComb(pZ1', pZ1'), linComb(pZ2', pZ2'))` of the sets without independent generators, the independent block `pairSum` then `pairDiff` then one zero column |
 | `polyZonotope.jacobian` | `PolyZonotope.jacobian` (`Float/Operations/Jacobian.lean`) | `pZ`, `k` | every column kept, `E k i` copies added from the right, the exponent of `k` lowered (not below 0), center 0 |
 | `polyZonotope.outerApprox` | `PolyZonotope.outerApprox`, `boxOut` (`Float/Operations/OuterApprox.lean`, `BoxOut.lean`) | `pZ`, `tol`, `id` | the dependent generators left, then the independent ones with the diagonal of the box appended; the box radius the removed magnitudes plus the taken ones, each sum added up |
+
+
+
+## NN nonlinear layers, gradients and forms (PR "nn/port-rest-2", batch 2)
+
+`NeuralNetwork::exp_layer`, `softmax_layer` (1 / sum_j exp(x_j - x_i), two layers; CORA's exp(x - max)
+/ sum is the same function but not the same floating-point steps), `max_pool2d_layer` (b + relu(a - b)
+over the window's pairs), `evaluate_zonotope_batch`, `backprop`, `backprop_interval_batch`,
+`propagate_bounds`, `input_neuron_order` and `normal_form` are tested by hand-computed cases, samples
+and the Jacobian of `sensitivity`. CORALean has float models of the activations and of
+`neuralNetwork.backwardBound`, but no op for the gradient passes or the forms, so their rows are
+oracle debt.
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.backprop` | `layers`, `x`, `gradOut` | the input gradient |
+| `neuralNetwork.backpropIntervalBatch` | `layers`, `l`, `u`, `gl`, `gu` | `gl`, `gu` (Gowal et al. 2019) |
+| `neuralNetwork.propagateBounds` | `layers`, per-layer `l`, `u`, `i` | the bounds per layer |
+| `neuralNetwork.normalForm` | `layers` | the merged layers |
+| `neuralNetwork.evaluateZonotopeBatch` | `layers`, `c`, `G`, `numApproxErr`, `polyMethod` | `c`, `G`, `dr` |
