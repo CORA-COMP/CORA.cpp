@@ -221,6 +221,32 @@ class Lowering(unittest.TestCase):
         self.assertIsNone(_constant_matrix("MatMul", [None, B * float("inf")], {}, (1, 3)))
         self.assertIsNone(_constant_matrix("MatMul", [None, B], {}, (1, 4, 3)))
 
+    def test_split_fold_and_wide_scaling(self):
+        # a Split of sizes as an input, then a product with a fixed input of 12000 entries
+        n = 12000
+        m = model(
+            [helper.make_node("Split", ["x", "sizes"], ["a", "b"], axis=1),
+             helper.make_node("Relu", ["a"], ["r"]),
+             helper.make_node("Mul", ["r", "b"], ["y"])],
+            [("x", [1, 2 * n])], [("y", [1, n])],
+            {"sizes": np.array([n, n], dtype=np.int64)},
+        )
+        net = OnnxNetwork(m, dtype=torch.float64)
+        self.assertEqual(net.op_types(), {"Slice", "Relu", "Mul"})
+        (_, why) = net.layers()
+        self.assertIn("of two values", why)
+        # folded: a scaling, a gather with factors (no diagonal), equal to the graph
+        lo, hi = -np.ones(2 * n), np.ones(2 * n)
+        lo[n:] = hi[n:] = RNG.uniform(-2, 2, n)
+        folded = net.fold_fixed_inputs(lo, hi)
+        self.assertEqual(folded.op_types(), {"Slice", "Relu", "Mul"})
+        (layers, acts), why = folded.layers()
+        self.assertIsNone(why)
+        self.assertTrue(any(isinstance(la, dict) and "scale" in la for la in layers))
+        x = torch.as_tensor(np.concatenate([RNG.uniform(-1, 1, (3, n)), np.tile(lo[n:], (3, 1))], 1))
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
+                                   net(x).numpy(), rtol=1e-12, atol=1e-12)
+
     def test_signs_and_an_output_softmax(self):
         # a binarized network: sign layers; its output Softmax dropped, the logits equal the graph's
         m = sign_net()

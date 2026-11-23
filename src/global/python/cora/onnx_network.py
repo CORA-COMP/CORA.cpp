@@ -61,7 +61,8 @@ class OnnxNetwork:
             if node.op_type == "Constant":
                 self.constants[node.output[0]] = self._tensor(numpy_helper.to_array(attrs["value"]))
                 continue
-            self.nodes.append((node.op_type, list(node.input), list(node.output), attrs))
+            self.nodes += _split_as_slices(node.op_type, list(node.input), list(node.output),
+                                           attrs, self.constants)
         self.opset = max(
             (o.version for o in model.opset_import if o.domain in ("", "ai.onnx")), default=13
         )
@@ -103,6 +104,42 @@ class OnnxNetwork:
     def op_types(self):
         """The set of ONNX operators of the graph (Constant nodes are folded)."""
         return {op for op, _, _, _ in self.nodes}
+
+    def fold_fixed_inputs(self, lo, hi):
+        """The network on the inputs of the box [lo, hi] (flat), each value that reads only inputs
+        with lo = hi a constant (an input's mask, nn4sys' mscn: then a product with it or a
+        quotient by its sum is linear); equal to this one on the box. The values are computed at the
+        box's center in float64; which entries read a free input follows each node: a data move
+        moves the mask, an element-wise node joins its arguments', any other node makes its whole
+        output free."""
+        net = self.cast(torch.float64)
+        free = torch.as_tensor(np.asarray(hi) > np.asarray(lo)).reshape(self.input_shape)
+        center = (np.asarray(lo, dtype=np.float64) + np.asarray(hi, dtype=np.float64)) / 2
+        values = dict(net.constants)
+        values[self.input_name] = torch.as_tensor(center).reshape(self.input_shape)
+        masks = {self.input_name: free}
+        nodes, constants = [], dict(self.constants)
+        for op, ins, outs, attrs in net.nodes:
+            out = net._run(op, [values.get(n) if n else None for n in ins], attrs)
+            out = out if isinstance(out, tuple) else (out,)
+            if any(bool(masks[n].any()) for n in ins if n in masks):
+                out_masks = _masks(net, op, ins, attrs, values, masks, out)
+            else:
+                out_masks = [torch.zeros(v.shape, dtype=torch.bool) for v in out]
+            # an output without a free entry is a constant in the network's dtype; the node stays
+            # if it has another output
+            for name, value, mask in zip(outs, out, out_masks, strict=False):
+                values[name] = value
+                if bool(mask.any()):
+                    masks[name] = mask
+                else:
+                    constants[name] = value.to(self.dtype) if value.is_floating_point() else value
+            if any(name in masks for name in outs):
+                nodes.append((op, ins, [n if n in masks else "" for n in outs], attrs))
+        other = object.__new__(type(self))
+        other.__dict__.update(self.__dict__)
+        other.nodes, other.constants = nodes, constants
+        return other
 
     def __call__(self, x):
         """The outputs (B, m) of the rows x (B, n), in the network's dtype."""
@@ -155,7 +192,8 @@ class OnnxNetwork:
             # a graph (two branches joined, a product of two values) goes layer by layer
             if dense or not any(
                 r in why
-                for r in ("joins two", "of two values", "fails to lower", "Softmax", "max_elements")
+                for r in ("joins two", "of two values", "fails to lower", "Softmax", "max_elements",
+                          "Reduce")
             ):
                 return dense, why
         try:
@@ -1057,6 +1095,12 @@ STRUCTURED_OPS = {
     "MaxPool",
 }  # lowered layer by layer, never to a matrix
 
+MASK_MOVES = {"Slice", "Gather", "Reshape", "Transpose", "Concat", "Squeeze", "Unsqueeze",
+              "Flatten", "Identity", "Dropout", "Pad"}  # fold_fixed_inputs: data moves
+
+MASK_ELEMENTWISE = {"Add", "Sub", "Mul", "Div", "Neg", "Relu", "Sigmoid", "Tanh", "LeakyRelu",
+                    "Sign", "Exp", "Cast"}  # fold_fixed_inputs: entry by entry
+
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
 DATA_MOVES = {"Slice", "Gather", "Cast"}  # ... unless they move a value of the input: then linear
 
@@ -1150,8 +1194,49 @@ def _scale(expr, single, then, factor, shape, out_shape):
     if fused is not None:
         return fused
     if factor.numel() > MAX_PRODUCT:
-        raise _NotAChain(f"an element-wise scaling of {factor.numel()} entries")
+        # many entries (mscn_2048d's 12288): a gather with factors, never a dense diagonal
+        n = factor.numel()
+        return then(_gather(list(range(n)), n, zero, factor.to(torch.float64)))
     return then((torch.diag(factor).contiguous(), zero))
+
+
+def _split_as_slices(op, ins, outs, attrs, constants):
+    """A node as the nodes of the graph: a Split of known sizes (its attribute, or a constant
+    input) one Slice per output, which the lowering moves like any other; the rest as it is."""
+    sizes = attrs.get("split")
+    if op == "Split" and sizes is None and len(ins) > 1 and ins[1] in constants:
+        sizes = [int(v) for v in constants[ins[1]].tolist()]
+    if op != "Split" or sizes is None:
+        return [(op, ins, outs, attrs)]
+    axis, at, nodes = attrs.get("axis", 0), 0, []
+    for name, size in zip(outs, sizes, strict=True):
+        nodes.append(("Slice", ins[:1], [name], {"starts": [at], "ends": [at + int(size)],
+                                                  "axes": [axis]}))
+        at += int(size)
+    return nodes
+
+
+def _masks(net, op, ins, attrs, values, masks, out):
+    """Which entries of a node's outputs read a free input (fold_fixed_inputs): a data move
+    moves its argument's mask, an element-wise node joins its arguments' (broadcast), any other
+    node makes every output entry free."""
+    if op in MASK_MOVES:
+        # the node on the masks as numbers (a constant argument: no entry free)
+        def as_mask(n):
+            if n in masks:
+                return masks[n].to(torch.float64)
+            v = values.get(n) if n else None
+            return torch.zeros_like(v) if op == "Concat" and v is not None else v
+
+        moved = net._run(op, [as_mask(n) if n else None for n in ins], attrs)
+        return [m > 0 for m in (moved if isinstance(moved, tuple) else (moved,))]
+    if op in MASK_ELEMENTWISE:
+        joined = torch.zeros(out[0].shape, dtype=torch.bool)
+        for n in ins:
+            if n in masks:
+                joined = joined | masks[n]
+        return [joined]
+    return [torch.ones(v.shape, dtype=torch.bool) for v in out]
 
 
 def _gather(index, inputs, bias, scale=None):
