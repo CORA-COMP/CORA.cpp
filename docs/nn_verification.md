@@ -245,6 +245,10 @@ come only at the very end.
 - **Generator environments:** `--python` picks the Python of a generator, and the manifest records it.
   sat_relu needs a torch whose ONNX exporter writes the weights inline (torch 2.4; 2.15 writes external
   data files). safenlp needs NumPy < 1.25 (Python 3.10), because it compares an array with `[]`.
+  cifar100_2024 and tinyimagenet_2024 need torch < 2.6 (e.g. 2.4.1 with NumPy < 2): their datasets
+  are pickles holding NumPy scalars, which `torch.load`'s `weights_only` default refuses since 2.6.
+  make_dev_set itself runs in a Python with NumPy and the built `cora` package
+  (`PYTHONPATH=build/python`), which writes the VNN-LIB 2.0 form; that need not be the `--python`.
   linearizenn needs h5py.
   relusplitter's `generate_properties.py` installs uv by `curl | sh` and a CUDA torch, so
   make_dev_set runs its `scripts/gen_props.py` in our venv with CPU torch instead. It needs
