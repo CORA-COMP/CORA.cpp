@@ -19,7 +19,7 @@
 //
 // Authors:       Tobias Ladner
 // Written:       02-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
@@ -74,7 +74,7 @@ torch::Tensor certified(const torch::nn::Sequential &model, const torch::Tensor 
         torch::where((labels == 0).unsqueeze(-1), torch::tensor({-1.0, 1.0}, torch::kDouble),
                      torch::tensor({1.0, -1.0}, torch::kDouble));
     const Zonotope Y = output_set(model, points, eps);
-    return to_torch(Y.support_function(from_torch(direction.unsqueeze(-1)))).flatten() < 0;
+    return to_torch(Y.support_function(from_torch(direction))).flatten() < 0;
 }
 
 

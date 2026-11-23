@@ -158,8 +158,11 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' example ') }}
         env:
           TESTS: ${{ inputs.tests }}
+          BUILD_LABELS: ${{ inputs.build_labels }}
         run: |
           filter=(); [ "$TESTS" = ALL ] || filter=(-R "$TESTS")
+          # a build of some labels only (torch-tests) lacks the ARCH benchmark programs: plain examples
+          case " $BUILD_LABELS " in "  " | *" benchmark "*) ;; *) filter+=(-E '^examples/benchmark_') ;; esac
           ctest --preset ${{ inputs.preset }} -j4 --output-on-failure -L '^example$' "${filter[@]}"
       - name: test benchmark
         if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(format(' {0} ', inputs.labels), ' benchmark ') }}
