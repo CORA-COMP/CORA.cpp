@@ -222,6 +222,16 @@ class OnnxNetwork:
             return a[0].sum(dim=tuple(range(a[0].dim())), keepdim=keep)
         return a[0].sum(dim=tuple(int(x) for x in axes), keepdim=keep)
 
+    def _op_ReduceMean(self, a, attrs):
+        # the mean over the axes (input from opset 18, else the attribute); none: all
+        axes = a[1] if len(a) > 1 and a[1] is not None else attrs.get("axes")
+        keep = bool(attrs.get("keepdims", 1))
+        if axes is None or len(axes) == 0:
+            if attrs.get("noop_with_empty_axes", 0):
+                return a[0]
+            return a[0].mean(dim=tuple(range(a[0].dim())), keepdim=keep)
+        return a[0].mean(dim=tuple(int(x) for x in axes), keepdim=keep)
+
     def _op_Relu(self, a, _):
         return torch.relu(a[0])
 
@@ -403,6 +413,14 @@ class OnnxNetwork:
     def _op_Concat(self, a, attrs):
         return torch.cat(a, dim=attrs["axis"])
 
+    def _op_ConstantOfShape(self, a, attrs):
+        # a tensor of the shape a[0], filled with the value's one entry (default: float 0)
+        from onnx import numpy_helper
+
+        value = attrs.get("value")
+        fill = numpy_helper.to_array(value).reshape(-1)[0] if value is not None else np.float32(0)
+        return self._tensor(np.full([int(d) for d in a[0].tolist()], fill))
+
     def _op_Shape(self, a, _):
         return torch.tensor(list(a[0].shape), dtype=torch.int64, device=self.device)
 
@@ -417,9 +435,15 @@ class OnnxNetwork:
         )
 
     def _op_Slice(self, a, attrs):
-        starts, ends = a[1].tolist(), a[2].tolist()
-        axes = a[3].tolist() if len(a) > 3 and a[3] is not None else list(range(len(starts)))
-        steps = a[4].tolist() if len(a) > 4 and a[4] is not None else [1] * len(starts)
+        # the bounds from the inputs (opset 10), else from the attributes (opset 1)
+        if len(a) > 2:
+            starts, ends = a[1].tolist(), a[2].tolist()
+            axes = a[3].tolist() if len(a) > 3 and a[3] is not None else None
+            steps = a[4].tolist() if len(a) > 4 and a[4] is not None else [1] * len(starts)
+        else:
+            starts, ends = list(attrs["starts"]), list(attrs["ends"])
+            axes, steps = attrs.get("axes"), [1] * len(starts)
+        axes = list(range(len(starts))) if axes is None else list(axes)
         index = [slice(None)] * a[0].dim()
         for s, e, ax, st in zip(starts, ends, axes, steps, strict=True):
             index[ax] = slice(s, min(e, a[0].shape[ax]), st)
@@ -836,6 +860,12 @@ class OnnxNetwork:
                 if fused is None and len(shape) == 2:
                     # of features (after a Gemm): a diagonal dense layer
                     fused = then((torch.diag(factor).contiguous(), offset.contiguous()))
+                if fused is None and len(shape) == 3:
+                    # of a sequence (C, L) (a transformer's tokens): a gather with factors
+                    per = [1, c, 1]
+                    f = torch.broadcast_to(factor.reshape(per), (1, *shape[1:])).reshape(-1)
+                    o = torch.broadcast_to(offset.reshape(per), (1, *shape[1:])).reshape(-1)
+                    fused = then(_gather(list(range(size)), size, o.contiguous(), f.contiguous()))
                 chain[outs[0]] = fused or then(
                     _conv(factor.reshape(c, 1, 1, 1), offset, shape, {"group": c}, out_shape)
                 )
@@ -860,15 +890,20 @@ class OnnxNetwork:
                 if tuple(factor.shape) != tuple(probe.shape):
                     raise _NotAChain(f"{op} broadcasts the value to another shape")
                 chain[outs[0]] = _scale(expr, single, then, factor.reshape(-1), shape, out_shape)
-            elif op == "ReduceSum":
-                # a sum over axes (the batch axis of one row dropped): the matrix of ones
+            elif op in ("ReduceSum", "ReduceMean"):
+                # a sum or a mean over axes (the batch axis of one row dropped): the matrix of
+                # ones, or of 1 / count
                 axes = args[1] if len(args) > 1 and args[1] is not None else attrs.get("axes", [])
                 axes = [int(a) % len(shape) for a in axes] or list(range(1, len(shape)))
                 dims = tuple(a for a in axes if a)
                 keep = bool(attrs.get("keepdims", 1))
                 rows = math.prod(out_shape[1:])
+                mean = op == "ReduceMean"
                 lin = _chunked_images(
-                    lambda unit, dims=dims, keep=keep: unit.sum(dim=dims, keepdim=keep)
+                    lambda unit, dims=dims, keep=keep, mean=mean: (
+                        unit.mean(dim=dims, keepdim=keep) if mean else
+                        unit.sum(dim=dims, keepdim=keep)
+                    )
                     if dims
                     else unit,
                     size, shape, rows,
