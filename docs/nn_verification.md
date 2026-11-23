@@ -72,6 +72,10 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   then the input generators, until it fits; the errors without a slot go to the interval center
   (sound, looser) and the backward bound keeps the margin. `stats` reports `slot_budget` and
   `init_gen_budget`.
+- **Memory check.** The front end builds a Gemm's matrix after a convolution from chunks of unit
+  vectors (malbeware's identity of 61504 entries alone was 29 GiB). `run_dev_set.py
+  --one-per-network` runs the first instance of each network of a dev set, and `score.py
+  --max-rss-mib M` lists every instance whose peak RSS exceeds M and exits with 1.
 - **Property.** VNN-LIB 1.0 is read with the semantics of the scoring's parser, 2.0 by the
   reference parser (`vnnlib`), every assertion in DNF and the conjunction multiplied out; the cases'
   polytopes are stacked and padded with the rows `0 <= +inf`.
