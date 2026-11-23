@@ -38,11 +38,10 @@ int main() {
         const std::vector<double> x = test::point(P, {{1, 0.4}, {2, -0.8}}, {b1[0], b1[1]}),
                                   y = test::point(Q, {{1, 0.3}, {2, 0.6}}, {b2[0], b2[1]});
         std::vector<double> beta(4), expected(2);
-        for (int j = 0; j < 2; ++j) {
-            beta[std::size_t(j)] = ((1 + t) * b1[j] + (1 - t) * b2[j]) / 2;
-            beta[std::size_t(2 + j)] = ((1 + t) * b1[j] - (1 - t) * b2[j]) / 2;
-            expected[std::size_t(j)] =
-                (1 + t) / 2 * x[std::size_t(j)] + (1 - t) / 2 * y[std::size_t(j)];
+        for (std::size_t j = 0; j < 2; ++j) {
+            beta[j] = ((1 + t) * b1[j] + (1 - t) * b2[j]) / 2;
+            beta[2 + j] = ((1 + t) * b1[j] - (1 - t) * b2[j]) / 2;
+            expected[j] = (1 + t) / 2 * x[j] + (1 - t) / 2 * y[j];
         }
         const std::vector<double> z =
             test::point(S, {{1, 0.4}, {2, -0.8}, {3, 0.3}, {4, 0.6}, {5, t}}, beta);

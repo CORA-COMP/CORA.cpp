@@ -38,13 +38,12 @@ double monomial(const PolyZonotope &P, int64_t j, const std::map<int64_t, double
 }
 
 /// The column-by-column vector of an n x k matrix product (n, k, m) of two such vectors.
-std::vector<double> product(const std::vector<double> &a, const std::vector<double> &b, int n,
-                            int k, int m) {
-    std::vector<double> c(std::size_t(n * m), 0.0);
-    for (int i = 0; i < n; ++i)
-        for (int j = 0; j < m; ++j)
-            for (int l = 0; l < k; ++l)
-                c[std::size_t(i + n * j)] += a[std::size_t(i + n * l)] * b[std::size_t(l + k * j)];
+std::vector<double> product(const std::vector<double> &a, const std::vector<double> &b,
+                            std::size_t n, std::size_t k, std::size_t m) {
+    std::vector<double> c(n * m, 0.0);
+    for (std::size_t i = 0; i < n; ++i)
+        for (std::size_t j = 0; j < m; ++j)
+            for (std::size_t l = 0; l < k; ++l) c[i + n * j] += a[i + n * l] * b[l + k * j];
     return c;
 }
 

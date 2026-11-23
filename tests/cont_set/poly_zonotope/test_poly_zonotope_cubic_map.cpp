@@ -34,9 +34,8 @@ std::vector<double> cubic(const std::vector<std::vector<Tensor>> &T, const std::
         for (const int64_t k : ind[i]) {
             const std::vector<double> M = T[i][std::size_t(k)].data();
             double quad = 0.0;
-            for (int r = 0; r < 2; ++r)
-                for (int c = 0; c < 2; ++c)
-                    quad += x[std::size_t(r)] * M[std::size_t(2 * r + c)] * x[std::size_t(c)];
+            for (std::size_t r = 0; r < 2; ++r)
+                for (std::size_t c = 0; c < 2; ++c) quad += x[r] * M[2 * r + c] * x[c];
             sum += x[std::size_t(k)] * quad;
         }
         z.push_back(sum);

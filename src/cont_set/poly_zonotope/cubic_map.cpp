@@ -78,6 +78,7 @@ PolyZonotope PolyZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
                [] { return std::string("cubic_map: ind needs one list per output"); });
     // ind: the default is every k, a k outside the matrices is refused
     std::vector<int64_t> all;
+    all.reserve(std::size_t(n));
     for (int64_t k = 0; k < n; ++k) all.push_back(k);
     for (const std::vector<int64_t> &list : ind)
         for (const int64_t k : list)
@@ -90,6 +91,7 @@ PolyZonotope PolyZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
     const Exponents Ee = priv_extended_exponents(D.exponents(), D.ids().size());
     const auto N = int64_t(Ee.size());
     std::vector<Tensor> outputs;
+    outputs.reserve(T.size());
     for (std::size_t i = 0; i < T.size(); ++i)
         outputs.push_back(aux_output(Zext, T[i], ind.empty() ? all : ind[i]));
     // the exponents of the triples, the first column the slowest
