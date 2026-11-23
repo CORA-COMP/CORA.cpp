@@ -277,6 +277,26 @@ PolyZonotope priv_fold_constants(const PolyZonotope &set) {
             detail::Normalized{}};
 }
 
+PolyZonotope priv_merged_set(const Tensor &c, const Tensor &G, const Tensor &GI, const Exponents &E,
+                             const std::vector<int64_t> &id) {
+    // equal columns merge first, as CORA does, then the constants and the unused identifiers go
+    MergedColumns merged = priv_merge_columns(G, E);
+    const PolyZonotope set(c, std::move(merged.G), GI, std::move(merged.E), id,
+                           detail::Normalized{});
+    // the center takes the constants, the unused identifiers leave the exponents
+    const PolyZonotope folded = priv_fold_constants(set);
+    Exponents E_out = folded.exponents();
+    std::vector<int64_t> id_out = folded.ids();
+    priv_drop_unused_ids(E_out, id_out);
+    return {folded.center(),  folded.generators(), folded.independent_generators(),
+            std::move(E_out), std::move(id_out),   detail::Normalized{}};
+}
+
+int64_t priv_find_id(const std::vector<int64_t> &ids, int64_t id) {
+    const auto it = std::find(ids.begin(), ids.end(), id);
+    return it == ids.end() ? -1 : int64_t(it - ids.begin());
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -3194,6 +3194,45 @@ void bind_poly_zonotope(py::module_ &m) {
             },
             py::arg("method") = py::none(), py::arg("tol") = py::none(),
             "The set without zero generators and unused factors (method 'all')")
+        // the identifiers and the factors
+        .def(
+            "get_subset",
+            [](const PolyZonotope &P, const std::vector<int64_t> &ids, const py::object &val) {
+                if (py::isinstance<Interval>(val))
+                    return P.get_subset(ids, py::cast<Interval>(val));
+                return P.get_subset(ids, tensor_of(val, "val"));
+            },
+            py::arg("id"), py::arg("val"),
+            "The subset for the factors id at the values val (a vector) or in the boxes val")
+        .def(
+            "replace_id",
+            [](const PolyZonotope &P, const std::vector<int64_t> &old_ids,
+               const std::optional<std::vector<int64_t>> &new_ids) {
+                return new_ids ? P.replace_id(old_ids, *new_ids) : P.replace_id(old_ids);
+            },
+            py::arg("id_old"), py::arg("id_new") = py::none(),
+            "Renames the identifiers id_old to id_new; with one argument all identifiers become it")
+        // adding and removing factors
+        .def("restore_id", &PolyZonotope::restore_id, py::arg("id"),
+             "Adds the identifiers the set lacks, as unused factors")
+        .def("rm_id", &PolyZonotope::rm_id, py::arg("id"),
+             "Removes the factors id: they are fixed to 1")
+        .def("only_id", &PolyZonotope::only_id, py::arg("id"),
+             "The part that depends on the factors id alone and the remainder")
+        // the independent part, the empty set and the comparison
+        .def("no_indep", &PolyZonotope::no_indep, "The set without its independent generators")
+        .def_static("empty", &PolyZonotope::empty, py::arg("n") = 0,
+                    "Not supported: a polynomial zonotope has no empty member")
+        .def(
+            "isequal",
+            [](const PolyZonotope &P, const py::object &S, Tol tol) {
+                // a zonotope or a box is compared as a polynomial zonotope
+                if (py::isinstance<Zonotope>(S)) return P.isequal(py::cast<Zonotope>(S), tol);
+                if (py::isinstance<Interval>(S)) return P.isequal(py::cast<Interval>(S), tol);
+                return P.isequal(py::cast<PolyZonotope>(S), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(),
+            "Whether the set equals a polynomial zonotope, a zonotope or a box up to tol")
         // the halves along a dependent factor
         .def("split_dep_factor", &PolyZonotope::split_dep_factor, py::arg("id"),
              "The halves along the factor with the identifier id: alpha becomes (alpha +- 1) / 2")

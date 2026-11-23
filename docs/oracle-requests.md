@@ -546,3 +546,18 @@ The oracle (`oracle-20261123-722cbe1e7`) serves the layer kinds `linear`, `relu`
 | layer kind `batchNorm` (inference) | `scale`, `offset`, `mean`, `var`, `epsilon`, `shape` (C, H, W), `Z` | `Z`; CORALean's order of the three steps decides whether CORA.cpp's folded map is bit-exact |
 | layer kind `avgPool` | `pool`, `stride`, `pads`, `shape`, `Z` | `Z` |
 | layer kind `lipLinear` | `W`, `b`, `lambda`, `Z` | `Z` |
+
+### Identifier and structure helpers of the polynomial zonotope (port batch pzrest-1)
+
+CORALean has float definitions of these CORA methods (`src/CORALean/ContSet/PolyZonotope/Float/Operations/`),
+but the pinned oracle serves none of them, so they are tested as properties (evaluation at sampled factor
+values) and the rows are oracle debt. Requests as for the section above (`pZ`, `E` the exponent matrix, `id`
+the identifiers), reply a polynomial zonotope unless stated. CORALean's factors are positions, so the
+requests carry the identifiers and the oracle maps them.
+
+| op (proposed) | CORALean definition | request fields | reply and order |
+|---|---|---|---|
+| `polyZonotope.getSubset` | `PolyZonotope.getSubset`, `getSubsetCoef` (`GetSubset.lean`) | `pZ`, `id`, `val` (numbers) or `I` (a box) | the columns as CORA.cpp: the original columns, then the appended terms of each expanded generator; the coefficients of `(c + r a)^e` by CORA's `conv` |
+| `polyZonotope.replaceId`, `restoreId`, `rmId`, `noIndep` | `ReplaceId.lean`, `PadBack.lean`, `RmId.lean`, `NoIndep.lean` | `pZ`, `id` / `idOld`, `idNew` | exact: nothing rounds; `rmId` adds the columns of equal exponents in order |
+| `polyZonotope.onlyId` | `PolyZonotope.onlyId` | `pZ`, `id` | the two parts (`pZId`, `pZr`) |
+| `polyZonotope.isequal`, `isFullDim`, `isBounded`, `representsa` | `Isequal.lean` (structural, tolerance 0), `IsFullDim.lean` (certified true only), `Basic.lean` | `pZ`, `S`, `tol` | a Boolean; CORA.cpp's `isequal` compares up to order after `compact`, CORALean's in order, so the two agree on `true` only |

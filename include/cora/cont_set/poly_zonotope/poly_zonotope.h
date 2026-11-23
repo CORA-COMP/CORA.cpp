@@ -18,6 +18,16 @@
 //
 // CORA: contSet/@polyZonotope/polyZonotope.m
 // CORA: contSet/@polyZonotope/dim.m
+// CORA: contSet/@polyZonotope/getSubset.m
+// CORA: contSet/@polyZonotope/replaceId.m
+// CORA: contSet/@polyZonotope/restoreId.m
+// CORA: contSet/@polyZonotope/rmId.m
+// CORA: contSet/@polyZonotope/onlyId.m
+// CORA: contSet/@polyZonotope/noIndep.m
+// CORA: contSet/@polyZonotope/isBounded.m
+// CORA: contSet/@polyZonotope/isFullDim.m
+// CORA: contSet/@polyZonotope/isequal.m
+// CORA: contSet/@polyZonotope/empty.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
@@ -179,8 +189,57 @@ class PolyZonotope : public ContSet {
     /// from the last column to the first (CORALean's compactGens); no zero generator is dropped.
     PolyZonotope compact_gens() const;
 
+    // The identifiers and the factors -------------------------------------------------------------
+
+    /// The subset in which the factors ids take the values val (CORA's getSubset): the factors
+    /// leave the set; a set without generators is the point, as a PolyZonotope. Unknown
+    /// identifiers are Error::wrong_value.
+    PolyZonotope get_subset(const std::vector<int64_t> &ids, const Tensor &val) const;
+
+    /// The same for a factor restricted to the box val[i] of [-1, 1]: the generators are expanded
+    /// binomially in the factor (a factor with the box [-1, 1] stays). An empty box is
+    /// Error::wrong_value.
+    PolyZonotope get_subset(const std::vector<int64_t> &ids, const Interval &val) const;
+
+    /// The set with the identifiers old_ids renamed to new_ids (CORA's replaceId): factors that get
+    /// the same identifier merge, their exponents add. Without old_ids all identifiers are renamed.
+    PolyZonotope replace_id(const std::vector<int64_t> &old_ids,
+                            const std::vector<int64_t> &new_ids) const;
+    PolyZonotope replace_id(const std::vector<int64_t> &new_ids) const;
+
+    /// The set with the factors ids that it lacks added, unused (CORA's restoreId): their exponents
+    /// are 0. Repeated identifiers in ids are Error::wrong_value.
+    PolyZonotope restore_id(const std::vector<int64_t> &ids) const;
+
+    /// The set without the factors ids (CORA's rmId): the factors are fixed to 1 and equal
+    /// generators merge. An identifier the set lacks is Error::wrong_value (CORA ignores it).
+    PolyZonotope rm_id(const std::vector<int64_t> &ids) const;
+
+    /// The part that depends on the factors ids alone (with the center) and the remainder (with the
+    /// independent generators), whose sum is this set (CORA's onlyId).
+    std::pair<PolyZonotope, PolyZonotope> only_id(const std::vector<int64_t> &ids) const;
+
+    /// The set without its independent generators (CORA's noIndep): a subset.
+    PolyZonotope no_indep() const;
+
+    /// CORA's empty: a polynomial zonotope has no empty member here (CORALean's wrapper holds it),
+    /// Error::not_supported.
+    static PolyZonotope empty(int64_t n);
+
+    /// Whether the set has a nonempty interior (CORA's isFullDim): true only if shown, see
+    /// docs/cora-differences.md. tol (default: the repository tolerance) is the rank tolerance.
+    bool is_full_dim(Tol tol = std::nullopt) const;
+
+    /// Whether the set equals S up to tol (CORA's isequal): both compacted, the identifiers
+    /// aligned, the generators compared up to order (the independent ones also up to sign). A
+    /// zonotope or a box is compared as a polynomial zonotope; another dimension is false.
+    bool isequal(const PolyZonotope &S, Tol tol = std::nullopt) const;
+    bool isequal(const Zonotope &Z, Tol tol = std::nullopt) const;
+    bool isequal(const Interval &I, Tol tol = std::nullopt) const;
+
 
   protected:
+    // The ContSet interface, as CORA's methods of the same names
     int64_t dim_impl() const override { return c_.shape()[0]; }
     Tensor center_impl() const override;
     Set reduce_impl(int order) const override;
@@ -193,7 +252,8 @@ class PolyZonotope : public ContSet {
     std::vector<Polygon> vertices_impl() const override;
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
-    bool is_bounded_impl() const override { return true; }
+    bool is_bounded_impl() const override;
+    bool is_full_dim_impl(Tol tol) const override;
 
   private:
     Tensor c_, G_, GI_;
