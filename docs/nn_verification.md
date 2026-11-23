@@ -113,7 +113,13 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   keeps 768 of the 3072 input generators and boxes the rest, and an exp's bound then overflows; an
   8 GiB budget keeps them all (2.6 GiB peak) and finishes a first iteration, but the margin's
   lower bound stays below -20 where the network's linearization varies by 0.33 over the box: the
-  products and the softmax's lines are far too loose to verify yet.
+  products and the softmax's lines are far too loose to verify yet. Measured on a 40 GB A100:
+  the slot estimate is conservative (16 GiB kept 1536 input generators of ibp's 3072 and an
+  interval of radius 28 on the output; the zonotope's root margin -5.7, CROWN's -0.18), so the vit
+  preset's `memory_budget` is 32 GiB: all generators, 13 slots, ibp's root margins -0.03 to -0.06
+  (CROWN) and pgd's some roots verified at once. The ReLU-slope steps (`alpha_iterations`) left the
+  root bound unchanged (the softmax and the products are the loose part), so the preset turns them
+  off. The preset only changes the budgets, not an enclosure.
 - **nn4sys (Phase 4).** A Gather's negative index counts from the end (pensieve's last entry of a
   row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
   output to 6e-7. pensieve_parallel's input `[12, 8]` has no batch axis: only a Reshape to a batch
