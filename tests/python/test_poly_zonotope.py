@@ -51,6 +51,8 @@ Reviewed:      ---
 # CORA: contSet/@polyZonotope/linComb.m
 # CORA: contSet/@polyZonotope/lift_.m
 # CORA: contSet/@polyZonotope/partZonotope.m
+# CORA: contSet/@polyZonotope/convHull_.m
+# CORA: contSet/@polyZonotope/jacobian.m
 
 import unittest
 
@@ -212,15 +214,19 @@ class Substitution(unittest.TestCase):
         self.assertEqual(list(S.id), [1])
         in_ = cora.PolyZonotope(np.array([0.5]), np.array([[2.0], [0.5]]), np.zeros((0, 1)),
                                 np.array([[1, 2]]), [7])
+        # the substitution
         T = P.subs(in_, [2])
         self.assertEqual(sorted(T.id), [1, 7])
+        # a wrong number of values
         with self.assertRaises(cora.errors.WrongValue):
             P.resolve(np.array([0.5, 0.5, 0.5]))
 
     def test_sum_and_stack(self):
+        # the sum, the stack, the restructure and the type test
         P = known()
         S = P.sum([P])
         np.testing.assert_allclose(S.c, [2, 0])
+        # the stacked dimension
         T = cora.PolyZonotope.stack([P, P])
         self.assertEqual(T.dim, 4)
         self.assertEqual(P.restructure().dim, 2)
@@ -232,6 +238,7 @@ class Maps(unittest.TestCase):
     # the maps and combinations: dimensions and identifiers, the points are checked in C++
     def test_linear_combination_and_lift(self):
         P = known()
+        # the factors side by side, t last
         S = P.linear_combination(P)
         self.assertEqual(S.dim, 2)
         self.assertEqual(list(S.id), [1, 2, 3, 4, 5])
@@ -241,14 +248,27 @@ class Maps(unittest.TestCase):
 
     def test_matrix_polynomial_and_cubic_maps(self):
         P = cora.PolyZonotope(np.array([1.0, 2.0, 3.0, 4.0]), np.eye(4)[:2], None, None, [1, 2])
+        # the matrix product and the polynomial map
         self.assertEqual(P.matrix_map(P, 2, 2, 2).dim, 4)
         coeff, E = np.array([[1.0, 2.0]]), np.array([[1, 0], [1, 1], [0, 0], [0, 0]])
         self.assertEqual(P.polynomial_map(coeff, E).dim, 1)
+        # the cubic map and the grouping
         Q = known()
         self.assertEqual(Q.cubic_map([[np.eye(2), np.eye(2)]]).dim, 1)
         self.assertEqual(Q.part_zonotope([1]).dim, 2)
         with self.assertRaises(cora.errors.WrongValue):
             Q.part_zonotope([9])
+
+    def test_convex_hull_and_jacobian(self):
+        P = known()
+        self.assertEqual(P.convex_hull().dim, 2)
+        self.assertEqual(P.convex_hull(P).dim, 2)
+        # the derivatives along the factors
+        D = P.jacobian()
+        self.assertEqual(len(D), 2)
+        self.assertEqual(len(P.jacobian([2])), 1)
+        with self.assertRaises(cora.errors.WrongValue):
+            P.jacobian([9])
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
