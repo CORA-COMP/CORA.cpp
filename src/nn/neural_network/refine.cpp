@@ -6,8 +6,11 @@
 // layers below max_order; "neuron" raises the neurons whose heuristic exceeds gamma times the
 // largest one, in the layer of that neuron. The heuristics "sensitivity", "both" and "random"
 // are not ported (a sensitivity of every layer, and a random draw that CORA.cpp cannot repeat).
+// order_pattern is CORA's getOrderPattern: the orders of the refinable layers' neurons, and
+// without orders resetApproxOrder's (all 1); the orders are an argument here, not a layer's state.
 //
-// Syntax:   orders = nn.refine(orders, nn.approx_errors(X));
+// Syntax:   pattern = nn.order_pattern(orders);
+//           orders = nn.refine(orders, nn.approx_errors(X));
 //           orders = nn.refine(orders, errors, {.max_order = 4, .type = RefineType::neuron});
 // Inputs:   orders - per layer: none (order 1), one value, or one per neuron
 //           heuristic - per layer, one value per neuron (approx_errors)
@@ -20,6 +23,8 @@
 //
 // CORA: nn/@neuralNetwork/refine.m
 // CORA: nn/@neuralNetwork/getRefinableLayers.m
+// CORA: nn/@neuralNetwork/getOrderPattern.m
+// CORA: nn/@neuralNetwork/resetApproxOrder.m
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
@@ -72,6 +77,20 @@ std::vector<int64_t> NeuralNetwork::refinable_layers() const {
     return out;
 }
 
+// OrderPattern ------------------------------------------------------------------------------------
+
+std::vector<std::vector<int>>
+NeuralNetwork::order_pattern(const std::vector<std::vector<int>> &orders) const {
+    detail::Entry entry;
+    // the orders of each refinable layer's neurons
+    std::vector<std::vector<int>> out;
+    for (const int64_t k : refinable_layers())
+        out.push_back(
+            aux_expand(std::size_t(k) < orders.size() ? orders[std::size_t(k)] : std::vector<int>{},
+                       layers_[std::size_t(k)].outputs()));
+    return out;
+}
+
 // Refine ------------------------------------------------------------------------------------------
 
 std::vector<std::vector<int>>
@@ -86,8 +105,8 @@ NeuralNetwork::refine(const std::vector<std::vector<int>> &orders,
     std::vector<std::vector<int>> out;
     out.reserve(layers_.size());
     for (std::size_t k = 0; k < layers_.size(); ++k)
-        out.push_back(aux_expand(k < orders.size() ? orders[k] : std::vector<int>{},
-                                 layers_[k].W.shape()[0]));
+        out.push_back(
+            aux_expand(k < orders.size() ? orders[k] : std::vector<int>{}, layers_[k].outputs()));
     const std::vector<int64_t> refinable = refinable_layers();
     std::vector<std::vector<double>> heu(layers_.size());
     for (std::size_t i = 0; i < refinable.size(); ++i) {

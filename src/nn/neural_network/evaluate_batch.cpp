@@ -49,20 +49,7 @@ ZonotopeBatch NeuralNetwork::evaluate_zonotope_batch(const Tensor &c, const Tens
                           std::to_string(input_dim()) + "), got " + shape_text(c.shape()) +
                           " and " + shape_text(G.shape());
                });
-    // every input generator is a factor of the batch (the net would clamp q to the inputs)
-    const int64_t q = G.shape()[1];
-    ZonoNet zono(*this, double(q), options.num_approx_err, options.poly_method,
-                 options.approx_error_order);
-    zono.q0 = q;
-    zono.q = q;
-    int64_t widest = 0;
-    for (std::size_t k = 0; k < layers_.size(); ++k) {
-        zono.q += zono.slots[k];
-        if (activations_[k] != Activation::identity) widest = std::max(widest, zono.widths[k]);
-    }
-    // an error without a generator goes to the interval center
-    zono.interval_center =
-        std::isfinite(options.num_approx_err) && int64_t(options.num_approx_err) < widest;
+    const ZonoNet zono = priv_batch_net(*this, G.shape()[1], options);
     const ZonoPropagation out = zono.forward(c, Tensor(), G, Tensor(), nullptr, false);
     return {out.c, out.G, out.dr};
 }

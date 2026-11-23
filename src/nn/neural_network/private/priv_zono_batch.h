@@ -134,7 +134,17 @@ class ZonoNet {
                                     const Tensor &splits) const;
 };
 
+/// The net of a batch of q input generators as CORA's evaluateZonotopeBatch sets it up: every input
+/// generator a factor, the errors in slots and, past num_approx_err, in the radius dr.
+ZonoNet priv_batch_net(const NeuralNetwork &nn, int64_t q, const ZonotopeBatchOptions &options);
+
 // Gradients and bounds ----------------------------------------------------------------------------
+
+/// The gradients of the input's center (B, n0) and generators (B, q0, n0) (the fields c and G) from
+/// those of a recorded propagation's output: the lines fixed (held slopes, CORA's backprop without
+/// exact_backprop), or exact through the lines' bounds (exact_backprop).
+ZonotopeBatch priv_backprop_set(const ZonoPropagation &out, const ZonoNet &net, const Tensor &g_c,
+                                const Tensor &g_gen, const Tensor &g_dr, bool exact);
 
 /// The F-radius sqrt(sum G^2)'s gradient in each generator's value (the input's, every slot's):
 /// exact (CORA's exact_backprop) through the lines, else the slopes held, |G_g|^2 / (v_g F).

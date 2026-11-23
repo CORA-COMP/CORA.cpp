@@ -89,6 +89,26 @@ void gradients(const std::string &b) {
           b + ": the gradient of a product");
 }
 
+/// A layer merged away entirely has no neurons: its gradient is the empty row, the one before it
+/// gets zero.
+void empty_layer(const std::string &b) {
+    const Tensor W1({{1.0, -0.5}, {0.3, 0.8}}), b1({0.1, 0.2});
+    const NeuralNetwork nn({{W1, b1},
+                            {Tensor::zeros({0, 2}), Tensor::zeros({0})},
+                            {Tensor::zeros({1, 0}), Tensor({0.5})}},
+                           {Activation::relu, Activation::relu, Activation::identity});
+    // the gradient and its bounds at two points, the output
+    const Tensor x({{0.4, 0.9}, {-0.6, 0.3}}), g({{2.0}, {-1.5}});
+    check(test::close(nn.backprop(x, g), std::vector<double>(4, 0.0), 0.0),
+          b + ": the gradient through a layer without neurons is 0");
+    const auto [gl, gu] = nn.backprop_interval_batch(x, x, g, g);
+    check(test::close(gl, std::vector<double>(4, 0.0), 0.0) &&
+              test::close(gu, std::vector<double>(4, 0.0), 0.0),
+          b + ": the gradient bounds through a layer without neurons are 0");
+    check(test::close(nn.evaluate(x), std::vector<double>{0.5, 0.5}, 0.0),
+          b + ": a layer without neurons evaluates to the bias");
+}
+
 void bounds(const std::string &b) {
     const NeuralNetwork nn = aux_network(Activation::relu);
     const double nan = std::numeric_limits<double>::quiet_NaN();
@@ -128,6 +148,7 @@ void bounds(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         gradients(b);
+        empty_layer(b);
         bounds(b);
     });
     return test::finish("neuralNetwork backprop");

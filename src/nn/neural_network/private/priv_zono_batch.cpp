@@ -395,12 +395,13 @@ LineJacobian aux_alpha_jacobian(const LineJacobian &base, const Tensor &l, const
             Tensor::where(cross, h_l, base.r_l),  Tensor::where(cross, h_u, base.r_u)};
 }
 
-/// The reverse pass from the partial derivatives of the output (g_c, g_gen, g_dr) back through
-/// every layer: the input's generator rows (B, q0, n0) if need_input, each record's slot gradient
-/// (per neuron) into slot_grads, the slopes' gradients into g_alpha where alpha holds them.
+/// The reverse pass from the output's derivatives (g_c, g_gen, g_dr) to the input's generator rows
+/// (B, q0, n0), c_in its center, each record's slot_grads, g_alpha where alpha holds the slopes;
+/// held: the lines are fixed.
 Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits, Tensor g_c,
                    Tensor g_gen, Tensor g_dr, const std::vector<Tensor> *alpha,
-                   std::vector<Tensor> *g_alpha, std::vector<Tensor> *slot_grads, bool need_input) {
+                   std::vector<Tensor> *g_alpha, std::vector<Tensor> *slot_grads, bool need_input,
+                   bool held = false, Tensor *c_in = nullptr) {
     // the factor rows of each output (rows[j + 1]; 0: the input), from the output's back
     const std::size_t L = net.W.size();
     std::vector<int64_t> rows(L + 1);
@@ -468,8 +469,8 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
                 J = aux_alpha_jacobian(J, cl.lc, cl.uc, *a);
             }
             const Tensor &m = line.slope;
-            if (act == Activation::product) {
-                // held slopes [c_b; c_a]: c2, G2 and dr2 (by |m|) linear in c1, G1 and dr1
+            if (act == Activation::product || held) {
+                // held slopes ([c_b; c_a] of a product): c2, G2, dr2 (by |m|) linear in c1, G1, dr1
                 g_c = priv_slope_times_t(act, m, g_c);
                 g_gen = priv_slope_times_t(act, m.expand_dims(1), g_gen);
                 g_dr = dr1.defined() ? priv_slope_times_t(act, aux_abs_slope(m), g_dr) : Tensor();
@@ -495,6 +496,7 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
                 const Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
                 // l = c1 - sum |G1| - dr1, u = c1 + sum |G1| + dr1
                 const Tensor g_rad = g_u - g_l;
+                // the center, the generators and the radius of the input of the line
                 g_c = g_c.multiply(m) + g_l + g_u;
                 g_gen = m.expand_dims(1).multiply(g_gen) + G1.sign().multiply(g_rad.expand_dims(1));
                 g_dr = dr1.defined() ? g_dr.multiply(aux_abs_slope(m)) + g_rad : Tensor();
@@ -502,10 +504,11 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
         }
         // back to the inputs: a source's own factor rows (the input's center and radii unused)
         const auto back = [&](int64_t j, const auto &map, const auto &map_abs) {
+            // the factor rows of the source, and the gradients through its map
             const int64_t r = rows[std::size_t(j + 1)];
             const Tensor gen = r < g_gen.shape()[1] ? g_gen.slice(1, 0, r) : g_gen;
             if (j < 0) {
-                if (need_input) add(j, Tensor(), map(gen), Tensor());
+                if (need_input) add(j, c_in ? map(g_c) : Tensor(), map(gen), Tensor());
                 return;
             }
             add(j, map(g_c), map(gen), g_dr.defined() ? map_abs(g_dr) : Tensor());
@@ -519,6 +522,7 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
             net.sources[k], [&](const Tensor &x) { return net.map_t(k, x); },
             [&](const Tensor &x) { return net.map_abs_t(k, x); });
     }
+    if (c_in) *c_in = acc[0].c;
     return acc[0].gen;
 }
 
@@ -925,6 +929,32 @@ Tensor priv_frad_gradients(ZonoPropagation &out, const ZonoInput &in, const Zono
     // the records' gradients, and the input's of its generator dimensions
     for (std::size_t i = 0; i < out.layers.size(); ++i) out.layers[i].grad = slot_grads[i];
     return g_gen.take_along_axis(in.dims.expand_dims(-1), 2).squeeze(-1);
+}
+
+ZonotopeBatch priv_backprop_set(const ZonoPropagation &out, const ZonoNet &net, const Tensor &g_c,
+                                const Tensor &g_gen, const Tensor &g_dr, bool exact) {
+    // the reverse pass to the input's center and generators, the slopes held or exact
+    Tensor c_in;
+    const Tensor G_in = aux_reverse(out, net, Tensor(), g_c, g_gen, g_dr, nullptr, nullptr, nullptr,
+                                    true, !exact, &c_in);
+    return {c_in, G_in, Tensor()};
+}
+
+ZonoNet priv_batch_net(const NeuralNetwork &nn, int64_t q, const ZonotopeBatchOptions &options) {
+    // every input generator is a factor of the batch (the net would clamp q to the inputs)
+    ZonoNet zono(nn, double(q), options.num_approx_err, options.poly_method,
+                 options.approx_error_order);
+    zono.q0 = q;
+    zono.q = q;
+    int64_t widest = 0;
+    for (std::size_t k = 0; k < nn.layers().size(); ++k) {
+        zono.q += zono.slots[k];
+        if (nn.activations()[k] != Activation::identity) widest = std::max(widest, zono.widths[k]);
+    }
+    // an error without a generator goes to the interval center
+    zono.interval_center =
+        std::isfinite(options.num_approx_err) && int64_t(options.num_approx_err) < widest;
+    return zono;
 }
 
 std::vector<Tensor> priv_alpha_gradients(const ZonoPropagation &out, const ZonoNet &net,

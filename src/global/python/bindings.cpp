@@ -5118,6 +5118,77 @@ void bind_neural_network(py::module_ &m) {
             py::arg("X"),
             "Per layer, the radius of the approximation error of each neuron when X goes through "
             "the network (CORA's refine_heu); empty for a layer without a nonlinear activation")
+        // the copy, and the orders of the refinable layers
+        .def(
+            "__copy__", [](const NeuralNetwork &nn) { return nn; },
+            "CORA's copyNeuralNetwork: an independent copy (a network is a value)")
+        .def(
+            "order_pattern",
+            [](const NeuralNetwork &nn, const std::vector<std::vector<int>> &orders) {
+                return nn.order_pattern(orders);
+            },
+            py::arg("orders") = std::vector<std::vector<int>>{},
+            "CORA's getOrderPattern: the orders of the neurons of each refinable layer (orders: "
+            "per layer none, one value or one per neuron); without orders, resetApproxOrder's")
+        // a random dense network, the weights drawn again, and the weights cast
+        .def_static(
+            "random",
+            [](int64_t inputs, int64_t outputs, int64_t layers, int64_t hidden,
+               const std::string &activation, uint64_t seed) {
+                RandomOptions o;
+                o.inputs = inputs;
+                o.outputs = outputs;
+                o.layers = layers;
+                o.hidden = hidden;
+                o.activation = activation_of(activation);
+                o.seed = seed;
+                return NeuralNetwork::random(o);
+            },
+            py::arg("inputs") = 0, py::arg("outputs") = 0, py::arg("layers") = 0,
+            py::arg("hidden") = 0, py::arg("activation") = "sigmoid", py::arg("seed") = 1,
+            "CORA's generateRandom: a dense network of random layers (0: drawn as CORA draws it)")
+        .def("init_weights", &NeuralNetwork::init_weights, py::arg("method") = "glorot",
+             py::arg("seed") = 1, py::arg("layers") = std::vector<int64_t>{},
+             "CORA's initWeights: the network with the dense layers' weights drawn again "
+             "('glorot' or 'shi'), the biases 0; layers: 0-based, empty for all")
+        // the weights in another dtype, and the gradients of a loss at batched zonotopes
+        .def(
+            "to",
+            [](const NeuralNetwork &nn, const std::string &dtype, const std::string &device) {
+                if (dtype != "float32" && dtype != "float64")
+                    CORA_FAIL(Error::wrong_value, "to: dtype is 'float32' or 'float64'");
+                return nn.to(dtype == "float32" ? DType::float32 : DType::float64, device);
+            },
+            py::arg("dtype"), py::arg("device") = "",
+            "CORA's castWeights: the network with every weight in the dtype, on the device")
+        // the gradients at the input sets of a loss at the output sets of a batch
+        .def(
+            "backprop_zonotope_batch",
+            [](const NeuralNetwork &nn, const py::object &c, const py::object &G,
+               const py::object &grad_c, const py::object &grad_gen,
+               const std::optional<py::object> &grad_dr, double num_approx_err,
+               const std::string &poly_method, const std::string &approx_error_order, bool exact) {
+                // the options by name
+                ZonotopeBatchOptions o;
+                o.num_approx_err = num_approx_err;
+                o.poly_method = poly_method;
+                o.approx_error_order = approx_error_order;
+                // the gradients at the input as (c, G)
+                const ZonotopeBatch g = nn.backprop_zonotope_batch(
+                    point_of(c, "the centers"), tensor_of(G, "G"), point_of(grad_c, "grad_c"),
+                    tensor_of(grad_gen, "grad_gen"),
+                    grad_dr ? point_of(*grad_dr, "grad_dr") : Tensor(), o, exact);
+                return py::make_tuple(matrix(g.c), matrix(g.G));
+            },
+            // the arguments, then the documentation
+            py::arg("c"), py::arg("G"), py::arg("grad_c"), py::arg("grad_gen"),
+            py::arg("grad_dr") = py::none(),
+            py::arg("num_approx_err") = std::numeric_limits<double>::infinity(),
+            py::arg("poly_method") = "bounds", py::arg("approx_error_order") = "sequential",
+            py::arg("exact") = false,
+            "CORA's backpropZonotopeBatch: the gradients at the input sets (c, G) of a loss with "
+            "the gradients grad_c (B, m), grad_gen (B, q + errors, m) and grad_dr (B, m) at the "
+            "output of evaluate_zonotope_batch; exact: through the lines' bounds, else held")
         .def("refinable_layers", &NeuralNetwork::refinable_layers,
              "The indices of the layers with a nonlinear activation (CORA's getRefinableLayers)")
         .def(

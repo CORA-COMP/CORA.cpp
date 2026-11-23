@@ -8,6 +8,10 @@
 // (im2col), and its transpose multiplies by the kernel's transpose and folds the patches back onto
 // the input pixels (col2im), so W^T y costs what W x does.
 // The generator axis of a batch of zonotopes is just more rows, a batched convolution.
+// A ConvTranspose (CORA's nnConvTranspose2DLayer) is the transposed product of the convolution it
+// inverts (kernel (in, out / groups, kh, kw), the output's shape given). CORA's nnReshapeLayer
+// (its output the input entries at an index list) is a gather: its gradient scatters back (the
+// transpose, a repeated input summing its outputs).
 //
 // Syntax:   Layer L = NeuralNetwork::Layer::conv2d(kernel, bias, {C, H, W}, spec);
 //           Tensor y = L.rows(x) + L.b;   Tensor g = L.rows_t(y);   Tensor r = L.abs_rows(dr);
@@ -22,6 +26,8 @@
 //        document processing", IWFHR 2006.
 //
 // CORA: nn/layers/linear/nnConv2DLayer.m
+// CORA: nn/layers/linear/nnConvTranspose2DLayer.m
+// CORA: nn/layers/other/nnReshapeLayer.m
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       22-November-2026
@@ -63,7 +69,12 @@ namespace {
 // Patches and gathers ----------------------------------------------------------------------------
 
 /// The rows (N, k) of the leading axes of x (..., k), and back.
-Tensor aux_flat(const Tensor &x, int64_t k) { return x.reshape({x.numel() / k, k}); }
+Tensor aux_flat(const Tensor &x, int64_t k) {
+    // the rows are the leading dimensions (numel / k fails for a layer without neurons, k = 0)
+    int64_t rows = 1;
+    for (int64_t i = 0; i + 1 < x.ndim(); ++i) rows *= x.shape()[i];
+    return x.reshape({rows, k});
+}
 Tensor aux_unflat(const Tensor &y, const Tensor &like, int64_t k) {
     std::vector<int64_t> shape = like.shape();
     shape.back() = k;

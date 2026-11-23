@@ -123,6 +123,14 @@ enum class RefineHeuristic { approx_error, layer_bias, all };
 /// ends and the stationary points; bracket, the looser one of the derivative bracket.
 enum class RegressionError { extremum, bracket };
 
+/// The sizes of NeuralNetwork::random (0: drawn as CORA draws it), the activation of every layer
+/// and the seed.
+struct RandomOptions {
+    int64_t inputs = 0, outputs = 0, layers = 0, hidden = 0;
+    Activation activation = Activation::sigmoid;
+    uint64_t seed = 1;
+};
+
 /// What evaluate_with_input does with the error of the activations (CORA's options.nn).
 struct NnOptions {
     /// true: the errors are independent generators (add_approx_error_to_GI); false: new factors
@@ -389,6 +397,10 @@ class NeuralNetwork {
                       const std::vector<double> &p_start, double d_start,
                       const std::vector<double> &p_end, double d_end);
 
+    /// A random dense network (CORA's generateRandom): layers of random affine maps (entries in
+    /// [-1, 1)), each followed by the activation.
+    static NeuralNetwork random(const RandomOptions &options = {});
+
     /// The network of a block.
     explicit NeuralNetwork(const Block &block) : NeuralNetwork(block.layers, block.activations) {}
 
@@ -455,6 +467,14 @@ class NeuralNetwork {
     ZonotopeBatch evaluate_zonotope_batch(const Tensor &c, const Tensor &G,
                                           const ZonotopeBatchOptions &options = {}) const;
 
+    /// The gradients at the input sets (c, G) of a loss with the gradients grad_c (B, m), grad_gen
+    /// (B, q + errors, m), grad_dr (B, m) at the output of evaluate_zonotope_batch (CORA's
+    /// backpropZonotopeBatch). exact: through the lines' bounds, else the lines are held.
+    ZonotopeBatch backprop_zonotope_batch(const Tensor &c, const Tensor &G, const Tensor &grad_c,
+                                          const Tensor &grad_gen, const Tensor &grad_dr = Tensor(),
+                                          const ZonotopeBatchOptions &options = {},
+                                          bool exact = false) const;
+
     /// The gradient of the loss at the input (B, in) for the loss's gradient grad_out (B, out) at
     /// the output of the network at the points x (B, in) (CORA's backprop; the weights are not
     /// updated). A chain of any layers but a product.
@@ -497,6 +517,23 @@ class NeuralNetwork {
     /// The network needs to be a chain of dense layers or convolutions (normal_form).
     Explanation explain(const Tensor &x, int64_t label, double epsilon,
                         const ExplainOptions &options = {}) const;
+
+    // The weights ------------------------------------------------------------------------------
+
+    /// The network with the weights of the dense layers `which` (empty: all) drawn again, and
+    /// their biases 0 (CORA's initWeights): "glorot" uniform in +-1 / sqrt(inputs), "shi" normal
+    /// with the standard deviation sqrt(2 pi) / inputs. Other layers keep their weights.
+    NeuralNetwork init_weights(const std::string &method = "glorot", uint64_t seed = 1,
+                               const std::vector<int64_t> &which = {}) const;
+
+    /// The network with every weight in the dtype, on the device (empty: where it is), CORA's
+    /// castWeights. The copy of a network (CORA's copyNeuralNetwork) is the copy constructor.
+    NeuralNetwork to(DType dtype, const std::string &device = "") const;
+
+    /// The orders of the refinable layers' neurons (CORA's getOrderPattern); orders are indexed by
+    /// layer as NnOptions::orders, and without them every order is 1 (resetApproxOrder).
+    std::vector<std::vector<int>>
+    order_pattern(const std::vector<std::vector<int>> &orders = {}) const;
 
     /// The layers that refine can raise: those with an activation other than the identity (CORA's
     /// getRefinableLayers), as indices into layers().

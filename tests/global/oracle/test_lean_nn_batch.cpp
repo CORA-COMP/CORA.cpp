@@ -3,11 +3,16 @@
 // ORACLE: nn/@neuralNetwork/evaluateZonotopeBatch.m
 // ORACLE: nn/layers/linear/nnConv2DLayer.m
 // ORACLE: nn/layers/nonlinear/nnSquareLayer.m
+// ORACLE: nn/layers/linear/nnConvTranspose2DLayer.m
+// ORACLE: nn/layers/other/nnReshapeLayer.m
+// ORACLE: nn/layers/nnLayer.m
 //
 // The oracle's neuralNetwork.evaluate at poly_method "singh" on a zonotope, with the layer kinds
 // linear, conv, relu, sign and square: the batch of one zonotope through the network (an error
 // generator per neuron of every activation layer, in the order of the neurons) has the oracle's
-// center and generators, without the zero generators that the oracle's linear layers add.
+// center and generators, without the zero generators that the oracle's linear layers add. A
+// ConvTranspose of stride 1 is the conv kind with the flipped kernel and the pads k - 1 - p, a
+// reshape the linear kind of its permutation matrix.
 //
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
@@ -101,6 +106,39 @@ int main() {
         oracle::check("conv relu", aux_batch(cnn, X),
                       aux_without_bias(lean::evaluate_network(cl, lean::Zonotope(X), "singh"), 3,
                                        cl, {18, 18, 3}));
+        // a ConvTranspose (stride 1) is a padded convolution; small integers: the sums are exact
+        const auto whole = [](const Tensor &t) { return (t * 4.0).round(); };
+        const Zonotope T(whole(rnd.point(18)), whole(rnd.matrix(18, 3).matrix_transpose()));
+        const Tensor Kt = whole(rnd.matrix(2, 3 * 4)), bt = whole(rnd.point(48)),
+                     W5 = rnd.matrix(2, 48), b5 = rnd.point(2);
+        // the kernel flipped in both axes, its channel axes swapped
+        std::vector<double> flipped(3 * 2 * 4);
+        for (int64_t o = 0; o < 3; ++o)
+            for (int64_t i = 0; i < 2; ++i)
+                for (int64_t a = 0; a < 2; ++a)
+                    for (int64_t c = 0; c < 2; ++c)
+                        flipped[std::size_t(((o * 2 + i) * 2 + a) * 2 + c)] =
+                            Kt.data()[std::size_t(((i * 3 + o) * 2 + (1 - a)) * 2 + (1 - c))];
+        const NeuralNetwork ct(
+            {Layer::conv_transpose2d(Kt.reshape({2, 3, 2, 2}), bt, {3, 4, 4}, {}), {W5, b5}},
+            {Activation::relu, Activation::identity});
+        NeuralNetwork::Conv2d pad1;
+        pad1.pads = {1, 1, 1, 1};
+        const std::vector<lean::NnLayer> tl{
+            lean::NnLayer::conv(Tensor::from_data(flipped, {3, 2, 2, 2}), bt, {2, 3, 3}, pad1),
+            lean::NnLayer::relu(), lean::NnLayer::linear(W5, b5)};
+        oracle::check("convTranspose relu", aux_batch(ct, T),
+                      aux_without_bias(lean::evaluate_network(tl, lean::Zonotope(T), "singh"), 3,
+                                       tl, {48, 48, 2}));
+        // a reshape (a gather) is the linear layer of its permutation matrix
+        const Zonotope S(rnd.point(6) * 2.0, rnd.matrix(6, 3).matrix_transpose());
+        const Layer shuffle = Layer::gather({0, 3, 1, 4, 2, 5}, 6, Tensor::zeros({6}));
+        const NeuralNetwork rs({shuffle}, {Activation::relu});
+        const std::vector<lean::NnLayer> rl{
+            lean::NnLayer::linear(shuffle.dense(), Tensor::zeros({6})), lean::NnLayer::relu()};
+        oracle::check("reshape relu", aux_batch(rs, S),
+                      aux_without_bias(lean::evaluate_network(rl, lean::Zonotope(S), "singh"), 3,
+                                       rl, {6, 6}));
     });
     return test::finish("lean nn batch");
 }

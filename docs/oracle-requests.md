@@ -647,3 +647,15 @@ the standard method equal to the abstract one at the rate 1, and sampled soundne
 |---|---|---|
 | `neuralNetwork.explain` | `layers`, `x`, `label`, `epsilon`, `method`, `featOrder`, `refineSteps`, `outputThreshold` | the freed features, the order tried |
 | `neuralNetwork.fgsmAttack` | `layers`, `x`, `t`, `epsilon`, `mask` | the moved points `x - alpha sign(grad)` |
+
+## Zonotope batch gradients (PR "nn/port-rest-6", batch 6)
+
+`NeuralNetwork::backprop_zonotope_batch` has no op in the oracle (newest tag oracle-20261123-26a33fe5b):
+`neuralNetwork.backwardBound` is CROWN's bound, not a gradient of the output set, so it is tested by
+properties (the chain rule where all neurons are stable, central differences of the exact gradients, the
+held slopes by hand). The ConvTranspose layer is tested against the oracle's `conv` kind at stride 1
+(a convolution with the flipped kernel and the pads `k - 1 - p`).
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.backpropZonotopeBatch` | `layers`, `c`, `G`, `gc`, `gG`, `exact` | the gradients at the input's `c` and `G` |

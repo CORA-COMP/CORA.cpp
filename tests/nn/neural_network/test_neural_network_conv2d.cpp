@@ -7,6 +7,12 @@
 // up to rounding, and verify gives the same verdicts.
 //
 // CORA: nn/layers/linear/nnConv2DLayer.m
+// CORA: nn/layers/linear/nnConvTranspose2DLayer.m
+// CORA: nn/layers/other/nnReshapeLayer.m
+// CORA: nn/layers/nnLayer.m
+// PROPERTY: nn/layers/linear/nnConvTranspose2DLayer.m
+// PROPERTY: nn/layers/other/nnReshapeLayer.m
+// PROPERTY: nn/layers/nnLayer.m
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       22-November-2026
@@ -119,6 +125,70 @@ void layers(const std::string &b) {
               b + ": a gather refuses an index out of range");
 }
 
+/// A ConvTranspose by its definition: each input pixel scatters its kernel into the output.
+std::vector<double> aux_scatter(const std::vector<double> &x, int64_t N,
+                                const std::vector<double> &k, int64_t cin, int64_t Hi, int64_t Wi,
+                                int64_t cout, int64_t kh, int64_t kw, int64_t H, int64_t W,
+                                const NeuralNetwork::Conv2d &s) {
+    const int64_t cg = cin / s.groups, og = cout / s.groups;
+    std::vector<double> y(static_cast<std::size_t>(N * cout * H * W), 0.0);
+    for (int64_t r = 0; r < N; ++r)
+        for (int64_t i = 0; i < cin; ++i)
+            for (int64_t ih = 0; ih < Hi; ++ih)
+                for (int64_t iw = 0; iw < Wi; ++iw)
+                    for (int64_t o = 0; o < og; ++o)
+                        for (int64_t a = 0; a < kh; ++a)
+                            for (int64_t c = 0; c < kw; ++c) {
+                                // the output pixel and channel this tap lands on
+                                const int64_t oh = ih * s.stride[0] - s.pads[0] + a * s.dilation[0];
+                                const int64_t ow = iw * s.stride[1] - s.pads[1] + c * s.dilation[1];
+                                if (oh < 0 || oh >= H || ow < 0 || ow >= W) continue;
+                                const int64_t oc = (i / cg) * og + o;
+                                y[std::size_t(((r * cout + oc) * H + oh) * W + ow)] +=
+                                    x[std::size_t(((r * cin + i) * Hi + ih) * Wi + iw)] *
+                                    k[std::size_t(((i * og + o) * kh + a) * kw + c)];
+                            }
+    return y;
+}
+
+/// A ConvTranspose is the scatter of its definition, its transpose the convolution's rows, and a
+/// reshape (a gather) moves entries and its gradient moves them back.
+void transposed_and_reshape(const std::string &b) {
+    Rng rng(11);
+    NeuralNetwork::Conv2d spec;
+    spec.stride = {2, 1};
+    spec.dilation = {1, 2};
+    spec.pads = {1, 0, 0, 1};
+    spec.groups = 2;
+    const int64_t cin = 4, cout = 6, kh = 3, kw = 2, H = 7, W = 6;
+    const Tensor kernel = aux_random(rng, {cin, cout / 2, kh, kw}, 1.0);
+    const NeuralNetwork::Layer L = NeuralNetwork::Layer::conv_transpose2d(
+        kernel, Tensor::zeros({cout * H * W}), {cout, H, W}, spec);
+    // the input is the output of the convolution this one inverts
+    const int64_t Hi =
+        (H + spec.pads[0] + spec.pads[2] - spec.dilation[0] * (kh - 1) - 1) / spec.stride[0] + 1;
+    const int64_t Wi =
+        (W + spec.pads[1] + spec.pads[3] - spec.dilation[1] * (kw - 1) - 1) / spec.stride[1] + 1;
+    check(L.inputs() == cin * Hi * Wi && L.outputs() == cout * H * W,
+          b + ": the ConvTranspose's sizes");
+    const Tensor x = aux_random(rng, {3, L.inputs()}, 1.0);
+    check(aux_gap(L.rows(x), Tensor::from_data(aux_scatter(x.data(), 3, kernel.data(), cin, Hi, Wi,
+                                                           cout, kh, kw, H, W, spec),
+                                               {3, L.outputs()})) < 1e-12,
+          b + ": the ConvTranspose's rows are its definition");
+    const Tensor M = L.dense(), y = aux_random(rng, {2, 4, L.outputs()}, 1.0);
+    check(aux_gap(L.rows_t(y), y.matmul(M)) < 1e-12 &&
+              aux_gap(L.abs_rows(x), x.matmul(M.abs().matrix_transpose())) < 1e-12,
+          b + ": the ConvTranspose's transpose and absolute value");
+    // a reshape of a 2 x 3 matrix to its transpose: a gather; its gradient is the inverse
+    const NeuralNetwork::Layer R =
+        NeuralNetwork::Layer::gather({0, 3, 1, 4, 2, 5}, 6, Tensor::zeros({6}));
+    const Tensor v({{0.0, 1.0, 2.0, 3.0, 4.0, 5.0}});
+    check(aux_gap(R.rows(v), Tensor({{0.0, 3.0, 1.0, 4.0, 2.0, 5.0}})) == 0 &&
+              aux_gap(R.rows_t(R.rows(v)), v) == 0,
+          b + ": a reshape moves the entries, its gradient moves them back");
+}
+
 /// A small convolutional network and the same network of dense layers.
 std::pair<NeuralNetwork, NeuralNetwork> aux_networks(Rng &rng) {
     NeuralNetwork::Conv2d spec;
@@ -210,6 +280,7 @@ void networks(const std::string &b) {
 int main() {
     test::for_each_backend([](const std::string &b) {
         layers(b);
+        transposed_and_reshape(b);
         networks(b);
     });
     // the same with the checks off

@@ -11,7 +11,17 @@ Reviewed:      ---
 # CORA: nn/@neuralNetwork/nonlinearSysDT.m
 # CORA: nn/@neuralNetwork/explain.m
 # CORA: nn/@neuralNetwork/computeFGSMAttack.m
+# CORA: nn/@neuralNetwork/backpropZonotopeBatch.m
+# CORA: nn/@neuralNetwork/backpropZonotopeBatch_.m
+# CORA: nn/layers/nonlinear/@nnActivationLayer/backpropZonotopeBatch.m
+# CORA: nn/@neuralNetwork/generateRandom.m
+# CORA: nn/@neuralNetwork/initWeights.m
+# CORA: nn/@neuralNetwork/castWeights.m
+# CORA: nn/@neuralNetwork/copyNeuralNetwork.m
+# CORA: nn/@neuralNetwork/getOrderPattern.m
+# CORA: nn/@neuralNetwork/resetApproxOrder.m
 
+import copy
 import unittest
 
 import cora
@@ -83,6 +93,25 @@ class SetEvaluation(unittest.TestCase):
         np.testing.assert_allclose(z, [[0.75, 1.0, 0.75]])
         with self.assertRaisesRegex(Exception, "class below"):
             nn.explain(x, 5, 1.2)
+
+    # the gradients of a loss at batched zonotopes, a random network, drawn weights and a cast
+    def test_batch_backprop_and_utilities(self):
+        nn = cora.NeuralNetwork.random(inputs=3, outputs=2, layers=2, hidden=4, activation="tanh")
+        self.assertEqual(len(nn.order_pattern()), 2)
+        c = np.array([[0.1, -0.2, 0.3]])
+        G = 0.05 * np.ones((1, 3, 3))
+        yc, yG, _ = nn.evaluate_zonotope_batch(c, G)
+        gc, gG = nn.backprop_zonotope_batch(c, G, np.ones_like(yc), np.ones_like(yG), exact=True)
+        self.assertEqual((np.asarray(gc).shape, np.asarray(gG).shape), ((1, 3), (1, 3, 3)))
+        fresh = nn.init_weights("glorot", 2)
+        self.assertEqual(fresh.input_dim, nn.input_dim)
+        self.assertFalse(np.allclose(fresh.evaluate(c), nn.evaluate(c)))
+        copied = copy.copy(nn)
+        np.testing.assert_allclose(copied.evaluate(c), nn.evaluate(c))
+        single = nn.to("float32")
+        self.assertEqual(single.input_dim, nn.input_dim)
+        with self.assertRaisesRegex(Exception, "dtype"):
+            nn.to("float16")
 
 
 if __name__ == "__main__":
