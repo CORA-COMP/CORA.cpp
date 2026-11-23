@@ -38,6 +38,14 @@ struct PrivLine {
     Tensor slope, offset, radius;
 };
 
+/// The value of an activation at z and its derivative there (neuron by neuron).
+struct PrivDerivative {
+    Tensor value, derivative;
+};
+
+/// The activation at z and its derivative (CORA's getDf(1)); a group sort or a product has none.
+PrivDerivative priv_activation_derivative(Activation activation, const Tensor &z);
+
 /// The rows of a set that goes through the layers: the center, the dependent generators, the mask
 /// of those with only even exponents (1, h), the independent generators. Tracked rows also hold
 /// the exponents, the factors' identifiers, and the input column of each independent generator.

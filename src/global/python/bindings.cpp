@@ -4563,6 +4563,7 @@ NnOptions nn_options_of(const py::kwargs &kwargs) {
     read("max_gens_post", options.max_gens_post);
     read("do_pre_order_reduction", options.do_pre_order_reduction);
     read("use_approx_error", options.use_approx_error);
+    read("bound_approx", options.bound_approx);
     if (kwargs.contains("remove_gi") && !kwargs["remove_gi"].is_none())
         options.remove_gi = py::cast<bool>(kwargs["remove_gi"]);
     if (kwargs.contains("poly_method"))
@@ -4696,6 +4697,39 @@ NeuralNetwork::Layer aux_nn_map(const py::object &layer) {
 }
 
 void bind_neural_network(py::module_ &m) {
+    // the network as a discrete-time system, then the network itself
+    py::class_<NetworkSystemDT>(m, "NetworkSystemDT",
+                                "A network as a discrete-time system (CORA's nonlinearSysDT).")
+        .def_property_readonly("num_states", &NetworkSystemDT::num_states, "The state dimension")
+        .def_property_readonly("num_inputs", &NetworkSystemDT::num_inputs,
+                               "The number of offsets u: one per neuron of every layer")
+        .def_property_readonly("num_outputs", &NetworkSystemDT::num_outputs, "The outputs")
+        // the state, the output and the Jacobians
+        .def(
+            "next_state",
+            [](const NetworkSystemDT &sys, const py::object &x, const py::object &u) {
+                return values(sys.next_state(point_of(x, "x"), point_of(u, "u")));
+            },
+            py::arg("x"), py::arg("u"), "The next state: x")
+        .def(
+            "output",
+            [](const NetworkSystemDT &sys, const py::object &x, const py::object &u) {
+                return values(sys.output(point_of(x, "x"), point_of(u, "u")));
+            },
+            py::arg("x"), py::arg("u"), "The output y = f(x, u)")
+        // C and D
+        .def(
+            "output_jacobian_x",
+            [](const NetworkSystemDT &sys, const py::object &x) {
+                return matrix(sys.output_jacobian_x(point_of(x, "x")));
+            },
+            py::arg("x"), "C = dy / dx")
+        .def(
+            "output_jacobian_u",
+            [](const NetworkSystemDT &sys, const py::object &x, const py::object &u) {
+                return matrix(sys.output_jacobian_u(point_of(x, "x"), point_of(u, "u")));
+            },
+            py::arg("x"), py::arg("u"), "D = dy / du");
     // the network: layers, activations, and the evaluation on points and sets
     py::class_<NeuralNetwork>(m, "NeuralNetwork",
                               "Affine layers with an activation after each (a ReLU after each "
@@ -4741,6 +4775,9 @@ void bind_neural_network(py::module_ &m) {
                     return py::cast(nn.evaluate(py::cast<Zonotope>(x), nn_options_of(kwargs)));
                 if (py::isinstance<PolyZonotope>(x))
                     return py::cast(nn.evaluate(py::cast<PolyZonotope>(x), nn_options_of(kwargs)));
+                if (py::isinstance<ConZonotope>(x))
+                    return py::cast(
+                        nn.evaluate_con_zonotope(py::cast<ConZonotope>(x), nn_options_of(kwargs)));
                 // the points one per row (N, in), or one point (in)
                 const Tensor points = point_of(x, "the points");
                 if (points.ndim() == 1)
@@ -4754,7 +4791,17 @@ void bind_neural_network(py::module_ &m) {
             "'bernstein', 'taylor', 'bounds', 'throw-catch'), regression_error ('extremum' or "
             "'bracket'), add_approx_error_to_gi, and for a polynomial zonotope orders (per layer: "
             "None, an int, or a list with one int per neuron), num_generators, max_gens_post, "
-            "do_pre_order_reduction, remove_gi, use_approx_error")
+            "do_pre_order_reduction, remove_gi, use_approx_error; for a constrained zonotope "
+            "(identity and ReLU layers) bound_approx")
+        // the network on Taylor models
+        .def(
+            "evaluate_taylm",
+            [](const NeuralNetwork &nn, const std::vector<Taylm> &x, const py::kwargs &kwargs) {
+                return nn.evaluate_taylm(x, nn_options_of(kwargs));
+            },
+            py::arg("x"),
+            "CORA's evaluateTaylm: the outputs of the network on one Taylor model per input. "
+            "Keywords: poly_method ('singh', 'regression'), orders (per layer)")
         // the Jacobian at a point
         .def(
             "sensitivity",
@@ -4763,6 +4810,9 @@ void bind_neural_network(py::module_ &m) {
                 return matrix(nn.sensitivity(point.reshape({point.numel()})));
             },
             py::arg("x"), "The Jacobian (out, in) of the network at the point x (in,)")
+        .def("nonlinear_sys_dt", &NeuralNetwork::nonlinear_sys_dt,
+             "CORA's nonlinearSysDT: the network as a discrete-time system (state x, output "
+             "y = f(x, u) with one offset per layer neuron)")
         // CORA's exp, softmax and max-pool layers, as the networks of their blocks
         .def_static(
             "exp_layer", [](int64_t n) { return NeuralNetwork(NeuralNetwork::exp_layer(n)); },

@@ -38,6 +38,9 @@
 // CORA: nn/layers/nonlinear/nnMaxPool2DLayer.m
 // CORA: nn/@neuralNetwork/evaluateZonotopeBatch.m
 // CORA: nn/@neuralNetwork/backprop.m
+// CORA: nn/@neuralNetwork/nonlinearSysDT.m
+// CORA: nn/layers/nonlinear/@nnActivationLayer/evaluateTaylm.m
+// CORA: nn/layers/nonlinear/@nnActivationLayer/evaluateConZonotope.m
 // CORA: nn/@neuralNetwork/backpropIntervalBatch.m
 // CORA: nn/@neuralNetwork/propagateBounds.m
 // CORA: nn/@neuralNetwork/getInputNeuronOrder.m
@@ -51,7 +54,9 @@
 
 #pragma once
 
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/taylm/taylm.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/nn/neural_network/verify.h"
 
@@ -142,6 +147,9 @@ struct NnOptions {
     std::optional<bool> remove_gi = std::nullopt;
     /// Whether the errors of the activations are added to the set (CORA's use_approx_error).
     bool use_approx_error = true;
+    /// Whether a constrained zonotope's neuron bounds come from the box of its factors instead of
+    /// two linear programs (CORA's options.nn.bound_approx).
+    bool bound_approx = true;
 };
 
 // The refinement ----------------------------------------------------------------------------------
@@ -202,6 +210,7 @@ struct ReduceOptions {
 };
 
 struct ReducedNetwork;
+class NetworkSystemDT;
 
 // The network -------------------------------------------------------------------------------------
 
@@ -398,6 +407,15 @@ class NeuralNetwork {
     /// are exact linear images in them, and the errors of the activations are added by options.
     PolyZonotope evaluate_with_input(const PolyZonotope &X, const NnOptions &options = {}) const;
 
+    /// The outputs on Taylor models, one per input (CORA's evaluateTaylm): per neuron the
+    /// polynomial of poly_method and orders over its bounds, the error as the remainder. A chain.
+    std::vector<Taylm> evaluate_taylm(const std::vector<Taylm> &x,
+                                      const NnOptions &options = {}) const;
+
+    /// A constrained zonotope that contains the outputs of every point of X (CORA's
+    /// evaluateConZonotope): a chain of identity and ReLU layers, an unstable ReLU a new factor.
+    ConZonotope evaluate_con_zonotope(const ConZonotope &X, const NnOptions &options = {}) const;
+
     /// A batch of zonotopes through the network, an activation by its line (CORA's
     /// evaluateZonotopeBatch): the sets (B, n) and (B, q, n), a graph or a chain, any layer.
     ZonotopeBatch evaluate_zonotope_batch(const Tensor &c, const Tensor &G,
@@ -454,6 +472,9 @@ class NeuralNetwork {
     /// calcSensitivity of one point, whose mean(abs(S), 1) is the sensitivity of each input).
     Tensor sensitivity(const Tensor &x) const;
 
+    /// The network as a discrete-time system (CORA's nonlinearSysDT): see NetworkSystemDT.
+    NetworkSystemDT nonlinear_sys_dt() const;
+
     /// CORA's verify of a VNN-COMP property within timeout seconds: "sat" with a counterexample
     /// that confirm accepts (unset: the float64 output check), "unsat" or "unknown" (verify.h).
     NnVerifyResult verify(const NnProperty &property, double timeout,
@@ -472,6 +493,34 @@ struct ReducedNetwork {
     std::vector<Tensor> offset_center, offset_radius, merged;
     std::vector<double> reduction_rate;
     Zonotope output;
+};
+
+// The system --------------------------------------------------------------------------------------
+
+/// CORA's nonlinearSysDT of a network: the state x stays, the output is y = f(x, u) with an offset
+/// u_k added to the bias of each layer k (nonlinear_sys_dt.cpp), and C = dy / dx, D = dy / du.
+class NetworkSystemDT {
+  public:
+    explicit NetworkSystemDT(NeuralNetwork net);
+
+    int64_t num_states() const { return net_.input_dim(); }
+    int64_t num_inputs() const { return num_inputs_; }
+    int64_t num_outputs() const { return net_.output_dim(); }
+    const NeuralNetwork &network() const { return net_; }
+
+    /// The next state: the state x (CORA's `@(x, u) x`, step size 1).
+    Tensor next_state(const Tensor &x, const Tensor &u) const;
+    /// The output y = f(x, u) (out) of the state x (in) and the offsets u.
+    Tensor output(const Tensor &x, const Tensor &u) const;
+    /// C = dy / dx (out, in), the network's Jacobian at x.
+    Tensor output_jacobian_x(const Tensor &x) const;
+    /// D = dy / du (out, inputs): the block of layer k is the Jacobian of the output by that
+    /// layer's pre-activation.
+    Tensor output_jacobian_u(const Tensor &x, const Tensor &u) const;
+
+  private:
+    NeuralNetwork net_;
+    int64_t num_inputs_ = 0;
 };
 
 } // namespace cora
