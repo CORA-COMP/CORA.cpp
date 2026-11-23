@@ -24,6 +24,8 @@ Reviewed:      ---
 # CORA: nn/layers/nonlinear/@nnActivationLayer/getMergeBuckets.m
 # CORA: nn/@neuralNetwork/computeReducedNetwork.m
 # CORA: nn/layers/nonlinear/@nnActivationLayer/findRegionPolys.m
+# CORA: nn/layers/nonlinear/nnSquareLayer.m
+# CORA: nn/layers/linear/nnConv2DLayer.m
 
 import unittest
 
@@ -114,6 +116,18 @@ class NonlinearLayers(unittest.TestCase):
         np.testing.assert_allclose(joined.evaluate(x), np.concatenate([np.exp(x), x]))
         with self.assertRaises(ValueError):
             cora.NeuralNetwork.composite_layer([branch], "mean", 3)
+
+    def test_square_and_conv(self):
+        # x^2 on points, and a 1 x 1 convolution (channels 1 to 2) of a 1 x 2 x 2 image
+        x = np.array([0.5, -2.0])
+        np.testing.assert_allclose(
+            cora.NeuralNetwork([([[1.0, 0.0], [0.0, 1.0]], [0.0, 0.0])], ["square"]).evaluate(x),
+            x ** 2)
+        kernel = np.array([2.0, -1.0]).reshape(2, 1, 1, 1)
+        conv = cora.NeuralNetwork([{"conv2d": kernel, "bias": np.zeros(8), "input": [1, 2, 2]}],
+                                  ["identity"])
+        img = np.array([1.0, 2.0, 3.0, 4.0])
+        np.testing.assert_allclose(conv.evaluate(img), np.concatenate([2 * img, -img]))
 
     def test_reduction(self):
         # the generator reduction keeps the shortest and boxes the rest
