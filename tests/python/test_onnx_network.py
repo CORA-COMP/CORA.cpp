@@ -5,7 +5,7 @@ equals onnxruntime's (float32) to float32 accuracy; a chain of affine maps and a
 to dense layers whose network equals the graph in float64, and a plain Gemm keeps its weights bit
 for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
 folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
-padded max pool and a quotient of two values do not lower and say why; a batch norm of features
+padded max pool and a quotient that broadcasts its dividend do not lower and say why; a batch norm of features
 and a slice of the input concatenated with a branch lower; a product of two values lowers to a
 product layer, and a ReduceSum, a difference of branches and scalings lower; a Gemm or a MatMul
 of a row and a constant matrix takes the weights themselves, far below the identity's memory; the
@@ -96,8 +96,9 @@ class Lowering(unittest.TestCase):
         np.testing.assert_allclose(np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12)
 
     def test_what_does_not_lower(self):
-        # a quotient of two values and a padded max pool, each with the reason
-        for m, reason in ((quotient_net(), "Div joins two branches"), (maxpool_net(pads=1), "MaxPool")):
+        # a padded max pool and a quotient that broadcasts its dividend, each with the reason
+        for m, reason in ((maxpool_net(pads=1), "MaxPool"),
+                          (quotient_net(broadcast=True), "broadcasts the dividend")):
             nn, why = OnnxNetwork(m).to_neural_network()
             self.assertIsNone(nn)
             self.assertIn(reason, why)
@@ -268,11 +269,17 @@ class Lowering(unittest.TestCase):
         x = torch.as_tensor(RNG.uniform(-3, 3, (20, 2)))
         np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
                                    net(x).numpy(), rtol=1e-9, atol=1e-9)
-        # Pow of another exponent runs, but does not lower
+        # Pow(x, 3) a cube layer; Pow of another exponent runs, but does not lower
         init["two"] = np.array(3.0, np.float32)
         cube = OnnxNetwork(model(nodes, [("x", [1, 2])], [("y", [1, 3])], init), dtype=torch.float64)
-        np.testing.assert_allclose(cube(x).numpy(), net(x).numpy() ** 1.5, rtol=1e-9)
-        self.assertIsNone(cube.layers()[0])
+        (layers, acts), _ = cube.layers()
+        self.assertIn("cube", acts)
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
+                                   net(x).numpy() ** 1.5, rtol=1e-9, atol=1e-9)
+        init["two"] = np.array(1.5, np.float32)
+        other = OnnxNetwork(model(nodes, [("x", [1, 2])], [("y", [1, 3])], init), dtype=torch.float64)
+        np.testing.assert_allclose(other(x).numpy(), net(x).numpy() ** 0.75, rtol=1e-9)
+        self.assertIsNone(other.layers()[0])
 
     def test_signs_and_an_output_softmax(self):
         # a binarized network: sign layers; its output Softmax dropped, the logits equal the graph's
@@ -348,6 +355,23 @@ class Lowering(unittest.TestCase):
         self.assertIsNone(why)
         np.testing.assert_allclose(np.asarray(nn.evaluate(torch.as_tensor(x))), expected, rtol=1e-5,
                                    atol=1e-5)
+
+    def test_quotients_and_an_input_without_batch(self):
+        # pensieve_parallel's input without a batch axis and relu^3 / sum relu^3; x / (relu + 1)
+        for m in (pensieve_parallel_net(), quotient_net()):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            (layers, acts), why = net.layers()
+            self.assertIsNone(why)
+            self.assertIn("inverse", acts)
+            x = RNG.uniform(0.1, 1, (6, net.num_inputs))
+            expected = onnxruntime_rows(m, x.astype(np.float32))
+            got = np.asarray(cora.NeuralNetwork(layers, acts).evaluate(torch.as_tensor(x)))
+            np.testing.assert_allclose(got, net(torch.as_tensor(x)).numpy(), rtol=1e-12, atol=1e-12)
+            np.testing.assert_allclose(got, expected, rtol=1e-5, atol=1e-5)
+        self.assertIn("cube", OnnxNetwork(pensieve_parallel_net()).layers()[0][1])
+        # an input without a batch axis read by another operator does not lower
+        bad = pensieve_parallel_net(reshape=False)
+        self.assertIn("without a batch axis", OnnxNetwork(bad).layers()[1])
 
     def test_columns_and_thresholds(self):
         # ml4acopf: a column C x^T, a ReLU sum over thresholds; a column into a join refuses
@@ -694,16 +718,48 @@ def sign_net():
     return model(nodes, [("x", [1, 3])], [("y", [1, 2])], init)
 
 
-def quotient_net():
-    """A quotient of two values, which is no affine map: y = x / (relu(W1 x) + 1)."""
+def quotient_net(broadcast=False):
+    """A quotient of two values: y = x / (relu(W1 x) + 1); with broadcast, the dividend the first
+    entry of x (1, 1) against the divisor's three."""
     nodes = [
         helper.make_node("MatMul", ["x", "W1"], ["h"]),
         helper.make_node("Relu", ["h"], ["r"]),
         helper.make_node("Add", ["r", "one"], ["d"]),
-        helper.make_node("Div", ["x", "d"], ["y"]),
     ]
+    if broadcast:
+        nodes += [helper.make_node("Slice", ["x", "s0", "s1", "ax1"], ["x0"]),
+                  helper.make_node("Div", ["x0", "d"], ["y"])]
+    else:
+        nodes += [helper.make_node("Div", ["x", "d"], ["y"])]
     init = {"W1": weight(3, 3), "one": np.ones((1, 3), np.float32)}
+    if broadcast:
+        init |= {"s0": np.array([0], np.int64), "s1": np.array([1], np.int64),
+                 "ax1": np.array([1], np.int64)}
     return model(nodes, [("x", [1, 3])], [("y", [1, 3])], init)
+
+
+def pensieve_parallel_net(reshape=True):
+    """nn4sys' pensieve_parallel on an input (2, 4) without a batch axis: Reshape to (1, 2, 4),
+    each row through a Gemm and a ReLU, cubed and divided by the cubes' sum (Pow, ReduceSum, Div),
+    the difference of the two rows' weighted means."""
+    nodes = [helper.make_node("Reshape", ["x", "shape"], ["xr"])] if reshape else [
+        helper.make_node("Unsqueeze", ["x"], ["xr"], axes=[0])]
+    for i in range(2):
+        nodes += [
+            helper.make_node("Gather", ["xr", f"i{i}"], [f"r{i}"], axis=1),
+            helper.make_node("Gemm", [f"r{i}", "W", "b"], [f"h{i}"], transB=1),
+            helper.make_node("Relu", [f"h{i}"], [f"a{i}"]),
+            helper.make_node("Pow", [f"a{i}", "three"], [f"p{i}"]),
+            helper.make_node("ReduceSum", [f"p{i}"], [f"s{i}"], axes=[1], keepdims=1),
+            helper.make_node("Div", [f"p{i}", f"s{i}"], [f"q{i}"]),
+            helper.make_node("MatMul", [f"q{i}", "v"], [f"m{i}"]),
+        ]
+    nodes += [helper.make_node("Sub", ["m0", "m1"], ["y"])]
+    init = {"shape": np.array([-1, 2, 4], np.int64),
+            "i0": np.array(0, np.int64), "i1": np.array(1, np.int64), "W": np.abs(weight(3, 4)) + 0.1,
+            "b": np.abs(weight(3)) + 0.5, "three": np.array(3.0, np.float32),
+            "v": np.array([[1.0], [2.0], [4.0]], np.float32)}
+    return model(nodes, [("x", [2, 4])], [("y", [1, 1])], init, opset=11)
 
 
 def lyapunov_net():

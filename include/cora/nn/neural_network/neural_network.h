@@ -50,9 +50,9 @@ namespace cora {
 
 // The options -------------------------------------------------------------------------------------
 
-/// The function applied to the output of a layer: square x^2, sign -1, 0, 1, reciprocal
-/// 1 / max(x, 1) (a softmax is 1 / sum_j exp(x_j - x_i)), product [a o b; 0] of the output's halves
-/// [a; b] (verify only), floor the largest integer at most x (ml4acopf's turns).
+/// A layer's function: square x^2, sign, reciprocal 1 / max(x, 1) (a softmax's sums), product [a o
+/// b; 0] of the halves [a; b] (verify only), floor, cube x^3, inverse 1 / x (verify: x > 0 only, a
+/// bound l <= 0 is out of range; nn4sys' x^3 / sum x^3).
 enum class Activation {
     identity,
     relu,
@@ -63,7 +63,9 @@ enum class Activation {
     exp,
     reciprocal,
     product,
-    floor
+    floor,
+    cube,
+    inverse
 };
 
 /// The polynomial over a neuron's range (CORA's poly_method): at order 1 singh or regression; of

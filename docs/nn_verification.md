@@ -116,8 +116,16 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   products and the softmax's lines are far too loose to verify yet.
 - **nn4sys (Phase 4).** A Gather's negative index counts from the end (pensieve's last entry of a
   row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
-  output to 6e-7. Not yet: pensieve_parallel (a cube by Pow, a quotient of two values) and mscn
-  (Split, products of values with the inputs' masks, a quotient by their sum).
+  output to 6e-7. pensieve_parallel's input `[12, 8]` has no batch axis: only a Reshape to a batch
+  of 1 may read it. Its `x^3 / sum x^3` lowers as `Activation::cube` (Pow(x, 3)), the sum to
+  `Activation::inverse` (`1 / x`, verify only for `x > 0`: a bound `l <= 0` is out of range, and that
+  batch stays open), and a product layer of the cubes and the broadcast inverse. The lines (CORA.cpp
+  only): x^3 the chord's slope `l^2 + l u + u^2` with the range of `x^3 - m x` at the ends and at
+  `+-sqrt(m / 3)`, `1 / x` the chord's slope `-1 / (l u)` with the convex `1 / x - m x` least at
+  `sqrt(l u)`, both widened by the rounding. A cube or an inverse layer that reads a ReLU, cube or
+  exp layer alone also bounds its input by the image of that layer's box, so the sums of cubes of
+  ReLUs stay at least the cubes of the ReLUs' lower bounds. Both pensieve_parallel networks lower
+  and equal the float64 graph to 1e-13 (onnxruntime's float32 to 3e-5).
   lindex's properties have thousands of cases, each a small box with its own two polytopes.
   The attack's loss and gradient take each row's margins over its own case's polytopes only
   (`NnProblem` per case, when the most polytopes of a case times the outputs is below all of

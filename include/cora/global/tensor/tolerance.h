@@ -124,6 +124,7 @@ inline constexpr double kFradSmoothing = 1e-12;    ///< verify: keeps the F-radi
 inline constexpr double kAdamEpsilon = 1e-8;       ///< verify: Adam's floor of the step's root
 inline constexpr double kHeuristicGradient = 1e-3; ///< verify: CORA's offset of a gradient score
 inline constexpr double kVerifiedMargin = 1e-4;    ///< verify: float32 network vs float64 enclosure
+inline constexpr double kInverseFloor = 1e-12;     ///< verify: a heuristic's least input of 1 / x
 
 // Powers and pieces -------------------------------------------------------------------------------
 

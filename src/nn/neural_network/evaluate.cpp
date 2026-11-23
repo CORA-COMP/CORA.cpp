@@ -104,6 +104,11 @@ Tensor aux_apply(Activation activation, const Tensor &x, int axis = -1) {
         return x.sign();
     case Activation::floor:
         return x.floor();
+    // nn4sys' x^3 / sum x^3: x^3 and 1 / x
+    case Activation::cube:
+        return x.square().multiply(x);
+    case Activation::inverse:
+        return x.ones_like().divide(x);
     // a softmax's parts
     case Activation::exp:
         return x.exp();
@@ -167,6 +172,11 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         return priv_sign_line(l, u);
     case Activation::floor:
         return priv_floor_line(l, u);
+    // x^3 and 1 / x (nn4sys)
+    case Activation::cube:
+        return priv_cube_line(l, u);
+    case Activation::inverse:
+        return priv_inverse_line(l, u);
     case Activation::exp:
         return priv_exp_line(l, u);
     case Activation::reciprocal:
@@ -299,8 +309,9 @@ Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u
 
 /// The line of the activation over [l, u] by the method.
 Line aux_line(Activation activation, const Tensor &l, const Tensor &u, const NnOptions &options) {
-    // exp and the reciprocal have one line in every method
+    // exp, the reciprocals and x^3 have one line in every method
     if (activation == Activation::exp || activation == Activation::reciprocal ||
+        activation == Activation::cube || activation == Activation::inverse ||
         options.poly_method == PolyMethod::singh)
         return aux_line_singh(activation, l, u);
     if (options.poly_method == PolyMethod::regression)
@@ -663,6 +674,11 @@ Tensor priv_derivative(Activation activation, const Tensor &x) {
     case Activation::sign:
     case Activation::floor:
         return x.zeros_like();
+    // 3 x^2 and -1 / x^2
+    case Activation::cube:
+        return x.square() * 3.0;
+    case Activation::inverse:
+        return x.ones_like().divide(x).square().negative();
     case Activation::exp:
         return x.exp();
     case Activation::reciprocal: {
@@ -770,7 +786,23 @@ PrivLine priv_reciprocal_line(const Tensor &l, const Tensor &u) {
     return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big * (16.0 * machine_eps(l.dtype()))};
 }
 
-// The lines of sign and the square ----------------------------------------------------------------
+PrivLine priv_inverse_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    // 1 / x for x > 0 only: a bound at or below 0 (or NaN) has no line
+    const Tensor positive = l.zeros_like().less(l);
+    if (positive.numel() > 0 && positive.reshape({positive.numel()}).min(0).item() < 1)
+        CORA_FAIL(Error::special_error, kOutOfRangeMessage);
+    const Tensor one = l.ones_like(), il = one.divide(l), iu = one.divide(u);
+    // the chord's slope -1 / (l u); 1 / x - m x is convex: largest at l or u, least at sqrt(l u)
+    const Tensor m = il.multiply(iu).negative();
+    priv_check_finite(il, m);
+    const auto g = [&](const Tensor &x) { return one.divide(x) - m.multiply(x); };
+    const Tensor hi = g(l).maximum(g(u)), lo = g(l.sqrt().multiply(u.sqrt()).maximum(l).minimum(u));
+    // the radius widened by the rounding (16 ulps of the largest term, 1 / l + |m| u = 2 / l)
+    return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + il * (32.0 * machine_eps(l.dtype()))};
+}
+
+// The lines of sign, the square and the cube ------------------------------------------------------
 
 PrivLine priv_sign_line(const Tensor &l, const Tensor &u) {
     detail::Entry entry;
@@ -795,6 +827,22 @@ PrivLine priv_square_line(const Tensor &l, const Tensor &u) {
     const Tensor big = l.square().maximum(u.square());
     const Tensor radius = (u - l).square() * 0.125 + big * (8.0 * machine_eps(l.dtype()));
     return {slope, offset, radius};
+}
+
+PrivLine priv_cube_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    const Tensor big = l.abs().maximum(u.abs()), big3 = big.square().multiply(big);
+    priv_check_finite(big3, big3);
+    // the chord's slope; x^3 - m x is extreme at the ends and at +-sqrt(m / 3) clamped into [l, u]
+    const Tensor m = (l.square() + l.multiply(u)) + u.square();
+    const auto g = [&](const Tensor &x) { return x.square().multiply(x) - m.multiply(x); };
+    const Tensor s = (m * (1.0 / 3.0)).sqrt();
+    const Tensor gl = g(l), gu = g(u), gp = g(s.maximum(l).minimum(u)),
+                 gn = g(s.negative().maximum(l).minimum(u));
+    const Tensor hi = gl.maximum(gu).maximum(gp.maximum(gn));
+    const Tensor lo = gl.minimum(gu).minimum(gp.minimum(gn));
+    // the radius widened by the rounding (16 ulps of the largest terms, |x^3| + |m x| <= 4 big^3)
+    return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big3 * (64.0 * machine_eps(l.dtype()))};
 }
 
 Tensor priv_even_mask(const Tensor &like, const Exponents &E) {
