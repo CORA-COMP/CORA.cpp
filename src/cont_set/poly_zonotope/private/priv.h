@@ -65,6 +65,18 @@ bool priv_is_even(const std::vector<int> &exponents);
 /// The set with its generators of exponent 0 (a constant) moved into the center.
 PolyZonotope priv_fold_constants(const PolyZonotope &set);
 
+/// CORA's ending of getSubset: the columns of equal exponents merged, the generators of exponent 0
+/// added to the center, the identifiers no generator uses dropped.
+PolyZonotope priv_merged_set(const Tensor &c, const Tensor &G, const Tensor &GI, const Exponents &E,
+                             const std::vector<int64_t> &id);
+
+/// CORA's aux_isZonotope: the merged exponents have one factor per generator and none is shared,
+/// so that the dependent part is a zonotope.
+bool priv_is_zonotope(const PolyZonotope &set);
+
+/// The position of the identifier in ids, -1 if it is not there.
+int64_t priv_find_id(const std::vector<int64_t> &ids, int64_t id);
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

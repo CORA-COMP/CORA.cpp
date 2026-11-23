@@ -29,6 +29,16 @@ Reviewed:      ---
 # CORA: contSet/@polyZonotope/splitDepFactor.m
 # CORA: contSet/@polyZonotope/splitLongestGen.m
 # CORA: contSet/@polyZonotope/cartProd_.m
+# CORA: contSet/@polyZonotope/getSubset.m
+# CORA: contSet/@polyZonotope/replaceId.m
+# CORA: contSet/@polyZonotope/restoreId.m
+# CORA: contSet/@polyZonotope/rmId.m
+# CORA: contSet/@polyZonotope/onlyId.m
+# CORA: contSet/@polyZonotope/noIndep.m
+# CORA: contSet/@polyZonotope/isBounded.m
+# CORA: contSet/@polyZonotope/isFullDim.m
+# CORA: contSet/@polyZonotope/isequal.m
+# CORA: contSet/@polyZonotope/empty.m
 
 import unittest
 
@@ -131,6 +141,53 @@ class Operations(unittest.TestCase):
         hit = cora.Polytope(np.array([[1.0, 0.0]]), np.array([1.0]))
         self.assertFalse(np.all(P.is_intersecting(miss)))
         self.assertTrue(np.all(P.is_intersecting(hit)))
+
+
+class Factors(unittest.TestCase):
+    # the identifiers: renamed, added, removed, split into parts
+    def test_identifiers(self):
+        P = known()
+        R = P.replace_id([2], [1])
+        self.assertEqual(list(R.id), [1])
+        np.testing.assert_array_equal(R.E, [[1, 2]])
+        self.assertEqual(list(P.replace_id([10, 20]).id), [10, 20])
+        self.assertEqual(list(P.restore_id([2, 9]).id), [1, 2, 9])
+        self.assertEqual(list(P.rm_id([1]).id), [2])
+        A, B = P.only_id([1])
+        self.assertEqual(list(A.id), [1])
+        self.assertEqual(A.G.shape[0], 1)
+        self.assertEqual(B.GI.shape[0], 1)
+        self.assertEqual(P.no_indep().GI.shape[0], 0)
+        with self.assertRaises(cora.errors.WrongValue):
+            P.replace_id([1], [3, 4])
+        with self.assertRaises(cora.errors.WrongValue):
+            P.only_id([1, 1])
+
+    # a factor fixed to a value or to a box
+    def test_get_subset(self):
+        P = known()
+        S = P.get_subset([1], np.array([0.5]))
+        np.testing.assert_allclose(S.c, [1.0, 0.0])
+        self.assertEqual(S.dim, 2)
+        T = P.get_subset([1], cora.Interval(np.array([-1.0]), np.array([1.0])))
+        self.assertTrue(T.isequal(P))
+        U = P.get_subset([1], cora.Interval(np.array([0.0]), np.array([1.0])))
+        self.assertEqual(U.dim, 2)
+        with self.assertRaises(cora.errors.WrongValue):
+            P.get_subset([5], np.array([0.5]))
+
+    # equality, boundedness, interior and the empty set
+    def test_predicates(self):
+        P = known()
+        self.assertTrue(P.isequal(P))
+        self.assertFalse(P.isequal(P.linear_map(2 * np.eye(2))))
+        self.assertTrue(P.is_bounded())
+        Z = cora.Zonotope(np.array([1.0, 1.0]), np.array([[1.0, 0.0], [0.0, 1.0]]))
+        self.assertTrue(cora.PolyZonotope(Z).isequal(Z))
+        self.assertTrue(cora.PolyZonotope(Z).is_full_dim())
+        self.assertFalse(P.no_indep().is_full_dim())
+        with self.assertRaises(cora.errors.NotSupported):
+            cora.PolyZonotope.empty(2)
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
