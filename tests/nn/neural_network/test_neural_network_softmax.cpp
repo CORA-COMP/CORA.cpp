@@ -1,7 +1,8 @@
 // test_neural_network_softmax - exp, 1 / max(x, 1), a softmax of them and gathers with factors
 //
 // On points, on sets (the lines hold, a softmax of a box) and in verify; the heuristics, the
-// sensitivity and order-2 polynomials through x^2, sign, exp and 1 / max(x, 1).
+// sensitivity and order-2 polynomials through x^2, sign, exp and 1 / max(x, 1); the interval
+// center through their negative slopes.
 //
 // CORA.cpp only: exp and the reciprocal 1 / max(x, 1), a softmax's parts (no CORA layer)
 // Authors:       Claude Opus 5.5
@@ -10,9 +11,12 @@
 // Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
+#include "nn/neural_network/private/priv_zono_batch.h"
 #include "testing.h"
 
 #include <cmath>
+#include <limits>
+#include <random>
 
 using namespace cora;
 using test::check;
@@ -219,6 +223,35 @@ void polynomials_of_the_activations(const std::string &b) {
           b + ": order-2 polynomials of the four activations hold sampled values");
 }
 
+/// The interval center through a negative slope: (x0 + x1)^2 and 1 / max(x0 + x1, 1) with x1
+/// boxed (q0 = 1); the bounds hold sampled points (a negative slope times the radius was not one).
+void negative_slopes(const std::string &b) {
+    const double inf = std::numeric_limits<double>::infinity();
+    std::mt19937 rng(3);
+    std::uniform_real_distribution<double> U(-1.0, 1.0);
+    int violations = 0;
+    for (const auto &[a, center] : std::vector<std::pair<Activation, double>>{
+             {Activation::square, -3.0}, {Activation::reciprocal, 2.0}}) {
+        const NeuralNetwork nn(
+            {{Tensor({{1.0, 1.0}}), Tensor({0.0})}, {Tensor({{2.0}}), Tensor({0.5})}},
+            {a, Activation::identity});
+        // x1 has no generator (q0 = 1): its radius is the interval center's
+        const ZonoNet net(nn, 1.0, inf, "singh", "length");
+        const ZonoInput in = net.input_zonotope(Tensor({{center, 0.0}}), Tensor({{0.3, 0.4}}));
+        const ZonoPropagation out = net.forward(in.c, in.dr, in.G, Tensor(), nullptr, false);
+        double rad = out.G.abs().sum(1).reshape({1}).item();
+        if (out.dr.defined()) rad += out.dr.reshape({1}).item();
+        const double c = out.c.reshape({1}).item();
+        // sampled points of the box inside the bounds
+        for (int s = 0; s < 400; ++s) {
+            const double p0 = center + 0.3 * U(rng), p1 = 0.4 * U(rng);
+            const double y = nn.evaluate(Tensor({{p0, p1}})).reshape({1}).item();
+            violations += y < c - rad || y > c + rad;
+        }
+    }
+    check(violations == 0, b + ": the interval center through negative slopes holds 800 points");
+}
+
 } // namespace
 
 
@@ -233,6 +266,7 @@ int main() {
         verify_decides(b);
         heuristics_through_the_activations(b);
         polynomials_of_the_activations(b);
+        negative_slopes(b);
     });
     return test::finish("neuralNetwork softmax");
 }

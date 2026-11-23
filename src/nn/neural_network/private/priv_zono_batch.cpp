@@ -433,7 +433,7 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
                 if (slot_grads) (*slot_grads)[next] = rec.l.zeros_like();
                 g_reach = g_dr.defined() ? g_dr : rec.l.zeros_like();
             }
-            // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = m dr1 + reach
+            // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = |m| dr1 + reach
             const ClampJacobian cl = aux_clamp_jacobian(rec.first_id, rec.l, rec.u, splits);
             PrivLine line = priv_verify_line(net.activations[k], cl.lc, cl.uc, net.poly_method);
             LineJacobian J = aux_line_jacobian(net.activations[k], cl.lc, cl.uc, net.poly_method);
@@ -443,8 +443,13 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
                 J = aux_alpha_jacobian(J, cl.lc, cl.uc, *a);
             }
             const Tensor &m = line.slope;
+            // dr2 = |m| dr1: its gradient in m has the sign of m (+ at 0, as for a ReLU)
             Tensor g_m = g_c.multiply(c1) + g_gen.multiply(G1).sum(1);
-            if (dr1.defined()) g_m = g_m + g_dr.multiply(dr1);
+            if (dr1.defined()) {
+                const Tensor sign_m =
+                    Tensor::where(m.less(m.zeros_like()), -m.ones_like(), m.ones_like());
+                g_m = g_m + g_dr.multiply(dr1).multiply(sign_m);
+            }
             if (a) {
                 // the slope's own gradient: c2, G2, dr2 through m, the offset and reach through h
                 const Tensor zero = rec.l.zeros_like();
@@ -461,7 +466,7 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
             const Tensor g_rad = g_u - g_l;
             g_c = g_c.multiply(m) + g_l + g_u;
             g_gen = m.expand_dims(1).multiply(g_gen) + G1.sign().multiply(g_rad.expand_dims(1));
-            g_dr = dr1.defined() ? g_dr.multiply(m) + g_rad : Tensor();
+            g_dr = dr1.defined() ? g_dr.multiply(m.abs()) + g_rad : Tensor();
         }
         // back to the inputs: a source's own factor rows (the input's center and radii unused)
         const auto back = [&](int64_t j, const auto &map, const auto &map_abs) {
@@ -772,7 +777,8 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
         }
         c = line.slope.multiply(c) + 0.0 + middle;
         G = line.slope.expand_dims(1).multiply(G) + 0.0;
-        if (dr.defined()) dr = line.slope.multiply(dr);
+        // a radius maps by |slope|: x^2 left of 0 and the reciprocal fall (#272)
+        if (dr.defined()) dr = line.slope.abs().multiply(dr);
         // the errors: a generator per slot neuron, the rest into the interval center
         const int64_t B = reach.shape()[0], n = reach.shape()[1], dn = slots[k];
         if (dn == 0) {
