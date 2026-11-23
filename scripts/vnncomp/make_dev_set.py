@@ -46,9 +46,7 @@ def main():
     parser.add_argument(
         "--official", default=os.path.join(HOME, "vnncomp", "vnncomp2026_benchmarks")
     )
-    parser.add_argument(
-        "--python", default=os.path.join(HOME, "vnncomp", "genvenv", "bin", "python")
-    )
+    parser.add_argument("--python", default=DEFAULT_PYTHON)
     parser.add_argument("--cache", default=os.path.join(HOME, "vnncomp", "cache"))
     # packages a generator needs that may not go into the venv (relusplitter's beartype)
     parser.add_argument(
@@ -57,6 +55,9 @@ def main():
     )
     parser.add_argument("--keep-official", action="store_true")
     args = parser.parse_args()
+    # a benchmark whose generator needs another Python (vggnet16)
+    if args.python == DEFAULT_PYTHON:
+        args.python = PYTHONS.get(args.benchmark, args.python)
     # the generator works in a copy of its source tree
     work = os.path.join(args.out, args.benchmark, "work")
     # the benchmark's own generator, else a sampler of the official instances' structure
@@ -79,6 +80,11 @@ def main():
             if args.benchmark == "tllverifybench_2023"
             else "generator: generate_properties.py with the seed"
         )
+        if args.benchmark == "challenging_certified_training_2026":
+            args.method += (
+                ", the three networks of the 2026 repository; the three wide ones, which it does not"
+                " ship, from the generator's file share"
+            )
         run_generator(args, work)
         rows = generated_rows(args, work)
     manifest = write_set(args, work, rows)
@@ -90,6 +96,13 @@ def main():
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 HOME = os.path.expanduser("~")
+
+# the generators' Python, and the benchmarks that need another one
+DEFAULT_PYTHON = os.path.join(HOME, "vnncomp", "genvenv", "bin", "python")
+PYTHONS = {
+    # vggnet16 preprocesses with mxnet 1.9, which needs NumPy < 1.24 (Python 3.10)
+    "vggnet16_2022": os.path.join(HOME, "vnncomp", "genvenv-vgg", "bin", "python"),
+}
 
 # the source repositories and commits of the 2026 benchmark repository's READMEs
 SOURCES = {
@@ -181,6 +194,16 @@ SOURCES = {
         "https://github.com/jferlez/TLLVerifyBench.git",
         "1a072009a102606ed2cf533cbd3100b21256fb1f",
     ),
+    # challenging_ct: CNN-7 nets of certified training; the networks from the 2026 repository
+    "challenging_certified_training_2026": (
+        "https://github.com/kkaulen/vnncomp_challenging_certified_training.git",
+        "b4caf3d72d4f4442a640e1ef5aa1bce165815456",
+    ),
+    # vggnet16: ImageNet's VGG16 (its generator downloads the network from the ONNX model zoo)
+    "vggnet16_2022": (
+        "https://github.com/stanleybak/vggnet16_benchmark2022.git",
+        "c1eece7db36277bdc9f6f36ff1940a3ad0810240",
+    ),
     # vit: two CIFAR-10 vision transformers; the seed shuffles each model's pool of images
     "vit_2023": (
         "https://github.com/shizhouxing/ViT_vnncomp2023.git",
@@ -222,8 +245,16 @@ def run_generator(args, work):
         os.makedirs(os.path.join(work, "vnnlib"))
         os.makedirs(os.path.join(args.cache, "datasets"), exist_ok=True)
         os.symlink(os.path.join(args.cache, "datasets"), os.path.join(work, "tmp"))
+    if args.benchmark == "challenging_certified_training_2026":
+        _official_networks(args, work)
+    if args.benchmark == "vggnet16_2022":
+        _cached_network(args, work, "vgg16-7.onnx")
     env = dict(os.environ, PYTHONHASHSEED="0", OMP_NUM_THREADS="2")
     command = [args.python, "generate_properties.py", str(args.seed)]
+    if args.benchmark == "challenging_certified_training_2026":
+        # the datasets by torchvision and urllib into the shared cache
+        data = os.path.join(args.cache, "datasets", args.benchmark)
+        command += ["--no-ctrain-download", "--data-root", data]
     if args.benchmark == "relusplitter_2026":
         command = _relusplitter(args, work, env)
     if args.benchmark == "tllverifybench_2023":
@@ -235,6 +266,34 @@ def run_generator(args, work):
         )
         command = [args.python, "-c", script, str(args.seed)]
     subprocess.run(command, cwd=work, env=env, check=True)
+    if args.benchmark == "vggnet16_2022":
+        _cached_network(args, work, "vgg16-7.onnx", store=True)
+
+
+def _official_networks(args, work):
+    """challenging_ct's networks from the 2026 benchmark repository (decompressed into work/onnx); the
+    generator fetches the three wide ones it lacks from its file share (the password is in its source)."""
+    official = os.path.join(args.official, "benchmarks", args.benchmark, "1.0", "onnx")
+    os.makedirs(os.path.join(work, "onnx"), exist_ok=True)
+    for name in sorted(os.listdir(official)):
+        if name.endswith(".onnx.gz"):
+            with gzip.open(os.path.join(official, name), "rb") as a, open(
+                os.path.join(work, "onnx", name[:-3]), "wb"
+            ) as b:
+                shutil.copyfileobj(a, b)
+
+
+def _cached_network(args, work, name, store=False):
+    """A network the generator downloads (vggnet16's 528 MB VGG16): from the cache into work/onnx
+    before it runs, and into the cache after the first run (store)."""
+    cached = os.path.join(args.cache, args.benchmark, name)
+    target = os.path.join(work, "onnx", name)
+    if store and not os.path.exists(cached) and os.path.exists(target):
+        os.makedirs(os.path.dirname(cached), exist_ok=True)
+        shutil.copyfile(target, cached)
+    elif not store and os.path.exists(cached):
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        shutil.copyfile(cached, target)
 
 
 def _relusplitter(args, work, env):

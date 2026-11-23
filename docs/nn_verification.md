@@ -254,11 +254,24 @@ come only at the very end.
   so a seed gives the same weights and properties, not the same bytes.
   vit's generator shuffles each model's pool of CIFAR-10 images (242 for ibp_3_3_8, 4847 for
   pgd_2_3_16) and takes 100 of each, so about 40 of a seed's 200 are official ones, left out.
+  vggnet16 preprocesses its ImageNet images with mxnet 1.9, which needs NumPy < 1.24
+  (`genvenv-vgg`, Python 3.10; its generator pip-installs mxnet into any Python that lacks it). Its
+  528 MB VGG16 comes from the ONNX model zoo once, into the cache (`--cache`).
+  challenging_certified_training's generator downloads its six networks from a password-protected
+  share (the password is in its source). make_dev_set decompresses the three that the 2026 benchmark
+  repository ships, identical to the share's; the generator fetches the three wide ones. Only the
+  sampled CIFAR-10 and TinyImageNet test images are new.
   tllverifybench's generator draws each network's output threshold from NumPy's global generator,
   which it never seeds; make_dev_set seeds it with the seed (the networks are the official ones).
   nn4sys runs its three generators (video streaming, learned index, cardinality) with the seed.
   ml4acopf's generator perturbs each bus' loads with the seed (69 instances per seed).
 - **Data:** networks and instances stay outside the repository (e.g. `~/vnncomp/dev_sets`).
+- **Releases:** `scripts/vnncomp/freeze_dev_sets.py DIR --write --release v1` writes the release's
+  `MANIFEST.json`: per benchmark and seed the instances, the official ones left out, the source
+  commit, the method, the known nondeterminism and the sha256 of every file; `--verify` checks a copy
+  against it. Both refuse absolute, dangling or escaping links, work folders and logs. A release is
+  read-only; a change becomes the next release in a new directory. The subset safenlp_2024_sub
+  (every fourth instance of safenlp) links its networks and properties relatively.
 
 ## Running
 
