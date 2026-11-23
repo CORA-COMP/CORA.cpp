@@ -10,7 +10,7 @@
 // CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Tobias Ladner, Claude Opus 5.5
 // Written:       03-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "global/backend/host_tensor.h"
@@ -20,6 +20,7 @@
 #include <cstring>
 #include <limits>
 #include <numeric>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -738,14 +739,28 @@ Tensor::Ptr HostTensor<T>::take(const Tensor::Impl &idx, int axis) const {
     Shape out = shape;
     out[axis] = k;
     auto r = fresh(out);
-    for (int64_t o = 0; o < e.outer; ++o)
-        for (int64_t j = 0; j < k; ++j) {
-            const int64_t l = static_cast<int64_t>(ix[j]);
-            if (l < 0 || l >= e.len)
-                CORA_FAIL(Error::wrong_value, "CoraTensor::take: the index " + std::to_string(l) +
-                                                  " is outside 0.." + std::to_string(e.len - 1));
-            std::copy_n(p + (o * e.len + l) * e.inner, e.inner, r->p + (o * k + j) * e.inner);
+    // the indices once, checked
+    std::vector<int64_t> at(static_cast<std::size_t>(k));
+    for (int64_t j = 0; j < k; ++j) {
+        const int64_t l = static_cast<int64_t>(ix[j]);
+        if (l < 0 || l >= e.len)
+            CORA_FAIL(Error::wrong_value, "CoraTensor::take: the index " + std::to_string(l) +
+                                              " is outside 0.." + std::to_string(e.len - 1));
+        at[static_cast<std::size_t>(j)] = l;
+    }
+    // single entries (a gather along the last axis, im2col) one by one, else whole blocks
+    if (e.inner == 1) {
+        for (int64_t o = 0; o < e.outer; ++o) {
+            const T *src = p + o * e.len;
+            T *dst = r->p + o * k;
+            for (int64_t j = 0; j < k; ++j) dst[j] = src[at[static_cast<std::size_t>(j)]];
         }
+        return r;
+    }
+    for (int64_t o = 0; o < e.outer; ++o)
+        for (int64_t j = 0; j < k; ++j)
+            std::copy_n(p + (o * e.len + at[static_cast<std::size_t>(j)]) * e.inner, e.inner,
+                        r->p + (o * k + j) * e.inner);
     return r;
 }
 
