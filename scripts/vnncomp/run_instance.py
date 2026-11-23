@@ -86,6 +86,8 @@ def main():
 
 SAFETY = 1.0  # seconds kept for writing the result before the timeout
 BATCH_SHARE = 0.8  # of a GPU's free memory for the sets of one batch (the rest: the attack's)
+# Sets per batch on CUDA: lsnc_relu 0 closes in 12 s at 32768, 46 s at 1024 (launch-bound); no bound moves
+GPU_MINI_BATCH = {"lsnc_relu": 32768}
 
 
 def options_for(category, device):
@@ -95,6 +97,8 @@ def options_for(category, device):
     overrides = json.loads(os.environ.get("CORACPP_VNNCOMP_OPTIONS", "{}"))
     if device.startswith("cuda") and "batch_memory_budget" not in overrides:
         overrides["batch_memory_budget"] = batch_budget(device)
+    if device.startswith("cuda") and category in GPU_MINI_BATCH:
+        overrides.setdefault("mini_batch_size", GPU_MINI_BATCH[category])
     return cora.vnncomp_options(category, device=device, **overrides)
 
 
