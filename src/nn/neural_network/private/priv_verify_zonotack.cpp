@@ -646,6 +646,9 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
     for (std::size_t i = 0; i < rows.size(); ++i) rows[i] = int64_t(i);
     Tensor result = excluded_;
     ZonoInput in = net.input_zonotope(xi_, ri_);
+    // given bounds: one set (relu-bab's root), never dropped while it is open
+    if (bounds && xi_.shape()[0] != 1)
+        CORA_FAIL(Error::wrong_value, "verify: given bounds of one set only");
     ZonoPropagation out = net.forward(in.c, in.dr, in.G, si, nullptr, true, nullptr, bounds);
     std::vector<Tensor> alpha = priv_alpha_start(out, net, si), m1(alpha.size()), m2(alpha.size());
     // the slopes asked for (one set): the best step's, by the weakest open polytope's best row
