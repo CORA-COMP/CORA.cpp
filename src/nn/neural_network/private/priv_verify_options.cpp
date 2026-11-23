@@ -212,6 +212,12 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.alpha_iterations = 0;
     // traffic_signs' binarized networks: the bounds rarely decide, the attack finds more
     if (name == "traffic_signs_recognition") o.attack_time_share = 0.9;
+    // nn4sys: CORA's bounding of lindex' many small cases, the attack only briefly (dev seed 1001)
+    if (name == "nn4sys") {
+        o.bounding_method = "conzonotope";
+        o.backward_bound = false;
+        o.attack_time_share = 0.05;
+    }
     return o;
 }
 

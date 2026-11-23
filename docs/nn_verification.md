@@ -176,6 +176,10 @@ against 300 and 240. metaroom, soundnessbench and tinyimagenet take no alpha-CRO
 (`alpha_iterations` 0): on the first 40 instances of seed 1001 they score 380, 60 and 60 against
 370, 50 and 50, tinyimagenet in half the time; cifar100 keeps them (70 against 60), and cgan and
 collins score the same either way. On the three, 3 steps or `optimize_gap` 0.1 score no more.
+nn4sys keeps CORA's `conzonotope` bounding without CROWN and gives the attack a twentieth of the
+time (`attack_time_share` 0.05): lindex's thousands of small cases go chunk by chunk, and the
+preset scores 450 against 400 on dev seed 1001 (19 lindex instances unsat against 14; pensieve and
+mscn the same).
 
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per
