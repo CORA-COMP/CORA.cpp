@@ -115,6 +115,11 @@ void options_and_strategies() {
     check(vnncomp_options("traffic_signs_recognition_2023").attack_time_share == 0.9 &&
               ours.attack_time_share == cora.attack_time_share,
           "traffic_signs' preset: nine tenths of the time for the attack");
+    // nn4sys: lindex's many cases
+    const NnVerifyOptions sys = vnncomp_options("nn4sys");
+    check(sys.bounding_method == "conzonotope" && !sys.backward_bound &&
+              sys.attack_time_share == 0.05,
+          "nn4sys' preset: CORA's bounding without CROWN, a brief attack");
     check(vnncomp_options("tinyimagenet_2024").alpha_iterations == 0 &&
               vnncomp_options("metaroom_2023").alpha_iterations == 0 &&
               vnncomp_options("soundnessbench_2026").alpha_iterations == 0 &&
