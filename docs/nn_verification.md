@@ -142,7 +142,10 @@ else), except for sat_relu: its many small boxes keep CORA's `conzonotope` bound
 which scores 980 on dev seeds 1001 and 1002 against 960 and 940 (the slopes cost more than they
 decide). traffic_signs gives the attack nine tenths of the time (`attack_time_share` 0.9): its
 binarized networks' bounds rarely decide, and the share scores 330 and 250 on seeds 1001 and 1002
-against 300 and 240.
+against 300 and 240. metaroom, soundnessbench and tinyimagenet take no alpha-CROWN steps
+(`alpha_iterations` 0): on the first 40 instances of seed 1001 they score 380, 60 and 60 against
+370, 50 and 50, tinyimagenet in half the time; cifar100 keeps them (70 against 60), and cgan and
+collins score the same either way. On the three, 3 steps or `optimize_gap` 0.1 score no more.
 
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per

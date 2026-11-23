@@ -207,6 +207,9 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.bounding_method = "conzonotope";
         o.backward_bound = false;
     }
+    // the wide conv nets whose alpha-CROWN steps cost more than they decide (the dev sets)
+    if (name == "metaroom" || name == "soundnessbench" || name == "tinyimagenet")
+        o.alpha_iterations = 0;
     // traffic_signs' binarized networks: the bounds rarely decide, the attack finds more
     if (name == "traffic_signs_recognition") o.attack_time_share = 0.9;
     return o;

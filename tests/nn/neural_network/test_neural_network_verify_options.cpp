@@ -108,12 +108,18 @@ void options_and_strategies() {
               ours.alpha_method == "crown" && acas.alpha_method == "zonotope" &&
               ours.num_neuron_splits == cora.num_neuron_splits,
           "the VNN-COMP preset: CORA's with Phase 2's bounds");
+    // the benchmarks' own changes of it (docs/nn_verification.md)
     const NnVerifyOptions sat = vnncomp_options("sat_relu");
     check(sat.bounding_method == "conzonotope" && !sat.backward_bound,
           "sat_relu's preset: CORA's bounding without CROWN");
     check(vnncomp_options("traffic_signs_recognition_2023").attack_time_share == 0.9 &&
               ours.attack_time_share == cora.attack_time_share,
           "traffic_signs' preset: nine tenths of the time for the attack");
+    check(vnncomp_options("tinyimagenet_2024").alpha_iterations == 0 &&
+              vnncomp_options("metaroom_2023").alpha_iterations == 0 &&
+              vnncomp_options("soundnessbench_2026").alpha_iterations == 0 &&
+              vnncomp_options("cifar100_2024").alpha_iterations == ours.alpha_iterations,
+          "the wide conv nets' preset: no alpha-CROWN steps, except cifar100");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");
