@@ -109,7 +109,24 @@ void verify_decides(const std::string &b) {
               name + ": sin: y <= -0.4 is sat");
         check(c.verify(aux_below(0.0, 3.0, -1.2), 20, o).status == "unsat",
               name + ": cos: y <= -1.2 is unsat");
+        // tight: cos(x_1 - x_2) >= cos 3 = -0.98999, so y <= -0.995 needs splits
+        check(c.verify(aux_below(0.0, 3.0, -0.995), 60, o).status != "sat",
+              name + ": cos: y <= -0.995 is not sat");
     }
+    // the sensitivity: d cos(x_1 - x_2) / dx = -sin(x_1 - x_2) (1, -1)
+    const Tensor Jc = aux_network(Activation::cos).sensitivity(Tensor({1.0, 0.5}));
+    check(test::close(Jc.reshape({2}), std::vector<double>{-std::sin(0.5), std::sin(0.5)}, 1e-12),
+          b + ": the sensitivity through cos");
+    // the polynomial methods refuse sin (verify's lines only)
+    bool refused = false;
+    try {
+        const PolyZonotope X(Tensor({0.5, 0.5}), Tensor({{0.5}, {0.5}}), Tensor::zeros({0, 2}),
+                             {{1}}, {1});
+        (void)aux_network(Activation::sin).evaluate(X, {.poly_method = PolyMethod::taylor});
+    } catch (const Error &) {
+        refused = true;
+    }
+    check(refused, b + ": a polynomial zonotope through sin is refused");
     // the sensitivity: d sin(x_1 - x_2) / dx = cos(x_1 - x_2) (1, -1)
     const Tensor J = aux_network(Activation::sin).sensitivity(Tensor({1.0, 0.5}));
     check(test::close(J.reshape({2}), std::vector<double>{std::cos(0.5), -std::cos(0.5)}, 1e-12),
