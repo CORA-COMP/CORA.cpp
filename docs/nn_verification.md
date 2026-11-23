@@ -191,6 +191,11 @@ time (`attack_time_share` 0.05): lindex's thousands of small cases go chunk by c
 preset scores 450 against 400 on dev seed 1001 (19 lindex instances unsat against 14; pensieve and
 mscn the same).
 
+lsnc_relu takes no alpha-CROWN steps either. Its boxes are verified by the refinement (an empty
+child), and on instance 0 of seed 1001 the steps took 27 s of 57 s and verified none of 7410 sets.
+Without them, the 8 sample rows of each dev seed (25 s) give 2 sat against 1 sat (0 unsat either
+way), and instance 0 closes as unsat in 250 s.
+
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per
   polytope the violated rows' excess plus a tenth of the worst row, the best polytope of the case),

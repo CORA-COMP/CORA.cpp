@@ -125,6 +125,7 @@ void options_and_strategies() {
               vnncomp_options("soundnessbench_2026").alpha_iterations == 0 &&
               vnncomp_options("cifar100_2024").alpha_iterations == ours.alpha_iterations,
           "the wide conv nets' preset: no alpha-CROWN steps, except cifar100");
+    check(vnncomp_options("lsnc_relu").alpha_iterations == 0, "lsnc_relu's preset: no alpha steps");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");
