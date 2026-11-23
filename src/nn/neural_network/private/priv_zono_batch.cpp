@@ -492,8 +492,13 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
                     g_m.multiply(J.m_l) + g_c.multiply(J.o_l) + g_reach.multiply(J.r_l);
                 const Tensor g_uc =
                     g_m.multiply(J.m_u) + g_c.multiply(J.o_u) + g_reach.multiply(J.r_u);
-                const Tensor g_l = g_lc.multiply(cl.lc_l) + g_uc.multiply(cl.uc_l);
-                const Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
+                Tensor g_l = g_lc.multiply(cl.lc_l) + g_uc.multiply(cl.uc_l);
+                Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
+                // a given bound that replaced the zonotope's does not move with the set
+                if (rec.held_l.defined()) {
+                    g_l = g_l.multiply(1.0 - rec.held_l);
+                    g_u = g_u.multiply(1.0 - rec.held_u);
+                }
                 // l = c1 - sum |G1| - dr1, u = c1 + sum |G1| + dr1
                 const Tensor g_rad = g_u - g_l;
                 // the center, the generators and the radius of the input of the line
@@ -755,9 +760,12 @@ std::pair<Tensor, Tensor> ZonoNet::clamp(int64_t first_id, const Tensor &l, cons
     return {lc, uc};
 }
 
+// The propagation ---------------------------------------------------------------------------------
+
 ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tensor &G_,
                                  const Tensor &splits, const std::vector<Tensor> *layer_sens,
-                                 bool record, const std::vector<Tensor> *alpha) const {
+                                 bool record, const std::vector<Tensor> *alpha,
+                                 const ZonoBounds *bounds) const {
     Tensor c = c_, dr = dr_, G = G_;
     ZonoPropagation out;
     const bool split = splits.defined() && splits.shape()[1] > 0;
@@ -837,6 +845,16 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             l = l.maximum(lo);
             u = u.minimum(hi).maximum(l);
         }
+        // given sound bounds: the intersection (where it is not empty after the rounding)
+        Tensor held_l, held_u;
+        if (bounds && k < bounds->l.size() && bounds->l[k].defined()) {
+            const Tensor &gl = bounds->l[k], &gu = bounds->u[k];
+            const Tensor ok = l.maximum(gl).less_equal(u.minimum(gu));
+            held_l = ok.multiply(gl.greater(l));
+            held_u = ok.multiply(gu.less(u));
+            l = Tensor::where(held_l, gl, l);
+            u = Tensor::where(held_u, gu, u);
+        }
         const auto [lc, uc] = split ? clamp(first_ids[k], l, u, splits) : std::pair{l, u};
         if (range_read[k]) ranges[k] = aux_range(activations[k], lc, uc);
         PrivLine line = aux_layer_line(*this, k, c, G, dr, lc, uc);
@@ -855,6 +873,8 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             rec.l = l;
             rec.u = u;
             rec.er = reach;
+            rec.held_l = held_l;
+            rec.held_u = held_u;
         }
         const Activation act = activations[k];
         c = priv_slope_times(act, line.slope, c) + 0.0 + middle;

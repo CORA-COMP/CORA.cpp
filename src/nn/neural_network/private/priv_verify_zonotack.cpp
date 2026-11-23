@@ -414,11 +414,15 @@ class ConZonotopeBounding : public Bounding {
     Tensor aux_gap(const ZonoPropagation &out, const Tensor &lower, const Tensor &excluded) const;
     Tensor aux_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
                               const Tensor &si, const Tensor &excluded,
-                              std::vector<Tensor> *slopes = nullptr, int64_t steps = -1) const;
+                              std::vector<Tensor> *slopes = nullptr, int64_t steps = -1,
+                              const ZonoBounds *bounds = nullptr) const;
     // the ReLU-split branch and bound on a frozen zonotope (refinement_method "relu-bab")
     std::string aux_relu_bab(NnProblem &problem, std::map<std::string, double> &stats);
     void aux_relu_bab_slots(NnProblem &problem, const Tensor &xi, const Tensor &ri,
                             std::map<std::string, double> &stats);
+    void aux_relu_bab_crown(const Tensor &xi, const Tensor &ri, const Tensor &si,
+                            ZonoPropagation &out, ZonoBounds &bounds,
+                            std::map<std::string, double> &stats) const;
     int aux_relu_bab_polytope(NnProblem &problem, int64_t p, const ZonoPropagation &out,
                               const ZonoInput &in, const PrivSplitTable &table,
                               const std::vector<int64_t> &order, const Tensor &ci,
@@ -633,7 +637,7 @@ Tensor ConZonotopeBounding::aux_gap(const ZonoPropagation &out, const Tensor &lo
 Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &ri_,
                                                const Tensor &ci_, const Tensor &si_,
                                                const Tensor &excluded_, std::vector<Tensor> *slopes,
-                                               int64_t steps) const {
+                                               int64_t steps, const ZonoBounds *bounds) const {
     const ZonoNet &net = *net_;
     const Tensor A = A_.reshape({P_ * K_, A_.shape()[2]}), abs_a = A.abs();
     // the open sets; a set leaves the loop once every polytope of its case is excluded
@@ -642,9 +646,23 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
     for (std::size_t i = 0; i < rows.size(); ++i) rows[i] = int64_t(i);
     Tensor result = excluded_;
     ZonoInput in = net.input_zonotope(xi_, ri_);
-    ZonoPropagation out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
+    ZonoPropagation out = net.forward(in.c, in.dr, in.G, si, nullptr, true, nullptr, bounds);
     std::vector<Tensor> alpha = priv_alpha_start(out, net, si), m1(alpha.size()), m2(alpha.size());
-    constexpr double kB1 = 0.9, kB2 = 0.999;
+    // the slopes asked for (one set): the best step's, by the weakest open polytope's best row
+    const Tensor open0 = 1.0 - excluded_;
+    double best_score = -kInf;
+    const auto consider = [&]() {
+        if (!slopes || out.c.shape()[0] != 1) return;
+        const Tensor rows = aux_margins(out).max(2);
+        const Tensor masked =
+            Tensor::where(open0.greater(open0.zeros_like()), rows, rows.full_like({1}, kInf));
+        const double score = masked.min().item();
+        if (score > best_score) {
+            best_score = score;
+            *slopes = alpha;
+        }
+    };
+    consider();
     // the steps stop after alpha_patience of them without a newly excluded polytope
     double count = excluded.sum().item();
     int64_t gained = 0;
@@ -663,17 +681,10 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
             priv_alpha_gradients(out, net, si, alpha, w.matmul(A), S.matmul(A).negative(),
                                  out.dr.defined() ? w.matmul(abs_a).negative() : Tensor());
         // Adam, projected onto [0, 1]
-        const double c1 = 1.0 - std::pow(kB1, double(t)), c2 = 1.0 - std::pow(kB2, double(t));
-        for (std::size_t k = 0; k < alpha.size(); ++k) {
-            if (!g[k].defined()) continue;
-            m1[k] = m1[k].defined() ? m1[k] * kB1 + g[k] * (1.0 - kB1) : g[k] * (1.0 - kB1);
-            const Tensor g2 = g[k].square() * (1.0 - kB2);
-            m2[k] = m2[k].defined() ? m2[k] * kB2 + g2 : g2;
-            const Tensor step = (m1[k] / c1).divide((m2[k] / c2).sqrt() + numerics::kAdamEpsilon);
-            alpha[k] = (alpha[k] + step * o_.alpha_step_size).maximum(0.0).minimum(1.0);
-        }
+        priv_adam_slopes(alpha, m1, m2, g, t, o_.alpha_step_size);
         // every bound is sound: a polytope excluded once stays excluded
-        out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha);
+        out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha, bounds);
+        consider();
         excluded = excluded.maximum(aux_excluded(out, ci));
         result = aux_put_rows(result, rows, excluded);
         const double now = excluded.sum().item();
@@ -699,10 +710,10 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
             if (m1[k].defined()) m1[k] = m1[k].take(open, 0);
             if (m2[k].defined()) m2[k] = m2[k].take(open, 0);
         }
-        out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha);
+        out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha, bounds);
     }
-    // the slopes of the last step (one set: never dropped while it is open)
-    if (slopes) *slopes = alpha;
+    // the slopes of the best step (several sets: the last step's)
+    if (slopes && (best_score == -kInf || in.c.shape()[0] != 1)) *slopes = alpha;
     return result;
 }
 
@@ -849,16 +860,20 @@ std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
         Tensor excluded;
         ZonoInput in;
         ZonoPropagation out;
+        ZonoBounds bounds;
         {
             const StepTimer timer(&stats, "relu_bab_root_seconds");
             in = net.input_zonotope(xi, ri);
             out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
+            // CROWN's bounds of the layers' inputs at the zonotope's (nn_verification.md, relu-bab)
+            if (o_.relu_bab_crown_rounds > 0) aux_relu_bab_crown(xi, ri, si, out, bounds, stats);
+            const ZonoBounds *given = o_.relu_bab_crown_rounds > 0 ? &bounds : nullptr;
             excluded = aux_excluded(out, ci);
             if (alpha_ && o_.relu_bab_alpha_iterations > 0 && excluded.min().item() == 0) {
                 std::vector<Tensor> alpha;
                 excluded = aux_alpha_excluded(xi, ri, ci, si, excluded, &alpha,
-                                              o_.relu_bab_alpha_iterations);
-                out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha);
+                                              o_.relu_bab_alpha_iterations, given);
+                out = net.forward(in.c, in.dr, in.G, si, nullptr, true, &alpha, given);
                 excluded = excluded.maximum(aux_excluded(out, ci));
             }
         }
@@ -952,6 +967,41 @@ void ConZonotopeBounding::aux_relu_bab_slots(NnProblem &problem, const Tensor &x
     stats["relu_bab_init_gens"] = double(net->q0);
     if (fits(*net) || net->q > net_->q) net_ = std::move(net);
     net_->deadline = std::min(deadline_, problem.deadline);
+}
+
+// CROWN bounds at the root ------------------------------------------------------------------------
+
+void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri, const Tensor &si,
+                                             ZonoPropagation &out, ZonoBounds &bounds,
+                                             std::map<std::string, double> &stats) const {
+    const StepTimer timer(&stats, "relu_bab_crown_seconds");
+    const ZonoNet &net = *net_;
+    // the crossing ReLU neurons of a propagation, and the sum of their bounds' widths
+    const auto crossing = [&](const ZonoPropagation &p, double &width) {
+        double count = 0;
+        width = 0;
+        for (const ZonoLayerRecord &rec : p.layers) {
+            if (net.activations[std::size_t(rec.index)] != Activation::relu) continue;
+            const Tensor cross =
+                rec.l.less(rec.l.zeros_like()).multiply(rec.u.greater(rec.u.zeros_like()));
+            count += cross.sum().item();
+            width += cross.multiply(rec.u - rec.l).sum().item();
+        }
+        return count;
+    };
+    double width = 0;
+    stats["relu_bab_crown_crossing_before"] = crossing(out, width);
+    stats["relu_bab_crown_width_before"] = width;
+    // rounds: CROWN over the bounds so far, then the zonotope with its lines at the intersection
+    const ZonoInput in = net.input_zonotope(xi, ri);
+    const int64_t chunk = problem_->batch_memory_budget / 8;
+    for (int64_t r = 0; r < o_.relu_bab_crown_rounds && now_seconds() < deadline_; ++r) {
+        bounds = priv_crown_bounds(out, net, xi, ri, o_.relu_bab_crown_iterations,
+                                   o_.relu_bab_crown_step, chunk, deadline_);
+        out = net.forward(in.c, in.dr, in.G, si, nullptr, true, nullptr, &bounds);
+    }
+    stats["relu_bab_crown_crossing_after"] = crossing(out, width);
+    stats["relu_bab_crown_width_after"] = width;
 }
 
 // The nodes of the ReLU splits --------------------------------------------------------------------

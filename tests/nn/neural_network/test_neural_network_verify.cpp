@@ -406,6 +406,84 @@ void dual_unscaled_rows(const std::string &b) {
     check(violations == 0, b + ": the dual certificate is at most the optimum on unequal rows");
 }
 
+/// CROWN's bounds of the layers' inputs (priv_crown_bounds) hold the sampled inputs of every
+/// activation layer, inside the zonotope's, alpha-CROWN's at least as tight; the zonotope with its
+/// lines at them holds the sampled outputs. ReLU nets and one of every other activation.
+void crown_bounds(const std::string &b) {
+    Rng rng(23);
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
+                 r = Tensor({{0.4, 0.3, 0.5}, {0.25, 0.4, 0.3}});
+    std::vector<double> pts(std::size_t(3000 * 3));
+    rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+    // a ReLU net, then one of every activation (small weights: exp and the products stay small)
+    const NeuralNetwork relu = aux_network(rng, {3, 8, 8, 6, 2}, Activation::relu);
+    std::vector<NeuralNetwork::Layer> layers;
+    const std::vector<Activation> acts{
+        Activation::relu,    Activation::tanh,    Activation::exp,    Activation::reciprocal,
+        Activation::sigmoid, Activation::product, Activation::square, Activation::identity};
+    const std::vector<int64_t> sizes{3, 8, 6, 6, 6, 6, 4, 4, 2};
+    for (std::size_t k = 0; k + 1 < sizes.size(); ++k) {
+        std::vector<double> W(std::size_t(sizes[k + 1] * sizes[k])), c(std::size_t(sizes[k + 1]));
+        rng.normal(W.data(), W.size(), 0.8 / std::sqrt(double(sizes[k])));
+        rng.normal(c.data(), c.size(), 0.3);
+        layers.push_back(
+            {Tensor::from_data(W, {sizes[k + 1], sizes[k]}), Tensor::from_data(c, {sizes[k + 1]})});
+    }
+    const NeuralNetwork mixed(layers, acts);
+    bool holds = true, inside = true, tighter = true, outputs = true, narrower = false;
+    for (const NeuralNetwork *nn : {&relu, &mixed}) {
+        // few slots and input generators: the zonotope's bounds are loose
+        const ZonoNet net(*nn, 2, 2, "bounds", "length");
+        const ZonoInput in = net.input_zonotope(x, r);
+        const ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({2, 0}), nullptr, true);
+        const ZonoBounds crown = priv_crown_bounds(out, net, x, r, 0, 0.25, int64_t(1) << 30);
+        const ZonoBounds alpha = priv_crown_bounds(out, net, x, r, 10, 0.25, 2000);
+        const ZonoPropagation with =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({2, 0}), nullptr, true, nullptr, &crown);
+        for (int64_t i = 0; i < 2; ++i) {
+            // the samples' inputs of every layer
+            Tensor h = Tensor::from_data(pts, {3000, 3}).multiply(r.slice(0, i, i + 1)) +
+                       x.slice(0, i, i + 1);
+            const Tensor y = nn->evaluate(h);
+            std::size_t next = 0;
+            for (std::size_t k = 0; k < net.W.size(); ++k) {
+                const Tensor z = h.matmul(net.W[k]) + net.b[k];
+                h = priv_apply(net.activations[k], z);
+                if (net.activations[k] == Activation::identity) continue;
+                const ZonoLayerRecord &rec = out.layers[next++];
+                for (const ZonoBounds *bd : {&crown, &alpha}) {
+                    const Tensor l = bd->l[k].slice(0, i, i + 1), u = bd->u[k].slice(0, i, i + 1);
+                    holds = holds && z.greater_equal(l).min().item() > 0 &&
+                            z.less_equal(u).min().item() > 0;
+                    inside = inside && l.greater_equal(rec.l.slice(0, i, i + 1)).min().item() > 0 &&
+                             u.less_equal(rec.u.slice(0, i, i + 1)).min().item() > 0;
+                }
+                // the second activation layer: the same relaxation below, alpha-CROWN from CROWN's
+                if (next == 2)
+                    tighter = tighter &&
+                              alpha.l[k].greater_equal(crown.l[k] - 1e-9).min().item() > 0 &&
+                              alpha.u[k].less_equal(crown.u[k] + 1e-9).min().item() > 0;
+                narrower = narrower || (crown.u[k] - crown.l[k]).sum().item() <
+                                           (rec.u - rec.l).sum().item() - 1e-6;
+            }
+            // the output zonotope with the lines at CROWN's bounds holds the sampled outputs
+            Tensor lo = with.c - with.G.abs().sum(1), hi = with.c + with.G.abs().sum(1);
+            if (with.dr.defined()) {
+                lo = lo - with.dr;
+                hi = hi + with.dr;
+            }
+            outputs = outputs && y.greater_equal(lo.slice(0, i, i + 1)).min().item() > 0 &&
+                      y.less_equal(hi.slice(0, i, i + 1)).min().item() > 0;
+        }
+    }
+    check(holds, b + ": CROWN's bounds hold the sampled inputs of every activation layer");
+    check(inside, b + ": CROWN's bounds lie inside the zonotope's");
+    check(tighter, b + ": alpha-CROWN's bounds are at least CROWN's over the same relaxations");
+    check(narrower, b + ": CROWN's bounds narrow some layer's zonotope bounds");
+    check(outputs, b + ": the zonotope with its lines at CROWN's bounds holds the sampled outputs");
+}
+
 /// The dual certificate holds the sampled outputs under the splits, is at least the zonotope's
 /// bound, and on a small program reaches its optimum.
 void dual_bounds(const std::string &b) {
@@ -860,6 +938,9 @@ void relu_bab_verdicts(const std::string &b) {
         plain.relu_bab_order = "error";
         plain.relu_bab_alpha_iterations = 0; // the slopes may make more neurons cross
         plain.relu_bab_farkas_steps = 10;
+        plain.relu_bab_crown_rounds = 0; // the zonotope's bounds: more nodes for Farkas to prune
+        o.relu_bab_crown_rounds = 2;     // CROWN's bounds of the root twice, alpha-CROWN's
+        o.relu_bab_crown_iterations = 5;
         for (const double t : {least - 0.5, least - 0.02, least + 0.02}) {
             // the wide margin with time to spare: its verdict depends on the nodes, not the load
             const double timeout = t == least - 0.5 ? 120 : 3;
@@ -965,6 +1046,7 @@ int main() {
         frad_gradients(b);
         alpha_gradients(b);
         backward_bounds(b);
+        crown_bounds(b);
         // the dual certificates, on rows of very different norms too
         dual_bounds(b);
         dual_unscaled_rows(b);

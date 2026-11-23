@@ -367,6 +367,30 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     error that is not a factor in `dr` (never dropped) and one `beta` for `G_in` and `G_out` (one
     column order, later columns zero, as `priv_split_table` pads them). The frozen lines and clamps
     of later layers are not re-derived. unsat only when every open polytope's frontier is empty.
+  - **CROWN's bounds at the root (`relu_bab_crown_rounds`, default 1):** before the slopes, the
+    input `z_k` of every activation layer after the first is bounded by a backward pass
+    (`priv_crown_bounds`): rows `e_i` and `-e_i` of the crossing neurons of a ReLU layer (every
+    neuron of another activation) go back through the earlier layers, each by a relaxation at its
+    bounds so far (a ReLU: the chord `u (z - l) / (u - l)` above, a slope in `[0, 1]` below, CROWN's
+    `1` where `u > -l` else `0`, or `relu_bab_crown_iterations` projected Adam steps of size
+    `relu_bab_crown_step` per row, each row's best bound over the steps; another activation: the
+    parallels of the zonotope's line at those bounds, a product's on the recorded input set), down to
+    the input box. Each bound is intersected with the zonotope's (`l = max(l_z, l_c)`,
+    `u = min(u_z, u_c)`; a non-finite or empty intersection keeps the zonotope's), and the zonotope is
+    propagated again with its lines, slots and clamps at the intersection (`ZonoNet::forward`'s
+    `bounds`, the slope steps' too); a round repeats both on the new record. The gradient of the
+    slope steps is 0 in a bound the intersection held (`held_l`, `held_u`). The slope steps return
+    the slopes of their best step (the weakest open polytope's best row), not the last.
+    **Soundness:** for every input `x` of the box, the true input `z_k(x)` of layer k satisfies
+    every earlier layer's relaxation at bounds that hold for the true inputs (induction over the
+    layers: a valid lower line `sl z + bl <= f(z)` and upper line hold on `[l, u]`, which contains
+    the true `z`), so `Lambda^T z_k(x)` is at least the backward pass's affine function of `x`, at
+    least its minimum over the box: `l_c <= z_k(x) <= u_c`. Both `[l_z, u_z]` (the zonotope's) and
+    `[l_c, u_c]` hold, so their intersection does. A line of the zonotope (ReLU, exp, ...) built
+    over any interval that contains the true input encloses the activation at it, which is all the
+    soundness of the zonotope (and of the frozen zonotope's faces over `[l, u]`) needs; the bounds
+    only narrow the lines' domains and may make crossing neurons stable (exact lines, no split).
+    Rounding: float64 nearest, as the backward bound.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
   triangle relaxation.

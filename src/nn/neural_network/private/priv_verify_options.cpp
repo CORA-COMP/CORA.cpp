@@ -118,6 +118,9 @@ void NnVerifyOptions::validate() const {
     aux_at_least("relu_bab_root_steps", double(relu_bab_root_steps), 0);
     aux_at_least("relu_bab_farkas_steps", double(relu_bab_farkas_steps), 0);
     aux_at_least("relu_bab_alpha_iterations", double(relu_bab_alpha_iterations), 0);
+    aux_at_least("relu_bab_crown_rounds", double(relu_bab_crown_rounds), 0);
+    aux_at_least("relu_bab_crown_iterations", double(relu_bab_crown_iterations), 0);
+    aux_at_least("relu_bab_crown_step", relu_bab_crown_step, 0);
     aux_at_least("refinement_max_iter", double(refinement_max_iter), 1);
     aux_at_least("refinement_min_move", refinement_min_move, 0);
     aux_at_least("polytope_bound_approx_max_iter", double(polytope_bound_approx_max_iter), 0);
