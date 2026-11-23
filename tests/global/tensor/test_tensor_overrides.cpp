@@ -151,7 +151,8 @@ void aux_abs_sum_bits(const std::string &b) {
         for (int64_t j = 0; j < 7; ++j)
             for (int64_t i = m; i-- > 0;) ref[j] = std::abs(d[i * 7 + j]) + ref[j];
         aux_agree(b + " abs_sum_rows " + std::to_string(m), y.abs_sum_rows(),
-                  Tensor::from_data(ref, {7, 1}), b == "torch" ? aux_sum_bound(m) : 0.0);
+                  Tensor::from_data(ref, {7, 1}),
+                  b.rfind("torch", 0) == 0 ? aux_sum_bound(m) : 0.0);
     }
 }
 

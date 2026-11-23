@@ -34,7 +34,7 @@ void batches_are_their_members(const std::string &name) {
     const Tensor A = Tensor::from_data(va, {3, 4, 4}) + Tensor::eye(4) * 4.0;
     const Tensor B = Tensor::from_data(vb, {3, 4, 2});
     const Tensor single = aux_member(B, 0);
-    const double product_tol = name == "torch" ? 1e-12 : 0;
+    const double product_tol = name.rfind("torch", 0) == 0 ? 1e-12 : 0; // any torch device
     for (int64_t b = 0; b < 3; ++b) {
         const Tensor Ab = aux_member(A, b), Bb = aux_member(B, b);
         const std::string at = name + ", member " + std::to_string(b);
