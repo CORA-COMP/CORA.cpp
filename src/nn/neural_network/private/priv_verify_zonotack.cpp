@@ -976,22 +976,29 @@ void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri,
                                              std::map<std::string, double> &stats) const {
     const StepTimer timer(&stats, "relu_bab_crown_seconds");
     const ZonoNet &net = *net_;
-    // the crossing ReLU neurons of a propagation, and the sum of their bounds' widths
-    const auto crossing = [&](const ZonoPropagation &p, double &width) {
-        double count = 0;
-        width = 0;
+    // per ReLU layer: its crossing neurons and their widths, before and after (the same neurons)
+    std::vector<Tensor> masks;
+    const auto tally = [&](const ZonoPropagation &p, const std::string &when) {
+        double count = 0, width = 0;
+        std::size_t r = 0;
         for (const ZonoLayerRecord &rec : p.layers) {
             if (net.activations[std::size_t(rec.index)] != Activation::relu) continue;
             const Tensor cross =
                 rec.l.less(rec.l.zeros_like()).multiply(rec.u.greater(rec.u.zeros_like()));
-            count += cross.sum().item();
-            width += cross.multiply(rec.u - rec.l).sum().item();
+            if (masks.size() <= r) masks.push_back(cross);
+            const double c = cross.sum().item(),
+                         w = masks[r++].multiply(rec.u - rec.l).sum().item();
+            // the stats of the layer and the sums
+            const std::string layer = "relu_bab_crown_layer" + std::to_string(rec.index);
+            stats[layer + "_crossing_" + when] = c;
+            stats[layer + "_width_" + when] = w;
+            count += c;
+            width += w;
         }
-        return count;
+        stats["relu_bab_crown_crossing_" + when] = count;
+        stats["relu_bab_crown_width_" + when] = width;
     };
-    double width = 0;
-    stats["relu_bab_crown_crossing_before"] = crossing(out, width);
-    stats["relu_bab_crown_width_before"] = width;
+    tally(out, "before");
     // rounds: CROWN over the bounds so far, then the zonotope with its lines at the intersection
     const ZonoInput in = net.input_zonotope(xi, ri);
     const int64_t chunk = problem_->batch_memory_budget / 8;
@@ -1000,8 +1007,7 @@ void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri,
                                    o_.relu_bab_crown_step, chunk, deadline_);
         out = net.forward(in.c, in.dr, in.G, si, nullptr, true, nullptr, &bounds);
     }
-    stats["relu_bab_crown_crossing_after"] = crossing(out, width);
-    stats["relu_bab_crown_width_after"] = width;
+    tally(out, "after");
 }
 
 // The nodes of the ReLU splits --------------------------------------------------------------------
