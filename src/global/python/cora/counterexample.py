@@ -18,7 +18,7 @@ See also: cora.vnnlib, cora.nn_attack, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -28,6 +28,8 @@ import math
 import re
 
 import numpy as np
+
+from .vnnlib import positional
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -274,7 +276,8 @@ def _check_v2(onnx_path, vnnlib_text, content):
     import vnnlib
 
     try:
-        query = vnnlib.parse_query_string(vnnlib_text)
+        # exponents written positionally (as VNN-COMP's own 2.0 files), which the parser needs
+        query = vnnlib.parse_query_string(positional(vnnlib_text))
         if len(query.networks) != 1 or query.networks[0].hidden:
             return UNSUPPORTED, "one network without hidden variables is supported"
         assignment = _parse_v2(content, query)

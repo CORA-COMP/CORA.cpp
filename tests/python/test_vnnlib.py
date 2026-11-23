@@ -4,8 +4,8 @@ The 1.0 reader on boxes, comparisons of two outputs and of an output with a cons
 directions), a disjunction of conjunctions, and a disjunction of input boxes (ACAS Xu's property
 6) merged per box; a 2.0 text, written by to_vnnlib2 from the 1.0 text (exponents as decimals),
 reads to the same arrays bit for bit; a 2.0 input fixed by ==, a scaled bound and a box of 2000
-inputs; errors for unbounded and empty inputs and for an input constraint that is no box; the
-specifications as cora objects.
+inputs; errors for unbounded and empty inputs and for an input constraint that is no box; a 2.0
+text with exponents reads too; the specifications as cora objects.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -22,7 +22,7 @@ try:
 except ImportError:
     raise unittest.SkipTest("needs numpy and vnnlib") from None
 
-from cora.vnnlib import parse_vnnlib, to_vnnlib2
+from cora.vnnlib import parse_vnnlib, positional, to_vnnlib2
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -111,6 +111,17 @@ class Version2(unittest.TestCase):
         bad = head + "(assert (<= (+ X[0] X[1]) 1.0))\n" + box + "(assert (<= Y[0] 0.0))\n"
         with self.assertRaisesRegex(NotImplementedError, "box constraints"):
             parse_vnnlib(bad, n, 1)
+
+    def test_exponents(self):
+        # 1.0's exponents (2.5e-05) as 2.0 writes them, positionally; a 2.0 text with them reads too
+        text = SIMPLE.replace("0.25", "2.5e-01").replace("3.5", "3.5E+0")
+        v2 = to_vnnlib2(text, (1, 3), (1, 3))
+        self.assertIn("X[0,2] 0.25)", v2)
+        self.assertNotIn("e-01", v2)
+        same(self, parse_vnnlib(text, 3, 3), parse_vnnlib(v2, 3, 3))
+        raw = v2.replace("0.25)", "2.5e-01)")
+        same(self, parse_vnnlib(text, 3, 3), parse_vnnlib(raw, 3, 3))
+        self.assertEqual(positional("; 1e-5\n(<= X[0] -1E+3)"), "; 1e-5\n(<= X[0] -1000.0)")
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
