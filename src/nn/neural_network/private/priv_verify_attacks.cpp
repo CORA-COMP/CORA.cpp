@@ -112,7 +112,7 @@ class PgdAttack : public Attack {
                 const Tensor g =
                     problem.objective_gradient(x, r.cases, &loss, targeted_ ? &r.targets : nullptr);
                 const Tensor before = x;
-                x = (x - alpha.multiply(g.sign())).maximum(r.lo).minimum(r.hi);
+                x = priv_sign_step(x, g, alpha).maximum(r.lo).minimum(r.hi);
                 ++result.iterations;
                 result.evaluations += x.shape()[0];
                 if (priv_confirm_rows(problem, before, loss, result)) return;
@@ -196,6 +196,12 @@ class PgdAttack : public Attack {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// The sign step -----------------------------------------------------------------------------------
+
+Tensor priv_sign_step(const Tensor &x, const Tensor &g, const Tensor &alpha) {
+    return x - alpha.multiply(g.sign());
+}
 
 // The registry ------------------------------------------------------------------------------------
 
