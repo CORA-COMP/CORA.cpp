@@ -15,6 +15,12 @@ import cora
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
+# run_instance imports cora.nn_verify, which needs torch
+try:
+    import torch  # noqa: F401
+except ImportError:
+    torch = None
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -27,6 +33,7 @@ def load_script():
     return module
 
 
+@unittest.skipUnless(torch is not None and cora.has_torch, "needs torch")
 class RunInstanceOptions(unittest.TestCase):
     def setUp(self):
         # a fresh copy of the script per test
