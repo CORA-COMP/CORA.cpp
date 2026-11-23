@@ -280,6 +280,11 @@ Interval fourier_motzkin_bounds(const Tensor &C, const Tensor &d, int64_t k) {
         .get<Interval>("I");
 }
 
+double dual_bound(const Tensor &C, const Tensor &d, const Tensor &w, const Tensor &lambda) {
+    return ask("conZonotope.dualBound", {{"C", C}, {"d", d}, {"w", w}, {"lambda", lambda}})
+        .get<double>("h");
+}
+
 } // namespace cora::lean
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

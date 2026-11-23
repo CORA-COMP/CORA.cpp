@@ -37,7 +37,13 @@ Json aux_layer(const NnLayer &layer, std::string &dtype) {
         j.set("coeffs", C.to_json()).set("d", d.to_json());
     } else if (layer.kind == "sigmoid" || layer.kind == "tanh") {
         j.set("k", int64_t(layer.k));
-    } else if (layer.kind != "relu") {
+    } else if (layer.kind == "conv") {
+        // the geometry, then the kernel and the bias
+        const Tensor K(layer.W), b(layer.b);
+        dtype = K.dtype();
+        j = layer.geometry;
+        j.set("kind", layer.kind).set("kernel", K.to_json()).set("b", b.to_json());
+    } else if (layer.kind != "relu" && layer.kind != "sign" && layer.kind != "square") {
         CORA_FAIL(Error::wrong_value, "lean: the layer kind '" + layer.kind + "' is unknown");
     }
     return j;
@@ -85,6 +91,43 @@ NnLayer NnLayer::tanh() {
     return layer;
 }
 
+// the two lines of NeuralNetwork::verify without a CORA layer
+NnLayer NnLayer::sign() {
+    NnLayer layer;
+    layer.kind = "sign";
+    return layer;
+}
+
+NnLayer NnLayer::square() {
+    NnLayer layer;
+    layer.kind = "square";
+    return layer;
+}
+
+// a convolution: the kernel as a matrix (out, C / groups * kh * kw) and its geometry
+NnLayer NnLayer::conv(const cora::Tensor &kernel, const cora::Tensor &bias,
+                      const std::vector<int64_t> &input, const NeuralNetwork::Conv2d &spec) {
+    NnLayer layer;
+    layer.kind = "conv";
+    const std::vector<int64_t> &s = kernel.shape();
+    layer.W = kernel.reshape({s[0], s[1] * s[2] * s[3]});
+    layer.b = bias.reshape({bias.numel(), 1});
+    // the geometry as lists of integers
+    const auto ints = [](const auto &v) {
+        Json a = Json::array();
+        for (const int64_t x : v) a.push(x);
+        return a;
+    };
+    layer.geometry = Json::object();
+    layer.geometry.set("kshape", ints(std::vector<int64_t>{s[2], s[3]}))
+        .set("input", ints(input))
+        .set("stride", ints(spec.stride))
+        .set("dilation", ints(spec.dilation))
+        .set("pads", ints(spec.pads))
+        .set("groups", spec.groups);
+    return layer;
+}
+
 // the fit of order k given: its coefficients and its errors
 NnLayer NnLayer::poly(const cora::Tensor &coeffs, const cora::Tensor &d) {
     NnLayer layer;
@@ -92,6 +135,36 @@ NnLayer NnLayer::poly(const cora::Tensor &coeffs, const cora::Tensor &d) {
     layer.W = coeffs;
     layer.b = d;
     return layer;
+}
+
+// The lines ---------------------------------------------------------------------------------------
+
+NnLine relaxation(const std::string &kind, const cora::Tensor &l, const cora::Tensor &u,
+                  const cora::Tensor &alpha) {
+    std::vector<Operand> args{{"kind", kind}, {"l", Tensor(l)}, {"u", Tensor(u)}};
+    if (alpha.defined()) args.push_back({"alpha", Tensor(alpha)});
+    // the depths of exp's reduction and of the log and root iterations (unused at nearest)
+    if (kind == "exp") args.push_back({"k", int64_t(30)});
+    if (kind == "exp" || kind == "reciprocal") args.push_back({"p", int64_t(60)});
+    const Reply r = ask("nnLayer.relaxation", args);
+    return {r.get<Tensor>("slope"), r.get<Tensor>("offset"), r.get<Tensor>("error")};
+}
+
+NnLine product_line(const cora::Tensor &c, const cora::Tensor &G, const cora::Tensor &dr) {
+    std::vector<Operand> args{{"Z", Zonotope(c, G)}, {"p", int64_t(60)}};
+    if (dr.defined()) args.push_back({"dr", Tensor(dr)});
+    const Reply r = ask("nnLayer.productLine", args);
+    return {r.get<Tensor>("slope"), r.get<Tensor>("offset"), r.get<Tensor>("error")};
+}
+
+std::pair<Tensor, Tensor> softmax_sum_bounds(const cora::Tensor &W, const cora::Tensor &b,
+                                             const cora::Tensor &l, const cora::Tensor &u) {
+    const Reply r = ask("nnLayer.softmaxSumBounds", {{"W", Tensor(W)},
+                                                     {"b", Tensor(b)},
+                                                     {"l", Tensor(l)},
+                                                     {"u", Tensor(u)},
+                                                     {"k", int64_t(30)}});
+    return {r.get<Tensor>("inf"), r.get<Tensor>("sup")};
 }
 
 // The evaluations ----------------------------------------------------------------------------

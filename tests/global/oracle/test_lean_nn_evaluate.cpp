@@ -71,11 +71,15 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
         case Activation::tanh:
             layers.push_back(lean::NnLayer::tanh());
             break;
+        case Activation::sign:
+            layers.push_back(lean::NnLayer::sign());
+            break;
+        case Activation::square:
+            layers.push_back(lean::NnLayer::square());
+            break;
         case Activation::identity:
             break;
         // the activations CORALean has no layer of
-        case Activation::square:
-        case Activation::sign:
         case Activation::floor:
         case Activation::cube:
         case Activation::inverse:
@@ -84,9 +88,8 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
         case Activation::exp:
         case Activation::reciprocal:
         case Activation::product:
-            throw std::invalid_argument(
-                "aux_lean_layers: the oracle has no square, sign, exp, "
-                "reciprocal, product, floor, cube, inverse, sin or cos layer");
+            throw std::invalid_argument("aux_lean_layers: the oracle has no exp, reciprocal, "
+                                        "product, floor, cube, inverse, sin or cos layer");
         }
     }
     return layers;
@@ -250,16 +253,21 @@ int main() {
     if (!oracle::available() || !oracle::serves("neuralNetwork.evaluate")) return 0;
     const std::vector<std::pair<std::string, Activation>> kinds{
         {"relu", Activation::relu}, {"sigmoid", Activation::sigmoid}, {"tanh", Activation::tanh}};
+    // plus the lines of verify without a CORA layer: sign, and the square's chord-tangent band
+    std::vector<std::pair<std::string, Activation>> all_kinds = kinds;
+    all_kinds.insert(all_kinds.end(), {{"sign", Activation::sign}, {"square", Activation::square}});
 
     // one activation layer of every kind on zonotopes with neurons below, above and across 0
     oracle::run("nnLayer.evaluateZonotope", [&](oracle::Random &rnd) {
-        for (const auto &[name, activation] : kinds) {
+        for (const auto &[name, activation] : all_kinds) {
             for (const auto &[n, m] : std::vector<std::pair<int, int>>{{2, 3}, {5, 4}, {12, 12}}) {
                 const Zonotope Z(rnd.point(n) * 2.0, rnd.matrix(n, m).matrix_transpose());
                 const NeuralNetwork nn({{Tensor::eye(n), Tensor::zeros({n})}}, {activation});
-                lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
-                                      : name == "sigmoid" ? lean::NnLayer::sigmoid()
-                                                          : lean::NnLayer::tanh();
+                const lean::NnLayer layer = name == "relu"      ? lean::NnLayer::relu()
+                                            : name == "sigmoid" ? lean::NnLayer::sigmoid()
+                                            : name == "tanh"    ? lean::NnLayer::tanh()
+                                            : name == "sign"    ? lean::NnLayer::sign()
+                                                                : lean::NnLayer::square();
                 NnOptions options;
                 options.poly_method = PolyMethod::singh;
                 oracle::check(name, nn.evaluate(Z, options),
@@ -275,7 +283,7 @@ int main() {
 
     // networks of several layers, mixed activations, and the last layer without one
     oracle::run("neuralNetwork.evaluate", [&](oracle::Random &rnd) {
-        for (const auto &[name, activation] : kinds) {
+        for (const auto &[name, activation] : all_kinds) {
             const NeuralNetwork nn = aux_random_network(
                 rnd, {3, 6, 5, 2}, {activation, activation, Activation::identity});
             aux_check_network(nn,

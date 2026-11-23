@@ -356,6 +356,56 @@ void backward_bounds(const std::string &b) {
     }
 }
 
+/// The chord above a crossing ReLU holds at both ends at the stored slope, in long double, at the
+/// witness l = -0.006077605996286801, u = 0.008781622029526388, where -chord l alone is 1.9e-19
+/// short of relu(u) (CORALean !971, fixture 9529).
+void relu_chord_both_ends(const std::string &b) {
+    const double lv = -0.006077605996286801, uv = 0.008781622029526388;
+    const Tensor l({{lv}}), u({{uv}});
+    const Tensor chord = u.divide((u - l).maximum(numerics::kTiny));
+    const long double s = chord.item(), o = priv_relu_chord_offset(l, u, chord).item();
+    const long double old = chord.multiply(l).negative().item();
+    check(s * uv + o >= (long double)uv && s * lv + o >= 0.0L,
+          b + ": the ReLU's chord above holds at both ends at the witness");
+    // Only an extended long double sees the 1.9e-19 shortfall (MSVC's long double is double).
+    if (sizeof(long double) > sizeof(double))
+        check(s * uv + old < (long double)uv, b + ": -chord l alone is short at the witness");
+}
+
+/// The certificate on rows of very different norms is at most the program's optimum: min w beta
+/// over beta in [-1, 1] with c_i beta <= d_i, exact in long double (weak duality on the rows as
+/// given, not on rows rescaled to unit norm and rounded).
+void dual_unscaled_rows(const std::string &b) {
+    Rng rng(29);
+    std::vector<double> v(std::size_t(200 * 7));
+    rng.uniform(v.data(), v.size(), -1.0, 1.0);
+    int violations = 0;
+    for (std::size_t t = 0; t < 200; ++t) {
+        const double *x = v.data() + 7 * t;
+        // three rows c beta <= d of norms 1e-3 to 1e3, all holding at beta = x[6] / 2
+        const double beta0 = x[6] / 2, w = x[0];
+        std::vector<double> c, d;
+        long double lo = -1, hi = 1;
+        for (int i = 0; i < 3; ++i) {
+            const double ci = x[1 + i] * std::pow(10.0, 3.0 * (i - 1)),
+                         di = ci * beta0 + 0.1 * x[4];
+            c.push_back(ci);
+            d.push_back(std::max(di, ci * beta0));
+            const long double r = (long double)(d.back()) / ci;
+            if (ci > 0) hi = std::min(hi, r);
+            if (ci < 0) lo = std::max(lo, r);
+        }
+        // the optimum at an end of the feasible interval, and the certificate
+        const long double opt = w > 0 ? w * lo : w * hi;
+        const double h =
+            priv_dual_lower(Tensor::from_data({w}, {1, 1, 1}), Tensor::from_data(c, {1, 3, 1}),
+                            Tensor::from_data(d, {1, 3}), 40, 0.1, DType::float64)
+                .item();
+        violations += (long double)h > opt + 1e-15L;
+    }
+    check(violations == 0, b + ": the dual certificate is at most the optimum on unequal rows");
+}
+
 /// The dual certificate holds the sampled outputs under the splits, is at least the zonotope's
 /// bound, and on a small program reaches its optimum.
 void dual_bounds(const std::string &b) {
@@ -736,6 +786,8 @@ int main() {
         alpha_gradients(b);
         backward_bounds(b);
         dual_bounds(b);
+        dual_unscaled_rows(b);
+        relu_chord_both_ends(b);
         fourier_motzkin(b);
         switches(b);
         deadlines(b);

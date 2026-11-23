@@ -363,7 +363,7 @@ Tensor aux_crossing(const Tensor &l, const Tensor &u) {
 
 /// Where -a l is the larger end of relu(x) - a x over [l, u].
 Tensor aux_alpha_left(const Tensor &l, const Tensor &u, const Tensor &a) {
-    return a.multiply(l).negative().greater_equal((1.0 - a).multiply(u));
+    return a.multiply(l).negative().greater_equal(u - a.multiply(u));
 }
 
 /// The slopes of layer k, if alpha holds them and the layer is a ReLU.
@@ -376,7 +376,7 @@ const Tensor *aux_alpha_of(const ZonoNet &net, const std::vector<Tensor> *alpha,
 /// over [l, u] with h = max(-a l, (1 - a) u), so the offset and the radius are h / 2.
 PrivLine aux_alpha_line(const PrivLine &base, const Tensor &l, const Tensor &u, const Tensor &a) {
     const Tensor cross = aux_crossing(l, u);
-    const Tensor half = a.multiply(l).negative().maximum((1.0 - a).multiply(u)) * 0.5;
+    const Tensor half = a.multiply(l).negative().maximum(u - a.multiply(u)) * 0.5;
     return {Tensor::where(cross, a, base.slope), Tensor::where(cross, half, base.offset),
             Tensor::where(cross, half, base.radius)};
 }
@@ -525,6 +525,22 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
 
 
 // ===========================================  MAIN  =========================================== //
+
+// The lines and boxes of a layer ------------------------------------------------------------------
+
+Tensor priv_relu_chord_offset(const Tensor &l, const Tensor &u, const Tensor &chord) {
+    // -chord l alone can fall below relu(u) = u once the slope is rounded: the larger of the two
+    return chord.multiply(l).negative().maximum(u - chord.multiply(u));
+}
+
+PrivLine priv_alpha_line(const PrivLine &base, const Tensor &l, const Tensor &u, const Tensor &a) {
+    return aux_alpha_line(base, l, u, a);
+}
+
+std::pair<Tensor, Tensor> priv_box_image(const ZonoNet &net, std::size_t k, const Tensor &lo,
+                                         const Tensor &hi) {
+    return aux_box_image(net, k, lo, hi);
+}
 
 PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &u,
                           const std::string &poly_method) {
@@ -955,7 +971,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                 const Tensor cross = aux_crossing(lc, uc), on = lc.greater_equal(zero);
                 const Tensor chord = uc.divide((uc - lc).maximum(numerics::kTiny));
                 su = Tensor::where(cross, chord, on);
-                bu = Tensor::where(cross, chord.multiply(lc).negative(), zero);
+                bu = Tensor::where(cross, priv_relu_chord_offset(lc, uc, chord), zero);
                 const Tensor *a = aux_alpha_of(net, alpha, k);
                 const Tensor below = a ? *a : uc.greater(lc.negative());
                 sl = Tensor::where(cross, below, on);
@@ -1004,11 +1020,13 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
             split ? net.clamp(rec.first_id, rec.l, rec.u, splits) : std::pair{rec.l, rec.u};
         Lines &L = lines[k];
         if (net.activations[k] == Activation::relu) {
+            // the chord above where the neuron crosses zero, the identity or zero elsewhere
             const Tensor zero = lc.zeros_like(), on = lc.greater_equal(zero);
             L.cross = aux_crossing(lc, uc);
             const Tensor chord = uc.divide((uc - lc).maximum(numerics::kTiny));
             L.su = Tensor::where(L.cross, chord, on).expand_dims(1);
-            L.bu = Tensor::where(L.cross, chord.multiply(lc).negative(), zero).expand_dims(1);
+            L.bu =
+                Tensor::where(L.cross, priv_relu_chord_offset(lc, uc, chord), zero).expand_dims(1);
             L.sl = Tensor::where(L.cross, zero, on).expand_dims(1);
             L.bl = zero.expand_dims(1);
             // CROWN's start: 1 where u > -l, per row

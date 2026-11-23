@@ -88,6 +88,31 @@ void lines_hold(const std::string &b) {
     check(violations == 0, b + ": the lines of exp and 1 / max(x, 1) hold on six ranges");
 }
 
+/// The lower ends at the minimum: exp(x) - m x at x = log m and 1 / x - m x at x = 1 / sqrt(-m), in
+/// long double, are at least the line's lower end (the closed-form minimum, sound in floats; the
+/// value at a rounded stationary point is not a lower bound).
+void lower_end_at_the_minimum(const std::string &b) {
+    // a draw of boxes from 1e-12 to 10 wide
+    std::mt19937 gen(41);
+    std::uniform_real_distribution<double> start(-20.0, 20.0), scale(-12.0, 1.0);
+    int violations = 0;
+    for (int t = 0; t < 2000; ++t) {
+        const double l = start(gen), u = l + std::pow(10.0, scale(gen));
+        const Tensor L({{l}}), U({{u}});
+        const PrivLine e = priv_exp_line(L, U), r = priv_reciprocal_line(L, U);
+        const long double me = e.slope.item(), mr = r.slope.item();
+        // exp: the minimum over the line at log m, where it lies in [l, u]
+        const long double xe = std::log(me);
+        if (me > 0 && xe >= l && xe <= u)
+            violations += std::exp(xe) - me * xe < (long double)(e.offset.item()) - e.radius.item();
+        // the reciprocal after 1: the minimum at 1 / sqrt(-m), where it lies in [max(l, 1), u]
+        const long double xr = 1.0L / std::sqrt(-mr);
+        if (xr >= std::max(l, 1.0) && xr <= u)
+            violations += 1.0L / xr - mr * xr < (long double)(r.offset.item()) - r.radius.item();
+    }
+    check(violations == 0, b + ": the lines of exp and 1 / max(x, 1) hold at their minima");
+}
+
 /// The softmax of a box: the enclosure holds sampled softmax values, inside (0, 1).
 void softmax_of_a_box(const std::string &b) {
     const NeuralNetwork nn = softmax_network(3);
@@ -261,6 +286,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         points(b);
         lines_hold(b);
+        lower_end_at_the_minimum(b);
         softmax_of_a_box(b);
         scaled_gather(b);
         verify_decides(b);

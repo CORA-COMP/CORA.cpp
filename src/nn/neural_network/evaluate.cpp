@@ -779,7 +779,10 @@ PrivLine priv_exp_line(const Tensor &l, const Tensor &u) {
         Tensor::where(width.greater(zero), (eu - el).divide(width.maximum(numerics::kTiny)), el)
             .maximum(zero);
     const auto g = [&](const Tensor &x) { return x.exp() - m.multiply(x); };
-    const Tensor hi = g(l).maximum(g(u)), lo = g(m.log().maximum(l).minimum(u));
+    // the least value over the line, m - m log m (g(l) for m = 0): CORALean's expChordRelaxation
+    const Tensor hi = g(l).maximum(g(u));
+    const Tensor pos = m.greater(zero), mp = Tensor::where(pos, m, m.ones_like()); // log finite
+    const Tensor lo = Tensor::where(pos, m - m.multiply(mp.log()), g(l));
     // the radius widened by the rounding (16 ulps of the largest term)
     const Tensor big = eu + m.multiply(l.abs().maximum(u.abs()));
     return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big * (16.0 * machine_eps(l.dtype()))};
@@ -793,7 +796,8 @@ PrivLine priv_reciprocal_line(const Tensor &l, const Tensor &u) {
     const Tensor m = one.divide(lc).multiply(one.divide(uc)).negative();
     const auto g = [&](const Tensor &x) { return one.divide(x.maximum(1.0)) - m.multiply(x); };
     const Tensor hi = g(l).maximum(g(u)).maximum(g(one.maximum(l).minimum(u)));
-    const Tensor lo = g(l).minimum(g(lc.multiply(uc).sqrt().maximum(l).minimum(u)));
+    // g rises up to 1, then is at least 2 sqrt(-m), 1 / x - m x's least (reciprocalRelaxation)
+    const Tensor lo = g(l).minimum(m.negative().sqrt() * 2.0);
     // the radius widened by the rounding (16 ulps of the largest term)
     const Tensor big = one + m.abs().multiply(l.abs().maximum(u.abs()));
     return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big * (16.0 * machine_eps(l.dtype()))};

@@ -92,11 +92,11 @@ PrivLine priv_sign_line(const Tensor &l, const Tensor &u);
 PrivLine priv_floor_line(const Tensor &l, const Tensor &u);
 
 /// The line of exp over [l, u]: the chord's slope m, the middle and half the range of the convex
-/// exp(x) - m x (largest at an end, least at log m in [l, u]), widened by the rounding.
+/// exp(x) - m x (largest at an end, at least its minimum m - m log m), widened by the rounding.
 PrivLine priv_exp_line(const Tensor &l, const Tensor &u);
 
 /// The line of 1 / max(x, 1) over [l, u]: the chord's slope m on [max(l, 1), max(u, 1)]; f - m x
-/// rises to 1, then is convex: largest at l, u or 1, least at l or sqrt(l u) (where f' = m).
+/// rises to 1, then is convex: largest at l, u or 1, at least min(f(l) - m l, 2 sqrt(-m)).
 PrivLine priv_reciprocal_line(const Tensor &l, const Tensor &u);
 
 /// The line of x^3 over [l, u]: the chord's slope m = l^2 + l u + u^2, the middle and half the
