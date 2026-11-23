@@ -824,7 +824,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     return xs.shape()[0] == 0 && unresolved == 0 ? "unsat" : "unknown";
 }
 
-// The ReLU-split branch and bound on a frozen zonotope --------------------------------------------
+// The branch and bound of ReLU splits on a frozen zonotope ----------------------------------------
 
 // sound: a split only intersects with true facts of its phase (nn_verification.md, relu-bab)
 
