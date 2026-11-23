@@ -9,6 +9,7 @@
 // concave function in the search dtype (beta-CROWN's split multipliers, applied to the factors of
 // the latent space); the bound of the best lambda is evaluated again in the rows' dtype (float64),
 // so it holds for any lambda the steps found.
+// On a frozen zonotope the nodes of one depth share their split rows (priv_dual_lower_signs).
 //
 // Syntax:   auto [C, d] = priv_dual_rows(out, net, splits, 32);
 //           Tensor low = priv_dual_lower(w, C, d, 20, 0.1, DType::float32);
@@ -23,13 +24,14 @@
 // CORA.cpp only: the dual bound of the check (CORA bounds the factors' box by dual-iter only)
 // Authors:       Claude Opus 5.5
 // Written:       22-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
 #include "nn/neural_network/private/priv_zono_batch.h"
 
 #include <cmath>
+#include <functional>
 #include <limits>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -62,6 +64,30 @@ Tensor aux_dual(const Tensor &w, const Tensor &C, const Tensor &d, const Tensor 
     const Tensor s = w + lambda.matmul(C);
     if (sum) *sum = s;
     return s.abs().sum(-1).negative() - lambda.multiply(d.expand_dims(1)).sum(-1);
+}
+
+/// Projected Adam ascent of a concave dual on lambda >= 0 (value, supergradient grad), steps of
+/// lr per row from lambda; the best lambda of each row.
+Tensor aux_ascent(Tensor lambda, const Tensor &lr, int64_t iterations,
+                  const std::function<Tensor(const Tensor &)> &value,
+                  const std::function<Tensor(const Tensor &)> &grad) {
+    Tensor m1 = lambda.zeros_like(), m2 = m1, best = lambda;
+    Tensor best_value = value(lambda);
+    constexpr double kB1 = 0.9, kB2 = 0.999;
+    for (int64_t t = 1; t <= iterations; ++t) {
+        const Tensor g = grad(lambda);
+        m1 = m1 * kB1 + g * (1.0 - kB1);
+        m2 = m2 * kB2 + g.square() * (1.0 - kB2);
+        const double c1 = 1.0 - std::pow(kB1, double(t)), c2 = 1.0 - std::pow(kB2, double(t));
+        const Tensor move = (m1 / c1).divide((m2 / c2).sqrt() + numerics::kAdamEpsilon);
+        lambda = (lambda + move.multiply(lr)).maximum(0.0);
+        // the best lambda of each row so far
+        const Tensor v = value(lambda);
+        const Tensor better = v.greater(best_value);
+        best_value = Tensor::where(better, v, best_value);
+        best = Tensor::where(better.expand_dims(-1), lambda, best);
+    }
+    return best;
 }
 
 } // namespace
@@ -148,6 +174,86 @@ std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoN
     return {Tensor::concat(Cs, 1), Tensor::concat(ds, 1)};
 }
 
+// The table of the splits -------------------------------------------------------------------------
+
+PrivSplitTable priv_split_table(const ZonoPropagation &out, const ZonoNet &net) {
+    const int64_t q = net.q;
+    std::vector<Tensor> rows, cs, drs;
+    std::vector<double> ids;
+    for (const ZonoLayerRecord &rec : out.layers) {
+        if (net.activations[std::size_t(rec.index)] != Activation::relu) continue;
+        // the neurons whose input crosses 0, on the host: the table is made once
+        const int64_t n = rec.l.shape()[1];
+        const std::vector<double> l = rec.l.data(), u = rec.u.data();
+        std::vector<int64_t> j;
+        for (int64_t k = 0; k < n; ++k)
+            if (l[std::size_t(k)] < 0 && u[std::size_t(k)] > 0) j.push_back(k);
+        if (j.empty()) continue;
+        const Tensor G = rec.G_in.take(j, 2).squeeze(0).matrix_transpose(); // (|j|, qi)
+        const int64_t extra = q - G.shape()[1];
+        rows.push_back(extra == 0 ? G
+                                  : Tensor::concat({G, G.zeros_like({G.shape()[0], extra})}, 1));
+        cs.push_back(rec.c_in.take(j, 1).squeeze(0));
+        drs.push_back(rec.dr_in.defined() ? rec.dr_in.take(j, 1).squeeze(0)
+                                          : cs.back().zeros_like());
+        for (const int64_t k : j) ids.push_back(double(rec.first_id + k));
+    }
+    PrivSplitTable t;
+    t.ids = Tensor::like(out.c, ids, {int64_t(ids.size())});
+    if (ids.empty()) {
+        t.rows = out.c.zeros_like({0, q});
+        t.c = t.dr = out.c.zeros_like({0});
+        return t;
+    }
+    t.rows = Tensor::concat(rows, 0);
+    t.c = Tensor::concat(cs, 0);
+    t.dr = Tensor::concat(drs, 0);
+    return t;
+}
+
+// The bound of the nodes of one depth -------------------------------------------------------------
+
+// node n: s_j G_j beta <= -s_j c_j + dr_j, so lambda C is (lambda * s) R (nn_verification.md)
+
+Tensor priv_dual_lower_signs(const Tensor &w, const Tensor &R_, const Tensor &c_, const Tensor &dr_,
+                             const Tensor &s, int64_t iterations, double step, DType dtype,
+                             const Tensor &start, Tensor *best_out) {
+    const int64_t N = s.shape()[0], K = w.shape()[0], d = R_.shape()[0];
+    // the rows at unit 1-norm (the signs keep it), then node n's offsets -s c + dr
+    const Tensor norm = R_.abs().sum(-1);
+    const Tensor scale = Tensor::where(norm.greater(norm.zeros_like()), norm, norm.ones_like());
+    const Tensor R = R_.divide(scale.expand_dims(-1));
+    const Tensor off = (s.multiply(c_.negative()) + dr_).divide(scale); // (N, d)
+    // L(lambda) = -|w + (lambda s) R|_1 - sum lambda off, per node and row
+    const auto dual = [&](const Tensor &ww, const Tensor &RR, const Tensor &oo, const Tensor &ss,
+                          const Tensor &lambda, Tensor *sum) {
+        const Tensor ls = lambda.multiply(ss.expand_dims(1)); // (N, K, d)
+        const Tensor t = ww.expand_dims(0) + ls.matmul(RR);   // (N, K, q)
+        if (sum) *sum = t;
+        return t.abs().sum(-1).negative() - lambda.multiply(oo.expand_dims(1)).sum(-1);
+    };
+    const Tensor w32 = w.to(dtype), R32 = R.to(dtype), off32 = off.to(dtype), s32 = s.to(dtype);
+    const Tensor RT32 = R32.matrix_transpose();
+    const Tensor zero = w32.zeros_like({N, K, d});
+    const Tensor lambda = start.defined() ? start.to(dtype).maximum(0.0) : zero;
+    const Tensor lr = w32.abs().max(-1, true).expand_dims(0) * step; // (1, K, 1)
+    // the supergradient -(sign(w + lambda C) R^T) s - off
+    const Tensor best = aux_ascent(
+        lambda, lr, iterations,
+        [&](const Tensor &l) { return dual(w32, R32, off32, s32, l, nullptr); },
+        [&](const Tensor &l) {
+            Tensor sum;
+            dual(w32, R32, off32, s32, l, &sum);
+            return sum.sign().matmul(RT32).multiply(s32.expand_dims(1)).negative() -
+                   off32.expand_dims(1);
+        });
+    if (best_out) *best_out = best;
+    // the certificate: weak duality holds for every lambda >= 0, evaluated in the rows' dtype
+    const Tensor at_best =
+        dual(w, R, off, s.to(w.dtype()), best.to(w.dtype()).maximum(0.0), nullptr);
+    return at_best.maximum(w.abs().sum(-1).negative().expand_dims(0));
+}
+
 // The bound ---------------------------------------------------------------------------------------
 
 Tensor priv_dual_lower(const Tensor &w, const Tensor &C_, const Tensor &d_, int64_t iterations,
@@ -161,25 +267,15 @@ Tensor priv_dual_lower(const Tensor &w, const Tensor &C_, const Tensor &d_, int6
     const int64_t B = w.shape()[0], R = w.shape()[1], p = C.shape()[1];
     // the step of each row in units of its own coefficients
     const Tensor lr = w32.abs().max(-1, true) * step;
-    Tensor lambda = w32.zeros_like({B, R, p}), m1 = lambda, m2 = lambda, best = lambda;
-    Tensor best_value = aux_dual(w32, C32, d32, lambda, nullptr);
-    constexpr double kB1 = 0.9, kB2 = 0.999;
-    for (int64_t t = 1; t <= iterations; ++t) {
-        // the supergradient -sign(w + lambda C) C^T - d, Adam, projected onto lambda >= 0
-        Tensor s;
-        aux_dual(w32, C32, d32, lambda, &s);
-        const Tensor g = s.sign().matmul(CT32).negative() - d32.expand_dims(1);
-        m1 = m1 * kB1 + g * (1.0 - kB1);
-        m2 = m2 * kB2 + g.square() * (1.0 - kB2);
-        const double c1 = 1.0 - std::pow(kB1, double(t)), c2 = 1.0 - std::pow(kB2, double(t));
-        const Tensor move = (m1 / c1).divide((m2 / c2).sqrt() + numerics::kAdamEpsilon);
-        lambda = (lambda + move.multiply(lr)).maximum(0.0);
-        // the best lambda of each row so far
-        const Tensor value = aux_dual(w32, C32, d32, lambda, nullptr);
-        const Tensor better = value.greater(best_value);
-        best_value = Tensor::where(better, value, best_value);
-        best = Tensor::where(better.expand_dims(-1), lambda, best);
-    }
+    // the supergradient -sign(w + lambda C) C^T - d
+    const Tensor best = aux_ascent(
+        w32.zeros_like({B, R, p}), lr, iterations,
+        [&](const Tensor &l) { return aux_dual(w32, C32, d32, l, nullptr); },
+        [&](const Tensor &l) {
+            Tensor s;
+            aux_dual(w32, C32, d32, l, &s);
+            return s.sign().matmul(CT32).negative() - d32.expand_dims(1);
+        });
     // the certificate: the bound of the best lambda in the rows' dtype, at least lambda = 0's
     const Tensor at_best = aux_dual(w, C, d, best.to(w.dtype()).maximum(0.0), nullptr);
     return at_best.maximum(w.abs().sum(-1).negative());

@@ -114,7 +114,7 @@ class ZonotopeBounding : public Bounding {
                                  AttackResult &found) override {
         Tensor lo = problem.outer_lo, hi = problem.outer_hi;
         Tensor cases = problem.box_case;
-        const int64_t batch = std::max<int64_t>(1, problem.memory_budget / box_bytes_);
+        const int64_t batch = std::max<int64_t>(1, problem.batch_memory_budget / box_bytes_);
         const InputSplitHeuristic &split = priv_input_split_heuristic(o_.input_split_heuristic);
         int64_t iteration = 0;
         double last = 0;

@@ -6,6 +6,7 @@
 // NeuralNetwork::evaluate, and with few slots (an interval center) it still holds sampled outputs;
 // Fourier-Motzkin in both orders holds the feasible points of random systems; the three repairs and
 // every switch of CORA's verify run. exact_backprop's F-radius gradient is the difference quotient.
+// Many cases of few polytopes (lindex) decide chunk by chunk.
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA: nn/@neuralNetwork/evaluateZonotopeBatch_.m
@@ -17,7 +18,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -398,6 +399,71 @@ void dual_bounds(const std::string &b) {
         }
         check(holds, b + ": the dual certificate holds the sampled outputs, above the zonotope's");
     }
+    // the table of one set's crossing neurons: priv_dual_rows' rows of their splits
+    const ZonoNet net(nn, 3, 6.0, "bounds", "length");
+    const Tensor x0 = x.slice(0, 0, 1), r0 = r.slice(0, 0, 1);
+    const ZonoInput in = net.input_zonotope(x0, r0);
+    const ZonoPropagation root = net.forward(in.c, in.dr, in.G, Tensor(), nullptr, true);
+    const PrivSplitTable table = priv_split_table(root, net);
+    const std::vector<double> ids = table.ids.data();
+    const int64_t U = int64_t(ids.size());
+    check(U >= 2, b + ": the set has crossing neurons to split");
+    if (U < 2) return;
+    // the first and the last crossing neuron, below and above 0: priv_dual_rows' -id and +id
+    const Tensor some = Tensor::like(x0, {-ids.front(), ids.back()}, {1, 2});
+    const auto [Cd, dd] = priv_dual_rows(root, net, some, 0);
+    const int64_t L = Cd.shape()[1] / 2; // one block of the two splits per layer
+    const Tensor Cs = Cd.reshape({1, L, 2, net.q}).sum(1), ds = dd.reshape({1, L, 2}).sum(1);
+    const Tensor R = table.rows.take({0, U - 1}, 0), c = table.c.take({0, U - 1}, 0),
+                 dr = table.dr.take({0, U - 1}, 0);
+    const Tensor sg = Tensor::like(x0, {-1.0, 1.0}, {1, 2});
+    check(test::close(R.multiply(sg.reshape({2, 1})).expand_dims(0), Cs, 1e-12) &&
+              test::close(sg.multiply(c.negative()) + dr, ds, 1e-12),
+          b + ": the table's rows with the signs are priv_dual_rows'");
+    // the bound of nodes of shared rows: at 0 steps priv_dual_lower's, better with steps, sound
+    const Tensor wr = root.G.matmul(rows.matrix_transpose()).permute_dims({0, 2, 1}).squeeze(0);
+    const Tensor nodes = Tensor::like(x0, {-1.0, 1.0, 1.0, -1.0, 1.0, 1.0}, {3, 2});
+    const Tensor at0 = priv_dual_lower_signs(wr, R, c, dr, nodes, 0, 0.1, DType::float32);
+    bool same = true;
+    for (int64_t k = 0; k < 3; ++k) {
+        const Tensor sk = nodes.slice(0, k, k + 1);
+        const Tensor Ck = R.multiply(sk.reshape({2, 1})).expand_dims(0);
+        const Tensor dk = sk.multiply(c.negative()) + dr;
+        same =
+            same &&
+            test::close(at0.slice(0, k, k + 1),
+                        priv_dual_lower(wr.expand_dims(0), Ck, dk, 0, 0.1, DType::float32), 1e-10);
+    }
+    check(same, b + ": the nodes' bound at 0 steps is priv_dual_lower's");
+    Tensor best;
+    const Tensor at30 =
+        priv_dual_lower_signs(wr, R, c, dr, nodes, 30, 0.1, DType::float32, Tensor(), &best);
+    const Tensor warm = priv_dual_lower_signs(wr, R, c, dr, nodes, 0, 0.1, DType::float32, best);
+    check(at30.greater_equal(at0 - 1e-12).min().item() > 0 && test::close(warm, at30, 1e-6),
+          b + ": the steps raise the nodes' bound, a warm start keeps it");
+    // sound: below the sampled generator sums of the factors that satisfy each node's rows
+    std::vector<double> bs(std::size_t(20000 * net.q));
+    rng.uniform(bs.data(), bs.size(), -1.0, 1.0);
+    const Tensor beta = Tensor::from_data(bs, {20000, net.q});
+    const Tensor zs = beta.matmul(R.matrix_transpose()) + c; // the split neurons' inputs
+    const Tensor vals = beta.matmul(wr.matrix_transpose());  // (20000, K)
+    const std::vector<double> z = zs.data(), v = vals.data(), lo = at30.data(), ns = nodes.data(),
+                              rad = dr.data();
+    const int64_t K = wr.shape()[0];
+    bool sound = true;
+    for (int64_t k = 0; k < 3; ++k)
+        for (int64_t p = 0; p < 20000; ++p) {
+            bool in_node = true;
+            for (int64_t j = 0; j < 2; ++j) {
+                // s_j z_j <= dr_j: the input's side, its error at the worst
+                const double sj = ns[std::size_t(k * 2 + j)];
+                in_node = in_node && sj * z[std::size_t(p * 2 + j)] <= rad[std::size_t(j)];
+            }
+            if (!in_node) continue;
+            for (int64_t i = 0; i < K; ++i)
+                sound = sound && lo[std::size_t(k * K + i)] <= v[std::size_t(p * K + i)] + 1e-9;
+        }
+    check(sound, b + ": the nodes' bound holds the sampled factors in each node");
 }
 
 /// Fourier-Motzkin in both orders holds the feasible points, and the orders agree closely.
@@ -434,7 +500,7 @@ void switches(const std::string &b) {
     Rng rng(11);
     const NeuralNetwork nn = aux_network(rng, {3, 6, 6, 2}, Activation::relu);
     const double least = aux_least_output(nn, rng, 3, -0.3, 0.3);
-    for (int variant = 0; variant < 10; ++variant) {
+    for (int variant = 0; variant < 11; ++variant) {
         NnVerifyOptions o = aux_options("conzonotope", b);
         o.falsification_order = "bound-first";
         o.falsification_method = "center";
@@ -453,6 +519,7 @@ void switches(const std::string &b) {
         if (variant == 7) o.num_init_gens = 2;
         if (variant == 8) o.exact_backprop = false;
         if (variant == 9) o.verify_dequeue_type = "front";
+        if (variant == 10) o.refinement_min_move = 0.05;
         // close enough to the outputs that the first box needs the refinement
         const NnVerifyResult r = nn.verify(aux_below(3, 2, -0.3, 0.3, least - 0.1), 20, o);
         check(r.status == "unsat" && r.stats.count("artifacts_seconds") == 1,
@@ -551,6 +618,50 @@ void deadlines(const std::string &b) {
           b + ": verify answers within a second of its timeout");
 }
 
+/// PGD toward a target polytope: its gradient is that polytope's alone, and the targeted restarts
+/// find a counterexample of one disjunct.
+void targeted_attacks(const std::string &b) {
+    Rng rng(5);
+    const NeuralNetwork nn = aux_network(rng, {3, 8, 8, 2}, Activation::relu);
+    // y_0 <= b0 or y_1 <= b1, both polytopes in case 0, and the second one alone
+    NnProperty both = aux_below(3, 2, -0.2, 0.2, -1000.0);
+    both.A = Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 1, 2});
+    both.b = Tensor::from_data({-1000.0, 1000.0}, {2, 1});
+    both.poly_case = {0, 0};
+    NnProperty second = both;
+    second.A = Tensor::from_data({0.0, 1.0}, {1, 1, 2});
+    second.b = Tensor::from_data({1000.0}, {1, 1});
+    second.poly_case = {0};
+    NnVerifyOptions o = aux_options("conzonotope", b);
+    o.pgd_targeted = true;
+    // the gradient toward polytope 1 is the gradient of the property with polytope 1 only
+    NnProblem pb(nn, both, o, ConfirmFn{}), ps(nn, second, o, ConfirmFn{});
+    const Tensor x = (pb.lo + pb.hi) * 0.5;
+    const Tensor targets = Tensor::like(x, {1.0}, {1, 1});
+    check(test::close(pb.objective_gradient(x, pb.search_case, nullptr, &targets),
+                      ps.objective_gradient(x, ps.search_case), 1e-6),
+          b + ": the gradient toward a target polytope is that polytope's");
+    // the least sampled y_1: just above it, only the second disjunct is reachable
+    std::vector<double> xs(4000 * 3);
+    rng.uniform(xs.data(), xs.size(), -0.2, 0.2);
+    const std::vector<double> y = nn.evaluate(Tensor::from_data(xs, {4000, 3})).data();
+    double low = std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < 4000; ++i) low = std::min(low, y[i * 2 + 1]);
+    both.b = Tensor::from_data({-1000.0, low + 0.01}, {2, 1});
+    NnProblem reach(nn, both, o, ConfirmFn{});
+    check(!make_attack("pgd", o)->run(reach, now_seconds() + 10.0, 2).x.empty(),
+          b + ": targeted PGD finds the counterexample of one disjunct");
+    // one group per polytope: twice the samples of an untargeted round, and nothing found
+    NnVerifyOptions plain = o;
+    plain.pgd_targeted = false;
+    both.b = Tensor::from_data({-1000.0, -1000.0}, {2, 1});
+    NnProblem none_t(nn, both, o, ConfirmFn{}), none_p(nn, both, plain, ConfirmFn{});
+    const AttackResult t = make_attack("pgd", o)->run(none_t, now_seconds() + 10.0, 1);
+    const AttackResult u = make_attack("pgd", plain)->run(none_p, now_seconds() + 10.0, 1);
+    check(t.x.empty() && u.x.empty() && t.evaluations == 2 * u.evaluations,
+          b + ": targeted PGD runs its restarts per polytope");
+}
+
 /// Wrong inputs are refused; the checks off give the same verdict.
 void checks_and_their_switch() {
     Rng rng(2);
@@ -571,6 +682,47 @@ void checks_and_their_switch() {
           "verify: the same with the checks off");
 }
 
+/// nn4sys' lindex shape: C cases, each a small box [x_k, x_k + w] with its own two polytopes
+/// y <= f(x_k) - d and y >= f(x_k) + d; with sat_case >= 0 that case's first polytope holds f.
+NnProperty aux_many_cases(const NeuralNetwork &nn, int64_t C, double w, double d,
+                          int64_t sat_case) {
+    std::vector<double> lo, hi, A, b;
+    NnProperty p;
+    for (int64_t k = 0; k < C; ++k) {
+        const double x = -1.0 + 2.0 * double(k) / double(C);
+        lo.push_back(x);
+        hi.push_back(x + w);
+        const double f = nn.evaluate(Tensor({{x + w / 2}})).reshape({1}).item();
+        const double below = k == sat_case ? f + d : f - d;
+        // y <= below and -y <= -(f + d)
+        A.insert(A.end(), {1.0, -1.0});
+        b.insert(b.end(), {below, -(f + d)});
+        p.poly_case.insert(p.poly_case.end(), {k, k});
+    }
+    p.lo = Tensor::from_data(lo, {C, 1});
+    p.hi = Tensor::from_data(hi, {C, 1});
+    p.A = Tensor::from_data(A, {2 * C, 1, 1});
+    p.b = Tensor::from_data(b, {2 * C, 1});
+    return p;
+}
+
+/// Many cases of few polytopes (300, 600 rows): the attack's margins per case and the branch and
+/// bound in chunks of cases decide as with all polytopes at once, within the memory budget.
+void many_cases(const std::string &b) {
+    Rng rng(11);
+    const NeuralNetwork nn = aux_network(rng, {1, 16, 16, 1}, Activation::relu);
+    for (const std::string bounding : {"conzonotope", "zonotope-alpha"}) {
+        NnVerifyOptions o = aux_options(bounding, b);
+        o.backward_bound = false;
+        const NnVerifyResult unsat = nn.verify(aux_many_cases(nn, 300, 1e-4, 0.5, -1), 60, o);
+        check(unsat.status == "unsat" && unsat.stats.count("case_chunks") > 0,
+              b + " " + bounding + ": 300 cases of two polytopes are unsat, chunk by chunk");
+        const NnVerifyResult sat = nn.verify(aux_many_cases(nn, 300, 1e-4, 0.5, 177), 60, o);
+        check(sat.status == "sat" && std::abs(sat.x[0] - (-1.0 + 2.0 * 177 / 300.0)) < 2e-4,
+              b + " " + bounding + ": a violated case is sat, the point in its box");
+    }
+}
+
 } // namespace
 
 
@@ -587,6 +739,8 @@ int main() {
         fourier_motzkin(b);
         switches(b);
         deadlines(b);
+        many_cases(b);
+        targeted_attacks(b);
     });
     checks_and_their_switch();
     return test::finish("neuralNetwork verify");

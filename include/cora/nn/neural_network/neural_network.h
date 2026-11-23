@@ -1,15 +1,15 @@
 // neural_network - a feed-forward network of affine layers and activations, on points and sets
 //
 // Layer k maps h -> a_k(W_k h + b_k) with the activation a_k (identity, ReLU, sigmoid, tanh, x^2,
-// sign, exp or 1 / max(x, 1)); without activations given, every layer but the last is followed by
-// max(., 0). A set that goes through the network comes out as a zonotope (or polynomial zonotope)
-// that contains the outputs of all its points: an affine layer maps it exactly, and an activation
-// is enclosed neuron by neuron by one line and an error (CORA's poly_method "singh", order 1: the
-// tightest parallelogram of a ReLU, [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and
-// tanh; for x^2 the secant slope l + u, between the chord and the parallel tangent). On a
-// polynomial zonotope the factors stay, evaluate_with_input returns the pairs (x, N(x)), and a
-// neuron may have an order k (NnOptions::orders), raised by refine. For points and verify, a layer
-// may be a convolution or a gather (conv2d.cpp) and form a graph (a ResNet's residuals).
+// sign, exp, 1 / max(x, 1), or verify's product of the halves); without activations given, every
+// layer but the last is followed by max(., 0). A set that goes through the network comes out as a
+// zonotope (or polynomial zonotope) that contains the outputs of all its points: an affine layer
+// maps it exactly, and an activation is enclosed neuron by neuron by one line and an error (CORA's
+// poly_method "singh", order 1: the tightest parallelogram of a ReLU, [Singh et al., NeurIPS 2018,
+// Thm. 3.1 and 3.2] for sigmoid and tanh; for x^2 the secant slope l + u). On a polynomial
+// zonotope the factors stay, evaluate_with_input returns the pairs (x, N(x)), and a neuron may
+// have an order k (NnOptions::orders), raised by refine. For points and verify, a layer may be a
+// convolution or a gather (conv2d.cpp) and form a graph (a ResNet's residuals).
 //
 // Syntax:     NeuralNetwork nn({{W1, b1}, {W2, b2}});   Zonotope Y = nn.evaluate(X);
 //             PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(X));
@@ -50,10 +50,21 @@ namespace cora {
 
 // The options -------------------------------------------------------------------------------------
 
-/// The function applied to the output of a layer: square is x^2 (a product of two values is
-/// ((a + b)^2 - (a - b)^2) / 4), sign -1, 0, 1, reciprocal 1 / max(x, 1) (a softmax is
-/// 1 / sum_j exp(x_j - x_i), whose sum is at least 1; see the front end's docs).
-enum class Activation { identity, relu, sigmoid, tanh, square, sign, exp, reciprocal };
+/// The function applied to the output of a layer: square x^2, sign -1, 0, 1, reciprocal
+/// 1 / max(x, 1) (a softmax is 1 / sum_j exp(x_j - x_i)), product [a o b; 0] of the output's halves
+/// [a; b] (verify only), floor the largest integer at most x (ml4acopf's turns).
+enum class Activation {
+    identity,
+    relu,
+    sigmoid,
+    tanh,
+    square,
+    sign,
+    exp,
+    reciprocal,
+    product,
+    floor
+};
 
 /// The polynomial over a neuron's range (CORA's poly_method): at order 1 singh or regression; of
 /// higher order (polynomial zonotopes only) any, singh only for a ReLU of order 2.

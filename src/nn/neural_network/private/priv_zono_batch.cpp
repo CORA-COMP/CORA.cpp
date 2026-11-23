@@ -78,32 +78,9 @@ Tensor aux_onehot(const Tensor &idx, int64_t n) {
 /// The activation at the points (evaluate.cpp's).
 Tensor aux_apply(Activation activation, const Tensor &x) { return priv_apply(activation, x); }
 
-/// The derivative of the activation at the points (a ReLU's is 0 at 0, as autograd's).
+/// The derivative of the activation at the points as a slope (priv_derivative).
 Tensor aux_derivative(Activation activation, const Tensor &x) {
-    switch (activation) {
-    case Activation::identity:
-        return x.ones_like();
-    case Activation::relu:
-        return x.greater(x.zeros_like());
-    case Activation::sigmoid: {
-        const Tensor s = x.sigmoid();
-        return s.multiply(1.0 - s);
-    }
-    case Activation::tanh:
-        return 1.0 - x.tanh().square();
-    case Activation::square:
-        return x + x;
-    case Activation::sign:
-        return x.zeros_like();
-    case Activation::exp:
-        return x.exp();
-    case Activation::reciprocal: {
-        // -1 / x^2 above 1, else 0
-        const Tensor y = x.ones_like().divide(x.maximum(1.0));
-        return Tensor::where(x.greater(x.ones_like()), y.square().negative(), x.zeros_like());
-    }
-    }
-    CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
+    return priv_derivative(activation, x);
 }
 
 /// The points where f'(x) = m (CORA's computeExtremePointsBatch): +-2 atanh sqrt(1 - 4 m) for the
@@ -290,9 +267,10 @@ LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Ten
                                const std::string &poly_method) {
     if (activation == Activation::relu) return aux_relu_jacobian(l, u);
     if (activation == Activation::square) return aux_square_jacobian(l, u);
-    if (activation == Activation::sign || activation == Activation::exp ||
-        activation == Activation::reciprocal) {
-        // sign is a step, its line does not move with the bounds; exp's and 1 / x's are held
+    if (activation == Activation::sign || activation == Activation::floor ||
+        activation == Activation::exp || activation == Activation::reciprocal ||
+        activation == Activation::product) {
+        // steps' lines (sign, floor) do not move with the bounds; exp's, 1 / x's, a product's held
         const Tensor zero = l.zeros_like();
         return {zero, zero, zero, zero, zero, zero};
     }
@@ -302,6 +280,38 @@ LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Ten
     const LineJacobian s = aux_sigmoid_singh_jacobian(l + l, u + u);
     return {s.m_l * 8.0, s.m_u * 8.0, s.o_l * 4.0, s.o_u * 4.0, s.r_l * 4.0, s.r_u * 4.0};
 }
+
+/// The line of layer k over its input set (c, G, dr) at the clamped bounds [lc, uc]: a product's
+/// from the set itself, the others' from the bounds.
+PrivLine aux_layer_line(const ZonoNet &net, std::size_t k, const Tensor &c, const Tensor &G,
+                        const Tensor &dr, const Tensor &lc, const Tensor &uc) {
+    if (net.activations[k] == Activation::product) return priv_product_line(c, G, dr);
+    return priv_verify_line(net.activations[k], lc, uc, net.poly_method);
+}
+
+/// The range of the exp layer that a reciprocal layer k reads alone (a softmax's sums), if any.
+const std::pair<Tensor, Tensor> *
+aux_exp_source(const ZonoNet &net, std::size_t k,
+               const std::vector<std::pair<Tensor, Tensor>> &exp_ranges) {
+    if (net.activations[k] != Activation::reciprocal || !net.residuals[k].empty()) return nullptr;
+    const int64_t j = net.sources[k];
+    if (j < 0 || net.activations[std::size_t(j)] != Activation::exp) return nullptr;
+    return &exp_ranges[std::size_t(j)];
+}
+
+/// The box [lo, hi] (B, n_in) through layer k's map: its center's image +- |W| times its radius,
+/// widened by the rounding (n_in + 4 ulps of the largest term).
+std::pair<Tensor, Tensor> aux_box_image(const ZonoNet &net, std::size_t k, const Tensor &lo,
+                                        const Tensor &hi) {
+    const Tensor mid = (lo + hi) * 0.5, rad = (hi - lo) * 0.5;
+    const Tensor c = net.map(k, mid) + net.b[k], r = net.map_abs(k, rad);
+    const double ulps = double(net.maps[k].inputs() + 4) * machine_eps(lo.dtype());
+    const Tensor w = r + (net.map_abs(k, mid.abs()) + net.b[k].abs() + r) * ulps;
+    return {c - w, c + w};
+}
+
+/// The slopes' absolute values as a map of radii (the sign of a negative slope does not flip one).
+Tensor aux_abs_slope(const Tensor &m) { return m.abs(); }
 
 /// The gradients with the slopes held: the F-radius is linear in each generator's value.
 Tensor aux_held_gradients(ZonoPropagation &out, const ZonoInput &in) {
@@ -435,7 +445,8 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
             }
             // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = |m| dr1 + reach
             const ClampJacobian cl = aux_clamp_jacobian(rec.first_id, rec.l, rec.u, splits);
-            PrivLine line = priv_verify_line(net.activations[k], cl.lc, cl.uc, net.poly_method);
+            const Activation act = net.activations[k];
+            PrivLine line = aux_layer_line(net, k, c1, G1, dr1, cl.lc, cl.uc);
             LineJacobian J = aux_line_jacobian(net.activations[k], cl.lc, cl.uc, net.poly_method);
             const Tensor *a = aux_alpha_of(net, alpha, k);
             if (a) {
@@ -443,30 +454,37 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
                 J = aux_alpha_jacobian(J, cl.lc, cl.uc, *a);
             }
             const Tensor &m = line.slope;
-            // dr2 = |m| dr1: its gradient in m has the sign of m (+ at 0, as for a ReLU)
-            Tensor g_m = g_c.multiply(c1) + g_gen.multiply(G1).sum(1);
-            if (dr1.defined()) {
+            if (act == Activation::product) {
+                // held slopes [c_b; c_a]: c2, G2 and dr2 (by |m|) linear in c1, G1 and dr1
+                g_c = priv_slope_times_t(act, m, g_c);
+                g_gen = priv_slope_times_t(act, m.expand_dims(1), g_gen);
+                g_dr = dr1.defined() ? priv_slope_times_t(act, aux_abs_slope(m), g_dr) : Tensor();
+            } else {
+                // dr2 = |m| dr1: its gradient in m has the sign of m (+ at 0, as for a ReLU)
                 const Tensor sign_m =
                     Tensor::where(m.less(m.zeros_like()), -m.ones_like(), m.ones_like());
-                g_m = g_m + g_dr.multiply(dr1).multiply(sign_m);
+                Tensor g_m = g_c.multiply(c1) + g_gen.multiply(G1).sum(1);
+                if (dr1.defined()) g_m = g_m + g_dr.multiply(dr1).multiply(sign_m);
+                if (a) {
+                    // the slope's own gradient: c2, G2, dr2 through m, offset and reach through h
+                    const Tensor zero = rec.l.zeros_like();
+                    const Tensor left = aux_alpha_left(cl.lc, cl.uc, *a);
+                    const Tensor h_a = Tensor::where(left, cl.lc.negative(), cl.uc.negative());
+                    (*g_alpha)[k] = Tensor::where(aux_crossing(cl.lc, cl.uc),
+                                                  g_m + (g_c + g_reach).multiply(h_a) * 0.5, zero);
+                }
+                const Tensor g_lc =
+                    g_m.multiply(J.m_l) + g_c.multiply(J.o_l) + g_reach.multiply(J.r_l);
+                const Tensor g_uc =
+                    g_m.multiply(J.m_u) + g_c.multiply(J.o_u) + g_reach.multiply(J.r_u);
+                const Tensor g_l = g_lc.multiply(cl.lc_l) + g_uc.multiply(cl.uc_l);
+                const Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
+                // l = c1 - sum |G1| - dr1, u = c1 + sum |G1| + dr1
+                const Tensor g_rad = g_u - g_l;
+                g_c = g_c.multiply(m) + g_l + g_u;
+                g_gen = m.expand_dims(1).multiply(g_gen) + G1.sign().multiply(g_rad.expand_dims(1));
+                g_dr = dr1.defined() ? g_dr.multiply(aux_abs_slope(m)) + g_rad : Tensor();
             }
-            if (a) {
-                // the slope's own gradient: c2, G2, dr2 through m, the offset and reach through h
-                const Tensor zero = rec.l.zeros_like();
-                const Tensor left = aux_alpha_left(cl.lc, cl.uc, *a);
-                const Tensor h_a = Tensor::where(left, cl.lc.negative(), cl.uc.negative());
-                (*g_alpha)[k] = Tensor::where(aux_crossing(cl.lc, cl.uc),
-                                              g_m + (g_c + g_reach).multiply(h_a) * 0.5, zero);
-            }
-            const Tensor g_lc = g_m.multiply(J.m_l) + g_c.multiply(J.o_l) + g_reach.multiply(J.r_l);
-            const Tensor g_uc = g_m.multiply(J.m_u) + g_c.multiply(J.o_u) + g_reach.multiply(J.r_u);
-            const Tensor g_l = g_lc.multiply(cl.lc_l) + g_uc.multiply(cl.uc_l);
-            const Tensor g_u = g_lc.multiply(cl.lc_u) + g_uc.multiply(cl.uc_u);
-            // l = c1 - sum |G1| - dr1, u = c1 + sum |G1| + dr1
-            const Tensor g_rad = g_u - g_l;
-            g_c = g_c.multiply(m) + g_l + g_u;
-            g_gen = m.expand_dims(1).multiply(g_gen) + G1.sign().multiply(g_rad.expand_dims(1));
-            g_dr = dr1.defined() ? g_dr.multiply(m.abs()) + g_rad : Tensor();
         }
         // back to the inputs: a source's own factor rows (the input's center and radii unused)
         const auto back = [&](int64_t j, const auto &map, const auto &map_abs) {
@@ -500,8 +518,11 @@ PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &
     // a ReLU's line is CORALean's in both methods (the same line in the reals); x^2 has one line
     if (activation == Activation::square) return priv_square_line(l, u);
     if (activation == Activation::sign) return priv_sign_line(l, u);
+    if (activation == Activation::floor) return priv_floor_line(l, u);
     if (activation == Activation::exp) return priv_exp_line(l, u);
     if (activation == Activation::reciprocal) return priv_reciprocal_line(l, u);
+    if (activation == Activation::product)
+        CORA_FAIL(Error::not_supported, "verify: a product's line needs its set");
     if (activation == Activation::relu || poly_method == "singh")
         return priv_line(activation, l, u, NnOptions{});
     if (poly_method == "bounds") return aux_bounds_line(activation, l, u);
@@ -618,6 +639,7 @@ Tensor ZonoNet::evaluate(const Tensor &x) const {
     std::vector<Tensor> outs{x};
     for (std::size_t k = 0; k < W.size(); ++k) {
         check_deadline(deadline);
+        // the layer's linear part and activation; an output no later layer reads is dropped
         outs.push_back(aux_apply(activations[k], linear(k, outs) + b[k]));
         if (!kept[k]) outs[k] = Tensor();
     }
@@ -645,7 +667,9 @@ ZonoSensitivity ZonoNet::sensitivity(const Tensor &x) const {
         check_deadline(deadline);
         Tensor S = std::move(acc[k + 1]);
         if (activations[k] != Activation::identity) {
-            S = S.multiply(aux_derivative(activations[k], pre[k]).expand_dims(1));
+            // through the activation's derivative, and the layer's sums and maxima of |S|
+            S = priv_slope_times_t(activations[k],
+                                   aux_derivative(activations[k], pre[k]).expand_dims(1), S);
             const Tensor a = S.abs();
             out.layer_sum[k] = a.sum(1);
             out.layer_max[k] = a.maximum(numerics::kSensitivityFloor).max(1);
@@ -718,6 +742,8 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
     };
     std::vector<State> states(chain ? 0 : W.size() + 1);
     if (!chain) states[0] = {c, dr, G};
+    // an exp layer's range [e^l, e^u] at its clamped bounds, for a reciprocal that reads it
+    std::vector<std::pair<Tensor, Tensor>> exp_ranges(W.size());
     for (std::size_t k = 0; k < W.size(); ++k) {
         check_deadline(deadline);
         // the linear layer, exactly; an earlier source's rows are the first factors of all so far
@@ -757,8 +783,15 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             l = l - dr;
             u = u + dr;
         }
+        if (const auto *range = aux_exp_source(*this, k, exp_ranges)) {
+            // a softmax's sums of exps: also in the image of the exps' box (each sum >= 1)
+            const auto [lo, hi] = aux_box_image(*this, k, range->first, range->second);
+            l = l.maximum(lo);
+            u = u.minimum(hi).maximum(l);
+        }
         const auto [lc, uc] = split ? clamp(first_ids[k], l, u, splits) : std::pair{l, u};
-        PrivLine line = priv_verify_line(activations[k], lc, uc, poly_method);
+        if (activations[k] == Activation::exp) exp_ranges[k] = {lc.exp(), uc.exp()};
+        PrivLine line = aux_layer_line(*this, k, c, G, dr, lc, uc);
         if (const Tensor *a = aux_alpha_of(*this, alpha, k))
             line = aux_alpha_line(line, lc, uc, *a);
         // CORALean's Layer.activation: the slope map and the box of the offset and the error
@@ -775,10 +808,10 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             rec.u = u;
             rec.er = reach;
         }
-        c = line.slope.multiply(c) + 0.0 + middle;
-        G = line.slope.expand_dims(1).multiply(G) + 0.0;
-        // a radius maps by |slope|: x^2 left of 0 and the reciprocal fall (#272)
-        if (dr.defined()) dr = line.slope.abs().multiply(dr);
+        const Activation act = activations[k];
+        c = priv_slope_times(act, line.slope, c) + 0.0 + middle;
+        G = priv_slope_times(act, line.slope.expand_dims(1), G) + 0.0;
+        if (dr.defined()) dr = priv_slope_times(act, aux_abs_slope(line.slope), dr);
         // the errors: a generator per slot neuron, the rest into the interval center
         const int64_t B = reach.shape()[0], n = reach.shape()[1], dn = slots[k];
         if (dn == 0) {
@@ -908,7 +941,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                 bl = zero;
             } else {
                 // the parallel lines of the zonotope's line
-                const PrivLine line = priv_verify_line(net.activations[k], lc, uc, net.poly_method);
+                const PrivLine line = aux_layer_line(net, k, rec.c_in, rec.G_in, rec.dr_in, lc, uc);
                 sl = su = line.slope;
                 bl = line.offset - line.radius;
                 bu = line.offset + line.radius;
@@ -916,7 +949,10 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
             const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
             constant = constant + pos.matmul(bl.expand_dims(-1)).squeeze(-1) +
                        neg.matmul(bu.expand_dims(-1)).squeeze(-1);
-            lam = pos.multiply(sl.expand_dims(1)) + neg.multiply(su.expand_dims(1));
+            // a product's one slope: Lambda through the line's transpose
+            lam = net.activations[k] != Activation::product
+                      ? pos.multiply(sl.expand_dims(1)) + neg.multiply(su.expand_dims(1))
+                      : priv_slope_times_t(Activation::product, sl.expand_dims(1), lam);
         }
         // the linear layer
         constant = constant + lam.multiply(net.b[k]).sum(-1);
@@ -959,7 +995,7 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                 uc.greater(lc.negative()).expand_dims(1).broadcast_to({B, R, lc.shape()[1]}) + 0.0;
             L.cross = L.cross.expand_dims(1);
         } else {
-            const PrivLine line = priv_verify_line(net.activations[k], lc, uc, net.poly_method);
+            const PrivLine line = aux_layer_line(net, k, rec.c_in, rec.G_in, rec.dr_in, lc, uc);
             L.sl = L.su = line.slope.expand_dims(1);
             L.bl = (line.offset - line.radius).expand_dims(1);
             L.bu = (line.offset + line.radius).expand_dims(1);
@@ -987,7 +1023,9 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                     alpha[k].defined() ? Tensor::where(L.cross, alpha[k], L.sl) : L.sl;
                 const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
                 constant = constant + pos.multiply(L.bl).sum(-1) + neg.multiply(L.bu).sum(-1);
-                lam = pos.multiply(sl) + neg.multiply(L.su);
+                lam = net.activations[k] != Activation::product
+                          ? pos.multiply(sl) + neg.multiply(L.su)
+                          : priv_slope_times_t(Activation::product, L.su, lam);
             }
             // the bias, then back to the inputs
             constant = constant + lam.multiply(net.b[k]).sum(-1);
@@ -1027,8 +1065,14 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                     (m1[k] / c1).divide((m2[k] / c2).sqrt() + numerics::kAdamEpsilon);
                 alpha[k] = (alpha[k] + move * step).maximum(0.0).minimum(1.0);
             }
-            gs.push_back(pos.multiply(g.multiply(sl) + L.bl) +
-                         neg.multiply(g.multiply(L.su) + L.bu));
+            if (net.activations[k] != Activation::product) {
+                gs.push_back(pos.multiply(g.multiply(sl) + L.bl) +
+                             neg.multiply(g.multiply(L.su) + L.bu));
+            } else {
+                // a product's one slope: the line's map of g, then the offset of the side
+                const Tensor gm = priv_slope_times(Activation::product, L.su, g);
+                gs.push_back(pos.multiply(gm + L.bl) + neg.multiply(gm + L.bu));
+            }
         }
     }
     return best;

@@ -1,7 +1,7 @@
 // test_neural_network_softmax - exp, 1 / max(x, 1), a softmax of them and gathers with factors
 //
 // On points, on sets (the lines hold, a softmax of a box) and in verify; the heuristics, the
-// sensitivity and order-2 polynomials through x^2, sign, exp and 1 / max(x, 1); the interval
+// sensitivity and order-2 polynomials through x^2, sign, exp, 1 / max(x, 1) and floor; the interval
 // center through their negative slopes.
 //
 // CORA.cpp only: exp and the reciprocal 1 / max(x, 1), a softmax's parts (no CORA layer)
@@ -158,7 +158,7 @@ void verify_decides(const std::string &b) {
     }
 }
 
-/// The four activations of Phase 4 (x^2, sign, exp, 1 / max(x, 1)) after a 2 x 2 map.
+/// The activations of Phase 4 (x^2, sign, exp, 1 / max(x, 1), floor) after a 2 x 2 map.
 NeuralNetwork aux_phase4_network(Activation a) {
     return NeuralNetwork({{Tensor({{1.0, -0.5}, {0.3, 0.8}}), Tensor({0.2, -0.1})},
                           {Tensor({{1.0, 1.0}}), Tensor({0.0})}},
@@ -166,10 +166,10 @@ NeuralNetwork aux_phase4_network(Activation a) {
 }
 
 /// The input-generator and split heuristics' interval gradient, the F-radius gradients with and
-/// without exact_backprop, and the sensitivity, on the four activations: verify still decides.
+/// without exact_backprop, and the sensitivity, on the five activations: verify still decides.
 void heuristics_through_the_activations(const std::string &b) {
-    for (const Activation a :
-         {Activation::square, Activation::sign, Activation::exp, Activation::reciprocal}) {
+    for (const Activation a : {Activation::square, Activation::sign, Activation::exp,
+                               Activation::reciprocal, Activation::floor}) {
         const NeuralNetwork nn = aux_phase4_network(a);
         // the bound far below every output: unsat with a gradient heuristic and one generator
         Tensor y = nn.evaluate(Tensor({{1.0, 1.0}, {1.4, 0.6}, {0.6, 1.4}, {1.0, 1.4}}));
@@ -194,12 +194,12 @@ void heuristics_through_the_activations(const std::string &b) {
     }
 }
 
-/// A polynomial zonotope through the four activations by Taylor and Bernstein of order 2: the
+/// A polynomial zonotope through the five activations by Taylor and Bernstein of order 2: the
 /// enclosure holds sampled values, or the method refuses the activation.
 void polynomials_of_the_activations(const std::string &b) {
     int violations = 0, evaluated = 0, refused = 0;
-    for (const Activation a :
-         {Activation::square, Activation::sign, Activation::exp, Activation::reciprocal}) {
+    for (const Activation a : {Activation::square, Activation::sign, Activation::exp,
+                               Activation::reciprocal, Activation::floor}) {
         const NeuralNetwork nn({{Tensor({{1.0}}), Tensor({0.0})}}, {a});
         for (const PolyMethod m : {PolyMethod::taylor, PolyMethod::bernstein}) {
             const double l = a == Activation::reciprocal ? 1.5 : 0.5, u = l + 1.0;
@@ -219,8 +219,8 @@ void polynomials_of_the_activations(const std::string &b) {
             }
         }
     }
-    check(evaluated > 0 && evaluated + refused == 8 && violations == 0,
-          b + ": order-2 polynomials of the four activations hold sampled values");
+    check(evaluated > 0 && evaluated + refused == 10 && violations == 0,
+          b + ": order-2 polynomials of the five activations hold sampled values");
 }
 
 /// The interval center through a negative slope: (x0 + x1)^2 and 1 / max(x0 + x1, 1) with x1

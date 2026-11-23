@@ -25,6 +25,7 @@
 #include "cora/nn/neural_network/neural_network.h"
 
 #include <exception>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -51,8 +52,27 @@ struct PrivRows {
 /// The bounds of every row, summed as CORALean's PolyZonotope.interval.
 std::pair<Tensor, Tensor> priv_bounds(const PrivRows &r);
 
-/// The values of the activation at the points.
-Tensor priv_apply(Activation activation, const Tensor &x);
+/// The values of the activation at the points, the neurons along axis (a product pairs neuron i
+/// with neuron i + n / 2 of that axis).
+Tensor priv_apply(Activation activation, const Tensor &x, int axis = -1);
+
+/// A product layer's pre-activation [a; b] along the last axis: its halves a and b.
+std::pair<Tensor, Tensor> priv_halves(const Tensor &x, int axis = -1);
+
+/// The linear part of a line on rows x (..., n): m x for a neuron by neuron activation; for a
+/// product [m_a a + m_b b; 0] with m = [m_a; m_b] (the transpose priv_slope_times_t: [m_a g_a;
+/// m_b g_a] of g = [g_a; g_b]).
+Tensor priv_slope_times(Activation activation, const Tensor &m, const Tensor &x);
+Tensor priv_slope_times_t(Activation activation, const Tensor &m, const Tensor &g);
+
+/// The derivative at the points (..., n) as a slope of priv_slope_times_t: f'(x), and for a
+/// product [b; a] (a ReLU's is 0 at 0, as autograd's; sign's 0).
+Tensor priv_derivative(Activation activation, const Tensor &x);
+
+/// The line of a product layer on its input zonotope c (B, n), G (B, q, n), dr (B, n) (or none):
+/// slopes [c_b; c_a], the rest (G_a beta)(G_b beta) by two scaled squares (docs/nn_verification.md,
+/// "Products"), widened by the rounding; the second half's line is 0.
+PrivLine priv_product_line(const Tensor &c, const Tensor &G, const Tensor &dr);
 
 /// The line of the activation over the ranges by the method of the options (singh or regression).
 PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
@@ -64,6 +84,10 @@ PrivLine priv_square_line(const Tensor &l, const Tensor &u);
 
 /// The line of sign over [l, u]: slope 0, the middle and half the gap of sign(l) and sign(u).
 PrivLine priv_sign_line(const Tensor &l, const Tensor &u);
+
+/// The line of floor over [l, u]: slope 0, offset and radius the middle and half of [floor l,
+/// floor u] (exact in floats; a range inside one integer step is the constant).
+PrivLine priv_floor_line(const Tensor &l, const Tensor &u);
 
 /// The line of exp over [l, u]: the chord's slope m, the middle and half the range of the convex
 /// exp(x) - m x (largest at an end, least at log m in [l, u]), widened by the rounding.

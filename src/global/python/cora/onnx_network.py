@@ -61,7 +61,8 @@ class OnnxNetwork:
             if node.op_type == "Constant":
                 self.constants[node.output[0]] = self._tensor(numpy_helper.to_array(attrs["value"]))
                 continue
-            self.nodes.append((node.op_type, list(node.input), list(node.output), attrs))
+            self.nodes += _split_as_slices(node.op_type, list(node.input), list(node.output),
+                                           attrs, self.constants)
         self.opset = max(
             (o.version for o in model.opset_import if o.domain in ("", "ai.onnx")), default=13
         )
@@ -103,6 +104,42 @@ class OnnxNetwork:
     def op_types(self):
         """The set of ONNX operators of the graph (Constant nodes are folded)."""
         return {op for op, _, _, _ in self.nodes}
+
+    def fold_fixed_inputs(self, lo, hi):
+        """The network on the inputs of the box [lo, hi] (flat), each value that reads only inputs
+        with lo = hi a constant (an input's mask, nn4sys' mscn: then a product with it or a
+        quotient by its sum is linear); equal to this one on the box. The values are computed at the
+        box's center in float64; which entries read a free input follows each node: a data move
+        moves the mask, an element-wise node joins its arguments', any other node makes its whole
+        output free."""
+        net = self.cast(torch.float64)
+        free = torch.as_tensor(np.asarray(hi) > np.asarray(lo)).reshape(self.input_shape)
+        center = (np.asarray(lo, dtype=np.float64) + np.asarray(hi, dtype=np.float64)) / 2
+        values = dict(net.constants)
+        values[self.input_name] = torch.as_tensor(center).reshape(self.input_shape)
+        masks = {self.input_name: free}
+        nodes, constants = [], dict(self.constants)
+        for op, ins, outs, attrs in net.nodes:
+            out = net._run(op, [values.get(n) if n else None for n in ins], attrs)
+            out = out if isinstance(out, tuple) else (out,)
+            if any(bool(masks[n].any()) for n in ins if n in masks):
+                out_masks = _masks(net, op, ins, attrs, values, masks, out)
+            else:
+                out_masks = [torch.zeros(v.shape, dtype=torch.bool) for v in out]
+            # an output without a free entry is a constant in the network's dtype; the node stays
+            # if it has another output
+            for name, value, mask in zip(outs, out, out_masks, strict=False):
+                values[name] = value
+                if bool(mask.any()):
+                    masks[name] = mask
+                else:
+                    constants[name] = value.to(self.dtype) if value.is_floating_point() else value
+            if any(name in masks for name in outs):
+                nodes.append((op, ins, [n if n in masks else "" for n in outs], attrs))
+        other = object.__new__(type(self))
+        other.__dict__.update(self.__dict__)
+        other.nodes, other.constants = nodes, constants
+        return other
 
     def __call__(self, x):
         """The outputs (B, m) of the rows x (B, n), in the network's dtype."""
@@ -154,7 +191,9 @@ class OnnxNetwork:
             dense, why = self.dense_layers(max_elements)
             # a graph (two branches joined, a product of two values) goes layer by layer
             if dense or not any(
-                r in why for r in ("joins two", "of two values", "fails to lower", "Softmax")
+                r in why
+                for r in ("joins two", "of two values", "fails to lower", "Softmax", "max_elements",
+                          "Reduce")
             ):
                 return dense, why
         try:
@@ -212,6 +251,15 @@ class OnnxNetwork:
     def _op_Exp(self, a, _):
         return torch.exp(a[0])
 
+    def _op_Floor(self, a, _):
+        return torch.floor(a[0])
+
+    def _op_Pow(self, a, _):
+        return torch.pow(a[0], a[1])
+
+    def _op_Square(self, a, _):  # Pow(x, 2) as the loader names it (_split_as_slices)
+        return a[0] * a[0]
+
     def _op_ReduceSum(self, a, attrs):
         # the axes from the input (opset 13) or the attribute; none: all (or noop_with_empty_axes)
         axes = a[1] if len(a) > 1 and a[1] is not None else attrs.get("axes")
@@ -221,6 +269,16 @@ class OnnxNetwork:
                 return a[0]
             return a[0].sum(dim=tuple(range(a[0].dim())), keepdim=keep)
         return a[0].sum(dim=tuple(int(x) for x in axes), keepdim=keep)
+
+    def _op_ReduceMean(self, a, attrs):
+        # the mean over the axes (input from opset 18, else the attribute); none: all
+        axes = a[1] if len(a) > 1 and a[1] is not None else attrs.get("axes")
+        keep = bool(attrs.get("keepdims", 1))
+        if axes is None or len(axes) == 0:
+            if attrs.get("noop_with_empty_axes", 0):
+                return a[0]
+            return a[0].mean(dim=tuple(range(a[0].dim())), keepdim=keep)
+        return a[0].mean(dim=tuple(int(x) for x in axes), keepdim=keep)
 
     def _op_Relu(self, a, _):
         return torch.relu(a[0])
@@ -403,23 +461,36 @@ class OnnxNetwork:
     def _op_Concat(self, a, attrs):
         return torch.cat(a, dim=attrs["axis"])
 
+    def _op_ConstantOfShape(self, a, attrs):
+        # a tensor of the shape a[0], filled with the value's one entry (default: float 0)
+        from onnx import numpy_helper
+
+        value = attrs.get("value")
+        fill = numpy_helper.to_array(value).reshape(-1)[0] if value is not None else np.float32(0)
+        return self._tensor(np.full([int(d) for d in a[0].tolist()], fill))
+
     def _op_Shape(self, a, _):
         return torch.tensor(list(a[0].shape), dtype=torch.int64, device=self.device)
 
     def _op_Gather(self, a, attrs):
-        # (a scalar index drops the axis: the shape as a tuple, which may be empty)
-        return torch.index_select(a[0], attrs.get("axis", 0), a[1].reshape(-1)).reshape(
-            (
-                *a[0].shape[: attrs.get("axis", 0)],
-                *a[1].shape,
-                *a[0].shape[attrs.get("axis", 0) + 1 :],
-            )
+        # (a scalar index drops the axis: the shape as a tuple, which may be empty; a negative
+        # index counts from the end)
+        axis = attrs.get("axis", 0) % a[0].dim()
+        index = a[1].reshape(-1) % a[0].shape[axis]
+        return torch.index_select(a[0], axis, index).reshape(
+            (*a[0].shape[:axis], *a[1].shape, *a[0].shape[axis + 1 :])
         )
 
     def _op_Slice(self, a, attrs):
-        starts, ends = a[1].tolist(), a[2].tolist()
-        axes = a[3].tolist() if len(a) > 3 and a[3] is not None else list(range(len(starts)))
-        steps = a[4].tolist() if len(a) > 4 and a[4] is not None else [1] * len(starts)
+        # the bounds from the inputs (opset 10), else from the attributes (opset 1)
+        if len(a) > 2:
+            starts, ends = a[1].tolist(), a[2].tolist()
+            axes = a[3].tolist() if len(a) > 3 and a[3] is not None else None
+            steps = a[4].tolist() if len(a) > 4 and a[4] is not None else [1] * len(starts)
+        else:
+            starts, ends = list(attrs["starts"]), list(attrs["ends"])
+            axes, steps = attrs.get("axes"), [1] * len(starts)
+        axes = list(range(len(starts))) if axes is None else list(axes)
         index = [slice(None)] * a[0].dim()
         for s, e, ax, st in zip(starts, ends, axes, steps, strict=True):
             index[ax] = slice(s, min(e, a[0].shape[ax]), st)
@@ -581,7 +652,7 @@ class OnnxNetwork:
             maps[-1] = _add_bias(maps[-1], expr.bias)
             return _Expr(expr.shape, [(src, maps)])
 
-        def squares(expr, activation="square"):
+        def activate(expr, activation):
             # the expression as a layer with the activation (a fresh layer: no other reader)
             before = len(layers)
             k = materialize(expr)
@@ -594,19 +665,17 @@ class OnnxNetwork:
             return k
 
         def products(a, b, ia, ib, out_shape):
-            # the sums over t of a[ia[t, o]] b[ib[t, o]] (index lists (K, O)): the halves
-            # (a + b) / 2 and (a - b) / 2 of every product by gathers with factors, their squares,
-            # then the difference of the squares summed over t by a 1 x 1 convolution
+            # the sums over t of a[ia[t, o]] b[ib[t, o]] (index lists (K, O)): the factors [a; b]
+            # of every product by two gathers, a product layer ([a o b; 0]), then its first half
+            # summed over t by a 1 x 1 convolution
             K, O = ia.shape
             ka, kb = materialize(single(a)), materialize(single(b))
             na, nb = math.prod(a.shape[1:]), math.prod(b.shape[1:])
-            half = torch.full((2 * K * O,), 0.5, dtype=torch.float64)
-            signs = torch.cat([half[: K * O], -half[K * O :]])
-            ga = _gather(torch.cat([ia.reshape(-1)] * 2).tolist(), na, torch.zeros(2 * K * O), half)
-            gb = _gather(torch.cat([ib.reshape(-1)] * 2).tolist(), nb, torch.zeros(2 * K * O),
-                         signs)
-            k = squares(_Expr((1, 2 * K * O), [(ka, [ga]), (kb, [gb])]))
-            w = torch.cat([torch.ones(K), -torch.ones(K)]).to(torch.float64).reshape(1, 2 * K, 1, 1)
+            none = torch.full((K * O,), -1, dtype=torch.int64)
+            ga = _gather(torch.cat([ia.reshape(-1), none]).tolist(), na, torch.zeros(2 * K * O))
+            gb = _gather(torch.cat([none, ib.reshape(-1)]).tolist(), nb, torch.zeros(2 * K * O))
+            k = activate(_Expr((1, 2 * K * O), [(ka, [ga]), (kb, [gb])]), "product")
+            w = torch.cat([torch.ones(K), torch.zeros(K)]).to(torch.float64).reshape(1, 2 * K, 1, 1)
             total = _conv(w, torch.zeros(1), (1, 2 * K, O, 1), {}, (1, 1, O, 1))
             return _Expr(out_shape, [(k, [total])])
 
@@ -627,10 +696,10 @@ class OnnxNetwork:
             minus = torch.full((M * n,), -1.0, dtype=torch.float64)
             dt = _gather(it.reshape(-1).tolist(), n, zero)
             dq = _gather(iq.reshape(-1).tolist(), n, zero, minus)
-            ke = squares(_Expr((1, M * n), [(kx, [dt]), (kx, [dq])]), "exp")
+            ke = activate(_Expr((1, M * n), [(kx, [dt]), (kx, [dq])]), "exp")
             w = torch.ones(1, M, 1, 1, dtype=torch.float64)
             total = _conv(w, torch.zeros(1), (1, M, n, 1), {}, (1, 1, n, 1))
-            return _Expr(shape, [(squares(_Expr((1, n), [(ke, [total])]), "reciprocal"), [])])
+            return _Expr(shape, [(activate(_Expr((1, n), [(ke, [total])]), "reciprocal"), [])])
 
         def max_pool(expr, shape, out_shape, attrs):
             # max(a, b) = b + relu(a - b): the window's items in pairs, round by round; a round is
@@ -685,6 +754,10 @@ class OnnxNetwork:
             if not linked:
                 values[outs[0]] = net._run(op, [values.get(n) if n else None for n in ins], attrs)
                 continue
+            if any(getattr(chain[n], "column", False) for n in linked) and (
+                len(set(linked)) > 1 or op in STRUCTURE_OPS
+            ):
+                raise _NotAChain(f"{op} of a column (the batch axis transposed) and more")
             if op in STRUCTURE_OPS and not _moves_data(op, ins[0] in chain):
                 # shape arithmetic on the chain: its shape only
                 probes = [
@@ -767,28 +840,47 @@ class OnnxNetwork:
                 chain[outs[0]] = softmax(expr, axis)
                 continue
             if op == "Mul" and len(ins) == 2 and len(linked) == 2:
-                # a product of two values: ((a + b)^2 - (a - b)^2) / 4, the squares a layer
+                # a product of two values: a product layer of [a; b] ([a o b; 0]), its first half
                 a, b = chain[ins[0]], chain[ins[1]]
                 if a.shape != b.shape:
                     raise _NotAChain("Mul of two values of other shapes")
                 n = math.prod(a.shape[1:])
                 if n > MAX_PRODUCT:
                     raise _NotAChain(f"Mul of two values of {n} entries exceeds {MAX_PRODUCT}")
-                half = torch.eye(n, dtype=torch.float64) * 0.5
+                eye = torch.eye(n, dtype=torch.float64)
+                zero_n = torch.zeros(n, n, dtype=torch.float64)
                 (ta, ba), (tb, bb) = terms(a), terms(b)
-                ta, ba = _scaled_terms(ta, ba, torch.cat([half, half]))
-                tb, bb = _scaled_terms(tb, bb, torch.cat([half, -half]))
+                ta, ba = _scaled_terms(ta, ba, torch.cat([eye, zero_n]))
+                tb, bb = _scaled_terms(tb, bb, torch.cat([zero_n, eye]))
                 bias = ba if bb is None else bb if ba is None else ba + bb
-                k = squares(_Expr((1, 2 * n), ta + tb, bias))
-                diff = torch.cat([torch.eye(n), -torch.eye(n)], 1).to(torch.float64)
+                k = activate(_Expr((1, 2 * n), ta + tb, bias), "product")
+                first = torch.cat([torch.eye(n), torch.zeros(n, n)], 1).to(torch.float64)
                 zero = torch.zeros(n, dtype=torch.float64)
-                chain[outs[0]] = _Expr(a.shape, [(k, [(diff, zero)])])
+                chain[outs[0]] = _Expr(a.shape, [(k, [(first, zero)])])
                 continue
             if len(set(linked)) > 1 or len(linked) > 1:
                 raise _NotAChain(f"{op} joins two branches")
             x_name = linked[0]
             expr = chain[x_name]
             shape = expr.shape
+            column = getattr(expr, "column", False)
+            if op == "Transpose" and len(shape) == 2 and (column or shape[0] == 1):
+                # a row (1, n) as a column (n, 1), or back: the same entries, a flag (ml4acopf)
+                flipped = _Expr(shape, expr.terms, expr.bias)
+                flipped.column = not column
+                chain[outs[0]] = flipped
+                continue
+            if column:
+                # a column takes only a constant matrix from the left: C (m, n) x as a dense layer
+                if op != "MatMul" or ins[1] != x_name or ins[0] not in values:
+                    raise _NotAChain(f"{op} of a column (the batch axis transposed)")
+                C = values[ins[0]].to(torch.float64)
+                src, maps = single(expr).terms[0]
+                zero = torch.zeros(C.shape[0], dtype=torch.float64)
+                product = _Expr((1, C.shape[0]), [(src, maps + [(C.contiguous(), zero)])])
+                product.column = True
+                chain[outs[0]] = product
+                continue
             probe = torch.zeros(1, *shape[1:], dtype=torch.float64)
             args = [probe if n == x_name else (values.get(n) if n else None) for n in ins]
             out_shape = tuple(net._run(op, args, attrs).shape)
@@ -836,6 +928,12 @@ class OnnxNetwork:
                 if fused is None and len(shape) == 2:
                     # of features (after a Gemm): a diagonal dense layer
                     fused = then((torch.diag(factor).contiguous(), offset.contiguous()))
+                if fused is None and len(shape) == 3:
+                    # of a sequence (C, L) (a transformer's tokens): a gather with factors
+                    per = [1, c, 1]
+                    f = torch.broadcast_to(factor.reshape(per), (1, *shape[1:])).reshape(-1)
+                    o = torch.broadcast_to(offset.reshape(per), (1, *shape[1:])).reshape(-1)
+                    fused = then(_gather(list(range(size)), size, o.contiguous(), f.contiguous()))
                 chain[outs[0]] = fused or then(
                     _conv(factor.reshape(c, 1, 1, 1), offset, shape, {"group": c}, out_shape)
                 )
@@ -860,15 +958,20 @@ class OnnxNetwork:
                 if tuple(factor.shape) != tuple(probe.shape):
                     raise _NotAChain(f"{op} broadcasts the value to another shape")
                 chain[outs[0]] = _scale(expr, single, then, factor.reshape(-1), shape, out_shape)
-            elif op == "ReduceSum":
-                # a sum over axes (the batch axis of one row dropped): the matrix of ones
+            elif op in ("ReduceSum", "ReduceMean"):
+                # a sum or a mean over axes (the batch axis of one row dropped): the matrix of
+                # ones, or of 1 / count
                 axes = args[1] if len(args) > 1 and args[1] is not None else attrs.get("axes", [])
                 axes = [int(a) % len(shape) for a in axes] or list(range(1, len(shape)))
                 dims = tuple(a for a in axes if a)
                 keep = bool(attrs.get("keepdims", 1))
                 rows = math.prod(out_shape[1:])
+                mean = op == "ReduceMean"
                 lin = _chunked_images(
-                    lambda unit, dims=dims, keep=keep: unit.sum(dim=dims, keepdim=keep)
+                    lambda unit, dims=dims, keep=keep, mean=mean: (
+                        unit.mean(dim=dims, keepdim=keep) if mean else
+                        unit.sum(dim=dims, keepdim=keep)
+                    )
                     if dims
                     else unit,
                     size, shape, rows,
@@ -881,15 +984,25 @@ class OnnxNetwork:
                 # convolution, as malbeware's 61504 entries, the identity alone is 30 GB)
                 zero = torch.zeros(1, *shape[1:], dtype=torch.float64)
                 bias = net._run(op, [zero] + args[1:], attrs)
-                lin = _chunked_images(
-                    lambda unit, op=op, args=args, attrs=attrs: net._run_batched(
-                        op, [unit] + args[1:2], [True, False], attrs
-                    ),
-                    size, shape, bias.numel(),
-                )
+                # a row times a constant matrix: its weights (vggnet16's 25088 x 4096 at once)
+                lin = _constant_matrix(op, args, attrs, shape)
+                if lin is None:
+                    lin = _chunked_images(
+                        lambda unit, op=op, args=args, attrs=attrs: net._run_batched(
+                            op, [unit] + args[1:2], [True, False], attrs
+                        ),
+                        size, shape, bias.numel(),
+                    )
                 chain[outs[0]] = then((lin, bias.reshape(-1)))
             elif op in ("Add", "Sub") and len(ins) == 2:
                 other = args[1] if ins[0] == x_name else args[0]
+                if math.prod(out_shape[1:]) != size:
+                    # the constant broadcasts the value to more entries (ml4acopf's x - t_k for
+                    # every threshold): the value repeated by a gather first
+                    index = torch.broadcast_to(torch.arange(size).reshape(shape), out_shape)
+                    expr = then(_gather(index.reshape(-1).tolist(), size,
+                                        torch.zeros(index.numel())))
+                    shape, size = out_shape, index.numel()
                 if op == "Sub" and ins[1] == x_name:
                     # a constant minus the value: the value negated, then the constant added
                     expr = _scale(expr, single, then, -torch.ones(size, dtype=torch.float64),
@@ -926,6 +1039,8 @@ class OnnxNetwork:
         if self.output_name not in chain:
             raise _NotAChain("the output does not depend on the input")
         out = chain[self.output_name]
+        if getattr(out, "column", False):
+            raise _NotAChain("the output is a column (the batch axis transposed)")
         last = materialize(out)
         if last != len(layers) - 1 or last < 0:
             # the output is an earlier layer's or the input: one more identity layer
@@ -956,7 +1071,8 @@ MAX_PRODUCT = 4096  # entries of a product of two values at most (its maps are d
 
 UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
 
-ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign", "Exp": "exp"}
+ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign", "Exp": "exp",
+               "Floor": "floor", "Square": "square"}
 
 LINEAR_OPS = {
     "Add",
@@ -987,6 +1103,12 @@ STRUCTURED_OPS = {
     "AveragePool",
     "MaxPool",
 }  # lowered layer by layer, never to a matrix
+
+MASK_MOVES = {"Slice", "Gather", "Reshape", "Transpose", "Concat", "Squeeze", "Unsqueeze",
+              "Flatten", "Identity", "Dropout", "Pad"}  # fold_fixed_inputs: data moves
+
+MASK_ELEMENTWISE = {"Add", "Sub", "Mul", "Div", "Neg", "Relu", "Sigmoid", "Tanh", "LeakyRelu",
+                    "Sign", "Exp", "Cast", "Floor", "Square", "Pow"}  # fold_fixed_inputs: by entry
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
 DATA_MOVES = {"Slice", "Gather", "Cast"}  # ... unless they move a value of the input: then linear
@@ -1029,6 +1151,24 @@ def _scaled_terms(terms, bias, M):
     return terms, (None if bias is None else M @ bias.to(torch.float64))
 
 
+def _constant_matrix(op, args, attrs, shape):
+    """The matrix (out, in) of a row (1, in) times a constant matrix, a Gemm's alpha B' or a
+    MatMul's B, transposed: the images of the unit vectors without computing them (bit for bit
+    the same: each image is a row of B' times 1 plus zeros); None for another shape or transA."""
+    B = args[1]
+    if len(shape) != 2 or shape[0] != 1 or B is None or B.dim() != 2:
+        return None
+    if op == "Gemm":
+        if attrs.get("transA", 0):
+            return None
+        B = B.T if attrs.get("transB", 0) else B
+        alpha = attrs.get("alpha", 1.0)
+        B = alpha * B if alpha != 1.0 else B
+    if not torch.isfinite(B).all():  # 0 * inf of the unit vectors is nan, not the weight
+        return None
+    return B.to(torch.float64).T.contiguous()
+
+
 def _chunked_images(image, size, shape, rows):
     """The matrix (rows, size) of a linear map from the images of the unit vectors of a value of
     the shape (batch 1 first), a chunk of UNIT_VECTOR_CHUNK entries at a time: image maps a batch
@@ -1063,8 +1203,54 @@ def _scale(expr, single, then, factor, shape, out_shape):
     if fused is not None:
         return fused
     if factor.numel() > MAX_PRODUCT:
-        raise _NotAChain(f"an element-wise scaling of {factor.numel()} entries")
+        # many entries (mscn_2048d's 12288): a gather with factors, never a dense diagonal
+        n = factor.numel()
+        return then(_gather(list(range(n)), n, zero, factor.to(torch.float64)))
     return then((torch.diag(factor).contiguous(), zero))
+
+
+def _split_as_slices(op, ins, outs, attrs, constants):
+    """A node as the nodes of the graph: a Split of known sizes (its attribute, or a constant
+    input) one Slice per output, which the lowering moves like any other; Pow(x, 2) a Square
+    (the activation x^2); the rest as it is."""
+    if op == "Pow" and len(ins) == 2 and ins[1] in constants:
+        exponent = constants[ins[1]]
+        if exponent.numel() == 1 and float(exponent) == 2.0:
+            return [("Square", ins[:1], outs, {})]
+    sizes = attrs.get("split")
+    if op == "Split" and sizes is None and len(ins) > 1 and ins[1] in constants:
+        sizes = [int(v) for v in constants[ins[1]].tolist()]
+    if op != "Split" or sizes is None:
+        return [(op, ins, outs, attrs)]
+    axis, at, nodes = attrs.get("axis", 0), 0, []
+    for name, size in zip(outs, sizes, strict=True):
+        nodes.append(("Slice", ins[:1], [name], {"starts": [at], "ends": [at + int(size)],
+                                                  "axes": [axis]}))
+        at += int(size)
+    return nodes
+
+
+def _masks(net, op, ins, attrs, values, masks, out):
+    """Which entries of a node's outputs read a free input (fold_fixed_inputs): a data move
+    moves its argument's mask, an element-wise node joins its arguments' (broadcast), any other
+    node makes every output entry free."""
+    if op in MASK_MOVES:
+        # the node on the masks as numbers (a constant argument: no entry free)
+        def as_mask(n):
+            if n in masks:
+                return masks[n].to(torch.float64)
+            v = values.get(n) if n else None
+            return torch.zeros_like(v) if op == "Concat" and v is not None else v
+
+        moved = net._run(op, [as_mask(n) if n else None for n in ins], attrs)
+        return [m > 0 for m in (moved if isinstance(moved, tuple) else (moved,))]
+    if op in MASK_ELEMENTWISE:
+        joined = torch.zeros(out[0].shape, dtype=torch.bool)
+        for n in ins:
+            if n in masks:
+                joined = joined | masks[n]
+        return [joined]
+    return [torch.ones(v.shape, dtype=torch.bool) for v in out]
 
 
 def _gather(index, inputs, bias, scale=None):

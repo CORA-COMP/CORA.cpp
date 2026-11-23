@@ -74,6 +74,8 @@ def main():
         seconds=time.time() - start,
         peak_rss_mib=rss,
         peak_cuda_mib=cuda,
+        batch_memory_budget=options.batch_memory_budget,
+        tf32=bool(torch.backends.cuda.matmul.allow_tf32 or torch.backends.cudnn.allow_tf32),
     )
     with open(args.result + ".stats.json", "w") as out:
         json.dump(stats, out)
@@ -83,6 +85,7 @@ def main():
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 SAFETY = 1.0  # seconds kept for writing the result before the timeout
+BATCH_SHARE = 0.8  # of a GPU's free memory for the sets of one batch (the rest: the attack's)
 
 
 def options_for(category, device):
@@ -90,7 +93,16 @@ def options_for(category, device):
     getDefaultVNNCOMPoptions with Phase 2's bounds) with the PGD attack around it, and the overrides
     of the environment variable CORACPP_VNNCOMP_OPTIONS (a JSON object of NnVerifyOptions fields)."""
     overrides = json.loads(os.environ.get("CORACPP_VNNCOMP_OPTIONS", "{}"))
+    if device.startswith("cuda") and "batch_memory_budget" not in overrides:
+        overrides["batch_memory_budget"] = batch_budget(device)
     return cora.vnncomp_options(category, device=device, **overrides)
+
+
+def batch_budget(device):
+    """The bytes of one batch of sets on a CUDA device: a share of its free memory, after the
+    network's load. One set's own budget (memory_budget, its cuts) stays the CPU default."""
+    free, _ = torch.cuda.mem_get_info(torch.device(device))
+    return int(BATCH_SHARE * free)
 
 
 def write_result(path, result):

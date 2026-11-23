@@ -28,6 +28,7 @@
 
 #include "cora/global/error.h"
 #include "cora/nn/neural_network/neural_network.h"
+#include "nn/neural_network/private/priv_layers.h"
 #include "nn/neural_network/private/priv_verify.h"
 
 #include <algorithm>
@@ -120,6 +121,15 @@ NnProblem::NnProblem(const NeuralNetwork &net, const NnProperty &property,
     : property_(property), options_(options), confirm_(std::move(confirm)) {
     net_ = aux_network(net, DType::float64, options.device); // NOLINT(backend): the bounds
     net32_ = aux_network(net, options.dtype, options.device);
+    memory_budget = options.memory_budget > 0 ? options.memory_budget : kBudget;
+    batch_memory_budget =
+        options.batch_memory_budget > 0 ? options.batch_memory_budget : memory_budget;
+    aux_set_property(property);
+}
+
+void NnProblem::aux_set_property(const NnProperty &property) {
+    detail::Entry entry;
+    property_ = property;
     const Tensor &like64 = net_->layers()[0].b, &like32 = net32_->layers()[0].b;
     // the search boxes inside the property's and the outer boxes of the bounds
     std::vector<double> in_lo, in_hi, out_lo, out_hi;
@@ -138,13 +148,114 @@ NnProblem::NnProblem(const NeuralNetwork &net, const NnProperty &property,
     cases.reserve(property.poly_case.size());
     for (const int64_t k : property.poly_case) cases.push_back(double(k));
     poly_case = Tensor::like(like64, cases, {int64_t(cases.size())});
-    A32_ = A.to(options.dtype);
-    b32_ = b.to(options.dtype);
-    poly_case32_ = poly_case.to(options.dtype);
-    memory_budget = options.memory_budget > 0 ? options.memory_budget : kBudget;
+    A32_ = A.to(options_.dtype);
+    b32_ = b.to(options_.dtype);
+    poly_case32_ = poly_case.to(options_.dtype);
+    // the polytopes of each case; per case when that is cheaper than all of them per row
+    case_polys_.assign(std::size_t(box[0]), {});
+    max_polys_ = 0;
+    for (std::size_t k = 0; k < property.poly_case.size(); ++k)
+        case_polys_[std::size_t(property.poly_case[k])].push_back(int64_t(k));
+    for (const std::vector<int64_t> &list : case_polys_)
+        max_polys_ = std::max(max_polys_, int64_t(list.size()));
+    const int64_t P = A.shape()[0], m = A.shape()[2];
+    per_case_ = box[0] > 1 && max_polys_ * m < P;
+}
+
+// The cases in chunks -----------------------------------------------------------------------------
+
+std::vector<std::vector<int64_t>> NnProblem::case_chunks(int64_t max_rows) const {
+    detail::Entry entry;
+    // none for few rows: the bounding takes them all at once
+    const int64_t P = A.shape()[0], K = A.shape()[1];
+    if (!per_case_ || P * K <= max_rows) return {};
+    std::vector<std::vector<int64_t>> chunks(1);
+    int64_t rows = 0;
+    for (std::size_t c = 0; c < case_polys_.size(); ++c) {
+        const int64_t mine = int64_t(case_polys_[c].size()) * K;
+        if (rows > 0 && rows + mine > max_rows) {
+            chunks.emplace_back();
+            rows = 0;
+        }
+        chunks.back().push_back(int64_t(c));
+        rows += mine;
+    }
+    return chunks;
+}
+
+NnProblem NnProblem::subproblem(const std::vector<int64_t> &cases) const {
+    detail::Entry entry;
+    // the cases' boxes, their polytopes, the cases renumbered in order
+    const int64_t n = property_.lo.shape()[1], K = property_.A.shape()[1];
+    const int64_t m = property_.A.shape()[2];
+    // the property's values on the host, read once for all the chunks
+    if (!host_) {
+        host_ = std::make_shared<HostProperty>(HostProperty{
+            property_.lo.data(), property_.hi.data(), property_.A.data(), property_.b.data()});
+    }
+    const std::vector<double> &lo_all = host_->lo, &hi_all = host_->hi;
+    const std::vector<double> &A_all = host_->A, &b_all = host_->b;
+    // each case's box and its polytopes in turn
+    NnProperty sub;
+    std::vector<double> lo_s, hi_s, A_s, b_s;
+    for (std::size_t j = 0; j < cases.size(); ++j) {
+        const auto c = std::size_t(cases[j]);
+        lo_s.insert(lo_s.end(), lo_all.begin() + std::ptrdiff_t(c) * n,
+                    lo_all.begin() + std::ptrdiff_t(c + 1) * n);
+        hi_s.insert(hi_s.end(), hi_all.begin() + std::ptrdiff_t(c) * n,
+                    hi_all.begin() + std::ptrdiff_t(c + 1) * n);
+        for (const int64_t p : case_polys_[c]) {
+            A_s.insert(A_s.end(), A_all.begin() + p * K * m, A_all.begin() + (p + 1) * K * m);
+            b_s.insert(b_s.end(), b_all.begin() + p * K, b_all.begin() + (p + 1) * K);
+            sub.poly_case.push_back(int64_t(j));
+        }
+    }
+    const auto C = int64_t(cases.size()), P = int64_t(sub.poly_case.size());
+    sub.lo = Tensor::like(property_.lo, lo_s, {C, n});
+    sub.hi = Tensor::like(property_.hi, hi_s, {C, n});
+    sub.A = Tensor::like(property_.A, A_s, {P, K, m});
+    sub.b = Tensor::like(property_.b, b_s, {P, K});
+    // the same networks, options and check
+    return {*this, sub};
+}
+
+NnProblem::NnProblem(const NnProblem &parent, const NnProperty &property)
+    : memory_budget(parent.memory_budget), batch_memory_budget(parent.batch_memory_budget),
+      deadline(parent.deadline), net_(parent.net_), net32_(parent.net32_),
+      options_(parent.options_), confirm_(parent.confirm_) {
+    aux_set_property(property);
+}
+
+NnProblem::CaseMargins NnProblem::aux_case_margins(const Tensor &y, const Tensor &cases) const {
+    detail::Entry entry;
+    const int64_t S = y.shape()[0], Q = max_polys_, K = A32_.shape()[1], m = A32_.shape()[2];
+    // each row's slots: the polytopes of its case, padded to Q
+    const std::vector<double> c = cases.data();
+    CaseMargins out;
+    out.poly.assign(std::size_t(S * Q), 0);
+    std::vector<double> valid(std::size_t(S * Q), 0.0);
+    for (int64_t s = 0; s < S; ++s) {
+        const std::vector<int64_t> &list = case_polys_[std::size_t(c[std::size_t(s)])];
+        for (std::size_t j = 0; j < list.size(); ++j) {
+            out.poly[std::size_t(s * Q) + j] = list[j];
+            valid[std::size_t(s * Q) + j] = 1.0;
+        }
+    }
+    // A_k y - b_k of the slots, one batched product per row
+    const Tensor rows = A32_.take(out.poly, 0).reshape({S, Q * K, m});
+    out.margin = rows.matmul(y.expand_dims(-1)).squeeze(-1).reshape({S, Q, K}) -
+                 b32_.take(out.poly, 0).reshape({S, Q, K});
+    out.valid = Tensor::like(y, valid, {S, Q});
+    return out;
 }
 
 Tensor NnProblem::loss(const Tensor &y, const Tensor &cases) const {
+    if (per_case_) {
+        // the worst row of each of the case's polytopes, the best of them
+        const CaseMargins cm = aux_case_margins(y, cases);
+        const Tensor worst = cm.margin.max(2);
+        return Tensor::where(cm.valid, worst, worst.full_like(worst.shape(), kInf)).min(1);
+    }
     const int64_t S = y.shape()[0], P = A32_.shape()[0], K = A32_.shape()[1];
     const Tensor margin = y.matmul(A32_.reshape({P * K, A32_.shape()[2]}).matrix_transpose())
                               .reshape({S, P, K})
@@ -155,7 +266,8 @@ Tensor NnProblem::loss(const Tensor &y, const Tensor &cases) const {
     return Tensor::where(mine, worst, worst.full_like(worst.shape(), kInf)).min(1);
 }
 
-Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss) const {
+Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss,
+                                     const Tensor *targets) const {
     const NeuralNetwork &net = *net32_;
     // the forward pass, keeping the inputs of the activations and the outputs (outs[k + 1])
     const std::vector<NeuralNetwork::Layer> &layers = net.layers();
@@ -176,29 +288,48 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
             : a == Activation::tanh       ? pre.back().tanh()
             : a == Activation::square     ? pre.back().square()
             : a == Activation::sign       ? pre.back().sign()
+            : a == Activation::floor      ? pre.back().floor()
             : a == Activation::exp        ? pre.back().exp()
             : a == Activation::reciprocal ? pre.back().ones_like().divide(pre.back().maximum(1.0))
+            : a == Activation::product    ? priv_apply(a, pre.back())
                                           : pre.back();
         outs.push_back(h);
     }
-    // the margins of the rows of every polytope
+    // the margins of the rows of every polytope (or of the case's own, per_case_)
     const int64_t S = x.shape()[0], P = A32_.shape()[0], K = A32_.shape()[1];
-    const Tensor margin = h.matmul(A32_.reshape({P * K, A32_.shape()[2]}).matrix_transpose())
-                              .reshape({S, P, K})
-                              .subtract(b32_);
+    CaseMargins cm;
+    if (per_case_) cm = aux_case_margins(h, cases);
+    const Tensor margin = per_case_
+                              ? cm.margin
+                              : h.matmul(A32_.reshape({P * K, A32_.shape()[2]}).matrix_transpose())
+                                    .reshape({S, P, K})
+                                    .subtract(b32_);
     // the objective of each polytope, and the best one of the case
     const Tensor value = margin.maximum(0.0).sum(2) + margin.max(2) * 0.1;
-    const Tensor mine = cases.expand_dims(1).equal(poly_case32_.expand_dims(0));
+    const Tensor mine =
+        per_case_ ? cm.valid : cases.expand_dims(1).equal(poly_case32_.expand_dims(0));
     if (loss)
         *loss = Tensor::where(mine, margin.max(2), value.full_like(value.shape(), kInf)).min(1);
+    // the polytope a sample aims at (targets, (S, 1)), else the best one of its case
     const Tensor best =
-        Tensor::where(mine, value, value.full_like(value.shape(), kInf)).argmin(1, true);
+        targets ? *targets
+                : Tensor::where(mine, value, value.full_like(value.shape(), kInf)).argmin(1, true);
     const Tensor rows = margin.take_along_axis(best.expand_dims(-1), 1).squeeze(1);
     // d/dy: the violated rows and a tenth of the worst row
     const Tensor worst = rows.argmax(1, true);
     const Tensor hot = worst.equal(rows.arange_like(K).reshape({1, K}));
     const Tensor weight = rows.greater(rows.zeros_like()) + hot * 0.1;
-    const Tensor chosen = A32_.take(best.squeeze(1), 0);
+    Tensor chosen;
+    if (per_case_) {
+        // the slot's polytope
+        const std::vector<double> slot = best.squeeze(1).data();
+        std::vector<int64_t> ids(slot.size());
+        for (std::size_t s = 0; s < slot.size(); ++s)
+            ids[s] = cm.poly[s * std::size_t(max_polys_) + std::size_t(slot[s])];
+        chosen = A32_.take(ids, 0);
+    } else {
+        chosen = A32_.take(best.squeeze(1), 0);
+    }
     // back through the layers, each output's gradient summed over the layers that read it
     std::vector<Tensor> acc(layers.size() + 1);
     acc.back() = weight.expand_dims(1).matmul(chosen).squeeze(1);
@@ -218,6 +349,8 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         if (a == Activation::square) g = g.multiply(z + z);
         // sign: the straight-through estimator (1 on [-1, 1]), so that the attack moves
         if (a == Activation::sign) g = g.multiply(z.abs().less_equal(z.ones_like()));
+        // floor: the straight-through estimator (1), as x - frac(x)
+        if (a == Activation::floor) g = g.multiply(z.ones_like());
         if (a == Activation::exp) g = g.multiply(z.exp());
         if (a == Activation::reciprocal) {
             // -1 / x^2 above 1, else 0
@@ -225,6 +358,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
             g = g.multiply(
                 Tensor::where(z.greater(z.ones_like()), y.square().negative(), z.zeros_like()));
         }
+        if (a == Activation::product) g = priv_slope_times_t(a, priv_derivative(a, z), g);
         for (const NeuralNetwork::Residual &r : layers[k].residuals)
             add(r.source, r.map ? r.map->rows_t(g) : g);
         add(net.source(k), layers[k].rows_t(g));
@@ -251,7 +385,7 @@ int64_t NnProblem::attack_batch() const {
     }
     elements += 2 * work;
     const int64_t itemsize = options_.dtype == DType::float32 ? 4 : 8; // NOLINT(backend): bytes
-    return std::max<int64_t>(1, memory_budget / (4 * elements * itemsize));
+    return std::max<int64_t>(1, batch_memory_budget / (4 * elements * itemsize));
 }
 
 // Candidates --------------------------------------------------------------------------------------

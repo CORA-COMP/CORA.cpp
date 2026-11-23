@@ -16,13 +16,14 @@ See also: cora.onnx_network, cora.counterexample, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
 import gzip
 import re
 from dataclasses import dataclass, field
+from decimal import Decimal
 
 import numpy as np
 
@@ -109,13 +110,6 @@ def to_vnnlib2(text, input_shape, output_shape, input_type="float32", output_typ
     # the declarations of 1.0 go; every X_i and Y_j becomes an index
     body = [line for line in text.splitlines() if not DECLARE.match(line.strip())]
     body = [re.sub(r"\b([XY])_(\d+)\b", index, line) for line in body]
-    # an exponent is no 2.0 number: the shortest decimal of the same double (1e-06: 0.000001)
-    body = [
-        line
-        if line.lstrip().startswith(";")
-        else re.sub(r"(?<=[\s(])(-?\d+(?:\.\d*)?[eE][-+]?\d+)(?=[\s)])", _decimal, line)
-        for line in body
-    ]
     # an integer constant is a real one in 2.0 (its type checker refuses 1 for a float32)
     body = [
         line
@@ -123,15 +117,26 @@ def to_vnnlib2(text, input_shape, output_shape, input_type="float32", output_typ
         else re.sub(r"(?<=[\s(])(-?\d+)(?=[\s)])", r"\1.0", line)
         for line in body
     ]
-    return "\n".join(head + body) + "\n"
+    # an exponent is no 2.0 number: the same digits positionally (1e-06: 0.000001)
+    return positional("\n".join(head + body) + "\n")
+
+
+def positional(text):
+    """The text with every number in exponent form (2.1e-05) written positionally (0.000021), the
+    same digits (Decimal, no rounding), as VNN-COMP's 2.0 files write it; comment lines kept."""
+
+    def plain(match):
+        out = format(Decimal(match.group(0)), "f")
+        return out if "." in out else out + ".0"
+
+    lines = text.split("\n")
+    return "\n".join(
+        line if line.lstrip().startswith(";") else EXPONENT.sub(plain, line) for line in lines
+    )
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
-
-def _decimal(match):
-    """The number of a match in positional notation, the shortest that parses to the same double."""
-    return np.format_float_positional(float(match.group(1)), unique=True, trim="0")
 
 COMPARISON = r"\((<=|>=) (\S+) (\S+)\)"
 
@@ -140,6 +145,8 @@ DECLARE = re.compile(r"^\(declare-const (X|Y)_(\S+) Real\)$")
 SIMPLE_ASSERT = re.compile(r"^\(assert " + COMPARISON + r"\)$")
 
 DNF_ASSERT = re.compile(r"^\(assert \(or (\(and ?(" + COMPARISON + r")+\))+\)\)$")
+
+EXPONENT = re.compile(r"(?<![\w.\[,])-?\d+(\.\d*)?[eE][-+]?\d+(?![\w.])")
 
 VERSION_2 = re.compile(r"\(\s*vnnlib-version\s*<\s*2\.0\s*>\s*\)")
 
@@ -261,12 +268,19 @@ def _read_v2(text, n, m):
     multiplied out, and every conjunct split into its input box and its output polytope."""
     import vnnlib
 
-    query = vnnlib.parse_query_string(text)
+    # the reference parser refuses an exponent (1e-05): positional, as VNN-COMP's own 2.0 files
+    query = vnnlib.parse_query_string(positional(text))
     if len(query.networks) != 1 or query.networks[0].hidden:
         raise NotImplementedError("vnnlib: one network without hidden variables is supported")
     conjuncts = [[]]
     for assertion in query.assertions:
         dnf = assertion.expr.to_dnf()
+        if len(dnf) == 1:
+            # one conjunct (a box's bound): appended in place, not every list copied (vggnet16's
+            # 301057 assertions made that quadratic)
+            for c in conjuncts:
+                c.extend(dnf[0])
+            continue
         conjuncts = [c + list(d) for c in conjuncts for d in dnf]
     # each atom's linear form once (a box atom is shared by every conjunct of the disjunction)
     forms = {}
@@ -290,7 +304,7 @@ def _read_v2(text, n, m):
 
 def _linear_atoms(atom, n, m):
     """A comparison as (op, coefficients, constant, 'input' or 'output'): row . v + constant op 0
-    with op '<=' (or two of them for '==')."""
+    with op '<=' (or two of them for '=='); an input's row as {index: coefficient}."""
     name = type(atom).__name__
     if name == "NotEqual":
         raise NotImplementedError("vnnlib: != is not supported")
@@ -307,14 +321,21 @@ def _linear_atoms(atom, n, m):
     if len(kinds) != 1 or kinds - {"Input", "Output"}:
         raise NotImplementedError("vnnlib: a constraint that mixes inputs and outputs")
     kind = kinds.pop()
-    row = np.zeros(n if kind == "Input" else m)
-    for (_, flat), c in coeffs.items():
-        row[flat] = c
+    # an input's row as its nonzero coefficients {index: c} (a dense row per atom of a box of
+    # vggnet16's 150528 inputs costs n^2: 734 s), an output's row dense
+    if kind == "Input":
+        row = {flat: c for (_, flat), c in coeffs.items() if c != 0}
+        neg = {i: -c for i, c in row.items()}
+    else:
+        row = np.zeros(m)
+        for (_, flat), c in coeffs.items():
+            row[flat] = c
+        neg = -row
     if name in ("LessEqual", "LessThan"):
         return [("<=", row, const, kind)]
     if name in ("GreaterEqual", "GreaterThan"):
-        return [("<=", -row, -const, kind)]
-    return [("<=", row, const, kind), ("<=", -row, -const, kind)]
+        return [("<=", neg, -const, kind)]
+    return [("<=", row, const, kind), ("<=", neg, -const, kind)]
 
 
 def _atom_form(op, row, const, kind):
@@ -322,11 +343,10 @@ def _atom_form(op, row, const, kind):
     del op  # always "<=" (_linear_atoms)
     if kind == "Output":
         return ("Output", list(row), -const)
-    nonzero = np.flatnonzero(row)
-    if len(nonzero) != 1:
+    if len(row) != 1:
         raise NotImplementedError("vnnlib: input constraints must be box constraints")
-    i, a = int(nonzero[0]), float(row[nonzero[0]])
-    return ("Input", i, -const / a, a > 0)
+    ((i, a),) = row.items()
+    return ("Input", int(i), -const / float(a), a > 0)
 
 
 def _add_atom(case, form):

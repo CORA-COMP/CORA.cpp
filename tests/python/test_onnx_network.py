@@ -6,11 +6,12 @@ to dense layers whose network equals the graph in float64, and a plain Gemm keep
 for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
 folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
 padded max pool and a quotient of two values do not lower and say why; a batch norm of features
-and a slice of the input concatenated with a branch lower; a product of two values lowers to x^2
-layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
-builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
-backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
-layers, its output Softmax dropped for a property that only compares outputs.
+and a slice of the input concatenated with a branch lower; a product of two values lowers to a
+product layer, and a ReduceSum, a difference of branches and scalings lower; a Gemm or a MatMul
+of a row and a constant matrix takes the weights themselves, far below the identity's memory; the
+verifier's backend is torch for a convolution, eigen for a dense network; a binarized network
+lowers to sign layers, its output Softmax dropped for a property that only compares outputs;
+vit_2023's, nn4sys' and ml4acopf's shapes lower and equal the graph.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -40,7 +41,7 @@ import cora
 if not cora.has_torch:
     raise unittest.SkipTest("needs a build with torch") from None
 
-from cora.onnx_network import OnnxNetwork
+from cora.onnx_network import OnnxNetwork, _constant_matrix
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -143,7 +144,7 @@ class Lowering(unittest.TestCase):
                 np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
             )
         (layers, acts), _ = OnnxNetwork(product_net()).layers()
-        self.assertIn("square", acts)
+        self.assertIn("product", acts)
 
     def test_features_and_branches(self):
         # a batch norm of features (CNN-7), and a slice of the input concatenated with a branch
@@ -202,6 +203,77 @@ class Lowering(unittest.TestCase):
             W = numpy_helper.to_array(m.graph.initializer[2])
             self.assertTrue(np.array_equal(np.load(out), W.astype(np.float64)))
 
+    def test_constant_matrices_without_unit_vectors(self):
+        # a Gemm (alpha, B as is) and a MatMul after a convolution: their weights, bit for bit
+        m = conv_gemm_matmul_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        (layers, acts), why = net.layers()
+        self.assertIsNone(why)
+        W1, W2 = (numpy_helper.to_array(m.graph.initializer[k]) for k in (2, 4))
+        self.assertTrue(np.array_equal(layers[-2]["W"].numpy(), 0.5 * W1.astype(np.float64).T))
+        self.assertTrue(np.array_equal(layers[-1]["W"].numpy(), W2.astype(np.float64).T))
+        x = torch.as_tensor(RNG.uniform(-1, 1, (4, net.num_inputs)))
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
+                                   net(x).numpy(), rtol=1e-12, atol=1e-12)
+        # a transA, a non-finite weight and a batch of rows keep the unit vectors
+        B = torch.ones(3, 2, dtype=torch.float64)
+        self.assertIsNone(_constant_matrix("Gemm", [None, B], {"transA": 1}, (1, 3)))
+        self.assertIsNone(_constant_matrix("MatMul", [None, B * float("inf")], {}, (1, 3)))
+        self.assertIsNone(_constant_matrix("MatMul", [None, B], {}, (1, 4, 3)))
+
+    def test_split_fold_and_wide_scaling(self):
+        # a Split of sizes as an input, then a product with a fixed input of 12000 entries
+        n = 12000
+        m = model(
+            [helper.make_node("Split", ["x", "sizes"], ["a", "b"], axis=1),
+             helper.make_node("Relu", ["a"], ["r"]),
+             helper.make_node("Mul", ["r", "b"], ["y"])],
+            [("x", [1, 2 * n])], [("y", [1, n])],
+            {"sizes": np.array([n, n], dtype=np.int64)},
+        )
+        net = OnnxNetwork(m, dtype=torch.float64)
+        self.assertEqual(net.op_types(), {"Slice", "Relu", "Mul"})
+        (_, why) = net.layers()
+        self.assertIn("of two values", why)
+        # folded: a scaling, a gather with factors (no diagonal), equal to the graph
+        lo, hi = -np.ones(2 * n), np.ones(2 * n)
+        lo[n:] = hi[n:] = RNG.uniform(-2, 2, n)
+        folded = net.fold_fixed_inputs(lo, hi)
+        self.assertEqual(folded.op_types(), {"Slice", "Relu", "Mul"})
+        (layers, acts), why = folded.layers()
+        self.assertIsNone(why)
+        self.assertTrue(any(isinstance(la, dict) and "scale" in la for la in layers))
+        x = torch.as_tensor(np.concatenate([RNG.uniform(-1, 1, (3, n)), np.tile(lo[n:], (3, 1))], 1))
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
+                                   net(x).numpy(), rtol=1e-12, atol=1e-12)
+
+    def test_floor_and_pow(self):
+        # ml4acopf's x - 2 pi floor(x / (2 pi)) and Pow(x, 2): floor and square layers
+        tau = np.float32(2 * np.pi)
+        nodes = [
+            helper.make_node("Gemm", ["x", "W", "b"], ["g"], transB=1),
+            helper.make_node("Div", ["g", "tau"], ["d"]),
+            helper.make_node("Floor", ["d"], ["f"]),
+            helper.make_node("Mul", ["f", "tau"], ["t"]),
+            helper.make_node("Sub", ["g", "t"], ["w"]),
+            helper.make_node("Pow", ["w", "two"], ["y"]),
+        ]
+        init = {"W": weight(3, 2) * 4, "b": weight(3), "tau": np.array(tau), "two": np.array(2.0, np.float32)}
+        m = model(nodes, [("x", [1, 2])], [("y", [1, 3])], init)
+        net = OnnxNetwork(m, dtype=torch.float64)
+        (layers, acts), why = net.layers()
+        self.assertIsNone(why)
+        self.assertIn("floor", acts)
+        self.assertIn("square", acts)
+        x = torch.as_tensor(RNG.uniform(-3, 3, (20, 2)))
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
+                                   net(x).numpy(), rtol=1e-9, atol=1e-9)
+        # Pow of another exponent runs, but does not lower
+        init["two"] = np.array(3.0, np.float32)
+        cube = OnnxNetwork(model(nodes, [("x", [1, 2])], [("y", [1, 3])], init), dtype=torch.float64)
+        np.testing.assert_allclose(cube(x).numpy(), net(x).numpy() ** 1.5, rtol=1e-9)
+        self.assertIsNone(cube.layers()[0])
+
     def test_signs_and_an_output_softmax(self):
         # a binarized network: sign layers; its output Softmax dropped, the logits equal the graph's
         m = sign_net()
@@ -240,7 +312,7 @@ class Lowering(unittest.TestCase):
         )
         (_, acts), _ = OnnxNetwork(attention_net()).layers()
         self.assertEqual([a for a in acts if a != "identity"],
-                         ["square", "exp", "reciprocal", "square"])
+                         ["product", "exp", "reciprocal", "product"])
         # verify on its enclosure: a sampled violation is never unsat
         x = RNG.uniform(-1, 1, (4000, net.num_inputs))
         y = net(torch.as_tensor(x)).numpy()
@@ -251,6 +323,46 @@ class Lowering(unittest.TestCase):
         out = nn.verify(lo, hi, [0], A, np.array([[low + 0.01]]), 20, cora.vnncomp_options("x"))
         self.assertEqual(out["status"], "sat")
 
+    def test_vision_transformer(self):
+        # vit_2023's graph (vit_net): the torch run as onnxruntime, then the layers as the graph
+        m = vit_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        x = RNG.uniform(-1, 1, (5, net.num_inputs))
+        expected = onnxruntime_rows(m, x.astype(np.float32))
+        np.testing.assert_allclose(net(torch.as_tensor(x)).numpy(), expected, rtol=1e-5, atol=1e-5)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        np.testing.assert_allclose(
+            np.asarray(nn.evaluate(torch.as_tensor(x))), net(torch.as_tensor(x)).numpy(), rtol=1e-10,
+            atol=1e-12,
+        )
+
+    def test_gather_from_the_end(self):
+        # nn4sys' pensieve: the last entry of a row by a Gather of index -1, onnxruntime's value
+        m = pensieve_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        x = RNG.uniform(-1, 1, (5, net.num_inputs))
+        expected = onnxruntime_rows(m, x.astype(np.float32))
+        np.testing.assert_allclose(net(torch.as_tensor(x)).numpy(), expected, rtol=1e-5, atol=1e-5)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        np.testing.assert_allclose(np.asarray(nn.evaluate(torch.as_tensor(x))), expected, rtol=1e-5,
+                                   atol=1e-5)
+
+    def test_columns_and_thresholds(self):
+        # ml4acopf: a column C x^T, a ReLU sum over thresholds; a column into a join refuses
+        m = acopf_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        x = RNG.uniform(-1, 1, (5, net.num_inputs))
+        expected = onnxruntime_rows(m, x.astype(np.float32))
+        np.testing.assert_allclose(net(torch.as_tensor(x)).numpy(), expected, rtol=1e-5, atol=1e-5)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        np.testing.assert_allclose(np.asarray(nn.evaluate(torch.as_tensor(x))), expected,
+                                   rtol=1e-5, atol=1e-5)
+        _, why = OnnxNetwork(acopf_net(join_column=True)).layers()
+        self.assertIn("column", why)
+
     def test_backend_by_network(self):
         # torch for a convolution (or a GPU), eigen for a dense network (cora.nn_verify.load)
         from cora.nn_verify import choose_backend
@@ -260,6 +372,7 @@ class Lowering(unittest.TestCase):
         self.assertEqual(choose_backend(conv[0]), "torch")
         self.assertEqual(choose_backend(dense[0]), "eigen")
         self.assertEqual(choose_backend(dense[0], "cuda:0"), "torch")
+        self.assertEqual(choose_backend(dense[0], "cpu", ["relu", "product"]), "torch")
 
     def test_size_cap(self):
         # max_elements refuses unit-vector batches beyond it
@@ -290,8 +403,8 @@ def weight(*shape):
     return RNG.standard_normal(shape).astype(np.float32)
 
 
-def model(nodes, inputs, outputs, initializers):
-    """A model of the nodes with float32 inputs and outputs (name, shape)."""
+def model(nodes, inputs, outputs, initializers, opset=13):
+    """A model of the nodes with float32 inputs and outputs (name, shape), of the opset."""
     graph = helper.make_graph(
         nodes,
         "g",
@@ -299,7 +412,7 @@ def model(nodes, inputs, outputs, initializers):
         [helper.make_tensor_value_info(n, TensorProto.FLOAT, s) for n, s in outputs],
         [numpy_helper.from_array(a, name) for name, a in initializers.items()],
     )
-    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
+    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", opset)])
     m.ir_version = 8
     onnx.checker.check_model(m)
     return m
@@ -475,6 +588,98 @@ def attention_net():
     return model(nodes, [("x", [1, 2, 2, 2])], [("y", [1, 3])], init)
 
 
+def vit_net():
+    """vit_2023's shapes at opset 9 on a (2, 4, 4) image: 2 x 2 patches by a Conv into 4 tokens of
+    3, a class token (ConstantOfShape of the batch, plus the token) and positions, a batch norm of
+    the tokens, one attention head with a residual, the mean of the tokens, a batch norm, a Gemm."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wc", "bc"], ["p"], kernel_shape=[2, 2], strides=[2, 2]),
+        helper.make_node("Shape", ["p"], ["ps"]),
+        helper.make_node("Slice", ["ps"], ["pb"], starts=[0], ends=[2], axes=[0]),
+        helper.make_node("Concat", ["pb", "minus1"], ["s"], axis=0),
+        helper.make_node("Reshape", ["p", "s"], ["pr"]),
+        helper.make_node("Transpose", ["pr"], ["tok"], perm=[0, 2, 1]),
+        # the class token: zeros of (batch, 1, 3) plus the learned token
+        helper.make_node("Shape", ["x"], ["xs"]),
+        helper.make_node("Gather", ["xs", "zero"], ["n"], axis=0),
+        helper.make_node("Unsqueeze", ["n"], ["n1"], axes=[0]),
+        helper.make_node("Concat", ["n1", "one", "three"], ["cs"], axis=0),
+        helper.make_node("ConstantOfShape", ["cs"], ["c0"]),
+        helper.make_node("Add", ["c0", "cls"], ["c"]),
+        helper.make_node("Concat", ["c", "tok"], ["t"], axis=1),
+        helper.make_node("Add", ["t", "pos"], ["e"]),
+        # a batch norm of the tokens' features, between two transposes
+        helper.make_node("Transpose", ["e"], ["et"], perm=[0, 2, 1]),
+        helper.make_node("BatchNormalization", ["et", "g1", "b1", "m1", "v1"], ["en"]),
+        helper.make_node("Transpose", ["en"], ["h"], perm=[0, 2, 1]),
+        # one head: softmax(q k^T / sqrt(3)) v, then the residual
+        helper.make_node("MatMul", ["h", "Wq"], ["q"]),
+        helper.make_node("MatMul", ["h", "Wk"], ["k"]),
+        helper.make_node("MatMul", ["h", "Wv"], ["v"]),
+        helper.make_node("Transpose", ["k"], ["kt"], perm=[0, 2, 1]),
+        helper.make_node("MatMul", ["q", "kt"], ["qk"]),
+        helper.make_node("Mul", ["qk", "scale"], ["qs"]),
+        helper.make_node("Softmax", ["qs"], ["a"], axis=2),
+        helper.make_node("MatMul", ["a", "v"], ["o"]),
+        helper.make_node("Add", ["o", "e"], ["r"]),
+        helper.make_node("ReduceMean", ["r"], ["mean"], axes=[1], keepdims=0),
+        helper.make_node("BatchNormalization", ["mean", "g2", "b2", "m2", "v2"], ["mn"]),
+        helper.make_node("Gemm", ["mn", "W", "b"], ["y"], transB=1),
+    ]
+    var = lambda n: RNG.uniform(0.5, 2, n).astype(np.float32)  # noqa: E731
+    init = {"Wc": weight(3, 2, 2, 2), "bc": weight(3), "minus1": np.array([-1], np.int64),
+            "zero": np.array(0, np.int64), "one": np.array([1], np.int64),
+            "three": np.array([3], np.int64), "cls": weight(1, 1, 3), "pos": weight(1, 5, 3),
+            "g1": weight(3), "b1": weight(3), "m1": weight(3), "v1": var(3),
+            "Wq": weight(3, 3), "Wk": weight(3, 3), "Wv": weight(3, 3),
+            "scale": np.array(1 / np.sqrt(3), np.float32),
+            "g2": weight(3), "b2": weight(3), "m2": weight(3), "v2": var(3),
+            "W": weight(2, 3), "b": weight(2)}
+    return model(nodes, [("x", [1, 2, 4, 4])], [("y", [1, 2])], init, opset=9)
+
+
+def pensieve_net():
+    """nn4sys' pensieve on a (2, 4) input: the last entry of the first row (Slice, then a Gather
+    of index -1 on axis 2) and the second row, each through a Gemm and a ReLU, concatenated."""
+    nodes = [
+        helper.make_node("Slice", ["x", "s0", "s1", "ax1"], ["r0"]),
+        helper.make_node("Gather", ["r0", "last"], ["g"], axis=2),
+        helper.make_node("Gemm", ["g", "W0", "b0"], ["h0"], transB=1),
+        helper.make_node("Relu", ["h0"], ["a0"]),
+        helper.make_node("Gather", ["x", "one"], ["r1"], axis=1),
+        helper.make_node("Gemm", ["r1", "W1", "b1"], ["h1"], transB=1),
+        helper.make_node("Relu", ["h1"], ["a1"]),
+        helper.make_node("Concat", ["a0", "a1"], ["c"], axis=1),
+        helper.make_node("Gemm", ["c", "W", "b"], ["y"], transB=1),
+    ]
+    init = {"s0": np.array([0], np.int64), "s1": np.array([1], np.int64),
+            "ax1": np.array([1], np.int64), "last": np.array(-1, np.int64),
+            "one": np.array(1, np.int64), "W0": weight(3, 1), "b0": weight(3),
+            "W1": weight(3, 4), "b1": weight(3), "W": weight(2, 6), "b": weight(2)}
+    return model(nodes, [("x", [1, 2, 4])], [("y", [1, 2])], init)
+
+
+def acopf_net(join_column=False):
+    """ml4acopf's shapes on x (1, 3): h = relu(x W), C h^T as a column by two transposes, and
+    sum_k relu(h - t_k) d_k (an Unsqueeze broadcast against the thresholds), added; with
+    join_column the column itself joins h."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W"], ["l"]),
+        helper.make_node("Relu", ["l"], ["h"]),
+        helper.make_node("Transpose", ["h"], ["ht"], perm=[1, 0]),
+        helper.make_node("MatMul", ["C", "ht"], ["ch"]),
+        helper.make_node("Transpose", ["ch"], ["c"], perm=[1, 0]),
+        helper.make_node("Unsqueeze", ["h", "last"], ["hu"]),
+        helper.make_node("Sub", ["hu", "t"], ["ht3"]),
+        helper.make_node("Relu", ["ht3"], ["r"]),
+        helper.make_node("MatMul", ["r", "d"], ["p"]),
+        helper.make_node("Add", ["c", "p"] if not join_column else ["ch", "p"], ["y"]),
+    ]
+    init = {"W": weight(3, 2), "C": weight(2, 2), "t": weight(4), "d": weight(4),
+            "last": np.array([-1], np.int64)}
+    return model(nodes, [("x", [1, 3])], [("y", [1, 2] if not join_column else [2, 2])], init)
+
+
 def sign_net():
     """A binarized network: sign(x W1), + 0.1, sign, then W2 and a Softmax (traffic_signs')."""
     nodes = [
@@ -589,6 +794,20 @@ def wide_conv_net():
     ]
     init = {"Wc": weight(16, 1, 3, 3), "bc": weight(16), "W": weight(5, 14400), "b": weight(5)}
     return model(nodes, [("x", [1, 1, 32, 32])], [("y", [1, 5])], init)
+
+
+def conv_gemm_matmul_net():
+    """Conv (1 -> 2 channels, 3 x 3) on 6 x 6, Flatten, Gemm (alpha 0.5), Relu, MatMul."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wc", "bc"], ["c"]),
+        helper.make_node("Flatten", ["c"], ["f"]),
+        helper.make_node("Gemm", ["f", "W1", "b1"], ["g"], alpha=0.5),
+        helper.make_node("Relu", ["g"], ["r"]),
+        helper.make_node("MatMul", ["r", "W2"], ["y"]),
+    ]
+    init = {"Wc": weight(2, 1, 3, 3), "bc": weight(2), "W1": weight(32, 7), "b1": weight(7),
+            "W2": weight(7, 3)}
+    return model(nodes, [("x", [1, 1, 6, 6])], [("y", [1, 3])], init)
 
 
 def maxpool_net(kernel=2, stride=1, channels=1, pads=0):

@@ -4369,7 +4369,8 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "The states (steps + 1, n) and the algebraic variables (steps + 1, p) of a trajectory");
 }
 
-/// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp or reciprocal.
+/// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp, reciprocal,
+/// product or floor.
 Activation activation_of(const std::string &name) {
     if (name == "identity") return Activation::identity;
     if (name == "relu") return Activation::relu;
@@ -4379,8 +4380,10 @@ Activation activation_of(const std::string &name) {
     if (name == "sign") return Activation::sign;
     if (name == "exp") return Activation::exp;
     if (name == "reciprocal") return Activation::reciprocal;
+    if (name == "product") return Activation::product;
+    if (name == "floor") return Activation::floor;
     CORA_FAIL(Error::wrong_value, "NeuralNetwork: the activation must be identity, relu, sigmoid, "
-                                  "tanh, square, sign, exp or reciprocal, got " +
+                                  "tanh, square, sign, exp, reciprocal, product or floor, got " +
                                       name);
 }
 
@@ -4566,7 +4569,8 @@ void bind_neural_network(py::module_ &m) {
              "the optional graph keys "
              "'source' (the layer it reads, -1 the input) and 'residuals' ([{'source', 'map': a "
              "layer or None for the identity}], added), and optionally the activation of each: "
-             "'identity', 'relu', 'sigmoid', 'tanh', 'square', 'sign', 'exp' or 'reciprocal'")
+             "'identity', 'relu', 'sigmoid', 'tanh', 'square', 'sign', 'exp', 'reciprocal' or "
+             "'product' (the halves' products, then zeros; for verify)")
         .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
         .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")
         // the outputs at points, the enclosure of the outputs over a set, and the pairs
@@ -4912,7 +4916,8 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(attack_time_share, "The share of the timeout of the first attack");
     CORA_VERIFY_FIELD(attack_first_rounds, "The rounds of the first attack at most");
     CORA_VERIFY_FIELD(pgd_steps, "PGD: the steps per round");
-    CORA_VERIFY_FIELD(pgd_restarts, "PGD: the restarts per box");
+    CORA_VERIFY_FIELD(pgd_restarts, "PGD: the restarts per box (per target with pgd_targeted)");
+    CORA_VERIFY_FIELD(pgd_targeted, "PGD: restarts per polytope of the case, each toward its own");
     CORA_VERIFY_FIELD(pgd_step_size, "PGD: the step as a share of the box radius");
     CORA_VERIFY_FIELD(pgd_decay, "PGD: the factor of the step at each decay point");
     CORA_VERIFY_FIELD(pgd_decay_at, "PGD: the decay points as shares of the steps");
@@ -4929,7 +4934,8 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(verify_enqueue_type, "'prepend' or 'append'");
     CORA_VERIFY_FIELD(max_verif_iter, "The batches of the branch and bound at most");
     CORA_VERIFY_FIELD(verified_margin, "The margin of a verified row");
-    CORA_VERIFY_FIELD(memory_budget, "Bytes per batch; 0: 1 GiB");
+    CORA_VERIFY_FIELD(memory_budget, "Bytes per set; 0: 1 GiB");
+    CORA_VERIFY_FIELD(batch_memory_budget, "Bytes per batch of sets; 0: memory_budget");
     CORA_VERIFY_FIELD(device, "Where the network goes ('cpu', 'cuda'); empty: its own");
     // CORA's verify
     CORA_VERIFY_FIELD(refinement_method, "'zonotack' or 'naive'");
@@ -4941,6 +4947,9 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(conzonotope_bounding_method, "'fourier-motzkin' or 'dual-iter'");
     CORA_VERIFY_FIELD(polytope_bound_approx_max_iter, "The Fourier-Motzkin passes");
     CORA_VERIFY_FIELD(refinement_max_iter, "The propagations of Prop. 2 per set, plus one");
+    CORA_VERIFY_FIELD(
+        refinement_min_move,
+        "A child leaves Prop. 2's passes once its box moves by at most this; 0: none");
     CORA_VERIFY_FIELD(num_neuron_splits, "The neurons split per set");
     // the neuron splits, the ReLU rows, the batches and the repairs
     CORA_VERIFY_FIELD(neuron_split_position, "'zero' or 'middle'");

@@ -180,6 +180,17 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             hi.push_back(sl.maximum(su));
             continue;
         }
+        if (a == Activation::product) {
+            // a b in a_m b_m +- (|a_m| r_b + |b_m| r_a + r_a r_b), then zeros
+            const Tensor pm = (plo.back() + phi.back()) * 0.5, pr = (phi.back() - plo.back()) * 0.5;
+            const auto [am, bm] = priv_halves(pm);
+            const auto [ar, br] = priv_halves(pr);
+            const Tensor ab = am.multiply(bm);
+            const Tensor ab_rad = am.abs().multiply(br) + bm.abs().multiply(ar) + ar.multiply(br);
+            lo.push_back(Tensor::concat({ab - ab_rad, ab.zeros_like()}, -1));
+            hi.push_back(Tensor::concat({ab + ab_rad, ab.zeros_like()}, -1));
+            continue;
+        }
         if (a == Activation::reciprocal) {
             // 1 / max(x, 1) falls: lo is the upper end's, hi the lower end's
             lo.push_back(phi.back().ones_like().divide(phi.back().maximum(1.0)));
@@ -189,12 +200,14 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
         lo.push_back(a == Activation::identity  ? plo.back()
                      : a == Activation::exp     ? plo.back().exp()
                      : a == Activation::sign    ? plo.back().sign()
+                     : a == Activation::floor   ? plo.back().floor()
                      : a == Activation::relu    ? plo.back().maximum(0.0)
                      : a == Activation::sigmoid ? plo.back().sigmoid()
                                                 : plo.back().tanh());
         hi.push_back(a == Activation::identity  ? phi.back()
                      : a == Activation::exp     ? phi.back().exp()
                      : a == Activation::sign    ? phi.back().sign()
+                     : a == Activation::floor   ? phi.back().floor()
                      : a == Activation::relu    ? phi.back().maximum(0.0)
                      : a == Activation::sigmoid ? phi.back().sigmoid()
                                                 : phi.back().tanh());
@@ -227,6 +240,7 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             case Activation::square:
                 return z + z;
             case Activation::sign:
+            case Activation::floor:
                 return z.zeros_like();
             // a softmax's parts: exp, and -1 / x^2 above 1
             case Activation::exp:
@@ -236,6 +250,8 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                 return Tensor::where(z.greater(z.ones_like()), y.square().negative(),
                                      z.zeros_like());
             }
+            case Activation::product:
+                break;
             }
             CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
         };
@@ -250,6 +266,17 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             g_hi = g_hi.multiply(1.0 - left).multiply(d_hi) +
                    g_lo.multiply(open).multiply(left).multiply(d_hi);
             g_lo = g_l;
+        } else if (net.activations[k] == Activation::product) {
+            // the box's middle a_m b_m and radius |a_m| r_b + |b_m| r_a + r_a r_b, differentiated
+            const Tensor pm = (plo[k] + phi[k]) * 0.5, pr = (phi[k] - plo[k]) * 0.5;
+            const Activation p = Activation::product;
+            const Tensor g_pm = priv_slope_times_t(p, priv_derivative(p, pm), g_lo + g_hi);
+            const auto [am, bm] = priv_halves(pm);
+            const auto [ar, br] = priv_halves(pr);
+            const Tensor d_r = Tensor::concat({bm.abs() + br, am.abs() + ar}, -1);
+            const Tensor g_pr = priv_slope_times_t(p, d_r, g_hi - g_lo);
+            g_lo = (g_pm - g_pr) * 0.5;
+            g_hi = (g_pm + g_pr) * 0.5;
         } else if (net.activations[k] == Activation::reciprocal) {
             // falling: the output's lo is the input's hi, and back
             const Tensor g_l = g_hi.multiply(slope(plo[k]));
@@ -327,7 +354,10 @@ class ConZonotopeBounding : public Bounding {
     struct Step {
         bool found = false;
         Children children;
-        int64_t verified = 0;
+        int64_t verified = 0;       ///< the sum of the next three
+        int64_t check_verified = 0; ///< boxes of the batch the check decides
+        int64_t empty_children = 0; ///< children the refinement leaves empty
+        int64_t point_children = 0; ///< point children, checked and dropped
     };
 
     // the steps of one batch
@@ -422,7 +452,8 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     int64_t elements = net_->n0, work = 0;
     for (const int64_t w : net_->widths) elements += w;
     for (const NeuralNetwork::Layer &layer : net_->maps) work = std::max(work, layer.work());
-    elements += work;
+    // and the rows of every polytope (G A^T: lindex's thousands of cases), each set's own
+    elements += work + P_ * K_;
     // the slot budget: fewer error slots per layer until one set fits (docs/nn_verification.md)
     double slots = o_.num_approx_err;
     const auto bytes = [&](const ZonoNet &net) { return 8 * 4 * net.q * elements; };
@@ -444,9 +475,9 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     }
     if (slots != o_.num_approx_err) slot_budget_ = slots;
     if (gens != o_.num_init_gens) init_gen_budget_ = gens;
-    // CORA's batch size, at most what the memory budget holds
-    batch_ =
-        std::min(o_.mini_batch_size, std::max<int64_t>(1, problem.memory_budget / bytes(*net_)));
+    // CORA's batch size, at most what the batch's memory budget holds
+    batch_ = std::min(o_.mini_batch_size,
+                      std::max<int64_t>(1, problem.batch_memory_budget / bytes(*net_)));
     return true;
 }
 
@@ -670,7 +701,8 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
     Tensor splits = xs.zeros_like({xs.shape()[0], 0});
-    int64_t iteration = 0, verified = 0, unresolved = 0;
+    int64_t iteration = 0, verified = 0, unresolved = 0, queue_peak = xs.shape()[0];
+    stats["batch_size"] = double(batch_);
     double last = 0;
     while (xs.shape()[0] > 0) {
         // a batch starts only if the last one's time still fits before the deadline
@@ -709,6 +741,9 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
         }
         stats["boxes"] += double(xi.shape()[0]);
         verified += step.verified;
+        stats["check_verified"] += double(step.check_verified);
+        stats["empty_children"] += double(step.empty_children);
+        stats["point_children"] += double(step.point_children);
         ++iteration;
         last = now_seconds() - started;
         if (step.found) {
@@ -732,7 +767,9 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
                                                     o_.verify_enqueue_type +
                                                     "' is unknown; use 'prepend' or 'append'");
         }
+        queue_peak = std::max(queue_peak, xs.shape()[0]);
     }
+    stats["queue_peak"] = double(queue_peak);
     stats["iterations"] = double(iteration);
     // the verdict: no set left (nor one beyond the float range) is unsat
     stats["verified_sets"] = double(verified);
@@ -802,7 +839,8 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
             (*stats_)["dual_verified"] += double(before - open.size());
         }
     }
-    step.verified = xi_.shape()[0] - int64_t(open.size());
+    step.check_verified = xi_.shape()[0] - int64_t(open.size());
+    step.verified = step.check_verified;
     const auto empty = [&] {
         return Children{xi_.slice(0, 0, 0), ri_.slice(0, 0, 0), ci_.slice(0, 0, 0),
                         si_.slice(0, 0, 0)};
@@ -849,6 +887,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
     auto [children, n_empty] =
         aux_refine(ci, si, art, excluded, split, relu_rows.first, relu_rows.second);
     if (timed_out_) return step;
+    step.empty_children = n_empty;
     step.verified += n_empty;
     // the point sets are checked and dropped
     const std::vector<int64_t> point = aux_where(children.r.equal(children.r.zeros_like()).all(1));
@@ -858,6 +897,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
             step.found = true;
             return step;
         }
+        step.point_children = int64_t(point.size());
         step.verified += int64_t(point.size());
         const std::vector<int64_t> rest = aux_rest(children.x.shape()[0], point);
         children = {children.x.take(rest, 0), children.r.take(rest, 0),
@@ -1218,23 +1258,28 @@ std::pair<Children, int64_t> ConZonotopeBounding::aux_refine(const Tensor &ci, c
     Tensor cy = art.out.c.take(parent, 0), Gy = art.out.G.take(parent, 0);
     Tensor dry = art.out.dr.defined() ? art.out.dr.take(parent, 0) : Tensor();
     // the members: (child, polytope) for the polytopes the parent did not exclude
-    const std::vector<int64_t> member = aux_where(1.0 - excluded.take(parent, 0));
-    Tensor empty = cx.zeros_like({n_ch});
+    std::vector<int64_t> member = aux_where(1.0 - excluded.take(parent, 0));
+    // the children still refined (act, ascending) and the input sets of those that are done
+    std::vector<int64_t> act(static_cast<std::size_t>(n_ch));
+    for (int64_t i = 0; i < n_ch; ++i) act[std::size_t(i)] = i;
+    std::vector<double> empty(static_cast<std::size_t>(n_ch), 0.0);
+    Tensor cx_all = cx, Gx_all = Gx;
+    Tensor splits_a = splits, drx_a = drx;
     const bool has_rows = C.shape()[1] > 0;
-    for (int64_t it = 1; it < o_.refinement_max_iter; ++it) {
+    for (int64_t it = 1; it < o_.refinement_max_iter && !act.empty(); ++it) {
         if (aux_late()) return {};
         std::tuple<Tensor, Tensor, Tensor> bounds;
         {
             const StepTimer timer(stats_, "fourier_motzkin_seconds");
-            bounds = aux_bound_children(cy, Gy, dry, C, d, member, n_ch);
+            bounds = aux_bound_children(cy, Gy, dry, C, d, member, int64_t(act.size()));
         }
         const auto &[bl, bu, child_empty] = bounds;
         if (timed_out_) return {};
-        empty = empty.maximum(child_empty);
         const Tensor bc = (bu + bl) * 0.5, br = (bu - bl) * 0.5;
         // the input set and the rows to the new box (aux_scaleAndOffsetZonotope)
-        cx = cx + bc.slice(1, 0, q0).expand_dims(1).matmul(Gx).squeeze(1);
-        Gx = Gx.multiply(br.slice(1, 0, q0).expand_dims(-1));
+        const Tensor bc0 = bc.slice(1, 0, q0), br0 = br.slice(1, 0, q0);
+        cx = cx + bc0.expand_dims(1).matmul(Gx).squeeze(1);
+        Gx = Gx.multiply(br0.expand_dims(-1));
         if (has_rows) {
             d = d - C.matmul(bc.expand_dims(-1)).squeeze(-1);
             C = C.multiply(br.expand_dims(1));
@@ -1244,23 +1289,81 @@ std::pair<Children, int64_t> ConZonotopeBounding::aux_refine(const Tensor &ci, c
                 C = Tensor::concat({C.slice(2, 0, q0), C.slice(2, q0, q).zeros_like()}, 2);
             }
         }
-        // the refined input set through the network again
-        if (it + 1 < o_.refinement_max_iter) {
-            const StepTimer timer(stats_, "refine_forward_seconds");
-            const ZonoPropagation prop =
-                net.forward(cx, drx, Gx, splits, art.has_sens ? &layer_sens : nullptr, false);
-            cy = prop.c;
-            Gy = prop.G;
-            dry = prop.dr;
+        // the empty children are verified, whatever a later pass would give
+        const std::vector<double> gone = child_empty.data();
+        for (std::size_t i = 0; i < act.size(); ++i)
+            if (gone[i] > 0) empty[std::size_t(act[i])] = 1.0;
+        if (it + 1 >= o_.refinement_max_iter) break;
+        // done: an empty child, or one whose box moved by at most refinement_min_move (0: not)
+        const double tol = o_.refinement_min_move;
+        const std::vector<double> same =
+            tol > 0
+                ? bc0.abs()
+                      .less_equal(bc0.full_like(bc0.shape(), tol))
+                      .multiply(br0.greater_equal(br0.full_like(br0.shape(), 1.0 - tol)))
+                      .all(1)
+                      .data()
+                : bc0.equal(bc0.zeros_like()).multiply(br0.equal(br0.ones_like())).all(1).data();
+        std::vector<int64_t> stay, done;
+        for (std::size_t i = 0; i < act.size(); ++i)
+            (gone[i] > 0 || same[i] > 0 ? done : stay).push_back(int64_t(i));
+        if (!done.empty()) {
+            // their input sets are final
+            std::vector<int64_t> at;
+            at.reserve(done.size());
+            for (const int64_t i : done) at.push_back(act[std::size_t(i)]);
+            cx_all = aux_put_rows(cx_all, at, cx.take(done, 0));
+            Gx_all = aux_put_rows(Gx_all, at, Gx.take(done, 0));
+            if (stay.empty()) {
+                act.clear();
+                break;
+            }
+            // the rest only: their sets, rows, members, splits and sensitivities
+            std::vector<int64_t> pos(act.size(), -1), next;
+            for (std::size_t j = 0; j < stay.size(); ++j) {
+                pos[std::size_t(stay[j])] = int64_t(j);
+                next.push_back(act[std::size_t(stay[j])]);
+            }
+            // their members, renumbered, then their tensors
+            std::vector<int64_t> kept;
+            for (const int64_t m : member)
+                if (const int64_t j = pos[std::size_t(m / P_)]; j >= 0)
+                    kept.push_back(j * P_ + m % P_);
+            member = kept;
+            act = next;
+            cx = cx.take(stay, 0);
+            Gx = Gx.take(stay, 0);
+            if (has_rows) {
+                C = C.take(stay, 0);
+                d = d.take(stay, 0);
+            }
+            splits_a = splits_a.take(stay, 0);
+            if (drx_a.defined()) drx_a = drx_a.take(stay, 0);
+            for (Tensor &s : layer_sens)
+                if (s.defined()) s = s.take(stay, 0);
         }
+        // the refined input set through the network again
+        const StepTimer timer(stats_, "refine_forward_seconds");
+        const ZonoPropagation prop =
+            net.forward(cx, drx_a, Gx, splits_a, art.has_sens ? &layer_sens : nullptr, false);
+        cy = prop.c;
+        Gy = prop.G;
+        dry = prop.dr;
     }
+    if (!act.empty()) {
+        cx_all = aux_put_rows(cx_all, act, cx);
+        Gx_all = aux_put_rows(Gx_all, act, Gx);
+    }
+    (*stats_)["refined_children"] += double(n_ch);
     // the boxes of the refined input sets; an empty or crossed one is verified
-    Tensor rad = Gx.abs().sum(1);
+    Tensor rad = Gx_all.abs().sum(1);
     if (drx.defined()) rad = rad + drx;
-    const Tensor lo = cx - rad, hi = cx + rad;
-    empty =
-        empty.maximum(lo.greater(hi).any(1)).maximum(lo.isnan().any(1)).maximum(hi.isnan().any(1));
-    const std::vector<int64_t> live = aux_where(1.0 - empty);
+    const Tensor lo = cx_all - rad, hi = cx_all + rad;
+    const Tensor empty_t = Tensor::like(lo, empty, {n_ch})
+                               .maximum(lo.greater(hi).any(1))
+                               .maximum(lo.isnan().any(1))
+                               .maximum(hi.isnan().any(1));
+    const std::vector<int64_t> live = aux_where(1.0 - empty_t);
     const int64_t n_empty = n_ch - int64_t(live.size());
     Children out{((hi + lo) * 0.5).take(live, 0), ((hi - lo) * 0.5).take(live, 0),
                  cases.take(live, 0), splits.take(live, 0)};

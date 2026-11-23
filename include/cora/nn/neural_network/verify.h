@@ -8,7 +8,8 @@
 // Bounding (its own branch and bound), a neuron heuristic (CORA's computeHeuristic) or an input
 // split heuristic. The search runs in NnVerifyOptions::dtype (float32) inside the float32 boxes,
 // the bounds in float64 over the outer boxes; a box is verified when, for every polytope of its
-// case, some row's lower bound exceeds verified_margin. Batches follow memory_budget (bytes).
+// case, some row's lower bound exceeds verified_margin. One set fits memory_budget (bytes: fewer
+// error slots and input generators otherwise), and a batch of sets batch_memory_budget.
 //
 // Syntax:   NnVerifyResult r = nn.verify(property, timeout, vnncomp_options("acasxu_2023"));
 //           register_attack("mine", factory);
@@ -21,7 +22,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -69,6 +70,7 @@ struct NnVerifyOptions {
     int64_t attack_first_rounds = 3; ///< rounds of restarts at most, for attack-first
     int64_t pgd_steps = 100;
     int64_t pgd_restarts = 64;
+    bool pgd_targeted = false;   ///< restarts per polytope of a box's case, each toward its own one
     double pgd_step_size = 0.25; ///< times the box radius
     double pgd_decay = 0.5;
     std::vector<double> pgd_decay_at = {0.5, 0.75}; ///< fractions of the steps
@@ -86,9 +88,10 @@ struct NnVerifyOptions {
     std::string verify_enqueue_type = "prepend"; ///< or "append"
     int64_t max_verif_iter = std::numeric_limits<int64_t>::max();
     double verified_margin = numerics::kVerifiedMargin; ///< float32 net vs float64 bounds
-    int64_t memory_budget = 0;                          ///< bytes per batch; 0: 1 GiB
-    std::string device;           ///< where the network goes ("cpu", "cuda"); empty: its own
-    DType dtype = DType::float32; // NOLINT(backend): the search dtype, an option of verify
+    int64_t memory_budget = 0;                          ///< bytes per set; 0: 1 GiB
+    int64_t batch_memory_budget = 0; ///< bytes per batch of sets; 0: memory_budget
+    std::string device;              ///< where the network goes ("cpu", "cuda"); empty: its own
+    DType dtype = DType::float32;    // NOLINT(backend): the search dtype, an option of verify
     // CORA's verify (bounding_method "conzonotope"), CORA's names
     std::string refinement_method = "zonotack";        ///< or "naive"
     std::string bab_falsification_method = "zonotack"; ///< or "center", "fgsm"
@@ -99,6 +102,9 @@ struct NnVerifyOptions {
     std::string conzonotope_bounding_method = "fourier-motzkin"; ///< or "dual-iter" (the same)
     int64_t polytope_bound_approx_max_iter = 8;                  ///< Fourier-Motzkin passes
     int64_t refinement_max_iter = 8; ///< propagations of Prop. 2 per set, plus one
+    /// A child leaves Prop. 2's passes once its input box moves by at most this much in a pass, in
+    /// the factors' [-1, 1] (CORA.cpp only; 0: only a box that did not move, as CORA's results).
+    double refinement_min_move = 0;
     int64_t num_neuron_splits = 0;
     std::string neuron_split_position = "zero"; ///< or "middle"
     double num_relu_constraints = 0;
@@ -180,14 +186,23 @@ class NnProblem {
     Tensor loss(const Tensor &y, const Tensor &cases) const;
 
     /// The gradient at x (S, n) of the attack's objective: per polytope the violated rows' excess
-    /// plus a tenth of the worst row, the best polytope of the case; loss gets loss() at x.
-    Tensor objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss = nullptr) const;
+    /// plus a tenth of the worst row, the best polytope of the case or the sample's target
+    /// (targets: (S, 1) polytope indices); loss gets loss() at x.
+    Tensor objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss = nullptr,
+                              const Tensor *targets = nullptr) const;
 
     /// The confirm check of one point; the output if it is a counterexample.
     std::optional<std::vector<double>> confirm(const Tensor &x);
 
     /// How many points of the search fit into the memory budget.
     int64_t attack_batch() const;
+
+    /// Many cases of few polytopes each (nn4sys' lindex): the cases in chunks of at most max_rows
+    /// rows of polytopes, in order; none when all the rows are at most max_rows.
+    std::vector<std::vector<int64_t>> case_chunks(int64_t max_rows) const;
+
+    /// The problem of some cases only: their boxes and polytopes, the same networks and check.
+    NnProblem subproblem(const std::vector<int64_t> &cases) const;
 
     /// The search boxes (float32 inside the property's) and the outer float64 ones (C, n).
     Tensor lo, hi, outer_lo, outer_hi;
@@ -196,7 +211,8 @@ class NnProblem {
     Tensor A, b;        ///< the polytopes in float64
     Tensor poly_case;   ///< (P), float64
     int64_t memory_budget = 0;
-    int64_t checks = 0; ///< confirm calls
+    int64_t batch_memory_budget = 0; ///< the boxes of one batch (options, else memory_budget)
+    int64_t checks = 0;              ///< confirm calls
     /// The deadline of the step that runs (verify sets it): objective_gradient and the bounding's
     /// passes check it once per layer (check_deadline).
     double deadline = std::numeric_limits<double>::infinity();
@@ -207,6 +223,26 @@ class NnProblem {
     NnVerifyOptions options_;
     ConfirmFn confirm_;
     Tensor A32_, b32_, poly_case32_;
+    /// Many cases of few polytopes each (nn4sys' lindex: thousands of boxes): each row's margins
+    /// over its own case's polytopes only, not over all of them (memory S P K otherwise).
+    bool per_case_ = false;
+    std::vector<std::vector<int64_t>> case_polys_; ///< the polytopes of each case
+    int64_t max_polys_ = 0;                        ///< the most polytopes of a case
+    struct CaseMargins {
+        Tensor margin;             ///< (S, Q, K): the rows of the case's polytopes, Q = max_polys_
+        std::vector<int64_t> poly; ///< (S Q): the polytope of each slot (0 for a padding slot)
+        Tensor valid;              ///< (S, Q): 1 for a polytope of the case, 0 for a padding slot
+    };
+    CaseMargins aux_case_margins(const Tensor &y, const Tensor &cases) const;
+    /// The property's values on the host, for subproblem (filled once).
+    struct HostProperty {
+        std::vector<double> lo, hi, A, b;
+    };
+    mutable std::shared_ptr<const HostProperty> host_;
+    /// The problem of the property with the parent's networks, options and check (subproblem).
+    NnProblem(const NnProblem &parent, const NnProperty &property);
+    /// The boxes and the polytopes as tensors (the constructor and subproblem).
+    void aux_set_property(const NnProperty &property);
 };
 
 // The strategies ----------------------------------------------------------------------------------

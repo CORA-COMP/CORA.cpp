@@ -65,11 +65,14 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     # the network first: one the C++ verifier cannot take is unknown without reading the property
     net = OnnxNetwork.load(onnx_path)
     lowered, why = net.layers(drop_output_softmax=True)
+    if not lowered and any(r in why for r in FOLDABLE):
+        # unless the property fixes inputs whose values make the graph lower (nn4sys' masks)
+        net, lowered = _folded(net, vnnlib_path)
     if not lowered:
         return Instance(str(onnx_path), None, why, None, "")
     layers, activations = lowered
     if backend == "auto":
-        backend = choose_backend(layers, device)
+        backend = choose_backend(layers, device, activations)
     convert = (lambda t: t.to(device)) if backend == "torch" else (lambda t: t.numpy())
 
     def one(layer):
@@ -104,10 +107,11 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     return Instance(str(onnx_path), network, "", prop, text, backend)
 
 
-def choose_backend(layers, device="cpu"):
+def choose_backend(layers, device="cpu", activations=()):
     """The faster Tensor backend of a lowered network, as measured on the dev sets: torch for a
-    network with a convolution (its GEMMs about twice Eigen's at CORACPP_NATIVE=OFF) or on a GPU,
-    eigen for dense networks; eigen if the module has no torch."""
+    network with a convolution (its GEMMs about twice Eigen's at CORACPP_NATIVE=OFF), with a
+    product (lsnc_relu's graph: 1.7 times the boxes per second) or on a GPU, eigen for the other
+    dense networks; eigen if the module has no torch."""
     import cora
 
     if not cora.has_torch:
@@ -116,7 +120,7 @@ def choose_backend(layers, device="cpu"):
         return "torch"
     conv = any(isinstance(la, dict) and ("conv2d" in la or "conv_transpose2d" in la)
                for la in layers)
-    return "torch" if conv else "eigen"
+    return "torch" if conv or "product" in activations else "eigen"
 
 
 def verify(instance, timeout, options=None):
@@ -142,6 +146,29 @@ def verify(instance, timeout, options=None):
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+
+FOLDABLE = ("of two values", "Div by a value")  # refusals that fixed inputs may lift
+
+
+def _folded(net, vnnlib_path):
+    """(the network with the inputs the property fixes as constants, its lowering), when every case
+    fixes them to the same values and that lowers; else (net, None). The two agree on every box of
+    the property."""
+    try:
+        prop = parse_vnnlib(read_text(vnnlib_path), net.num_inputs, net.num_outputs)
+    except (ValueError, NotImplementedError):
+        return net, None
+    lo = np.stack([c.lo for c in prop.cases])
+    hi = np.stack([c.hi for c in prop.cases])
+    fixed = (lo == hi).all(0) & (lo == lo[0]).all(0)
+    if not fixed.any():
+        return net, None
+    # the box of all cases, the fixed inputs at their values
+    low, high = np.where(fixed, lo[0], lo.min(0)), np.where(fixed, hi[0], hi.max(0))
+    folded = net.fold_fixed_inputs(low, high)
+    lowered, _ = folded.layers(drop_output_softmax=True)
+    return (folded, lowered) if lowered else (net, None)
 
 
 def _compares_outputs(prop):

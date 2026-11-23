@@ -10,7 +10,7 @@
 // CORA.cpp only: Tensor replaces MATLAB's matrices.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
-// Last update:   20-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tensor.h"
@@ -38,19 +38,33 @@ namespace cora {
 
 namespace {
 
-/// The backend named by spec: "eigen", "torch", "torch:cuda", "torch:cuda:1", each with an optional
-/// ",custom_backward" (libtorch only).
+/// The backend named by spec: "eigen", "torch", "torch:cuda", "torch:cuda:1", each with optional
+/// ",custom_backward" and ",tf32" (libtorch only).
 std::shared_ptr<const Tensor::Backend> aux_make_backend(const std::string &spec) {
-    // spec is name[:device][,custom_backward]
+    // spec is name[:device][,option]...
     const std::size_t comma = spec.find(',');
     const std::string head = spec.substr(0, comma);
     const std::string option = comma == std::string::npos ? "" : spec.substr(comma + 1);
     const std::size_t colon = head.find(':');
     const std::string name = head.substr(0, colon);
-
-    if (!option.empty() && option != "custom_backward")
-        CORA_FAIL(Error::wrong_value,
-                  "unknown backend option '" + option + "'; the only option is custom_backward");
+    bool custom_backward = false, tf32 = false;
+    for (std::size_t at = 0; !option.empty() && at <= option.size();) {
+        const std::size_t end = std::min(option.find(',', at), option.size());
+        const std::string one = option.substr(at, end - at);
+        if (one == "custom_backward")
+            custom_backward = true;
+        else if (one == "tf32")
+            tf32 = true;
+        else
+            CORA_FAIL(Error::wrong_value, "unknown backend option '" + one +
+                                              "'; the options are custom_backward and tf32");
+        at = end + 1;
+    }
+#ifndef CORACPP_TORCH
+    // the options are libtorch's: read, then unused in a build without it
+    (void)custom_backward;
+    (void)tf32;
+#endif
     // Eigen has neither devices nor options.
     if (name == "eigen") {
         if (colon != std::string::npos || !option.empty())
@@ -68,7 +82,7 @@ std::shared_ptr<const Tensor::Backend> aux_make_backend(const std::string &spec)
 #ifdef CORACPP_TORCH
     if (name == "torch") {
         const std::string device = colon == std::string::npos ? "cpu" : head.substr(colon + 1);
-        return torch_backend(torch_device(device), option == "custom_backward");
+        return torch_backend(torch_device(device), custom_backward, tf32);
     }
 #endif
 #ifdef CORACPP_TORCH
