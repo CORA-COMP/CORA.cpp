@@ -73,6 +73,22 @@ PolyZonotope priv_merged_set(const Tensor &c, const Tensor &G, const Tensor &GI,
 /// The position of the identifier in ids, -1 if it is not there.
 int64_t priv_find_id(const std::vector<int64_t> &ids, int64_t id);
 
+/// The identifiers ids followed by `count` new ones, each above all of ids (the next integers).
+std::vector<int64_t> priv_append_fresh_ids(const std::vector<int64_t> &ids, int64_t count);
+
+/// The exponent columns of [c, G]: a column of zeros for the center, then those of E, over `rows`
+/// identifiers.
+Exponents priv_extended_exponents(const Exponents &E, std::size_t rows);
+
+/// CORALean's absorbRounding at an empty error box: the independent generators and one zero
+/// column per coordinate become dependent generators, each on a new factor. Nothing is merged.
+PolyZonotope priv_absorb_rounding(const PolyZonotope &set);
+
+/// The coordinatewise product of two sets over the same identifiers (CORALean's mul at nearest):
+/// a generator per pair of columns of [c, G], the first slower, exponents added, center 0. Neither
+/// set has independent generators.
+PolyZonotope priv_multiply(const PolyZonotope &a, const PolyZonotope &b);
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

@@ -287,9 +287,72 @@ PolyZonotope priv_merged_set(const Tensor &c, const Tensor &G, const Tensor &GI,
     const PolyZonotope folded = priv_fold_constants(set);
     Exponents E_out = folded.exponents();
     std::vector<int64_t> id_out = folded.ids();
+    // the unused identifiers leave
     priv_drop_unused_ids(E_out, id_out);
     return {folded.center(),  folded.generators(), folded.independent_generators(),
             std::move(E_out), std::move(id_out),   detail::Normalized{}};
+}
+
+std::vector<int64_t> priv_append_fresh_ids(const std::vector<int64_t> &ids, int64_t count) {
+    std::vector<int64_t> out = ids;
+    const int64_t top = ids.empty() ? int64_t(0) : *std::max_element(ids.begin(), ids.end());
+    for (int64_t j = 1; j <= count; ++j) out.push_back(top + j);
+    return out;
+}
+
+Exponents priv_extended_exponents(const Exponents &E, std::size_t rows) {
+    Exponents out;
+    out.reserve(E.size() + 1);
+    out.emplace_back(rows, 0);
+    out.insert(out.end(), E.begin(), E.end());
+    return out;
+}
+
+PolyZonotope priv_absorb_rounding(const PolyZonotope &set) {
+    const int64_t n = set.dim(), q = set.independent_generators().shape()[0], k = q + n;
+    const std::size_t p = set.ids().size();
+    // the old columns padded with the new factors, then one unit column per new factor
+    Exponents E;
+    for (const std::vector<int> &col : set.exponents()) {
+        std::vector<int> e = col;
+        e.resize(p + std::size_t(k), 0);
+        E.push_back(std::move(e));
+    }
+    for (int64_t j = 0; j < k; ++j) {
+        std::vector<int> e(p + std::size_t(k), 0);
+        e[p + std::size_t(j)] = 1;
+        E.push_back(std::move(e));
+    }
+    // the generators, the independent ones, then the zero columns of the error box
+    const Tensor G = Tensor::concat(
+        {set.generators(), set.independent_generators(), set.center().zeros_like({n, n})}, -2);
+    return {set.center(),
+            G,
+            set.center().zeros_like({0, n}),
+            std::move(E),
+            priv_append_fresh_ids(set.ids(), k),
+            detail::Verbatim{}};
+}
+
+PolyZonotope priv_multiply(const PolyZonotope &a, const PolyZonotope &b) {
+    const Tensor ga = Tensor::concat({a.center().expand_dims(0), a.generators()}, -2);
+    const Tensor gb = Tensor::concat({b.center().expand_dims(0), b.generators()}, -2);
+    const int64_t na = ga.shape()[0], nb = gb.shape()[0], n = a.dim();
+    // every pair, the first column the slower index
+    const Tensor G = ga.reshape({na, 1, n}).multiply(gb.reshape({1, nb, n})).reshape({na * nb, n});
+    // the exponents of the pairs, the first column the slower index
+    const Exponents Ea = priv_extended_exponents(a.exponents(), a.ids().size());
+    const Exponents Eb = priv_extended_exponents(b.exponents(), b.ids().size());
+    Exponents E;
+    E.reserve(Ea.size() * Eb.size());
+    for (const std::vector<int> &x : Ea)
+        for (const std::vector<int> &y : Eb) {
+            std::vector<int> e = x;
+            for (std::size_t i = 0; i < e.size(); ++i) e[i] += y[i];
+            E.push_back(std::move(e));
+        }
+    return {a.center().zeros_like(), G, a.center().zeros_like({0, n}), std::move(E), a.ids(),
+            detail::Verbatim{}};
 }
 
 int64_t priv_find_id(const std::vector<int64_t> &ids, int64_t id) {
