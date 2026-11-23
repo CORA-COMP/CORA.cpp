@@ -1,6 +1,9 @@
 // torch - the libtorch backend of Tensor: batched tensors on the CPU or a CUDA device
 //
-// Differentiable through autograd. Only built with libtorch.
+// Differentiable through autograd. Only built with libtorch. TensorFloat-32 in float32 products
+// and convolutions on CUDA (cuBLAS, cuDNN) is a switch of the process's libtorch: the first torch
+// backend or wrapped tensor (from_torch) turns it off, and a torch backend made later sets it to
+// its option tf32 (spec ",tf32"), so an attack's float32 point holds in ONNX Runtime.
 //
 // Syntax:   BackendScope scope("torch");   Tensor t = from_torch(x);
 //           torch::Tensor x = to_torch(t);
@@ -8,7 +11,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   03-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -23,8 +26,12 @@ namespace cora {
 
 /// The libtorch backend on `device`, for `backend(spec)` and `BackendScope`. `custom_backward`
 /// differentiates the matrix exponential with a hand-written backward pass, not autograd's own.
+/// `tf32` allows TensorFloat-32 on CUDA (the process's switch, see above).
 std::shared_ptr<const Tensor::Backend> torch_backend(const torch::Device &device,
-                                                     bool custom_backward);
+                                                     bool custom_backward, bool tf32 = false);
+
+/// Whether libtorch allows TensorFloat-32 in float32 products on CUDA (the last torch backend's).
+bool torch_tf32();
 
 /// Sets libtorch's intra-op pool to `n` threads, and its inter-op pool too the first time
 /// (libtorch allows that once, before any parallel work).

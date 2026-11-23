@@ -75,6 +75,7 @@ def main():
         peak_rss_mib=rss,
         peak_cuda_mib=cuda,
         batch_memory_budget=options.batch_memory_budget,
+        tf32=bool(torch.backends.cuda.matmul.allow_tf32 or torch.backends.cudnn.allow_tf32),
     )
     with open(args.result + ".stats.json", "w") as out:
         json.dump(stats, out)

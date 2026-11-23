@@ -4912,7 +4912,8 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(attack_time_share, "The share of the timeout of the first attack");
     CORA_VERIFY_FIELD(attack_first_rounds, "The rounds of the first attack at most");
     CORA_VERIFY_FIELD(pgd_steps, "PGD: the steps per round");
-    CORA_VERIFY_FIELD(pgd_restarts, "PGD: the restarts per box");
+    CORA_VERIFY_FIELD(pgd_restarts, "PGD: the restarts per box (per target with pgd_targeted)");
+    CORA_VERIFY_FIELD(pgd_targeted, "PGD: restarts per polytope of the case, each toward its own");
     CORA_VERIFY_FIELD(pgd_step_size, "PGD: the step as a share of the box radius");
     CORA_VERIFY_FIELD(pgd_decay, "PGD: the factor of the step at each decay point");
     CORA_VERIFY_FIELD(pgd_decay_at, "PGD: the decay points as shares of the steps");

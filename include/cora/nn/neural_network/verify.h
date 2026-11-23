@@ -70,6 +70,7 @@ struct NnVerifyOptions {
     int64_t attack_first_rounds = 3; ///< rounds of restarts at most, for attack-first
     int64_t pgd_steps = 100;
     int64_t pgd_restarts = 64;
+    bool pgd_targeted = false;   ///< restarts per polytope of a box's case, each toward its own one
     double pgd_step_size = 0.25; ///< times the box radius
     double pgd_decay = 0.5;
     std::vector<double> pgd_decay_at = {0.5, 0.75}; ///< fractions of the steps
@@ -182,8 +183,10 @@ class NnProblem {
     Tensor loss(const Tensor &y, const Tensor &cases) const;
 
     /// The gradient at x (S, n) of the attack's objective: per polytope the violated rows' excess
-    /// plus a tenth of the worst row, the best polytope of the case; loss gets loss() at x.
-    Tensor objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss = nullptr) const;
+    /// plus a tenth of the worst row, the best polytope of the case or the sample's target
+    /// (targets: (S, 1) polytope indices); loss gets loss() at x.
+    Tensor objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss = nullptr,
+                              const Tensor *targets = nullptr) const;
 
     /// The confirm check of one point; the output if it is a counterexample.
     std::optional<std::vector<double>> confirm(const Tensor &x);

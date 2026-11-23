@@ -551,6 +551,50 @@ void deadlines(const std::string &b) {
           b + ": verify answers within a second of its timeout");
 }
 
+/// PGD toward a target polytope: its gradient is that polytope's alone, and the targeted restarts
+/// find a counterexample of one disjunct.
+void targeted_attacks(const std::string &b) {
+    Rng rng(5);
+    const NeuralNetwork nn = aux_network(rng, {3, 8, 8, 2}, Activation::relu);
+    // y_0 <= b0 or y_1 <= b1, both polytopes in case 0, and the second one alone
+    NnProperty both = aux_below(3, 2, -0.2, 0.2, -1000.0);
+    both.A = Tensor::from_data({1.0, 0.0, 0.0, 1.0}, {2, 1, 2});
+    both.b = Tensor::from_data({-1000.0, 1000.0}, {2, 1});
+    both.poly_case = {0, 0};
+    NnProperty second = both;
+    second.A = Tensor::from_data({0.0, 1.0}, {1, 1, 2});
+    second.b = Tensor::from_data({1000.0}, {1, 1});
+    second.poly_case = {0};
+    NnVerifyOptions o = aux_options("conzonotope", b);
+    o.pgd_targeted = true;
+    // the gradient toward polytope 1 is the gradient of the property with polytope 1 only
+    NnProblem pb(nn, both, o, ConfirmFn{}), ps(nn, second, o, ConfirmFn{});
+    const Tensor x = (pb.lo + pb.hi) * 0.5;
+    const Tensor targets = Tensor::like(x, {1.0}, {1, 1});
+    check(test::close(pb.objective_gradient(x, pb.search_case, nullptr, &targets),
+                      ps.objective_gradient(x, ps.search_case), 1e-6),
+          b + ": the gradient toward a target polytope is that polytope's");
+    // the least sampled y_1: just above it, only the second disjunct is reachable
+    std::vector<double> xs(4000 * 3);
+    rng.uniform(xs.data(), xs.size(), -0.2, 0.2);
+    const std::vector<double> y = nn.evaluate(Tensor::from_data(xs, {4000, 3})).data();
+    double low = std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < 4000; ++i) low = std::min(low, y[i * 2 + 1]);
+    both.b = Tensor::from_data({-1000.0, low + 0.01}, {2, 1});
+    NnProblem reach(nn, both, o, ConfirmFn{});
+    check(!make_attack("pgd", o)->run(reach, now_seconds() + 10.0, 2).x.empty(),
+          b + ": targeted PGD finds the counterexample of one disjunct");
+    // one group per polytope: twice the samples of an untargeted round, and nothing found
+    NnVerifyOptions plain = o;
+    plain.pgd_targeted = false;
+    both.b = Tensor::from_data({-1000.0, -1000.0}, {2, 1});
+    NnProblem none_t(nn, both, o, ConfirmFn{}), none_p(nn, both, plain, ConfirmFn{});
+    const AttackResult t = make_attack("pgd", o)->run(none_t, now_seconds() + 10.0, 1);
+    const AttackResult u = make_attack("pgd", plain)->run(none_p, now_seconds() + 10.0, 1);
+    check(t.x.empty() && u.x.empty() && t.evaluations == 2 * u.evaluations,
+          b + ": targeted PGD runs its restarts per polytope");
+}
+
 /// Wrong inputs are refused; the checks off give the same verdict.
 void checks_and_their_switch() {
     Rng rng(2);
@@ -587,6 +631,7 @@ int main() {
         fourier_motzkin(b);
         switches(b);
         deadlines(b);
+        targeted_attacks(b);
     });
     checks_and_their_switch();
     return test::finish("neuralNetwork verify");
