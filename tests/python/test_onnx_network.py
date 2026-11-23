@@ -11,7 +11,7 @@ layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a
 builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
 backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
 layers, its output Softmax dropped for a property that only compares outputs; vit_2023's
-vision transformer at opset 9 lowers and equals the graph.
+vision transformer at opset 9 lowers and equals the graph, and a Gather of index -1 too.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -265,6 +265,18 @@ class Lowering(unittest.TestCase):
             np.asarray(nn.evaluate(torch.as_tensor(x))), net(torch.as_tensor(x)).numpy(), rtol=1e-10,
             atol=1e-12,
         )
+
+    def test_gather_from_the_end(self):
+        # nn4sys' pensieve: the last entry of a row by a Gather of index -1, onnxruntime's value
+        m = pensieve_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        x = RNG.uniform(-1, 1, (5, net.num_inputs))
+        expected = onnxruntime_rows(m, x.astype(np.float32))
+        np.testing.assert_allclose(net(torch.as_tensor(x)).numpy(), expected, rtol=1e-5, atol=1e-5)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        np.testing.assert_allclose(np.asarray(nn.evaluate(torch.as_tensor(x))), expected, rtol=1e-5,
+                                   atol=1e-5)
 
     def test_backend_by_network(self):
         # torch for a convolution (or a GPU), eigen for a dense network (cora.nn_verify.load)
@@ -538,6 +550,27 @@ def vit_net():
             "g2": weight(3), "b2": weight(3), "m2": weight(3), "v2": var(3),
             "W": weight(2, 3), "b": weight(2)}
     return model(nodes, [("x", [1, 2, 4, 4])], [("y", [1, 2])], init, opset=9)
+
+
+def pensieve_net():
+    """nn4sys' pensieve on a (2, 4) input: the last entry of the first row (Slice, then a Gather
+    of index -1 on axis 2) and the second row, each through a Gemm and a ReLU, concatenated."""
+    nodes = [
+        helper.make_node("Slice", ["x", "s0", "s1", "ax1"], ["r0"]),
+        helper.make_node("Gather", ["r0", "last"], ["g"], axis=2),
+        helper.make_node("Gemm", ["g", "W0", "b0"], ["h0"], transB=1),
+        helper.make_node("Relu", ["h0"], ["a0"]),
+        helper.make_node("Gather", ["x", "one"], ["r1"], axis=1),
+        helper.make_node("Gemm", ["r1", "W1", "b1"], ["h1"], transB=1),
+        helper.make_node("Relu", ["h1"], ["a1"]),
+        helper.make_node("Concat", ["a0", "a1"], ["c"], axis=1),
+        helper.make_node("Gemm", ["c", "W", "b"], ["y"], transB=1),
+    ]
+    init = {"s0": np.array([0], np.int64), "s1": np.array([1], np.int64),
+            "ax1": np.array([1], np.int64), "last": np.array(-1, np.int64),
+            "one": np.array(1, np.int64), "W0": weight(3, 1), "b0": weight(3),
+            "W1": weight(3, 4), "b1": weight(3), "W": weight(2, 6), "b": weight(2)}
+    return model(nodes, [("x", [1, 2, 4])], [("y", [1, 2])], init)
 
 
 def sign_net():
