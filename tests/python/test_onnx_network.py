@@ -367,5 +367,4 @@ def maxpool_net(kernel=2, stride=1, channels=1, pads=0):
         nodes, [("x", [1, channels, 5, 5])], [("y", [1, channels * out * out])], {}
     )
 
-
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

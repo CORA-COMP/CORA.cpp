@@ -33,7 +33,6 @@ import torch.nn.functional as F
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
-
 class OnnxNetwork:
     """An ONNX graph run node by node on batched torch tensors; the constants are in one dtype and
     on one device, loaded once and reused across attacks and bounds."""
@@ -886,6 +885,5 @@ def _pool_padding(x, pads, value):
     for i in reversed(range(k)):  # torch's pad lists the last axis first
         flat += [pads[i], pads[i + k]]
     return F.pad(x, flat, value=value)
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #
