@@ -122,8 +122,12 @@ name (`register_attack`, `register_bounding`, `register_heuristic`, `register_in
 
 CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradient`, `most-unstable`,
 `gap-sensitivity`, `product-sensitivity`, `centered-sensitivity`, `most-sensitive-approx-error`,
-`most-sensitive-input-radius`, `zono-norm-gradient`. `vnncomp_options(category)` is CORA's
-`getDefaultVNNCOMPoptions` with the benchmark's own changes.
+`most-sensitive-input-radius`, `zono-norm-gradient`. `cora_vnncomp_options(category)` is CORA's
+`getDefaultVNNCOMPoptions` with the benchmark's own changes. `vnncomp_options(category)` adds
+Phase 2's bounds (`zonotope-alpha`, `backward_bound`; `alpha_method` `zonotope` for acasxu, `crown`
+else), except for sat_relu: its many small boxes keep CORA's `conzonotope` bounding without CROWN,
+which scores 980 on dev seeds 1001 and 1002 against 960 and 940 (the slopes cost more than they
+decide).
 
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per

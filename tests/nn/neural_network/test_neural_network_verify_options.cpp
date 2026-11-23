@@ -9,7 +9,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -108,6 +108,9 @@ void options_and_strategies() {
               ours.alpha_method == "crown" && acas.alpha_method == "zonotope" &&
               ours.num_neuron_splits == cora.num_neuron_splits,
           "the VNN-COMP preset: CORA's with Phase 2's bounds");
+    const NnVerifyOptions sat = vnncomp_options("sat_relu");
+    check(sat.bounding_method == "conzonotope" && !sat.backward_bound,
+          "sat_relu's preset: CORA's bounding without CROWN");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");
