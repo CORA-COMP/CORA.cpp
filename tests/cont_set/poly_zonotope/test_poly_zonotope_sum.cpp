@@ -3,7 +3,7 @@
 // The points of the sum at the shared factors are the sum of the points of the summands, with
 // the center of every summand added (CORA adds the first one's again, docs/cora-differences.md).
 //
-// Oracle debt: the request is in docs/oracle-requests.md (CORALean has the float definition).
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/sum.m
 // PROPERTY: contSet/@polyZonotope/sum.m

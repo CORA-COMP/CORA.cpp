@@ -2,15 +2,15 @@
 //
 // The independent generators become dependent on new factors (absorbRounding), so the image is
 // exact: its point at the factors (alpha, the old independent coefficients on the new factors) is
-// the cubic map of the point of the set. One generator per ordered triple of columns. Lean-ORACLE
-// debt: the request is in docs/oracle-requests.md.
+// the cubic map of the point of the set. One generator per ordered triple of columns.
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/cubMap.m
 // PROPERTY: contSet/@polyZonotope/cubMap.m
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -98,6 +98,22 @@ int main() {
     const std::vector<std::vector<Tensor>> T = {{test::normal(rng, 2, 2), test::normal(rng, 2, 2)}};
     ChecksScope off(false);
     check(P.cubic_map(T).dim() == 1, "cubic_map: valid, checks off");
+    // every sum nests to the right (cubContractDown): 1 + (1 + 2^53) is 2^53, not 2^53 + 2
+    const double big = 9007199254740992.0;
+    const PolyZonotope C(Tensor::from_data({1.0, 1.0, 1.0}, {3}),
+                         Tensor::from_data({1.0, 1.0, 1.0}, {1, 3}), Tensor::zeros({0, 3}), {{1}},
+                         {1});
+    const Tensor none = Tensor::zeros({3, 3});
+    const Tensor row = Tensor::from_data({1.0, 1.0, big, 0, 0, 0, 0, 0, 0}, {3, 3});
+    const auto first = [&](const std::vector<Tensor> &Tk) {
+        return C.cubic_map({Tk}).generators().data()[0];
+    };
+    check(first({row, none, none}) == big, "cubic_map: the sums over the rows nest to the right");
+    const auto corner = [&](double q) {
+        return Tensor::from_data({q, 0, 0, 0, 0, 0, 0, 0, 0}, {3, 3});
+    };
+    check(first({corner(1.0), corner(1.0), corner(big)}) == big,
+          "cubic_map: the sum over k nests to the right");
     return test::finish("poly_zonotope cubic_map");
 }
 

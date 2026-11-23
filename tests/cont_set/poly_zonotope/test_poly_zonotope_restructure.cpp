@@ -2,8 +2,8 @@
 //
 // The independent generators become one diagonal generator per coordinate (the row sums of their
 // magnitudes) on factors of their own, then n zero columns on factors of their own, as CORALean's
-// restructure; the set is enclosed and nothing is independent. Lean-ORACLE debt: the request is in
-// docs/oracle-requests.md.
+// restructure; the set is enclosed and nothing is independent.
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/restructure.m
 // PROPERTY: contSet/@polyZonotope/restructure.m

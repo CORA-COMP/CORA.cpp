@@ -9,7 +9,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -61,6 +61,12 @@ int main() {
               b + ": a point is a set without generators");
         check(Q.get_subset({7}, Interval(vec({-1.0}), vec({1.0}))).isequal(Q),
               b + ": the box [-1, 1] changes nothing");
+        // the power is multiplied up as CORALean's powDown, (v v) v, which std::pow(v, 3) is not
+        const double v = 0.3, cube = (v * v) * v;
+        const PolyZonotope C(vec({0.0}), Tensor::from_data({1.0}, {1, 1}), Tensor::zeros({0, 1}),
+                             {{3}}, {7});
+        check(C.get_subset({7}, vec({v})).center().data()[0] == cube,
+              b + ": the cube of the value is (v v) v");
     });
     const PolyZonotope Q = test::sample_poly();
     check(test::raises([&] { Q.get_subset({9}, vec({0.1})); }, Error::wrong_value),

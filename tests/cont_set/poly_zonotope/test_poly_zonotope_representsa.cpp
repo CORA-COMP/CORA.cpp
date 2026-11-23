@@ -3,7 +3,7 @@
 // A point, a box, a zonotope and a set with a squared factor against the types; the types that
 // every set is or none is; the tests that are not ported are refused.
 //
-// Oracle debt: the request is in docs/oracle-requests.md (CORALean has the float definition).
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_ids.cpp.
 //
 // CORA: contSet/@polyZonotope/representsa_.m
 // PROPERTY: contSet/@polyZonotope/representsa_.m

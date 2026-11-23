@@ -2,15 +2,15 @@
 //
 // The sets hold an n x k and a k x m matrix column by column. At equal factors the product of the
 // matrices is a point of the result when each independent generator of a product pair takes the
-// product of the coefficients of its pair (the dependent generators are exact). Lean-ORACLE debt:
-// the request is in docs/oracle-requests.md.
+// product of the coefficients of its pair (the dependent generators are exact).
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/matMap.m
 // PROPERTY: contSet/@polyZonotope/matMap.m
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "poly_zonotope_testing.h"
@@ -18,6 +18,7 @@
 using namespace cora;
 using test::check;
 using test::close;
+using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -110,6 +111,14 @@ int main() {
         check(test::raises([&] { P1.matrix_map(P2, n + 1, k, m); }, Error::wrong_value),
               b + ": the first dimension");
     });
+    // the sum over k nests to the right (matMulDown): 1 + (1 + 2^53) is 2^53, not 2^53 + 2
+    const double big = 9007199254740992.0;
+    const PolyZonotope A(vec({1.0, 1.0, 1.0}), Tensor::from_data({1.0, 1.0, 1.0}, {1, 3}),
+                         Tensor::zeros({0, 3}), {{1}}, {1});
+    const PolyZonotope B(vec({1.0, 1.0, big}), Tensor::from_data({1.0, 1.0, 1.0}, {1, 3}),
+                         Tensor::zeros({0, 3}), {{1}}, {1});
+    check(A.matrix_map(B, 1, 3, 1).generators().data()[0] == big,
+          "matrix_map: the sum over k nests to the right");
     Rng rng(34);
     const PolyZonotope P1 = test::random_poly(rng, 4), P2 = test::random_poly(rng, 4);
     ChecksScope off(false);

@@ -7,7 +7,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   18-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -347,6 +347,18 @@ Tensor priv_pair_independent(const Tensor &A, const Tensor &B) {
     if (qb > common) diffs.push_back(B.slice(-2, common, qb));
     sums.insert(sums.end(), diffs.begin(), diffs.end());
     return Tensor::concat(sums, -2);
+}
+
+Tensor priv_matmul_nested(const Tensor &A, const Tensor &B) {
+    const int64_t k = A.shape().back();
+    if (k == 0) return A.matmul(B);
+    // the last term plus zero, then each earlier term plus the sum of those after it
+    Tensor sum;
+    for (int64_t l = k; l-- > 0;) {
+        const Tensor term = A.slice(-1, l, l + 1).multiply(B.slice(-2, l, l + 1));
+        sum = l == k - 1 ? term + term.zeros_like() : term + sum;
+    }
+    return sum;
 }
 
 PolyZonotope priv_multiply(const PolyZonotope &a, const PolyZonotope &b) {

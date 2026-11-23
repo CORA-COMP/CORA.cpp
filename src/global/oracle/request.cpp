@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   11-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/request.h"
@@ -243,6 +243,7 @@ Wire::Wire(const Capsule &C) : json(C.to_json()), dtype(C.dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
 Wire::Wire(const std::vector<Zonotope> &Zs) : Wire(aux_list(Zs)) {}
 Wire::Wire(const std::vector<Polytope> &Ps) : Wire(aux_list(Ps)) {}
+Wire::Wire(const std::vector<PolyZonotope> &Ps) : Wire(aux_list(Ps)) {}
 
 // Lists ---------------------------------------------------------------------------------------
 

@@ -88,6 +88,11 @@ PolyZonotope priv_absorb_rounding(const PolyZonotope &set);
 /// of the rows of A and B, then the half-differences, the surplus rows of the longer one copied.
 Tensor priv_pair_independent(const Tensor &A, const Tensor &B);
 
+/// The matrix product A B (..., r, k) x (..., k, c) with every entry summed from the last term to
+/// the first (CORALean's dotDown, sumDown nests to the right), on every backend: the batch axes
+/// broadcast, a term is one product, and the sum starts at zero.
+Tensor priv_matmul_nested(const Tensor &A, const Tensor &B);
+
 /// The coordinatewise product of two sets over the same identifiers (CORALean's mul at nearest):
 /// a generator per pair of columns of [c, G], the first slower, exponents added, center 0. Neither
 /// set has independent generators.

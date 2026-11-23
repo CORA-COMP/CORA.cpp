@@ -555,11 +555,16 @@ The oracle (`oracle-20261123-722cbe1e7`) serves the layer kinds `linear`, `relu`
 
 ### Identifier and structure helpers of the polynomial zonotope (port batch pzrest-1)
 
-CORALean has float definitions of these CORA methods (`src/CORALean/ContSet/PolyZonotope/Float/Operations/`),
-but the pinned oracle serves none of them, so they are tested as properties (evaluation at sampled factor
-values) and the rows are oracle debt. Requests as for the section above (`pZ`, `E` the exponent matrix, `id`
-the identifiers), reply a polynomial zonotope unless stated. CORALean's factors are positions, so the
-requests carry the identifiers and the oracle maps them.
+CORALean has float definitions of these CORA methods (`src/CORALean/ContSet/PolyZonotope/Float/Operations/`).
+**Served** (oracle-debt batch 4, `PolyZonotopeOps2.lean`; bit for bit by `test_lean_poly_zonotope_ids` and
+`test_lean_poly_zonotope_maps`): `getSubset` and `resolve` (numbers), `replaceId`, `restoreId`, `rmId`,
+`onlyId`, `noIndep`, `lift`, `isBounded`, `isFullDim`, `isequal`, `representsa` (point), `sum`, `restructure`,
+`jacobian`, `linComb`, `convHull`, `matMap`, `cubMap`, `partZonotope` and `outerApprox`. The sets are `P`, `Q`
+(as `polyZonotope.plus`), the identifier argument is `ids` (a request's `id` is the request id), `jacobian`
+takes `factor`, the predicates take no tolerance (`tol` is 0). `isequal` is structural and in order (a `true`
+is a proof), CORA.cpp's compares up to order: the test restricts to the sets where the two agree. Still oracle
+debt: `getSubset` with a box, `subs`, `stack` (and `polyMap`, which has no float definition). The rows below
+keep the original proposals; read `id` as `ids` and `pZ` as `P`.
 
 | op (proposed) | CORALean definition | request fields | reply and order |
 |---|---|---|---|

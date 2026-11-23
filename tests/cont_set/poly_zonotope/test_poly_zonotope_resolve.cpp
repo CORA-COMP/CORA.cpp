@@ -3,7 +3,7 @@
 // The result at the remaining factors is the set with the resolved factors at the given values;
 // a hand case with constants moving into the center. The default ids are all factors in order.
 //
-// Oracle debt: the request is in docs/oracle-requests.md (CORALean has the float definition).
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_ids.cpp.
 //
 // CORA: contSet/@polyZonotope/resolve.m
 // PROPERTY: contSet/@polyZonotope/resolve.m

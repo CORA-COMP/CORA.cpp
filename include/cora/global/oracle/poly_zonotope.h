@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   20-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -23,6 +23,7 @@
 #include "cora/global/oracle/zonotope.h"
 
 #include <cstdint>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -99,6 +100,50 @@ class PolyZonotope {
     /// CORA's reduce(P, 'girard', order) and enclose(P, Q).
     PolyZonotope reduce(int order) const;
     PolyZonotope enclose(const PolyZonotope &Q) const;
+
+    /// CORA's replaceId (without old_ids all of them), restoreId, rmId (the factors fixed to 1),
+    /// onlyId (the part on ids alone, and the rest) and noIndep.
+    PolyZonotope replace_id(const std::vector<int64_t> &old_ids,
+                            const std::vector<int64_t> &new_ids) const;
+    PolyZonotope replace_id(const std::vector<int64_t> &new_ids) const;
+    PolyZonotope restore_id(const std::vector<int64_t> &ids) const;
+    PolyZonotope rm_id(const std::vector<int64_t> &ids) const;
+    std::pair<PolyZonotope, PolyZonotope> only_id(const std::vector<int64_t> &ids) const;
+    PolyZonotope no_indep() const;
+
+    /// CORA's getSubset(P, ids, val) with numbers, and resolve(P, x, ids) (all identifiers, in
+    /// ascending order, without ids): the factors at the values, constants in the center.
+    PolyZonotope get_subset(const std::vector<int64_t> &ids, const cora::Tensor &val) const;
+    PolyZonotope resolve(const cora::Tensor &x,
+                         const std::optional<std::vector<int64_t>> &ids = std::nullopt) const;
+
+    /// CORA's lift_ (the coordinates at dims), restructure (CORALean's: the independent part boxed
+    /// and made dependent) and jacobian (along the factor with the identifier `id`).
+    PolyZonotope lift(int64_t N, const std::vector<int64_t> &dims) const;
+    PolyZonotope restructure() const;
+    PolyZonotope jacobian(int64_t id) const;
+
+    /// CORA's sum(P, L) (the sets of L over the identifiers of P), linComb(P, Q) and convHull_(P,
+    /// Q): the columns as the oracle orders them, nothing merged.
+    PolyZonotope sum(const std::vector<PolyZonotope> &list) const;
+    PolyZonotope linear_combination(const PolyZonotope &Q) const;
+    PolyZonotope convex_hull(const PolyZonotope &Q) const;
+
+    /// CORA's matMap (this n x k, Q k x m, each stored column by column), cubMap(P, T) and
+    /// partZonotope(P, ids).
+    PolyZonotope matrix_map(const PolyZonotope &Q, int64_t n, int64_t k, int64_t m) const;
+    PolyZonotope cubic_map(const std::vector<std::vector<cora::Tensor>> &T) const;
+    PolyZonotope part_zonotope(const std::vector<int64_t> &ids) const;
+
+    /// CORA's outerApprox(P, tol, ids): the small generators boxed (CORALean's boxOut).
+    PolyZonotope outer_approx(double tol, const std::vector<int64_t> &ids) const;
+
+    /// The predicates at tolerance 0: isFullDim and representsa("point") are sufficient only,
+    /// isequal is structural and in order (CORA.cpp's compares up to order: they agree there).
+    bool is_bounded() const;
+    bool is_full_dim() const;
+    bool isequal(const PolyZonotope &Q) const;
+    bool representsa_point() const;
 
     /// CORA's zonotope(P) and interval(P), and the dimension.
     Zonotope zonotope() const;

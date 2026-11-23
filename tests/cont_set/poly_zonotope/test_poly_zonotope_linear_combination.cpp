@@ -3,7 +3,8 @@
 // The result lays the factors of the sets side by side with a new factor t last: its point at the
 // factors (alpha, alpha', t) and the independent coefficients paired as CORA's zonotope enclose
 // pairs them is (1 + t)/2 x + (1 - t)/2 y for the points x, y of the sets at alpha, beta and
-// alpha', beta'. Lean-ORACLE debt: the request is in docs/oracle-requests.md.
+// alpha', beta'.
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/linComb.m
 // PROPERTY: contSet/@polyZonotope/linComb.m

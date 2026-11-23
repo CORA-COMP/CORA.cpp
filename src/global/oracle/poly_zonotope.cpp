@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   20-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/poly_zonotope.h"
@@ -168,6 +168,121 @@ std::pair<PolyZonotope, PolyZonotope> PolyZonotope::split_dep_factor(int64_t id)
 std::pair<PolyZonotope, PolyZonotope> PolyZonotope::split_longest_gen() const {
     const Reply r = ask("polyZonotope.splitLongestGen", {{"P", *this}});
     return {r.get<PolyZonotope>("P1"), r.get<PolyZonotope>("P2")};
+}
+
+// Identifiers and structure -----------------------------------------------------------------------
+
+// the identifiers renamed
+PolyZonotope PolyZonotope::replace_id(const std::vector<int64_t> &old_ids,
+                                      const std::vector<int64_t> &new_ids) const {
+    return aux_set("polyZonotope.replaceId",
+                   {{"P", *this}, {"idOld", old_ids}, {"idNew", new_ids}});
+}
+
+PolyZonotope PolyZonotope::replace_id(const std::vector<int64_t> &new_ids) const {
+    return aux_set("polyZonotope.replaceId", {{"P", *this}, {"idNew", new_ids}});
+}
+
+// added, removed and the part of some factors
+PolyZonotope PolyZonotope::restore_id(const std::vector<int64_t> &ids) const {
+    return aux_set("polyZonotope.restoreId", {{"P", *this}, {"ids", ids}});
+}
+
+PolyZonotope PolyZonotope::rm_id(const std::vector<int64_t> &ids) const {
+    return aux_set("polyZonotope.rmId", {{"P", *this}, {"ids", ids}});
+}
+
+std::pair<PolyZonotope, PolyZonotope> PolyZonotope::only_id(const std::vector<int64_t> &ids) const {
+    const Reply r = ask("polyZonotope.onlyId", {{"P", *this}, {"ids", ids}});
+    return {r.get<PolyZonotope>("P1"), r.get<PolyZonotope>("P2")};
+}
+
+PolyZonotope PolyZonotope::no_indep() const {
+    return aux_set("polyZonotope.noIndep", {{"P", *this}});
+}
+
+// Values and maps ---------------------------------------------------------------------------------
+
+// the factors at values
+PolyZonotope PolyZonotope::get_subset(const std::vector<int64_t> &ids,
+                                      const cora::Tensor &val) const {
+    return aux_set("polyZonotope.getSubset",
+                   {{"P", *this}, {"ids", ids}, {"val", Tensor::from(val)}});
+}
+
+PolyZonotope PolyZonotope::resolve(const cora::Tensor &x,
+                                   const std::optional<std::vector<int64_t>> &ids) const {
+    std::vector<Operand> operands = {{"P", *this}, {"x", Tensor::from(x)}};
+    if (ids) operands.push_back({"ids", *ids});
+    return ask("polyZonotope.resolve", operands).get<PolyZonotope>("P");
+}
+
+// the coordinates, the restructuring and the derivative
+PolyZonotope PolyZonotope::lift(int64_t N, const std::vector<int64_t> &dims) const {
+    return aux_set("polyZonotope.lift", {{"P", *this}, {"N", N}, {"dims", dims}});
+}
+
+PolyZonotope PolyZonotope::restructure() const {
+    return aux_set("polyZonotope.restructure", {{"P", *this}});
+}
+
+PolyZonotope PolyZonotope::jacobian(int64_t id) const {
+    return aux_set("polyZonotope.jacobian", {{"P", *this}, {"factor", id}});
+}
+
+// the sum of a list, the combinations
+PolyZonotope PolyZonotope::sum(const std::vector<PolyZonotope> &list) const {
+    return aux_set("polyZonotope.sum", {{"P", *this}, {"L", list}});
+}
+
+PolyZonotope PolyZonotope::linear_combination(const PolyZonotope &Q) const {
+    return aux_set("polyZonotope.linComb", {{"P", *this}, {"Q", Q}});
+}
+
+PolyZonotope PolyZonotope::convex_hull(const PolyZonotope &Q) const {
+    return aux_set("polyZonotope.convHull", {{"P", *this}, {"Q", Q}});
+}
+
+// the products, the partition and the box
+PolyZonotope PolyZonotope::matrix_map(const PolyZonotope &Q, int64_t n, int64_t k,
+                                      int64_t m) const {
+    return aux_set("polyZonotope.matMap", {{"P", *this}, {"Q", Q}, {"n", n}, {"k", k}, {"m", m}});
+}
+
+PolyZonotope PolyZonotope::cubic_map(const std::vector<std::vector<cora::Tensor>> &T) const {
+    std::vector<std::vector<Tensor>> wire;
+    for (const std::vector<cora::Tensor> &row : T) {
+        wire.emplace_back();
+        for (const cora::Tensor &M : row) wire.back().push_back(Tensor::from(M));
+    }
+    return aux_set("polyZonotope.cubMap", {{"P", *this}, {"T", wire}});
+}
+
+PolyZonotope PolyZonotope::part_zonotope(const std::vector<int64_t> &ids) const {
+    return aux_set("polyZonotope.partZonotope", {{"P", *this}, {"ids", ids}});
+}
+
+PolyZonotope PolyZonotope::outer_approx(double tol, const std::vector<int64_t> &ids) const {
+    return aux_set("polyZonotope.outerApprox", {{"P", *this}, {"tol", tol}, {"ids", ids}});
+}
+
+// Predicates --------------------------------------------------------------------------------------
+
+// the oracle takes no tolerance, tol = 0 is its only value
+bool PolyZonotope::is_bounded() const {
+    return ask("polyZonotope.isBounded", {{"P", *this}}).get<bool>("value");
+}
+
+bool PolyZonotope::is_full_dim() const {
+    return ask("polyZonotope.isFullDim", {{"P", *this}}).get<bool>("value");
+}
+
+bool PolyZonotope::isequal(const PolyZonotope &Q) const {
+    return ask("polyZonotope.isequal", {{"P", *this}, {"Q", Q}}).get<bool>("value");
+}
+
+bool PolyZonotope::representsa_point() const {
+    return ask("polyZonotope.representsa", {{"P", *this}, {"type", "point"}}).get<bool>("value");
 }
 
 // the conversions and the dimension

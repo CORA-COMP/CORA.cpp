@@ -4,9 +4,9 @@
 // own, with one zero column per coordinate for the error box). Then every ordered triple (a, b, c)
 // of the columns of [c, G] is a generator of the image, the first column the slowest index, with
 // the sum of the three exponent columns: its entry i is sum_k a_k (b' T[i][k] c), the quadratic
-// form summed first, the sum over k from the first term. The center is 0, a constant generator
-// stays one. CORA instead keeps the independent part independent and encloses its cubic terms, and
-// only for the symmetrized triples (docs/cora-differences.md).
+// form summed first, every sum nested to the right (the last term first). The center is 0, a
+// constant generator stays one. CORA instead keeps the independent part independent and encloses
+// its cubic terms, and only for the symmetrized triples (docs/cora-differences.md).
 //
 // The map is z_i = sum_k x_k (x' T[i][k] x).
 //
@@ -20,7 +20,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -37,7 +37,8 @@ namespace cora {
 
 namespace {
 
-/// The generators of output i: row a, column (b, c) of Zext T[i][k] summed over k, flattened.
+/// The generators of output i: row a, column (b, c) of Zext T[i][k] summed over k, flattened; every
+/// sum nests to the right as CORALean's cubContractDown.
 Tensor aux_output(const Tensor &Zext, const std::vector<Tensor> &Ti,
                   const std::vector<int64_t> &ind) {
     const int64_t N = Zext.shape()[0], n = Zext.shape()[1];
@@ -45,9 +46,10 @@ Tensor aux_output(const Tensor &Zext, const std::vector<Tensor> &Ti,
     // the forms b' T c of the columns, one row per k; a missing k is a zero row
     std::vector<Tensor> rows(std::size_t(n), Zext.zeros_like({1, N * N}));
     for (const int64_t k : ind)
-        rows[std::size_t(k)] = Zext.matmul(Ti[std::size_t(k)].matmul(Zt)).reshape({1, N * N});
+        rows[std::size_t(k)] = priv_matmul_nested(Zext, priv_matmul_nested(Ti[std::size_t(k)], Zt))
+                                   .reshape({1, N * N});
     const Tensor forms = Tensor::concat(rows, -2);
-    return Zext.matmul(forms).reshape({1, N * N * N});
+    return priv_matmul_nested(Zext, forms).reshape({1, N * N * N});
 }
 
 } // namespace
@@ -85,6 +87,7 @@ PolyZonotope PolyZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
             CORA_CHECK(k >= 0 && k < n, Error::wrong_value,
                        [] { return std::string("cubic_map: ind outside the matrices"); });
 
+    // The exact image -----------------------------------------------------------------------------
     // the exact image of the dependent set, one output after the other
     const PolyZonotope D = priv_absorb_rounding(*this);
     const Tensor Zext = Tensor::concat({D.center().expand_dims(0), D.generators()}, -2);
@@ -94,6 +97,7 @@ PolyZonotope PolyZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
     outputs.reserve(T.size());
     for (std::size_t i = 0; i < T.size(); ++i)
         outputs.push_back(aux_output(Zext, T[i], ind.empty() ? all : ind[i]));
+    // The triples ---------------------------------------------------------------------------------
     // the exponents of the triples, the first column the slowest
     Exponents E;
     E.reserve(std::size_t(N * N * N));
