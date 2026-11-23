@@ -288,6 +288,11 @@ class ConZonotopeBounding : public Bounding {
     Tensor aux_dual_margins(const ZonoPropagation &out, const Tensor &si) const;
     Tensor aux_crown_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
                                     const Tensor &si, const Tensor &excluded) const;
+    // CROWN's bound on the rows the zonotope left open
+    std::vector<int64_t> aux_open_rows(const Tensor &excluded) const;
+    Tensor aux_crown_lower(const ZonoPropagation &out, const Tensor &xi, const Tensor &ri,
+                           const Tensor &si, const Tensor &lower, const Tensor &excluded,
+                           bool alpha) const;
     std::vector<int64_t> aux_near(const std::vector<int64_t> &open, const Tensor &gap) const;
     Tensor aux_gap(const ZonoPropagation &out, const Tensor &lower, const Tensor &excluded) const;
     Tensor aux_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
@@ -436,12 +441,39 @@ Tensor ConZonotopeBounding::aux_crown_alpha_excluded(const Tensor &xi, const Ten
     // CROWN's bound with the lower ReLU slopes optimized per row, over the zonotope's bounds
     const ZonoInput in = net_->input_zonotope(xi, ri);
     const ZonoPropagation out = net_->forward(in.c, in.dr, in.G, si, nullptr, true);
+    const Tensor zono = aux_margins(out);
+    const Tensor ex = excluded.maximum(aux_excluded_lower(zono, ci));
+    return ex.maximum(aux_excluded_lower(aux_crown_lower(out, xi, ri, si, zono, ex, true), ci));
+}
+
+std::vector<int64_t> ConZonotopeBounding::aux_open_rows(const Tensor &excluded) const {
+    // the real rows (P K) of the polytopes that some set has open
+    const std::vector<double> open = (1.0 - excluded).max(0).data(), real = real_row_.data();
+    std::vector<int64_t> rows;
+    for (int64_t p = 0; p < P_; ++p) {
+        if (open[std::size_t(p)] <= 0) continue;
+        for (int64_t k = 0; k < K_; ++k)
+            if (real[std::size_t(p * K_ + k)] > 0) rows.push_back(p * K_ + k);
+    }
+    return rows;
+}
+
+Tensor ConZonotopeBounding::aux_crown_lower(const ZonoPropagation &out, const Tensor &xi,
+                                            const Tensor &ri, const Tensor &si, const Tensor &lower,
+                                            const Tensor &excluded, bool alpha) const {
+    // CROWN's bound (alpha: optimized slopes) of the open polytopes' rows only, each row on its own
+    const std::vector<int64_t> rows = aux_open_rows(excluded);
+    if (rows.empty()) return lower;
     const int64_t B = xi.shape()[0];
-    const Tensor crown = priv_backward_alpha(out, *net_, si, xi, ri, AT_.matrix_transpose(),
-                                             o_.alpha_iterations, o_.alpha_step_size, deadline_) -
-                         b_.reshape({P_ * K_});
-    const Tensor lower = aux_margins(out).maximum(crown.reshape({B, P_, K_}));
-    return excluded.maximum(aux_excluded_lower(lower, ci));
+    const Tensor R = AT_.matrix_transpose().take(rows, 0);
+    const Tensor bound = alpha ? priv_backward_alpha(out, *net_, si, xi, ri, R, o_.alpha_iterations,
+                                                     o_.alpha_step_size, deadline_)
+                               : priv_backward_lower(out, *net_, si, xi, ri, R);
+    const Tensor crown = bound - b_.reshape({P_ * K_}).take(rows, 0);
+    // the better of the two on those rows, the others as they are
+    const Tensor flat = lower.reshape({B, P_ * K_}).matrix_transpose();
+    const Tensor better = flat.take(rows, 0).maximum(crown.matrix_transpose());
+    return aux_put_rows(flat, rows, better).matrix_transpose().reshape({B, P_, K_});
 }
 
 std::vector<int64_t> ConZonotopeBounding::aux_near(const std::vector<int64_t> &open,
@@ -667,14 +699,10 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
         const ZonoInput in = net.input_zonotope(xi_, ri_);
         const ZonoPropagation out = net.forward(in.c, in.dr, in.G, si_, nullptr, o_.backward_bound);
         Tensor lower = aux_margins(out);
-        if (o_.backward_bound) {
-            // the better of the zonotope's and CROWN's lower bound of every row
-            const int64_t B = xi_.shape()[0];
-            const Tensor crown =
-                priv_backward_lower(out, net, si_, xi_, ri_, AT_.matrix_transpose()) -
-                b_.reshape({P_ * K_});
-            lower = lower.maximum(crown.reshape({B, P_, K_}));
-        }
+        // the better of the zonotope's and CROWN's lower bound of the rows the zonotope left open
+        if (o_.backward_bound)
+            lower =
+                aux_crown_lower(out, xi_, ri_, si_, lower, aux_excluded_lower(lower, ci_), false);
         excluded_all = aux_excluded_lower(lower, ci_);
         open = aux_where(1.0 - excluded_all.min(1));
         if ((alpha_ || o_.dual_certificate) && std::isfinite(o_.optimize_gap))
@@ -794,8 +822,13 @@ Artifacts ConZonotopeBounding::aux_artifacts(const Tensor &xi, const Tensor &ri,
         aux_heuristic_or_none(o_.neuron_split_heuristic, o_.num_neuron_splits > 0),
         aux_heuristic_or_none(o_.relu_constraint_heuristic, n_relu_ > 0),
         aux_heuristic_or_none(o_.input_generator_heuristic, net.q0 < net.n0)};
-    bool need_sens = o_.bab_falsification_method == "fgsm" ||
-                     (o_.approx_error_order == "sensitivity*length" && net.interval_center);
+    // the sensitivity orders the slots of a layer with some but not all neurons in one
+    bool orders = false;
+    for (std::size_t k = 0; k < net.slots.size(); ++k)
+        orders = orders || (net.slots[k] > 0 && net.slots[k] < net.widths[k]);
+    bool need_sens =
+        o_.bab_falsification_method == "fgsm" ||
+        (o_.approx_error_order == "sensitivity*length" && net.interval_center && orders);
     bool need_grad = false;
     for (const std::string &name : names) {
         if (name.empty()) continue;

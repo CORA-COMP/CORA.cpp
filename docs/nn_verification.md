@@ -101,7 +101,8 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per
   polytope the violated rows' excess plus a tenth of the worst row, the best polytope of the case),
   decayed by `pgd_decay` at `pgd_decay_at`, projected into the box, in rounds until the deadline.
-  **FGSM** is one step of the full radius from the center, **center** the centers.
+  When the first step shows that `pgd_min_steps` steps would not fit in the time left (a wide conv
+  net), each box keeps fewer restarts (CORA.cpp only; small networks never shrink). **FGSM** is one step of the full radius from the center, **center** the centers.
 - **zonotope:** the output zonotope of `NeuralNetwork::evaluate` (DeepZ) per box, the naive branch and
   bound of input splits (`num_splits` pieces), the centers of the open boxes as candidates.
 
@@ -115,7 +116,9 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
   the radius `dr (B, n)` of CORA's interval center. The input gets `num_init_gens` generators (chosen
   by `input_generator_heuristic`), each activation layer at most `num_approx_err` error generators
   (chosen by `approx_error_order`); the rest of the errors goes into `dr`. The output's first factors
-  are the input's, so constraints on the output are constraints on the input.
+  are the input's, so constraints on the output are constraints on the input. The sensitivity that
+  orders the slots (`sensitivity*length`) is computed only if some layer has slots for some but not
+  all of its neurons (tinyimagenet's preset has none, and the 200-output Jacobian costs a pass).
 - **Lines:** a ReLU takes CORALean's relaxation, which is CORA's `poly_method` `bounds` in the reals.
   Sigmoid and tanh take CORA's `bounds` (the secant, the errors at the extreme points of
   `f(x) - m x`) or CORALean's `singh`.
@@ -166,8 +169,10 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
 - **optimize_gap:** the slopes and the dual multipliers are optimized only for open sets whose worst
   open polytope's best row is below 0 by at most this share of the row's width (inf: all).
 - **backward_bound:** the check also bounds every row by CROWN's backward pass over the input box and
-  takes the better of it and the zonotope's bound. Its cost is `(B, P K, n)` per layer, so it stays
-  cheap on wide layers.
+  takes the better of it and the zonotope's bound. Its cost is `(B, R, n)` per layer, so it stays
+  cheap on wide layers. R counts only the rows of the polytopes that the zonotope left open in some
+  set of the batch (each row's bound is its own, so the verdicts do not change); alpha-CROWN does
+  the same. A robustness property of 199 rows whose zonotope excludes most classes costs a few.
 - **dual_certificate:** the check also bounds every row of the open sets by weak duality under the
   rows `C beta <= d` of the factors: each split of the set (`x >= 0` or `x <= 0` of the neuron's
   input) and the three faces of the `dual_relu_rows` crossing ReLUs of the largest error. For any

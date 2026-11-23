@@ -109,6 +109,7 @@ void NnVerifyOptions::validate() const {
     aux_at_least("refinement_max_iter", double(refinement_max_iter), 1);
     aux_at_least("polytope_bound_approx_max_iter", double(polytope_bound_approx_max_iter), 0);
     aux_at_least("max_candidates", double(max_candidates), 1);
+    aux_at_least("pgd_min_steps", double(pgd_min_steps), 1);
     aux_at_least("pgd_steps", double(pgd_steps), 1);
     aux_at_least("pgd_restarts", double(pgd_restarts), 1);
     // the counts of Phase 2's steps

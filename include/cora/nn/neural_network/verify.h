@@ -73,6 +73,8 @@ struct NnVerifyOptions {
     double pgd_decay = 0.5;
     std::vector<double> pgd_decay_at = {0.5, 0.75}; ///< fractions of the steps
     int64_t max_candidates = 8;                     ///< confirm checks per attack step
+    /// PGD's restarts shrink until this many steps fit in the attack's time (a slow, wide network).
+    int64_t pgd_min_steps = 10;
     uint64_t seed = 0;
     // the bounding and its splits
     std::string bounding_method = "zonotope"; ///< "conzonotope" (CORA's verify), "zonotope-alpha"
