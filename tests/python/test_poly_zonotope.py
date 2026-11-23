@@ -39,6 +39,12 @@ Reviewed:      ---
 # CORA: contSet/@polyZonotope/isFullDim.m
 # CORA: contSet/@polyZonotope/isequal.m
 # CORA: contSet/@polyZonotope/empty.m
+# CORA: contSet/@polyZonotope/sum.m
+# CORA: contSet/@polyZonotope/stack.m
+# CORA: contSet/@polyZonotope/resolve.m
+# CORA: contSet/@polyZonotope/subs.m
+# CORA: contSet/@polyZonotope/restructure.m
+# CORA: contSet/@polyZonotope/representsa_.m
 
 import unittest
 
@@ -190,6 +196,30 @@ class Factors(unittest.TestCase):
         self.assertFalse(P.no_indep().is_full_dim())
         with self.assertRaises(cora.errors.NotSupported):
             cora.PolyZonotope.empty(2)
+
+
+class Substitution(unittest.TestCase):
+    # factors set to values, replaced by polynomials, and sets summed or stacked
+    def test_resolve_and_subs(self):
+        P = known()
+        S = P.resolve(np.array([0.5]), [2])
+        self.assertEqual(list(S.id), [1])
+        in_ = cora.PolyZonotope(np.array([0.5]), np.array([[2.0], [0.5]]), np.zeros((0, 1)),
+                                np.array([[1, 2]]), [7])
+        T = P.subs(in_, [2])
+        self.assertEqual(sorted(T.id), [1, 7])
+        with self.assertRaises(cora.errors.WrongValue):
+            P.resolve(np.array([0.5, 0.5, 0.5]))
+
+    def test_sum_and_stack(self):
+        P = known()
+        S = P.sum([P])
+        np.testing.assert_allclose(S.c, [2, 0])
+        T = cora.PolyZonotope.stack([P, P])
+        self.assertEqual(T.dim, 4)
+        self.assertEqual(P.restructure().dim, 2)
+        self.assertTrue(P.representsa("polyZonotope"))
+        self.assertFalse(P.representsa("emptySet"))
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #

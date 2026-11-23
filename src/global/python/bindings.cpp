@@ -3233,6 +3233,31 @@ void bind_poly_zonotope(py::module_ &m) {
             },
             py::arg("S"), py::arg("tol") = py::none(),
             "Whether the set equals a polynomial zonotope, a zonotope or a box up to tol")
+        // sums, stacks and substitutions
+        .def(
+            "sum",
+            [](const PolyZonotope &P, const std::vector<PolyZonotope> &list) {
+                return P.sum(list);
+            },
+            py::arg("list"), "The sum with polynomial zonotopes over shared factors")
+        .def_static("stack", &PolyZonotope::stack, py::arg("sets"),
+                    "The polynomial zonotopes one below the other, shared factors staying shared")
+        // the factors fixed to values or replaced by polynomials
+        .def(
+            "resolve",
+            [](const PolyZonotope &P, const py::object &x,
+               const std::optional<std::vector<int64_t>> &ids) {
+                return P.resolve(tensor_of(x, "x"), ids);
+            },
+            py::arg("x"), py::arg("id") = py::none(),
+            "The set with the factors id set to the values x")
+        .def("subs", &PolyZonotope::subs, py::arg("pZin"), py::arg("id") = py::none(),
+             "The factors id replaced by the coordinates of pZin")
+        // restructuring and the type test
+        .def("restructure", &PolyZonotope::restructure,
+             "A set without independent generators that holds the set")
+        .def("representsa", &PolyZonotope::representsa, py::arg("type"),
+             py::arg("tol") = py::none(), "Whether the set is also a set of the CORA type")
         // the halves along a dependent factor
         .def("split_dep_factor", &PolyZonotope::split_dep_factor, py::arg("id"),
              "The halves along the factor with the identifier id: alpha becomes (alpha +- 1) / 2")
