@@ -108,6 +108,15 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
   output to 6e-7. Not yet: pensieve_parallel (a cube by Pow, a quotient of two values) and mscn
   (Split, products of values with the inputs' masks, a quotient by their sum).
+- **ml4acopf (Phase 4).** Its `linear-nonresidual` networks replace sin, cos and the sigmoid by
+  sums of ReLUs over thresholds: `x - t_k` broadcasts a value against a constant to more entries,
+  which lowers as a gather that repeats the value first. They also compute `C h^T` with the batch
+  axis transposed: a Transpose of a row `(1, n)` makes a column (a flag on the value, the same
+  entries), a MatMul of a constant matrix from the left keeps it a column as a dense layer, and a
+  Transpose makes it a row again; any other operator on a column refuses. A dense chain whose layer
+  exceeds `max_elements` now goes layer by layer. The three networks lower (122 layers) and give
+  onnxruntime's output to 2e-6. Not yet: the residual ones (Floor reduces the angles mod 2 pi) and
+  the trigonometric ones (Pow, Sin, Cos, Where).
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of

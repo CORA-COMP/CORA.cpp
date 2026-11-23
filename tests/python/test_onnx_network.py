@@ -10,8 +10,8 @@ and a slice of the input concatenated with a branch lower; a product of two valu
 layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
 builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
 backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
-layers, its output Softmax dropped for a property that only compares outputs; vit_2023's
-vision transformer at opset 9 lowers and equals the graph, and a Gather of index -1 too.
+layers, its output Softmax dropped for a property that only compares outputs; vit_2023's,
+nn4sys' and ml4acopf's shapes lower and equal the graph.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -277,6 +277,20 @@ class Lowering(unittest.TestCase):
         self.assertIsNone(why)
         np.testing.assert_allclose(np.asarray(nn.evaluate(torch.as_tensor(x))), expected, rtol=1e-5,
                                    atol=1e-5)
+
+    def test_columns_and_thresholds(self):
+        # ml4acopf: a column C x^T, a ReLU sum over thresholds; a column into a join refuses
+        m = acopf_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        x = RNG.uniform(-1, 1, (5, net.num_inputs))
+        expected = onnxruntime_rows(m, x.astype(np.float32))
+        np.testing.assert_allclose(net(torch.as_tensor(x)).numpy(), expected, rtol=1e-5, atol=1e-5)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        np.testing.assert_allclose(np.asarray(nn.evaluate(torch.as_tensor(x))), expected,
+                                   rtol=1e-5, atol=1e-5)
+        _, why = OnnxNetwork(acopf_net(join_column=True)).layers()
+        self.assertIn("column", why)
 
     def test_backend_by_network(self):
         # torch for a convolution (or a GPU), eigen for a dense network (cora.nn_verify.load)
@@ -571,6 +585,27 @@ def pensieve_net():
             "one": np.array(1, np.int64), "W0": weight(3, 1), "b0": weight(3),
             "W1": weight(3, 4), "b1": weight(3), "W": weight(2, 6), "b": weight(2)}
     return model(nodes, [("x", [1, 2, 4])], [("y", [1, 2])], init)
+
+
+def acopf_net(join_column=False):
+    """ml4acopf's shapes on x (1, 3): h = relu(x W), C h^T as a column by two transposes, and
+    sum_k relu(h - t_k) d_k (an Unsqueeze broadcast against the thresholds), added; with
+    join_column the column itself joins h."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W"], ["l"]),
+        helper.make_node("Relu", ["l"], ["h"]),
+        helper.make_node("Transpose", ["h"], ["ht"], perm=[1, 0]),
+        helper.make_node("MatMul", ["C", "ht"], ["ch"]),
+        helper.make_node("Transpose", ["ch"], ["c"], perm=[1, 0]),
+        helper.make_node("Unsqueeze", ["h", "last"], ["hu"]),
+        helper.make_node("Sub", ["hu", "t"], ["ht3"]),
+        helper.make_node("Relu", ["ht3"], ["r"]),
+        helper.make_node("MatMul", ["r", "d"], ["p"]),
+        helper.make_node("Add", ["c", "p"] if not join_column else ["ch", "p"], ["y"]),
+    ]
+    init = {"W": weight(3, 2), "C": weight(2, 2), "t": weight(4), "d": weight(4),
+            "last": np.array([-1], np.int64)}
+    return model(nodes, [("x", [1, 3])], [("y", [1, 2] if not join_column else [2, 2])], init)
 
 
 def sign_net():
