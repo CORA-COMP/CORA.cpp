@@ -83,6 +83,10 @@ SOURCES = {
         "https://github.com/kkaulen/acasxu_2023.git",
         "fb1e1899079f2d25a270c5523798e9fa1fca7750",
     ),
+    "cersyve": (
+        "https://github.com/intelligent-control-lab/Cersyve.jl.git",
+        "d1a8e46e7de59c77ab1cd6852f853eeef7e3ce8a",
+    ),
     # cgan's generator downloads its networks with gdown
     "cgan2026": (
         "https://github.com/stanleybak/cgan_benchmark2026",
@@ -109,6 +113,10 @@ SOURCES = {
     "linearizenn_2024": (
         "https://github.com/aliabigdeli/LinearizeNN_benchmark2024.git",
         "d695230914a0894da859c31d9f8b0dff141406e3",
+    ),
+    "malbeware": (
+        "https://github.com/pkrobinette/MalBeWare.git",
+        "fc044fe46f4a6ed7ad7f22341e59bbf99e616c5f",
     ),
     # metaroom: the commit of the 2026 README, not the repository's head
     "metaroom_2023": (
