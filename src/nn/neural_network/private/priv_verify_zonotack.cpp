@@ -205,6 +205,13 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             hi.push_back(plo.back().ones_like().divide(plo.back().maximum(kInversePositive)));
             continue;
         }
+        if (a == Activation::sin || a == Activation::cos) {
+            // the range of the box (a heuristic's: its gradient is the ends' derivatives)
+            const auto [blo, bhi] = priv_trig_box(plo.back(), phi.back(), a == Activation::cos);
+            lo.push_back(blo);
+            hi.push_back(bhi);
+            continue;
+        }
         if (a == Activation::cube) {
             // x^3 rises
             lo.push_back(plo.back().square().multiply(plo.back()));
@@ -266,6 +273,11 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             }
             case Activation::cube:
                 return z.square() * 3.0;
+            // sin's and cos' derivatives (the heuristic's)
+            case Activation::sin:
+                return z.cos();
+            case Activation::cos:
+                return z.sin().negative();
             case Activation::inverse:
                 return z.ones_like().divide(z.maximum(kInversePositive)).square().negative();
             case Activation::product:

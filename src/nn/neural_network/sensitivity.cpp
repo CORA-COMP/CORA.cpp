@@ -31,6 +31,8 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
+// The Jacobian at a point -------------------------------------------------------------------------
+
 Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
     detail::Entry entry;
     CORA_CHECK(x.shape() == std::vector<int64_t>({input_dim()}), Error::dimension_mismatch, [&] {
@@ -45,6 +47,7 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         // the pre-activation of the layer
         const Tensor z = layers_[k].W.matmul(h) + layers_[k].b.expand_dims(-1);
+        // The activations -------------------------------------------------------------------------
         // the value after the activation and its derivative
         const Tensor one = z.ones_like(), zero = z.zeros_like();
         Tensor derivative = one;
@@ -88,6 +91,14 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
             // 1 / x and -1 / x^2
             h = one.divide(z);
             derivative = h.multiply(h).negative();
+            break;
+        case Activation::sin:
+            h = z.sin();
+            derivative = z.cos();
+            break;
+        case Activation::cos:
+            h = z.cos();
+            derivative = z.sin().negative();
             break;
         case Activation::exp:
             h = z.exp();

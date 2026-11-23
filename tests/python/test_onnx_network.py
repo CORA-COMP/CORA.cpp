@@ -5,13 +5,13 @@ equals onnxruntime's (float32) to float32 accuracy; a chain of affine maps and a
 to dense layers whose network equals the graph in float64, and a plain Gemm keeps its weights bit
 for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
 folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
-padded max pool and a quotient that broadcasts its dividend do not lower and say why; a batch norm of features
-and a slice of the input concatenated with a branch lower; a product of two values lowers to a
+padded max pool and a quotient that broadcasts its dividend do not lower and say why; a batch norm
+of features and a slice of the input concatenated with a branch lower; a product of two values is a
 product layer, and a ReduceSum, a difference of branches and scalings lower; a Gemm or a MatMul
 of a row and a constant matrix takes the weights themselves, far below the identity's memory; the
 verifier's backend is torch for a convolution, eigen for a dense network; a binarized network
 lowers to sign layers, its output Softmax dropped for a property that only compares outputs;
-vit_2023's, nn4sys' and ml4acopf's shapes lower and equal the graph.
+vit_2023's, nn4sys' and ml4acopf's shapes (quotients, sin, cos) lower and equal the graph.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -372,6 +372,19 @@ class Lowering(unittest.TestCase):
         # an input without a batch axis read by another operator does not lower
         bad = pensieve_parallel_net(reshape=False)
         self.assertIn("without a batch axis", OnnxNetwork(bad).layers()[1])
+
+    def test_sin_cos_and_constant_shapes(self):
+        # ml4acopf's power flows: v_i v_j cos(t_i - t_j), sin of the same; Where, Expand on constants
+        m = trig_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        (layers, acts), why = net.layers()
+        self.assertIsNone(why)
+        self.assertTrue({"sin", "cos", "product"} <= set(acts))
+        x = RNG.uniform(-1, 1, (6, net.num_inputs))
+        got = np.asarray(cora.NeuralNetwork(layers, acts).evaluate(torch.as_tensor(x)))
+        np.testing.assert_allclose(got, net(torch.as_tensor(x)).numpy(), rtol=1e-12, atol=1e-12)
+        np.testing.assert_allclose(got, onnxruntime_rows(m, x.astype(np.float32)), rtol=1e-5,
+                                   atol=1e-5)
 
     def test_columns_and_thresholds(self):
         # ml4acopf: a column C x^T, a ReLU sum over thresholds; a column into a join refuses
@@ -736,6 +749,38 @@ def quotient_net(broadcast=False):
         init |= {"s0": np.array([0], np.int64), "s1": np.array([1], np.int64),
                  "ax1": np.array([1], np.int64)}
     return model(nodes, [("x", [1, 3])], [("y", [1, 3])], init)
+
+
+def trig_net():
+    """ml4acopf-shaped: angles t = x[:, :2], magnitudes v = x[:, 2:]; y = [v0 v1 cos(t0 - t1), v0 v1
+    sin(t0 - t1)] plus a constant expanded by Where/Equal/ConstantOfShape (opset 13)."""
+    # the angles' difference and the magnitudes' product, then cos and sin of it times that
+    nodes = [
+        helper.make_node("Gather", ["x", "i0"], ["t0"], axis=1),
+        helper.make_node("Gather", ["x", "i1"], ["t1"], axis=1),
+        helper.make_node("Gather", ["x", "i2"], ["v0"], axis=1),
+        helper.make_node("Gather", ["x", "i3"], ["v1"], axis=1),
+        helper.make_node("Sub", ["t0", "t1"], ["d"]),
+        helper.make_node("Cos", ["d"], ["c"]),
+        helper.make_node("Sin", ["d"], ["s"]),
+        helper.make_node("Mul", ["v0", "v1"], ["vv"]),
+        helper.make_node("Mul", ["vv", "c"], ["p"]),
+        helper.make_node("Mul", ["vv", "s"], ["q"]),
+        # ml4acopf's shape arithmetic on constants: Expand to Where(shape == -1, 1, shape)
+        helper.make_node("ConstantOfShape", ["two"], ["ones"],
+                         value=numpy_helper.from_array(np.array([1], np.int64))),
+        helper.make_node("Mul", ["ones", "minus"], ["neg"]),
+        helper.make_node("Equal", ["shape", "neg"], ["eq"]),
+        helper.make_node("Where", ["eq", "ones", "shape"], ["w"]),
+        helper.make_node("Expand", ["k", "w"], ["kk"]),
+        helper.make_node("Concat", ["p", "q"], ["pq"], axis=1),
+        helper.make_node("Add", ["pq", "kk"], ["y"]),
+    ]
+    init = {"i0": np.array([0], np.int64), "i1": np.array([1], np.int64),
+            "i2": np.array([2], np.int64), "i3": np.array([3], np.int64),
+            "two": np.array([2], np.int64), "minus": np.array(-1, np.int64),
+            "shape": np.array([1, -1], np.int64), "k": np.array([0.5, -0.25], np.float32)}
+    return model(nodes, [("x", [1, 4])], [("y", [1, 2])], init)
 
 
 def pensieve_parallel_net(reshape=True):

@@ -283,6 +283,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         }
         pre.push_back(z + layers[k].b);
         const Activation a = net.activations()[k];
+        // the activation's value
         h = a == Activation::relu         ? pre.back().maximum(0.0)
             : a == Activation::sigmoid    ? pre.back().sigmoid()
             : a == Activation::tanh       ? pre.back().tanh()
@@ -291,7 +292,8 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
             : a == Activation::floor      ? pre.back().floor()
             : a == Activation::exp        ? pre.back().exp()
             : a == Activation::reciprocal ? pre.back().ones_like().divide(pre.back().maximum(1.0))
-            : a == Activation::product || a == Activation::cube || a == Activation::inverse
+            : a == Activation::product || a == Activation::cube || a == Activation::inverse ||
+                    a == Activation::sin || a == Activation::cos
                 ? priv_apply(a, pre.back())
                 : pre.back();
         outs.push_back(h);
@@ -359,7 +361,8 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
             g = g.multiply(
                 Tensor::where(z.greater(z.ones_like()), y.square().negative(), z.zeros_like()));
         }
-        if (a == Activation::cube || a == Activation::inverse)
+        if (a == Activation::cube || a == Activation::inverse || a == Activation::sin ||
+            a == Activation::cos)
             g = g.multiply(priv_derivative(a, z));
         if (a == Activation::product) g = priv_slope_times_t(a, priv_derivative(a, z), g);
         for (const NeuralNetwork::Residual &r : layers[k].residuals)

@@ -4370,7 +4370,7 @@ void bind_nonlin_das_sys(py::module_ &m) {
 }
 
 /// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp, reciprocal,
-/// product, floor, cube or inverse.
+/// product, floor, cube, inverse, sin or cos.
 Activation activation_of(const std::string &name) {
     if (name == "identity") return Activation::identity;
     if (name == "relu") return Activation::relu;
@@ -4384,9 +4384,11 @@ Activation activation_of(const std::string &name) {
     if (name == "floor") return Activation::floor;
     if (name == "cube") return Activation::cube;
     if (name == "inverse") return Activation::inverse;
+    if (name == "sin") return Activation::sin;
+    if (name == "cos") return Activation::cos;
     CORA_FAIL(Error::wrong_value, "NeuralNetwork: the activation must be identity, relu, sigmoid, "
-                                  "tanh, square, sign, exp, reciprocal, product, floor, cube or "
-                                  "inverse, got " +
+                                  "tanh, square, sign, exp, reciprocal, product, floor, cube, "
+                                  "inverse, sin or cos, got " +
                                       name);
 }
 
