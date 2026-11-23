@@ -154,7 +154,8 @@ class OnnxNetwork:
             dense, why = self.dense_layers(max_elements)
             # a graph (two branches joined, a product of two values) goes layer by layer
             if dense or not any(
-                r in why for r in ("joins two", "of two values", "fails to lower", "Softmax")
+                r in why
+                for r in ("joins two", "of two values", "fails to lower", "Softmax", "max_elements")
             ):
                 return dense, why
         try:
@@ -708,6 +709,10 @@ class OnnxNetwork:
             if not linked:
                 values[outs[0]] = net._run(op, [values.get(n) if n else None for n in ins], attrs)
                 continue
+            if any(getattr(chain[n], "column", False) for n in linked) and (
+                len(set(linked)) > 1 or op in STRUCTURE_OPS
+            ):
+                raise _NotAChain(f"{op} of a column (the batch axis transposed) and more")
             if op in STRUCTURE_OPS and not _moves_data(op, ins[0] in chain):
                 # shape arithmetic on the chain: its shape only
                 probes = [
@@ -812,6 +817,24 @@ class OnnxNetwork:
             x_name = linked[0]
             expr = chain[x_name]
             shape = expr.shape
+            column = getattr(expr, "column", False)
+            if op == "Transpose" and len(shape) == 2 and (column or shape[0] == 1):
+                # a row (1, n) as a column (n, 1), or back: the same entries, a flag (ml4acopf)
+                flipped = _Expr(shape, expr.terms, expr.bias)
+                flipped.column = not column
+                chain[outs[0]] = flipped
+                continue
+            if column:
+                # a column takes only a constant matrix from the left: C (m, n) x as a dense layer
+                if op != "MatMul" or ins[1] != x_name or ins[0] not in values:
+                    raise _NotAChain(f"{op} of a column (the batch axis transposed)")
+                C = values[ins[0]].to(torch.float64)
+                src, maps = single(expr).terms[0]
+                zero = torch.zeros(C.shape[0], dtype=torch.float64)
+                product = _Expr((1, C.shape[0]), [(src, maps + [(C.contiguous(), zero)])])
+                product.column = True
+                chain[outs[0]] = product
+                continue
             probe = torch.zeros(1, *shape[1:], dtype=torch.float64)
             args = [probe if n == x_name else (values.get(n) if n else None) for n in ins]
             out_shape = tuple(net._run(op, args, attrs).shape)
@@ -924,6 +947,13 @@ class OnnxNetwork:
                 chain[outs[0]] = then((lin, bias.reshape(-1)))
             elif op in ("Add", "Sub") and len(ins) == 2:
                 other = args[1] if ins[0] == x_name else args[0]
+                if math.prod(out_shape[1:]) != size:
+                    # the constant broadcasts the value to more entries (ml4acopf's x - t_k for
+                    # every threshold): the value repeated by a gather first
+                    index = torch.broadcast_to(torch.arange(size).reshape(shape), out_shape)
+                    expr = then(_gather(index.reshape(-1).tolist(), size,
+                                        torch.zeros(index.numel())))
+                    shape, size = out_shape, index.numel()
                 if op == "Sub" and ins[1] == x_name:
                     # a constant minus the value: the value negated, then the constant added
                     expr = _scale(expr, single, then, -torch.ones(size, dtype=torch.float64),
@@ -960,6 +990,8 @@ class OnnxNetwork:
         if self.output_name not in chain:
             raise _NotAChain("the output does not depend on the input")
         out = chain[self.output_name]
+        if getattr(out, "column", False):
+            raise _NotAChain("the output is a column (the batch axis transposed)")
         last = materialize(out)
         if last != len(layers) - 1 or last < 0:
             # the output is an earlier layer's or the input: one more identity layer
