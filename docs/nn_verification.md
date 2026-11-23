@@ -212,6 +212,15 @@ moves their box by at most 0.03 (`refinement_min_move`), and its networks run on
 `choose_backend`). Together, instance 0 closes in 126 s (156 s on torch alone); the sample rows'
 verdicts stay the same (2 sat, 14 unknown), since the official timeout is 25 s.
 
+On a CUDA device (A100) the sets of lsnc_relu are tiny (6 inputs), so a batch of 1024 sets is bound
+by kernel launches, not arithmetic: instance 0 of seed 1001 closes as unsat in 46 s at 1024 sets
+per batch, 18 s at 4096 and 12 s at 32768 (3.4 GiB peak). `run_instance.py` therefore takes
+`mini_batch_size` 32768 for lsnc_relu on CUDA (`GPU_MINI_BATCH`). Soundness: the sets of a batch
+are propagated and bounded independently (every step is per row), so the batch size changes no
+bound and only the order in which the open boxes are taken; the verdict is unsat only when the
+queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknown to 3 sat and
+5 unsat.
+
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per
   polytope the violated rows' excess plus a tenth of the worst row, the best polytope of the case),
