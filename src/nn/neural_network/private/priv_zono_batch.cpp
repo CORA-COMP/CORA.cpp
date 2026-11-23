@@ -267,9 +267,10 @@ LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Ten
                                const std::string &poly_method) {
     if (activation == Activation::relu) return aux_relu_jacobian(l, u);
     if (activation == Activation::square) return aux_square_jacobian(l, u);
-    if (activation == Activation::sign || activation == Activation::exp ||
-        activation == Activation::reciprocal || activation == Activation::product) {
-        // sign's line does not move with the bounds; exp's, 1 / x's and a product's are held
+    if (activation == Activation::sign || activation == Activation::floor ||
+        activation == Activation::exp || activation == Activation::reciprocal ||
+        activation == Activation::product) {
+        // steps' lines (sign, floor) do not move with the bounds; exp's, 1 / x's, a product's held
         const Tensor zero = l.zeros_like();
         return {zero, zero, zero, zero, zero, zero};
     }
@@ -517,6 +518,7 @@ PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &
     // a ReLU's line is CORALean's in both methods (the same line in the reals); x^2 has one line
     if (activation == Activation::square) return priv_square_line(l, u);
     if (activation == Activation::sign) return priv_sign_line(l, u);
+    if (activation == Activation::floor) return priv_floor_line(l, u);
     if (activation == Activation::exp) return priv_exp_line(l, u);
     if (activation == Activation::reciprocal) return priv_reciprocal_line(l, u);
     if (activation == Activation::product)

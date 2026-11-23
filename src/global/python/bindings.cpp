@@ -4369,7 +4369,8 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "The states (steps + 1, n) and the algebraic variables (steps + 1, p) of a trajectory");
 }
 
-/// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp, reciprocal, product.
+/// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp, reciprocal,
+/// product or floor.
 Activation activation_of(const std::string &name) {
     if (name == "identity") return Activation::identity;
     if (name == "relu") return Activation::relu;
@@ -4380,8 +4381,9 @@ Activation activation_of(const std::string &name) {
     if (name == "exp") return Activation::exp;
     if (name == "reciprocal") return Activation::reciprocal;
     if (name == "product") return Activation::product;
+    if (name == "floor") return Activation::floor;
     CORA_FAIL(Error::wrong_value, "NeuralNetwork: the activation must be identity, relu, sigmoid, "
-                                  "tanh, square, sign, exp, reciprocal or product, got " +
+                                  "tanh, square, sign, exp, reciprocal, product or floor, got " +
                                       name);
 }
 

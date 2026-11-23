@@ -102,6 +102,8 @@ Tensor aux_apply(Activation activation, const Tensor &x, int axis = -1) {
         return x.square();
     case Activation::sign:
         return x.sign();
+    case Activation::floor:
+        return x.floor();
     // a softmax's parts
     case Activation::exp:
         return x.exp();
@@ -163,6 +165,8 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         return priv_square_line(l, u);
     case Activation::sign:
         return priv_sign_line(l, u);
+    case Activation::floor:
+        return priv_floor_line(l, u);
     case Activation::exp:
         return priv_exp_line(l, u);
     case Activation::reciprocal:
@@ -657,6 +661,7 @@ Tensor priv_derivative(Activation activation, const Tensor &x) {
     case Activation::square:
         return x + x;
     case Activation::sign:
+    case Activation::floor:
         return x.zeros_like();
     case Activation::exp:
         return x.exp();
@@ -771,6 +776,13 @@ PrivLine priv_sign_line(const Tensor &l, const Tensor &u) {
     detail::Entry entry;
     // slope 0 between sign(l) and sign(u) (exact: the values are halves)
     const Tensor lo = l.sign(), hi = u.sign();
+    return {l.zeros_like(), (lo + hi) * 0.5, (hi - lo) * 0.5};
+}
+
+PrivLine priv_floor_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    // slope 0 between floor(l) and floor(u) (exact: integers and their halves)
+    const Tensor lo = l.floor(), hi = u.floor();
     return {l.zeros_like(), (lo + hi) * 0.5, (hi - lo) * 0.5};
 }
 

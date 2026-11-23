@@ -76,11 +76,12 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
         // the activations CORALean has no layer of
         case Activation::square:
         case Activation::sign:
+        case Activation::floor:
         case Activation::exp:
         case Activation::reciprocal:
         case Activation::product:
             throw std::invalid_argument("aux_lean_layers: the oracle has no square, sign, exp, "
-                                        "reciprocal or product layer");
+                                        "reciprocal, product or floor layer");
         }
     }
     return layers;

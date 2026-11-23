@@ -173,6 +173,9 @@ double aux_f(Activation a, double x) {
         return x * x;
     case Activation::sign:
         return x > 0 ? 1.0 : x < 0 ? -1.0 : 0.0;
+    case Activation::floor:
+        // a step at every integer: no polynomial of its points encloses it
+        CORA_FAIL(Error::not_supported, "computeApproxPoly: floor has no polynomial");
     // a softmax's parts
     case Activation::exp:
         return std::exp(x);

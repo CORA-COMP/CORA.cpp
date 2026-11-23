@@ -251,6 +251,15 @@ class OnnxNetwork:
     def _op_Exp(self, a, _):
         return torch.exp(a[0])
 
+    def _op_Floor(self, a, _):
+        return torch.floor(a[0])
+
+    def _op_Pow(self, a, _):
+        return torch.pow(a[0], a[1])
+
+    def _op_Square(self, a, _):  # Pow(x, 2) as the loader names it (_split_as_slices)
+        return a[0] * a[0]
+
     def _op_ReduceSum(self, a, attrs):
         # the axes from the input (opset 13) or the attribute; none: all (or noop_with_empty_axes)
         axes = a[1] if len(a) > 1 and a[1] is not None else attrs.get("axes")
@@ -1062,7 +1071,8 @@ MAX_PRODUCT = 4096  # entries of a product of two values at most (its maps are d
 
 UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
 
-ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign", "Exp": "exp"}
+ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign", "Exp": "exp",
+               "Floor": "floor", "Square": "square"}
 
 LINEAR_OPS = {
     "Add",
@@ -1098,7 +1108,7 @@ MASK_MOVES = {"Slice", "Gather", "Reshape", "Transpose", "Concat", "Squeeze", "U
               "Flatten", "Identity", "Dropout", "Pad"}  # fold_fixed_inputs: data moves
 
 MASK_ELEMENTWISE = {"Add", "Sub", "Mul", "Div", "Neg", "Relu", "Sigmoid", "Tanh", "LeakyRelu",
-                    "Sign", "Exp", "Cast"}  # fold_fixed_inputs: entry by entry
+                    "Sign", "Exp", "Cast", "Floor", "Square", "Pow"}  # fold_fixed_inputs: by entry
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
 DATA_MOVES = {"Slice", "Gather", "Cast"}  # ... unless they move a value of the input: then linear
@@ -1201,7 +1211,12 @@ def _scale(expr, single, then, factor, shape, out_shape):
 
 def _split_as_slices(op, ins, outs, attrs, constants):
     """A node as the nodes of the graph: a Split of known sizes (its attribute, or a constant
-    input) one Slice per output, which the lowering moves like any other; the rest as it is."""
+    input) one Slice per output, which the lowering moves like any other; Pow(x, 2) a Square
+    (the activation x^2); the rest as it is."""
+    if op == "Pow" and len(ins) == 2 and ins[1] in constants:
+        exponent = constants[ins[1]]
+        if exponent.numel() == 1 and float(exponent) == 2.0:
+            return [("Square", ins[:1], outs, {})]
     sizes = attrs.get("split")
     if op == "Split" and sizes is None and len(ins) > 1 and ins[1] in constants:
         sizes = [int(v) for v in constants[ins[1]].tolist()]

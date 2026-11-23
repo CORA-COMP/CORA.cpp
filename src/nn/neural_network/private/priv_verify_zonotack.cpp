@@ -200,12 +200,14 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
         lo.push_back(a == Activation::identity  ? plo.back()
                      : a == Activation::exp     ? plo.back().exp()
                      : a == Activation::sign    ? plo.back().sign()
+                     : a == Activation::floor   ? plo.back().floor()
                      : a == Activation::relu    ? plo.back().maximum(0.0)
                      : a == Activation::sigmoid ? plo.back().sigmoid()
                                                 : plo.back().tanh());
         hi.push_back(a == Activation::identity  ? phi.back()
                      : a == Activation::exp     ? phi.back().exp()
                      : a == Activation::sign    ? phi.back().sign()
+                     : a == Activation::floor   ? phi.back().floor()
                      : a == Activation::relu    ? phi.back().maximum(0.0)
                      : a == Activation::sigmoid ? phi.back().sigmoid()
                                                 : phi.back().tanh());
@@ -238,6 +240,7 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             case Activation::square:
                 return z + z;
             case Activation::sign:
+            case Activation::floor:
                 return z.zeros_like();
             // a softmax's parts: exp, and -1 / x^2 above 1
             case Activation::exp:

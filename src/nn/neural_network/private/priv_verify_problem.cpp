@@ -288,6 +288,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
             : a == Activation::tanh       ? pre.back().tanh()
             : a == Activation::square     ? pre.back().square()
             : a == Activation::sign       ? pre.back().sign()
+            : a == Activation::floor      ? pre.back().floor()
             : a == Activation::exp        ? pre.back().exp()
             : a == Activation::reciprocal ? pre.back().ones_like().divide(pre.back().maximum(1.0))
             : a == Activation::product    ? priv_apply(a, pre.back())
@@ -348,6 +349,8 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         if (a == Activation::square) g = g.multiply(z + z);
         // sign: the straight-through estimator (1 on [-1, 1]), so that the attack moves
         if (a == Activation::sign) g = g.multiply(z.abs().less_equal(z.ones_like()));
+        // floor: the straight-through estimator (1), as x - frac(x)
+        if (a == Activation::floor) g = g.multiply(z.ones_like());
         if (a == Activation::exp) g = g.multiply(z.exp());
         if (a == Activation::reciprocal) {
             // -1 / x^2 above 1, else 0
