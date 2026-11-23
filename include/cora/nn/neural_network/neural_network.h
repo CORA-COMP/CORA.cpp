@@ -50,10 +50,10 @@ namespace cora {
 
 // The options -------------------------------------------------------------------------------------
 
-/// The function applied to the output of a layer: square is x^2 (a product of two values is
-/// ((a + b)^2 - (a - b)^2) / 4), sign -1, 0, 1, reciprocal 1 / max(x, 1) (a softmax is
-/// 1 / sum_j exp(x_j - x_i), whose sum is at least 1; see the front end's docs).
-enum class Activation { identity, relu, sigmoid, tanh, square, sign, exp, reciprocal };
+/// The function applied to the output of a layer: square x^2, sign -1, 0, 1, reciprocal
+/// 1 / max(x, 1) (a softmax is 1 / sum_j exp(x_j - x_i); the front end's docs), floor the largest
+/// integer at most x (ml4acopf's turns).
+enum class Activation { identity, relu, sigmoid, tanh, square, sign, exp, reciprocal, floor };
 
 /// The polynomial over a neuron's range (CORA's poly_method): at order 1 singh or regression; of
 /// higher order (polynomial zonotopes only) any, singh only for a ReLU of order 2.

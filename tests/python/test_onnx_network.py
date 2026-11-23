@@ -247,6 +247,33 @@ class Lowering(unittest.TestCase):
         np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
                                    net(x).numpy(), rtol=1e-12, atol=1e-12)
 
+    def test_floor_and_pow(self):
+        # ml4acopf's x - 2 pi floor(x / (2 pi)) and Pow(x, 2): floor and square layers
+        tau = np.float32(2 * np.pi)
+        nodes = [
+            helper.make_node("Gemm", ["x", "W", "b"], ["g"], transB=1),
+            helper.make_node("Div", ["g", "tau"], ["d"]),
+            helper.make_node("Floor", ["d"], ["f"]),
+            helper.make_node("Mul", ["f", "tau"], ["t"]),
+            helper.make_node("Sub", ["g", "t"], ["w"]),
+            helper.make_node("Pow", ["w", "two"], ["y"]),
+        ]
+        init = {"W": weight(3, 2) * 4, "b": weight(3), "tau": np.array(tau), "two": np.array(2.0, np.float32)}
+        m = model(nodes, [("x", [1, 2])], [("y", [1, 3])], init)
+        net = OnnxNetwork(m, dtype=torch.float64)
+        (layers, acts), why = net.layers()
+        self.assertIsNone(why)
+        self.assertIn("floor", acts)
+        self.assertIn("square", acts)
+        x = torch.as_tensor(RNG.uniform(-3, 3, (20, 2)))
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
+                                   net(x).numpy(), rtol=1e-9, atol=1e-9)
+        # Pow of another exponent runs, but does not lower
+        init["two"] = np.array(3.0, np.float32)
+        cube = OnnxNetwork(model(nodes, [("x", [1, 2])], [("y", [1, 3])], init), dtype=torch.float64)
+        np.testing.assert_allclose(cube(x).numpy(), net(x).numpy() ** 1.5, rtol=1e-9)
+        self.assertIsNone(cube.layers()[0])
+
     def test_signs_and_an_output_softmax(self):
         # a binarized network: sign layers; its output Softmax dropped, the logits equal the graph's
         m = sign_net()

@@ -65,6 +65,10 @@ PrivLine priv_square_line(const Tensor &l, const Tensor &u);
 /// The line of sign over [l, u]: slope 0, the middle and half the gap of sign(l) and sign(u).
 PrivLine priv_sign_line(const Tensor &l, const Tensor &u);
 
+/// The line of floor over [l, u]: slope 0, offset and radius the middle and half of [floor l,
+/// floor u] (exact in floats; a range inside one integer step is the constant).
+PrivLine priv_floor_line(const Tensor &l, const Tensor &u);
+
 /// The line of exp over [l, u]: the chord's slope m, the middle and half the range of the convex
 /// exp(x) - m x (largest at an end, least at log m in [l, u]), widened by the rounding.
 PrivLine priv_exp_line(const Tensor &l, const Tensor &u);
