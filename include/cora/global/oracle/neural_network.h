@@ -76,9 +76,9 @@ struct NnLine {
     Tensor slope, offset, error;
 };
 
-/// nnLayer.relaxation: the line of `kind` ("sign", "square", "relu", a kind of NnLayer::line) over
-/// each box [l_i, u_i] (columns (n, 1)); relu: alpha (n, 1) the crossing neurons' slopes; softplus,
-/// root, invSqrt: method "regression" (empty: the oracle's default, the same) or "singh".
+/// nnLayer.relaxation: the line of `kind` ("sign", "square", "relu", "sin", "cos", a kind of
+/// NnLayer::line) over each box [l_i, u_i] (columns (n, 1)); relu: alpha (n, 1) the crossing neurons'
+/// slopes; softplus, root, invSqrt: method "regression" (empty: the oracle's default) or "singh".
 NnLine relaxation(const std::string &kind, const cora::Tensor &l, const cora::Tensor &u,
                   const cora::Tensor &alpha = cora::Tensor(), const std::string &method = "");
 
@@ -91,6 +91,20 @@ NnLine product_line(const cora::Tensor &c, const cora::Tensor &G,
 /// nnLayer.softmaxSumBounds: the box (inf, sup) of W exp(d) + b for l <= d <= u (columns).
 std::pair<Tensor, Tensor> softmax_sum_bounds(const cora::Tensor &W, const cora::Tensor &b,
                                              const cora::Tensor &l, const cora::Tensor &u);
+
+/// A layer of neuralNetwork.backwardBound: an affine map, or a ReLU with the box [l, u] of its
+/// inputs and optionally the slopes alpha of its crossing neurons.
+struct CrownLayer {
+    std::string kind; // "linear" or "relu"
+    cora::Tensor W, b, l, u, alpha;
+    static CrownLayer linear(const cora::Tensor &W, const cora::Tensor &b);
+    static CrownLayer relu(const cora::Tensor &l, const cora::Tensor &u,
+                           const cora::Tensor &alpha = cora::Tensor());
+};
+/// neuralNetwork.backwardBound: CROWN's lower bound (q, 1) of every row of C (q, m) on the outputs
+/// over the box |x' - x| <= r (columns), CORA.cpp's priv_backward_lower.
+Tensor backward_bound(const std::vector<CrownLayer> &layers, const cora::Tensor &x,
+                      const cora::Tensor &r, const cora::Tensor &C);
 
 // Networks on sets and Taylor models --------------------------------------------------------------
 

@@ -1,12 +1,14 @@
 // test_lean_nn_relaxation - the lines and bounds of NeuralNetwork::verify against CORALean
 //
 // Bit for bit against the oracle, every rounding cost of CORALean's definitions zero at nearest:
-// the lines of sign, the square, exp and 1 / max(x, 1) over boxes (nnLayer.relaxation), the ReLU
-// line at optimized slopes alpha, the monotone lines of softplus, root and inv_sqrt_root at both
-// slopes on boxes of every scale, the product line on a zonotope (nnLayer.productLine), the box of
-// a softmax's sums (nnLayer.softmaxSumBounds), the dual certificate (conZonotope.dualBound) and a
-// convolution's map (the layer conv of nnLayer.evaluateZonotope). Another backend compares a line
-// by its values at the box's ends, not by its slope, which is ill-conditioned on a narrow box.
+// the lines of sign, the square, exp, 1 / max(x, 1), x^3 and 1 / x over boxes
+// (nnLayer.relaxation), the ReLU line at optimized slopes alpha, the monotone lines of softplus,
+// root and inv_sqrt_root at both slopes on boxes of every scale, the product line on a zonotope
+// (nnLayer.productLine), the box of a softmax's sums (nnLayer.softmaxSumBounds), the dual
+// certificate (conZonotope.dualBound), a convolution's map (the layer conv of
+// nnLayer.evaluateZonotope) and CROWN's backward bound (neuralNetwork.backwardBound). Another
+// backend compares a line by its values at the box's ends, not by its slope, which is
+// ill-conditioned on a narrow box.
 //
 // CORA.cpp only: tests verify's lines (CORA has no zonotope line of these activations)
 // Authors:       Claude Opus 5.5
@@ -25,6 +27,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <tuple>
 
 using namespace cora;
 
@@ -142,6 +145,11 @@ int main() {
             aux_check("square", priv_square_line(l, u), lean::relaxation("square", l, u), l, u);
             aux_check("reciprocal", priv_reciprocal_line(l, u),
                       lean::relaxation("reciprocal", l, u), l, u);
+            // x^3, and 1 / x on boxes above zero
+            aux_check("cube", priv_cube_line(l, u), lean::relaxation("cube", l, u), l, u);
+            const Tensor pl = l.abs() + 1e-3, pu = pl + (u - l);
+            aux_check("inverse", priv_inverse_line(pl, pu), lean::relaxation("inverse", pl, pu),
+                      pl, pu);
             const auto [el, eu] = aux_exp_boxes(rnd, n);
             aux_check("exp", priv_exp_line(el, eu), lean::relaxation("exp", el, eu), el, eu);
             // the ReLU at slopes alpha in [0, 1] (CORALean's line where a neuron does not cross)
@@ -279,6 +287,37 @@ int main() {
                 lean::NnLayer::conv(kernel, bias, input, spec), lean::Zonotope(c, G), "singh");
             oracle::check("conv center", mine_c, Y.center());
             oracle::check("conv generators", mine_G, Y.generators().gather().slice(1, 0, h));
+        }
+    });
+    // CROWN's backward bound of a ReLU network at the forward pass's boxes
+    oracle::run("neuralNetwork.backwardBound", [&](oracle::Random &rnd) {
+        for (const auto &[n0, n1, m] :
+             std::vector<std::tuple<int64_t, int64_t, int64_t>>{{2, 3, 2}, {3, 8, 4}}) {
+            const Tensor W1 = rnd.matrix(n1, n0), b1 = rnd.vector(n1) * 0.3;
+            const Tensor W2 = rnd.matrix(m, n1), b2 = rnd.vector(m) * 0.3;
+            const NeuralNetwork nn({{W1, b1.squeeze(-1)}, {W2, b2.squeeze(-1)}},
+                                   {Activation::relu, Activation::identity});
+            const ZonoNet net(nn, kInf, kInf, "singh", "length");
+            const Tensor x = rnd.vector(n0), r = rnd.vector(n0).abs() * 0.5;
+            const ZonoInput in = net.input_zonotope(x.reshape({1, n0}), r.reshape({1, n0}));
+            const ZonoPropagation out = net.forward(in.c, in.dr, in.G, Tensor(), nullptr, true);
+            const Tensor &lb = out.layers[0].l, &ub = out.layers[0].u;
+            // the rows, and slopes alpha besides CROWN's lower slopes
+            const Tensor C = rnd.matrix(m + 1, m);
+            const Tensor a = (rnd.vector(n1) * 0.5 + 0.5).clip(0.0, 1.0);
+            const std::vector<Tensor> alpha{a.reshape({1, n1}), Tensor()};
+            for (const bool slopes : {false, true}) {
+                const Tensor mine =
+                    priv_backward_lower(out, net, Tensor(), x.reshape({1, n0}), r.reshape({1, n0}),
+                                        C, slopes ? &alpha : nullptr);
+                const lean::Tensor lean_lower =
+                    lean::backward_bound({lean::CrownLayer::linear(W1, b1),
+                                          lean::CrownLayer::relu(lb, ub, slopes ? a : Tensor()),
+                                          lean::CrownLayer::linear(W2, b2)},
+                                         x, r, C);
+                oracle::check(slopes ? "backward bound at alpha" : "backward bound",
+                              mine.reshape({m + 1, 1}) + 0.0, lean_lower);
+            }
         }
     });
     return test::finish("lean nn relaxation");

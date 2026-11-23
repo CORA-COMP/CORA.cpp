@@ -113,7 +113,7 @@ PrivLine priv_reciprocal_line(const Tensor &l, const Tensor &u);
 PrivLine priv_cube_line(const Tensor &l, const Tensor &u);
 
 /// The line of 1 / x over [l, u] with l > 0: the chord's slope -1 / (l u); 1 / x - m x is convex,
-/// largest at l or u, least at sqrt(l u). A bound l <= 0 fails with kOutOfRangeMessage.
+/// largest at l or u, at least 2 sqrt(-m). A bound l <= 0 fails with kOutOfRangeMessage.
 PrivLine priv_inverse_line(const Tensor &l, const Tensor &u);
 
 /// The range [lo, hi] of sin (cos) over [l, u]: the ends' values widened by the rounding, 1 (-1)
