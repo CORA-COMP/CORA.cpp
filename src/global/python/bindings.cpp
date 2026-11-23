@@ -4783,6 +4783,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(pgd_decay, "PGD: the factor of the step at each decay point");
     CORA_VERIFY_FIELD(pgd_decay_at, "PGD: the decay points as shares of the steps");
     CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
+    CORA_VERIFY_FIELD(pgd_min_steps, "The PGD steps that the shrunk restarts fit in the time");
     CORA_VERIFY_FIELD(seed, "The seed of the restarts");
     // the bounding and its splits
     CORA_VERIFY_FIELD(bounding_method, "'zonotope', 'conzonotope' or 'zonotope-alpha'");
