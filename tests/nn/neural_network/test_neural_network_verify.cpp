@@ -334,6 +334,68 @@ void backward_bounds(const std::string &b) {
             check(holds, b + ": CROWN's backward bound holds the sampled outputs" +
                              (given ? " (slopes given)" : ""));
         }
+        // alpha-CROWN: the optimized slopes hold the sampled outputs, at least CROWN's bound
+        const Tensor crown = priv_backward_lower(out, net, splits, x, r, rows);
+        const Tensor opt = priv_backward_alpha(out, net, splits, x, r, rows, 20, 0.1);
+        bool holds = opt.greater_equal(crown - 1e-9).min().item() > 0;
+        const std::vector<double> lower = opt.data();
+        for (int64_t i = 0; i < 2; ++i) {
+            const Tensor xs = Tensor::from_data(pts, {3000, 3}).multiply(r.slice(0, i, i + 1)) +
+                              x.slice(0, i, i + 1);
+            const std::vector<double> hv = (xs.matmul(net.W[0]) + net.b[0]).data();
+            const std::vector<double> y = nn.evaluate(xs).matmul(rows.matrix_transpose()).data();
+            for (std::size_t p = 0; p < 3000; ++p) {
+                if (i == 0 && (hv[p * 6 + 2] < 0 || hv[p * 6 + 4] > 0)) continue;
+                for (std::size_t j = 0; j < 2; ++j)
+                    holds = holds && lower[std::size_t(i) * 2 + j] <= y[p * 2 + j];
+            }
+        }
+        check(holds, b + ": alpha-CROWN holds the sampled outputs, at least CROWN's bound");
+    }
+}
+
+/// The dual certificate holds the sampled outputs under the splits, is at least the zonotope's
+/// bound, and on a small program reaches its optimum.
+void dual_bounds(const std::string &b) {
+    Rng rng(23);
+    // min beta1 + beta2 over [-1, 1]^2 with beta1 + beta2 >= 0 is 0; lambda = 1 attains it
+    const Tensor w = Tensor::from_data({1.0, 1.0}, {1, 1, 2});
+    const Tensor C = Tensor::from_data({-1.0, -1.0}, {1, 1, 2}), d = Tensor::zeros({1, 1});
+    const double opt = priv_dual_lower(w, C, d, 60, 0.1, DType::float32).item();
+    check(opt <= 0 && opt > -0.05, b + ": the dual bound reaches the program's optimum");
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
+                 r = Tensor({{0.4, 0.3, 0.5}, {0.25, 0.4, 0.3}});
+    const Tensor splits = Tensor({{-3.0, 5.0}, {0.0, 0.0}}),
+                 rows = Tensor({{1.0, -0.7}, {-0.3, 1.0}});
+    std::vector<double> pts(std::size_t(3000 * 3));
+    rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+    const NeuralNetwork nn = aux_network(rng, {3, 6, 5, 2}, Activation::relu);
+    for (const double slots : {2.0, 6.0}) {
+        const ZonoNet net(nn, 3, slots, "bounds", "length");
+        const ZonoInput in = net.input_zonotope(x, r);
+        const ZonoPropagation out = net.forward(in.c, in.dr, in.G, splits, nullptr, true);
+        const auto [Cr, dr] = priv_dual_rows(out, net, splits, 8);
+        // the zonotope's bound of the rows and the dual one
+        const Tensor wr = out.G.matmul(rows.matrix_transpose()).permute_dims({0, 2, 1});
+        Tensor base = out.c.matmul(rows.matrix_transpose());
+        if (out.dr.defined()) base = base - out.dr.matmul(rows.abs().matrix_transpose());
+        const Tensor zono = base - wr.abs().sum(-1);
+        const Tensor dual = base + priv_dual_lower(wr, Cr, dr, 30, 0.1, DType::float32);
+        const std::vector<double> lower = dual.data();
+        bool holds = dual.greater_equal(zono).min().item() > 0;
+        for (int64_t i = 0; i < 2; ++i) {
+            const Tensor xs = Tensor::from_data(pts, {3000, 3}).multiply(r.slice(0, i, i + 1)) +
+                              x.slice(0, i, i + 1);
+            const std::vector<double> hv = (xs.matmul(net.W[0]) + net.b[0]).data();
+            const std::vector<double> y = nn.evaluate(xs).matmul(rows.matrix_transpose()).data();
+            for (std::size_t p = 0; p < 3000; ++p) {
+                // set 0 holds neuron 3 at least 0 and neuron 5 at most 0
+                if (i == 0 && (hv[p * 6 + 2] < 0 || hv[p * 6 + 4] > 0)) continue;
+                for (std::size_t j = 0; j < 2; ++j)
+                    holds = holds && lower[std::size_t(i) * 2 + j] <= y[p * 2 + j];
+            }
+        }
+        check(holds, b + ": the dual certificate holds the sampled outputs, above the zonotope's");
     }
 }
 
@@ -429,6 +491,7 @@ int main() {
         frad_gradients(b);
         alpha_gradients(b);
         backward_bounds(b);
+        dual_bounds(b);
         fourier_motzkin(b);
         switches(b);
     });

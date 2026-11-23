@@ -734,6 +734,97 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
            lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
 }
 
+Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
+                           const Tensor &x, const Tensor &rad, const Tensor &rows,
+                           int64_t iterations, double step) {
+    const int64_t B = x.shape()[0], R = rows.shape()[0];
+    const bool split = splits.defined() && splits.shape()[1] > 0;
+    // per activation layer the clamped bounds' lines: a ReLU's chord above, its lower slope free
+    struct Lines {
+        Tensor sl, su, bl, bu, cross;
+    };
+    std::vector<Lines> lines(net.W.size());
+    std::vector<Tensor> alpha(net.W.size()), m1(net.W.size()), m2(net.W.size());
+    std::size_t next = out.layers.size();
+    for (std::size_t k = net.W.size(); k-- > 0;) {
+        if (net.activations[k] == Activation::identity) continue;
+        const ZonoLayerRecord &rec = out.layers[--next];
+        const auto [lc, uc] =
+            split ? net.clamp(rec.first_id, rec.l, rec.u, splits) : std::pair{rec.l, rec.u};
+        Lines &L = lines[k];
+        if (net.activations[k] == Activation::relu) {
+            const Tensor zero = lc.zeros_like(), on = lc.greater_equal(zero);
+            L.cross = aux_crossing(lc, uc);
+            const Tensor chord = uc.divide((uc - lc).maximum(numerics::kTiny));
+            L.su = Tensor::where(L.cross, chord, on).expand_dims(1);
+            L.bu = Tensor::where(L.cross, chord.multiply(lc).negative(), zero).expand_dims(1);
+            L.sl = Tensor::where(L.cross, zero, on).expand_dims(1);
+            L.bl = zero.expand_dims(1);
+            // CROWN's start: 1 where u > -l, per row
+            alpha[k] =
+                uc.greater(lc.negative()).expand_dims(1).broadcast_to({B, R, lc.shape()[1]}) + 0.0;
+            L.cross = L.cross.expand_dims(1);
+        } else {
+            const PrivLine line = priv_verify_line(net.activations[k], lc, uc, net.poly_method);
+            L.sl = L.su = line.slope.expand_dims(1);
+            L.bl = (line.offset - line.radius).expand_dims(1);
+            L.bu = (line.offset + line.radius).expand_dims(1);
+        }
+    }
+    const Tensor lam0 = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
+    const Tensor xe = x.expand_dims(-1), re = rad.expand_dims(-1);
+    Tensor best;
+    constexpr double kB1 = 0.9, kB2 = 0.999;
+    for (int64_t t = 0; t <= iterations; ++t) {
+        // the backward pass, keeping each layer's Lambda for the reverse
+        std::vector<Tensor> lams(net.W.size());
+        Tensor lam = lam0, constant = x.zeros_like({B, R});
+        for (std::size_t k = net.W.size(); k-- > 0;) {
+            if (net.activations[k] != Activation::identity) {
+                const Lines &L = lines[k];
+                lams[k] = lam;
+                const Tensor sl =
+                    alpha[k].defined() ? Tensor::where(L.cross, alpha[k], L.sl) : L.sl;
+                const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
+                constant = constant + pos.multiply(L.bl).sum(-1) + neg.multiply(L.bu).sum(-1);
+                lam = pos.multiply(sl) + neg.multiply(L.su);
+            }
+            constant = constant + lam.multiply(net.b[k]).sum(-1);
+            lam = aux_rows_times(lam, net.WT[k]);
+        }
+        const Tensor value =
+            lam.matmul(xe).squeeze(-1) - lam.abs().matmul(re).squeeze(-1) + constant;
+        best = best.defined() ? best.maximum(value) : value;
+        if (t == iterations) break;
+        // the reverse: d value / d Lambda from the input box up, the slopes' gradients on the way
+        Tensor g = x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1));
+        const double c1 = 1.0 - std::pow(kB1, double(t + 1)),
+                     c2 = 1.0 - std::pow(kB2, double(t + 1));
+        for (std::size_t k = 0; k < net.W.size(); ++k) {
+            // through the linear layer: Lambda_k W_k, plus the bias
+            g = aux_rows_times(g, net.W[k]) + net.b[k];
+            if (net.activations[k] == Activation::identity) continue;
+            const Lines &L = lines[k];
+            const Tensor &lk = lams[k];
+            const Tensor pos = lk.greater(lk.zeros_like()), neg = lk.less(lk.zeros_like());
+            const Tensor sl = alpha[k].defined() ? Tensor::where(L.cross, alpha[k], L.sl) : L.sl;
+            if (alpha[k].defined()) {
+                // Adam on the slopes in [0, 1]
+                const Tensor ga =
+                    Tensor::where(L.cross, g.multiply(lk.maximum(0.0)), g.zeros_like());
+                m1[k] = m1[k].defined() ? m1[k] * kB1 + ga * (1.0 - kB1) : ga * (1.0 - kB1);
+                const Tensor g2 = ga.square() * (1.0 - kB2);
+                m2[k] = m2[k].defined() ? m2[k] * kB2 + g2 : g2;
+                const Tensor move =
+                    (m1[k] / c1).divide((m2[k] / c2).sqrt() + numerics::kAdamEpsilon);
+                alpha[k] = (alpha[k] + move * step).maximum(0.0).minimum(1.0);
+            }
+            g = pos.multiply(g.multiply(sl) + L.bl) + neg.multiply(g.multiply(L.su) + L.bu);
+        }
+    }
+    return best;
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

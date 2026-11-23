@@ -113,12 +113,24 @@ struct NnVerifyOptions {
     std::string fourier_motzkin_order = "cora";
     /// The check also takes CROWN's backward bound over the same relaxation, the better of the two.
     bool backward_bound = false;
+    /// The check also takes the dual certificate: per row a Lagrangian bound under the splits'
+    /// rows and the three faces of dual_relu_rows crossing ReLUs (beta-CROWN's multipliers).
+    bool dual_certificate = false;
+    int64_t dual_iterations = 20; ///< projected Adam steps on the multipliers
+    double dual_step_size = 0.1;  ///< Adam's step, times the row's largest coefficient
+    int64_t dual_relu_rows = 32;  ///< crossing ReLUs whose faces are rows, by their error
     /// The candidates of a look-ahead neuron split heuristic ("fsb") per set.
     int64_t look_ahead_candidates = 8;
     // the bounding "zonotope-alpha": CORA's verify whose check optimizes the ReLU slopes
     int64_t alpha_iterations = 10; ///< projected Adam steps on the open sets' margins
     double alpha_step_size = 0.3;  ///< Adam's step on the slopes in [0, 1]
     int64_t alpha_patience = 3;    ///< steps without a newly excluded polytope before it stops
+    /// "zonotope": the slopes of the zonotope's lines, every later bound moves; "crown": CROWN's
+    /// lower slopes per row in the backward pass (alpha-CROWN), the zonotope's bounds held.
+    std::string alpha_method = "zonotope";
+    /// The open sets whose slopes or multipliers are optimized: their worst polytope's best row is
+    /// below 0 by at most this share of the row's width (inf: all).
+    double optimize_gap = std::numeric_limits<double>::infinity();
     // the repairs of CORA's unsound steps (docs/nn_verification.md), on by default
     bool project_stale_factors = true; ///< the split rows keep the input factors after one pass
     bool drop_dummy_duplicates = true; ///< a dummy split drops its duplicate child only

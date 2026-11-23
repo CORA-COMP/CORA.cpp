@@ -4766,10 +4766,19 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(mini_batch_size, "The sets per batch at most");
     CORA_VERIFY_FIELD(exact_backprop, "CORA's exact_backprop: the gradient through the lines");
     CORA_VERIFY_FIELD(fourier_motzkin_order, "'cora' (fast) or 'coralean' (the oracle's)");
+    // Phase 2: the backward bound, the dual certificate, the slopes
     CORA_VERIFY_FIELD(backward_bound, "The check also takes CROWN's backward bound");
+    CORA_VERIFY_FIELD(dual_certificate, "The check also takes the Lagrangian bound of the rows");
+    CORA_VERIFY_FIELD(dual_iterations, "dual_certificate: Adam steps on the multipliers");
+    CORA_VERIFY_FIELD(dual_step_size, "dual_certificate: Adam's step on the multipliers");
+    CORA_VERIFY_FIELD(dual_relu_rows, "dual_certificate: crossing ReLUs whose faces are rows");
     CORA_VERIFY_FIELD(look_ahead_candidates, "The candidates of the look-ahead heuristic fsb");
     CORA_VERIFY_FIELD(alpha_iterations, "zonotope-alpha: Adam steps on the ReLU slopes");
     CORA_VERIFY_FIELD(alpha_patience, "zonotope-alpha: steps without progress before it stops");
+    CORA_VERIFY_FIELD(alpha_method, "zonotope-alpha: 'zonotope' (the lines) or 'crown' (backward)");
+    CORA_VERIFY_FIELD(
+        optimize_gap,
+        "zonotope-alpha and dual_certificate: the largest gap of a set they optimize");
     CORA_VERIFY_FIELD(alpha_step_size, "zonotope-alpha: Adam's step on the slopes");
     CORA_VERIFY_FIELD(project_stale_factors, "Repair: the split rows keep the input factors");
     CORA_VERIFY_FIELD(drop_dummy_duplicates, "Repair: a dummy split drops its duplicate only");

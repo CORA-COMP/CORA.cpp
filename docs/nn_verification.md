@@ -131,9 +131,21 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
   their best row's lower bound. The gradient is a hand-written reverse pass (the one of
   `exact_backprop`, seeded with the margins), exact through the bounds of the later layers; a ctest
   checks it against the central difference. A set leaves the loop once it is verified.
+- **alpha_method:** `zonotope` (the default) optimizes the slopes of the zonotope's lines, so every
+  later layer's bounds move and a step costs a forward and a reverse pass of the sets; `crown`
+  optimizes CROWN's lower ReLU slopes per specification row in the backward pass (alpha-CROWN) over
+  the zonotope's bounds, so a step costs one backward pass and its reverse, `(B, P K, n)` per layer.
+- **optimize_gap:** the slopes and the dual multipliers are optimized only for open sets whose worst
+  open polytope's best row is below 0 by at most this share of the row's width (inf: all).
 - **backward_bound:** the check also bounds every row by CROWN's backward pass over the input box and
   takes the better of it and the zonotope's bound. Its cost is `(B, P K, n)` per layer, so it stays
   cheap on wide layers.
+- **dual_certificate:** the check also bounds every row of the open sets by weak duality under the
+  rows `C beta <= d` of the factors: each split of the set (`x >= 0` or `x <= 0` of the neuron's
+  input) and the three faces of the `dual_relu_rows` crossing ReLUs of the largest error. For any
+  `lambda >= 0`, `min a^T y >= a^T c - |a| dr - |G a + C^T lambda|_1 - lambda^T d` (beta-CROWN's
+  bound in the latent space); `dual_iterations` projected Adam steps choose `lambda` in the search
+  dtype, and the bound of the best `lambda` is evaluated again in float64.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
   triangle relaxation.
@@ -166,8 +178,10 @@ Beyond CORA (Phase 2), every step sound for any choice it optimizes:
 | Step | Sound? | Evidence | Here |
 | --- | --- | --- | --- |
 | ReLU slope `alpha` in `[0, 1]` (`zonotope-alpha`) | yes, in the reals | `relu(x) - a x` lies in `[0, max(-a l, (1 - a) u)]` on `[l, u]` for `a` in `[0, 1]` (convex, 0 at 0); not formalized | every iteration's bound is a bound; a polytope excluded once stays excluded |
+| alpha-CROWN slopes (`alpha_method` `crown`) | yes, in the reals | any lower slope in `[0, 1]` through 0 bounds a crossing ReLU from below; every step's bound is a bound, the best is kept; not formalized | float64, `verified_margin`, the clamped bounds of the zonotope |
 | CROWN backward bound (`backward_bound`) | yes, in the reals | the chord above and a slope in `[0, 1]` through 0 below a crossing ReLU; the zonotope line's parallels for sigmoid/tanh; not formalized | float64, `verified_margin`, the clamped bounds of the zonotope |
 | chord rows `ReLU(x) <= u (x - l) / (u - l)` (`relu_constraint_faces` `triangle`) | yes (the true factors satisfy them on the clamped `[l, u]`) | the chord bounds a ReLU on `[l, u]` from above; the offsets add `dr_out + s dr_in`; not formalized | with the other ReLU rows, under `project_stale_factors` |
+| dual certificate (`dual_certificate`) | yes, for any `lambda >= 0` | weak duality: `w^T beta >= w^T beta + lambda^T (C beta - d)` on the feasible factors, whose least value over the box is `-\|w + C^T lambda\|_1 - lambda^T d`; the rows hold the true factors (splits on the clamped bounds, the ReLU faces with `dr` at its worst); not formalized | the bound of the best `lambda`, evaluated again in float64, and never below the zonotope's (`lambda = 0`) |
 | FSB look-ahead (`fsb`) | no claim (it only picks the neuron) | the children are as for any neuron split | the backward bound of both children, the other bounds held |
 
 The repairs are options, on by default. `tests/nn/neural_network/test_neural_network_verify_witness.cpp`
