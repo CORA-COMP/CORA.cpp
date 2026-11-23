@@ -138,7 +138,6 @@ def positional(text):
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 
-
 COMPARISON = r"\((<=|>=) (\S+) (\S+)\)"
 
 DECLARE = re.compile(r"^\(declare-const (X|Y)_(\S+) Real\)$")

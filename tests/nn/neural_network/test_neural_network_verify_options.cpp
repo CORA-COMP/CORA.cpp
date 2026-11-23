@@ -84,8 +84,7 @@ void options_and_strategies() {
         if (field == "position") w.neuron_split_position = "x";
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "an unknown " + field);
     }
-    // the counts of Phase 2 (slopes, step size, candidates), PGD's steps, the batch's budget and
-    // the refinement's least move
+    // the counts of Phase 2, PGD's steps, the batch's budget and the refinement's least move
     for (const std::string field : {"alpha_iterations", "alpha_step_size", "candidates",
                                     "pgd_min_steps", "batch_memory_budget", "min_move"}) {
         NnVerifyOptions w = vnncomp_options("x");
