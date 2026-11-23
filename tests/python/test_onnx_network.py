@@ -8,7 +8,8 @@ folded into the convolutions) and max pools to pairs of b + relu(a - b), equal t
 padded max pool and a quotient of two values do not lower and say why; a batch norm of features
 and a slice of the input concatenated with a branch lower; a product of two values lowers to x^2
 layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
-builds its matrix in chunks of unit vectors, far below the identity's memory.
+builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
+backend is torch for a convolution, eigen for a dense network.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -199,6 +200,16 @@ class Lowering(unittest.TestCase):
             self.assertLess(float(grown), 400.0)  # MiB
             W = numpy_helper.to_array(m.graph.initializer[2])
             self.assertTrue(np.array_equal(np.load(out), W.astype(np.float64)))
+
+    def test_backend_by_network(self):
+        # torch for a convolution (or a GPU), eigen for a dense network (cora.nn_verify.load)
+        from cora.nn_verify import choose_backend
+
+        conv, _ = OnnxNetwork(conv_net()).layers()
+        dense, _ = OnnxNetwork(mlp()).layers()
+        self.assertEqual(choose_backend(conv[0]), "torch")
+        self.assertEqual(choose_backend(dense[0]), "eigen")
+        self.assertEqual(choose_backend(dense[0], "cuda:0"), "torch")
 
     def test_size_cap(self):
         # max_elements refuses unit-vector batches beyond it
