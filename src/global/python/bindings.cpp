@@ -4525,6 +4525,33 @@ NeuralNetwork::Layer aux_nn_map(const py::object &layer) {
         return {tensor_of(W, "the weights"), point_of(b, "the bias")};
     }
     const py::dict d = layer.cast<py::dict>();
+    // CORA's linear layers by name
+    const auto vec = [&](const char *key) { return point_of(d[key], key); };
+    if (d.contains("identity"))
+        return NeuralNetwork::Layer::identity(d["identity"].cast<int64_t>());
+    // scale .* x + offset
+    if (d.contains("elementwise_affine"))
+        return NeuralNetwork::Layer::elementwise_affine(
+            point_of(d["elementwise_affine"], "the scale"), vec("offset"),
+            d["inputs"].cast<int64_t>());
+    if (d.contains("batch_norm"))
+        return NeuralNetwork::Layer::batch_norm(
+            point_of(d["batch_norm"], "the scale"), vec("offset"), vec("mean"), vec("var"),
+            d["input"].cast<std::vector<int64_t>>(),
+            d.contains("epsilon") ? d["epsilon"].cast<double>() : numerics::kBatchNormEpsilon);
+    // the mean over each pool window
+    if (d.contains("avg_pool2d"))
+        return NeuralNetwork::Layer::avg_pool2d(
+            d["avg_pool2d"].cast<std::array<int64_t, 2>>(), d["input"].cast<std::vector<int64_t>>(),
+            d.contains("stride") ? d["stride"].cast<std::array<int64_t, 2>>()
+                                 : std::array<int64_t, 2>{0, 0},
+            d.contains("pads") ? d["pads"].cast<std::array<int64_t, 4>>()
+                               : std::array<int64_t, 4>{0, 0, 0, 0});
+    // the rows of W scaled down to the absolute sum lambda
+    if (d.contains("lip_constr_linear"))
+        return NeuralNetwork::Layer::lip_constr_linear(
+            tensor_of(d["lip_constr_linear"], "the weights"), vec("bias"),
+            d.contains("lambda") ? d["lambda"].cast<double>() : 1.0);
     const Tensor bias = point_of(d["bias"], "the bias");
     if (d.contains("W")) return {tensor_of(d["W"], "the weights"), bias};
     if (d.contains("gather"))
@@ -4565,13 +4592,23 @@ void bind_neural_network(py::module_ &m) {
              py::arg("layers"), py::arg("activations") = py::none(),
              "the layers as (W (out, in), b (out,)) pairs, first to last, or dicts {'conv2d': "
              "kernel, 'bias', 'input': (C, H, W), 'stride', 'dilation', 'pads', 'groups'} and "
-             "{'gather': index, 'inputs', 'bias', optional 'scale'} or {'W', 'bias'}, each with "
+             "{'gather': index, 'inputs', 'bias', optional 'scale'} or {'W', 'bias'} or CORA's "
+             "linear layers {'identity': n}, {'elementwise_affine': scale, 'offset', 'inputs'}, "
+             "{'batch_norm': scale, 'offset', 'mean', 'var', 'input', 'epsilon'}, {'avg_pool2d': "
+             "(ph, pw), 'input', 'stride', 'pads'}, {'lip_constr_linear': W, 'bias', 'lambda'}, "
+             "each with "
              "the optional graph keys "
              "'source' (the layer it reads, -1 the input) and 'residuals' ([{'source', 'map': a "
              "layer or None for the identity}], added), and optionally the activation of each: "
              "'identity', 'relu', 'sigmoid', 'tanh', 'square', 'sign', 'exp', 'reciprocal' or "
              "'product' (the halves' products, then zeros; for verify)")
         .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
+        // the counts of neurons and parameters
+        .def("num_neurons", &NeuralNetwork::num_neurons,
+             "The number of neurons in front of each layer and after the last (CORA's "
+             "getNumNeurons)")
+        .def("num_params", &NeuralNetwork::num_params,
+             "The entries of all weights and biases of a dense network (CORA's getNumParams)")
         .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")
         // the outputs at points, the enclosure of the outputs over a set, and the pairs
         .def(

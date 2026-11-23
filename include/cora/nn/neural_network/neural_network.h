@@ -25,6 +25,14 @@
 // CORA: nn/@neuralNetwork/neuralNetwork.m
 // CORA: nn/@neuralNetwork/refine.m
 // CORA: nn/@neuralNetwork/getRefinableLayers.m
+// CORA: nn/@neuralNetwork/getNumNeurons.m
+// CORA: nn/@neuralNetwork/getNumParams.m
+// CORA: nn/layers/linear/nnLinearLayer.m
+// CORA: nn/layers/linear/nnIdentityLayer.m
+// CORA: nn/layers/linear/nnElementwiseAffineLayer.m
+// CORA: nn/layers/linear/nnBatchNormLayer.m
+// CORA: nn/layers/linear/nnAvgPool2DLayer.m
+// CORA: nn/layers/linear/nnLipConstrLinearLayer.m
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
@@ -48,7 +56,7 @@
 
 namespace cora {
 
-// The options -------------------------------------------------------------------------------------
+// The activations ---------------------------------------------------------------------------------
 
 /// The function applied to the output of a layer: square x^2, sign -1, 0, 1, reciprocal
 /// 1 / max(x, 1) (a softmax is 1 / sum_j exp(x_j - x_i)), product [a o b; 0] of the output's halves
@@ -85,6 +93,8 @@ enum class RefineType { all, layer, neuron };
 /// The heuristic of refine: the approximation errors, those divided by the (1-based) index of the
 /// refinable layer, or none (every neuron counts, with type all).
 enum class RefineHeuristic { approx_error, layer_bias, all };
+
+// The options -------------------------------------------------------------------------------------
 
 /// The error of the regression line, CORALean's float definitions: extremum (CORA's), that of the
 /// ends and the stationary points; bracket, the looser one of the derivative bracket.
@@ -175,6 +185,27 @@ class NeuralNetwork {
         static Layer gather(const std::vector<int64_t> &index, int64_t inputs, const Tensor &bias,
                             const Tensor &scale = Tensor());
 
+        /// CORA's nnLinearLayer: W (out, in) and b (out).
+        static Layer linear(const Tensor &W, const Tensor &b);
+        /// CORA's nnIdentityLayer on n values.
+        static Layer identity(int64_t n);
+        /// CORA's nnElementwiseAffineLayer: scale .* x + offset on n values; scale and offset are
+        /// one entry (all values) or n entries.
+        static Layer elementwise_affine(const Tensor &scale, const Tensor &offset, int64_t n);
+        /// CORA's nnBatchNormLayer in inference mode on the input (channels, height, width):
+        /// (x - mean) / sqrt(var + epsilon) .* scale + offset per channel, folded into one map.
+        static Layer batch_norm(const Tensor &scale, const Tensor &offset, const Tensor &mean,
+                                const Tensor &var, const std::vector<int64_t> &input,
+                                double epsilon = numerics::kBatchNormEpsilon);
+        /// CORA's nnAvgPool2DLayer: the mean of each pool window per channel (a depthwise
+        /// convolution); an empty stride is the pool size.
+        static Layer avg_pool2d(const std::array<int64_t, 2> &pool,
+                                const std::vector<int64_t> &input,
+                                const std::array<int64_t, 2> &stride = {0, 0},
+                                const std::array<int64_t, 4> &pads = {0, 0, 0, 0});
+        /// CORA's nnLipConstrLinearLayer: N (W x + b), N = diag(1 / max(1, |W| 1 / lambda)).
+        static Layer lip_constr_linear(const Tensor &W, const Tensor &b, double lambda = 1.0);
+
         int64_t inputs() const;
         int64_t outputs() const;
         /// The entries per row of a product's largest intermediate (a convolution's patches).
@@ -213,6 +244,14 @@ class NeuralNetwork {
     int64_t source(std::size_t k) const;
     const std::vector<Layer> &layers() const { return layers_; }
     const std::vector<Activation> &activations() const { return activations_; }
+
+    /// The number of neurons in front of each layer and after the last, (num_layers + 1)
+    /// entries (CORA's getNumNeurons).
+    std::vector<int64_t> num_neurons() const;
+
+    /// The learnable parameters of a dense network: the entries of all W and b (CORA's
+    /// getNumParams).
+    int64_t num_params() const;
 
     /// The outputs at the points, the rows of x (N, in): (N, out).
     Tensor evaluate(const Tensor &x) const;
