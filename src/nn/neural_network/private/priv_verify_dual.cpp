@@ -248,9 +248,10 @@ Tensor priv_dual_lower_signs(const Tensor &w, const Tensor &R_, const Tensor &c_
                    off32.expand_dims(1);
         });
     if (best_out) *best_out = best;
-    // the certificate: weak duality holds for every lambda >= 0, evaluated in the rows' dtype
+    // the certificate: the best lambda / scale on the unscaled rows (the scaled ones are rounded)
+    const Tensor unscaled = best.to(w.dtype()).maximum(0.0).divide(scale);
     const Tensor at_best =
-        dual(w, R, off, s.to(w.dtype()), best.to(w.dtype()).maximum(0.0), nullptr);
+        dual(w, R_, s.multiply(c_.negative()) + dr_, s.to(w.dtype()), unscaled, nullptr);
     return at_best.maximum(w.abs().sum(-1).negative().expand_dims(0));
 }
 
@@ -276,9 +277,17 @@ Tensor priv_dual_lower(const Tensor &w, const Tensor &C_, const Tensor &d_, int6
             aux_dual(w32, C32, d32, l, &s);
             return s.sign().matmul(CT32).negative() - d32.expand_dims(1);
         });
-    // the certificate: the bound of the best lambda in the rows' dtype, at least lambda = 0's
-    const Tensor at_best = aux_dual(w, C, d, best.to(w.dtype()).maximum(0.0), nullptr);
-    return at_best.maximum(w.abs().sum(-1).negative());
+    // the certificate on the unscaled rows (the scaled ones are rounded): lambda / scale
+    return priv_dual_certificate(w, C_, d_, best.to(w.dtype()).divide(scale.expand_dims(1)));
+}
+
+// The certificate ---------------------------------------------------------------------------------
+
+Tensor priv_dual_certificate(const Tensor &w, const Tensor &C, const Tensor &d,
+                             const Tensor &lambda) {
+    // weak duality at every lambda >= 0, and at least lambda = 0's bound
+    const Tensor at = aux_dual(w, C, d, lambda.maximum(0.0), nullptr);
+    return at.maximum(w.abs().sum(-1).negative());
 }
 
 } // namespace cora

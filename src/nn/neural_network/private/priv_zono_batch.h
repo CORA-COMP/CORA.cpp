@@ -196,10 +196,28 @@ Tensor priv_dual_lower_signs(const Tensor &w, const Tensor &R, const Tensor &c, 
                              const Tensor &s, int64_t iterations, double step, DType dtype,
                              const Tensor &start = Tensor(), Tensor *best = nullptr);
 
+/// The certificate (B, R) of lambda (B, R, p): -|w + lambda C|_1 - lambda d at max(lambda, 0), at
+/// least -|w|_1, on the rows as given (weak duality, CORALean's ConZonotope.dualBound).
+Tensor priv_dual_certificate(const Tensor &w, const Tensor &C, const Tensor &d,
+                             const Tensor &lambda);
+
 /// The Lagrangian lower bound (B, R) of w (B, R, q) times beta over [-1, 1]^q with C beta <= d,
 /// lambda by `iterations` projected Adam steps in dtype; evaluated again in w's dtype.
 Tensor priv_dual_lower(const Tensor &w, const Tensor &C, const Tensor &d, int64_t iterations,
                        double step, DType dtype);
+
+/// The offset of a crossing ReLU's chord above at the stored slope `chord`: max(-chord l,
+/// u - chord u), so that the line holds at both ends (CORALean !971).
+Tensor priv_relu_chord_offset(const Tensor &l, const Tensor &u, const Tensor &chord);
+
+/// A ReLU's line base with the slope a in [0, 1] where it crosses zero: relu(x) - a x lies in
+/// [0, h] with h = max(-a l, u - a u), the offset and the radius h / 2 (CORALean's reluRelaxation).
+PrivLine priv_alpha_line(const PrivLine &base, const Tensor &l, const Tensor &u, const Tensor &a);
+
+/// The box [lo, hi] (B, n_in) through layer k's map: the center's image +- |W| times the radius,
+/// widened by n_in + 4 ulps of the largest term (a softmax's sums, CORALean's softmaxSumBounds).
+std::pair<Tensor, Tensor> priv_box_image(const ZonoNet &net, std::size_t k, const Tensor &lo,
+                                         const Tensor &hi);
 
 /// The line of CORA's poly_method "bounds" (aux_imgEncBatch) or CORALean's "singh" over [l, u].
 PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &u,

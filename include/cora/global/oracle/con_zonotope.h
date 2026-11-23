@@ -144,6 +144,10 @@ class ConZonotope {
 /// al., ICLR 2026, Prop. 3 from the unit box (`conZonotope.fourierMotzkinBounds`).
 Interval fourier_motzkin_bounds(const Tensor &C, const Tensor &d, int64_t k);
 
+/// The weak-duality bound of w' beta over beta in [-1, 1]^q with C beta <= d at the multipliers
+/// lambda (p, 1), clamped at 0, at least lambda = 0's (`conZonotope.dualBound`).
+double dual_bound(const Tensor &C, const Tensor &d, const Tensor &w, const Tensor &lambda);
+
 } // namespace cora::lean
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
