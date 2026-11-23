@@ -21,7 +21,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -189,6 +189,13 @@ class NnProblem {
     /// How many points of the search fit into the memory budget.
     int64_t attack_batch() const;
 
+    /// Many cases of few polytopes each (nn4sys' lindex): the cases in chunks of at most max_rows
+    /// rows of polytopes, in order; none when all the rows are at most max_rows.
+    std::vector<std::vector<int64_t>> case_chunks(int64_t max_rows) const;
+
+    /// The problem of some cases only: their boxes and polytopes, the same networks and check.
+    NnProblem subproblem(const std::vector<int64_t> &cases) const;
+
     /// The search boxes (float32 inside the property's) and the outer float64 ones (C, n).
     Tensor lo, hi, outer_lo, outer_hi;
     Tensor box_case;    ///< (C): 0, 1, ..., the case of each box, float64
@@ -207,6 +214,26 @@ class NnProblem {
     NnVerifyOptions options_;
     ConfirmFn confirm_;
     Tensor A32_, b32_, poly_case32_;
+    /// Many cases of few polytopes each (nn4sys' lindex: thousands of boxes): each row's margins
+    /// over its own case's polytopes only, not over all of them (memory S P K otherwise).
+    bool per_case_ = false;
+    std::vector<std::vector<int64_t>> case_polys_; ///< the polytopes of each case
+    int64_t max_polys_ = 0;                        ///< the most polytopes of a case
+    struct CaseMargins {
+        Tensor margin;             ///< (S, Q, K): the rows of the case's polytopes, Q = max_polys_
+        std::vector<int64_t> poly; ///< (S Q): the polytope of each slot (0 for a padding slot)
+        Tensor valid;              ///< (S, Q): 1 for a polytope of the case, 0 for a padding slot
+    };
+    CaseMargins aux_case_margins(const Tensor &y, const Tensor &cases) const;
+    /// The property's values on the host, for subproblem (filled once).
+    struct HostProperty {
+        std::vector<double> lo, hi, A, b;
+    };
+    mutable std::shared_ptr<const HostProperty> host_;
+    /// The problem of the property with the parent's networks, options and check (subproblem).
+    NnProblem(const NnProblem &parent, const NnProperty &property);
+    /// The boxes and the polytopes as tensors (the constructor and subproblem).
+    void aux_set_property(const NnProperty &property);
 };
 
 // The strategies ----------------------------------------------------------------------------------

@@ -422,7 +422,8 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     int64_t elements = net_->n0, work = 0;
     for (const int64_t w : net_->widths) elements += w;
     for (const NeuralNetwork::Layer &layer : net_->maps) work = std::max(work, layer.work());
-    elements += work;
+    // and the rows of every polytope (G A^T: lindex's thousands of cases), each set's own
+    elements += work + P_ * K_;
     // the slot budget: fewer error slots per layer until one set fits (docs/nn_verification.md)
     double slots = o_.num_approx_err;
     const auto bytes = [&](const ZonoNet &net) { return 8 * 4 * net.q * elements; };
