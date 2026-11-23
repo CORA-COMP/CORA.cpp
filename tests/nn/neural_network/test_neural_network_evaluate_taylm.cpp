@@ -53,9 +53,8 @@ void taylm_contains(const std::string &b, Activation a, const NnOptions &options
     rng.uniform(random.data(), random.size(), lo, hi);
     for (int i = 0; i < 9 + 20; ++i)
         for (int j = 0; j <= (i < 9 ? 8 : 0); ++j) {
-            const double x = i < 9 ? lo + (hi - lo) * i / 8.0 : random[std::size_t(2 * (i - 9))],
-                         z = i < 9 ? lo + (hi - lo) * j / 8.0
-                                   : random[std::size_t(2 * (i - 9) + 1)];
+            const double x = i < 9 ? lo + (hi - lo) * i / 8.0 : random[2 * std::size_t(i - 9)],
+                         z = i < 9 ? lo + (hi - lo) * j / 8.0 : random[2 * std::size_t(i - 9) + 1];
             const Tensor out = nn.evaluate(Tensor({{x, z}}));
             const std::vector<double> v = out.data();
             for (std::size_t k = 0; k < 2; ++k) {
