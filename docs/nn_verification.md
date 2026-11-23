@@ -166,6 +166,10 @@ against 300 and 240. metaroom, soundnessbench and tinyimagenet take no alpha-CRO
 (`alpha_iterations` 0): on the first 40 instances of seed 1001 they score 380, 60 and 60 against
 370, 50 and 50, tinyimagenet in half the time; cifar100 keeps them (70 against 60), and cgan and
 collins score the same either way. On the three, 3 steps or `optimize_gap` 0.1 score no more.
+lsnc_relu takes no alpha-CROWN steps either. Its boxes are verified by the refinement (an empty
+child), and on instance 0 of seed 1001 the steps took 27 s of 57 s and verified none of 7410 sets.
+Without them, the 8 sample rows of each dev seed (25 s) give 2 sat against 1 sat (0 unsat either
+way), and instance 0 closes as unsat in 250 s.
 
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per

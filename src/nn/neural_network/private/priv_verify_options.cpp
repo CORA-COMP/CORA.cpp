@@ -210,6 +210,8 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
     // the wide conv nets whose alpha-CROWN steps cost more than they decide (the dev sets)
     if (name == "metaroom" || name == "soundnessbench" || name == "tinyimagenet")
         o.alpha_iterations = 0;
+    // lsnc_relu's Lyapunov boxes: the refinement decides them, the slopes none (the dev sets)
+    if (name == "lsnc_relu") o.alpha_iterations = 0;
     // traffic_signs' binarized networks: the bounds rarely decide, the attack finds more
     if (name == "traffic_signs_recognition") o.attack_time_share = 0.9;
     // vit's 3072 inputs: all a generator (16 GiB estimated, 2.5 GiB measured; docs/nn_verification)
