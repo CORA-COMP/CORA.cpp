@@ -68,9 +68,8 @@ namespace cora {
 
 // The activations ---------------------------------------------------------------------------------
 
-/// A layer's function: square x^2, sign, reciprocal 1 / max(x, 1) (a softmax's sums), product [a o
-/// b; 0] of the halves [a; b] (verify only), floor, cube x^3, inverse 1 / x (x > 0; nn4sys' x^3 /
-/// sum x^3), sin and cos (ml4acopf), softplus log(1 + e^x), root sqrt x (x >= 0), inv_sqrt_root
+/// A layer's function: square, sign, reciprocal 1 / max(x, 1), product [a o b; 0] (verify only),
+/// floor, cube, inverse 1 / x (x > 0), sin, cos, softplus, root sqrt x (x >= 0), inv_sqrt_root
 /// x^(-1/2) (x > 0), group_sort (points only: Layer::group_size).
 enum class Activation {
     identity,
