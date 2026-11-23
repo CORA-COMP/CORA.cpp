@@ -60,6 +60,11 @@ std::shared_ptr<const Tensor::Backend> aux_make_backend(const std::string &spec)
                                               "'; the options are custom_backward and tf32");
         at = end + 1;
     }
+#ifndef CORACPP_TORCH
+    // the options are libtorch's: read, then unused in a build without it
+    (void)custom_backward;
+    (void)tf32;
+#endif
     // Eigen has neither devices nor options.
     if (name == "eigen") {
         if (colon != std::string::npos || !option.empty())
