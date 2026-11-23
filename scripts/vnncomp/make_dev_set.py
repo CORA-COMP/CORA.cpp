@@ -71,10 +71,12 @@ def main():
         os.makedirs(work, exist_ok=True)
         rows = sampled_dist_shift(args, work)
     else:
-        # (relusplitter: its gen_props.py, see _relusplitter)
+        # (relusplitter: its gen_props.py, see _relusplitter; tll: NumPy's global seed too)
         args.method = (
             "generator: scripts/gen_props.py with the seed, CPU torch"
             if args.benchmark == "relusplitter_2026"
+            else "generator: generate_properties.py with the seed, NumPy's global seed set to it"
+            if args.benchmark == "tllverifybench_2023"
             else "generator: generate_properties.py with the seed"
         )
         run_generator(args, work)
@@ -164,6 +166,21 @@ SOURCES = {
         "https://github.com/huanzhang12/vnncomp2024_tinyimagenet_benchmark.git",
         "771377743f16ee30ecb00029268ba62ec7e9e78c",
     ),
+    # ml4acopf: AC optimal power flow proxies; the seed perturbs each bus' loads
+    "ml4acopf_2024": (
+        "https://github.com/AI4OPT/ml4acopf_benchmark.git",
+        "cdbde645123927ec95a3c01b66ec934077725e19",
+    ),
+    # nn4sys: learned indexes, cardinality estimation and video streaming (three generators)
+    "nn4sys": (
+        "https://github.com/kkaulen/VNNComp25_NN4Sys.git",
+        "187e38d4703ba7dce900cad400f46f6366c94f29",
+    ),
+    # tll: two-level lattice networks; the seed draws each network's output threshold
+    "tllverifybench_2023": (
+        "https://github.com/jferlez/TLLVerifyBench.git",
+        "1a072009a102606ed2cf533cbd3100b21256fb1f",
+    ),
     # vit: two CIFAR-10 vision transformers; the seed shuffles each model's pool of images
     "vit_2023": (
         "https://github.com/shizhouxing/ViT_vnncomp2023.git",
@@ -209,6 +226,14 @@ def run_generator(args, work):
     command = [args.python, "generate_properties.py", str(args.seed)]
     if args.benchmark == "relusplitter_2026":
         command = _relusplitter(args, work, env)
+    if args.benchmark == "tllverifybench_2023":
+        # its properties draw from NumPy's global generator, which it never seeds
+        script = (
+            "import runpy, sys, numpy; numpy.random.seed(int(sys.argv[1])); "
+            "sys.argv = ['generate_properties.py', sys.argv[1]]; "
+            "runpy.run_path('generate_properties.py', run_name='__main__')"
+        )
+        command = [args.python, "-c", script, str(args.seed)]
     subprocess.run(command, cwd=work, env=env, check=True)
 
 
@@ -245,6 +270,7 @@ def generated_rows(args, work):
         "collins_rul_cnn_2022": "vnnlib",  # the seed changes the files' content, not their names
         "cifar100_2024": "generated_vnnlib",
         "tinyimagenet_2024": "generated_vnnlib",
+        "tllverifybench_2023": "vnnlib",
     }
     if args.benchmark in folders:
         return [
@@ -396,7 +422,11 @@ def write_set(args, work, rows):
     shapes, overlap, expected, kept = {}, 0, [], []
     for version in ("1.0", "2.0"):
         shutil.rmtree(os.path.join(base, version), ignore_errors=True)
+    # a network the source tree lacks (nn4sys' mscn_2048d_dual, a file share): left out
+    missing = sorted({o for o, _, _ in rows if not os.path.exists(os.path.join(work, o))})
     for onnx, prop, timeout in rows:
+        if onnx in missing:
+            continue
         if onnx not in shapes:
             net = cora.onnx_network.OnnxNetwork.load(os.path.join(work, onnx))
             shapes[onnx] = (net.input_shape, net.output_shape)
@@ -436,6 +466,7 @@ def write_set(args, work, rows):
         "method": args.method,
         "instances": len(kept),
         "identical_to_official": overlap,
+        "missing_networks": missing,
         "official_kept": bool(args.keep_official),
         "python": args.python,
         "instances_sha256": sha256(os.path.join(base, "1.0", "instances.csv")),
