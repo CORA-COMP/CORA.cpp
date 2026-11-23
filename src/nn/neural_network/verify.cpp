@@ -34,6 +34,10 @@
 
 #include <cmath>
 #include <exception>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -42,6 +46,29 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// The chunks of cases -----------------------------------------------------------------------------
+
+/// The rows of polytopes per chunk of cases at most (NnProblem::case_chunks).
+constexpr int64_t kCaseChunkRows = 256;
+
+/// The branch and bound of the cases chunk by chunk: unsat if every chunk is, sat if one is.
+std::string aux_chunks(NnProblem &problem, const std::vector<std::vector<int64_t>> &chunks,
+                       double deadline, std::map<std::string, double> &stats, AttackResult &found) {
+    const NnVerifyOptions &o = problem.options();
+    for (const std::vector<int64_t> &chunk : chunks) {
+        check_deadline(deadline);
+        NnProblem sub = problem.subproblem(chunk);
+        sub.deadline = deadline;
+        const std::unique_ptr<Bounding> bounding = priv_make_bounding(o.bounding_method, o);
+        if (!bounding->prepare(sub)) return "unknown";
+        const std::string status = bounding->branch_and_bound(sub, deadline, stats, found);
+        problem.checks += sub.checks;
+        stats["case_chunks"] += 1;
+        if (status != "unsat") return status;
+    }
+    return "unsat";
+}
 
 // The order of the strategies ---------------------------------------------------------------------
 
@@ -53,8 +80,15 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
     std::unique_ptr<Attack> attack = make_attack(o.falsification_method, o);
     std::unique_ptr<Bounding> bounding = priv_make_bounding(o.bounding_method, o);
     bool can_bound = false;
+    // many cases (lindex): chunk by chunk, the first one tells whether the bounding takes the net
+    const std::vector<std::vector<int64_t>> chunks = problem.case_chunks(kCaseChunkRows);
     try {
-        can_bound = bounding->prepare(problem);
+        if (chunks.empty()) {
+            can_bound = bounding->prepare(problem);
+        } else {
+            NnProblem first = problem.subproblem(chunks.front());
+            can_bound = bounding->prepare(first);
+        }
         if (!can_bound) result.note = bounding->why;
     } catch (const Error &error) {
         // a bound beyond the float range (an exp): the attack alone
@@ -100,7 +134,11 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
         problem.deadline = deadline;
         std::string status = "unknown";
         try {
-            status = bounding->branch_and_bound(problem, deadline, result.stats, found);
+            if (chunks.empty()) {
+                status = bounding->branch_and_bound(problem, deadline, result.stats, found);
+            } else {
+                status = aux_chunks(problem, chunks, deadline, result.stats, found);
+            }
         } catch (const Error &error) {
             // the deadline, or a bound beyond the float range: the verdict stays open
             if (!is_deadline(error) && !priv_is_out_of_range(error))

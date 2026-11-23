@@ -6,6 +6,7 @@
 // NeuralNetwork::evaluate, and with few slots (an interval center) it still holds sampled outputs;
 // Fourier-Motzkin in both orders holds the feasible points of random systems; the three repairs and
 // every switch of CORA's verify run. exact_backprop's F-radius gradient is the difference quotient.
+// Many cases of few polytopes (lindex) decide chunk by chunk.
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA: nn/@neuralNetwork/evaluateZonotopeBatch_.m
@@ -17,7 +18,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -571,6 +572,47 @@ void checks_and_their_switch() {
           "verify: the same with the checks off");
 }
 
+/// nn4sys' lindex shape: C cases, each a small box [x_k, x_k + w] with its own two polytopes
+/// y <= f(x_k) - d and y >= f(x_k) + d; with sat_case >= 0 that case's first polytope holds f.
+NnProperty aux_many_cases(const NeuralNetwork &nn, int64_t C, double w, double d,
+                          int64_t sat_case) {
+    std::vector<double> lo, hi, A, b;
+    NnProperty p;
+    for (int64_t k = 0; k < C; ++k) {
+        const double x = -1.0 + 2.0 * double(k) / double(C);
+        lo.push_back(x);
+        hi.push_back(x + w);
+        const double f = nn.evaluate(Tensor({{x + w / 2}})).reshape({1}).item();
+        const double below = k == sat_case ? f + d : f - d;
+        // y <= below and -y <= -(f + d)
+        A.insert(A.end(), {1.0, -1.0});
+        b.insert(b.end(), {below, -(f + d)});
+        p.poly_case.insert(p.poly_case.end(), {k, k});
+    }
+    p.lo = Tensor::from_data(lo, {C, 1});
+    p.hi = Tensor::from_data(hi, {C, 1});
+    p.A = Tensor::from_data(A, {2 * C, 1, 1});
+    p.b = Tensor::from_data(b, {2 * C, 1});
+    return p;
+}
+
+/// Many cases of few polytopes (300, 600 rows): the attack's margins per case and the branch and
+/// bound in chunks of cases decide as with all polytopes at once, within the memory budget.
+void many_cases(const std::string &b) {
+    Rng rng(11);
+    const NeuralNetwork nn = aux_network(rng, {1, 16, 16, 1}, Activation::relu);
+    for (const std::string bounding : {"conzonotope", "zonotope-alpha"}) {
+        NnVerifyOptions o = aux_options(bounding, b);
+        o.backward_bound = false;
+        const NnVerifyResult unsat = nn.verify(aux_many_cases(nn, 300, 1e-4, 0.5, -1), 60, o);
+        check(unsat.status == "unsat" && unsat.stats.count("case_chunks") > 0,
+              b + " " + bounding + ": 300 cases of two polytopes are unsat, chunk by chunk");
+        const NnVerifyResult sat = nn.verify(aux_many_cases(nn, 300, 1e-4, 0.5, 177), 60, o);
+        check(sat.status == "sat" && std::abs(sat.x[0] - (-1.0 + 2.0 * 177 / 300.0)) < 2e-4,
+              b + " " + bounding + ": a violated case is sat, the point in its box");
+    }
+}
+
 } // namespace
 
 
@@ -587,6 +629,7 @@ int main() {
         fourier_motzkin(b);
         switches(b);
         deadlines(b);
+        many_cases(b);
     });
     checks_and_their_switch();
     return test::finish("neuralNetwork verify");

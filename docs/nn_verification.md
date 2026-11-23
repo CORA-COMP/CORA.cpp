@@ -108,6 +108,13 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
   output to 6e-7. Not yet: pensieve_parallel (a cube by Pow, a quotient of two values) and mscn
   (Split, products of values with the inputs' masks, a quotient by their sum).
+  lindex's properties have thousands of cases, each a small box with its own two polytopes.
+  The attack's loss and gradient take each row's margins over its own case's polytopes only
+  (`NnProblem` per case, when the most polytopes of a case times the outputs is below all of
+  them), the batch budget counts the rows of the polytopes, and the branch and bound goes chunk
+  by chunk of cases of at most 256 rows (`NnProblem::subproblem`; unsat when every chunk is).
+  lindex_60000 took 44 GiB and ran past its deadline; now 1.2 GiB within it, and lindex_10000 is
+  unsat in 17 s with `conzonotope` bounding.
 - **ml4acopf (Phase 4).** Its `linear-nonresidual` networks replace sin, cos and the sigmoid by
   sums of ReLUs over thresholds: `x - t_k` broadcasts a value against a constant to more entries,
   which lowers as a gather that repeats the value first. They also compute `C h^T` with the batch
