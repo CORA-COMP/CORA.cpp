@@ -6,6 +6,9 @@
 // CORA: nn/layers/nonlinear/nnExpLayer.m
 // CORA: nn/layers/nonlinear/nnSoftmaxLayer.m
 // CORA: nn/layers/nonlinear/nnMaxPool2DLayer.m
+// CORA: nn/layers/nonlinear/nnSoftPlusLayer.m
+// CORA: nn/layers/nonlinear/nnRootLayer.m
+// CORA: nn/layers/nonlinear/nnInvSqrtRootLayer.m
 // CORA: nn/@neuralNetwork/evaluateZonotopeBatch.m
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Sonnet 5.5
@@ -131,6 +134,97 @@ void max_pool(const std::string &b) {
     }
 }
 
+/// The points in the box [c - r, c + r] of the network lie in the zonotope's support in 20
+/// directions.
+int aux_violations(const NeuralNetwork &nn, const Zonotope &X, const Zonotope &Y, int out) {
+    cora::Rng rng(9);
+    int violations = 0;
+    const std::vector<double> y =
+        nn.evaluate(X.rand_point(100, rng, "extreme")).matrix_transpose().data();
+    for (int k = 0; k < 10; ++k) {
+        const std::vector<double> d = test::random_direction(rng, out);
+        const double bound = test::support(Y, d);
+        for (int j = 0; j < 100; ++j) {
+            double v = 0;
+            for (int i = 0; i < out; ++i)
+                v += d[std::size_t(i)] * y[std::size_t(i) * 100 + std::size_t(j)];
+            violations += v > bound + 1e-9;
+        }
+    }
+    return violations;
+}
+
+/// The network with every layer as a matrix (sets take matrices only).
+NeuralNetwork aux_dense(const NeuralNetwork &nn) {
+    std::vector<NeuralNetwork::Layer> layers;
+    for (const NeuralNetwork::Layer &L : nn.layers()) layers.push_back({L.dense(), L.b});
+    return NeuralNetwork(layers, nn.activations());
+}
+
+void new_activations(const std::string &b) {
+    const Tensor x({{0.5, 2.0}});
+    // softplus with sharpness 1 and 2 (CORA: (1 / k) log(1 + e^(k x))), root, inverse square root
+    check(test::close(NeuralNetwork(NeuralNetwork::softplus_layer(2)).evaluate(x),
+                      {std::log(1 + std::exp(0.5)), std::log(1 + std::exp(2.0))}, 1e-14),
+          b + ": softplus");
+    const NeuralNetwork sharp(NeuralNetwork::softplus_layer(2, 2.0));
+    check(sharp.num_layers() == 2 &&
+              test::close(sharp.evaluate(x),
+                          {0.5 * std::log(1 + std::exp(1.0)), 0.5 * std::log(1 + std::exp(4.0))},
+                          1e-14),
+          b + ": softplus of sharpness 2");
+    check(test::close(NeuralNetwork(NeuralNetwork::root_layer(2)).evaluate(x),
+                      {std::sqrt(0.5), std::sqrt(2.0)}, 1e-14) &&
+              test::close(NeuralNetwork(NeuralNetwork::inv_sqrt_root_layer(2)).evaluate(x),
+                          {std::pow(0.5, -0.5), std::pow(2.0, -0.5)}, 1e-14),
+          b + ": root and inverse square root");
+    check(test::raises([] { NeuralNetwork::softplus_layer(2, 0.0); },
+                       Error::wrong_input_in_constructor),
+          b + ": a sharpness of 0");
+    // a set through each layer encloses the points, by both lines, and the batch and gradient
+    const Zonotope X(Tensor({1.5, 2.5}), Tensor({{0.5, 0.0}, {0.0, 0.4}}));
+    for (const NeuralNetwork::Block &block :
+         {NeuralNetwork::softplus_layer(2, 2.0), NeuralNetwork::root_layer(2),
+          NeuralNetwork::inv_sqrt_root_layer(2)}) {
+        const NeuralNetwork nn(block);
+        for (const PolyMethod m : {PolyMethod::singh, PolyMethod::regression})
+            check(aux_violations(nn, X, aux_dense(nn).evaluate(X, {.poly_method = m}), 2) == 0,
+                  b + ": the set through a layer of activation " +
+                      std::to_string(int(nn.activations()[0])));
+        const ZonotopeBatch out = nn.evaluate_zonotope_batch(
+            Tensor({{1.5, 2.5}}), Tensor::from_data({0.5, 0.0, 0.0, 0.4}, {1, 2, 2}));
+        const Zonotope Y(out.c.squeeze(0), out.G.squeeze(0));
+        check(aux_violations(nn, X, Y, 2) == 0, b + ": the batch through the layer");
+        // the gradient at a point against the Jacobian, and the box of the gradient
+        const Tensor p({{1.5, 2.5}}), g({{1.0, 1.0}});
+        check(test::close(nn.backprop(p, g),
+                          aux_dense(nn).sensitivity(Tensor({1.5, 2.5})).sum(0).data(), 1e-12),
+              b + ": the gradient is the Jacobian's");
+        const auto [lo, hi] = nn.backprop_interval_batch(p, p, g, g);
+        check(test::close(lo, nn.backprop(p, g), 1e-12) && test::close(hi, lo, 1e-12),
+              b + ": the gradient bounds on a point");
+    }
+    // verify takes none of them
+    check(
+        test::raises([] { NeuralNetwork(NeuralNetwork::root_layer(2)).verify(NnProperty{}, 1.0); },
+                     Error::not_supported),
+        b + ": verify rejects the layers");
+    // an order-3 polynomial zonotope takes their derivatives (Taylor), and stays enclosing
+    for (const NeuralNetwork::Block &block :
+         {NeuralNetwork::softplus_layer(2), NeuralNetwork::root_layer(2),
+          NeuralNetwork::inv_sqrt_root_layer(2)}) {
+        const NeuralNetwork nn(block);
+        const PolyZonotope P(X);
+        for (const PolyMethod m : {PolyMethod::taylor, PolyMethod::regression}) {
+            const PolyZonotope Y =
+                aux_dense(nn).evaluate(P, {.poly_method = m, .orders = {{3, 3}}});
+            check(aux_violations(nn, X, Y.zonotope(), 2) == 0,
+                  b + ": an order-3 polynomial zonotope through activation " +
+                      std::to_string(int(nn.activations()[0])));
+        }
+    }
+}
+
 } // namespace
 
 
@@ -140,6 +234,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         exp_and_softmax(b);
         max_pool(b);
+        new_activations(b);
     });
     return test::finish("neuralNetwork nonlinear layers");
 }

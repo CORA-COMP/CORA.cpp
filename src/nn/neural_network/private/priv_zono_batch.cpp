@@ -271,7 +271,8 @@ LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Ten
         activation == Activation::exp || activation == Activation::reciprocal ||
         activation == Activation::product || activation == Activation::cube ||
         activation == Activation::inverse || activation == Activation::sin ||
-        activation == Activation::cos) {
+        activation == Activation::cos || activation == Activation::softplus ||
+        activation == Activation::root || activation == Activation::inv_sqrt_root) {
         // steps' lines (sign, floor) do not move with the bounds; the others' here are held
         const Tensor zero = l.zeros_like();
         return {zero, zero, zero, zero, zero, zero};
@@ -556,6 +557,12 @@ PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &
         return priv_trig_line(l, u, activation == Activation::cos);
     if (activation == Activation::product)
         CORA_FAIL(Error::not_supported, "verify: a product's line needs its set");
+    // softplus, root and inv_sqrt_root: Singh's line is the one line of both methods
+    if (activation == Activation::softplus || activation == Activation::root ||
+        activation == Activation::inv_sqrt_root)
+        return priv_monotone_line(activation, l, u, false);
+    if (activation == Activation::group_sort)
+        CORA_FAIL(Error::not_supported, "a group sort has no line (CORA throws too)");
     if (activation == Activation::relu || poly_method == "singh")
         return priv_line(activation, l, u, NnOptions{});
     if (poly_method == "bounds") return aux_bounds_line(activation, l, u);

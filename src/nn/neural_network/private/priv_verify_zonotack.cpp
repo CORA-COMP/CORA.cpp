@@ -280,6 +280,11 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                 return z.sin().negative();
             case Activation::inverse:
                 return z.ones_like().divide(z.maximum(kInversePositive)).square().negative();
+            // verify rejects the layers beyond its own up front
+            case Activation::softplus:
+            case Activation::root:
+            case Activation::inv_sqrt_root:
+            case Activation::group_sort:
             case Activation::product:
                 break;
             }

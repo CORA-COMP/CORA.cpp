@@ -1,4 +1,4 @@
-// nonlinear_layers - CORA's exp, softmax and max-pool layers as layers of a NeuralNetwork
+// nonlinear_layers - CORA's exp, softmax, max-pool, softplus, root and group sort layers
 //
 // A layer of this port is an affine map and an activation. Exp is the identity map with the exp
 // activation. Softmax and max pooling have no neuron by neuron activation: they are lowered, as
@@ -9,6 +9,7 @@
 //
 // Syntax:   nonlinear_layers() - the factories, e.g.
 //           NeuralNetwork nn(NeuralNetwork::softmax_layer(10));
+//           NeuralNetwork nn(NeuralNetwork::softplus_layer(10, 2.0));
 //           NeuralNetwork nn(NeuralNetwork::max_pool2d_layer({2, 2}, {C, H, W}));
 // Inputs:   n - the number of values
 //           pool - the window; input - (channels, height, width) in C order
@@ -19,16 +20,21 @@
 // CORA: nn/layers/nonlinear/nnExpLayer.m
 // CORA: nn/layers/nonlinear/nnSoftmaxLayer.m
 // CORA: nn/layers/nonlinear/nnMaxPool2DLayer.m
+// CORA: nn/layers/nonlinear/nnSoftPlusLayer.m
+// CORA: nn/layers/nonlinear/nnRootLayer.m
+// CORA: nn/layers/nonlinear/nnInvSqrtRootLayer.m
+// CORA: nn/layers/nonlinear/nnGroupSortLayer.m
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"
 
+#include <cmath>
 #include <numeric>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -40,6 +46,8 @@ namespace cora {
 namespace {
 
 using Layer = NeuralNetwork::Layer;
+
+// The helpers -------------------------------------------------------------------------------------
 
 /// The zeros of n values.
 CORA_FROM_NUMBERS Tensor aux_zeros(int64_t n) { return Tensor::zeros({n}); }
@@ -104,6 +112,63 @@ CORA_FROM_NUMBERS NeuralNetwork::Block NeuralNetwork::softmax_layer(int64_t n, i
     // the sums over t by a 1 x 1 convolution (t the channels), then 1 / max(s, 1) (s >= 1: t = q)
     const Layer sums = Layer::conv2d(Tensor::ones({1, n, 1, 1}), Tensor::zeros({n}), {n, n, 1}, {});
     return {{differences, sums}, {Activation::exp, Activation::reciprocal}};
+}
+
+// Softplus, root, inverse square root and group sort ----------------------------------------------
+
+CORA_FROM_NUMBERS NeuralNetwork::Block NeuralNetwork::softplus_layer(int64_t n, double sharpness,
+                                                                     int64_t previous) {
+    detail::Entry entry;
+    // n values and a positive sharpness
+    CORA_CHECK(n >= 1 && sharpness > 0 && std::isfinite(sharpness),
+               Error::wrong_input_in_constructor, [&] {
+                   return "Layer softplus_layer: n >= 1 and a finite sharpness > 0, got n = " +
+                          std::to_string(n) + " and k = " + std::to_string(sharpness);
+               });
+    // sharpness 1 is the activation itself; else (1 / k) log(1 + e^(k x)) as CORA computes it
+    if (sharpness == 1.0) {
+        Layer layer = Layer::identity(n);
+        layer.source = previous;
+        return {{layer}, {Activation::softplus}};
+    }
+    // k x, then softplus, then 1 / k: the layers around the activation
+    const Tensor zero = Tensor::zeros({1});
+    Layer scale = Layer::elementwise_affine(aux_tensor({sharpness}, {1}), zero, n);
+    scale.source = previous;
+    // the layer that scales back by 1 / k
+    const Layer unscale = Layer::elementwise_affine(aux_tensor({1.0 / sharpness}, {1}), zero, n);
+    return {{scale, unscale}, {Activation::softplus, Activation::identity}};
+}
+
+CORA_FROM_NUMBERS NeuralNetwork::Block NeuralNetwork::root_layer(int64_t n, int64_t previous) {
+    detail::Entry entry;
+    // the identity map with the root activation
+    Layer layer = Layer::identity(n);
+    layer.source = previous;
+    return {{layer}, {Activation::root}};
+}
+
+CORA_FROM_NUMBERS NeuralNetwork::Block NeuralNetwork::inv_sqrt_root_layer(int64_t n,
+                                                                          int64_t previous) {
+    detail::Entry entry;
+    // the identity map with the inverse square root activation
+    Layer layer = Layer::identity(n);
+    layer.source = previous;
+    return {{layer}, {Activation::inv_sqrt_root}};
+}
+
+CORA_FROM_NUMBERS NeuralNetwork::Block
+NeuralNetwork::group_sort_layer(int64_t n, int64_t group_size, int64_t previous) {
+    detail::Entry entry;
+    CORA_CHECK(n >= 1 && group_size >= 1, Error::wrong_input_in_constructor, [&] {
+        return "Layer group_sort_layer: n >= 1 and a group size >= 1, got " + std::to_string(n) +
+               " and " + std::to_string(group_size);
+    });
+    // the identity map with the group sort activation of the group size
+    Layer layer = Layer::identity(n);
+    layer.source = previous;
+    layer.group_size = group_size;
+    return {{layer}, {Activation::group_sort}};
 }
 
 // Max pooling -------------------------------------------------------------------------------------

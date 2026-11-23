@@ -4481,7 +4481,7 @@ void bind_nonlin_das_sys(py::module_ &m) {
 }
 
 /// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp, reciprocal,
-/// product, floor, cube, inverse, sin or cos.
+/// product, floor, cube, inverse, sin, cos, softplus, root, inv_sqrt_root or group_sort.
 Activation activation_of(const std::string &name) {
     if (name == "identity") return Activation::identity;
     if (name == "relu") return Activation::relu;
@@ -4497,9 +4497,14 @@ Activation activation_of(const std::string &name) {
     if (name == "inverse") return Activation::inverse;
     if (name == "sin") return Activation::sin;
     if (name == "cos") return Activation::cos;
+    // the layers of this port beyond VNN-COMP's
+    if (name == "softplus") return Activation::softplus;
+    if (name == "root") return Activation::root;
+    if (name == "inv_sqrt_root") return Activation::inv_sqrt_root;
+    if (name == "group_sort") return Activation::group_sort;
     CORA_FAIL(Error::wrong_value, "NeuralNetwork: the activation must be identity, relu, sigmoid, "
                                   "tanh, square, sign, exp, reciprocal, product, floor, cube, "
-                                  "inverse, sin or cos, got " +
+                                  "inverse, sin, cos, softplus, root, inv_sqrt_root or group_sort, got " +
                                       name);
 }
 
@@ -4775,6 +4780,145 @@ void bind_neural_network(py::module_ &m) {
             py::arg("pool"), py::arg("input"), py::arg("stride") = std::array<int64_t, 2>{0, 0},
             "The network of CORA's nnMaxPool2DLayer on the input (C, H, W): max(a, b) = b + "
             "relu(a - b) over each window, round by round")
+        // CORA's softplus, root, inverse square root, group sort and composite layers
+        .def_static(
+            "softplus_layer",
+            [](int64_t n, double sharpness) {
+                return NeuralNetwork(NeuralNetwork::softplus_layer(n, sharpness));
+            },
+            py::arg("n"), py::arg("sharpness") = 1.0,
+            "The network of CORA's nnSoftPlusLayer: log(1 + e^(k x)) / k on n values")
+        // root and inverse square root
+        .def_static(
+            "root_layer", [](int64_t n) { return NeuralNetwork(NeuralNetwork::root_layer(n)); },
+            py::arg("n"), "The network of CORA's nnRootLayer: sqrt(x) on n values (x >= 0)")
+        .def_static(
+            "inv_sqrt_root_layer",
+            [](int64_t n) { return NeuralNetwork(NeuralNetwork::inv_sqrt_root_layer(n)); },
+            py::arg("n"), "The network of CORA's nnInvSqrtRootLayer: x^(-1/2) on n values (x > 0)")
+        // group sort
+        .def_static(
+            "group_sort_layer",
+            [](int64_t n, int64_t group_size) {
+                return NeuralNetwork(NeuralNetwork::group_sort_layer(n, group_size));
+            },
+            py::arg("n"), py::arg("group_size") = 2,
+            "The network of CORA's nnGroupSortLayer: groups of consecutive neurons sorted "
+            "ascending (points and backprop only)")
+        .def_static(
+            "composite_layer",
+            // the branches, the aggregation, and the shapes of the outputs
+            [](const std::vector<py::object> &branches, const std::string &aggregation,
+               int64_t input_size, const std::vector<std::vector<int64_t>> &output_shapes,
+               int64_t concat_dim) {
+                // a branch is a network (its layers read the input first) or None (the input)
+                std::vector<NeuralNetwork::Block> blocks;
+                for (const py::object &b : branches) {
+                    // None is the input itself
+                    if (b.is_none()) {
+                        blocks.emplace_back();
+                        continue;
+                    }
+                    // its layers read the input, and the aggregation reads their last
+                    const NeuralNetwork &nn = py::cast<const NeuralNetwork &>(b);
+                    blocks.push_back({nn.layers(), nn.activations()});
+                }
+                // the aggregation by name
+                if (aggregation != "add" && aggregation != "concat")
+                    CORA_FAIL(Error::wrong_value,
+                              "aggregation must be 'add' or 'concat', got " + aggregation);
+                // the layers of all branches and the aggregation
+                return NeuralNetwork(NeuralNetwork::composite_layer(
+                    blocks, aggregation == "add" ? Aggregation::add : Aggregation::concat,
+                    input_size, output_shapes, concat_dim));
+            },
+            // the arguments of the factory
+            py::arg("branches"), py::arg("aggregation"), py::arg("input_size"),
+            py::arg("output_shapes") = std::vector<std::vector<int64_t>>{},
+            py::arg("concat_dim") = 0,
+            // the docstring
+            "The network of CORA's nnCompositeLayer: the branches (networks, or None for the "
+            "input itself) on the same input, their outputs added or concatenated")
+        // the generator reduction of a batch
+        .def_static(
+            "reduce_generators",
+            [](const py::object &c, const py::object &G, int64_t max_gens) {
+                const ZonotopeBatch R = NeuralNetwork::reduce_generators(
+                    {point_of(c, "the centers"), tensor_of(G, "G"), Tensor()}, max_gens);
+                return py::make_tuple(matrix(R.c), matrix(R.G));
+            },
+            py::arg("c"), py::arg("G"), py::arg("max_gens"),
+            "CORA's generator reduction layer on a batch: (c, G) with max_gens generators; the "
+            "shortest stay, the others become a box")
+        // the buckets of an activation
+        .def_static(
+            "merge_buckets",
+            [](const std::string &activation) {
+                return NeuralNetwork::merge_buckets(activation_of(activation));
+            },
+            py::arg("activation"), "CORA's getMergeBuckets: the finite limits of the activation")
+        .def_static(
+            "find_region_polys",
+            [](const std::string &activation, double tol, int order, double l_max, double u_max,
+               const std::vector<double> &p_start, double d_start, const std::vector<double> &p_end,
+               double d_end) {
+                // the regions as dicts, from -inf to inf
+                py::list out;
+                for (const RegionPoly &r :
+                     NeuralNetwork::find_region_polys(activation_of(activation), tol, order, l_max,
+                                                      u_max, p_start, d_start, p_end, d_end)) {
+                    py::dict d;
+                    d["l"] = r.l;
+                    d["u"] = r.u;
+                    d["p"] = r.p;
+                    d["d"] = r.d;
+                    out.append(d);
+                }
+                return out;
+            },
+            py::arg("activation"), py::arg("tol"), py::arg("order"), py::arg("l_max"),
+            py::arg("u_max"), py::arg("p_start"), py::arg("d_start"), py::arg("p_end"),
+            py::arg("d_end"),
+            "CORA's findRegionPolys: regions (dicts l, u, p, d) of the real line with a polynomial "
+            "(highest power first) of error d below tol each")
+        .def(
+            "compute_reduced_network",
+            // the options by name
+            [](const NeuralNetwork &nn, const Zonotope &X, bool dynamic_buckets,
+               const std::optional<std::vector<double>> &bucket_tol, bool input_compression,
+               const std::vector<double> &reduction_rate, int min_searches, uint64_t seed) {
+                ReduceOptions o;
+                o.dynamic_buckets = dynamic_buckets;
+                if (bucket_tol) o.bucket_tol = *bucket_tol;
+                o.input_compression = input_compression;
+                o.reduction_rate = reduction_rate;
+                o.min_searches = min_searches;
+                o.seed = seed;
+                // the reduction, and its parts as a dict
+                const ReducedNetwork R = nn.compute_reduced_network(X, o);
+                // the error interval and the mask of the merged neurons per layer, or None
+                const auto list = [](const std::vector<Tensor> &ts) {
+                    py::list out;
+                    for (const Tensor &t : ts)
+                        out.append(t.defined() ? py::object(values(t)) : py::none());
+                    return out;
+                };
+                // the network, the error intervals, the merged neurons, the rates and the set
+                py::dict d;
+                d["network"] = py::cast(R.net);
+                d["offset_center"] = list(R.offset_center);
+                d["offset_radius"] = list(R.offset_radius);
+                d["merged"] = list(R.merged);
+                d["reduction_rate"] = R.reduction_rate;
+                d["output"] = py::cast(R.output);
+                return d;
+            },
+            py::arg("X"), py::arg("dynamic_buckets") = false, py::arg("bucket_tol") = py::none(),
+            py::arg("input_compression") = false, py::arg("reduction_rate") = std::vector<double>{},
+            py::arg("min_searches") = 10, py::arg("seed") = 1,
+            "CORA's computeReducedNetwork of the normal form on a zonotope X: a dict with the "
+            "reduced 'network', the error intervals 'offset_center' and 'offset_radius' and the "
+            "'merged' neurons per layer (None where none), 'reduction_rate' and the 'output' set")
         // a batch of zonotopes through the network
         .def(
             "evaluate_zonotope_batch",

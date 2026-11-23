@@ -88,8 +88,13 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
         case Activation::exp:
         case Activation::reciprocal:
         case Activation::product:
+        case Activation::softplus:
+        case Activation::root:
+        case Activation::inv_sqrt_root:
+        case Activation::group_sort:
             throw std::invalid_argument("aux_lean_layers: the oracle has no exp, reciprocal, "
-                                        "product, floor, cube, inverse, sin or cos layer");
+                                        "product, floor, cube, inverse, sin, cos, softplus, root, "
+                                        "inv_sqrt_root or group_sort layer");
         }
     }
     return layers;
