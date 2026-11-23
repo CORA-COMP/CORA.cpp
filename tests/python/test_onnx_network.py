@@ -6,7 +6,8 @@ to dense layers whose network equals the graph in float64, and a plain Gemm keep
 for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
 folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
 padded max pool and a product of branches do not lower and say why; a batch norm of features
-and a slice of the input concatenated with a branch lower.
+and a slice of the input concatenated with a branch lower; a Gemm after a wide convolution builds
+its matrix in chunks of unit vectors, far below the identity's memory.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -14,6 +15,10 @@ Last update:   23-November-2026
 Reviewed:      ---
 """
 
+import os
+import subprocess
+import sys
+import tempfile
 import unittest
 
 
@@ -159,6 +164,27 @@ class Lowering(unittest.TestCase):
         lo, hi = -np.ones((1, net.num_inputs)), np.ones((1, net.num_inputs))
         out = nn.verify(lo, hi, [0], A, np.array([[low + 0.01]]), 20, cora.vnncomp_options("x"))
         self.assertEqual(out["status"], "sat")
+
+    def test_wide_gemm_in_chunks(self):
+        # a Gemm after a wide convolution: the weights bit for bit, far below the identity's 1.6 GB
+        m = wide_conv_net()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "wide.onnx")
+            onnx.save(m, path)
+            script = (
+                "import resource, sys; from cora.onnx_network import OnnxNetwork as N; "
+                "net = N.load(sys.argv[1]); peak = lambda: resource.getrusage("
+                "resource.RUSAGE_SELF).ru_maxrss / 1024; before = peak(); "
+                "(layers, _), _ = net.layers(); import numpy as np; "
+                "np.save(sys.argv[2], layers[-1]['W'].numpy()); print(peak() - before)"
+            )
+            out = os.path.join(tmp, "W.npy")
+            env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path), OMP_NUM_THREADS="2")
+            grown = subprocess.run([sys.executable, "-c", script, path, out], env=env,
+                                   capture_output=True, text=True, check=True).stdout
+            self.assertLess(float(grown), 400.0)  # MiB
+            W = numpy_helper.to_array(m.graph.initializer[2])
+            self.assertTrue(np.array_equal(np.load(out), W.astype(np.float64)))
 
     def test_size_cap(self):
         # max_elements refuses unit-vector batches beyond it
@@ -400,6 +426,18 @@ def slice_concat_net():
             "W4": weight(3, 2), "starts": np.array([2], np.int64),
             "ends": np.array([2**62], np.int64), "axes": np.array([1], np.int64)}
     return model(nodes, [("x", [1, 4])], [("y", [1, 2])], init)
+
+
+def wide_conv_net():
+    """Conv (1 -> 16 channels, 3 x 3) on 32 x 32, Relu, Flatten, Gemm of the 14400 entries."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wc", "bc"], ["c"]),
+        helper.make_node("Relu", ["c"], ["r"]),
+        helper.make_node("Flatten", ["r"], ["f"]),
+        helper.make_node("Gemm", ["f", "W", "b"], ["y"], transB=1),
+    ]
+    init = {"Wc": weight(16, 1, 3, 3), "bc": weight(16), "W": weight(5, 14400), "b": weight(5)}
+    return model(nodes, [("x", [1, 1, 32, 32])], [("y", [1, 5])], init)
 
 
 def maxpool_net(kernel=2, stride=1, channels=1, pads=0):

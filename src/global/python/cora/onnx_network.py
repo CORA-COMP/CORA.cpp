@@ -715,12 +715,25 @@ class OnnxNetwork:
                 chain[outs[0]] = then(_conv(w, torch.zeros(c), shape, {**attrs, "group": c},
                                             out_shape))
             elif op in ("Gemm", "MatMul"):
-                # the matrix of the unit vectors (small: one per input of a dense layer)
-                eye = torch.eye(size, dtype=torch.float64).reshape(size, *shape[1:])
+                # the matrix: the images of the unit vectors, a chunk at a time (after a wide
+                # convolution, as malbeware's 61504 entries, the identity alone is 30 GB)
                 zero = torch.zeros(1, *shape[1:], dtype=torch.float64)
-                lin = net._run_batched(op, [eye] + args[1:2], [True, False], attrs)
                 bias = net._run(op, [zero] + args[1:], attrs)
-                chain[outs[0]] = then((lin.reshape(size, -1).T.contiguous(), bias.reshape(-1)))
+                # (one buffer of unit vectors and the matrix allocated once: chunks allocated
+                # anew fragment the heap, and the peak grows with every chunk)
+                chunk = min(size, max(1, UNIT_VECTOR_CHUNK // size))
+                eye = torch.zeros(chunk, size, dtype=torch.float64)
+                lin = torch.empty(bias.numel(), size, dtype=torch.float64)
+                for start in range(0, size, chunk):
+                    count = min(chunk, size - start)
+                    unit = eye[:count]
+                    unit.zero_()
+                    unit[:, start : start + count].fill_diagonal_(1.0)
+                    image = net._run_batched(
+                        op, [unit.reshape(count, *shape[1:])] + args[1:2], [True, False], attrs
+                    )
+                    lin[:, start : start + count] = image.reshape(count, -1).T
+                chain[outs[0]] = then((lin, bias.reshape(-1)))
             elif op in ("Add", "Sub") and len(ins) == 2:
                 other = args[1] if ins[0] == x_name else args[0]
                 if op == "Sub" and ins[1] == x_name:
@@ -781,6 +794,8 @@ class _NotAChain(Exception):
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
 
 ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh"}  # what cora's layers know
 
