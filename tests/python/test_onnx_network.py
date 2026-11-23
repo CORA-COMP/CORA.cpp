@@ -5,11 +5,12 @@ equals onnxruntime's (float32) to float32 accuracy; a chain of affine maps and a
 to dense layers whose network equals the graph in float64, and a plain Gemm keeps its weights bit
 for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
 folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
-padded max pool and a product of branches do not lower and say why.
+padded max pool and a product of branches do not lower and say why; a batch norm of features
+and a slice of the input concatenated with a branch lower.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   22-November-2026
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -122,6 +123,20 @@ class Lowering(unittest.TestCase):
         self.assertEqual(acts, ["relu", "relu", "identity"])
         self.assertTrue(all("conv2d" in la for la in layers[:2]))
         self.assertIn("conv2d", layers[1]["residuals"][0]["map"])
+
+    def test_features_and_branches(self):
+        # a batch norm of features (CNN-7), and a slice of the input concatenated with a branch
+        for m in (cnn7_net(), slice_concat_net()):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            nn, why = net.to_neural_network()
+            self.assertIsNone(why)
+            x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+            np.testing.assert_allclose(
+                np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
+            )
+        # the batch norm folds into the Gemm before it: conv, gemm, gemm
+        (layers, acts), _ = OnnxNetwork(cnn7_net()).layers()
+        self.assertEqual(acts, ["relu", "relu", "identity"])
 
     def test_max_pools(self):
         # the pairwise max pools equal the graph (2 x 2; an odd 3 x 3 of stride 2, two channels)
@@ -351,6 +366,40 @@ def resnet_block():
     init = {"W1": weight(2, 1, 3, 3), "b1": weight(2), "W2": weight(2, 2, 3, 3), "b2": weight(2),
             "W3": weight(2, 1, 1, 1), "b3": weight(2), "W": weight(3, 8), "b": weight(3), **bn}
     return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 3])], init)
+
+
+def cnn7_net():
+    """Conv, Relu, Flatten, Gemm, BatchNormalization of the Gemm's features, Relu, Gemm."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wc", "bc"], ["c"], pads=[1, 1, 1, 1]),
+        helper.make_node("Relu", ["c"], ["r"]),
+        helper.make_node("Flatten", ["r"], ["f"]),
+        helper.make_node("Gemm", ["f", "W1", "b1"], ["g"], transB=1),
+        helper.make_node("BatchNormalization", ["g", "s", "o", "mu", "var"], ["n"]),
+        helper.make_node("Relu", ["n"], ["r2"]),
+        helper.make_node("Gemm", ["r2", "W2", "b2"], ["y"], transB=1),
+    ]
+    init = {"Wc": weight(2, 1, 3, 3), "bc": weight(2), "W1": weight(5, 32), "b1": weight(5),
+            "s": weight(5), "o": weight(5), "mu": weight(5), "var": np.abs(weight(5)) + 0.5,
+            "W2": weight(3, 5), "b2": weight(3)}
+    return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 3])], init)
+
+
+def slice_concat_net():
+    """linearizenn's shape: a controller relu(x W1) W2 beside the slice x[:, 2:], concatenated."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W1"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("MatMul", ["r", "W2"], ["u"]),
+        helper.make_node("Slice", ["x", "starts", "ends", "axes"], ["xs"]),
+        helper.make_node("MatMul", ["xs", "W3"], ["v"]),
+        helper.make_node("Concat", ["u", "v", "k"], ["cat"], axis=1),
+        helper.make_node("MatMul", ["cat", "W4"], ["y"]),
+    ]
+    init = {"W1": weight(4, 6), "W2": weight(6, 1), "W3": weight(2, 1), "k": weight(1, 1),
+            "W4": weight(3, 2), "starts": np.array([2], np.int64),
+            "ends": np.array([2**62], np.int64), "axes": np.array([1], np.int64)}
+    return model(nodes, [("x", [1, 4])], [("y", [1, 2])], init)
 
 
 def maxpool_net(kernel=2, stride=1, channels=1, pads=0):

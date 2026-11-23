@@ -49,13 +49,16 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   instead, and no convolution becomes a matrix: Conv is a C++ `Layer::conv2d` (groups, strides,
   dilations, asymmetric pads; Conv1D as width 1), ConvTranspose its transpose
   (`Layer::conv_transpose2d`), BatchNormalization and AveragePool depthwise convolutions, the data
-  moves (Transpose, Pad, Slice, Concat with constants, nearest Upsample) a `Layer::gather` found by
-  running the node on the indices, Flatten and Reshape nothing, Gemm and MatMul dense layers, and an
-  added constant the bias of the layer before (a BatchNormalization after a Conv folds into it).
+  moves (Transpose, Pad, Slice, Gather, Concat with constants, nearest Upsample) a `Layer::gather`
+  found by running the node on the indices, Flatten and Reshape nothing, Gemm and MatMul dense
+  layers, and an added constant the bias of the layer before (a BatchNormalization after a Conv or a
+  Gemm folds into it, one of features elsewhere is a diagonal dense layer). A Slice or Gather of a
+  value of the input is such a data move, not shape arithmetic (linearizenn slices its input).
   Two branches joined by an Add (a ResNet, soundnessbench's carriers) become a graph: each value is
   a pending sum of maps of earlier outputs, emitted as layers when an activation or the output
   needs it, the longest term as a chain and the others as residuals of its last layer (`source`,
-  `residuals` of a `Layer`). A MaxPool without pads lowers to `max(a, b) = b + relu(a - b)` pairwise
+  `residuals` of a `Layer`). A Concat of branches is their sum, each term padded into its place by
+  a gather (linearizenn's controller beside its linear part). A MaxPool without pads lowers to `max(a, b) = b + relu(a - b)` pairwise
   over its window (a grouped convolution of the differences, a ReLU, a gather plus a residual
   convolution of the second items, per round). What does not lower, or what C++ refuses, is
   `unknown` at once with the reason, before the property is read.
