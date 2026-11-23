@@ -107,6 +107,10 @@ void con_zonotope(const std::string &b) {
                         Tensor::zeros({0}));
     check(test::close(id.evaluate_con_zonotope(P).c(), {3.0}, 1e-12),
           b + ": a set without generators");
+    // rows 0 = 0 without generators keep the point
+    const ConZonotope Q(Tensor({1.0}), Tensor::zeros({0, 1}), Tensor::zeros({1, 0}),
+                        Tensor::zeros({1}));
+    check(test::close(id.evaluate_con_zonotope(Q).c(), {3.0}, 1e-12), b + ": rows 0 = 0");
     // an infeasible set stays empty, and what a ReLU cannot take is refused
     check(nn.evaluate_con_zonotope(ConZonotope::empty(2)).representsa("emptySet"),
           b + ": the empty set");
