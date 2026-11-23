@@ -204,6 +204,9 @@ Interval Interval::linear_map(const Interval &M) const {
 Interval Interval::quad_map(const std::vector<Tensor> &Q) const {
     return aux_box("interval.quadMap", {{"I", *this}, {"Q", Q}});
 }
+Interval Interval::quad_map_cora(const std::vector<Tensor> &Q) const {
+    return aux_box("interval.quadMapCora", {{"I", *this}, {"Q", Q}});
+}
 
 // Predicates ---------------------------------------------------------------------------------
 

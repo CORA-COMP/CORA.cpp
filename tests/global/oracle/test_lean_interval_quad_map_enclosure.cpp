@@ -2,8 +2,9 @@
 //
 // CORA: contSet/@interval/quadMap.m
 //
-// CORALean builds the box through a polynomial zonotope, a different (wider) enclosure than CORA's
-// zonotope map, so a bit-exact test cannot exist. CORA.cpp's box lies inside the oracle's.
+// The oracle's `interval.quadMap` builds the box through a polynomial zonotope, a different (wider)
+// enclosure than CORA's zonotope map, so CORA.cpp's box only lies inside it. The bit-exact test is
+// against `interval.quadMapCora`, in test_lean_interval_quad_map.
 //
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner

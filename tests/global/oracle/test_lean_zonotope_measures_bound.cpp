@@ -8,9 +8,10 @@
 //
 // These cannot match the oracle bit for bit, by construction, so there is no ORACLE tag:
 // minnorm takes a square root, which the oracle computes by Newton steps rounded up (one ulp from
-// the correctly rounded one); intersect_strip is the oracle's
-// (I - L C) Z + L strip with an interval matrix (more generators, other roundings) where CORA
-// computes c + L (y - C c); is_intersecting is certified one way only (disjointness).
+// the correctly rounded one); intersect_strip is compared by its box with the oracle's
+// `zonotope.intersectStrip`, (I - L C) Z + L strip with an interval matrix, where CORA computes
+// c + L (y - C c) (bit for bit against `intersectStripCora` in
+// test_lean_zonotope_intersect_strip); is_intersecting is certified one way only (disjointness).
 //
 // CORA authors: Matthias Althoff, Victor Gassmann, Niklas Kochdumper
 // Authors:       Tobias Ladner, Claude Opus 5.5

@@ -32,6 +32,8 @@ namespace cora::lean {
 
 class PolyZonotope {
   public:
+    // Construction --------------------------------------------------------------------------------
+
     /// The exact set (empty error box) of a cora::PolyZonotope, in the current dtype.
     PolyZonotope(const cora::PolyZonotope &P);
 
@@ -55,7 +57,7 @@ class PolyZonotope {
     const cora::Exponents &exponents() const noexcept { return Exp_; }
     const std::vector<int64_t> &ids() const noexcept { return id_; }
 
-    // Operations -------------------------------------------------------------------------------
+    // Operations ----------------------------------------------------------------------------------
 
     /// The sum with a polynomial zonotope (its factors independent), a zonotope, a box or a point.
     PolyZonotope plus(const PolyZonotope &Q) const;
@@ -85,6 +87,14 @@ class PolyZonotope {
     /// CORA's quadMap(P, Q) as CORA.cpp computes it (PolyZonotope.quadMapCora): the products of
     /// [c G], CORA's three zonotope maps of the independent part, the constructor.
     PolyZonotope quad_map(const std::vector<Tensor> &Q) const;
+
+    /// CORA's project(P, dims): the coordinates dims (0-based) of the center and of both blocks of
+    /// generators, the exponents and the identifiers kept.
+    PolyZonotope project(const std::vector<int64_t> &dims) const;
+
+    /// CORA's compact(P): the generators of no factor added to the center, the factors no column
+    /// reads dropped, the constructor again (`polyZonotope.compact`).
+    PolyZonotope compact() const;
 
     /// CORA's reduce(P, 'girard', order) and enclose(P, Q).
     PolyZonotope reduce(int order) const;

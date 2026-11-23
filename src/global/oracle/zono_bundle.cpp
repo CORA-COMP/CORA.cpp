@@ -95,6 +95,10 @@ ZonoBundle ZonoBundle::project(const std::vector<int64_t> &dims) const {
     return aux_set("zonoBundle.project", {{"zB", *this}, {"dims", dims}});
 }
 
+ZonoBundle ZonoBundle::enclose_cora(const ZonoBundle &other) const {
+    return aux_set("zonoBundle.encloseCora", {{"zB", *this}, {"zB2", other}});
+}
+
 ZonoBundle ZonoBundle::quad_map_cora(const std::vector<Tensor> &Q) const {
     return aux_set("zonoBundle.quadMapCora", {{"zB", *this}, {"Q", Q}});
 }

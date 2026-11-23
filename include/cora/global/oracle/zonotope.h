@@ -87,6 +87,11 @@ class Zonotope {
     Zonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
                              const Tensor &Lambda) const;
 
+    /// The same in CORA.cpp's order (`zonotope.intersectStripCora`): the center c + Lambda (y - C
+    /// c).
+    Zonotope intersect_strip_cora(const Tensor &C, const Tensor &phi, const Tensor &y,
+                                  const Tensor &Lambda) const;
+
     /// The image of the quadratic map x' Q_i x and of the cubic map T_ij x x x.
     Zonotope quad_map(const std::vector<Tensor> &Q) const;
 

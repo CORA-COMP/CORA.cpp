@@ -62,6 +62,10 @@ class ZonoBundle {
     ZonoBundle intersect(const ZonoBundle &other) const;
     ZonoBundle cart_prod(const ZonoBundle &other) const;
 
+    /// CORA's enclose(this, other) of two bundles of as many members: member i encloses member i of
+    /// both (`zonoBundle.encloseCora`).
+    ZonoBundle enclose_cora(const ZonoBundle &other) const;
+
     /// The enclosure of this bundle and M * this + other (the oracle's `enclose`).
     ZonoBundle enclose(const Tensor &M, const ZonoBundle &other) const;
 
