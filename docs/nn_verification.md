@@ -140,7 +140,9 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
 Phase 2's bounds (`zonotope-alpha`, `backward_bound`; `alpha_method` `zonotope` for acasxu, `crown`
 else), except for sat_relu: its many small boxes keep CORA's `conzonotope` bounding without CROWN,
 which scores 980 on dev seeds 1001 and 1002 against 960 and 940 (the slopes cost more than they
-decide).
+decide). traffic_signs gives the attack nine tenths of the time (`attack_time_share` 0.9): its
+binarized networks' bounds rarely decide, and the share scores 330 and 250 on seeds 1001 and 1002
+against 300 and 240.
 
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per

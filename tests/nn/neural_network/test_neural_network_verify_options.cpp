@@ -111,6 +111,9 @@ void options_and_strategies() {
     const NnVerifyOptions sat = vnncomp_options("sat_relu");
     check(sat.bounding_method == "conzonotope" && !sat.backward_bound,
           "sat_relu's preset: CORA's bounding without CROWN");
+    check(vnncomp_options("traffic_signs_recognition_2023").attack_time_share == 0.9 &&
+              ours.attack_time_share == cora.attack_time_share,
+          "traffic_signs' preset: nine tenths of the time for the attack");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");
