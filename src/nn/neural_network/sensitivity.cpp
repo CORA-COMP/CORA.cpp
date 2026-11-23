@@ -28,10 +28,12 @@
 
 namespace cora {
 
+// The derivatives ---------------------------------------------------------------------------------
+
 
 // ===========================================  MAIN  =========================================== //
 
-// The Jacobian at a point -------------------------------------------------------------------------
+// The Jacobian ------------------------------------------------------------------------------------
 
 Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
     detail::Entry entry;
@@ -109,6 +111,22 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
             h = one.divide(z.maximum(1.0));
             derivative = Tensor::where(z.greater(one), h.multiply(h).negative(), zero);
             break;
+        case Activation::softplus:
+            // log(1 + e^x) and the sigmoid
+            h = (one + z.exp()).log();
+            derivative = z.sigmoid();
+            break;
+        case Activation::root:
+            h = z.sqrt();
+            derivative = one.divide(h) * 0.5;
+            break;
+        case Activation::inv_sqrt_root:
+            h = z.pow(-0.5);
+            derivative = h.divide(z).negative() * 0.5;
+            break;
+        case Activation::group_sort:
+            CORA_FAIL(Error::not_supported, "sensitivity: a group sort permutes its neurons; only "
+                                            "backprop at points takes it");
         case Activation::product:
             CORA_FAIL(Error::not_supported, "sensitivity: a product layer is not neuron by "
                                             "neuron; only NeuralNetwork::verify takes it");

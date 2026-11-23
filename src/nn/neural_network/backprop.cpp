@@ -41,6 +41,8 @@ namespace cora {
 
 namespace {
 
+// The boxes ---------------------------------------------------------------------------------------
+
 /// The image of the box [l, u] under the activation (an interval function of each neuron).
 std::pair<Tensor, Tensor> aux_activation_box(Activation a, const Tensor &l, const Tensor &u) {
     switch (a) {
@@ -58,8 +60,11 @@ std::pair<Tensor, Tensor> aux_activation_box(Activation a, const Tensor &l, cons
     }
     case Activation::product:
         CORA_FAIL(Error::not_supported, "NeuralNetwork: a product layer has no box image here");
+    case Activation::group_sort:
+        CORA_FAIL(Error::not_supported, "NeuralNetwork: a group sort has no gradient bounds; CORA "
+                                        "takes its derivative as 1 (unsound), backprop at points");
     default:
-        // relu, sigmoid, tanh, exp, sign and floor rise
+        // relu, sigmoid, tanh, exp, sign, floor, softplus, root and inv_sqrt_root rise
         return {priv_apply(a, l), priv_apply(a, u)};
     }
 }
@@ -104,12 +109,16 @@ Tensor NeuralNetwork::backprop(const Tensor &x, const Tensor &grad_out) const {
     Tensor h = x;
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         pre.push_back(layers_[k].rows(h) + layers_[k].b);
-        h = priv_apply(activations_[k], pre.back());
+        h = activations_[k] == Activation::group_sort
+                ? priv_group_sort(pre.back(), layers_[k].group_size)
+                : priv_apply(activations_[k], pre.back());
     }
     // the reverse pass: the derivative of the activation, then W^T
     Tensor g = grad_out;
     for (std::size_t k = layers_.size(); k-- > 0;) {
-        g = priv_slope_times_t(activations_[k], priv_derivative(activations_[k], pre[k]), g);
+        g = activations_[k] == Activation::group_sort
+                ? priv_group_sort_t(pre[k], g, layers_[k].group_size)
+                : priv_slope_times_t(activations_[k], priv_derivative(activations_[k], pre[k]), g);
         g = layers_[k].rows_t(g);
     }
     return g;

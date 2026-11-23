@@ -25,6 +25,7 @@
 #include "cora/nn/neural_network/neural_network.h"
 
 #include <exception>
+#include <functional>
 #include <utility>
 #include <vector>
 
@@ -114,6 +115,26 @@ std::pair<Tensor, Tensor> priv_trig_box(const Tensor &l, const Tensor &u, bool c
 /// The line of sin (cos) over [l, u]: the tangent at the middle with radius (half width)^2 / 2
 /// (|f''| <= 1), or slope 0 over priv_trig_box where that is narrower; widened by the rounding.
 PrivLine priv_trig_line(const Tensor &l, const Tensor &u, bool cosine);
+
+/// The line of softplus, root (x >= 0) or inv_sqrt_root (x > 0) over [l, u]: the regression slope
+/// with the closed-form range of f(x) - m x (CORA's default), or Singh's monotone parallelogram.
+PrivLine priv_monotone_line(Activation activation, const Tensor &l, const Tensor &u,
+                            bool regression);
+
+/// The least-squares slope through 20 points of [l, u] whose middles are middle(x) (CORALean's
+/// regressionSlope): zero where u <= l.
+Tensor priv_regression_slope(const Tensor &l, const Tensor &u,
+                             const std::function<Tensor(const Tensor &)> &middle);
+
+// The group sort ----------------------------------------------------------------------------------
+
+/// The rows x (..., n) with each group of g consecutive neurons sorted ascending (the last group
+/// may be shorter: CORA pads with inf and cuts the padding).
+Tensor priv_group_sort(const Tensor &x, int64_t group);
+
+/// The gradient (..., n) at the input of a group sort of the pre-activations x (..., n) from the
+/// gradient grad at its output: the entry of each sorted position goes back to where it came from.
+Tensor priv_group_sort_t(const Tensor &x, const Tensor &grad, int64_t group);
 
 // The bounds beyond the float range ---------------------------------------------------------------
 

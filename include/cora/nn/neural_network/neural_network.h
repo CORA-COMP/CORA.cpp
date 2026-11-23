@@ -69,8 +69,9 @@ namespace cora {
 // The activations ---------------------------------------------------------------------------------
 
 /// A layer's function: square x^2, sign, reciprocal 1 / max(x, 1) (a softmax's sums), product [a o
-/// b; 0] of the halves [a; b] (verify only), floor, cube x^3, inverse 1 / x (verify: x > 0 only, a
-/// bound l <= 0 is out of range; nn4sys' x^3 / sum x^3), sin and cos (ml4acopf).
+/// b; 0] of the halves [a; b] (verify only), floor, cube x^3, inverse 1 / x (x > 0; nn4sys' x^3 /
+/// sum x^3), sin and cos (ml4acopf), softplus log(1 + e^x), root sqrt x (x >= 0), inv_sqrt_root
+/// x^(-1/2) (x > 0), group_sort (points only: Layer::group_size).
 enum class Activation {
     identity,
     relu,
@@ -85,7 +86,11 @@ enum class Activation {
     cube,
     inverse,
     sin,
-    cos
+    cos,
+    softplus,
+    root,
+    inv_sqrt_root,
+    group_sort
 };
 
 /// The polynomial over a neuron's range (CORA's poly_method): at order 1 singh or regression; of
@@ -175,6 +180,30 @@ struct NnBounds {
     Tensor l, u;
 };
 
+/// How a composite layer joins the outputs of its branches (CORA's aggregation).
+enum class Aggregation { add, concat };
+
+/// A polynomial p (highest power first) with |a(x) - p(x)| <= d on [l, u] (CORA's region polys).
+struct RegionPoly {
+    double l, u;
+    std::vector<double> p;
+    double d;
+};
+
+/// CORA's computeReducedNetwork name-value pairs: dynamic buckets (the shuffled centers) or the
+/// static ones, the tolerance (none: 0.01; one, or per layer), input compression, the target rate
+/// (none, one, or per layer), the least searches, the seed of the shuffle.
+struct ReduceOptions {
+    bool dynamic_buckets = false;
+    std::vector<double> bucket_tol = {};
+    bool input_compression = false;
+    std::vector<double> reduction_rate = {};
+    int min_searches = 10;
+    uint64_t seed = 1;
+};
+
+struct ReducedNetwork;
+
 // The network -------------------------------------------------------------------------------------
 
 class NeuralNetwork {
@@ -209,6 +238,8 @@ class NeuralNetwork {
         std::shared_ptr<const LinearPlan> plan = nullptr;
         int64_t source = kPrevious;
         std::vector<Residual> residuals = {};
+        /// The group of Activation::group_sort: consecutive neurons sorted ascending together.
+        int64_t group_size = 2;
 
         /// ONNX's Conv of the input (channels, height, width) in C order: kernel (out, in /
         /// groups, kh, kw), the bias one entry per output (out channels times pixels).
@@ -284,6 +315,37 @@ class NeuralNetwork {
                                   const std::vector<int64_t> &input,
                                   const std::array<int64_t, 2> &stride = {0, 0},
                                   int64_t previous = -1);
+
+    /// CORA's nnSoftPlusLayer on n values, log(1 + e^(k x)) / k: k x, softplus, 1 / k (sharpness
+    /// k > 0; two layers unless k is 1).
+    static Block softplus_layer(int64_t n, double sharpness = 1.0, int64_t previous = -1);
+    /// CORA's nnRootLayer, sqrt x (x >= 0), and nnInvSqrtRootLayer, x^(-1/2) (x > 0), on n values.
+    static Block root_layer(int64_t n, int64_t previous = -1);
+    static Block inv_sqrt_root_layer(int64_t n, int64_t previous = -1);
+    /// CORA's nnGroupSortLayer on n values: groups of group_size consecutive neurons sorted
+    /// ascending. Points and backprop only (CORA has no set version either).
+    static Block group_sort_layer(int64_t n, int64_t group_size = 2, int64_t previous = -1);
+    /// CORA's nnCompositeLayer: the branches (blocks whose sources are -1 for the input, or
+    /// their own layers) on the same input of input_size values, their outputs added or
+    /// concatenated along concat_dim of the output shapes (default: flat vectors), as a graph.
+    static Block composite_layer(const std::vector<Block> &branches, Aggregation aggregation,
+                                 int64_t input_size,
+                                 const std::vector<std::vector<int64_t>> &output_shapes = {},
+                                 int64_t concat_dim = 0, int64_t previous = -1);
+    /// CORA's nnGeneratorReductionLayer.evaluateZonotopeBatch: of the batch's generators keep the
+    /// max_gens - n first of the ascending lengths (CORA's order), the others become the box
+    /// diag(sum |g|); (B, max_gens, n). A batch with at most max_gens - n generators is kept.
+    static ZonotopeBatch reduce_generators(const ZonotopeBatch &Z, int64_t max_gens);
+    /// CORA's getMergeBuckets of an activation layer: its values at -inf and inf that are finite
+    /// (the ReLU's: 0).
+    static std::vector<double> merge_buckets(Activation activation);
+    /// CORA's findRegionPolys: regions of [-inf, inf] with a polynomial of the order each (the
+    /// regression fit) whose error is below tol, from (pStart, dStart) below l_max to (pEnd, dEnd)
+    /// above u_max.
+    static std::vector<RegionPoly>
+    find_region_polys(Activation activation, double tol, int order, double l_max, double u_max,
+                      const std::vector<double> &p_start, double d_start,
+                      const std::vector<double> &p_end, double d_end);
 
     /// The network of a block.
     explicit NeuralNetwork(const Block &block) : NeuralNetwork(block.layers, block.activations) {}
@@ -367,6 +429,12 @@ class NeuralNetwork {
     /// linear layer (CORA's getNormalForm); a chain of dense layers or convolutions.
     NeuralNetwork normal_form() const;
 
+    /// CORA's computeReducedNetwork of the normal form: neurons whose output range lies within a
+    /// bucket's tolerance are merged away, their range added to the next layer as an interval;
+    /// the set X through the reduced network is in the result (a chain of ReLU, sigmoid, tanh).
+    ReducedNetwork compute_reduced_network(const Zonotope &X,
+                                           const ReduceOptions &options = {}) const;
+
     /// The layers that refine can raise: those with an activation other than the identity (CORA's
     /// getRefinableLayers), as indices into layers().
     std::vector<int64_t> refinable_layers() const;
@@ -395,6 +463,16 @@ class NeuralNetwork {
   private:
     std::vector<Layer> layers_;
     std::vector<Activation> activations_;
+};
+
+/// The result of compute_reduced_network: the merged layers (biases are CORA's b), each layer's
+/// error interval d = center +- radius (CORA's layer.d, added after its affine map), the neurons
+/// merged per layer (1), the rate of neurons that stay, and the set X through the reduced network.
+struct ReducedNetwork {
+    NeuralNetwork net;
+    std::vector<Tensor> offset_center, offset_radius, merged;
+    std::vector<double> reduction_rate;
+    Zonotope output;
 };
 
 } // namespace cora

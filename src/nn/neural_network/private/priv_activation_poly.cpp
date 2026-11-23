@@ -188,11 +188,18 @@ double aux_f(Activation a, double x) {
         return std::exp(x);
     case Activation::reciprocal:
         return 1.0 / std::max(x, 1.0);
+    case Activation::softplus:
+        return std::log(1.0 + std::exp(x));
+    case Activation::root:
+        return std::sqrt(x);
+    case Activation::inv_sqrt_root:
+        return std::pow(x, -0.5);
     case Activation::product:
+    case Activation::group_sort:
         break;
     }
-    CORA_FAIL(Error::not_supported, "computeApproxPoly: a product layer is not neuron by neuron; "
-                                    "only NeuralNetwork::verify takes it");
+    CORA_FAIL(Error::not_supported, "computeApproxPoly: a product or group_sort layer is not "
+                                    "neuron by neuron; a product only NeuralNetwork::verify takes");
 }
 
 /// The i-th derivative of the activation at x, i >= 0: a sigmoid's and a tanh's are polynomials in
@@ -206,6 +213,14 @@ double aux_df(Activation a, int i, double x) {
     if (a == Activation::square) return i == 1 ? 2.0 * x : i == 2 ? 2.0 : 0.0;
     if (a == Activation::sign) return 0.0;
     if (a == Activation::exp) return std::exp(x);
+    // the derivatives of softplus are the sigmoid's, those of a power are a product of exponents
+    if (a == Activation::softplus) return aux_df(Activation::sigmoid, i - 1, x);
+    if (a == Activation::root || a == Activation::inv_sqrt_root) {
+        const double p = a == Activation::root ? 0.5 : -0.5;
+        double d = 1.0;
+        for (int k = 0; k < i; ++k) d *= p - double(k);
+        return d * std::pow(x, p - double(i));
+    }
     if (a == Activation::reciprocal) {
         // (-1)^i i! / x^(i + 1) above 1, else 0
         if (x <= 1.0) return 0.0;
@@ -234,6 +249,9 @@ double aux_df(Activation a, int i, double x) {
 /// Bounds of the derivative of an S-shaped activation over [l, u] (CORA's getDerBounds).
 std::pair<double, double> aux_der_bounds(Activation a, double l, double u) {
     const auto df = [&](double x) { return aux_df(a, 1, x); };
+    // the derivative of softplus and of x^(-1/2) rises, that of sqrt falls
+    if (a == Activation::softplus || a == Activation::inv_sqrt_root) return {df(l), df(u)};
+    if (a == Activation::root) return {df(u), df(l)};
     if (l <= 0 && u >= 0) return {df(std::abs(l) >= std::abs(u) ? l : u), df(0.0)};
     if (l > 0) return {df(u), df(l)};
     return {df(l), df(u)};
@@ -381,6 +399,12 @@ double priv_polyval(const std::vector<double> &p, double x) {
     double v = 0;
     for (const double c : p) v = v * x + c;
     return v;
+}
+
+PrivApprox priv_approx_error(Activation a, std::vector<double> coeffs, double l, double u) {
+    const double radius =
+        a == Activation::relu ? aux_relu_error(coeffs, l, u) : aux_sampled_error(a, coeffs, l, u);
+    return {coeffs, radius};
 }
 
 PrivApprox priv_approx_poly(Activation a, double l, double u, int order, PolyMethod method) {
