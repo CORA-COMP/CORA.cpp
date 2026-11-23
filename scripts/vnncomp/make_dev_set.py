@@ -166,6 +166,11 @@ SOURCES = {
         "https://github.com/huanzhang12/vnncomp2024_tinyimagenet_benchmark.git",
         "771377743f16ee30ecb00029268ba62ec7e9e78c",
     ),
+    # ml4acopf: AC optimal power flow proxies; the seed perturbs each bus' loads
+    "ml4acopf_2024": (
+        "https://github.com/AI4OPT/ml4acopf_benchmark.git",
+        "cdbde645123927ec95a3c01b66ec934077725e19",
+    ),
     # nn4sys: learned indexes, cardinality estimation and video streaming (three generators)
     "nn4sys": (
         "https://github.com/kkaulen/VNNComp25_NN4Sys.git",

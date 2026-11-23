@@ -257,6 +257,7 @@ come only at the very end.
   tllverifybench's generator draws each network's output threshold from NumPy's global generator,
   which it never seeds; make_dev_set seeds it with the seed (the networks are the official ones).
   nn4sys runs its three generators (video streaming, learned index, cardinality) with the seed.
+  ml4acopf's generator perturbs each bus' loads with the seed (69 instances per seed).
 - **Data:** networks and instances stay outside the repository (e.g. `~/vnncomp/dev_sets`).
 
 ## Running
