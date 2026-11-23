@@ -142,6 +142,8 @@ NnProblem::NnProblem(const NeuralNetwork &net, const NnProperty &property,
     b32_ = b.to(options.dtype);
     poly_case32_ = poly_case.to(options.dtype);
     memory_budget = options.memory_budget > 0 ? options.memory_budget : kBudget;
+    batch_memory_budget =
+        options.batch_memory_budget > 0 ? options.batch_memory_budget : memory_budget;
 }
 
 Tensor NnProblem::loss(const Tensor &y, const Tensor &cases) const {

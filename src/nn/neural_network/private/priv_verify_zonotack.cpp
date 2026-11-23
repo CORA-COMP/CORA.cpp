@@ -327,7 +327,10 @@ class ConZonotopeBounding : public Bounding {
     struct Step {
         bool found = false;
         Children children;
-        int64_t verified = 0;
+        int64_t verified = 0;       ///< the sum of the next three
+        int64_t check_verified = 0; ///< boxes of the batch the check decides
+        int64_t empty_children = 0; ///< children the refinement leaves empty
+        int64_t point_children = 0; ///< point children, checked and dropped
     };
 
     // the steps of one batch
@@ -444,9 +447,9 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     }
     if (slots != o_.num_approx_err) slot_budget_ = slots;
     if (gens != o_.num_init_gens) init_gen_budget_ = gens;
-    // CORA's batch size, at most what the memory budget holds
-    batch_ =
-        std::min(o_.mini_batch_size, std::max<int64_t>(1, problem.memory_budget / bytes(*net_)));
+    // CORA's batch size, at most what the batch's memory budget holds
+    batch_ = std::min(o_.mini_batch_size,
+                      std::max<int64_t>(1, problem.batch_memory_budget / bytes(*net_)));
     return true;
 }
 
@@ -670,7 +673,8 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
     Tensor splits = xs.zeros_like({xs.shape()[0], 0});
-    int64_t iteration = 0, verified = 0, unresolved = 0;
+    int64_t iteration = 0, verified = 0, unresolved = 0, queue_peak = xs.shape()[0];
+    stats["batch_size"] = double(batch_);
     double last = 0;
     while (xs.shape()[0] > 0) {
         // a batch starts only if the last one's time still fits before the deadline
@@ -709,6 +713,9 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
         }
         stats["boxes"] += double(xi.shape()[0]);
         verified += step.verified;
+        stats["check_verified"] += double(step.check_verified);
+        stats["empty_children"] += double(step.empty_children);
+        stats["point_children"] += double(step.point_children);
         ++iteration;
         last = now_seconds() - started;
         if (step.found) {
@@ -732,7 +739,9 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
                                                     o_.verify_enqueue_type +
                                                     "' is unknown; use 'prepend' or 'append'");
         }
+        queue_peak = std::max(queue_peak, xs.shape()[0]);
     }
+    stats["queue_peak"] = double(queue_peak);
     stats["iterations"] = double(iteration);
     // the verdict: no set left (nor one beyond the float range) is unsat
     stats["verified_sets"] = double(verified);
@@ -802,7 +811,8 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
             (*stats_)["dual_verified"] += double(before - open.size());
         }
     }
-    step.verified = xi_.shape()[0] - int64_t(open.size());
+    step.check_verified = xi_.shape()[0] - int64_t(open.size());
+    step.verified = step.check_verified;
     const auto empty = [&] {
         return Children{xi_.slice(0, 0, 0), ri_.slice(0, 0, 0), ci_.slice(0, 0, 0),
                         si_.slice(0, 0, 0)};
@@ -849,6 +859,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
     auto [children, n_empty] =
         aux_refine(ci, si, art, excluded, split, relu_rows.first, relu_rows.second);
     if (timed_out_) return step;
+    step.empty_children = n_empty;
     step.verified += n_empty;
     // the point sets are checked and dropped
     const std::vector<int64_t> point = aux_where(children.r.equal(children.r.zeros_like()).all(1));
@@ -858,6 +869,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
             step.found = true;
             return step;
         }
+        step.point_children = int64_t(point.size());
         step.verified += int64_t(point.size());
         const std::vector<int64_t> rest = aux_rest(children.x.shape()[0], point);
         children = {children.x.take(rest, 0), children.r.take(rest, 0),
