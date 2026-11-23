@@ -37,7 +37,7 @@ Json aux_layer(const NnLayer &layer, std::string &dtype) {
         j.set("coeffs", C.to_json()).set("d", d.to_json());
     } else if (layer.kind == "sigmoid" || layer.kind == "tanh") {
         j.set("k", int64_t(layer.k));
-    } else if (layer.kind != "relu") {
+    } else if (layer.kind != "relu" && layer.kind != "sign" && layer.kind != "square") {
         CORA_FAIL(Error::wrong_value, "lean: the layer kind '" + layer.kind + "' is unknown");
     }
     return j;
@@ -85,6 +85,19 @@ NnLayer NnLayer::tanh() {
     return layer;
 }
 
+// the two lines of NeuralNetwork::verify without a CORA layer
+NnLayer NnLayer::sign() {
+    NnLayer layer;
+    layer.kind = "sign";
+    return layer;
+}
+
+NnLayer NnLayer::square() {
+    NnLayer layer;
+    layer.kind = "square";
+    return layer;
+}
+
 // the fit of order k given: its coefficients and its errors
 NnLayer NnLayer::poly(const cora::Tensor &coeffs, const cora::Tensor &d) {
     NnLayer layer;
@@ -92,6 +105,16 @@ NnLayer NnLayer::poly(const cora::Tensor &coeffs, const cora::Tensor &d) {
     layer.W = coeffs;
     layer.b = d;
     return layer;
+}
+
+// The lines ---------------------------------------------------------------------------------------
+
+NnLine relaxation(const std::string &kind, const cora::Tensor &l, const cora::Tensor &u,
+                  const cora::Tensor &alpha) {
+    std::vector<Operand> args{{"kind", kind}, {"l", Tensor(l)}, {"u", Tensor(u)}};
+    if (alpha.defined()) args.push_back({"alpha", Tensor(alpha)});
+    const Reply r = ask("nnLayer.relaxation", args);
+    return {r.get<Tensor>("slope"), r.get<Tensor>("offset"), r.get<Tensor>("error")};
 }
 
 // The evaluations ----------------------------------------------------------------------------
