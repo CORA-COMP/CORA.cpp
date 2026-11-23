@@ -44,6 +44,8 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+/// The interval gradient's smallest input of 1 / x (a heuristic: 1 / x^2 stays finite in float32).
+constexpr double kInversePositive = numerics::kInverseFloor;
 
 // Indices and rows --------------------------------------------------------------------------------
 
@@ -197,6 +199,18 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             hi.push_back(plo.back().ones_like().divide(plo.back().maximum(1.0)));
             continue;
         }
+        if (a == Activation::inverse) {
+            // 1 / x falls (a heuristic's box: an end below kInversePositive taken there)
+            lo.push_back(phi.back().ones_like().divide(phi.back().maximum(kInversePositive)));
+            hi.push_back(plo.back().ones_like().divide(plo.back().maximum(kInversePositive)));
+            continue;
+        }
+        if (a == Activation::cube) {
+            // x^3 rises
+            lo.push_back(plo.back().square().multiply(plo.back()));
+            hi.push_back(phi.back().square().multiply(phi.back()));
+            continue;
+        }
         lo.push_back(a == Activation::identity  ? plo.back()
                      : a == Activation::exp     ? plo.back().exp()
                      : a == Activation::sign    ? plo.back().sign()
@@ -250,6 +264,10 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                 return Tensor::where(z.greater(z.ones_like()), y.square().negative(),
                                      z.zeros_like());
             }
+            case Activation::cube:
+                return z.square() * 3.0;
+            case Activation::inverse:
+                return z.ones_like().divide(z.maximum(kInversePositive)).square().negative();
             case Activation::product:
                 break;
             }
@@ -277,7 +295,8 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             const Tensor g_pr = priv_slope_times_t(p, d_r, g_hi - g_lo);
             g_lo = (g_pm - g_pr) * 0.5;
             g_hi = (g_pm + g_pr) * 0.5;
-        } else if (net.activations[k] == Activation::reciprocal) {
+        } else if (net.activations[k] == Activation::reciprocal ||
+                   net.activations[k] == Activation::inverse) {
             // falling: the output's lo is the input's hi, and back
             const Tensor g_l = g_hi.multiply(slope(plo[k]));
             g_hi = g_lo.multiply(slope(phi[k]));

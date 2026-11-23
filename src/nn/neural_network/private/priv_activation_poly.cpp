@@ -176,6 +176,10 @@ double aux_f(Activation a, double x) {
     case Activation::floor:
         // a step at every integer: no polynomial of its points encloses it
         CORA_FAIL(Error::not_supported, "computeApproxPoly: floor has no polynomial");
+    case Activation::cube:
+    case Activation::inverse:
+        // verify's lines only (nn4sys' x^3 / sum x^3)
+        CORA_FAIL(Error::not_supported, "computeApproxPoly: x^3 and 1 / x are for verify only");
     // a softmax's parts
     case Activation::exp:
         return std::exp(x);
@@ -191,7 +195,9 @@ double aux_f(Activation a, double x) {
 /// The i-th derivative of the activation at x, i >= 0: a sigmoid's and a tanh's are polynomials in
 /// the value s, with d/dx P(s) = P'(s) s (1 - s) for the sigmoid and P'(s) (1 - s^2) for the tanh.
 double aux_df(Activation a, int i, double x) {
-    if (i == 0 || a == Activation::product) return aux_f(a, x);
+    if (i == 0 || a == Activation::product || a == Activation::floor || a == Activation::cube ||
+        a == Activation::inverse)
+        return aux_f(a, x);
     if (a == Activation::identity) return i == 1 ? 1.0 : 0.0;
     if (a == Activation::relu) return i == 1 && x > 0 ? 1.0 : 0.0;
     if (a == Activation::square) return i == 1 ? 2.0 * x : i == 2 ? 2.0 : 0.0;

@@ -78,6 +78,8 @@ PrivLine priv_product_line(const Tensor &c, const Tensor &G, const Tensor &dr);
 PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
                    const NnOptions &options);
 
+// The lines of the activations --------------------------------------------------------------------
+
 /// The line of x^2 over [l, u]: the secant slope l + u, half way between the chord and the parallel
 /// tangent, the radius (u - l)^2 / 8 widened by the rounding (sound in floats).
 PrivLine priv_square_line(const Tensor &l, const Tensor &u);
@@ -96,6 +98,16 @@ PrivLine priv_exp_line(const Tensor &l, const Tensor &u);
 /// The line of 1 / max(x, 1) over [l, u]: the chord's slope m on [max(l, 1), max(u, 1)]; f - m x
 /// rises to 1, then is convex: largest at l, u or 1, least at l or sqrt(l u) (where f' = m).
 PrivLine priv_reciprocal_line(const Tensor &l, const Tensor &u);
+
+/// The line of x^3 over [l, u]: the chord's slope m = l^2 + l u + u^2, the middle and half the
+/// range of x^3 - m x (at the ends and at +-sqrt(m / 3) in [l, u]), widened by the rounding.
+PrivLine priv_cube_line(const Tensor &l, const Tensor &u);
+
+/// The line of 1 / x over [l, u] with l > 0: the chord's slope -1 / (l u); 1 / x - m x is convex,
+/// largest at l or u, least at sqrt(l u). A bound l <= 0 fails with kOutOfRangeMessage.
+PrivLine priv_inverse_line(const Tensor &l, const Tensor &u);
+
+// The bounds beyond the float range ---------------------------------------------------------------
 
 /// The message of a bound beyond the float range (an exp that overflows): no line exists there.
 constexpr const char *kOutOfRangeMessage = "verify: a bound left the float range";

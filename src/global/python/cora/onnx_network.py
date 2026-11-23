@@ -193,7 +193,7 @@ class OnnxNetwork:
             if dense or not any(
                 r in why
                 for r in ("joins two", "of two values", "fails to lower", "Softmax", "max_elements",
-                          "Reduce")
+                          "Reduce", "Div by a value")
             ):
                 return dense, why
         try:
@@ -259,6 +259,9 @@ class OnnxNetwork:
 
     def _op_Square(self, a, _):  # Pow(x, 2) as the loader names it (_split_as_slices)
         return a[0] * a[0]
+
+    def _op_Cube(self, a, _):  # Pow(x, 3) as the loader names it (_split_as_slices)
+        return a[0] * a[0] * a[0]
 
     def _op_ReduceSum(self, a, attrs):
         # the axes from the input (opset 13) or the attribute; none: all (or noop_with_empty_axes)
@@ -598,7 +601,10 @@ class OnnxNetwork:
         net = self.cast(torch.float64, "cpu")
         layers, activations = [], []
         values = dict(net.constants)
-        chain = {self.input_name: _Expr(tuple(self.input_shape), [(-1, [])])}
+        given = tuple(self.input_shape)
+        unbatched = len(given) < 2 or given[0] != 1  # no batch axis (nn4sys' [12, 8])
+        chain = {self.input_name: _Expr((1, *given) if unbatched else given, [(-1, [])])}
+        chain[self.input_name].unbatched = unbatched
         done = {}  # id of an expression made layers -> the layer of its value
 
 
@@ -754,6 +760,16 @@ class OnnxNetwork:
             if not linked:
                 values[outs[0]] = net._run(op, [values.get(n) if n else None for n in ins], attrs)
                 continue
+            if any(getattr(chain[n], "unbatched", False) for n in linked):
+                # an input without a batch axis: a Reshape to a batch of 1 reads it, nothing else
+                if op != "Reshape" or ins[0] not in chain or ins[1] in chain:
+                    raise _NotAChain(f"{op} of an input without a batch axis (only a Reshape)")
+                probe = torch.zeros(self.input_shape, dtype=torch.float64)
+                out_shape = tuple(net._run(op, [probe, values[ins[1]]], attrs).shape)
+                if len(out_shape) < 2 or out_shape[0] != 1:
+                    raise _NotAChain("a Reshape of an input without a batch axis to no batch of 1")
+                chain[outs[0]] = _Expr(out_shape, chain[ins[0]].terms, chain[ins[0]].bias)
+                continue
             if any(getattr(chain[n], "column", False) for n in linked) and (
                 len(set(linked)) > 1 or op in STRUCTURE_OPS
             ):
@@ -838,6 +854,19 @@ class OnnxNetwork:
                 if axis == 0:
                     raise _NotAChain("Softmax over the batch axis")
                 chain[outs[0]] = softmax(expr, axis)
+                continue
+            if op == "Div" and len(ins) == 2 and len(set(linked)) == 2:
+                # a quotient of two values: a times 1 / b (b > 0 in verify, nn4sys' x^3 / sum x^3),
+                # b broadcast to a's entries (a product layer of gathers)
+                a, b = chain[ins[0]], chain[ins[1]]
+                inverse = _Expr(b.shape, [(activate(b, "inverse"), [])])
+                ia = torch.arange(math.prod(a.shape)).reshape(a.shape)
+                ib = torch.arange(math.prod(b.shape)).reshape(b.shape)
+                ia, ib = torch.broadcast_tensors(ia, ib)
+                if tuple(ia.shape) != tuple(a.shape):
+                    raise _NotAChain("Div of two values that broadcasts the dividend")
+                chain[outs[0]] = products(a, inverse, ia.reshape(1, -1), ib.reshape(1, -1),
+                                          tuple(a.shape))
                 continue
             if op == "Mul" and len(ins) == 2 and len(linked) == 2:
                 # a product of two values: a product layer of [a; b] ([a o b; 0]), its first half
@@ -1072,7 +1101,7 @@ MAX_PRODUCT = 4096  # entries of a product of two values at most (its maps are d
 UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
 
 ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign", "Exp": "exp",
-               "Floor": "floor", "Square": "square"}
+               "Floor": "floor", "Square": "square", "Cube": "cube"}
 
 LINEAR_OPS = {
     "Add",
@@ -1108,7 +1137,7 @@ MASK_MOVES = {"Slice", "Gather", "Reshape", "Transpose", "Concat", "Squeeze", "U
               "Flatten", "Identity", "Dropout", "Pad"}  # fold_fixed_inputs: data moves
 
 MASK_ELEMENTWISE = {"Add", "Sub", "Mul", "Div", "Neg", "Relu", "Sigmoid", "Tanh", "LeakyRelu",
-                    "Sign", "Exp", "Cast", "Floor", "Square", "Pow"}  # fold_fixed_inputs: by entry
+                    "Sign", "Exp", "Cast", "Floor", "Square", "Cube", "Pow"}  # fold_fixed_inputs
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
 DATA_MOVES = {"Slice", "Gather", "Cast"}  # ... unless they move a value of the input: then linear
@@ -1212,11 +1241,12 @@ def _scale(expr, single, then, factor, shape, out_shape):
 def _split_as_slices(op, ins, outs, attrs, constants):
     """A node as the nodes of the graph: a Split of known sizes (its attribute, or a constant
     input) one Slice per output, which the lowering moves like any other; Pow(x, 2) a Square
-    (the activation x^2); the rest as it is."""
+    and Pow(x, 3) a Cube (the activations x^2, x^3); the rest as it is."""
     if op == "Pow" and len(ins) == 2 and ins[1] in constants:
         exponent = constants[ins[1]]
-        if exponent.numel() == 1 and float(exponent) == 2.0:
-            return [("Square", ins[:1], outs, {})]
+        powers = {2.0: "Square", 3.0: "Cube"}
+        if exponent.numel() == 1 and float(exponent) in powers:
+            return [(powers[float(exponent)], ins[:1], outs, {})]
     sizes = attrs.get("split")
     if op == "Split" and sizes is None and len(ins) > 1 and ins[1] in constants:
         sizes = [int(v) for v in constants[ins[1]].tolist()]

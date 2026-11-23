@@ -116,7 +116,7 @@ PrivLine aux_bounds_line(Activation activation, const Tensor &l, const Tensor &u
     return {m, (hi + lo) * 0.5, (hi - lo) * 0.5};
 }
 
-// The reverse pass ---------------------------------------------------------------------------
+// The reverse pass --------------------------------------------------------------------------------
 
 /// The neurons (B, n) of the layer from first_id that an earlier split held at least 0 (-id) and
 /// at most 0 (+id).
@@ -269,8 +269,9 @@ LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Ten
     if (activation == Activation::square) return aux_square_jacobian(l, u);
     if (activation == Activation::sign || activation == Activation::floor ||
         activation == Activation::exp || activation == Activation::reciprocal ||
-        activation == Activation::product) {
-        // steps' lines (sign, floor) do not move with the bounds; exp's, 1 / x's, a product's held
+        activation == Activation::product || activation == Activation::cube ||
+        activation == Activation::inverse) {
+        // steps' lines (sign, floor) do not move with the bounds; the others' here are held
         const Tensor zero = l.zeros_like();
         return {zero, zero, zero, zero, zero, zero};
     }
@@ -289,14 +290,25 @@ PrivLine aux_layer_line(const ZonoNet &net, std::size_t k, const Tensor &c, cons
     return priv_verify_line(net.activations[k], lc, uc, net.poly_method);
 }
 
-/// The range of the exp layer that a reciprocal layer k reads alone (a softmax's sums), if any.
-const std::pair<Tensor, Tensor> *
-aux_exp_source(const ZonoNet &net, std::size_t k,
-               const std::vector<std::pair<Tensor, Tensor>> &exp_ranges) {
-    if (net.activations[k] != Activation::reciprocal || !net.residuals[k].empty()) return nullptr;
+// The boxes of the sources ------------------------------------------------------------------------
+
+/// Whether layer k's bounds take the box of the layer it reads alone: a reciprocal (a softmax's
+/// sums of exps), 1 / x (sums of cubes) or x^3 (of ReLUs).
+bool aux_reads_range(const ZonoNet &net, std::size_t k) {
+    const Activation a = net.activations[k];
+    if (a != Activation::reciprocal && a != Activation::inverse && a != Activation::cube)
+        return false;
     const int64_t j = net.sources[k];
-    if (j < 0 || net.activations[std::size_t(j)] != Activation::exp) return nullptr;
-    return &exp_ranges[std::size_t(j)];
+    if (j < 0 || !net.residuals[k].empty()) return false;
+    const Activation s = net.activations[std::size_t(j)];
+    return s == Activation::exp || s == Activation::cube || s == Activation::relu;
+}
+
+/// The output box of a rising activation layer (exp, x^3, ReLU) at its clamped bounds [lc, uc].
+std::pair<Tensor, Tensor> aux_range(Activation a, const Tensor &lc, const Tensor &uc) {
+    if (a == Activation::exp) return {lc.exp(), uc.exp()};
+    if (a == Activation::cube) return {lc.square().multiply(lc), uc.square().multiply(uc)};
+    return {lc.maximum(0.0), uc.maximum(0.0)};
 }
 
 /// The box [lo, hi] (B, n_in) through layer k's map: its center's image +- |W| times its radius,
@@ -521,6 +533,8 @@ PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &
     if (activation == Activation::floor) return priv_floor_line(l, u);
     if (activation == Activation::exp) return priv_exp_line(l, u);
     if (activation == Activation::reciprocal) return priv_reciprocal_line(l, u);
+    if (activation == Activation::cube) return priv_cube_line(l, u);
+    if (activation == Activation::inverse) return priv_inverse_line(l, u);
     if (activation == Activation::product)
         CORA_FAIL(Error::not_supported, "verify: a product's line needs its set");
     if (activation == Activation::relu || poly_method == "singh")
@@ -742,8 +756,11 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
     };
     std::vector<State> states(chain ? 0 : W.size() + 1);
     if (!chain) states[0] = {c, dr, G};
-    // an exp layer's range [e^l, e^u] at its clamped bounds, for a reciprocal that reads it
-    std::vector<std::pair<Tensor, Tensor>> exp_ranges(W.size());
+    // a layer's output box at its clamped bounds, for a layer that reads it alone (aux_reads_range)
+    std::vector<std::pair<Tensor, Tensor>> ranges(W.size());
+    std::vector<bool> range_read(W.size(), false);
+    for (std::size_t k = 0; k < W.size(); ++k)
+        if (aux_reads_range(*this, k)) range_read[std::size_t(sources[k])] = true;
     for (std::size_t k = 0; k < W.size(); ++k) {
         check_deadline(deadline);
         // the linear layer, exactly; an earlier source's rows are the first factors of all so far
@@ -783,14 +800,15 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             l = l - dr;
             u = u + dr;
         }
-        if (const auto *range = aux_exp_source(*this, k, exp_ranges)) {
-            // a softmax's sums of exps: also in the image of the exps' box (each sum >= 1)
-            const auto [lo, hi] = aux_box_image(*this, k, range->first, range->second);
+        if (aux_reads_range(*this, k)) {
+            // also in the image of the source's box (sums of exps >= 1, of cubes of ReLUs >= 0)
+            const auto &range = ranges[std::size_t(sources[k])];
+            const auto [lo, hi] = aux_box_image(*this, k, range.first, range.second);
             l = l.maximum(lo);
             u = u.minimum(hi).maximum(l);
         }
         const auto [lc, uc] = split ? clamp(first_ids[k], l, u, splits) : std::pair{l, u};
-        if (activations[k] == Activation::exp) exp_ranges[k] = {lc.exp(), uc.exp()};
+        if (range_read[k]) ranges[k] = aux_range(activations[k], lc, uc);
         PrivLine line = aux_layer_line(*this, k, c, G, dr, lc, uc);
         if (const Tensor *a = aux_alpha_of(*this, alpha, k))
             line = aux_alpha_line(line, lc, uc, *a);
