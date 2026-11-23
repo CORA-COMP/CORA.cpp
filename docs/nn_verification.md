@@ -310,6 +310,9 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
   cheap on wide layers. R counts only the rows of the polytopes that the zonotope left open in some
   set of the batch (each row's bound is its own, so the verdicts do not change); alpha-CROWN does
   the same. A robustness property of 199 rows whose zonotope excludes most classes costs a few.
+- **check_crown_rounds (0: off):** the check's propagation takes CROWN's bounds of the layer inputs
+  as relu-bab's root does (below), `check_crown_iterations` alpha-CROWN steps per row; the split
+  clamps apply after the intersection (each is a true fact of its set), so it stays sound.
 - **dual_certificate:** the check also bounds every row of the open sets by weak duality under the
   rows `C beta <= d` of the factors: each split of the set (`x >= 0` or `x <= 0` of the neuron's
   input) and the three faces of the `dual_relu_rows` crossing ReLUs of the largest error. For any
@@ -370,8 +373,8 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
   - **CROWN's bounds at the root (`relu_bab_crown_rounds`, default 1):** before the slopes, the
     input `z_k` of every activation layer after the first is bounded by a backward pass
     (`priv_crown_bounds`): rows `e_i` and `-e_i` of the crossing neurons of a ReLU layer (every
-    neuron of another activation) go back through the earlier layers, each by a relaxation at its
-    bounds so far (a ReLU: the chord `u (z - l) / (u - l)` above, a slope in `[0, 1]` below, CROWN's
+    neuron of another activation but a product, whose line is its input set's) go back through the
+    earlier layers, each by a relaxation at its bounds so far (a ReLU: the chord `u (z - l) / (u - l)` above, a slope in `[0, 1]` below, CROWN's
     `1` where `u > -l` else `0`, or `relu_bab_crown_iterations` projected Adam steps of size
     `relu_bab_crown_step` per row, each row's best bound over the steps; another activation: the
     parallels of the zonotope's line at those bounds, a product's on the recorded input set), down to

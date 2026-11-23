@@ -202,10 +202,11 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
         if (net.activations[k] == Activation::identity) continue;
         const ZonoLayerRecord &rec = out.layers[next++];
         Tensor l = rec.l, u = rec.u;
-        // the neurons to bound: a ReLU's crossing ones, every one of another activation
+        // the neurons to bound: a ReLU's crossing ones, all of another but a product (set line)
         std::vector<int64_t> idx;
         const int64_t n = l.shape()[1];
-        if (earlier && now_seconds() < std::min(deadline, net.deadline)) {
+        if (earlier && net.activations[k] != Activation::product &&
+            now_seconds() < std::min(deadline, net.deadline)) {
             const std::vector<double> open =
                 net.activations[k] == Activation::relu
                     ? l.less(l.zeros_like()).multiply(u.greater(u.zeros_like())).max(0).data()

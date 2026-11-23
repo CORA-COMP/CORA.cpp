@@ -423,7 +423,8 @@ void crown_bounds(const std::string &b) {
         Activation::sigmoid, Activation::product, Activation::square, Activation::identity};
     const std::vector<int64_t> sizes{3, 8, 6, 6, 6, 6, 4, 4, 2};
     for (std::size_t k = 0; k + 1 < sizes.size(); ++k) {
-        std::vector<double> W(std::size_t(sizes[k + 1] * sizes[k])), c(std::size_t(sizes[k + 1]));
+        std::vector<double> W(static_cast<std::size_t>(sizes[k + 1] * sizes[k])),
+            c(static_cast<std::size_t>(sizes[k + 1]));
         rng.normal(W.data(), W.size(), 0.8 / std::sqrt(double(sizes[k])));
         rng.normal(c.data(), c.size(), 0.3);
         layers.push_back(
@@ -482,6 +483,19 @@ void crown_bounds(const std::string &b) {
     check(tighter, b + ": alpha-CROWN's bounds are at least CROWN's over the same relaxations");
     check(narrower, b + ": CROWN's bounds narrow some layer's zonotope bounds");
     check(outputs, b + ": the zonotope with its lines at CROWN's bounds holds the sampled outputs");
+    // the check with CROWN's bounds (check_crown_rounds): unsat far below, sat around the least
+    NnVerifyOptions o = aux_options("zonotope-alpha", b);
+    o.falsification_order = "bound-first";
+    o.check_crown_rounds = 2;
+    o.check_crown_iterations = 3;
+    o.num_init_gens = 1;
+    o.num_approx_err = 1;
+    const double least = aux_least_output(relu, rng, 3, -0.2, 0.2);
+    const NnVerifyResult safe = relu.verify(aux_below(3, 2, -0.2, 0.2, least - 1.0), 20, o);
+    const NnVerifyResult unsafe = relu.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
+    check(safe.status == "unsat" && unsafe.status == "sat" &&
+              safe.stats.count("check_crown_seconds") == 1,
+          b + ": the check with CROWN's bounds is unsat far below the outputs, sat around them");
 }
 
 /// The dual certificate holds the sampled outputs under the splits, is at least the zonotope's

@@ -1217,7 +1217,17 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
         const StepTimer timer(stats_, "check_seconds");
         // the output zonotope, recorded for the backward bound
         const ZonoInput in = net.input_zonotope(xi_, ri_);
-        const ZonoPropagation out = net.forward(in.c, in.dr, in.G, si_, nullptr, o_.backward_bound);
+        const bool crown = o_.check_crown_rounds > 0;
+        ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, si_, nullptr, o_.backward_bound || crown);
+        // CROWN's bounds of the layers' inputs, the zonotope's lines at the intersection
+        for (int64_t r = 0; r < o_.check_crown_rounds && !aux_late(); ++r) {
+            const StepTimer crown_timer(stats_, "check_crown_seconds");
+            const ZonoBounds bounds = priv_crown_bounds(
+                out, net, xi_, ri_, o_.check_crown_iterations, o_.relu_bab_crown_step,
+                problem_->batch_memory_budget / 8, deadline_);
+            out = net.forward(in.c, in.dr, in.G, si_, nullptr, true, nullptr, &bounds);
+        }
         Tensor lower = aux_margins(out);
         // the better of the zonotope's and CROWN's lower bound of the rows the zonotope left open
         if (o_.backward_bound)
@@ -1225,6 +1235,13 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
                 aux_crown_lower(out, xi_, ri_, si_, lower, aux_excluded_lower(lower, ci_), false);
         excluded_all = aux_excluded_lower(lower, ci_);
         open = aux_where(1.0 - excluded_all.min(1));
+        // the first batch's margin: its weakest polytope of its case, by the best row
+        if (!stats_->count("check_root_margin")) {
+            const Tensor other = ci_.expand_dims(1).not_equal(poly_case_.expand_dims(0));
+            const Tensor best = lower.max(2);
+            (*stats_)["check_root_margin"] =
+                Tensor::where(other, best.full_like({1}, kInf), best).min().item();
+        }
         if ((alpha_ || o_.dual_certificate) && std::isfinite(o_.optimize_gap))
             gap = aux_gap(out, lower, excluded_all);
     }

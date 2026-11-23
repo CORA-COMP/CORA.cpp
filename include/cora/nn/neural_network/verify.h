@@ -143,6 +143,9 @@ struct NnVerifyOptions {
     int64_t relu_bab_crown_rounds = 1;
     int64_t relu_bab_crown_iterations = 0; ///< alpha-CROWN steps on their ReLU lower slopes per row
     double relu_bab_crown_step = 0.25;     ///< Adam's step on those slopes in [0, 1]
+    /// The check's rounds of CROWN's bounds of the layer inputs (0: none), as relu-bab's root.
+    int64_t check_crown_rounds = 0;
+    int64_t check_crown_iterations = 0; ///< their alpha-CROWN steps per row
     /// The candidates of a look-ahead neuron split heuristic ("fsb") per set.
     int64_t look_ahead_candidates = 8;
     // the bounding "zonotope-alpha": CORA's verify whose check optimizes the ReLU slopes
