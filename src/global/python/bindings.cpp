@@ -4369,7 +4369,7 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "The states (steps + 1, n) and the algebraic variables (steps + 1, p) of a trajectory");
 }
 
-/// The activation of a name: identity, relu, sigmoid, tanh, square or sign.
+/// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp or reciprocal.
 Activation activation_of(const std::string &name) {
     if (name == "identity") return Activation::identity;
     if (name == "relu") return Activation::relu;
@@ -4377,11 +4377,11 @@ Activation activation_of(const std::string &name) {
     if (name == "tanh") return Activation::tanh;
     if (name == "square") return Activation::square;
     if (name == "sign") return Activation::sign;
-    CORA_FAIL(
-        Error::wrong_value,
-        "NeuralNetwork: the activation must be identity, relu, sigmoid, tanh, square or sign, "
-        "got " +
-            name);
+    if (name == "exp") return Activation::exp;
+    if (name == "reciprocal") return Activation::reciprocal;
+    CORA_FAIL(Error::wrong_value, "NeuralNetwork: the activation must be identity, relu, sigmoid, "
+                                  "tanh, square, sign, exp or reciprocal, got " +
+                                      name);
 }
 
 /// The error of the regression line from its name.
@@ -4525,8 +4525,10 @@ NeuralNetwork::Layer aux_nn_map(const py::object &layer) {
     const Tensor bias = point_of(d["bias"], "the bias");
     if (d.contains("W")) return {tensor_of(d["W"], "the weights"), bias};
     if (d.contains("gather"))
-        return NeuralNetwork::Layer::gather(d["gather"].cast<std::vector<int64_t>>(),
-                                            d["inputs"].cast<int64_t>(), bias);
+        return NeuralNetwork::Layer::gather(
+            d["gather"].cast<std::vector<int64_t>>(), d["inputs"].cast<int64_t>(), bias,
+            d.contains("scale") && !d["scale"].is_none() ? point_of(d["scale"], "the scale")
+                                                         : Tensor());
     // a convolution with ONNX's attributes
     NeuralNetwork::Conv2d spec;
     if (d.contains("stride")) spec.stride = d["stride"].cast<std::array<int64_t, 2>>();
@@ -4560,11 +4562,11 @@ void bind_neural_network(py::module_ &m) {
              py::arg("layers"), py::arg("activations") = py::none(),
              "the layers as (W (out, in), b (out,)) pairs, first to last, or dicts {'conv2d': "
              "kernel, 'bias', 'input': (C, H, W), 'stride', 'dilation', 'pads', 'groups'} and "
-             "{'gather': index, 'inputs', 'bias'} or {'W', 'bias'}, each with the optional graph "
-             "keys "
+             "{'gather': index, 'inputs', 'bias', optional 'scale'} or {'W', 'bias'}, each with "
+             "the optional graph keys "
              "'source' (the layer it reads, -1 the input) and 'residuals' ([{'source', 'map': a "
              "layer or None for the identity}], added), and optionally the activation of each: "
-             "'identity', 'relu', 'sigmoid' or 'tanh'")
+             "'identity', 'relu', 'sigmoid', 'tanh', 'square', 'sign', 'exp' or 'reciprocal'")
         .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
         .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")
         // the outputs at points, the enclosure of the outputs over a set, and the pairs

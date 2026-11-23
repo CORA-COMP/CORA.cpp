@@ -180,12 +180,20 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             hi.push_back(sl.maximum(su));
             continue;
         }
+        if (a == Activation::reciprocal) {
+            // 1 / max(x, 1) falls: lo is the upper end's, hi the lower end's
+            lo.push_back(phi.back().ones_like().divide(phi.back().maximum(1.0)));
+            hi.push_back(plo.back().ones_like().divide(plo.back().maximum(1.0)));
+            continue;
+        }
         lo.push_back(a == Activation::identity  ? plo.back()
+                     : a == Activation::exp     ? plo.back().exp()
                      : a == Activation::sign    ? plo.back().sign()
                      : a == Activation::relu    ? plo.back().maximum(0.0)
                      : a == Activation::sigmoid ? plo.back().sigmoid()
                                                 : plo.back().tanh());
         hi.push_back(a == Activation::identity  ? phi.back()
+                     : a == Activation::exp     ? phi.back().exp()
                      : a == Activation::sign    ? phi.back().sign()
                      : a == Activation::relu    ? phi.back().maximum(0.0)
                      : a == Activation::sigmoid ? phi.back().sigmoid()
@@ -220,6 +228,14 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                 return z + z;
             case Activation::sign:
                 return z.zeros_like();
+            // a softmax's parts: exp, and -1 / x^2 above 1
+            case Activation::exp:
+                return z.exp();
+            case Activation::reciprocal: {
+                const Tensor y = z.ones_like().divide(z.maximum(1.0));
+                return Tensor::where(z.greater(z.ones_like()), y.square().negative(),
+                                     z.zeros_like());
+            }
             }
             CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
         };
@@ -233,6 +249,11 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                                g_lo.multiply(open).multiply(1.0 - left).multiply(d_lo);
             g_hi = g_hi.multiply(1.0 - left).multiply(d_hi) +
                    g_lo.multiply(open).multiply(left).multiply(d_hi);
+            g_lo = g_l;
+        } else if (net.activations[k] == Activation::reciprocal) {
+            // falling: the output's lo is the input's hi, and back
+            const Tensor g_l = g_hi.multiply(slope(plo[k]));
+            g_hi = g_lo.multiply(slope(phi[k]));
             g_lo = g_l;
         } else {
             g_hi = g_hi.multiply(slope(phi[k]));
@@ -649,7 +670,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
     Tensor splits = xs.zeros_like({xs.shape()[0], 0});
-    int64_t iteration = 0, verified = 0;
+    int64_t iteration = 0, verified = 0, unresolved = 0;
     double last = 0;
     while (xs.shape()[0] > 0) {
         // a batch starts only if the last one's time still fits before the deadline
@@ -669,6 +690,11 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
         try {
             step = aux_iteration(xi, ri, ci, si);
         } catch (const std::exception &error) {
+            if (priv_is_out_of_range(error)) {
+                // a bound beyond the float range (an exp): the batch stays open, the rest goes on
+                unresolved += xi.shape()[0];
+                continue;
+            }
             if (!is_deadline(error) && (!priv_is_oom(error) || !aux_back_off()))
                 std::rethrow_exception(std::current_exception());
             xs = Tensor::concat({xi, xs}, 0);
@@ -708,9 +734,10 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
         }
     }
     stats["iterations"] = double(iteration);
-    // the verdict: no set left is unsat
+    // the verdict: no set left (nor one beyond the float range) is unsat
     stats["verified_sets"] = double(verified);
-    return xs.shape()[0] == 0 ? "unsat" : "unknown";
+    if (unresolved > 0) stats["out_of_range_sets"] = double(unresolved);
+    return xs.shape()[0] == 0 && unresolved == 0 ? "unsat" : "unknown";
 }
 
 // One batch ---------------------------------------------------------------------------------------

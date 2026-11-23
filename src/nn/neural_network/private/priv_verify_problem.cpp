@@ -171,12 +171,14 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         }
         pre.push_back(z + layers[k].b);
         const Activation a = net.activations()[k];
-        h = a == Activation::relu      ? pre.back().maximum(0.0)
-            : a == Activation::sigmoid ? pre.back().sigmoid()
-            : a == Activation::tanh    ? pre.back().tanh()
-            : a == Activation::square  ? pre.back().square()
-            : a == Activation::sign    ? pre.back().sign()
-                                       : pre.back();
+        h = a == Activation::relu         ? pre.back().maximum(0.0)
+            : a == Activation::sigmoid    ? pre.back().sigmoid()
+            : a == Activation::tanh       ? pre.back().tanh()
+            : a == Activation::square     ? pre.back().square()
+            : a == Activation::sign       ? pre.back().sign()
+            : a == Activation::exp        ? pre.back().exp()
+            : a == Activation::reciprocal ? pre.back().ones_like().divide(pre.back().maximum(1.0))
+                                          : pre.back();
         outs.push_back(h);
     }
     // the margins of the rows of every polytope
@@ -216,6 +218,13 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         if (a == Activation::square) g = g.multiply(z + z);
         // sign: the straight-through estimator (1 on [-1, 1]), so that the attack moves
         if (a == Activation::sign) g = g.multiply(z.abs().less_equal(z.ones_like()));
+        if (a == Activation::exp) g = g.multiply(z.exp());
+        if (a == Activation::reciprocal) {
+            // -1 / x^2 above 1, else 0
+            const Tensor y = z.ones_like().divide(z.maximum(1.0));
+            g = g.multiply(
+                Tensor::where(z.greater(z.ones_like()), y.square().negative(), z.zeros_like()));
+        }
         for (const NeuralNetwork::Residual &r : layers[k].residuals)
             add(r.source, r.map ? r.map->rows_t(g) : g);
         add(net.source(k), layers[k].rows_t(g));

@@ -74,6 +74,15 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
             h = z.square();
             derivative = z + z;
             break;
+        case Activation::exp:
+            h = z.exp();
+            derivative = h;
+            break;
+        case Activation::reciprocal:
+            // 1 / max(x, 1) and -1 / x^2 above 1
+            h = one.divide(z.maximum(1.0));
+            derivative = Tensor::where(z.greater(one), h.multiply(h).negative(), zero);
+            break;
         }
         // the chain rule: diag(a'(z)) W J
         J = derivative.multiply(layers_[k].W.matmul(J));

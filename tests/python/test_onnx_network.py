@@ -206,7 +206,11 @@ class Lowering(unittest.TestCase):
         # a binarized network: sign layers; its output Softmax dropped, the logits equal the graph's
         m = sign_net()
         net = OnnxNetwork(m, dtype=torch.float64)
-        self.assertIsNotNone(net.layers()[1])  # the Softmax does not lower by itself
+        (whole, kept), _ = net.layers()  # the Softmax kept: exp and 1 / sum, like the graph
+        self.assertEqual(kept[-2:], ["exp", "reciprocal"])
+        x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(whole, kept).evaluate(x)),
+                                   net(x).numpy(), rtol=1e-12, atol=1e-12)
         (layers, acts), why = net.layers(drop_output_softmax=True)
         self.assertIsNone(why)
         self.assertTrue(net.dropped_softmax)
@@ -224,6 +228,28 @@ class Lowering(unittest.TestCase):
         outs = "(declare-const Y_0 Real)\n(declare-const Y_1 Real)\n"
         self.assertTrue(_compares_outputs(parse_vnnlib(box + outs + "(assert (>= Y_0 Y_1))\n", 3, 2)))
         self.assertFalse(_compares_outputs(parse_vnnlib(box + outs + "(assert (>= Y_0 0.5))\n", 3, 2)))
+
+    def test_attention_and_softmax(self):
+        # SAGAN's self-attention: two products of values and a softmax inside, equal to the graph
+        net = OnnxNetwork(attention_net(), dtype=torch.float64)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+        np.testing.assert_allclose(
+            np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-10, atol=1e-12
+        )
+        (_, acts), _ = OnnxNetwork(attention_net()).layers()
+        self.assertEqual([a for a in acts if a != "identity"],
+                         ["square", "exp", "reciprocal", "square"])
+        # verify on its enclosure: a sampled violation is never unsat
+        x = RNG.uniform(-1, 1, (4000, net.num_inputs))
+        y = net(torch.as_tensor(x)).numpy()
+        A = np.zeros((1, 1, net.num_outputs))
+        A[0, 0, 0], A[0, 0, 1] = 1.0, -1.0
+        low = float((y @ A[0, 0]).min())
+        lo, hi = -np.ones((1, net.num_inputs)), np.ones((1, net.num_inputs))
+        out = nn.verify(lo, hi, [0], A, np.array([[low + 0.01]]), 20, cora.vnncomp_options("x"))
+        self.assertEqual(out["status"], "sat")
 
     def test_backend_by_network(self):
         # torch for a convolution (or a GPU), eigen for a dense network (cora.nn_verify.load)
@@ -418,6 +444,35 @@ def product_net():
         helper.make_node("Mul", ["r", "x"], ["y"]),
     ]
     return model(nodes, [("x", [1, 3])], [("y", [1, 3])], {"W1": weight(3, 3)})
+
+
+def attention_net():
+    """SAGAN's self-attention on a (2, 2, 2) image: theta^T phi, its softmax, g times its
+    transpose, then x + sigma o(...) into a Gemm."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wt"], ["t"]),
+        helper.make_node("Reshape", ["t", "s1"], ["tr"]),
+        helper.make_node("Transpose", ["tr"], ["tt"], perm=[0, 2, 1]),
+        helper.make_node("Conv", ["x", "Wp"], ["p"]),
+        helper.make_node("Reshape", ["p", "s1"], ["pr"]),
+        helper.make_node("MatMul", ["tt", "pr"], ["att"]),
+        helper.make_node("Softmax", ["att"], ["sm"], axis=2),
+        # the values g, the softmax transposed, their product, then the residual
+        helper.make_node("Conv", ["x", "Wg"], ["g"]),
+        helper.make_node("Reshape", ["g", "s2"], ["gr"]),
+        helper.make_node("Transpose", ["sm"], ["smt"], perm=[0, 2, 1]),
+        helper.make_node("MatMul", ["gr", "smt"], ["o"]),
+        helper.make_node("Reshape", ["o", "s3"], ["oi"]),
+        helper.make_node("Mul", ["sigma", "oi"], ["os"]),
+        helper.make_node("Add", ["x", "os"], ["a"]),
+        helper.make_node("Flatten", ["a"], ["f"]),
+        helper.make_node("Gemm", ["f", "W", "b"], ["y"], transB=1),
+    ]
+    init = {"Wt": weight(1, 2, 1, 1), "Wp": weight(1, 2, 1, 1), "Wg": weight(2, 2, 1, 1),
+            "s1": np.array([1, 1, 4], np.int64), "s2": np.array([1, 2, 4], np.int64),
+            "s3": np.array([1, 2, 2, 2], np.int64), "sigma": np.array([0.7], np.float32),
+            "W": weight(3, 8), "b": weight(3)}
+    return model(nodes, [("x", [1, 2, 2, 2])], [("y", [1, 3])], init)
 
 
 def sign_net():

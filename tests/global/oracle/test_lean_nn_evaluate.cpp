@@ -25,7 +25,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   18-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -73,9 +73,13 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
             break;
         case Activation::identity:
             break;
+        // the activations CORALean has no layer of
         case Activation::square:
         case Activation::sign:
-            throw std::invalid_argument("aux_lean_layers: the oracle has no square or sign layer");
+        case Activation::exp:
+        case Activation::reciprocal:
+            throw std::invalid_argument(
+                "aux_lean_layers: the oracle has no square, sign, exp or reciprocal layer");
         }
     }
     return layers;

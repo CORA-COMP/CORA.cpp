@@ -15,7 +15,7 @@ See also: cora.onnx_network, cora.vnnlib, cora.counterexample, docs/nn_verificat
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -83,15 +83,24 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
             out["residuals"] = [{**r, "map": one(r["map"])} for r in out["residuals"]]
         return out
 
-    try:
-        network = cora.NeuralNetwork([one(layer) for layer in layers], activations)
-    except (ValueError, TypeError, RuntimeError, NotImplementedError) as error:  # C++ refuses
-        return Instance(str(onnx_path), None, f"the C++ network refuses a layer: {error}", None, "")
+    def build(layers, activations):
+        # the C++ network, or None and why it refuses a layer
+        try:
+            return cora.NeuralNetwork([one(layer) for layer in layers], activations), ""
+        except (ValueError, TypeError, RuntimeError, NotImplementedError) as error:
+            return None, f"the C++ network refuses a layer: {error}"
+
+    network, why = build(layers, activations)
+    if network is None:
+        return Instance(str(onnx_path), None, why, None, "")
     text = read_text(vnnlib_path)
     prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
     if net.dropped_softmax and not _compares_outputs(prop):
-        why = "a Softmax output with a property that is not only comparisons of outputs"
-        return Instance(str(onnx_path), None, why, None, "")
+        # the probabilities themselves: the output Softmax as exp and 1 / sum
+        lowered, why = net.layers()
+        network, why = build(*lowered) if lowered else (None, why)
+        if network is None:
+            return Instance(str(onnx_path), None, why, None, "")
     return Instance(str(onnx_path), network, "", prop, text, backend)
 
 

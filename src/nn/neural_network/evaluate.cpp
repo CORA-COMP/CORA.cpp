@@ -42,6 +42,7 @@
 // CORA: nn/layers/nonlinear/nnSShapeLayer.m
 // CORA: nn/layers/nonlinear/nnSquareLayer.m
 // CORA.cpp only: the sign activation (no CORA layer)
+// CORA.cpp only: exp and the reciprocal 1 / max(x, 1), a softmax's parts (no CORA layer)
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
@@ -84,6 +85,11 @@ Tensor aux_apply(Activation activation, const Tensor &x) {
         return x.square();
     case Activation::sign:
         return x.sign();
+    // a softmax's parts
+    case Activation::exp:
+        return x.exp();
+    case Activation::reciprocal:
+        return x.ones_like().divide(x.maximum(1.0));
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
@@ -140,6 +146,10 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         return priv_square_line(l, u);
     case Activation::sign:
         return priv_sign_line(l, u);
+    case Activation::exp:
+        return priv_exp_line(l, u);
+    case Activation::reciprocal:
+        return priv_reciprocal_line(l, u);
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
@@ -265,7 +275,10 @@ Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u
 
 /// The line of the activation over [l, u] by the method.
 Line aux_line(Activation activation, const Tensor &l, const Tensor &u, const NnOptions &options) {
-    if (options.poly_method == PolyMethod::singh) return aux_line_singh(activation, l, u);
+    // exp and the reciprocal have one line in every method
+    if (activation == Activation::exp || activation == Activation::reciprocal ||
+        options.poly_method == PolyMethod::singh)
+        return aux_line_singh(activation, l, u);
     if (options.poly_method == PolyMethod::regression)
         return aux_line_regression(activation, l, u, options.regression_error);
     CORA_FAIL(Error::not_supported, "evaluate: this poly_method is for polynomial zonotopes");
@@ -573,10 +586,63 @@ std::pair<Tensor, Tensor> priv_bounds(const PrivRows &r) {
     return aux_bounds(r);
 }
 
+Tensor priv_apply(Activation activation, const Tensor &x) {
+    detail::Entry entry;
+    return aux_apply(activation, x);
+}
+
 PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
                    const NnOptions &options) {
     detail::Entry entry;
     return aux_line(activation, l, u, options);
+}
+
+// The bounds beyond the float range ---------------------------------------------------------------
+
+void priv_check_finite(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    // one flag for the whole batch: a bound beyond the float range has no line
+    const Tensor finite = l.isfinite().multiply(u.isfinite());
+    if (finite.numel() > 0 && finite.reshape({finite.numel()}).min(0).item() < 1)
+        CORA_FAIL(Error::special_error, kOutOfRangeMessage);
+}
+
+bool priv_is_out_of_range(const std::exception &error) {
+    detail::Entry entry;
+    // a cora::Error with priv_check_finite's message
+    const auto *e = dynamic_cast<const Error *>(&error);
+    return e && e->id() == Error::special_error && std::string(kOutOfRangeMessage) == e->what();
+}
+
+// The lines of exp and the reciprocal ------------------------------------------------------------
+
+PrivLine priv_exp_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    const Tensor el = l.exp(), eu = u.exp(), width = u - l, zero = l.zeros_like();
+    priv_check_finite(el, eu);
+    // the chord's slope (e^l on a point); e^x - m x is convex, for any m >= 0 (priv_layers.h)
+    const Tensor m =
+        Tensor::where(width.greater(zero), (eu - el).divide(width.maximum(numerics::kTiny)), el)
+            .maximum(zero);
+    const auto g = [&](const Tensor &x) { return x.exp() - m.multiply(x); };
+    const Tensor hi = g(l).maximum(g(u)), lo = g(m.log().maximum(l).minimum(u));
+    // the radius widened by the rounding (16 ulps of the largest term)
+    const Tensor big = eu + m.multiply(l.abs().maximum(u.abs()));
+    return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big * (16.0 * machine_eps(l.dtype()))};
+}
+
+PrivLine priv_reciprocal_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    priv_check_finite(l, u);
+    const Tensor one = l.ones_like(), lc = l.maximum(1.0), uc = u.maximum(1.0);
+    // the chord's slope -1 / (l u) on [max(l, 1), max(u, 1)], the extremes as in priv_layers.h
+    const Tensor m = one.divide(lc).multiply(one.divide(uc)).negative();
+    const auto g = [&](const Tensor &x) { return one.divide(x.maximum(1.0)) - m.multiply(x); };
+    const Tensor hi = g(l).maximum(g(u)).maximum(g(one.maximum(l).minimum(u)));
+    const Tensor lo = g(l).minimum(g(lc.multiply(uc).sqrt().maximum(l).minimum(u)));
+    // the radius widened by the rounding (16 ulps of the largest term)
+    const Tensor big = one + m.abs().multiply(l.abs().maximum(u.abs()));
+    return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big * (16.0 * machine_eps(l.dtype()))};
 }
 
 // The lines of sign and the square ----------------------------------------------------------------

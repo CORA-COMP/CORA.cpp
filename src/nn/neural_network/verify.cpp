@@ -23,12 +23,13 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"
+#include "nn/neural_network/private/priv_layers.h"
 #include "nn/neural_network/private/priv_verify.h"
 
 #include <cmath>
@@ -51,8 +52,15 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
     NnVerifyResult result;
     std::unique_ptr<Attack> attack = make_attack(o.falsification_method, o);
     std::unique_ptr<Bounding> bounding = priv_make_bounding(o.bounding_method, o);
-    const bool can_bound = bounding->prepare(problem);
-    if (!can_bound) result.note = bounding->why;
+    bool can_bound = false;
+    try {
+        can_bound = bounding->prepare(problem);
+        if (!can_bound) result.note = bounding->why;
+    } catch (const Error &error) {
+        // a bound beyond the float range (an exp): the attack alone
+        if (!priv_is_out_of_range(error)) std::rethrow_exception(std::current_exception());
+        result.note = error.what();
+    }
     // the result of a confirmed counterexample, and an attack with its time
     const auto sat = [&](const AttackResult &found) {
         result.status = "sat";
@@ -94,8 +102,10 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
         try {
             status = bounding->branch_and_bound(problem, deadline, result.stats, found);
         } catch (const Error &error) {
-            if (!is_deadline(error)) std::rethrow_exception(std::current_exception());
-            result.stats["bab_cut"] += 1;
+            // the deadline, or a bound beyond the float range: the verdict stays open
+            if (!is_deadline(error) && !priv_is_out_of_range(error))
+                std::rethrow_exception(std::current_exception());
+            result.stats[is_deadline(error) ? "bab_cut" : "bab_out_of_range"] += 1;
         }
         result.stats["bab_seconds"] = now_seconds() - t;
         if (status == "sat") return sat(found);

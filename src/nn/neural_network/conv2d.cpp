@@ -2,10 +2,11 @@
 //
 // A layer maps rows h (..., in) to W h + b (..., out). W is a dense matrix, a convolution (ONNX's
 // Conv of a (channels, height, width) input in C order, with strides, pads, dilations and groups)
-// or a gather (each output an input or 0: ONNX's Transpose, Pad, Slice; Reshape and Flatten are the
-// identity on rows in C order). A convolution is never made a matrix: its rows are the patches of
-// the input times the kernel (im2col), and its transpose multiplies by the kernel's transpose and
-// folds the patches back onto the input pixels (col2im), so W^T y costs what W x does.
+// or a gather (each output an input or 0, times an optional factor: ONNX's Transpose, Pad, Slice,
+// the front end's products and softmax; Reshape and Flatten are the identity on rows in C order).
+// A convolution is never made a matrix: its rows are the patches of the input times the kernel
+// (im2col), and its transpose multiplies by the kernel's transpose and folds the patches back onto
+// the input pixels (col2im), so W^T y costs what W x does.
 // The generator axis of a batch of zonotopes is just more rows, a batched convolution.
 //
 // Syntax:   Layer L = NeuralNetwork::Layer::conv2d(kernel, bias, {C, H, W}, spec);
@@ -51,9 +52,10 @@ struct NeuralNetwork::LinearPlan {
     std::vector<int64_t> patch, col2im;
     int64_t fold = 1;
     Tensor K, abs_k, KT, abs_kt; ///< (cin offsets, cout) and its transpose (cout, cin offsets)
-    // a gather: the input of each output, and the fan outputs of each input (out: none)
+    // a gather: the input of each output, the fan outputs of each input (out: none)
     std::vector<int64_t> index, inverse;
     int64_t fan = 1;
+    Tensor scale, abs_scale; ///< the factor of each output (1, out) and |factor|; undefined: 1
 };
 
 namespace {
@@ -181,7 +183,7 @@ NeuralNetwork::Layer NeuralNetwork::Layer::conv2d(const Tensor &kernel, const Te
 }
 
 NeuralNetwork::Layer NeuralNetwork::Layer::gather(const std::vector<int64_t> &index, int64_t inputs,
-                                                  const Tensor &bias) {
+                                                  const Tensor &bias, const Tensor &scale) {
     detail::Entry entry;
     auto plan = std::make_shared<LinearPlan>();
     plan->in = inputs;
@@ -205,6 +207,14 @@ NeuralNetwork::Layer NeuralNetwork::Layer::gather(const std::vector<int64_t> &in
             plan->inverse[j * std::size_t(plan->fan) + t] = outputs[j][t];
     CORA_CHECK(bias.shape() == std::vector<int64_t>({plan->out}), Error::wrong_input_in_constructor,
                [] { return std::string("Layer::gather: the bias needs one entry per output"); });
+    // the factors as a row, broadcast over the rows of a product
+    if (scale.defined()) {
+        CORA_CHECK(
+            scale.shape() == std::vector<int64_t>({plan->out}), Error::wrong_input_in_constructor,
+            [] { return std::string("Layer::gather: the scale needs one entry per output"); });
+        plan->scale = scale.reshape({1, plan->out});
+        plan->abs_scale = plan->scale.abs();
+    }
     Layer layer{Tensor(), bias};
     layer.plan = plan;
     return layer;
@@ -262,11 +272,16 @@ Tensor NeuralNetwork::Layer::aux_product(const Tensor &x, bool absolute, bool tr
         Y = transposed ? aux_conv_t(X, p, absolute ? p.abs_k : p.K)
                        : aux_conv(X, p, absolute ? p.abs_kt : p.KT);
     } else {
-        // a gather and its transpose (the sum over each input's outputs) are gathers (|W| = W)
+        // a gather and its transpose (sums over each input's outputs), times the factors
         const int64_t N = X.shape()[0];
-        const Tensor X3 = X.reshape({N, 1, from});
-        Y = transposed ? aux_gather(X3, plan->inverse).reshape({N, to, plan->fan}).sum(-1)
-                       : aux_gather(X3, plan->index).reshape({N, to});
+        const Tensor &f = absolute ? plan->abs_scale : plan->scale;
+        if (transposed) {
+            const Tensor X3 = (f.defined() ? X.multiply(f) : X).reshape({N, 1, from});
+            Y = aux_gather(X3, plan->inverse).reshape({N, to, plan->fan}).sum(-1);
+        } else {
+            Y = aux_gather(X.reshape({N, 1, from}), plan->index).reshape({N, to});
+            if (f.defined()) Y = Y.multiply(f);
+        }
     }
     return aux_unflat(Y, x, to);
 }
@@ -285,6 +300,8 @@ NeuralNetwork::Layer NeuralNetwork::Layer::to(DType dtype, const std::string &de
         p->abs_k = move(p->abs_k);
         p->KT = move(p->KT);
         p->abs_kt = move(p->abs_kt);
+        p->scale = move(p->scale);
+        p->abs_scale = move(p->abs_scale);
         layer.plan = p;
     }
     // the graph: the same sources, the residuals' maps moved as well

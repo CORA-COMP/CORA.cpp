@@ -153,7 +153,9 @@ class OnnxNetwork:
         if not any(op in STRUCTURED_OPS for op, _, _, _ in self.nodes):
             dense, why = self.dense_layers(max_elements)
             # a graph (two branches joined, a product of two values) goes layer by layer
-            if dense or not any(r in why for r in ("joins two", "of two values", "fails to lower")):
+            if dense or not any(
+                r in why for r in ("joins two", "of two values", "fails to lower", "Softmax")
+            ):
                 return dense, why
         try:
             return self._lower_structured(), None
@@ -206,6 +208,9 @@ class OnnxNetwork:
 
     def _op_Sign(self, a, _):
         return torch.sign(a[0])
+
+    def _op_Exp(self, a, _):
+        return torch.exp(a[0])
 
     def _op_ReduceSum(self, a, attrs):
         # the axes from the input (opset 13) or the attribute; none: all (or noop_with_empty_axes)
@@ -402,10 +407,13 @@ class OnnxNetwork:
         return torch.tensor(list(a[0].shape), dtype=torch.int64, device=self.device)
 
     def _op_Gather(self, a, attrs):
+        # (a scalar index drops the axis: the shape as a tuple, which may be empty)
         return torch.index_select(a[0], attrs.get("axis", 0), a[1].reshape(-1)).reshape(
-            *a[0].shape[: attrs.get("axis", 0)],
-            *a[1].shape,
-            *a[0].shape[attrs.get("axis", 0) + 1 :],
+            (
+                *a[0].shape[: attrs.get("axis", 0)],
+                *a[1].shape,
+                *a[0].shape[attrs.get("axis", 0) + 1 :],
+            )
         )
 
     def _op_Slice(self, a, attrs):
@@ -573,8 +581,8 @@ class OnnxNetwork:
             maps[-1] = _add_bias(maps[-1], expr.bias)
             return _Expr(expr.shape, [(src, maps)])
 
-        def squares(expr):
-            # the expression as a layer whose activation is x^2 (a fresh layer: no other reader)
+        def squares(expr, activation="square"):
+            # the expression as a layer with the activation (a fresh layer: no other reader)
             before = len(layers)
             k = materialize(expr)
             if k < 0 or k < before or activations[k] != "identity":
@@ -582,8 +590,47 @@ class OnnxNetwork:
                 k = emit([_gather(list(range(size)), size, torch.zeros(size))], k)
             else:
                 done.pop(id(expr), None)
-            activations[k] = "square"
+            activations[k] = activation
             return k
+
+        def products(a, b, ia, ib, out_shape):
+            # the sums over t of a[ia[t, o]] b[ib[t, o]] (index lists (K, O)): the halves
+            # (a + b) / 2 and (a - b) / 2 of every product by gathers with factors, their squares,
+            # then the difference of the squares summed over t by a 1 x 1 convolution
+            K, O = ia.shape
+            ka, kb = materialize(single(a)), materialize(single(b))
+            na, nb = math.prod(a.shape[1:]), math.prod(b.shape[1:])
+            half = torch.full((2 * K * O,), 0.5, dtype=torch.float64)
+            signs = torch.cat([half[: K * O], -half[K * O :]])
+            ga = _gather(torch.cat([ia.reshape(-1)] * 2).tolist(), na, torch.zeros(2 * K * O), half)
+            gb = _gather(torch.cat([ib.reshape(-1)] * 2).tolist(), nb, torch.zeros(2 * K * O),
+                         signs)
+            k = squares(_Expr((1, 2 * K * O), [(ka, [ga]), (kb, [gb])]))
+            w = torch.cat([torch.ones(K), -torch.ones(K)]).to(torch.float64).reshape(1, 2 * K, 1, 1)
+            total = _conv(w, torch.zeros(1), (1, 2 * K, O, 1), {}, (1, 1, O, 1))
+            return _Expr(out_shape, [(k, [total])])
+
+        def softmax(expr, axis):
+            # 1 / sum_t exp(x_t - x_q) along the axis: the differences by two gathers (one times
+            # -1), exp, their sums by a 1 x 1 convolution, then 1 / max(s, 1) (s >= 1: t = q)
+            shape = expr.shape
+            n, M = math.prod(shape[1:]), shape[axis]
+            idx = torch.arange(n).reshape(shape[1:])
+            moved = idx.movedim(axis - 1, -1)  # (..., M): the entries along the axis
+            # it[t, q]: the entry t of q's row; iq[t, q] = q
+            rows = moved.unsqueeze(-2).expand(*moved.shape, M)  # (..., q, t)
+            it = torch.empty(M, n, dtype=torch.int64)
+            it[:, moved.reshape(-1)] = rows.reshape(-1, M).T
+            iq = torch.arange(n).expand(M, n)
+            kx = materialize(single(expr))
+            zero = torch.zeros(M * n)
+            minus = torch.full((M * n,), -1.0, dtype=torch.float64)
+            dt = _gather(it.reshape(-1).tolist(), n, zero)
+            dq = _gather(iq.reshape(-1).tolist(), n, zero, minus)
+            ke = squares(_Expr((1, M * n), [(kx, [dt]), (kx, [dq])]), "exp")
+            w = torch.ones(1, M, 1, 1, dtype=torch.float64)
+            total = _conv(w, torch.zeros(1), (1, M, n, 1), {}, (1, 1, n, 1))
+            return _Expr(shape, [(squares(_Expr((1, n), [(ke, [total])]), "reciprocal"), [])])
 
         def max_pool(expr, shape, out_shape, attrs):
             # max(a, b) = b + relu(a - b): the window's items in pairs, round by round; a round is
@@ -693,6 +740,31 @@ class OnnxNetwork:
                                                               dtype=torch.float64))
                 bias = ba if bb is None else bb if ba is None else ba + bb
                 chain[outs[0]] = _Expr(a.shape, ta + tb, bias)
+                continue
+            if op == "MatMul" and len(ins) == 2 and len(linked) == 2:
+                # a product of two values (attention): A (..., n, K) times B (..., K, m)
+                a, b = chain[ins[0]], chain[ins[1]]
+                ia = torch.arange(math.prod(a.shape)).reshape(a.shape).unsqueeze(-1)
+                ib = torch.arange(math.prod(b.shape)).reshape(b.shape).unsqueeze(-3)
+                ia, ib = torch.broadcast_tensors(ia, ib)  # (..., n, K, m)
+                out_shape = tuple(ia.shape[:-2]) + (ia.shape[-1],)
+                if out_shape[0] != 1:
+                    raise _NotAChain("MatMul of two values with a batch of other sizes")
+                K = ia.shape[-2]
+                chain[outs[0]] = products(
+                    a, b, ia.movedim(-2, 0).reshape(K, -1), ib.movedim(-2, 0).reshape(K, -1),
+                    out_shape,
+                )
+                continue
+            if op == "Softmax" and len(linked) == 1:
+                # a softmax inside the network (the output's may be dropped, layers())
+                expr = chain[ins[0]]
+                axis = attrs.get("axis", -1 if net.opset >= 13 else 1) % len(expr.shape)
+                if net.opset < 13 and axis != len(expr.shape) - 1:
+                    raise _NotAChain("Softmax before opset 13 over more than the last axis")
+                if axis == 0:
+                    raise _NotAChain("Softmax over the batch axis")
+                chain[outs[0]] = softmax(expr, axis)
                 continue
             if op == "Mul" and len(ins) == 2 and len(linked) == 2:
                 # a product of two values: ((a + b)^2 - (a - b)^2) / 4, the squares a layer
@@ -884,7 +956,7 @@ MAX_PRODUCT = 4096  # entries of a product of two values at most (its maps are d
 
 UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
 
-ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign"}  # cora's
+ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign", "Exp": "exp"}
 
 LINEAR_OPS = {
     "Add",
@@ -995,13 +1067,17 @@ def _scale(expr, single, then, factor, shape, out_shape):
     return then((torch.diag(factor).contiguous(), zero))
 
 
-def _gather(index, inputs, bias):
-    """The gather dict of cora.NeuralNetwork: output i is input index[i] (negative: 0)."""
-    return {
+def _gather(index, inputs, bias, scale=None):
+    """The gather dict of cora.NeuralNetwork: output i is input index[i] (negative: 0), times
+    scale[i] if given."""
+    out = {
         "gather": list(index),
         "inputs": int(inputs),
         "bias": bias.to(torch.float64).contiguous(),
     }
+    if scale is not None:
+        out["scale"] = scale.to(torch.float64).contiguous()
+    return out
 
 
 class _Expr:

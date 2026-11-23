@@ -79,8 +79,21 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   straight-through estimator (1 on `[-1, 1]`), so that PGD moves on a binarized network. The
   weights' Sign folds as a constant. A Softmax that makes the output is dropped when the property
   only compares outputs (`y_i - y_j <= 0`: it keeps their order); with any other property the
-  instance is `unknown` with the reason. traffic_signs' three networks lower and give onnxruntime's
+  Softmax stays, lowered as below. traffic_signs' three networks lower and give onnxruntime's
   probabilities to 7e-8.
+- **Softmax and attention (Phase 4, cGAN's transformer).** A Softmax inside the network lowers to
+  `1 / sum_t exp(x_t - x_q)`: the differences by two gathers of the same layer (one with the
+  factor -1), a layer of `Activation::exp`, their sums by a 1 x 1 convolution, then a layer of
+  `Activation::reciprocal`, `1 / max(x, 1)`, which is `1 / x` there because the term `t = q` is
+  exactly 1. A MatMul of two values (`theta^T phi`, `g attn^T`) is a sum of products, each
+  `((a + b)^2 - (a - b)^2) / 4`: gathers with factors `+-1/2` (`Layer::gather`'s `scale`) into one
+  layer of `Activation::square`, then a 1 x 1 convolution of `+1, -1` over the products of each
+  entry; nothing is dense. The lines (CORA.cpp only): exp takes the chord's slope `m`, the range of
+  `exp(x) - m x` at the ends and at `log m`; the reciprocal the chord's slope on `[max(l, 1),
+  max(u, 1)]`, the range of `f(x) - m x` at `l`, `u`, 1 and `sqrt(l u)`; both widened by 16 ulps of
+  the largest term. A bound beyond the float range (an exp that overflows) has no line: that batch
+  stays open (`out_of_range_sets`), the instance is never unsat for it, and the attack goes on.
+  cGAN's `small_transformer` lowers to 90 layers and gives onnxruntime's output to 4e-7.
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of

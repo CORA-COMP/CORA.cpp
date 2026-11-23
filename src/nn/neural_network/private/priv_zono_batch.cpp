@@ -75,25 +75,8 @@ Tensor aux_onehot(const Tensor &idx, int64_t n) {
 
 // The activations ---------------------------------------------------------------------------------
 
-/// The activation and its derivative at the points.
-Tensor aux_apply(Activation activation, const Tensor &x) {
-    switch (activation) {
-    case Activation::identity:
-        return x;
-    case Activation::relu:
-        // max(x, 0), the sigmoid and tanh
-        return x.maximum(0.0);
-    case Activation::sigmoid:
-        return x.sigmoid();
-    case Activation::tanh:
-        return x.tanh();
-    case Activation::square:
-        return x.square();
-    case Activation::sign:
-        return x.sign();
-    }
-    CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
-}
+/// The activation at the points (evaluate.cpp's).
+Tensor aux_apply(Activation activation, const Tensor &x) { return priv_apply(activation, x); }
 
 /// The derivative of the activation at the points (a ReLU's is 0 at 0, as autograd's).
 Tensor aux_derivative(Activation activation, const Tensor &x) {
@@ -112,6 +95,13 @@ Tensor aux_derivative(Activation activation, const Tensor &x) {
         return x + x;
     case Activation::sign:
         return x.zeros_like();
+    case Activation::exp:
+        return x.exp();
+    case Activation::reciprocal: {
+        // -1 / x^2 above 1, else 0
+        const Tensor y = x.ones_like().divide(x.maximum(1.0));
+        return Tensor::where(x.greater(x.ones_like()), y.square().negative(), x.zeros_like());
+    }
     }
     CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
 }
@@ -300,8 +290,9 @@ LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Ten
                                const std::string &poly_method) {
     if (activation == Activation::relu) return aux_relu_jacobian(l, u);
     if (activation == Activation::square) return aux_square_jacobian(l, u);
-    if (activation == Activation::sign) {
-        // a step: the line does not move with the bounds
+    if (activation == Activation::sign || activation == Activation::exp ||
+        activation == Activation::reciprocal) {
+        // sign is a step, its line does not move with the bounds; exp's and 1 / x's are held
         const Tensor zero = l.zeros_like();
         return {zero, zero, zero, zero, zero, zero};
     }
@@ -504,6 +495,8 @@ PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &
     // a ReLU's line is CORALean's in both methods (the same line in the reals); x^2 has one line
     if (activation == Activation::square) return priv_square_line(l, u);
     if (activation == Activation::sign) return priv_sign_line(l, u);
+    if (activation == Activation::exp) return priv_exp_line(l, u);
+    if (activation == Activation::reciprocal) return priv_reciprocal_line(l, u);
     if (activation == Activation::relu || poly_method == "singh")
         return priv_line(activation, l, u, NnOptions{});
     if (poly_method == "bounds") return aux_bounds_line(activation, l, u);
