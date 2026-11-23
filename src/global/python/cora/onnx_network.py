@@ -19,7 +19,7 @@ See also: cora.vnnlib, cora.nn_verify, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   22-November-2026
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -414,7 +414,7 @@ class OnnxNetwork:
             if len(tags) > 1:
                 raise _NotAChain(f"{op} joins two layers (a residual connection)")
             tag = tags.pop() if tags else None
-            if tag is None or op in STRUCTURE_OPS:
+            if tag is None or (op in STRUCTURE_OPS and not _moves_data(op, args[0][0] is not None)):
                 out = net._run(op, [v for _, v, _ in args], attrs)
                 values[outs[0]] = (None, out, out)
                 continue
@@ -432,7 +432,7 @@ class OnnxNetwork:
                 eye = torch.eye(size, dtype=torch.float64).reshape(size, *lin.shape[1:])
                 values[outs[0]] = (len(layers), eye, torch.zeros_like(eye[:1]))
                 continue
-            if op not in LINEAR_OPS:
+            if op not in LINEAR_OPS | DATA_MOVES:
                 raise _NotAChain(f"{op} is neither affine nor relu/sigmoid/tanh")
             values[outs[0]] = (tag, *net._lower_affine(op, args, attrs))
             if values[outs[0]][1].numel() > max_elements:
@@ -597,7 +597,7 @@ class OnnxNetwork:
             if not linked:
                 values[outs[0]] = net._run(op, [values.get(n) if n else None for n in ins], attrs)
                 continue
-            if op in STRUCTURE_OPS:
+            if op in STRUCTURE_OPS and not _moves_data(op, ins[0] in chain):
                 # shape arithmetic on the chain: its shape only
                 probes = [
                     torch.zeros(1, *chain[n].shape[1:], dtype=torch.float64)
@@ -608,6 +608,38 @@ class OnnxNetwork:
                     for n in ins
                 ]
                 values[outs[0]] = net._run(op, probes, attrs)
+                continue
+            if op == "Concat" and len(set(linked)) > 1:
+                # branches side by side: each term padded into its place, the constants as bias
+                shapes = [chain[n].shape if n in chain else tuple(values[n].shape) for n in ins]
+
+                def probes(i, part, shapes=shapes):
+                    # zeros of every part's shape, `part` at the i-th
+                    zs = [torch.zeros(1, *sh[1:], dtype=torch.float64) for sh in shapes]
+                    zs[i] = part
+                    return zs
+
+                pieces, bias = [], None
+                for i, n in enumerate(ins):
+                    if n not in chain:
+                        moved = net._run(op, probes(i, values[n].to(torch.float64)), attrs)
+                        bias = moved.reshape(-1) if bias is None else bias + moved.reshape(-1)
+                        continue
+                    # the place of each entry of this part in the output (-1: another part's)
+                    size_i = math.prod(shapes[i][1:])
+                    idx = torch.arange(1, size_i + 1, dtype=torch.float64)
+                    idx = idx.reshape(1, *shapes[i][1:])
+                    index = (net._run(op, probes(i, idx), attrs).reshape(-1).round().long() - 1)
+                    place = _gather(index.tolist(), size_i, torch.zeros(len(index)))
+                    t, b = terms(chain[n])
+                    pieces += [(src, list(maps) + [place]) for src, maps in t]
+                    if b is not None:
+                        moved = torch.cat([b.to(torch.float64), torch.zeros(1)])[index]
+                        bias = moved if bias is None else bias + moved
+                out_shape = tuple(net._run(op, probes(0, torch.zeros(1, *shapes[0][1:],
+                                                                     dtype=torch.float64)),
+                                           attrs).shape)
+                chain[outs[0]] = _Expr(out_shape, pieces, bias)
                 continue
             if op in ("Add", "Sub") and len(ins) == 2 and len(set(linked)) == 2:
                 # two branches: the sum of their terms
@@ -665,11 +697,13 @@ class OnnxNetwork:
             elif op == "BatchNormalization":
                 scale, shift, mean, var = args[1:5]
                 factor = scale / torch.sqrt(var + attrs.get("epsilon", 1e-5))
-                c = shape[1]
-                fused = _fold_batch_norm(single(expr), factor, shift - mean * factor)
+                c, offset = shape[1], shift - mean * factor
+                fused = _fold_batch_norm(single(expr), factor, offset)
+                if fused is None and len(shape) == 2:
+                    # of features (after a Gemm): a diagonal dense layer
+                    fused = then((torch.diag(factor).contiguous(), offset.contiguous()))
                 chain[outs[0]] = fused or then(
-                    _conv(factor.reshape(c, 1, 1, 1), shift - mean * factor, shape, {"group": c},
-                          out_shape)
+                    _conv(factor.reshape(c, 1, 1, 1), offset, shape, {"group": c}, out_shape)
                 )
             elif (
                 op == "AveragePool"
@@ -697,7 +731,7 @@ class OnnxNetwork:
                 chain[outs[0]] = _Expr(out_shape, expr.terms, bias)
             elif op in ("Flatten", "Reshape", "Squeeze", "Unsqueeze", "Identity", "Dropout"):
                 chain[outs[0]] = _Expr(out_shape, expr.terms, expr.bias)
-            elif op in ("Transpose", "Pad", "Slice", "Concat", "Upsample"):
+            elif op in ("Transpose", "Pad", "Slice", "Concat", "Upsample", "Gather"):
                 # the input index + 1 of each output (0: a constant), and the constants
                 idx = torch.arange(1, size + 1, dtype=torch.float64).reshape(1, *shape[1:])
                 # a Concat's constant parts and a Pad's value are zeros of the moved indices
@@ -781,6 +815,13 @@ STRUCTURED_OPS = {
 }  # lowered layer by layer, never to a matrix
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
+DATA_MOVES = {"Slice", "Gather"}  # ... unless they move a value of the input: then linear
+
+
+def _moves_data(op, on_data):
+    """Whether a STRUCTURE_OPS node moves the entries of a value of the input (its first argument
+    is one): a Slice or Gather of data is a linear map, not shape arithmetic."""
+    return op in DATA_MOVES and bool(on_data)
 
 
 def _conv(w, b, shape, attrs, out_shape):
@@ -832,9 +873,14 @@ def _with_graph(layer, graph):
 
 
 def _fold_batch_norm(expr, factor, shift):
-    """The expression with a per-channel x * factor + shift folded into its last map, a conv2d
-    (kernel rows and bias scaled); None if that map is no convolution."""
+    """The expression with a per-channel x * factor + shift folded into its last map, a conv2d or
+    a dense pair (kernel or matrix rows and bias scaled); None if that map is neither."""
     src, maps = expr.terms[0]
+    if maps and isinstance(maps[-1], tuple) and maps[-1][0].shape[0] == factor.numel():
+        # a dense layer's rows: W' = diag(factor) W, b' = factor b + shift
+        W, b = maps[-1]
+        fused = ((W * factor.reshape(-1, 1)).contiguous(), (b * factor + shift).contiguous())
+        return _Expr(expr.shape, [(src, maps[:-1] + [fused])])
     if not maps or not isinstance(maps[-1], dict) or "conv2d" not in maps[-1]:
         return None
     conv = maps[-1]
