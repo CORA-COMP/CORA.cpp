@@ -57,6 +57,7 @@
 #include "nn/neural_network/private/priv_layers.h"
 
 #include <algorithm>
+#include <numbers>
 #include <tuple>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -109,6 +110,10 @@ Tensor aux_apply(Activation activation, const Tensor &x, int axis = -1) {
         return x.square().multiply(x);
     case Activation::inverse:
         return x.ones_like().divide(x);
+    case Activation::sin:
+        return x.sin();
+    case Activation::cos:
+        return x.cos();
     // a softmax's parts
     case Activation::exp:
         return x.exp();
@@ -177,6 +182,9 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         return priv_cube_line(l, u);
     case Activation::inverse:
         return priv_inverse_line(l, u);
+    case Activation::sin:
+    case Activation::cos:
+        return priv_trig_line(l, u, activation == Activation::cos);
     case Activation::exp:
         return priv_exp_line(l, u);
     case Activation::reciprocal:
@@ -312,6 +320,7 @@ Line aux_line(Activation activation, const Tensor &l, const Tensor &u, const NnO
     // exp, the reciprocals and x^3 have one line in every method
     if (activation == Activation::exp || activation == Activation::reciprocal ||
         activation == Activation::cube || activation == Activation::inverse ||
+        activation == Activation::sin || activation == Activation::cos ||
         options.poly_method == PolyMethod::singh)
         return aux_line_singh(activation, l, u);
     if (options.poly_method == PolyMethod::regression)
@@ -679,6 +688,10 @@ Tensor priv_derivative(Activation activation, const Tensor &x) {
         return x.square() * 3.0;
     case Activation::inverse:
         return x.ones_like().divide(x).square().negative();
+    case Activation::sin:
+        return x.cos();
+    case Activation::cos:
+        return x.sin().negative();
     case Activation::exp:
         return x.exp();
     case Activation::reciprocal: {
@@ -843,6 +856,48 @@ PrivLine priv_cube_line(const Tensor &l, const Tensor &u) {
     const Tensor lo = gl.minimum(gu).minimum(gp.minimum(gn));
     // the radius widened by the rounding (16 ulps of the largest terms, |x^3| + |m x| <= 4 big^3)
     return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big3 * (64.0 * machine_eps(l.dtype()))};
+}
+
+// The lines of sin and cos -----------------------------------------------------------------------
+
+std::pair<Tensor, Tensor> priv_trig_box(const Tensor &l, const Tensor &u, bool cosine) {
+    detail::Entry entry;
+    priv_check_finite(l, u);
+    const double eps = machine_eps(l.dtype()), two_pi = 2.0 * std::numbers::pi;
+    const auto f = [&](const Tensor &x) { return cosine ? x.cos() : x.sin(); };
+    // the larger and smaller end, widened by 16 ulps of 1
+    const Tensor fl = f(l), fu = f(u), w = l.ones_like() * (16.0 * eps);
+    Tensor lo = fl.minimum(fu) - w, hi = fl.maximum(fu) + w;
+    // an extremum a + 2 pi k in [l, u] iff ceil((l - a) / 2 pi) <= floor((u - a) / 2 pi), widened
+    const auto inside = [&](double a) {
+        const Tensor tl = (l - a) * (1.0 / two_pi), tu = (u - a) * (1.0 / two_pi);
+        const Tensor sl = tl - (tl.abs() + 1.0) * (16.0 * eps),
+                     su = tu + (tu.abs() + 1.0) * (16.0 * eps);
+        return sl.ceil().less_equal(su.floor());
+    };
+    const double top = cosine ? 0.0 : std::numbers::pi / 2;
+    hi = Tensor::where(inside(top), hi.ones_like(), hi.minimum(1.0));
+    lo = Tensor::where(inside(top + std::numbers::pi), lo.full_like(lo.shape(), -1.0),
+                       lo.maximum(-1.0));
+    return {lo, hi};
+}
+
+PrivLine priv_trig_line(const Tensor &l, const Tensor &u, bool cosine) {
+    detail::Entry entry;
+    const double eps = machine_eps(l.dtype());
+    // slope 0 over the range's box
+    const auto [lo, hi] = priv_trig_box(l, u, cosine);
+    const Tensor offset0 = (lo + hi) * 0.5, radius0 = (hi - lo) * 0.5 + (hi.abs() + lo.abs()) * eps;
+    // the tangent at the middle c: |f(x) - f(c) - f'(c)(x - c)| <= (x - c)^2 / 2 (|f''| <= 1)
+    const Tensor c = l * 0.5 + u * 0.5;
+    const Tensor d = (u - c).maximum(c - l) * (1.0 + 4.0 * eps);
+    const Tensor m = cosine ? c.sin().negative() : c.cos();
+    const Tensor fc = cosine ? c.cos() : c.sin();
+    const Tensor big = l.ones_like() + m.abs().multiply(l.abs().maximum(u.abs())) + d;
+    const Tensor radius_t = d.square() * 0.5 + big * (16.0 * eps);
+    const Tensor use = radius_t.less(radius0);
+    return {Tensor::where(use, m, m.zeros_like()), Tensor::where(use, fc - m.multiply(c), offset0),
+            Tensor::where(use, radius_t, radius0)};
 }
 
 Tensor priv_even_mask(const Tensor &like, const Exponents &E) {

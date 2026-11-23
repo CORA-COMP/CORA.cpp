@@ -263,6 +263,23 @@ class OnnxNetwork:
     def _op_Cube(self, a, _):  # Pow(x, 3) as the loader names it (_split_as_slices)
         return a[0] * a[0] * a[0]
 
+    def _op_Sin(self, a, _):
+        return torch.sin(a[0])
+
+    def _op_Cos(self, a, _):
+        return torch.cos(a[0])
+
+    def _op_Equal(self, a, _):
+        return torch.eq(a[0], a[1])
+
+    def _op_Where(self, a, _):
+        return torch.where(a[0], a[1], a[2])
+
+    def _op_Expand(self, a, _):
+        # ONNX's Expand broadcasts both ways: the shape's 1s keep the value's sizes
+        shape = [int(v) for v in a[1].tolist()]
+        return a[0] * torch.ones(shape, dtype=a[0].dtype, device=a[0].device)
+
     def _op_ReduceSum(self, a, attrs):
         # the axes from the input (opset 13) or the attribute; none: all (or noop_with_empty_axes)
         axes = a[1] if len(a) > 1 and a[1] is not None else attrs.get("axes")
@@ -1101,7 +1118,7 @@ MAX_PRODUCT = 4096  # entries of a product of two values at most (its maps are d
 UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
 
 ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign", "Exp": "exp",
-               "Floor": "floor", "Square": "square", "Cube": "cube"}
+               "Floor": "floor", "Square": "square", "Cube": "cube", "Sin": "sin", "Cos": "cos"}
 
 LINEAR_OPS = {
     "Add",
@@ -1137,7 +1154,8 @@ MASK_MOVES = {"Slice", "Gather", "Reshape", "Transpose", "Concat", "Squeeze", "U
               "Flatten", "Identity", "Dropout", "Pad"}  # fold_fixed_inputs: data moves
 
 MASK_ELEMENTWISE = {"Add", "Sub", "Mul", "Div", "Neg", "Relu", "Sigmoid", "Tanh", "LeakyRelu",
-                    "Sign", "Exp", "Cast", "Floor", "Square", "Cube", "Pow"}  # fold_fixed_inputs
+                    "Sign", "Exp", "Cast", "Floor", "Square", "Cube", "Pow", "Sin",
+                    "Cos"}  # fold_fixed_inputs: entry by entry
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
 DATA_MOVES = {"Slice", "Gather", "Cast"}  # ... unless they move a value of the input: then linear

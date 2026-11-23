@@ -270,7 +270,8 @@ LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Ten
     if (activation == Activation::sign || activation == Activation::floor ||
         activation == Activation::exp || activation == Activation::reciprocal ||
         activation == Activation::product || activation == Activation::cube ||
-        activation == Activation::inverse) {
+        activation == Activation::inverse || activation == Activation::sin ||
+        activation == Activation::cos) {
         // steps' lines (sign, floor) do not move with the bounds; the others' here are held
         const Tensor zero = l.zeros_like();
         return {zero, zero, zero, zero, zero, zero};
@@ -535,6 +536,8 @@ PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &
     if (activation == Activation::reciprocal) return priv_reciprocal_line(l, u);
     if (activation == Activation::cube) return priv_cube_line(l, u);
     if (activation == Activation::inverse) return priv_inverse_line(l, u);
+    if (activation == Activation::sin || activation == Activation::cos)
+        return priv_trig_line(l, u, activation == Activation::cos);
     if (activation == Activation::product)
         CORA_FAIL(Error::not_supported, "verify: a product's line needs its set");
     if (activation == Activation::relu || poly_method == "singh")

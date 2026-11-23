@@ -96,14 +96,14 @@ class Verdicts(unittest.TestCase):
 
     def test_fail_fast(self):
         # a layer that C++ cannot take: unknown at once, with the reason, the property not read
-        path = os.path.join(self.dir.name, "sin.onnx")
-        network(path, activation="Sin")
+        path = os.path.join(self.dir.name, "erf.onnx")
+        network(path, activation="Erf")
         instance = nn_verify.load(path, os.path.join(self.dir.name, "missing.vnnlib"))
         self.assertIsNone(instance.network)
         self.assertIsNone(instance.prop)
         result = nn_verify.verify(instance, 10)
         self.assertEqual(result.status, "unknown")
-        self.assertIn("Sin", result.stats["bounding"])
+        self.assertIn("Erf", result.stats["bounding"])
 
     def test_fixed_inputs_fold(self):
         # nn4sys' mscn: a mean masked by inputs that the property fixes (the file's docstring)

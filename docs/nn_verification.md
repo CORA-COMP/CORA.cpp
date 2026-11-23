@@ -140,8 +140,11 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   entries), a MatMul of a constant matrix from the left keeps it a column as a dense layer, and a
   Transpose makes it a row again; any other operator on a column refuses. A dense chain whose layer
   exceeds `max_elements` now goes layer by layer. The three networks lower (122 layers) and give
-  onnxruntime's output to 2e-6. Not yet: the residual ones (Floor reduces the angles mod 2 pi) and
-  the trigonometric ones (Pow, Sin, Cos, Where).
+  onnxruntime's output to 2e-6. The residual ones reduce the angles mod 2 pi by Floor. The plain
+  ones take `Activation::sin` and `Activation::cos` of angle differences (CORA.cpp only): the
+  tangent at the middle with radius `d^2 / 2` (`|f''| <= 1`), or slope 0 over the range's box (the
+  ends' values, 1 or -1 where an extremum may lie inside) where that is narrower, both widened by
+  the rounding; Where, Equal and Expand fold as constants.
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of

@@ -107,6 +107,14 @@ PrivLine priv_cube_line(const Tensor &l, const Tensor &u);
 /// largest at l or u, least at sqrt(l u). A bound l <= 0 fails with kOutOfRangeMessage.
 PrivLine priv_inverse_line(const Tensor &l, const Tensor &u);
 
+/// The range [lo, hi] of sin (cos) over [l, u]: the ends' values widened by the rounding, 1 (-1)
+/// where a maximum (minimum) of the function may lie inside (tested with widened quotients).
+std::pair<Tensor, Tensor> priv_trig_box(const Tensor &l, const Tensor &u, bool cosine);
+
+/// The line of sin (cos) over [l, u]: the tangent at the middle with radius (half width)^2 / 2
+/// (|f''| <= 1), or slope 0 over priv_trig_box where that is narrower; widened by the rounding.
+PrivLine priv_trig_line(const Tensor &l, const Tensor &u, bool cosine);
+
 // The bounds beyond the float range ---------------------------------------------------------------
 
 /// The message of a bound beyond the float range (an exp that overflows): no line exists there.
