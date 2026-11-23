@@ -185,10 +185,10 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             const Tensor pm = (plo.back() + phi.back()) * 0.5, pr = (phi.back() - plo.back()) * 0.5;
             const auto [am, bm] = priv_halves(pm);
             const auto [ar, br] = priv_halves(pr);
-            const Tensor mid = am.multiply(bm);
-            const Tensor rad = am.abs().multiply(br) + bm.abs().multiply(ar) + ar.multiply(br);
-            lo.push_back(Tensor::concat({mid - rad, mid.zeros_like()}, -1));
-            hi.push_back(Tensor::concat({mid + rad, mid.zeros_like()}, -1));
+            const Tensor ab = am.multiply(bm);
+            const Tensor ab_rad = am.abs().multiply(br) + bm.abs().multiply(ar) + ar.multiply(br);
+            lo.push_back(Tensor::concat({ab - ab_rad, ab.zeros_like()}, -1));
+            hi.push_back(Tensor::concat({ab + ab_rad, ab.zeros_like()}, -1));
             continue;
         }
         if (a == Activation::reciprocal) {
