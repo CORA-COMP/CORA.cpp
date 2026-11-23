@@ -1,11 +1,12 @@
 // test_neural_network_softmax - exp, 1 / max(x, 1), a softmax of them and gathers with factors
 //
-// On points, on sets (the lines hold, a softmax of a box) and in verify.
+// On points, on sets (the lines hold, a softmax of a box) and in verify; the heuristics, the
+// sensitivity and order-2 polynomials through x^2, sign, exp and 1 / max(x, 1).
 //
 // CORA.cpp only: exp and the reciprocal 1 / max(x, 1), a softmax's parts (no CORA layer)
 // Authors:       Claude Opus 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
@@ -153,6 +154,71 @@ void verify_decides(const std::string &b) {
     }
 }
 
+/// The four activations of Phase 4 (x^2, sign, exp, 1 / max(x, 1)) after a 2 x 2 map.
+NeuralNetwork aux_phase4_network(Activation a) {
+    return NeuralNetwork({{Tensor({{1.0, -0.5}, {0.3, 0.8}}), Tensor({0.2, -0.1})},
+                          {Tensor({{1.0, 1.0}}), Tensor({0.0})}},
+                         {a, Activation::identity});
+}
+
+/// The input-generator and split heuristics' interval gradient, the F-radius gradients with and
+/// without exact_backprop, and the sensitivity, on the four activations: verify still decides.
+void heuristics_through_the_activations(const std::string &b) {
+    for (const Activation a :
+         {Activation::square, Activation::sign, Activation::exp, Activation::reciprocal}) {
+        const NeuralNetwork nn = aux_phase4_network(a);
+        // the bound far below every output: unsat with a gradient heuristic and one generator
+        Tensor y = nn.evaluate(Tensor({{1.0, 1.0}, {1.4, 0.6}, {0.6, 1.4}, {1.0, 1.4}}));
+        const double least = y.reshape({4}).min(0).item();
+        for (const bool exact : {true, false}) {
+            NnVerifyOptions o = cora_vnncomp_options("test");
+            o.bounding_method = "conzonotope";
+            o.input_split_heuristic = "zono-norm-gradient";
+            o.input_generator_heuristic = "zono-norm-gradient";
+            o.num_init_gens = 1;
+            o.exact_backprop = exact;
+            o.mini_batch_size = 16;
+            if (b == "lean") o.dtype = DType::float64;
+            const std::string status =
+                nn.verify(aux_below({0.6, 0.6}, {1.4, 1.4}, 0, 1, least - 100.0), 10, o).status;
+            check(status == "unsat", b + ": a gradient heuristic decides through activation " +
+                                         std::to_string(int(a)) + (exact ? "" : " (held slopes)"));
+        }
+        // the sensitivity: the network's Jacobian (1, 2) at a point off the kinks
+        const Tensor J = nn.sensitivity(Tensor({1.0, 1.2}));
+        check(J.numel() == 2, b + ": the sensitivity through activation " + std::to_string(int(a)));
+    }
+}
+
+/// A polynomial zonotope through the four activations by Taylor and Bernstein of order 2: the
+/// enclosure holds sampled values, or the method refuses the activation.
+void polynomials_of_the_activations(const std::string &b) {
+    int violations = 0, evaluated = 0, refused = 0;
+    for (const Activation a :
+         {Activation::square, Activation::sign, Activation::exp, Activation::reciprocal}) {
+        const NeuralNetwork nn({{Tensor({{1.0}}), Tensor({0.0})}}, {a});
+        for (const PolyMethod m : {PolyMethod::taylor, PolyMethod::bernstein}) {
+            const double l = a == Activation::reciprocal ? 1.5 : 0.5, u = l + 1.0;
+            const PolyZonotope X(Tensor({(l + u) / 2}), Tensor({{(u - l) / 2}}),
+                                 Tensor::zeros({0, 1}), {{1}}, {1});
+            try {
+                const Interval I =
+                    nn.evaluate(X, {.poly_method = m, .orders = {{2}}}).zonotope().interval();
+                ++evaluated;
+                for (int j = 0; j <= 50; ++j) {
+                    const double x = l + (u - l) * j / 50.0;
+                    const double v = nn.evaluate(Tensor({{x}})).reshape({1}).item();
+                    violations += v < I.inf().data()[0] - 1e-9 || v > I.sup().data()[0] + 1e-9;
+                }
+            } catch (const Error &) {
+                ++refused; // a method without a polynomial of this activation
+            }
+        }
+    }
+    check(evaluated > 0 && evaluated + refused == 8 && violations == 0,
+          b + ": order-2 polynomials of the four activations hold sampled values");
+}
+
 } // namespace
 
 
@@ -165,6 +231,8 @@ int main() {
         softmax_of_a_box(b);
         scaled_gather(b);
         verify_decides(b);
+        heuristics_through_the_activations(b);
+        polynomials_of_the_activations(b);
     });
     return test::finish("neuralNetwork softmax");
 }
