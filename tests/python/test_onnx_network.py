@@ -8,7 +8,8 @@ folded into the convolutions) and max pools to pairs of b + relu(a - b), equal t
 padded max pool and a quotient of two values do not lower and say why; a batch norm of features
 and a slice of the input concatenated with a branch lower; a product of two values lowers to x^2
 layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
-builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
+builds its matrix far below the identity's memory, a Gemm or a MatMul of a row and a constant
+matrix from the weights themselves; the verifier's
 backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
 layers, its output Softmax dropped for a property that only compares outputs; vit_2023's,
 nn4sys' and ml4acopf's shapes lower and equal the graph.
@@ -41,7 +42,7 @@ import cora
 if not cora.has_torch:
     raise unittest.SkipTest("needs a build with torch") from None
 
-from cora.onnx_network import OnnxNetwork
+from cora.onnx_network import OnnxNetwork, _constant_matrix
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -202,6 +203,25 @@ class Lowering(unittest.TestCase):
             self.assertLess(float(grown), 400.0)  # MiB
             W = numpy_helper.to_array(m.graph.initializer[2])
             self.assertTrue(np.array_equal(np.load(out), W.astype(np.float64)))
+
+    def test_constant_matrices_without_unit_vectors(self):
+        # a Gemm (alpha, B not transposed) and a MatMul after a convolution: their weights bit for
+        # bit, the network equal to the graph; a transA, a non-finite weight and a batch of rows
+        # keep the unit vectors
+        m = conv_gemm_matmul_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        (layers, acts), why = net.layers()
+        self.assertIsNone(why)
+        W1, W2 = (numpy_helper.to_array(m.graph.initializer[k]) for k in (2, 4))
+        self.assertTrue(np.array_equal(layers[-2]["W"].numpy(), 0.5 * W1.astype(np.float64).T))
+        self.assertTrue(np.array_equal(layers[-1]["W"].numpy(), W2.astype(np.float64).T))
+        x = torch.as_tensor(RNG.uniform(-1, 1, (4, net.num_inputs)))
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
+                                   net(x).numpy(), rtol=1e-12, atol=1e-12)
+        B = torch.ones(3, 2, dtype=torch.float64)
+        self.assertIsNone(_constant_matrix("Gemm", [None, B], {"transA": 1}, (1, 3)))
+        self.assertIsNone(_constant_matrix("MatMul", [None, B * float("inf")], {}, (1, 3)))
+        self.assertIsNone(_constant_matrix("MatMul", [None, B], {}, (1, 4, 3)))
 
     def test_signs_and_an_output_softmax(self):
         # a binarized network: sign layers; its output Softmax dropped, the logits equal the graph's
@@ -722,6 +742,20 @@ def wide_conv_net():
     ]
     init = {"Wc": weight(16, 1, 3, 3), "bc": weight(16), "W": weight(5, 14400), "b": weight(5)}
     return model(nodes, [("x", [1, 1, 32, 32])], [("y", [1, 5])], init)
+
+
+def conv_gemm_matmul_net():
+    """Conv (1 -> 2 channels, 3 x 3) on 6 x 6, Flatten, Gemm (alpha 0.5), Relu, MatMul."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wc", "bc"], ["c"]),
+        helper.make_node("Flatten", ["c"], ["f"]),
+        helper.make_node("Gemm", ["f", "W1", "b1"], ["g"], alpha=0.5),
+        helper.make_node("Relu", ["g"], ["r"]),
+        helper.make_node("MatMul", ["r", "W2"], ["y"]),
+    ]
+    init = {"Wc": weight(2, 1, 3, 3), "bc": weight(2), "W1": weight(32, 7), "b1": weight(7),
+            "W2": weight(7, 3)}
+    return model(nodes, [("x", [1, 1, 6, 6])], [("y", [1, 3])], init)
 
 
 def maxpool_net(kernel=2, stride=1, channels=1, pads=0):
