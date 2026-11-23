@@ -18,7 +18,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
@@ -63,6 +63,11 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
         case Activation::tanh:
             h = z.tanh();
             derivative = one - h.multiply(h);
+            break;
+        case Activation::square:
+            // x^2 and 2 x
+            h = z.square();
+            derivative = z + z;
             break;
         }
         // the chain rule: diag(a'(z)) W J

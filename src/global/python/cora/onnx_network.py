@@ -139,7 +139,8 @@ class OnnxNetwork:
         with the graph keys of a residual connection."""
         if not any(op in STRUCTURED_OPS for op, _, _, _ in self.nodes):
             dense, why = self.dense_layers(max_elements)
-            if dense or "joins two layers" not in why:
+            # a graph (two branches joined, a product of two values) goes layer by layer
+            if dense or not any(r in why for r in ("joins two", "of two values", "fails to lower")):
                 return dense, why
         try:
             return self._lower_structured(), None
@@ -154,6 +155,8 @@ class OnnxNetwork:
             return self._lower(max_elements), None
         except _NotAChain as reason:
             return None, str(reason)
+        except (TypeError, ValueError, RuntimeError, IndexError) as error:  # a node we cannot run
+            return None, f"a node fails to lower: {type(error).__name__}: {error}"
 
     # ----------------------------------------------------------------------------- internals
 
@@ -187,6 +190,16 @@ class OnnxNetwork:
 
     def _op_Neg(self, a, _):
         return -a[0]
+
+    def _op_ReduceSum(self, a, attrs):
+        # the axes from the input (opset 13) or the attribute; none: all (or noop_with_empty_axes)
+        axes = a[1] if len(a) > 1 and a[1] is not None else attrs.get("axes")
+        keep = bool(attrs.get("keepdims", 1))
+        if axes is None or len(axes) == 0:
+            if attrs.get("noop_with_empty_axes", 0):
+                return a[0]
+            return a[0].sum(dim=tuple(range(a[0].dim())), keepdim=keep)
+        return a[0].sum(dim=tuple(int(x) for x in axes), keepdim=keep)
 
     def _op_Relu(self, a, _):
         return torch.relu(a[0])
@@ -544,6 +557,18 @@ class OnnxNetwork:
             maps[-1] = _add_bias(maps[-1], expr.bias)
             return _Expr(expr.shape, [(src, maps)])
 
+        def squares(expr):
+            # the expression as a layer whose activation is x^2 (a fresh layer: no other reader)
+            before = len(layers)
+            k = materialize(expr)
+            if k < 0 or k < before or activations[k] != "identity":
+                size = math.prod(expr.shape[1:])
+                k = emit([_gather(list(range(size)), size, torch.zeros(size))], k)
+            else:
+                done.pop(id(expr), None)
+            activations[k] = "square"
+            return k
+
         def max_pool(expr, shape, out_shape, attrs):
             # max(a, b) = b + relu(a - b): the window's items in pairs, round by round; a round is
             # the differences (a grouped convolution) and their ReLU, then a gather of the ReLUs
@@ -642,13 +667,34 @@ class OnnxNetwork:
                 chain[outs[0]] = _Expr(out_shape, pieces, bias)
                 continue
             if op in ("Add", "Sub") and len(ins) == 2 and len(set(linked)) == 2:
-                # two branches: the sum of their terms
+                # two branches: the sum of their terms (a difference: b's through -I)
                 a, b = chain[ins[0]], chain[ins[1]]
-                if op == "Sub" or a.shape != b.shape:
-                    raise _NotAChain(f"{op} of two branches of other shapes, or a difference")
+                if a.shape != b.shape:
+                    raise _NotAChain(f"{op} of two branches of other shapes")
                 (ta, ba), (tb, bb) = terms(a), terms(b)
+                if op == "Sub":
+                    tb, bb = _scaled_terms(tb, bb, -torch.eye(math.prod(b.shape[1:]),
+                                                              dtype=torch.float64))
                 bias = ba if bb is None else bb if ba is None else ba + bb
                 chain[outs[0]] = _Expr(a.shape, ta + tb, bias)
+                continue
+            if op == "Mul" and len(ins) == 2 and len(linked) == 2:
+                # a product of two values: ((a + b)^2 - (a - b)^2) / 4, the squares a layer
+                a, b = chain[ins[0]], chain[ins[1]]
+                if a.shape != b.shape:
+                    raise _NotAChain("Mul of two values of other shapes")
+                n = math.prod(a.shape[1:])
+                if n > MAX_PRODUCT:
+                    raise _NotAChain(f"Mul of two values of {n} entries exceeds {MAX_PRODUCT}")
+                half = torch.eye(n, dtype=torch.float64) * 0.5
+                (ta, ba), (tb, bb) = terms(a), terms(b)
+                ta, ba = _scaled_terms(ta, ba, torch.cat([half, half]))
+                tb, bb = _scaled_terms(tb, bb, torch.cat([half, -half]))
+                bias = ba if bb is None else bb if ba is None else ba + bb
+                k = squares(_Expr((1, 2 * n), ta + tb, bias))
+                diff = torch.cat([torch.eye(n), -torch.eye(n)], 1).to(torch.float64)
+                zero = torch.zeros(n, dtype=torch.float64)
+                chain[outs[0]] = _Expr(a.shape, [(k, [(diff, zero)])])
                 continue
             if len(set(linked)) > 1 or len(linked) > 1:
                 raise _NotAChain(f"{op} joins two branches")
@@ -714,30 +760,53 @@ class OnnxNetwork:
                 w = torch.full((c, 1, *k), 1.0 / math.prod(k), dtype=torch.float64)
                 chain[outs[0]] = then(_conv(w, torch.zeros(c), shape, {**attrs, "group": c},
                                             out_shape))
+            elif op in ("Mul", "Div", "Neg", "Cast"):
+                # an element-wise scaling by constants: folded into the map before, else a layer
+                if op == "Div" and ins[0] != x_name:
+                    raise _NotAChain("Div by a value that depends on the input")
+                at = ins.index(x_name)
+                full = lambda v, at=at, args=args: [  # noqa: E731
+                    v if i == at else a for i, a in enumerate(args)
+                ]
+                factor = net._run(op, full(torch.ones_like(probe)), attrs)
+                if tuple(factor.shape) != tuple(probe.shape):
+                    raise _NotAChain(f"{op} broadcasts the value to another shape")
+                chain[outs[0]] = _scale(expr, single, then, factor.reshape(-1), shape, out_shape)
+            elif op == "ReduceSum":
+                # a sum over axes (the batch axis of one row dropped): the matrix of ones
+                axes = args[1] if len(args) > 1 and args[1] is not None else attrs.get("axes", [])
+                axes = [int(a) % len(shape) for a in axes] or list(range(1, len(shape)))
+                dims = tuple(a for a in axes if a)
+                keep = bool(attrs.get("keepdims", 1))
+                rows = math.prod(out_shape[1:])
+                lin = _chunked_images(
+                    lambda unit, dims=dims, keep=keep: unit.sum(dim=dims, keepdim=keep)
+                    if dims
+                    else unit,
+                    size, shape, rows,
+                )
+                chain[outs[0]] = then((lin, torch.zeros(rows, dtype=torch.float64)))
             elif op in ("Gemm", "MatMul"):
+                if ins[0] != x_name:
+                    raise _NotAChain(f"{op} of a constant times the value")
                 # the matrix: the images of the unit vectors, a chunk at a time (after a wide
                 # convolution, as malbeware's 61504 entries, the identity alone is 30 GB)
                 zero = torch.zeros(1, *shape[1:], dtype=torch.float64)
                 bias = net._run(op, [zero] + args[1:], attrs)
-                # (one buffer of unit vectors and the matrix allocated once: chunks allocated
-                # anew fragment the heap, and the peak grows with every chunk)
-                chunk = min(size, max(1, UNIT_VECTOR_CHUNK // size))
-                eye = torch.zeros(chunk, size, dtype=torch.float64)
-                lin = torch.empty(bias.numel(), size, dtype=torch.float64)
-                for start in range(0, size, chunk):
-                    count = min(chunk, size - start)
-                    unit = eye[:count]
-                    unit.zero_()
-                    unit[:, start : start + count].fill_diagonal_(1.0)
-                    image = net._run_batched(
-                        op, [unit.reshape(count, *shape[1:])] + args[1:2], [True, False], attrs
-                    )
-                    lin[:, start : start + count] = image.reshape(count, -1).T
+                lin = _chunked_images(
+                    lambda unit, op=op, args=args, attrs=attrs: net._run_batched(
+                        op, [unit] + args[1:2], [True, False], attrs
+                    ),
+                    size, shape, bias.numel(),
+                )
                 chain[outs[0]] = then((lin, bias.reshape(-1)))
             elif op in ("Add", "Sub") and len(ins) == 2:
                 other = args[1] if ins[0] == x_name else args[0]
                 if op == "Sub" and ins[1] == x_name:
-                    raise _NotAChain("Sub of the chain from a constant")
+                    # a constant minus the value: the value negated, then the constant added
+                    expr = _scale(expr, single, then, -torch.ones(size, dtype=torch.float64),
+                                  shape, out_shape)
+                    other = -other
                 delta = torch.broadcast_to(other * (-1.0 if op == "Sub" else 1.0), out_shape)
                 delta = delta.reshape(-1)
                 bias = delta if expr.bias is None else expr.bias + delta
@@ -795,6 +864,8 @@ class _NotAChain(Exception):
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
+MAX_PRODUCT = 4096  # entries of a product of two values at most (its maps are dense)
+
 UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
 
 ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh"}  # what cora's layers know
@@ -830,12 +901,12 @@ STRUCTURED_OPS = {
 }  # lowered layer by layer, never to a matrix
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
-DATA_MOVES = {"Slice", "Gather"}  # ... unless they move a value of the input: then linear
+DATA_MOVES = {"Slice", "Gather", "Cast"}  # ... unless they move a value of the input: then linear
 
 
 def _moves_data(op, on_data):
     """Whether a STRUCTURE_OPS node moves the entries of a value of the input (its first argument
-    is one): a Slice or Gather of data is a linear map, not shape arithmetic."""
+    is one): a Slice, Gather or Cast of data is a linear map, not shape arithmetic."""
     return op in DATA_MOVES and bool(on_data)
 
 
@@ -861,6 +932,51 @@ def _conv(w, b, shape, attrs, out_shape):
         "pads": pads,
         "groups": int(attrs.get("group", 1)),
     }
+
+
+def _scaled_terms(terms, bias, M):
+    """The terms and the constant of an expression through the dense map M (out, n)."""
+    zero = torch.zeros(M.shape[0], dtype=torch.float64)
+    terms = [(src, list(maps) + [(M.contiguous(), zero)]) for src, maps in terms]
+    return terms, (None if bias is None else M @ bias.to(torch.float64))
+
+
+def _chunked_images(image, size, shape, rows):
+    """The matrix (rows, size) of a linear map from the images of the unit vectors of a value of
+    the shape (batch 1 first), a chunk of UNIT_VECTOR_CHUNK entries at a time: image maps a batch
+    (count, *shape[1:]) to (count, ...). (One buffer of unit vectors and the matrix allocated
+    once: chunks allocated anew fragment the heap, and the peak grows with every chunk.)"""
+    chunk = min(size, max(1, UNIT_VECTOR_CHUNK // size))
+    eye = torch.zeros(chunk, size, dtype=torch.float64)
+    lin = torch.empty(rows, size, dtype=torch.float64)
+    for start in range(0, size, chunk):
+        count = min(chunk, size - start)
+        unit = eye[:count]
+        unit.zero_()
+        unit[:, start : start + count].fill_diagonal_(1.0)
+        lin[:, start : start + count] = image(unit.reshape(count, *shape[1:])).reshape(count, -1).T
+    return lin
+
+
+def _scale(expr, single, then, factor, shape, out_shape):
+    """The expression times the factor of each entry: folded into the map before it (a dense
+    layer's rows, a convolution's kernel per channel), else a depthwise convolution of an image
+    or a diagonal dense layer of at most MAX_PRODUCT entries."""
+    zero = torch.zeros(factor.numel(), dtype=torch.float64)
+    if len(shape) == 4:
+        per = factor.reshape(shape[1], -1)
+        if bool((per == per[:, :1]).all()):
+            c, f = shape[1], per[:, 0].contiguous()
+            fused = _fold_batch_norm(single(expr), f, torch.zeros(c, dtype=torch.float64))
+            return fused or then(
+                _conv(f.reshape(c, 1, 1, 1), torch.zeros(c), shape, {"group": c}, out_shape)
+            )
+    fused = _fold_batch_norm(single(expr), factor, zero)
+    if fused is not None:
+        return fused
+    if factor.numel() > MAX_PRODUCT:
+        raise _NotAChain(f"an element-wise scaling of {factor.numel()} entries")
+    return then((torch.diag(factor).contiguous(), zero))
 
 
 def _gather(index, inputs, bias):

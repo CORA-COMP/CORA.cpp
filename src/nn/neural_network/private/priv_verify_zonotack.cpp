@@ -22,7 +22,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -170,15 +170,24 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
         const Tensor rad = net.linear(k, rads, true);
         plo.push_back(mid - rad);
         phi.push_back(mid + rad);
-        // the box after the activation
-        lo.push_back(net.activations[k] == Activation::identity  ? plo.back()
-                     : net.activations[k] == Activation::relu    ? plo.back().maximum(0.0)
-                     : net.activations[k] == Activation::sigmoid ? plo.back().sigmoid()
-                                                                 : plo.back().tanh());
-        hi.push_back(net.activations[k] == Activation::identity  ? phi.back()
-                     : net.activations[k] == Activation::relu    ? phi.back().maximum(0.0)
-                     : net.activations[k] == Activation::sigmoid ? phi.back().sigmoid()
-                                                                 : phi.back().tanh());
+        // the box after the activation (x^2: 0 where the box crosses 0, else the nearer end's)
+        const Activation a = net.activations[k];
+        if (a == Activation::square) {
+            const Tensor sl = plo.back().square(), su = phi.back().square();
+            const Tensor zero = sl.zeros_like();
+            const Tensor cross = plo.back().less(zero).multiply(phi.back().greater(zero));
+            lo.push_back(Tensor::where(cross, sl.zeros_like(), sl.minimum(su)));
+            hi.push_back(sl.maximum(su));
+            continue;
+        }
+        lo.push_back(a == Activation::identity  ? plo.back()
+                     : a == Activation::relu    ? plo.back().maximum(0.0)
+                     : a == Activation::sigmoid ? plo.back().sigmoid()
+                                                : plo.back().tanh());
+        hi.push_back(a == Activation::identity  ? phi.back()
+                     : a == Activation::relu    ? phi.back().maximum(0.0)
+                     : a == Activation::sigmoid ? phi.back().sigmoid()
+                                                : phi.back().tanh());
     }
     // the F-radius of the output box, back through the layers
     const Tensor width = hi.back() - lo.back();
@@ -194,6 +203,7 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
             g_lo = g_mid - g_rad;
             g_hi = g_mid + g_rad;
         }
+        // the activation's derivative at the input box's ends
         const auto slope = [&](const Tensor &z) {
             switch (net.activations[k]) {
             case Activation::identity:
@@ -204,11 +214,26 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                 return z.sigmoid().multiply(1.0 - z.sigmoid());
             case Activation::tanh:
                 return 1.0 - z.tanh().square();
+            case Activation::square:
+                return z + z;
             }
             CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
         };
-        g_hi = g_hi.multiply(slope(phi[k]));
-        g_lo = g_lo.multiply(slope(plo[k]));
+        if (net.activations[k] == Activation::square) {
+            // x^2 is not monotone: hi is the larger end's square, lo the smaller's (0 across 0)
+            const Tensor left = plo[k].square().greater(phi[k].square());
+            const Tensor zero = plo[k].zeros_like();
+            const Tensor open = 1.0 - plo[k].less(zero).multiply(phi[k].greater(zero));
+            const Tensor d_lo = slope(plo[k]), d_hi = slope(phi[k]);
+            const Tensor g_l = g_hi.multiply(left).multiply(d_lo) +
+                               g_lo.multiply(open).multiply(1.0 - left).multiply(d_lo);
+            g_hi = g_hi.multiply(1.0 - left).multiply(d_hi) +
+                   g_lo.multiply(open).multiply(left).multiply(d_hi);
+            g_lo = g_l;
+        } else {
+            g_hi = g_hi.multiply(slope(phi[k]));
+            g_lo = g_lo.multiply(slope(plo[k]));
+        }
         // lo = mid - rad, hi = mid + rad, mid and rad of the layer's input box
         net.linear_t(k, g_lo + g_hi, g_mids);
         net.linear_t(k, g_hi - g_lo, g_rads, true);

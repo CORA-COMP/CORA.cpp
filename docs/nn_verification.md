@@ -62,6 +62,17 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   over its window (a grouped convolution of the differences, a ReLU, a gather plus a residual
   convolution of the second items, per round). What does not lower, or what C++ refuses, is
   `unknown` at once with the reason, before the property is read.
+- **Products (Phase 4).** A product of two values (lsnc_relu's Lyapunov terms `x P x`) lowers to
+  `((a + b)^2 - (a - b)^2) / 4`: a dense map to `[(a + b) / 2; (a - b) / 2]`, a layer of
+  `Activation::square`, a dense map `[I, -I]` (at most 4096 entries). A difference of branches takes
+  `-I`, a constant minus a value and a scaling by constants (Mul, Div, Neg, Cast) fold into the map
+  before or become a diagonal layer, and ReduceSum is a dense layer of ones. A graph without a
+  convolution that is no chain (a product, a join) lowers the same way. The square's line on `[l, u]`
+  is the parallelogram between the chord and the parallel tangent: slope `l + u`, radius
+  `(u - l)^2 / 8` widened by the rounding (CORA.cpp only; CORALean's `squareRelaxation` is the
+  derivative-bracket line, whose radius is `(u - l)^2`; see docs/oracle-requests.md). Its interval
+  is `[0, max(l^2, u^2)]` across 0, the backward bound takes the line's two parallels, and the
+  gradients take `2 x`. CORA's `nnSquareLayer` has no zonotope method.
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of

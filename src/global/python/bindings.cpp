@@ -19,7 +19,7 @@
 // CORA.cpp only: the Python package has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   21-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "global/python/convert.h"
@@ -4369,14 +4369,17 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "The states (steps + 1, n) and the algebraic variables (steps + 1, p) of a trajectory");
 }
 
-/// The activation of a name: identity, relu, sigmoid or tanh.
+/// The activation of a name: identity, relu, sigmoid, tanh or square.
 Activation activation_of(const std::string &name) {
     if (name == "identity") return Activation::identity;
     if (name == "relu") return Activation::relu;
     if (name == "sigmoid") return Activation::sigmoid;
     if (name == "tanh") return Activation::tanh;
-    CORA_FAIL(Error::wrong_value,
-              "NeuralNetwork: the activation must be identity, relu, sigmoid or tanh, got " + name);
+    if (name == "square") return Activation::square;
+    CORA_FAIL(
+        Error::wrong_value,
+        "NeuralNetwork: the activation must be identity, relu, sigmoid, tanh or square, got " +
+            name);
 }
 
 /// The error of the regression line from its name.
