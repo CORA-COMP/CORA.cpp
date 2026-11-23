@@ -527,6 +527,18 @@ void deadlines(const std::string &b) {
     AttackResult none;
     check(stops([&] { priv_check_points(past, pts, cases, none); }),
           b + ": a passed deadline stops the chunks");
+    // PGD: a step past the deadline ends the search with its counts; too slow, fewer restarts
+    NnVerifyOptions pgd = aux_options("conzonotope", b);
+    NnProblem cut(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), pgd, ConfirmFn{});
+    cut.deadline = now_seconds() - 1.0;
+    check(make_attack("pgd", pgd)->run(cut, now_seconds() + 10.0, 1).iterations == 0,
+          b + ": a PGD step past the deadline ends the search");
+    pgd.pgd_min_steps = int64_t{1} << 40;
+    NnProblem slow(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), pgd, ConfirmFn{});
+    const AttackResult shrunk = make_attack("pgd", pgd)->run(slow, now_seconds() + 10.0, 1);
+    check(shrunk.iterations == pgd.pgd_steps &&
+              shrunk.evaluations == pgd.pgd_restarts + (pgd.pgd_steps - 1),
+          b + ": PGD keeps one restart when its steps would not fit");
     if (b == "lean") return; // the wide network is slow on lean
     // a wide network whose box is not decided quickly: back within a second of the timeout
     const NeuralNetwork wide = aux_network(rng, {40, 400, 400, 400, 400, 2}, Activation::relu);
