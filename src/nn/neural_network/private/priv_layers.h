@@ -17,13 +17,14 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Sonnet 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/nn/neural_network/neural_network.h"
 
+#include <exception>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -50,9 +51,36 @@ struct PrivRows {
 /// The bounds of every row, summed as CORALean's PolyZonotope.interval.
 std::pair<Tensor, Tensor> priv_bounds(const PrivRows &r);
 
+/// The values of the activation at the points.
+Tensor priv_apply(Activation activation, const Tensor &x);
+
 /// The line of the activation over the ranges by the method of the options (singh or regression).
 PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
                    const NnOptions &options);
+
+/// The line of x^2 over [l, u]: the secant slope l + u, half way between the chord and the parallel
+/// tangent, the radius (u - l)^2 / 8 widened by the rounding (sound in floats).
+PrivLine priv_square_line(const Tensor &l, const Tensor &u);
+
+/// The line of sign over [l, u]: slope 0, the middle and half the gap of sign(l) and sign(u).
+PrivLine priv_sign_line(const Tensor &l, const Tensor &u);
+
+/// The line of exp over [l, u]: the chord's slope m, the middle and half the range of the convex
+/// exp(x) - m x (largest at an end, least at log m in [l, u]), widened by the rounding.
+PrivLine priv_exp_line(const Tensor &l, const Tensor &u);
+
+/// The line of 1 / max(x, 1) over [l, u]: the chord's slope m on [max(l, 1), max(u, 1)]; f - m x
+/// rises to 1, then is convex: largest at l, u or 1, least at l or sqrt(l u) (where f' = m).
+PrivLine priv_reciprocal_line(const Tensor &l, const Tensor &u);
+
+/// The message of a bound beyond the float range (an exp that overflows): no line exists there.
+constexpr const char *kOutOfRangeMessage = "verify: a bound left the float range";
+
+/// Fails with kOutOfRangeMessage unless every entry of l and u is finite.
+void priv_check_finite(const Tensor &l, const Tensor &u);
+
+/// Whether the error is priv_check_finite's.
+bool priv_is_out_of_range(const std::exception &error);
 
 /// The mask (1, h) of the generators whose exponents are all even.
 Tensor priv_even_mask(const Tensor &like, const Exponents &E);

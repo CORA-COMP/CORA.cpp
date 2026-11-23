@@ -6,14 +6,15 @@ killed at the timeout plus 60 s. A row of the CSV has the scoring's six columns 
 vnnlib, prepare time, result, run time) and then ours: the instance's timeout, the peak RSS of
 the run (MiB, from wait4), torch's peak on a GPU, the attack's and the branch and bound's
 seconds, the boxes bounded and the bounding method. Result files go to OUT_DIR/results/.
+--one-per-network runs the first instance of each network only: a memory sweep of a dev set.
 
 Syntax:   python scripts/vnncomp/run_dev_set.py DIR --out results.csv [--version 2.0] [--jobs 3]
-Inputs:   --max-timeout T caps the timeouts (in the CSV), --limit N, --threads K, --tool DIR
+Inputs:   --max-timeout T (caps the timeouts), --limit N, --threads K, --tool DIR, --one-per-network
 See also: scripts/vnncomp/score.py, scripts/vnncomp/make_dev_set.py
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -39,9 +40,14 @@ def main():
     parser.add_argument("--max-timeout", type=float, default=0.0)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--tool", default=HERE)
+    parser.add_argument("--one-per-network", action="store_true")
     args = parser.parse_args()
     with open(os.path.join(args.dir, args.version, "instances.csv"), newline="") as stream:
         rows = [r for r in csv.reader(stream) if r]
+    # the first instance of each network only, for a memory sweep
+    if args.one_per_network:
+        first = {}
+        rows = [first.setdefault(r[0], r) for r in rows if r[0] not in first]
     if args.limit:
         rows = rows[: args.limit]
     args.results = os.path.join(os.path.dirname(os.path.abspath(args.out)), "results")

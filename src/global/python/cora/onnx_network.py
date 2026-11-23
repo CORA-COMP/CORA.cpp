@@ -5,7 +5,9 @@ device and in any float dtype (float32 for the search, float64 for re-checks). P
 (B, n) of the flattened input (C order), outputs rows (B, m). A graph that is a chain of affine
 maps and element-wise activations lowers to a cora.NeuralNetwork: each affine part becomes one
 dense linear layer, its matrix the image of the unit vectors with the additive constants dropped
-(so a plain Gemm keeps its weights bit for bit), its bias the image of zero.
+(so a plain Gemm keeps its weights bit for bit), its bias the image of zero. A graph with
+convolutions or two branches joined by an Add (a ResNet) lowers layer by layer, a branch as a
+residual input of a layer; a MaxPool as max(a, b) = b + relu(a - b), pairwise over its window.
 
 Syntax:   net = OnnxNetwork.load("net.onnx", dtype=torch.float32, device="cpu")
           y = net(x)                       x (B, n) -> y (B, m), batched, autograd on
@@ -17,7 +19,7 @@ See also: cora.vnnlib, cora.nn_verify, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -30,7 +32,6 @@ import torch.nn.functional as F
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
-
 
 class OnnxNetwork:
     """An ONNX graph run node by node on batched torch tensors; the constants are in one dtype and
@@ -131,16 +132,37 @@ class OnnxNetwork:
         lowered, why = self.layers(max_elements)
         return (cora.NeuralNetwork(*lowered), None) if lowered else (None, why)
 
-    def layers(self, max_elements=2**27):
-        """(([layer], activation names), None) of the chain in float64, or (None, why): with a
-        Conv or an AveragePool one layer per linear node (cora.NeuralNetwork's conv2d and gather
-        dicts, never a matrix of a convolution), else the dense layers."""
+    def layers(self, max_elements=2**27, drop_output_softmax=False):
+        """(([layer], activation names), None) of the network in float64, or (None, why): a chain
+        without a Conv or an AveragePool as dense layers; else one layer per linear node
+        (cora.NeuralNetwork's conv2d, gather and dense dicts, never a matrix of a convolution),
+        with the graph keys of a residual connection. drop_output_softmax lowers a Softmax that
+        makes the output as the identity (it keeps the order of the outputs: a property that only
+        compares outputs holds for the logits iff for the probabilities); dropped_softmax tells."""
+        self.dropped_softmax = False
+        last = self.nodes[-1] if self.nodes else None
+        softmax = last and last[0] == "Softmax" and last[2][0] == self.output_name
+        if drop_output_softmax and softmax:
+            # the logits as the output, then the graph as it is
+            nodes, output = self.nodes, self.output_name
+            self.nodes, self.output_name, self.dropped_softmax = nodes[:-1], last[1][0], True
+            try:
+                return self.layers(max_elements)
+            finally:
+                self.nodes, self.output_name, self.dropped_softmax = nodes, output, True
         if not any(op in STRUCTURED_OPS for op, _, _, _ in self.nodes):
-            return self.dense_layers(max_elements)
+            dense, why = self.dense_layers(max_elements)
+            # a graph (two branches joined, a product of two values) goes layer by layer
+            if dense or not any(
+                r in why for r in ("joins two", "of two values", "fails to lower", "Softmax")
+            ):
+                return dense, why
         try:
             return self._lower_structured(), None
         except (_NotAChain, NotImplementedError) as reason:
             return None, str(reason)
+        except (TypeError, ValueError, RuntimeError, IndexError) as error:  # a node we cannot run
+            return None, f"a node fails to lower: {type(error).__name__}: {error}"
 
     def dense_layers(self, max_elements=2**27):
         """(([(W, b)], activation names), None) of the chain in float64, or (None, why)."""
@@ -148,6 +170,8 @@ class OnnxNetwork:
             return self._lower(max_elements), None
         except _NotAChain as reason:
             return None, str(reason)
+        except (TypeError, ValueError, RuntimeError, IndexError) as error:  # a node we cannot run
+            return None, f"a node fails to lower: {type(error).__name__}: {error}"
 
     # ----------------------------------------------------------------------------- internals
 
@@ -181,6 +205,22 @@ class OnnxNetwork:
 
     def _op_Neg(self, a, _):
         return -a[0]
+
+    def _op_Sign(self, a, _):
+        return torch.sign(a[0])
+
+    def _op_Exp(self, a, _):
+        return torch.exp(a[0])
+
+    def _op_ReduceSum(self, a, attrs):
+        # the axes from the input (opset 13) or the attribute; none: all (or noop_with_empty_axes)
+        axes = a[1] if len(a) > 1 and a[1] is not None else attrs.get("axes")
+        keep = bool(attrs.get("keepdims", 1))
+        if axes is None or len(axes) == 0:
+            if attrs.get("noop_with_empty_axes", 0):
+                return a[0]
+            return a[0].sum(dim=tuple(range(a[0].dim())), keepdim=keep)
+        return a[0].sum(dim=tuple(int(x) for x in axes), keepdim=keep)
 
     def _op_Relu(self, a, _):
         return torch.relu(a[0])
@@ -367,10 +407,13 @@ class OnnxNetwork:
         return torch.tensor(list(a[0].shape), dtype=torch.int64, device=self.device)
 
     def _op_Gather(self, a, attrs):
+        # (a scalar index drops the axis: the shape as a tuple, which may be empty)
         return torch.index_select(a[0], attrs.get("axis", 0), a[1].reshape(-1)).reshape(
-            *a[0].shape[: attrs.get("axis", 0)],
-            *a[1].shape,
-            *a[0].shape[attrs.get("axis", 0) + 1 :],
+            (
+                *a[0].shape[: attrs.get("axis", 0)],
+                *a[1].shape,
+                *a[0].shape[attrs.get("axis", 0) + 1 :],
+            )
         )
 
     def _op_Slice(self, a, attrs):
@@ -408,7 +451,7 @@ class OnnxNetwork:
             if len(tags) > 1:
                 raise _NotAChain(f"{op} joins two layers (a residual connection)")
             tag = tags.pop() if tags else None
-            if tag is None or op in STRUCTURE_OPS:
+            if tag is None or (op in STRUCTURE_OPS and not _moves_data(op, args[0][0] is not None)):
                 out = net._run(op, [v for _, v, _ in args], attrs)
                 values[outs[0]] = (None, out, out)
                 continue
@@ -426,7 +469,7 @@ class OnnxNetwork:
                 eye = torch.eye(size, dtype=torch.float64).reshape(size, *lin.shape[1:])
                 values[outs[0]] = (len(layers), eye, torch.zeros_like(eye[:1]))
                 continue
-            if op not in LINEAR_OPS:
+            if op not in LINEAR_OPS | DATA_MOVES:
                 raise _NotAChain(f"{op} is neither affine nor relu/sigmoid/tanh")
             values[outs[0]] = (tag, *net._lower_affine(op, args, attrs))
             if values[outs[0]][1].numel() > max_elements:
@@ -474,38 +517,178 @@ class OnnxNetwork:
 
     # ------------------------------------------------------------------- lowering with convolutions
     def _lower_structured(self):
-        """The layers of a chain with convolutions, one per linear node, none made a matrix: a Conv
-        (and a BatchNormalization or an AveragePool, as a depthwise one) a conv2d layer, a Gemm or
-        MatMul a dense one, a data move (Transpose, Pad, Slice, Concat with constants) a gather,
-        found by running the node on the indices; Flatten and Reshape change only the shape.
-        Additive constants go into the bias of the layer before."""
+        """The layers of a graph with convolutions, one per linear node, none made a matrix: a Conv
+        (a BatchNormalization after it folded in, else as a depthwise one, as an AveragePool) a
+        conv2d layer, a Gemm or MatMul a dense one, a data move (Transpose, Pad, Slice, Concat with
+        constants) a gather, found by running the node on the indices; Flatten and Reshape change
+        only the shape. A value is a pending sum of maps of earlier layers' outputs (_Expr): an
+        activation or the output makes it layers, the longest term as a chain and each other term
+        as a residual of the last one (an Add of two branches, as in a ResNet)."""
         net = self.cast(torch.float64, "cpu")
         layers, activations = [], []
         values = dict(net.constants)
-        chain = {self.input_name: tuple(self.input_shape)}  # the chain's values, batch first
-        latest = self.input_name
-        size = self.num_inputs
+        chain = {self.input_name: _Expr(tuple(self.input_shape), [(-1, [])])}
+        done = {}  # id of an expression made layers -> the layer of its value
 
-        def push(layer, out_shape):
-            nonlocal size
-            layers.append(layer)
-            activations.append("identity")
-            size = math.prod(out_shape)
 
-        def bias_room():
-            # a layer whose output may take an additive constant (no activation after it yet)
-            if not layers or activations[-1] != "identity":
-                push(_gather(list(range(size)), size, torch.zeros(size)), (size,))
+        def emit(maps, source, residuals=()):
+            # the maps as layers, the first reading source, the last adding the residuals
+            for k, layer in enumerate(maps):
+                graph = {"source": source}
+                if k == len(maps) - 1 and residuals:
+                    graph["residuals"] = [{"source": j, "map": m} for j, m in residuals]
+                layers.append(_with_graph(layer, graph))
+                activations.append("identity")
+                source = len(layers) - 1
+            return source
+
+        def materialize(expr):
+            # the expression as layers (once); a bare output of a layer (or the input) stays itself
+            if len(expr.terms) == 1 and not expr.terms[0][1] and expr.bias is None:
+                return expr.terms[0][0]
+            if id(expr) in done:
+                return done[id(expr)][0]
+            size = math.prod(expr.shape[1:])
+            terms = sorted(expr.terms, key=lambda t: -len(t[1]))
+            (src, maps), others = terms[0], terms[1:]
+            residuals = []
+            for j, m in others:
+                # a longer branch: its first maps as layers, the last as the residual's map
+                if len(m) > 1:
+                    j = emit(m[:-1], j)
+                residuals.append((j, m[-1] if m else None))
+            maps = list(maps) or [_gather(list(range(size)), size, torch.zeros(size))]
+            if expr.bias is not None:
+                maps[-1] = _add_bias(maps[-1], expr.bias)
+            done[id(expr)] = (emit(maps, src, residuals), expr)  # (the expression kept alive)
+            return done[id(expr)][0]
+
+        def terms(expr):
+            # the terms of an expression, one term if it is made layers already
+            if id(expr) in done:
+                return [(done[id(expr)][0], [])], None
+            return expr.terms, expr.bias
+
+        def single(expr):
+            # one term without a pending constant, for a map after it
+            if len(expr.terms) > 1 or id(expr) in done:
+                return _Expr(expr.shape, [(materialize(expr), [])])
+            src, maps = expr.terms[0]
+            if expr.bias is None:
+                return expr
+            size = math.prod(expr.shape[1:])
+            maps = list(maps) or [_gather(list(range(size)), size, torch.zeros(size))]
+            maps[-1] = _add_bias(maps[-1], expr.bias)
+            return _Expr(expr.shape, [(src, maps)])
+
+        def squares(expr, activation="square"):
+            # the expression as a layer with the activation (a fresh layer: no other reader)
+            before = len(layers)
+            k = materialize(expr)
+            if k < 0 or k < before or activations[k] != "identity":
+                size = math.prod(expr.shape[1:])
+                k = emit([_gather(list(range(size)), size, torch.zeros(size))], k)
+            else:
+                done.pop(id(expr), None)
+            activations[k] = activation
+            return k
+
+        def products(a, b, ia, ib, out_shape):
+            # the sums over t of a[ia[t, o]] b[ib[t, o]] (index lists (K, O)): the halves
+            # (a + b) / 2 and (a - b) / 2 of every product by gathers with factors, their squares,
+            # then the difference of the squares summed over t by a 1 x 1 convolution
+            K, O = ia.shape
+            ka, kb = materialize(single(a)), materialize(single(b))
+            na, nb = math.prod(a.shape[1:]), math.prod(b.shape[1:])
+            half = torch.full((2 * K * O,), 0.5, dtype=torch.float64)
+            signs = torch.cat([half[: K * O], -half[K * O :]])
+            ga = _gather(torch.cat([ia.reshape(-1)] * 2).tolist(), na, torch.zeros(2 * K * O), half)
+            gb = _gather(torch.cat([ib.reshape(-1)] * 2).tolist(), nb, torch.zeros(2 * K * O),
+                         signs)
+            k = squares(_Expr((1, 2 * K * O), [(ka, [ga]), (kb, [gb])]))
+            w = torch.cat([torch.ones(K), -torch.ones(K)]).to(torch.float64).reshape(1, 2 * K, 1, 1)
+            total = _conv(w, torch.zeros(1), (1, 2 * K, O, 1), {}, (1, 1, O, 1))
+            return _Expr(out_shape, [(k, [total])])
+
+        def softmax(expr, axis):
+            # 1 / sum_t exp(x_t - x_q) along the axis: the differences by two gathers (one times
+            # -1), exp, their sums by a 1 x 1 convolution, then 1 / max(s, 1) (s >= 1: t = q)
+            shape = expr.shape
+            n, M = math.prod(shape[1:]), shape[axis]
+            idx = torch.arange(n).reshape(shape[1:])
+            moved = idx.movedim(axis - 1, -1)  # (..., M): the entries along the axis
+            # it[t, q]: the entry t of q's row; iq[t, q] = q
+            rows = moved.unsqueeze(-2).expand(*moved.shape, M)  # (..., q, t)
+            it = torch.empty(M, n, dtype=torch.int64)
+            it[:, moved.reshape(-1)] = rows.reshape(-1, M).T
+            iq = torch.arange(n).expand(M, n)
+            kx = materialize(single(expr))
+            zero = torch.zeros(M * n)
+            minus = torch.full((M * n,), -1.0, dtype=torch.float64)
+            dt = _gather(it.reshape(-1).tolist(), n, zero)
+            dq = _gather(iq.reshape(-1).tolist(), n, zero, minus)
+            ke = squares(_Expr((1, M * n), [(kx, [dt]), (kx, [dq])]), "exp")
+            w = torch.ones(1, M, 1, 1, dtype=torch.float64)
+            total = _conv(w, torch.zeros(1), (1, M, n, 1), {}, (1, 1, n, 1))
+            return _Expr(shape, [(squares(_Expr((1, n), [(ke, [total])]), "reciprocal"), [])])
+
+        def max_pool(expr, shape, out_shape, attrs):
+            # max(a, b) = b + relu(a - b): the window's items in pairs, round by round; a round is
+            # the differences (a grouped convolution) and their ReLU, then a gather of the ReLUs
+            # plus the second item of each pair (and an odd last one) as a residual convolution
+            c, (kh, kw) = shape[1], attrs["kernel_shape"]
+            ho, wo = out_shape[2], out_shape[3]
+            pixels = ho * wo
+            src, items, first = materialize(single(expr)), kh * kw, True
+
+            def conv(rows, n_in, from_shape, spec):
+                # a grouped convolution: row j of `rows` (out, n_in) per channel
+                m = torch.as_tensor(rows, dtype=torch.float64)
+                k = m.reshape(-1, 1, kh, kw) if first else m.reshape(-1, n_in, 1, 1)
+                k = k.repeat(c, 1, 1, 1)
+                out = (1, c * m.shape[0], ho, wo)
+                return _conv(k, torch.zeros(k.shape[0]), from_shape, spec, out)
+
+            while items > 1 or first:
+                pairs, left = items // 2, items % 2
+                spec = (
+                    {**{a: attrs[a] for a in ("strides", "dilations") if a in attrs}, "group": c}
+                    if first
+                    else {"group": c}
+                )
+                from_shape = shape if first else (1, c * items, ho, wo)
+                if pairs == 0:  # a 1 x 1 window: the selection only
+                    return emit([conv(np.eye(1), items, from_shape, spec)], src)
+                diff, pick = np.zeros((pairs, items)), np.zeros((pairs + left, items))
+                for j in range(pairs):
+                    diff[j, 2 * j], diff[j, 2 * j + 1] = 1.0, -1.0
+                    pick[j, 2 * j + 1] = 1.0
+                if left:
+                    pick[pairs, items - 1] = 1.0
+                relu = emit([conv(diff, items, from_shape, spec)], src)
+                activations[relu] = "relu"
+                # the ReLU of pair j at item j of each channel, 0 at an odd last item
+                index = [
+                    ((ch * pairs + j) * pixels + p) if j < pairs else -1
+                    for ch in range(c)
+                    for j in range(pairs + left)
+                    for p in range(pixels)
+                ]
+                size = c * (pairs + left) * pixels
+                gather = _gather(index, c * pairs * pixels, torch.zeros(size))
+                src = emit([gather], relu, [(src, conv(pick, items, from_shape, spec))])
+                items, first = pairs + left, False
+            return src
 
         for op, ins, outs, attrs in net.nodes:
             linked = [name for name in ins if name in chain]
             if not linked:
                 values[outs[0]] = net._run(op, [values.get(n) if n else None for n in ins], attrs)
                 continue
-            if op in STRUCTURE_OPS:
+            if op in STRUCTURE_OPS and not _moves_data(op, ins[0] in chain):
                 # shape arithmetic on the chain: its shape only
                 probes = [
-                    torch.zeros(1, *chain[n][1:], dtype=torch.float64)
+                    torch.zeros(1, *chain[n].shape[1:], dtype=torch.float64)
                     if n in chain
                     else values.get(n)
                     if n
@@ -514,23 +697,126 @@ class OnnxNetwork:
                 ]
                 values[outs[0]] = net._run(op, probes, attrs)
                 continue
-            if len(set(linked)) > 1 or linked[0] != latest:
-                raise _NotAChain(f"{op} joins two layers (a residual connection)")
-            x_name = latest
-            shape = chain[x_name]
+            if op == "Concat" and len(set(linked)) > 1:
+                # branches side by side: each term padded into its place, the constants as bias
+                shapes = [chain[n].shape if n in chain else tuple(values[n].shape) for n in ins]
+
+                def probes(i, part, shapes=shapes):
+                    # zeros of every part's shape, `part` at the i-th
+                    zs = [torch.zeros(1, *sh[1:], dtype=torch.float64) for sh in shapes]
+                    zs[i] = part
+                    return zs
+
+                pieces, bias = [], None
+                for i, n in enumerate(ins):
+                    if n not in chain:
+                        moved = net._run(op, probes(i, values[n].to(torch.float64)), attrs)
+                        bias = moved.reshape(-1) if bias is None else bias + moved.reshape(-1)
+                        continue
+                    # the place of each entry of this part in the output (-1: another part's)
+                    size_i = math.prod(shapes[i][1:])
+                    idx = torch.arange(1, size_i + 1, dtype=torch.float64)
+                    idx = idx.reshape(1, *shapes[i][1:])
+                    index = (net._run(op, probes(i, idx), attrs).reshape(-1).round().long() - 1)
+                    place = _gather(index.tolist(), size_i, torch.zeros(len(index)))
+                    t, b = terms(chain[n])
+                    pieces += [(src, list(maps) + [place]) for src, maps in t]
+                    if b is not None:
+                        moved = torch.cat([b.to(torch.float64), torch.zeros(1)])[index]
+                        bias = moved if bias is None else bias + moved
+                out_shape = tuple(net._run(op, probes(0, torch.zeros(1, *shapes[0][1:],
+                                                                     dtype=torch.float64)),
+                                           attrs).shape)
+                chain[outs[0]] = _Expr(out_shape, pieces, bias)
+                continue
+            if op in ("Add", "Sub") and len(ins) == 2 and len(set(linked)) == 2:
+                # two branches: the sum of their terms (a difference: b's through -I)
+                a, b = chain[ins[0]], chain[ins[1]]
+                if a.shape != b.shape:
+                    raise _NotAChain(f"{op} of two branches of other shapes")
+                (ta, ba), (tb, bb) = terms(a), terms(b)
+                if op == "Sub":
+                    tb, bb = _scaled_terms(tb, bb, -torch.eye(math.prod(b.shape[1:]),
+                                                              dtype=torch.float64))
+                bias = ba if bb is None else bb if ba is None else ba + bb
+                chain[outs[0]] = _Expr(a.shape, ta + tb, bias)
+                continue
+            if op == "MatMul" and len(ins) == 2 and len(linked) == 2:
+                # a product of two values (attention): A (..., n, K) times B (..., K, m)
+                a, b = chain[ins[0]], chain[ins[1]]
+                ia = torch.arange(math.prod(a.shape)).reshape(a.shape).unsqueeze(-1)
+                ib = torch.arange(math.prod(b.shape)).reshape(b.shape).unsqueeze(-3)
+                ia, ib = torch.broadcast_tensors(ia, ib)  # (..., n, K, m)
+                out_shape = tuple(ia.shape[:-2]) + (ia.shape[-1],)
+                if out_shape[0] != 1:
+                    raise _NotAChain("MatMul of two values with a batch of other sizes")
+                K = ia.shape[-2]
+                chain[outs[0]] = products(
+                    a, b, ia.movedim(-2, 0).reshape(K, -1), ib.movedim(-2, 0).reshape(K, -1),
+                    out_shape,
+                )
+                continue
+            if op == "Softmax" and len(linked) == 1:
+                # a softmax inside the network (the output's may be dropped, layers())
+                expr = chain[ins[0]]
+                axis = attrs.get("axis", -1 if net.opset >= 13 else 1) % len(expr.shape)
+                if net.opset < 13 and axis != len(expr.shape) - 1:
+                    raise _NotAChain("Softmax before opset 13 over more than the last axis")
+                if axis == 0:
+                    raise _NotAChain("Softmax over the batch axis")
+                chain[outs[0]] = softmax(expr, axis)
+                continue
+            if op == "Mul" and len(ins) == 2 and len(linked) == 2:
+                # a product of two values: ((a + b)^2 - (a - b)^2) / 4, the squares a layer
+                a, b = chain[ins[0]], chain[ins[1]]
+                if a.shape != b.shape:
+                    raise _NotAChain("Mul of two values of other shapes")
+                n = math.prod(a.shape[1:])
+                if n > MAX_PRODUCT:
+                    raise _NotAChain(f"Mul of two values of {n} entries exceeds {MAX_PRODUCT}")
+                half = torch.eye(n, dtype=torch.float64) * 0.5
+                (ta, ba), (tb, bb) = terms(a), terms(b)
+                ta, ba = _scaled_terms(ta, ba, torch.cat([half, half]))
+                tb, bb = _scaled_terms(tb, bb, torch.cat([half, -half]))
+                bias = ba if bb is None else bb if ba is None else ba + bb
+                k = squares(_Expr((1, 2 * n), ta + tb, bias))
+                diff = torch.cat([torch.eye(n), -torch.eye(n)], 1).to(torch.float64)
+                zero = torch.zeros(n, dtype=torch.float64)
+                chain[outs[0]] = _Expr(a.shape, [(k, [(diff, zero)])])
+                continue
+            if len(set(linked)) > 1 or len(linked) > 1:
+                raise _NotAChain(f"{op} joins two branches")
+            x_name = linked[0]
+            expr = chain[x_name]
+            shape = expr.shape
             probe = torch.zeros(1, *shape[1:], dtype=torch.float64)
             args = [probe if n == x_name else (values.get(n) if n else None) for n in ins]
             out_shape = tuple(net._run(op, args, attrs).shape)
+            size = math.prod(shape[1:])
+
+            def then(layer, expr=expr, out_shape=out_shape):
+                # the map after the expression
+                src, maps = single(expr).terms[0]
+                return _Expr(out_shape, [(src, maps + [layer])])
+
             if op in ACTIVATIONS:
-                if not layers or activations[-1] != "identity":
-                    push(_gather(list(range(size)), size, torch.zeros(size)), shape)
-                activations[-1] = ACTIVATIONS[op]
-            elif op == "Conv":
+                # in place only on a layer made just now (nothing else reads it yet)
+                before = len(layers)
+                k = materialize(expr)
+                if k < 0 or k < before or activations[k] != "identity":
+                    # (a layer's output that others may read keeps its own)
+                    k = emit([_gather(list(range(size)), size, torch.zeros(size))], k)
+                else:
+                    done.pop(id(expr), None)  # the layer's own output is now the activation's
+                activations[k] = ACTIVATIONS[op]
+                chain[outs[0]] = _Expr(out_shape, [(k, [])])
+                continue
+            if op == "Conv":
                 w = args[1]
                 if w.dim() == 3:  # Conv1D as a 2-D convolution of width 1
                     w = w.unsqueeze(-1)
                 b = args[2] if len(args) > 2 and args[2] is not None else torch.zeros(w.shape[0])
-                push(_conv(w, b, shape, attrs, out_shape), out_shape)
+                chain[outs[0]] = then(_conv(w, b, shape, attrs, out_shape))
             elif op == "ConvTranspose" and len(shape) == 4:
                 # the transpose of the convolution from the output back to the input
                 w = args[1]
@@ -541,13 +827,18 @@ class OnnxNetwork:
                 spec["bias"] = spec["bias"].to(torch.float64).contiguous()
                 spec["conv_transpose2d"] = spec.pop("conv2d")
                 spec["output"] = spec.pop("input")
-                push(spec, out_shape)
+                chain[outs[0]] = then(spec)
             elif op == "BatchNormalization":
                 scale, shift, mean, var = args[1:5]
                 factor = scale / torch.sqrt(var + attrs.get("epsilon", 1e-5))
-                c = shape[1]
-                w = factor.reshape(c, 1, 1, 1)
-                push(_conv(w, shift - mean * factor, shape, {"group": c}, out_shape), out_shape)
+                c, offset = shape[1], shift - mean * factor
+                fused = _fold_batch_norm(single(expr), factor, offset)
+                if fused is None and len(shape) == 2:
+                    # of features (after a Gemm): a diagonal dense layer
+                    fused = then((torch.diag(factor).contiguous(), offset.contiguous()))
+                chain[outs[0]] = fused or then(
+                    _conv(factor.reshape(c, 1, 1, 1), offset, shape, {"group": c}, out_shape)
+                )
             elif (
                 op == "AveragePool"
                 and not attrs.get("ceil_mode", 0)
@@ -555,25 +846,62 @@ class OnnxNetwork:
             ):
                 k, c = list(attrs["kernel_shape"]), shape[1]
                 w = torch.full((c, 1, *k), 1.0 / math.prod(k), dtype=torch.float64)
-                push(_conv(w, torch.zeros(c), shape, {**attrs, "group": c}, out_shape), out_shape)
+                chain[outs[0]] = then(_conv(w, torch.zeros(c), shape, {**attrs, "group": c},
+                                            out_shape))
+            elif op in ("Mul", "Div", "Neg", "Cast"):
+                # an element-wise scaling by constants: folded into the map before, else a layer
+                if op == "Div" and ins[0] != x_name:
+                    raise _NotAChain("Div by a value that depends on the input")
+                at = ins.index(x_name)
+                full = lambda v, at=at, args=args: [  # noqa: E731
+                    v if i == at else a for i, a in enumerate(args)
+                ]
+                factor = net._run(op, full(torch.ones_like(probe)), attrs)
+                if tuple(factor.shape) != tuple(probe.shape):
+                    raise _NotAChain(f"{op} broadcasts the value to another shape")
+                chain[outs[0]] = _scale(expr, single, then, factor.reshape(-1), shape, out_shape)
+            elif op == "ReduceSum":
+                # a sum over axes (the batch axis of one row dropped): the matrix of ones
+                axes = args[1] if len(args) > 1 and args[1] is not None else attrs.get("axes", [])
+                axes = [int(a) % len(shape) for a in axes] or list(range(1, len(shape)))
+                dims = tuple(a for a in axes if a)
+                keep = bool(attrs.get("keepdims", 1))
+                rows = math.prod(out_shape[1:])
+                lin = _chunked_images(
+                    lambda unit, dims=dims, keep=keep: unit.sum(dim=dims, keepdim=keep)
+                    if dims
+                    else unit,
+                    size, shape, rows,
+                )
+                chain[outs[0]] = then((lin, torch.zeros(rows, dtype=torch.float64)))
             elif op in ("Gemm", "MatMul"):
-                # the matrix of the unit vectors (small: one per input of a dense layer)
-                eye = torch.eye(size, dtype=torch.float64).reshape(size, *shape[1:])
+                if ins[0] != x_name:
+                    raise _NotAChain(f"{op} of a constant times the value")
+                # the matrix: the images of the unit vectors, a chunk at a time (after a wide
+                # convolution, as malbeware's 61504 entries, the identity alone is 30 GB)
                 zero = torch.zeros(1, *shape[1:], dtype=torch.float64)
-                lin = net._run_batched(op, [eye] + args[1:2], [True, False], attrs)
                 bias = net._run(op, [zero] + args[1:], attrs)
-                push((lin.reshape(size, -1).T.contiguous(), bias.reshape(-1)), out_shape)
+                lin = _chunked_images(
+                    lambda unit, op=op, args=args, attrs=attrs: net._run_batched(
+                        op, [unit] + args[1:2], [True, False], attrs
+                    ),
+                    size, shape, bias.numel(),
+                )
+                chain[outs[0]] = then((lin, bias.reshape(-1)))
             elif op in ("Add", "Sub") and len(ins) == 2:
                 other = args[1] if ins[0] == x_name else args[0]
-                sign = -1.0 if op == "Sub" and ins[1] == x_name else 1.0
-                if sign < 0:
-                    raise _NotAChain("Sub of the chain from a constant")
+                if op == "Sub" and ins[1] == x_name:
+                    # a constant minus the value: the value negated, then the constant added
+                    expr = _scale(expr, single, then, -torch.ones(size, dtype=torch.float64),
+                                  shape, out_shape)
+                    other = -other
                 delta = torch.broadcast_to(other * (-1.0 if op == "Sub" else 1.0), out_shape)
-                bias_room()
-                layers[-1] = _add_bias(layers[-1], delta.reshape(-1))
+                delta = delta.reshape(-1)
+                bias = delta if expr.bias is None else expr.bias + delta
+                chain[outs[0]] = _Expr(out_shape, expr.terms, bias)
             elif op in ("Flatten", "Reshape", "Squeeze", "Unsqueeze", "Identity", "Dropout"):
-                pass
-            elif op in ("Transpose", "Pad", "Slice", "Concat", "Upsample"):
+                chain[outs[0]] = _Expr(out_shape, expr.terms, expr.bias)
+            elif op in ("Transpose", "Pad", "Slice", "Concat", "Upsample", "Gather"):
                 # the input index + 1 of each output (0: a constant), and the constants
                 idx = torch.arange(1, size + 1, dtype=torch.float64).reshape(1, *shape[1:])
                 # a Concat's constant parts and a Pad's value are zeros of the moved indices
@@ -588,15 +916,21 @@ class OnnxNetwork:
                 moved = net._run(op, moved_args, {**attrs, "value": 0.0} if op == "Pad" else attrs)
                 const = net._run(op, args, attrs)
                 index = (moved.reshape(-1).round().long() - 1).tolist()
-                push(_gather(index, size, const.reshape(-1)), out_shape)
+                chain[outs[0]] = then(_gather(index, size, const.reshape(-1)))
+            elif op == "MaxPool" and len(shape) == 4:
+                if attrs.get("ceil_mode", 0) or any(attrs.get("pads", [])):
+                    raise _NotAChain("MaxPool with pads or ceil_mode")
+                chain[outs[0]] = _Expr(out_shape, [(max_pool(expr, shape, out_shape, attrs), [])])
             else:
                 raise _NotAChain(f"{op} on the chain is not a layer yet")
-            chain[outs[0]] = out_shape
-            latest = outs[0]
-        if self.output_name != latest:
+        if self.output_name not in chain:
             raise _NotAChain("the output does not depend on the input")
-        if not layers:
-            push(_gather(list(range(size)), size, torch.zeros(size)), (size,))
+        out = chain[self.output_name]
+        last = materialize(out)
+        if last != len(layers) - 1 or last < 0:
+            # the output is an earlier layer's or the input: one more identity layer
+            size = math.prod(out.shape[1:])
+            emit([_gather(list(range(size)), size, torch.zeros(size))], last)
         return layers, activations
 
     def _run_batched(self, op, args, batched, attrs):
@@ -618,7 +952,11 @@ class _NotAChain(Exception):
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
-ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh"}  # what cora's layers know
+MAX_PRODUCT = 4096  # entries of a product of two values at most (its maps are dense)
+
+UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
+
+ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign", "Exp": "exp"}
 
 LINEAR_OPS = {
     "Add",
@@ -647,9 +985,17 @@ STRUCTURED_OPS = {
     "Conv",
     "ConvTranspose",
     "AveragePool",
+    "MaxPool",
 }  # lowered layer by layer, never to a matrix
 
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
+DATA_MOVES = {"Slice", "Gather", "Cast"}  # ... unless they move a value of the input: then linear
+
+
+def _moves_data(op, on_data):
+    """Whether a STRUCTURE_OPS node moves the entries of a value of the input (its first argument
+    is one): a Slice, Gather or Cast of data is a linear map, not shape arithmetic."""
+    return op in DATA_MOVES and bool(on_data)
 
 
 def _conv(w, b, shape, attrs, out_shape):
@@ -667,7 +1013,7 @@ def _conv(w, b, shape, attrs, out_shape):
     bias = torch.broadcast_to(b.reshape(-1, *([1] * k)), out_shape[1:]).reshape(size)
     return {
         "conv2d": w.reshape(w.shape[0], w.shape[1], w.shape[2], -1).contiguous(),
-        "bias": bias.contiguous(),
+        "bias": bias.to(torch.float64).contiguous(),
         "input": [shape[1], shape[2], shape[3] if k == 2 else 1],
         "stride": stride,
         "dilation": dilation,
@@ -676,13 +1022,98 @@ def _conv(w, b, shape, attrs, out_shape):
     }
 
 
-def _gather(index, inputs, bias):
-    """The gather dict of cora.NeuralNetwork: output i is input index[i] (negative: 0)."""
-    return {
+def _scaled_terms(terms, bias, M):
+    """The terms and the constant of an expression through the dense map M (out, n)."""
+    zero = torch.zeros(M.shape[0], dtype=torch.float64)
+    terms = [(src, list(maps) + [(M.contiguous(), zero)]) for src, maps in terms]
+    return terms, (None if bias is None else M @ bias.to(torch.float64))
+
+
+def _chunked_images(image, size, shape, rows):
+    """The matrix (rows, size) of a linear map from the images of the unit vectors of a value of
+    the shape (batch 1 first), a chunk of UNIT_VECTOR_CHUNK entries at a time: image maps a batch
+    (count, *shape[1:]) to (count, ...). (One buffer of unit vectors and the matrix allocated
+    once: chunks allocated anew fragment the heap, and the peak grows with every chunk.)"""
+    chunk = min(size, max(1, UNIT_VECTOR_CHUNK // size))
+    eye = torch.zeros(chunk, size, dtype=torch.float64)
+    lin = torch.empty(rows, size, dtype=torch.float64)
+    for start in range(0, size, chunk):
+        count = min(chunk, size - start)
+        unit = eye[:count]
+        unit.zero_()
+        unit[:, start : start + count].fill_diagonal_(1.0)
+        lin[:, start : start + count] = image(unit.reshape(count, *shape[1:])).reshape(count, -1).T
+    return lin
+
+
+def _scale(expr, single, then, factor, shape, out_shape):
+    """The expression times the factor of each entry: folded into the map before it (a dense
+    layer's rows, a convolution's kernel per channel), else a depthwise convolution of an image
+    or a diagonal dense layer of at most MAX_PRODUCT entries."""
+    zero = torch.zeros(factor.numel(), dtype=torch.float64)
+    if len(shape) == 4:
+        per = factor.reshape(shape[1], -1)
+        if bool((per == per[:, :1]).all()):
+            c, f = shape[1], per[:, 0].contiguous()
+            fused = _fold_batch_norm(single(expr), f, torch.zeros(c, dtype=torch.float64))
+            return fused or then(
+                _conv(f.reshape(c, 1, 1, 1), torch.zeros(c), shape, {"group": c}, out_shape)
+            )
+    fused = _fold_batch_norm(single(expr), factor, zero)
+    if fused is not None:
+        return fused
+    if factor.numel() > MAX_PRODUCT:
+        raise _NotAChain(f"an element-wise scaling of {factor.numel()} entries")
+    return then((torch.diag(factor).contiguous(), zero))
+
+
+def _gather(index, inputs, bias, scale=None):
+    """The gather dict of cora.NeuralNetwork: output i is input index[i] (negative: 0), times
+    scale[i] if given."""
+    out = {
         "gather": list(index),
         "inputs": int(inputs),
         "bias": bias.to(torch.float64).contiguous(),
     }
+    if scale is not None:
+        out["scale"] = scale.to(torch.float64).contiguous()
+    return out
+
+
+class _Expr:
+    """A value of the lowering: the sum of terms (source layer, maps after it; -1: the input) and
+    a constant (flat, or None), of the shape (batch first)."""
+
+    def __init__(self, shape, terms, bias=None):
+        self.shape, self.terms, self.bias = tuple(shape), list(terms), bias
+
+
+def _with_graph(layer, graph):
+    """A layer as a dict with its graph keys (a dense pair as {'W', 'bias'})."""
+    if not isinstance(layer, dict):
+        layer = {"W": layer[0], "bias": layer[1]}
+    return {**layer, **graph}
+
+
+def _fold_batch_norm(expr, factor, shift):
+    """The expression with a per-channel x * factor + shift folded into its last map, a conv2d or
+    a dense pair (kernel or matrix rows and bias scaled); None if that map is neither."""
+    src, maps = expr.terms[0]
+    if maps and isinstance(maps[-1], tuple) and maps[-1][0].shape[0] == factor.numel():
+        # a dense layer's rows: W' = diag(factor) W, b' = factor b + shift
+        W, b = maps[-1]
+        fused = ((W * factor.reshape(-1, 1)).contiguous(), (b * factor + shift).contiguous())
+        return _Expr(expr.shape, [(src, maps[:-1] + [fused])])
+    if not maps or not isinstance(maps[-1], dict) or "conv2d" not in maps[-1]:
+        return None
+    conv = maps[-1]
+    c = conv["conv2d"].shape[0]
+    if factor.numel() != c:
+        return None
+    kernel = conv["conv2d"] * factor.reshape(c, 1, 1, 1)
+    bias = (conv["bias"].reshape(c, -1) * factor.reshape(c, 1) + shift.reshape(c, 1)).reshape(-1)
+    fused = {**conv, "conv2d": kernel.contiguous(), "bias": bias.contiguous()}
+    return _Expr(expr.shape, [(src, maps[:-1] + [fused])])
 
 
 def _add_bias(layer, delta):
@@ -723,6 +1154,5 @@ def _pool_padding(x, pads, value):
     for i in reversed(range(k)):  # torch's pad lists the last axis first
         flat += [pads[i], pads[i + k]]
     return F.pad(x, flat, value=value)
-
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

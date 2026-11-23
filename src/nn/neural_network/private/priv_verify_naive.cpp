@@ -17,7 +17,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   ---
+// Last update:   22-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -72,8 +72,8 @@ class ZonotopeBounding : public Bounding {
 
     bool prepare(NnProblem &problem) override {
         // the set operations of NeuralNetwork take matrices only
-        if (!problem.net().is_dense()) {
-            why = "the bounding 'zonotope' takes dense layers; use 'conzonotope'";
+        if (!problem.net().is_dense() || !problem.net().is_chain()) {
+            why = "the bounding 'zonotope' takes a chain of dense layers; use 'conzonotope'";
             return false;
         }
         int64_t widest = problem.net().input_dim(), q = problem.net().input_dim();

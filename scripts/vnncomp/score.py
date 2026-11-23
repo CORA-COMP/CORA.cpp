@@ -9,12 +9,13 @@ the overhead (the fastest solve), exceeds the instance's timeout is a timeout. W
 there is no normalization to the best tool: the score is reported with its maximum, 10 per instance.
 
 Syntax:   python scripts/vnncomp/score.py results.csv [--expected DIR/expected.csv] [--json out.json]
+Inputs:   --max-rss-mib M: the memory check (an instance above M is listed; exit status 1)
 Outputs:  per category: verified, falsified, unknown, incorrect, score, maximum, the times and peaks
 See also: scripts/vnncomp/run_dev_set.py, cora.counterexample
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -33,6 +34,7 @@ def main():
     parser.add_argument("csv")
     parser.add_argument("--expected", default="")
     parser.add_argument("--json", default="")
+    parser.add_argument("--max-rss-mib", type=float, default=0.0)
     args = parser.parse_args()
     # the rows, the expected verdicts, the result files beside the CSV
     with open(args.csv, newline="") as stream:
@@ -49,10 +51,15 @@ def main():
               f"{s['incorrect']} incorrect; score {s['score']} of {s['maximum']} "
               f"({100.0 * s['score'] / max(1, s['maximum']):.1f}%); {s['run_seconds']:.0f} s, "
               f"peak RSS {s['peak_rss_mib']:.0f} MiB; checks {s['checks']}")
+    # the memory check: every instance within the budget
+    over = over_memory(rows, args.max_rss_mib) if args.max_rss_mib else []
+    for onnx, prop, rss in over:
+        print(f"over {args.max_rss_mib:.0f} MiB: {rss:.0f} MiB, {os.path.basename(onnx)} "
+              f"{os.path.basename(prop)}")
     if args.json:
         with open(args.json, "w") as out:
             json.dump(scores, out, indent=2)
-    return 0
+    return 1 if over else 0
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
@@ -83,6 +90,11 @@ def counterexample_text(results_dir, k):
         return ""
     with open(path) as stream:
         return "".join(stream.readlines()[1:])
+
+
+def over_memory(rows, limit):
+    """The rows (onnx, vnnlib, peak RSS) whose peak RSS in MiB exceeds limit."""
+    return [(r[1], r[2], float(r[7])) for r in rows if len(r) > 7 and float(r[7]) > limit]
 
 
 def score_rows(rows, results_dir, expected):

@@ -40,12 +40,15 @@
 // CORA: nn/layers/nonlinear/nnSigmoidLayer.m
 // CORA: nn/layers/nonlinear/nnTanhLayer.m
 // CORA: nn/layers/nonlinear/nnSShapeLayer.m
+// CORA: nn/layers/nonlinear/nnSquareLayer.m
+// CORA.cpp only: the sign activation (no CORA layer)
+// CORA.cpp only: exp and the reciprocal 1 / max(x, 1), a softmax's parts (no CORA layer)
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA authors: Tobias Ladner, Sebastian Sigl, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   19-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -78,6 +81,15 @@ Tensor aux_apply(Activation activation, const Tensor &x) {
         return x.sigmoid();
     case Activation::tanh:
         return x.tanh();
+    case Activation::square:
+        return x.square();
+    case Activation::sign:
+        return x.sign();
+    // a softmax's parts
+    case Activation::exp:
+        return x.exp();
+    case Activation::reciprocal:
+        return x.ones_like().divide(x.maximum(1.0));
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
@@ -130,6 +142,14 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         const Tensor four = (s.slope + s.slope) + (s.slope + s.slope);
         return {four, (s.offset + s.offset) + (-1.0), s.radius + s.radius};
     }
+    case Activation::square:
+        return priv_square_line(l, u);
+    case Activation::sign:
+        return priv_sign_line(l, u);
+    case Activation::exp:
+        return priv_exp_line(l, u);
+    case Activation::reciprocal:
+        return priv_reciprocal_line(l, u);
     }
     CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
 }
@@ -255,7 +275,10 @@ Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u
 
 /// The line of the activation over [l, u] by the method.
 Line aux_line(Activation activation, const Tensor &l, const Tensor &u, const NnOptions &options) {
-    if (options.poly_method == PolyMethod::singh) return aux_line_singh(activation, l, u);
+    // exp and the reciprocal have one line in every method
+    if (activation == Activation::exp || activation == Activation::reciprocal ||
+        options.poly_method == PolyMethod::singh)
+        return aux_line_singh(activation, l, u);
     if (options.poly_method == PolyMethod::regression)
         return aux_line_regression(activation, l, u, options.regression_error);
     CORA_FAIL(Error::not_supported, "evaluate: this poly_method is for polynomial zonotopes");
@@ -336,11 +359,15 @@ Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
                 bool keep_zero, const NnOptions &options,
                 std::vector<std::vector<double>> *errors = nullptr) {
     for (std::size_t k = 0; k < layers.size(); ++k) {
-        // a set goes through matrices only (a convolution: evaluate at points or verify)
+        // a set goes through a chain of matrices only (a convolution, a graph: points or verify)
         if (layers[k].plan)
             CORA_FAIL(Error::not_supported,
                       "evaluate: layer " + std::to_string(k) +
                           " is a convolution or a gather; sets take matrices (Layer::dense)");
+        if (layers[k].source != int64_t(k) - 1 || !layers[k].residuals.empty())
+            CORA_FAIL(Error::not_supported,
+                      "evaluate: layer " + std::to_string(k) +
+                          " reads another layer than the one before; sets take a chain");
         r.c = layers[k].W.matmul(r.c) + layers[k].b.expand_dims(-1);
         r.G = layers[k].W.matmul(r.G);
         r.GI = layers[k].W.matmul(r.GI);
@@ -559,10 +586,83 @@ std::pair<Tensor, Tensor> priv_bounds(const PrivRows &r) {
     return aux_bounds(r);
 }
 
+Tensor priv_apply(Activation activation, const Tensor &x) {
+    detail::Entry entry;
+    return aux_apply(activation, x);
+}
+
 PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
                    const NnOptions &options) {
     detail::Entry entry;
     return aux_line(activation, l, u, options);
+}
+
+// The bounds beyond the float range ---------------------------------------------------------------
+
+void priv_check_finite(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    // one flag for the whole batch: a bound beyond the float range has no line
+    const Tensor finite = l.isfinite().multiply(u.isfinite());
+    if (finite.numel() > 0 && finite.reshape({finite.numel()}).min(0).item() < 1)
+        CORA_FAIL(Error::special_error, kOutOfRangeMessage);
+}
+
+bool priv_is_out_of_range(const std::exception &error) {
+    detail::Entry entry;
+    // a cora::Error with priv_check_finite's message
+    const auto *e = dynamic_cast<const Error *>(&error);
+    return e && e->id() == Error::special_error && std::string(kOutOfRangeMessage) == e->what();
+}
+
+// The lines of exp and the reciprocal ------------------------------------------------------------
+
+PrivLine priv_exp_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    const Tensor el = l.exp(), eu = u.exp(), width = u - l, zero = l.zeros_like();
+    priv_check_finite(el, eu);
+    // the chord's slope (e^l on a point); e^x - m x is convex, for any m >= 0 (priv_layers.h)
+    const Tensor m =
+        Tensor::where(width.greater(zero), (eu - el).divide(width.maximum(numerics::kTiny)), el)
+            .maximum(zero);
+    const auto g = [&](const Tensor &x) { return x.exp() - m.multiply(x); };
+    const Tensor hi = g(l).maximum(g(u)), lo = g(m.log().maximum(l).minimum(u));
+    // the radius widened by the rounding (16 ulps of the largest term)
+    const Tensor big = eu + m.multiply(l.abs().maximum(u.abs()));
+    return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big * (16.0 * machine_eps(l.dtype()))};
+}
+
+PrivLine priv_reciprocal_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    priv_check_finite(l, u);
+    const Tensor one = l.ones_like(), lc = l.maximum(1.0), uc = u.maximum(1.0);
+    // the chord's slope -1 / (l u) on [max(l, 1), max(u, 1)], the extremes as in priv_layers.h
+    const Tensor m = one.divide(lc).multiply(one.divide(uc)).negative();
+    const auto g = [&](const Tensor &x) { return one.divide(x.maximum(1.0)) - m.multiply(x); };
+    const Tensor hi = g(l).maximum(g(u)).maximum(g(one.maximum(l).minimum(u)));
+    const Tensor lo = g(l).minimum(g(lc.multiply(uc).sqrt().maximum(l).minimum(u)));
+    // the radius widened by the rounding (16 ulps of the largest term)
+    const Tensor big = one + m.abs().multiply(l.abs().maximum(u.abs()));
+    return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + big * (16.0 * machine_eps(l.dtype()))};
+}
+
+// The lines of sign and the square ----------------------------------------------------------------
+
+PrivLine priv_sign_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    // slope 0 between sign(l) and sign(u) (exact: the values are halves)
+    const Tensor lo = l.sign(), hi = u.sign();
+    return {l.zeros_like(), (lo + hi) * 0.5, (hi - lo) * 0.5};
+}
+
+PrivLine priv_square_line(const Tensor &l, const Tensor &u) {
+    detail::Entry entry;
+    // x^2 - (l + u) x is (l - x)(u - x) - l u: -l u at the ends, -m^2 at the middle m
+    const Tensor slope = l + u, m = slope * 0.5, lu = l.multiply(u), m2 = m.square();
+    const Tensor offset = (lu + m2) * -0.5;
+    // the radius (m^2 - l u) / 2 = (u - l)^2 / 8, widened by the rounding (8 ulps of max x^2)
+    const Tensor big = l.square().maximum(u.square());
+    const Tensor radius = (u - l).square() * 0.125 + big * (8.0 * machine_eps(l.dtype()));
+    return {slope, offset, radius};
 }
 
 Tensor priv_even_mask(const Tensor &like, const Exponents &E) {
@@ -585,11 +685,23 @@ Tensor NeuralNetwork::evaluate(const Tensor &x) const {
                           "), got the shape " + shape_text(x.shape());
                });
     // per layer its map on the columns (a convolution's on the rows), then its activation
+    const auto apply = [](const Layer &L, const Tensor &h) {
+        return L.plan ? L.rows(h.matrix_transpose()).matrix_transpose() : L.W.matmul(h);
+    };
+    // the outputs of a graph's layers (outs[j + 1] is layer j's, outs[0] the input)
+    std::vector<Tensor> outs;
+    if (!is_chain()) outs.resize(layers_.size() + 1);
     Tensor h = x.matrix_transpose();
+    if (!outs.empty()) outs[0] = h;
     for (std::size_t k = 0; k < layers_.size(); ++k) {
         const Layer &L = layers_[k];
-        const Tensor z = L.plan ? L.rows(h.matrix_transpose()).matrix_transpose() : L.W.matmul(h);
+        Tensor z = apply(L, outs.empty() ? h : outs[std::size_t(L.source + 1)]);
+        for (const Residual &r : L.residuals) {
+            const Tensor &hr = outs[std::size_t(r.source + 1)];
+            z = z + (r.map ? apply(*r.map, hr) : hr);
+        }
         h = aux_apply(activations_[k], z + L.b.expand_dims(-1));
+        if (!outs.empty()) outs[k + 1] = h;
     }
     return h.matrix_transpose();
 }

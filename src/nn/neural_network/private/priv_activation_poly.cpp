@@ -13,7 +13,7 @@
 // CORA authors: Tobias Ladner, Niklas Kochdumper, Sebastian Sigl
 // Authors:       Claude Sonnet 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "nn/neural_network/private/priv_activation_poly.h"
@@ -169,6 +169,15 @@ double aux_f(Activation a, double x) {
         return 1.0 / (1.0 + std::exp(-x));
     case Activation::tanh:
         return std::tanh(x);
+    case Activation::square:
+        return x * x;
+    case Activation::sign:
+        return x > 0 ? 1.0 : x < 0 ? -1.0 : 0.0;
+    // a softmax's parts
+    case Activation::exp:
+        return std::exp(x);
+    case Activation::reciprocal:
+        return 1.0 / std::max(x, 1.0);
     }
     CORA_FAIL(Error::wrong_value, "computeApproxPoly: an unknown activation");
 }
@@ -179,6 +188,16 @@ double aux_df(Activation a, int i, double x) {
     if (i == 0) return aux_f(a, x);
     if (a == Activation::identity) return i == 1 ? 1.0 : 0.0;
     if (a == Activation::relu) return i == 1 && x > 0 ? 1.0 : 0.0;
+    if (a == Activation::square) return i == 1 ? 2.0 * x : i == 2 ? 2.0 : 0.0;
+    if (a == Activation::sign) return 0.0;
+    if (a == Activation::exp) return std::exp(x);
+    if (a == Activation::reciprocal) {
+        // (-1)^i i! / x^(i + 1) above 1, else 0
+        if (x <= 1.0) return 0.0;
+        double d = 1.0 / x;
+        for (int k = 1; k <= i; ++k) d *= -double(k) / x;
+        return d;
+    }
     // P as ascending coefficients, starting with P(s) = s
     std::vector<double> P{0.0, 1.0};
     const std::vector<double> factor = a == Activation::sigmoid

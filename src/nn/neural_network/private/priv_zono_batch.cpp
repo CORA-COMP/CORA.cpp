@@ -20,7 +20,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "nn/neural_network/private/priv_zono_batch.h"
@@ -54,6 +54,20 @@ Tensor aux_rows_times(const Tensor &G, const Tensor &M) {
     return G.reshape({B * q, G.shape()[2]}).matmul(M).reshape({B, q, M.shape()[1]});
 }
 
+/// G (B, q, n) with zero rows up to `rows` (a graph's earlier source has fewer factors).
+Tensor aux_rows_to(const Tensor &G, int64_t rows) {
+    const std::vector<int64_t> s = G.shape();
+    if (s[1] >= rows) return G;
+    return Tensor::concat({G, G.zeros_like({s[0], rows - s[1], s[2]})}, 1);
+}
+
+/// G plus the rows R (B, r, n), r <= q: R's factors are G's first r.
+Tensor aux_add_rows(const Tensor &G, const Tensor &R) {
+    const int64_t q = G.shape()[1], r = R.shape()[1];
+    if (r == q) return G + R;
+    return Tensor::concat({G.slice(1, 0, r) + R, G.slice(1, r, q)}, 1);
+}
+
 /// The one-hot rows (..., k, n) of the indices idx (..., k).
 Tensor aux_onehot(const Tensor &idx, int64_t n) {
     return idx.expand_dims(-1).equal(idx.arange_like(n).reshape({1, 1, n}));
@@ -61,21 +75,8 @@ Tensor aux_onehot(const Tensor &idx, int64_t n) {
 
 // The activations ---------------------------------------------------------------------------------
 
-/// The activation and its derivative at the points.
-Tensor aux_apply(Activation activation, const Tensor &x) {
-    switch (activation) {
-    case Activation::identity:
-        return x;
-    case Activation::relu:
-        // max(x, 0), the sigmoid and tanh
-        return x.maximum(0.0);
-    case Activation::sigmoid:
-        return x.sigmoid();
-    case Activation::tanh:
-        return x.tanh();
-    }
-    CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
-}
+/// The activation at the points (evaluate.cpp's).
+Tensor aux_apply(Activation activation, const Tensor &x) { return priv_apply(activation, x); }
 
 /// The derivative of the activation at the points (a ReLU's is 0 at 0, as autograd's).
 Tensor aux_derivative(Activation activation, const Tensor &x) {
@@ -90,6 +91,17 @@ Tensor aux_derivative(Activation activation, const Tensor &x) {
     }
     case Activation::tanh:
         return 1.0 - x.tanh().square();
+    case Activation::square:
+        return x + x;
+    case Activation::sign:
+        return x.zeros_like();
+    case Activation::exp:
+        return x.exp();
+    case Activation::reciprocal: {
+        // -1 / x^2 above 1, else 0
+        const Tensor y = x.ones_like().divide(x.maximum(1.0));
+        return Tensor::where(x.greater(x.ones_like()), y.square().negative(), x.zeros_like());
+    }
     }
     CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
 }
@@ -267,10 +279,23 @@ LineJacobian aux_sigmoid_singh_jacobian(const Tensor &l, const Tensor &u) {
             sign.multiply(hi_u - lo_u) * 0.5};
 }
 
+/// The line of x^2 (priv_square_line): m = l + u, o = -(l u + m^2 / 4) / 2, r = (u - l)^2 / 8.
+LineJacobian aux_square_jacobian(const Tensor &l, const Tensor &u) {
+    const Tensor one = l.ones_like(), mid = (l + u) * 0.5, quarter = (u - l) * 0.25;
+    return {one, one, (u + mid) * -0.5, (l + mid) * -0.5, quarter.negative(), quarter};
+}
+
 /// The partial derivatives of priv_verify_line in l and u.
 LineJacobian aux_line_jacobian(Activation activation, const Tensor &l, const Tensor &u,
                                const std::string &poly_method) {
     if (activation == Activation::relu) return aux_relu_jacobian(l, u);
+    if (activation == Activation::square) return aux_square_jacobian(l, u);
+    if (activation == Activation::sign || activation == Activation::exp ||
+        activation == Activation::reciprocal) {
+        // sign is a step, its line does not move with the bounds; exp's and 1 / x's are held
+        const Tensor zero = l.zeros_like();
+        return {zero, zero, zero, zero, zero, zero};
+    }
     if (poly_method == "bounds") return aux_bounds_jacobian(activation, l, u);
     if (activation == Activation::sigmoid) return aux_sigmoid_singh_jacobian(l, u);
     // tanh: the sigmoid's line at the doubled range, the slope times 4, the rest times 2
@@ -352,8 +377,41 @@ LineJacobian aux_alpha_jacobian(const LineJacobian &base, const Tensor &l, const
 Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits, Tensor g_c,
                    Tensor g_gen, Tensor g_dr, const std::vector<Tensor> *alpha,
                    std::vector<Tensor> *g_alpha, std::vector<Tensor> *slot_grads, bool need_input) {
+    // the factor rows of each output (rows[j + 1]; 0: the input), from the output's back
+    const std::size_t L = net.W.size();
+    std::vector<int64_t> rows(L + 1);
+    rows[L] = g_gen.shape()[1];
+    for (std::size_t k = L, i = out.layers.size(); k-- > 0;) {
+        // the slots that layer k added
+        int64_t added = 0;
+        if (net.activations[k] != Activation::identity) {
+            const ZonoLayerRecord &rec = out.layers[--i];
+            if (rec.slot_values.defined()) added = rec.slot_values.shape()[1];
+        }
+        rows[k] = rows[k + 1] - added;
+    }
+    // each output's gradients, summed over the layers that read it
+    struct Grad {
+        Tensor c, gen, dr;
+    };
+    std::vector<Grad> acc(L + 1);
+    acc[L] = {std::move(g_c), std::move(g_gen), std::move(g_dr)};
+    const auto add = [&](int64_t j, const Tensor &c, const Tensor &gen, const Tensor &dr) {
+        Grad &a = acc[std::size_t(j + 1)];
+        const auto sum = [](Tensor &t, const Tensor &v) {
+            if (v.defined()) t = t.defined() ? t + v : v;
+        };
+        sum(a.c, c);
+        sum(a.gen, gen);
+        sum(a.dr, dr);
+    };
+    // from the last layer back: the activation, then the linear maps
     std::size_t next = out.layers.size();
-    for (std::size_t k = net.W.size(); k-- > 0;) {
+    for (std::size_t k = L; k-- > 0;) {
+        check_deadline(net.deadline);
+        g_c = std::move(acc[k + 1].c);
+        g_gen = std::move(acc[k + 1].gen);
+        g_dr = std::move(acc[k + 1].dr);
         if (net.activations[k] != Activation::identity) {
             const ZonoLayerRecord &rec = out.layers[--next];
             const Tensor &c1 = rec.c_in, &G1 = rec.G_in, &dr1 = rec.dr_in;
@@ -375,7 +433,7 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
                 if (slot_grads) (*slot_grads)[next] = rec.l.zeros_like();
                 g_reach = g_dr.defined() ? g_dr : rec.l.zeros_like();
             }
-            // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = m dr1 + reach
+            // the line at the clamped bounds; c2 = m c1 + o, G2 = m G1, dr2 = |m| dr1 + reach
             const ClampJacobian cl = aux_clamp_jacobian(rec.first_id, rec.l, rec.u, splits);
             PrivLine line = priv_verify_line(net.activations[k], cl.lc, cl.uc, net.poly_method);
             LineJacobian J = aux_line_jacobian(net.activations[k], cl.lc, cl.uc, net.poly_method);
@@ -385,8 +443,13 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
                 J = aux_alpha_jacobian(J, cl.lc, cl.uc, *a);
             }
             const Tensor &m = line.slope;
+            // dr2 = |m| dr1: its gradient in m has the sign of m (+ at 0, as for a ReLU)
             Tensor g_m = g_c.multiply(c1) + g_gen.multiply(G1).sum(1);
-            if (dr1.defined()) g_m = g_m + g_dr.multiply(dr1);
+            if (dr1.defined()) {
+                const Tensor sign_m =
+                    Tensor::where(m.less(m.zeros_like()), -m.ones_like(), m.ones_like());
+                g_m = g_m + g_dr.multiply(dr1).multiply(sign_m);
+            }
             if (a) {
                 // the slope's own gradient: c2, G2, dr2 through m, the offset and reach through h
                 const Tensor zero = rec.l.zeros_like();
@@ -403,18 +466,28 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
             const Tensor g_rad = g_u - g_l;
             g_c = g_c.multiply(m) + g_l + g_u;
             g_gen = m.expand_dims(1).multiply(g_gen) + G1.sign().multiply(g_rad.expand_dims(1));
-            g_dr = dr1.defined() ? g_dr.multiply(m) + g_rad : Tensor();
+            g_dr = dr1.defined() ? g_dr.multiply(m.abs()) + g_rad : Tensor();
         }
-        // the linear layer; the centers and radii of the first layer's input are not needed
-        if (k == 0) {
-            if (need_input) g_gen = net.map_t(k, g_gen);
-            break;
-        }
-        g_gen = net.map_t(k, g_gen);
-        g_c = net.map_t(k, g_c);
-        if (g_dr.defined()) g_dr = net.map_abs_t(k, g_dr);
+        // back to the inputs: a source's own factor rows (the input's center and radii unused)
+        const auto back = [&](int64_t j, const auto &map, const auto &map_abs) {
+            const int64_t r = rows[std::size_t(j + 1)];
+            const Tensor gen = r < g_gen.shape()[1] ? g_gen.slice(1, 0, r) : g_gen;
+            if (j < 0) {
+                if (need_input) add(j, Tensor(), map(gen), Tensor());
+                return;
+            }
+            add(j, map(g_c), map(gen), g_dr.defined() ? map_abs(g_dr) : Tensor());
+        };
+        for (std::size_t i = 0; i < net.residuals[k].size(); ++i)
+            back(
+                net.residuals[k][i].source,
+                [&](const Tensor &x) { return net.residual(k, i, x, false, true); },
+                [&](const Tensor &x) { return net.residual(k, i, x, true, true); });
+        back(
+            net.sources[k], [&](const Tensor &x) { return net.map_t(k, x); },
+            [&](const Tensor &x) { return net.map_abs_t(k, x); });
     }
-    return g_gen;
+    return acc[0].gen;
 }
 
 } // namespace
@@ -424,7 +497,11 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
 
 PrivLine priv_verify_line(Activation activation, const Tensor &l, const Tensor &u,
                           const std::string &poly_method) {
-    // a ReLU's line is CORALean's in both methods (the same line in the reals)
+    // a ReLU's line is CORALean's in both methods (the same line in the reals); x^2 has one line
+    if (activation == Activation::square) return priv_square_line(l, u);
+    if (activation == Activation::sign) return priv_sign_line(l, u);
+    if (activation == Activation::exp) return priv_exp_line(l, u);
+    if (activation == Activation::reciprocal) return priv_reciprocal_line(l, u);
     if (activation == Activation::relu || poly_method == "singh")
         return priv_line(activation, l, u, NnOptions{});
     if (poly_method == "bounds") return aux_bounds_line(activation, l, u);
@@ -452,6 +529,9 @@ ZonoNet::ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_appr
         WT.push_back(dense ? layer.W : Tensor());
         abs_wT.push_back(dense ? layer.W.abs() : Tensor());
         b.push_back(layer.b);
+        // its place in the graph
+        sources.push_back(net.source(k));
+        residuals.push_back(layer.residuals);
         // a slot count and the first global id per activation layer
         const int64_t n = layer.outputs();
         widths.push_back(n);
@@ -462,6 +542,14 @@ ZonoNet::ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_appr
             id += n;
             widest = std::max(widest, n);
         }
+    }
+    // the graph: the outputs read by more than the next layer's own map
+    chain = net.is_chain();
+    kept.assign(sources.size() + 1, false);
+    for (std::size_t k = 0; k < sources.size(); ++k) {
+        if (sources[k] != int64_t(k) - 1) kept[std::size_t(sources[k] + 1)] = true;
+        for (const NeuralNetwork::Residual &r : residuals[k])
+            kept[std::size_t(r.source + 1)] = true;
     }
     // the factors, and whether an error has no slot
     num_neurons = id - 1;
@@ -493,39 +581,79 @@ Tensor ZonoNet::map_abs_t(std::size_t k, const Tensor &y) const {
     return y.shape().size() == 3 ? aux_rows_times(y, abs_wT[k]) : y.matmul(abs_wT[k]);
 }
 
+// The graph ---------------------------------------------------------------------------------------
+
+Tensor ZonoNet::residual(std::size_t k, std::size_t i, const Tensor &x, bool absolute,
+                         bool transposed) const {
+    // no map: the identity
+    const NeuralNetwork::Residual &r = residuals[k][i];
+    if (!r.map) return x;
+    if (transposed) return absolute ? r.map->abs_rows_t(x) : r.map->rows_t(x);
+    return absolute ? r.map->abs_rows(x) : r.map->rows(x);
+}
+
+Tensor ZonoNet::linear(std::size_t k, const std::vector<Tensor> &outs, bool absolute) const {
+    // the source's map, plus each residual's
+    const Tensor &x = outs[std::size_t(sources[k] + 1)];
+    Tensor z = absolute ? map_abs(k, x) : map(k, x);
+    for (std::size_t i = 0; i < residuals[k].size(); ++i)
+        z = z + residual(k, i, outs[std::size_t(residuals[k][i].source + 1)], absolute, false);
+    return z;
+}
+
+void ZonoNet::linear_t(std::size_t k, const Tensor &g, std::vector<Tensor> &acc,
+                       bool absolute) const {
+    // each input's share added to what other layers gave it
+    const auto add = [&](int64_t j, Tensor v) {
+        Tensor &t = acc[std::size_t(j + 1)];
+        t = t.defined() ? t + v : std::move(v);
+    };
+    for (std::size_t i = 0; i < residuals[k].size(); ++i)
+        add(residuals[k][i].source, residual(k, i, g, absolute, true));
+    add(sources[k], absolute ? map_abs_t(k, g) : map_t(k, g));
+}
+
 Tensor ZonoNet::evaluate(const Tensor &x) const {
-    Tensor h = x;
-    for (std::size_t k = 0; k < W.size(); ++k) h = aux_apply(activations[k], map(k, h) + b[k]);
-    return h;
+    // the outputs that a later layer still reads
+    std::vector<Tensor> outs{x};
+    for (std::size_t k = 0; k < W.size(); ++k) {
+        check_deadline(deadline);
+        outs.push_back(aux_apply(activations[k], linear(k, outs) + b[k]));
+        if (!kept[k]) outs[k] = Tensor();
+    }
+    return outs.back();
 }
 
 // Points ------------------------------------------------------------------------------------------
 
 ZonoSensitivity ZonoNet::sensitivity(const Tensor &x) const {
     // the inputs of the activations, then the chain rule from the outputs back
-    std::vector<Tensor> pre;
-    Tensor h = x;
+    std::vector<Tensor> pre, outs{x};
     for (std::size_t k = 0; k < W.size(); ++k) {
-        pre.push_back(map(k, h) + b[k]);
-        h = aux_apply(activations[k], pre.back());
+        check_deadline(deadline);
+        pre.push_back(linear(k, outs) + b[k]);
+        outs.push_back(aux_apply(activations[k], pre.back()));
     }
     const int64_t B = x.shape()[0];
-    // the Jacobian of the outputs, from the last layer back
-    Tensor S = x.eye_like(num_outputs).broadcast_to({B, num_outputs, num_outputs});
+    // the Jacobian of the outputs, from the last layer back (summed over the layers that read one)
+    std::vector<Tensor> acc(W.size() + 1);
+    acc.back() = x.eye_like(num_outputs).broadcast_to({B, num_outputs, num_outputs});
     ZonoSensitivity out;
     out.layer_sum.resize(W.size());
     out.layer_max.resize(W.size());
     for (std::size_t k = W.size(); k-- > 0;) {
+        check_deadline(deadline);
+        Tensor S = std::move(acc[k + 1]);
         if (activations[k] != Activation::identity) {
             S = S.multiply(aux_derivative(activations[k], pre[k]).expand_dims(1));
             const Tensor a = S.abs();
             out.layer_sum[k] = a.sum(1);
             out.layer_max[k] = a.maximum(numerics::kSensitivityFloor).max(1);
         }
-        S = map_t(k, S);
+        linear_t(k, S, acc);
     }
-    out.input = S.abs().maximum(numerics::kSensitivityFloor).max(1);
-    out.jacobian = S;
+    out.input = acc[0].abs().maximum(numerics::kSensitivityFloor).max(1);
+    out.jacobian = acc[0];
     return out;
 }
 
@@ -584,16 +712,43 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
         // + 0.0: the product's zero is +0, as the sum of the block's row with zeros is
         return pending_values.expand_dims(-1).multiply(rows) + 0.0;
     };
+    // a graph's outputs that more than the next layer read (states[j + 1]; 0: the input)
+    struct State {
+        Tensor c, dr, G;
+    };
+    std::vector<State> states(chain ? 0 : W.size() + 1);
+    if (!chain) states[0] = {c, dr, G};
     for (std::size_t k = 0; k < W.size(); ++k) {
-        // the linear layer, exactly
+        check_deadline(deadline);
+        // the linear layer, exactly; an earlier source's rows are the first factors of all so far
+        const int64_t rows = G.shape()[1];
+        if (sources[k] != int64_t(k) - 1) {
+            const State &from = states[std::size_t(sources[k] + 1)];
+            c = from.c;
+            dr = from.dr;
+            G = from.G;
+        }
         c = map(k, c) + b[k];
-        G = map(k, G);
+        G = aux_rows_to(map(k, G), rows);
         if (pending_values.defined()) {
             G = Tensor::concat({G, take_pending(k)}, 1);
             pending_values = Tensor();
         }
         if (dr.defined()) dr = map_abs(k, dr);
-        if (activations[k] == Activation::identity) continue;
+        // the residuals: their generators add to the first rows, their radii to dr
+        for (std::size_t i = 0; i < residuals[k].size(); ++i) {
+            const State &from = states[std::size_t(residuals[k][i].source + 1)];
+            c = c + residual(k, i, from.c, false, false);
+            G = aux_add_rows(G, residual(k, i, from.G, false, false));
+            if (from.dr.defined()) {
+                const Tensor r = residual(k, i, from.dr, true, false);
+                dr = dr.defined() ? dr + r : r;
+            }
+        }
+        if (activations[k] == Activation::identity) {
+            if (!chain && kept[k + 1]) states[k + 1] = {c, dr, G};
+            continue;
+        }
         // the bounds of every neuron (CORALean's interval of a zonotope), then the split clamps
         const Tensor r = G.abs().sum(1);
         const Tensor mid = c + 0.0;
@@ -622,7 +777,8 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
         }
         c = line.slope.multiply(c) + 0.0 + middle;
         G = line.slope.expand_dims(1).multiply(G) + 0.0;
-        if (dr.defined()) dr = line.slope.multiply(dr);
+        // a radius maps by |slope|: x^2 left of 0 and the reciprocal fall (#272)
+        if (dr.defined()) dr = line.slope.abs().multiply(dr);
         // the errors: a generator per slot neuron, the rest into the interval center
         const int64_t B = reach.shape()[0], n = reach.shape()[1], dn = slots[k];
         if (dn == 0) {
@@ -645,7 +801,8 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             }
             // the generators of the slot neurons, the rest of the errors in dr
             const Tensor values = dn == n ? reach : reach.take_along_axis(neurons, 1);
-            const bool defer = !record && k + 1 < W.size();
+            const bool defer =
+                !record && k + 1 < W.size() && sources[k + 1] == int64_t(k) && !kept[k + 1];
             const Tensor hot = defer && dn == n ? Tensor() : aux_onehot(neurons, n);
             if (defer) {
                 pending_values = values;
@@ -668,6 +825,7 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             rec.G_out = G;
             out.layers.push_back(rec);
         }
+        if (!chain && kept[k + 1]) states[k + 1] = {c, dr, G};
     }
     out.c = c;
     out.dr = dr;
@@ -723,12 +881,15 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
                            const std::vector<Tensor> *alpha) {
     const int64_t B = x.shape()[0], R = rows.shape()[0];
-    // Lambda (B, R, n): the rows' coefficients of the current layer's output, and the constant
-    Tensor lam = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
+    // Lambda (B, R, n): each output's coefficients of the rows (summed over readers), the constant
+    std::vector<Tensor> lams(net.W.size() + 1);
+    lams.back() = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
     Tensor constant = x.zeros_like({B, R});
     const bool split = splits.defined() && splits.shape()[1] > 0;
     std::size_t next = out.layers.size();
     for (std::size_t k = net.W.size(); k-- > 0;) {
+        check_deadline(net.deadline);
+        Tensor lam = std::move(lams[k + 1]);
         if (net.activations[k] != Activation::identity) {
             const ZonoLayerRecord &rec = out.layers[--next];
             const auto [lc, uc] =
@@ -759,16 +920,17 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
         }
         // the linear layer
         constant = constant + lam.multiply(net.b[k]).sum(-1);
-        lam = net.map_t(k, lam);
+        net.linear_t(k, lam, lams);
     }
     // the input box
+    const Tensor &lam = lams[0];
     return lam.matmul(x.expand_dims(-1)).squeeze(-1) -
            lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
 }
 
 Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
-                           int64_t iterations, double step) {
+                           int64_t iterations, double step, double deadline) {
     const int64_t B = x.shape()[0], R = rows.shape()[0];
     const bool split = splits.defined() && splits.shape()[1] > 0;
     // per activation layer the clamped bounds' lines: a ReLU's chord above, its lower slope free
@@ -803,15 +965,21 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
             L.bu = (line.offset + line.radius).expand_dims(1);
         }
     }
+    // the rows at the output, the input box, the best bound so far and Adam's constants
     const Tensor lam0 = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
     const Tensor xe = x.expand_dims(-1), re = rad.expand_dims(-1);
     Tensor best;
     constexpr double kB1 = 0.9, kB2 = 0.999;
     for (int64_t t = 0; t <= iterations; ++t) {
-        // the backward pass, keeping each layer's Lambda for the reverse
-        std::vector<Tensor> lams(net.W.size());
-        Tensor lam = lam0, constant = x.zeros_like({B, R});
+        // the backward pass, keeping each layer's Lambda for the reverse (acc: each output's)
+        std::vector<Tensor> lams(net.W.size()), acc(net.W.size() + 1);
+        acc.back() = lam0;
+        Tensor constant = x.zeros_like({B, R});
         for (std::size_t k = net.W.size(); k-- > 0;) {
+            // late: the best bound so far, none before the first pass
+            if (best.defined() && now_seconds() >= std::min(deadline, net.deadline)) return best;
+            check_deadline(net.deadline);
+            Tensor lam = std::move(acc[k + 1]);
             if (net.activations[k] != Activation::identity) {
                 const Lines &L = lines[k];
                 lams[k] = lam;
@@ -821,21 +989,29 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                 constant = constant + pos.multiply(L.bl).sum(-1) + neg.multiply(L.bu).sum(-1);
                 lam = pos.multiply(sl) + neg.multiply(L.su);
             }
+            // the bias, then back to the inputs
             constant = constant + lam.multiply(net.b[k]).sum(-1);
-            lam = net.map_t(k, lam);
+            net.linear_t(k, lam, acc);
         }
+        // the bound over the input box
+        const Tensor &lam = acc[0];
         const Tensor value =
             lam.matmul(xe).squeeze(-1) - lam.abs().matmul(re).squeeze(-1) + constant;
         best = best.defined() ? best.maximum(value) : value;
-        if (t == iterations) break;
+        // (every step's bound holds: the best so far at the deadline)
+        if (t == iterations || now_seconds() >= std::min(deadline, net.deadline)) break;
         // the reverse: d value / d Lambda from the input box up, the slopes' gradients on the way
-        Tensor g = x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1));
+        std::vector<Tensor> gs{x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1))};
         const double c1 = 1.0 - std::pow(kB1, double(t + 1)),
                      c2 = 1.0 - std::pow(kB2, double(t + 1));
         for (std::size_t k = 0; k < net.W.size(); ++k) {
+            if (now_seconds() >= std::min(deadline, net.deadline)) return best;
             // through the linear layer: Lambda_k W_k, plus the bias
-            g = net.map(k, g) + net.b[k];
-            if (net.activations[k] == Activation::identity) continue;
+            Tensor g = net.linear(k, gs) + net.b[k];
+            if (net.activations[k] == Activation::identity) {
+                gs.push_back(g);
+                continue;
+            }
             const Lines &L = lines[k];
             const Tensor &lk = lams[k];
             const Tensor pos = lk.greater(lk.zeros_like()), neg = lk.less(lk.zeros_like());
@@ -851,7 +1027,8 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                     (m1[k] / c1).divide((m2[k] / c2).sqrt() + numerics::kAdamEpsilon);
                 alpha[k] = (alpha[k] + move * step).maximum(0.0).minimum(1.0);
             }
-            g = pos.multiply(g.multiply(sl) + L.bl) + neg.multiply(g.multiply(L.su) + L.bu);
+            gs.push_back(pos.multiply(g.multiply(sl) + L.bl) +
+                         neg.multiply(g.multiply(L.su) + L.bu));
         }
     }
     return best;

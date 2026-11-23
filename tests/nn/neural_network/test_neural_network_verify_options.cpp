@@ -9,7 +9,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -84,14 +84,16 @@ void options_and_strategies() {
         if (field == "position") w.neuron_split_position = "x";
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "an unknown " + field);
     }
-    // the counts of Phase 2: the slopes' steps, their step size, the look-ahead candidates
-    for (const std::string field : {"alpha_iterations", "alpha_step_size", "candidates"}) {
+    // the counts of Phase 2 (slopes, step size, look-ahead candidates) and PGD's least steps
+    for (const std::string field :
+         {"alpha_iterations", "alpha_step_size", "candidates", "pgd_min_steps"}) {
         NnVerifyOptions w = vnncomp_options("x");
         w.bounding_method = "zonotope-alpha";
         // one count out of range
         if (field == "alpha_iterations") w.alpha_iterations = -1;
         if (field == "alpha_step_size") w.alpha_step_size = 0;
         if (field == "candidates") w.look_ahead_candidates = 0;
+        if (field == "pgd_min_steps") w.pgd_min_steps = 0;
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "a wrong " + field);
     }
     vnncomp_options("cora_2024").validate();
@@ -106,6 +108,18 @@ void options_and_strategies() {
               ours.alpha_method == "crown" && acas.alpha_method == "zonotope" &&
               ours.num_neuron_splits == cora.num_neuron_splits,
           "the VNN-COMP preset: CORA's with Phase 2's bounds");
+    // the benchmarks' own changes of it (docs/nn_verification.md)
+    const NnVerifyOptions sat = vnncomp_options("sat_relu");
+    check(sat.bounding_method == "conzonotope" && !sat.backward_bound,
+          "sat_relu's preset: CORA's bounding without CROWN");
+    check(vnncomp_options("traffic_signs_recognition_2023").attack_time_share == 0.9 &&
+              ours.attack_time_share == cora.attack_time_share,
+          "traffic_signs' preset: nine tenths of the time for the attack");
+    check(vnncomp_options("tinyimagenet_2024").alpha_iterations == 0 &&
+              vnncomp_options("metaroom_2023").alpha_iterations == 0 &&
+              vnncomp_options("soundnessbench_2026").alpha_iterations == 0 &&
+              vnncomp_options("cifar100_2024").alpha_iterations == ours.alpha_iterations,
+          "the wide conv nets' preset: no alpha-CROWN steps, except cifar100");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");

@@ -22,7 +22,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -160,26 +160,60 @@ Tensor aux_pieces_offsets(const Tensor &lo, const Tensor &hi, const Tensor &cent
 /// The gradient of the output box's F-radius with respect to the input radius r (B, n0), through
 /// the interval propagation of the network (CORA's aux_updateGradients of an interval).
 Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &r) {
-    std::vector<Tensor> lo{x - r}, hi{x + r}, plo, phi;
+    // the boxes' centers and radii of each output (mids[j + 1]; 0: the input)
+    std::vector<Tensor> lo{x - r}, hi{x + r}, plo, phi, mids, rads;
     for (std::size_t k = 0; k < net.W.size(); ++k) {
-        const Tensor mid = net.map(k, (lo.back() + hi.back()) * 0.5) + net.b[k];
-        const Tensor rad = net.map_abs(k, (hi.back() - lo.back()) * 0.5);
+        check_deadline(net.deadline);
+        mids.push_back((lo.back() + hi.back()) * 0.5);
+        rads.push_back((hi.back() - lo.back()) * 0.5);
+        const Tensor mid = net.linear(k, mids) + net.b[k];
+        const Tensor rad = net.linear(k, rads, true);
         plo.push_back(mid - rad);
         phi.push_back(mid + rad);
-        lo.push_back(net.activations[k] == Activation::identity  ? plo.back()
-                     : net.activations[k] == Activation::relu    ? plo.back().maximum(0.0)
-                     : net.activations[k] == Activation::sigmoid ? plo.back().sigmoid()
-                                                                 : plo.back().tanh());
-        hi.push_back(net.activations[k] == Activation::identity  ? phi.back()
-                     : net.activations[k] == Activation::relu    ? phi.back().maximum(0.0)
-                     : net.activations[k] == Activation::sigmoid ? phi.back().sigmoid()
-                                                                 : phi.back().tanh());
+        // the box after the activation (x^2: 0 where the box crosses 0, else the nearer end's)
+        const Activation a = net.activations[k];
+        if (a == Activation::square) {
+            const Tensor sl = plo.back().square(), su = phi.back().square();
+            const Tensor zero = sl.zeros_like();
+            const Tensor cross = plo.back().less(zero).multiply(phi.back().greater(zero));
+            lo.push_back(Tensor::where(cross, sl.zeros_like(), sl.minimum(su)));
+            hi.push_back(sl.maximum(su));
+            continue;
+        }
+        if (a == Activation::reciprocal) {
+            // 1 / max(x, 1) falls: lo is the upper end's, hi the lower end's
+            lo.push_back(phi.back().ones_like().divide(phi.back().maximum(1.0)));
+            hi.push_back(plo.back().ones_like().divide(plo.back().maximum(1.0)));
+            continue;
+        }
+        lo.push_back(a == Activation::identity  ? plo.back()
+                     : a == Activation::exp     ? plo.back().exp()
+                     : a == Activation::sign    ? plo.back().sign()
+                     : a == Activation::relu    ? plo.back().maximum(0.0)
+                     : a == Activation::sigmoid ? plo.back().sigmoid()
+                                                : plo.back().tanh());
+        hi.push_back(a == Activation::identity  ? phi.back()
+                     : a == Activation::exp     ? phi.back().exp()
+                     : a == Activation::sign    ? phi.back().sign()
+                     : a == Activation::relu    ? phi.back().maximum(0.0)
+                     : a == Activation::sigmoid ? phi.back().sigmoid()
+                                                : phi.back().tanh());
     }
     // the F-radius of the output box, back through the layers
     const Tensor width = hi.back() - lo.back();
     const Tensor frad = (width.square().sum(1, true) + numerics::kFradSmoothing).sqrt();
     Tensor g_hi = width.divide(frad), g_lo = g_hi.negative();
+    // the gradients of each output's center and radius, summed over the layers that read it
+    std::vector<Tensor> g_mids(net.W.size() + 1), g_rads(net.W.size() + 1);
     for (std::size_t k = net.W.size(); k-- > 0;) {
+        check_deadline(net.deadline);
+        // the bounds' gradients of output k (the last one's: the seeds)
+        if (k + 1 < net.W.size()) {
+            const Tensor g_mid = g_mids[k + 1] * 0.5, g_rad = g_rads[k + 1] * 0.5;
+            g_lo = g_mid - g_rad;
+            g_hi = g_mid + g_rad;
+        }
+        // the activation's derivative at the input box's ends
         const auto slope = [&](const Tensor &z) {
             switch (net.activations[k]) {
             case Activation::identity:
@@ -190,18 +224,47 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
                 return z.sigmoid().multiply(1.0 - z.sigmoid());
             case Activation::tanh:
                 return 1.0 - z.tanh().square();
+            case Activation::square:
+                return z + z;
+            case Activation::sign:
+                return z.zeros_like();
+            // a softmax's parts: exp, and -1 / x^2 above 1
+            case Activation::exp:
+                return z.exp();
+            case Activation::reciprocal: {
+                const Tensor y = z.ones_like().divide(z.maximum(1.0));
+                return Tensor::where(z.greater(z.ones_like()), y.square().negative(),
+                                     z.zeros_like());
+            }
             }
             CORA_FAIL(Error::wrong_value, "verify: an unknown activation");
         };
-        g_hi = g_hi.multiply(slope(phi[k]));
-        g_lo = g_lo.multiply(slope(plo[k]));
+        if (net.activations[k] == Activation::square) {
+            // x^2 is not monotone: hi is the larger end's square, lo the smaller's (0 across 0)
+            const Tensor left = plo[k].square().greater(phi[k].square());
+            const Tensor zero = plo[k].zeros_like();
+            const Tensor open = 1.0 - plo[k].less(zero).multiply(phi[k].greater(zero));
+            const Tensor d_lo = slope(plo[k]), d_hi = slope(phi[k]);
+            const Tensor g_l = g_hi.multiply(left).multiply(d_lo) +
+                               g_lo.multiply(open).multiply(1.0 - left).multiply(d_lo);
+            g_hi = g_hi.multiply(1.0 - left).multiply(d_hi) +
+                   g_lo.multiply(open).multiply(left).multiply(d_hi);
+            g_lo = g_l;
+        } else if (net.activations[k] == Activation::reciprocal) {
+            // falling: the output's lo is the input's hi, and back
+            const Tensor g_l = g_hi.multiply(slope(plo[k]));
+            g_hi = g_lo.multiply(slope(phi[k]));
+            g_lo = g_l;
+        } else {
+            g_hi = g_hi.multiply(slope(phi[k]));
+            g_lo = g_lo.multiply(slope(plo[k]));
+        }
         // lo = mid - rad, hi = mid + rad, mid and rad of the layer's input box
-        const Tensor g_mid = net.map_t(k, g_lo + g_hi) * 0.5;
-        const Tensor g_rad = net.map_abs_t(k, g_hi - g_lo) * 0.5;
-        g_lo = g_mid - g_rad;
-        g_hi = g_mid + g_rad;
+        net.linear_t(k, g_lo + g_hi, g_mids);
+        net.linear_t(k, g_hi - g_lo, g_rads, true);
     }
-    return g_hi - g_lo;
+    const Tensor g_mid = g_mids[0] * 0.5, g_rad = g_rads[0] * 0.5;
+    return (g_mid + g_rad) - (g_mid - g_rad);
 }
 
 // The parts of a batch ----------------------------------------------------------------------------
@@ -275,6 +338,11 @@ class ConZonotopeBounding : public Bounding {
     Tensor aux_dual_margins(const ZonoPropagation &out, const Tensor &si) const;
     Tensor aux_crown_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
                                     const Tensor &si, const Tensor &excluded) const;
+    // CROWN's bound on the rows the zonotope left open
+    std::vector<int64_t> aux_open_rows(const Tensor &excluded) const;
+    Tensor aux_crown_lower(const ZonoPropagation &out, const Tensor &xi, const Tensor &ri,
+                           const Tensor &si, const Tensor &lower, const Tensor &excluded,
+                           bool alpha) const;
     std::vector<int64_t> aux_near(const std::vector<int64_t> &open, const Tensor &gap) const;
     Tensor aux_gap(const ZonoPropagation &out, const Tensor &lower, const Tensor &excluded) const;
     Tensor aux_alpha_excluded(const Tensor &xi, const Tensor &ri, const Tensor &ci,
@@ -361,7 +429,7 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     while (bytes(*net_) > problem.memory_budget && net_->q > net_->q0) {
         int64_t widest = 0;
         for (const int64_t s : net_->slots) widest = std::max(widest, s);
-        const int64_t half = widest / 2; // (whole slots)
+        const int64_t half = widest / 2;
         slots = double(half);
         net_ = std::make_unique<ZonoNet>(problem.net(), o_.num_init_gens, slots, o_.poly_method,
                                          o_.approx_error_order);
@@ -423,12 +491,39 @@ Tensor ConZonotopeBounding::aux_crown_alpha_excluded(const Tensor &xi, const Ten
     // CROWN's bound with the lower ReLU slopes optimized per row, over the zonotope's bounds
     const ZonoInput in = net_->input_zonotope(xi, ri);
     const ZonoPropagation out = net_->forward(in.c, in.dr, in.G, si, nullptr, true);
+    const Tensor zono = aux_margins(out);
+    const Tensor ex = excluded.maximum(aux_excluded_lower(zono, ci));
+    return ex.maximum(aux_excluded_lower(aux_crown_lower(out, xi, ri, si, zono, ex, true), ci));
+}
+
+std::vector<int64_t> ConZonotopeBounding::aux_open_rows(const Tensor &excluded) const {
+    // the real rows (P K) of the polytopes that some set has open
+    const std::vector<double> open = (1.0 - excluded).max(0).data(), real = real_row_.data();
+    std::vector<int64_t> rows;
+    for (int64_t p = 0; p < P_; ++p) {
+        if (open[std::size_t(p)] <= 0) continue;
+        for (int64_t k = 0; k < K_; ++k)
+            if (real[std::size_t(p * K_ + k)] > 0) rows.push_back(p * K_ + k);
+    }
+    return rows;
+}
+
+Tensor ConZonotopeBounding::aux_crown_lower(const ZonoPropagation &out, const Tensor &xi,
+                                            const Tensor &ri, const Tensor &si, const Tensor &lower,
+                                            const Tensor &excluded, bool alpha) const {
+    // CROWN's bound (alpha: optimized slopes) of the open polytopes' rows only, each row on its own
+    const std::vector<int64_t> rows = aux_open_rows(excluded);
+    if (rows.empty()) return lower;
     const int64_t B = xi.shape()[0];
-    const Tensor crown = priv_backward_alpha(out, *net_, si, xi, ri, AT_.matrix_transpose(),
-                                             o_.alpha_iterations, o_.alpha_step_size) -
-                         b_.reshape({P_ * K_});
-    const Tensor lower = aux_margins(out).maximum(crown.reshape({B, P_, K_}));
-    return excluded.maximum(aux_excluded_lower(lower, ci));
+    const Tensor R = AT_.matrix_transpose().take(rows, 0);
+    const Tensor bound = alpha ? priv_backward_alpha(out, *net_, si, xi, ri, R, o_.alpha_iterations,
+                                                     o_.alpha_step_size, deadline_)
+                               : priv_backward_lower(out, *net_, si, xi, ri, R);
+    const Tensor crown = bound - b_.reshape({P_ * K_}).take(rows, 0);
+    // the better of the two on those rows, the others as they are
+    const Tensor flat = lower.reshape({B, P_ * K_}).matrix_transpose();
+    const Tensor better = flat.take(rows, 0).maximum(crown.matrix_transpose());
+    return aux_put_rows(flat, rows, better).matrix_transpose().reshape({B, P_, K_});
 }
 
 std::vector<int64_t> ConZonotopeBounding::aux_near(const std::vector<int64_t> &open,
@@ -566,6 +661,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
                                                   std::map<std::string, double> &stats,
                                                   AttackResult &found) {
     deadline_ = deadline;
+    net_->deadline = std::min(deadline, problem.deadline);
     found_ = &found;
     stats_ = &stats;
     if (slot_budget_ >= 0) stats["slot_budget"] = slot_budget_;
@@ -574,11 +670,11 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
     Tensor splits = xs.zeros_like({xs.shape()[0], 0});
-    int64_t iteration = 0, verified = 0;
+    int64_t iteration = 0, verified = 0, unresolved = 0;
     double last = 0;
     while (xs.shape()[0] > 0) {
         // a batch starts only if the last one's time still fits before the deadline
-        if (iteration >= o_.max_verif_iter || now_seconds() + last >= deadline) break;
+        if (iteration >= o_.max_verif_iter || now_seconds() + last >= net_->deadline) break;
         const double started = now_seconds();
         // the next batch out of the queue
         const std::vector<int64_t> take = aux_pop(xs.shape()[0]);
@@ -589,12 +685,17 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
         rs = rs.take(keep, 0);
         cases = cases.take(keep, 0);
         splits = splits.take(keep, 0);
-        // one batch; out of memory, fewer ReLU rows or a smaller batch
+        // one batch; out of memory (fewer ReLU rows, a smaller batch) or late, back into the queue
         Step step;
         try {
             step = aux_iteration(xi, ri, ci, si);
         } catch (const std::exception &error) {
-            if (!priv_is_oom(error) || !aux_back_off())
+            if (priv_is_out_of_range(error)) {
+                // a bound beyond the float range (an exp): the batch stays open, the rest goes on
+                unresolved += xi.shape()[0];
+                continue;
+            }
+            if (!is_deadline(error) && (!priv_is_oom(error) || !aux_back_off()))
                 std::rethrow_exception(std::current_exception());
             xs = Tensor::concat({xi, xs}, 0);
             rs = Tensor::concat({ri, rs}, 0);
@@ -633,9 +734,10 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
         }
     }
     stats["iterations"] = double(iteration);
-    // the verdict: no set left is unsat
+    // the verdict: no set left (nor one beyond the float range) is unsat
     stats["verified_sets"] = double(verified);
-    return xs.shape()[0] == 0 ? "unsat" : "unknown";
+    if (unresolved > 0) stats["out_of_range_sets"] = double(unresolved);
+    return xs.shape()[0] == 0 && unresolved == 0 ? "unsat" : "unknown";
 }
 
 // One batch ---------------------------------------------------------------------------------------
@@ -653,14 +755,10 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
         const ZonoInput in = net.input_zonotope(xi_, ri_);
         const ZonoPropagation out = net.forward(in.c, in.dr, in.G, si_, nullptr, o_.backward_bound);
         Tensor lower = aux_margins(out);
-        if (o_.backward_bound) {
-            // the better of the zonotope's and CROWN's lower bound of every row
-            const int64_t B = xi_.shape()[0];
-            const Tensor crown =
-                priv_backward_lower(out, net, si_, xi_, ri_, AT_.matrix_transpose()) -
-                b_.reshape({P_ * K_});
-            lower = lower.maximum(crown.reshape({B, P_, K_}));
-        }
+        // the better of the zonotope's and CROWN's lower bound of the rows the zonotope left open
+        if (o_.backward_bound)
+            lower =
+                aux_crown_lower(out, xi_, ri_, si_, lower, aux_excluded_lower(lower, ci_), false);
         excluded_all = aux_excluded_lower(lower, ci_);
         open = aux_where(1.0 - excluded_all.min(1));
         if ((alpha_ || o_.dual_certificate) && std::isfinite(o_.optimize_gap))
@@ -780,8 +878,13 @@ Artifacts ConZonotopeBounding::aux_artifacts(const Tensor &xi, const Tensor &ri,
         aux_heuristic_or_none(o_.neuron_split_heuristic, o_.num_neuron_splits > 0),
         aux_heuristic_or_none(o_.relu_constraint_heuristic, n_relu_ > 0),
         aux_heuristic_or_none(o_.input_generator_heuristic, net.q0 < net.n0)};
-    bool need_sens = o_.bab_falsification_method == "fgsm" ||
-                     (o_.approx_error_order == "sensitivity*length" && net.interval_center);
+    // the sensitivity orders the slots of a layer with some but not all neurons in one
+    bool orders = false;
+    for (std::size_t k = 0; k < net.slots.size(); ++k)
+        orders = orders || (net.slots[k] > 0 && net.slots[k] < net.widths[k]);
+    bool need_sens =
+        o_.bab_falsification_method == "fgsm" ||
+        (o_.approx_error_order == "sensitivity*length" && net.interval_center && orders);
     bool need_grad = false;
     for (const std::string &name : names) {
         if (name.empty()) continue;
@@ -1257,6 +1360,7 @@ Children ConZonotopeBounding::aux_naive_children(const Tensor &xi, const Tensor 
 
 bool ConZonotopeBounding::zonotack_attack(NnProblem &problem, AttackResult &found) {
     prepare(problem);
+    net_->deadline = problem.deadline;
     found_ = &found;
     const Tensor x = (problem.outer_lo + problem.outer_hi) * 0.5;
     const Tensor r = (problem.outer_hi - problem.outer_lo) * 0.5;

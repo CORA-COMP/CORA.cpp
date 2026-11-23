@@ -1,15 +1,15 @@
 // neural_network - a feed-forward network of affine layers and activations, on points and sets
 //
-// Layer k maps h -> a_k(W_k h + b_k) with the activation a_k (identity, ReLU, sigmoid or tanh);
-// without activations given, every layer but the last is followed by max(., 0). A set that goes
-// through the network comes out as a zonotope (or polynomial zonotope) that contains the outputs
-// of all its points: an affine layer maps it exactly, and an activation is enclosed neuron by
-// neuron by one line and an error (CORA's poly_method "singh", order 1: the tightest
-// parallelogram of a ReLU, [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and tanh).
-// On a polynomial zonotope the dependency on its factors stays, evaluate_with_input returns the
-// pairs (x, N(x)) of a set, and a neuron may have an order k (NnOptions::orders): its activation
-// is enclosed by a polynomial of that order, evaluated on the powers of its set, and refine
-// raises the orders. A layer may be a convolution or a gather (conv2d.cpp), for points and verify.
+// Layer k maps h -> a_k(W_k h + b_k) with the activation a_k (identity, ReLU, sigmoid, tanh, x^2,
+// sign, exp or 1 / max(x, 1)); without activations given, every layer but the last is followed by
+// max(., 0). A set that goes through the network comes out as a zonotope (or polynomial zonotope)
+// that contains the outputs of all its points: an affine layer maps it exactly, and an activation
+// is enclosed neuron by neuron by one line and an error (CORA's poly_method "singh", order 1: the
+// tightest parallelogram of a ReLU, [Singh et al., NeurIPS 2018, Thm. 3.1 and 3.2] for sigmoid and
+// tanh; for x^2 the secant slope l + u, between the chord and the parallel tangent). On a
+// polynomial zonotope the factors stay, evaluate_with_input returns the pairs (x, N(x)), and a
+// neuron may have an order k (NnOptions::orders), raised by refine. For points and verify, a layer
+// may be a convolution or a gather (conv2d.cpp) and form a graph (a ResNet's residuals).
 //
 // Syntax:     NeuralNetwork nn({{W1, b1}, {W2, b2}});   Zonotope Y = nn.evaluate(X);
 //             PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(X));
@@ -29,7 +29,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   21-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -50,8 +50,10 @@ namespace cora {
 
 // The options -------------------------------------------------------------------------------------
 
-/// The function applied to the output of a layer.
-enum class Activation { identity, relu, sigmoid, tanh };
+/// The function applied to the output of a layer: square is x^2 (a product of two values is
+/// ((a + b)^2 - (a - b)^2) / 4), sign -1, 0, 1, reciprocal 1 / max(x, 1) (a softmax is
+/// 1 / sum_j exp(x_j - x_i), whose sum is at least 1; see the front end's docs).
+enum class Activation { identity, relu, sigmoid, tanh, square, sign, exp, reciprocal };
 
 /// The polynomial over a neuron's range (CORA's poly_method): at order 1 singh or regression; of
 /// higher order (polynomial zonotopes only) any, singh only for a ReLU of order 2.
@@ -127,11 +129,26 @@ class NeuralNetwork {
     /// The index lists and kernel matrices of a convolution or a gather (conv2d.cpp).
     struct LinearPlan;
 
-    /// One layer: the weights W (out, in) and the bias b (out); or, with W undefined, a
-    /// convolution or a gather (plan), which is never made a matrix (conv2d.cpp).
+    /// The source of a layer that reads the layer before (Layer::source).
+    static constexpr int64_t kPrevious = -2;
+
+    struct Layer;
+
+    /// A residual input of a layer: the output of layer `source` (-1: the network's input)
+    /// through its own linear map (null: the identity), added to the layer's linear part.
+    struct Residual {
+        int64_t source = -1;
+        std::shared_ptr<const Layer> map = nullptr;
+    };
+
+    /// One layer: the weights W (out, in) and the bias b (out), or a convolution or a gather
+    /// (plan, never a matrix: conv2d.cpp), of the output of layer source (-1: the input), plus
+    /// the residuals' maps of their sources (the network adds their biases into b).
     struct Layer {
         Tensor W, b;
         std::shared_ptr<const LinearPlan> plan = nullptr;
+        int64_t source = kPrevious;
+        std::vector<Residual> residuals = {};
 
         /// ONNX's Conv of the input (channels, height, width) in C order: kernel (out, in /
         /// groups, kh, kw), the bias one entry per output (out channels times pixels).
@@ -142,8 +159,10 @@ class NeuralNetwork {
         /// from its output (channels, height, width) back to its input, with the same spec.
         static Layer conv_transpose2d(const Tensor &kernel, const Tensor &bias,
                                       const std::vector<int64_t> &output, const Conv2d &spec);
-        /// Output i is input index[i] (negative: 0), plus the bias; an input may repeat.
-        static Layer gather(const std::vector<int64_t> &index, int64_t inputs, const Tensor &bias);
+        /// Output i is input index[i] (negative: 0) times scale[i] (undefined: 1), plus the bias;
+        /// an input may repeat.
+        static Layer gather(const std::vector<int64_t> &index, int64_t inputs, const Tensor &bias,
+                            const Tensor &scale = Tensor());
 
         int64_t inputs() const;
         int64_t outputs() const;
@@ -163,7 +182,8 @@ class NeuralNetwork {
         Tensor aux_product(const Tensor &x, bool absolute, bool transposed) const;
     };
 
-    /// The network of the layers, first to last; the sizes of consecutive layers must match. Every
+    /// The network of the layers, first to last; each layer's inputs must match the outputs of
+    /// its source and residuals, and every layer but the last must be read by a later one. Every
     /// layer but the last is followed by a ReLU.
     explicit NeuralNetwork(std::vector<Layer> layers);
 
@@ -175,6 +195,11 @@ class NeuralNetwork {
     int64_t output_dim() const { return layers_.back().outputs(); }
     /// Whether every layer is a matrix (the set operations other than verify need that).
     bool is_dense() const;
+    /// Whether every layer reads the layer before only (the set operations other than verify and
+    /// the points need that).
+    bool is_chain() const;
+    /// The output layer k reads: the index of a layer, -1 for the network's input.
+    int64_t source(std::size_t k) const;
     const std::vector<Layer> &layers() const { return layers_; }
     const std::vector<Activation> &activations() const { return activations_; }
 

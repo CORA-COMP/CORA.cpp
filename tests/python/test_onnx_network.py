@@ -3,14 +3,25 @@
 Small graphs of every operator the loader knows, built with onnx.helper: the batched torch run
 equals onnxruntime's (float32) to float32 accuracy; a chain of affine maps and activations lowers
 to dense layers whose network equals the graph in float64, and a plain Gemm keeps its weights bit
-for bit; a residual connection or a max pool is no chain and says why.
+for bit; a residual connection and a ResNet block lower to layers with residuals (the batch norms
+folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
+padded max pool and a quotient of two values do not lower and say why; a batch norm of features
+and a slice of the input concatenated with a branch lower; a product of two values lowers to x^2
+layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
+builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
+backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
+layers, its output Softmax dropped for a property that only compares outputs.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
+import os
+import subprocess
+import sys
+import tempfile
 import unittest
 
 
@@ -37,7 +48,7 @@ from cora.onnx_network import OnnxNetwork
 class TorchRun(unittest.TestCase):
     def test_every_operator_agrees_with_onnxruntime(self):
         # each graph on 7 rows at once, against onnxruntime one sample at a time
-        for m in (mlp(), conv_net(), residual_net(), maxpool_net()):
+        for m in (mlp(), conv_net(), residual_net(), resnet_block(), maxpool_net(), lyapunov_net()):
             net = OnnxNetwork(m, dtype=torch.float32)
             x = RNG.uniform(-1, 1, (7, net.num_inputs)).astype(np.float32)
             expected = onnxruntime_rows(m, x)
@@ -83,9 +94,9 @@ class Lowering(unittest.TestCase):
         x = torch.as_tensor(RNG.uniform(-1, 1, (5, 5)))
         np.testing.assert_allclose(np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12)
 
-    def test_what_is_no_chain(self):
-        # a residual connection and a max pool, each with the reason
-        for m, reason in ((residual_net(), "residual"), (maxpool_net(), "MaxPool")):
+    def test_what_does_not_lower(self):
+        # a quotient of two values and a padded max pool, each with the reason
+        for m, reason in ((quotient_net(), "Div joins two branches"), (maxpool_net(pads=1), "MaxPool")):
             nn, why = OnnxNetwork(m).to_neural_network()
             self.assertIsNone(nn)
             self.assertIn(reason, why)
@@ -102,6 +113,153 @@ class Lowering(unittest.TestCase):
         np.testing.assert_allclose(
             structured_rows(*lowered, x), net(torch.from_numpy(x)).numpy(), rtol=1e-12, atol=1e-12
         )
+
+    def test_residual_graphs(self):
+        # a dense residual and a ResNet block: layers with residuals, the network equals the graph
+        for m, residuals in ((residual_net(), 1), (resnet_block(), 1)):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            nn, why = net.to_neural_network()
+            self.assertIsNone(why)
+            (layers, _), _ = net.layers()
+            self.assertEqual(sum(1 for la in layers if la.get("residuals")), residuals)
+            x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+            np.testing.assert_allclose(
+                np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
+            )
+        # the block's batch norms are folded into its convolutions: conv, conv + shortcut, gemm
+        (layers, acts), _ = OnnxNetwork(resnet_block()).layers()
+        self.assertEqual(acts, ["relu", "relu", "identity"])
+        self.assertTrue(all("conv2d" in la for la in layers[:2]))
+        self.assertIn("conv2d", layers[1]["residuals"][0]["map"])
+
+    def test_products_and_differences(self):
+        # products, a quadratic form, differences, scalings: the network equals the graph
+        for m in (product_net(), lyapunov_net()):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            nn, why = net.to_neural_network()
+            self.assertIsNone(why)
+            x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+            np.testing.assert_allclose(
+                np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
+            )
+        (layers, acts), _ = OnnxNetwork(product_net()).layers()
+        self.assertIn("square", acts)
+
+    def test_features_and_branches(self):
+        # a batch norm of features (CNN-7), and a slice of the input concatenated with a branch
+        for m in (cnn7_net(), slice_concat_net()):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            nn, why = net.to_neural_network()
+            self.assertIsNone(why)
+            x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+            np.testing.assert_allclose(
+                np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
+            )
+        # the batch norm folds into the Gemm before it: conv, gemm, gemm
+        (layers, acts), _ = OnnxNetwork(cnn7_net()).layers()
+        self.assertEqual(acts, ["relu", "relu", "identity"])
+
+    def test_max_pools(self):
+        # the pairwise max pools equal the graph (2 x 2; an odd 3 x 3 of stride 2, two channels)
+        for m in (maxpool_net(), maxpool_net(kernel=3, stride=2, channels=2)):
+            net = OnnxNetwork(m, dtype=torch.float64)
+            nn, why = net.to_neural_network()
+            self.assertIsNone(why)
+            x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+            np.testing.assert_allclose(
+                np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-12, atol=1e-12
+            )
+        # verify on the pool's enclosure: a sampled violation is never unsat
+        net = OnnxNetwork(maxpool_net(kernel=3, stride=2, channels=2), dtype=torch.float64)
+        nn, _ = net.to_neural_network()
+        x = RNG.uniform(-1, 1, (4000, net.num_inputs))
+        y = net(torch.as_tensor(x)).numpy()
+        A = np.zeros((1, 1, net.num_outputs))
+        A[0, 0, 0], A[0, 0, 1] = 1.0, -1.0
+        low = float((y @ A[0, 0]).min())
+        lo, hi = -np.ones((1, net.num_inputs)), np.ones((1, net.num_inputs))
+        out = nn.verify(lo, hi, [0], A, np.array([[low + 0.01]]), 20, cora.vnncomp_options("x"))
+        self.assertEqual(out["status"], "sat")
+
+    def test_wide_gemm_in_chunks(self):
+        # a Gemm after a wide convolution: the weights bit for bit, far below the identity's 1.6 GB
+        m = wide_conv_net()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "wide.onnx")
+            onnx.save(m, path)
+            script = (
+                "import resource, sys; from cora.onnx_network import OnnxNetwork as N; "
+                "net = N.load(sys.argv[1]); peak = lambda: resource.getrusage("
+                "resource.RUSAGE_SELF).ru_maxrss / 1024; before = peak(); "
+                "(layers, _), _ = net.layers(); import numpy as np; "
+                "np.save(sys.argv[2], layers[-1]['W'].numpy()); print(peak() - before)"
+            )
+            out = os.path.join(tmp, "W.npy")
+            env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path), OMP_NUM_THREADS="2")
+            grown = subprocess.run([sys.executable, "-c", script, path, out], env=env,
+                                   capture_output=True, text=True, check=True).stdout
+            self.assertLess(float(grown), 400.0)  # MiB
+            W = numpy_helper.to_array(m.graph.initializer[2])
+            self.assertTrue(np.array_equal(np.load(out), W.astype(np.float64)))
+
+    def test_signs_and_an_output_softmax(self):
+        # a binarized network: sign layers; its output Softmax dropped, the logits equal the graph's
+        m = sign_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        (whole, kept), _ = net.layers()  # the Softmax kept: exp and 1 / sum, like the graph
+        self.assertEqual(kept[-2:], ["exp", "reciprocal"])
+        x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+        np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(whole, kept).evaluate(x)),
+                                   net(x).numpy(), rtol=1e-12, atol=1e-12)
+        (layers, acts), why = net.layers(drop_output_softmax=True)
+        self.assertIsNone(why)
+        self.assertTrue(net.dropped_softmax)
+        self.assertEqual(acts.count("sign"), 2)
+        nn = cora.NeuralNetwork(layers, acts)
+        x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+        logits = torch.softmax(torch.as_tensor(np.asarray(nn.evaluate(x))), -1)
+        np.testing.assert_allclose(logits.numpy(), net(x).numpy(), rtol=1e-12, atol=1e-12)
+        # a property of comparisons only keeps the order of the outputs; one with a constant not
+        from cora.nn_verify import _compares_outputs
+        from cora.vnnlib import parse_vnnlib
+
+        box = "".join(f"(declare-const X_{i} Real)\n(assert (<= X_{i} 1))\n(assert (>= X_{i} 0))\n"
+                      for i in range(3))
+        outs = "(declare-const Y_0 Real)\n(declare-const Y_1 Real)\n"
+        self.assertTrue(_compares_outputs(parse_vnnlib(box + outs + "(assert (>= Y_0 Y_1))\n", 3, 2)))
+        self.assertFalse(_compares_outputs(parse_vnnlib(box + outs + "(assert (>= Y_0 0.5))\n", 3, 2)))
+
+    def test_attention_and_softmax(self):
+        # SAGAN's self-attention: two products of values and a softmax inside, equal to the graph
+        net = OnnxNetwork(attention_net(), dtype=torch.float64)
+        nn, why = net.to_neural_network()
+        self.assertIsNone(why)
+        x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+        np.testing.assert_allclose(
+            np.asarray(nn.evaluate(x)), net(x).numpy(), rtol=1e-10, atol=1e-12
+        )
+        (_, acts), _ = OnnxNetwork(attention_net()).layers()
+        self.assertEqual([a for a in acts if a != "identity"],
+                         ["square", "exp", "reciprocal", "square"])
+        # verify on its enclosure: a sampled violation is never unsat
+        x = RNG.uniform(-1, 1, (4000, net.num_inputs))
+        y = net(torch.as_tensor(x)).numpy()
+        A = np.zeros((1, 1, net.num_outputs))
+        A[0, 0, 0], A[0, 0, 1] = 1.0, -1.0
+        low = float((y @ A[0, 0]).min())
+        lo, hi = -np.ones((1, net.num_inputs)), np.ones((1, net.num_inputs))
+        out = nn.verify(lo, hi, [0], A, np.array([[low + 0.01]]), 20, cora.vnncomp_options("x"))
+        self.assertEqual(out["status"], "sat")
+
+    def test_backend_by_network(self):
+        # torch for a convolution (or a GPU), eigen for a dense network (cora.nn_verify.load)
+        from cora.nn_verify import choose_backend
+
+        conv, _ = OnnxNetwork(conv_net()).layers()
+        dense, _ = OnnxNetwork(mlp()).layers()
+        self.assertEqual(choose_backend(conv[0]), "torch")
+        self.assertEqual(choose_backend(dense[0]), "eigen")
+        self.assertEqual(choose_backend(dense[0], "cuda:0"), "torch")
 
     def test_size_cap(self):
         # max_elements refuses unit-vector batches beyond it
@@ -204,6 +362,8 @@ def structured_rows(layers, activations, x):
         # a dense layer, a gather, a ConvTranspose or a convolution
         if not isinstance(layer, dict):
             h = h @ layer[0].T + layer[1]
+        elif "W" in layer:
+            h = h @ layer["W"].T + layer["bias"]
         elif "gather" in layer:
             padded = torch.cat([h, torch.zeros(h.shape[0], 1, dtype=h.dtype)], 1)
             index = [i if i >= 0 else h.shape[1] for i in layer["gather"]]
@@ -276,13 +436,173 @@ def residual_net():
     return model(nodes, [("x", [1, 3])], [("y", [1, 3])], {"W1": weight(3, 4), "W2": weight(4, 3)})
 
 
-def maxpool_net():
-    """A max pool (ONNX's default stride 1), which is no affine map."""
+def product_net():
+    """The product of two branches, which is no affine map: y = relu(W1 x) * x."""
     nodes = [
-        helper.make_node("MaxPool", ["x"], ["p"], kernel_shape=[2, 2]),
+        helper.make_node("MatMul", ["x", "W1"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("Mul", ["r", "x"], ["y"]),
+    ]
+    return model(nodes, [("x", [1, 3])], [("y", [1, 3])], {"W1": weight(3, 3)})
+
+
+def attention_net():
+    """SAGAN's self-attention on a (2, 2, 2) image: theta^T phi, its softmax, g times its
+    transpose, then x + sigma o(...) into a Gemm."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wt"], ["t"]),
+        helper.make_node("Reshape", ["t", "s1"], ["tr"]),
+        helper.make_node("Transpose", ["tr"], ["tt"], perm=[0, 2, 1]),
+        helper.make_node("Conv", ["x", "Wp"], ["p"]),
+        helper.make_node("Reshape", ["p", "s1"], ["pr"]),
+        helper.make_node("MatMul", ["tt", "pr"], ["att"]),
+        helper.make_node("Softmax", ["att"], ["sm"], axis=2),
+        # the values g, the softmax transposed, their product, then the residual
+        helper.make_node("Conv", ["x", "Wg"], ["g"]),
+        helper.make_node("Reshape", ["g", "s2"], ["gr"]),
+        helper.make_node("Transpose", ["sm"], ["smt"], perm=[0, 2, 1]),
+        helper.make_node("MatMul", ["gr", "smt"], ["o"]),
+        helper.make_node("Reshape", ["o", "s3"], ["oi"]),
+        helper.make_node("Mul", ["sigma", "oi"], ["os"]),
+        helper.make_node("Add", ["x", "os"], ["a"]),
+        helper.make_node("Flatten", ["a"], ["f"]),
+        helper.make_node("Gemm", ["f", "W", "b"], ["y"], transB=1),
+    ]
+    init = {"Wt": weight(1, 2, 1, 1), "Wp": weight(1, 2, 1, 1), "Wg": weight(2, 2, 1, 1),
+            "s1": np.array([1, 1, 4], np.int64), "s2": np.array([1, 2, 4], np.int64),
+            "s3": np.array([1, 2, 2, 2], np.int64), "sigma": np.array([0.7], np.float32),
+            "W": weight(3, 8), "b": weight(3)}
+    return model(nodes, [("x", [1, 2, 2, 2])], [("y", [1, 3])], init)
+
+
+def sign_net():
+    """A binarized network: sign(x W1), + 0.1, sign, then W2 and a Softmax (traffic_signs')."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W1"], ["h"]),
+        helper.make_node("Sign", ["h"], ["s"]),
+        helper.make_node("Add", ["s", "eps"], ["a"]),
+        helper.make_node("Sign", ["a"], ["t"]),
+        helper.make_node("MatMul", ["t", "W2"], ["z"]),
+        helper.make_node("Softmax", ["z"], ["y"]),
+    ]
+    init = {"W1": weight(3, 4), "eps": np.full((1, 4), 0.1, np.float32), "W2": weight(4, 2)}
+    return model(nodes, [("x", [1, 3])], [("y", [1, 2])], init)
+
+
+def quotient_net():
+    """A quotient of two values, which is no affine map: y = x / (relu(W1 x) + 1)."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W1"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("Add", ["r", "one"], ["d"]),
+        helper.make_node("Div", ["x", "d"], ["y"]),
+    ]
+    init = {"W1": weight(3, 3), "one": np.ones((1, 3), np.float32)}
+    return model(nodes, [("x", [1, 3])], [("y", [1, 3])], init)
+
+
+def lyapunov_net():
+    """lsnc_relu's shapes: V = sum(x * (x P)) by ReduceSum, beside -((c - (relu(x W) - x)) * s) / t,
+    concatenated."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "P"], ["xp"]),
+        helper.make_node("Mul", ["x", "xp"], ["q"]),
+        helper.make_node("ReduceSum", ["q", "axes"], ["v"], keepdims=1),
+        helper.make_node("MatMul", ["x", "W"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("Sub", ["r", "x"], ["d"]),
+        helper.make_node("Sub", ["c", "d"], ["e"]),
+        helper.make_node("Mul", ["e", "s"], ["f"]),
+        helper.make_node("Div", ["f", "t"], ["g"]),
+        helper.make_node("Neg", ["g"], ["n"]),
+        helper.make_node("Concat", ["v", "n"], ["y"], axis=1),
+    ]
+    init = {"P": weight(3, 3), "axes": np.array([-1], np.int64), "W": weight(3, 3),
+            "c": weight(1, 3), "s": weight(1, 3), "t": np.array(2.0, np.float32)}
+    return model(nodes, [("x", [1, 3])], [("y", [1, 4])], init)
+
+
+def resnet_block():
+    """A ResNet block: relu(BN(conv(relu(BN(conv x)))) + BN(conv1x1 x)) as a Gemm's input, the
+    shortcut (strided) after the main branch in the graph."""
+    bn = {f"{k}{i}": v for i in range(3) for k, v in
+          (("s", weight(2)), ("o", weight(2)), ("mu", weight(2)), ("var", np.abs(weight(2)) + 0.5))}
+    nodes = [
+        helper.make_node("Conv", ["x", "W1", "b1"], ["c1"], pads=[1, 1, 1, 1], strides=[2, 2]),
+        helper.make_node("BatchNormalization", ["c1", "s0", "o0", "mu0", "var0"], ["n1"]),
+        helper.make_node("Relu", ["n1"], ["r1"]),
+        helper.make_node("Conv", ["r1", "W2", "b2"], ["c2"], pads=[1, 1, 1, 1]),
+        helper.make_node("BatchNormalization", ["c2", "s1", "o1", "mu1", "var1"], ["n2"]),
+        helper.make_node("Conv", ["x", "W3", "b3"], ["c3"], strides=[2, 2]),
+        helper.make_node("BatchNormalization", ["c3", "s2", "o2", "mu2", "var2"], ["n3"]),
+        helper.make_node("Add", ["n2", "n3"], ["a"]),
+        helper.make_node("Relu", ["a"], ["r2"]),
+        helper.make_node("Flatten", ["r2"], ["f"]),
+        helper.make_node("Gemm", ["f", "W", "b"], ["y"], transB=1),
+    ]
+    init = {"W1": weight(2, 1, 3, 3), "b1": weight(2), "W2": weight(2, 2, 3, 3), "b2": weight(2),
+            "W3": weight(2, 1, 1, 1), "b3": weight(2), "W": weight(3, 8), "b": weight(3), **bn}
+    return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 3])], init)
+
+
+def cnn7_net():
+    """Conv, Relu, Flatten, Gemm, BatchNormalization of the Gemm's features, Relu, Gemm."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wc", "bc"], ["c"], pads=[1, 1, 1, 1]),
+        helper.make_node("Relu", ["c"], ["r"]),
+        helper.make_node("Flatten", ["r"], ["f"]),
+        helper.make_node("Gemm", ["f", "W1", "b1"], ["g"], transB=1),
+        helper.make_node("BatchNormalization", ["g", "s", "o", "mu", "var"], ["n"]),
+        helper.make_node("Relu", ["n"], ["r2"]),
+        helper.make_node("Gemm", ["r2", "W2", "b2"], ["y"], transB=1),
+    ]
+    init = {"Wc": weight(2, 1, 3, 3), "bc": weight(2), "W1": weight(5, 32), "b1": weight(5),
+            "s": weight(5), "o": weight(5), "mu": weight(5), "var": np.abs(weight(5)) + 0.5,
+            "W2": weight(3, 5), "b2": weight(3)}
+    return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 3])], init)
+
+
+def slice_concat_net():
+    """linearizenn's shape: a controller relu(x W1) W2 beside the slice x[:, 2:], concatenated."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W1"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("MatMul", ["r", "W2"], ["u"]),
+        helper.make_node("Slice", ["x", "starts", "ends", "axes"], ["xs"]),
+        helper.make_node("MatMul", ["xs", "W3"], ["v"]),
+        helper.make_node("Concat", ["u", "v", "k"], ["cat"], axis=1),
+        helper.make_node("MatMul", ["cat", "W4"], ["y"]),
+    ]
+    init = {"W1": weight(4, 6), "W2": weight(6, 1), "W3": weight(2, 1), "k": weight(1, 1),
+            "W4": weight(3, 2), "starts": np.array([2], np.int64),
+            "ends": np.array([2**62], np.int64), "axes": np.array([1], np.int64)}
+    return model(nodes, [("x", [1, 4])], [("y", [1, 2])], init)
+
+
+def wide_conv_net():
+    """Conv (1 -> 16 channels, 3 x 3) on 32 x 32, Relu, Flatten, Gemm of the 14400 entries."""
+    nodes = [
+        helper.make_node("Conv", ["x", "Wc", "bc"], ["c"]),
+        helper.make_node("Relu", ["c"], ["r"]),
+        helper.make_node("Flatten", ["r"], ["f"]),
+        helper.make_node("Gemm", ["f", "W", "b"], ["y"], transB=1),
+    ]
+    init = {"Wc": weight(16, 1, 3, 3), "bc": weight(16), "W": weight(5, 14400), "b": weight(5)}
+    return model(nodes, [("x", [1, 1, 32, 32])], [("y", [1, 5])], init)
+
+
+def maxpool_net(kernel=2, stride=1, channels=1, pads=0):
+    """A max pool of a (channels, 5, 5) input (ONNX's default stride 1), as the output."""
+    out = (5 + 2 * pads - kernel) // stride + 1
+    attrs = {"kernel_shape": [kernel, kernel], "strides": [stride, stride]}
+    if pads:
+        attrs["pads"] = [pads] * 4
+    nodes = [
+        helper.make_node("MaxPool", ["x"], ["p"], **attrs),
         helper.make_node("Flatten", ["p"], ["y"]),
     ]
-    return model(nodes, [("x", [1, 1, 4, 4])], [("y", [1, 9])], {})
-
+    return model(
+        nodes, [("x", [1, channels, 5, 5])], [("y", [1, channels * out * out])], {}
+    )
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

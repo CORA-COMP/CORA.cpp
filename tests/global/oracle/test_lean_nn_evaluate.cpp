@@ -25,7 +25,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   18-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -39,6 +39,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 // the folder of the instance data, set before the benchmark header is read
 #define CORACPP_BENCHMARK_DATA "."
@@ -59,6 +60,7 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
     std::vector<lean::NnLayer> layers;
     for (std::size_t k = 0; k < nn.layers().size(); ++k) {
         layers.push_back(lean::NnLayer::linear(nn.layers()[k].W, nn.layers()[k].b));
+        // the oracle's layer of the activation
         switch (nn.activations()[k]) {
         case Activation::relu:
             layers.push_back(lean::NnLayer::relu());
@@ -71,6 +73,13 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
             break;
         case Activation::identity:
             break;
+        // the activations CORALean has no layer of
+        case Activation::square:
+        case Activation::sign:
+        case Activation::exp:
+        case Activation::reciprocal:
+            throw std::invalid_argument(
+                "aux_lean_layers: the oracle has no square, sign, exp or reciprocal layer");
         }
     }
     return layers;

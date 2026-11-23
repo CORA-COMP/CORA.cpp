@@ -49,10 +49,51 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   instead, and no convolution becomes a matrix: Conv is a C++ `Layer::conv2d` (groups, strides,
   dilations, asymmetric pads; Conv1D as width 1), ConvTranspose its transpose
   (`Layer::conv_transpose2d`), BatchNormalization and AveragePool depthwise convolutions, the data
-  moves (Transpose, Pad, Slice, Concat with constants, nearest Upsample) a `Layer::gather` found by
-  running the node on the indices, Flatten and Reshape nothing, Gemm and MatMul dense layers, and an
-  added constant the bias of the layer before. A residual connection or a max pool does not lower;
-  such an instance is `unknown` with the reason.
+  moves (Transpose, Pad, Slice, Gather, Concat with constants, nearest Upsample) a `Layer::gather`
+  found by running the node on the indices, Flatten and Reshape nothing, Gemm and MatMul dense
+  layers, and an added constant the bias of the layer before (a BatchNormalization after a Conv or a
+  Gemm folds into it, one of features elsewhere is a diagonal dense layer). A Slice or Gather of a
+  value of the input is such a data move, not shape arithmetic (linearizenn slices its input).
+  Two branches joined by an Add (a ResNet, soundnessbench's carriers) become a graph: each value is
+  a pending sum of maps of earlier outputs, emitted as layers when an activation or the output
+  needs it, the longest term as a chain and the others as residuals of its last layer (`source`,
+  `residuals` of a `Layer`). A Concat of branches is their sum, each term padded into its place by
+  a gather (linearizenn's controller beside its linear part). A MaxPool without pads lowers to `max(a, b) = b + relu(a - b)` pairwise
+  over its window (a grouped convolution of the differences, a ReLU, a gather plus a residual
+  convolution of the second items, per round). What does not lower, or what C++ refuses, is
+  `unknown` at once with the reason, before the property is read.
+- **Products (Phase 4).** A product of two values (lsnc_relu's Lyapunov terms `x P x`) lowers to
+  `((a + b)^2 - (a - b)^2) / 4`: a dense map to `[(a + b) / 2; (a - b) / 2]`, a layer of
+  `Activation::square`, a dense map `[I, -I]` (at most 4096 entries). A difference of branches takes
+  `-I`, a constant minus a value and a scaling by constants (Mul, Div, Neg, Cast) fold into the map
+  before or become a diagonal layer, and ReduceSum is a dense layer of ones. A graph without a
+  convolution that is no chain (a product, a join) lowers the same way. The square's line on `[l, u]`
+  is the parallelogram between the chord and the parallel tangent: slope `l + u`, radius
+  `(u - l)^2 / 8` widened by the rounding (CORA.cpp only; CORALean's `squareRelaxation` is the
+  derivative-bracket line, whose radius is `(u - l)^2`; see docs/oracle-requests.md). Its interval
+  is `[0, max(l^2, u^2)]` across 0, the backward bound takes the line's two parallels, and the
+  gradients take `2 x`. CORA's `nnSquareLayer` has no zonotope method.
+- **Sign (Phase 4, traffic_signs).** `Activation::sign` (CORA.cpp only): on `[l, u]` the line of
+  slope 0 between `sign(l)` and `sign(u)` (exact: the values are halves), the interval `[sign(l),
+  sign(u)]`, the derivative 0 in the bounds' heuristics; the attack's gradient takes the
+  straight-through estimator (1 on `[-1, 1]`), so that PGD moves on a binarized network. The
+  weights' Sign folds as a constant. A Softmax that makes the output is dropped when the property
+  only compares outputs (`y_i - y_j <= 0`: it keeps their order); with any other property the
+  Softmax stays, lowered as below. traffic_signs' three networks lower and give onnxruntime's
+  probabilities to 7e-8.
+- **Softmax and attention (Phase 4, cGAN's transformer).** A Softmax inside the network lowers to
+  `1 / sum_t exp(x_t - x_q)`: the differences by two gathers of the same layer (one with the
+  factor -1), a layer of `Activation::exp`, their sums by a 1 x 1 convolution, then a layer of
+  `Activation::reciprocal`, `1 / max(x, 1)`, which is `1 / x` there because the term `t = q` is
+  exactly 1. A MatMul of two values (`theta^T phi`, `g attn^T`) is a sum of products, each
+  `((a + b)^2 - (a - b)^2) / 4`: gathers with factors `+-1/2` (`Layer::gather`'s `scale`) into one
+  layer of `Activation::square`, then a 1 x 1 convolution of `+1, -1` over the products of each
+  entry; nothing is dense. The lines (CORA.cpp only): exp takes the chord's slope `m`, the range of
+  `exp(x) - m x` at the ends and at `log m`; the reciprocal the chord's slope on `[max(l, 1),
+  max(u, 1)]`, the range of `f(x) - m x` at `l`, `u`, 1 and `sqrt(l u)`; both widened by 16 ulps of
+  the largest term. A bound beyond the float range (an exp that overflows) has no line: that batch
+  stays open (`out_of_range_sets`), the instance is never unsat for it, and the attack goes on.
+  cGAN's `small_transformer` lowers to 90 layers and gives onnxruntime's output to 4e-7.
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of
@@ -63,6 +104,10 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   then the input generators, until it fits; the errors without a slot go to the interval center
   (sound, looser) and the backward bound keeps the margin. `stats` reports `slot_budget` and
   `init_gen_budget`.
+- **Memory check.** The front end builds a Gemm's matrix after a convolution from chunks of unit
+  vectors (malbeware's identity of 61504 entries alone was 29 GiB). `run_dev_set.py
+  --one-per-network` runs the first instance of each network of a dev set, and `score.py
+  --max-rss-mib M` lists every instance whose peak RSS exceeds M and exits with 1.
 - **Property.** VNN-LIB 1.0 is read with the semantics of the scoring's parser, 2.0 by the
   reference parser (`vnnlib`), every assertion in DNF and the conjunction multiplied out; the cases'
   polytopes are stacked and padded with the rows `0 <= +inf`.
@@ -71,7 +116,9 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   a `CORRECT` one ends the search.
 - **Backend.** `load(..., backend="eigen")` gives the network numpy weights (Eigen), `"torch"` torch
   tensors on `device`; `run_instance.py --backend` (or `CORACPP_VNNCOMP_BACKEND`) picks it, CUDA
-  takes torch.
+  takes torch. The default `"auto"` (`choose_backend`) takes torch for a network with a convolution
+  and eigen for a dense one. At `CORACPP_NATIVE=OFF`, one BaB iteration of a cifar100 ResNet takes
+  160 s on eigen and 61 s on torch, and of a tinyimagenet one 562 s and 273 s (2 threads).
 
 ## Strategies, chosen by name
 
@@ -88,14 +135,24 @@ name (`register_attack`, `register_bounding`, `register_heuristic`, `register_in
 
 CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradient`, `most-unstable`,
 `gap-sensitivity`, `product-sensitivity`, `centered-sensitivity`, `most-sensitive-approx-error`,
-`most-sensitive-input-radius`, `zono-norm-gradient`. `vnncomp_options(category)` is CORA's
-`getDefaultVNNCOMPoptions` with the benchmark's own changes.
+`most-sensitive-input-radius`, `zono-norm-gradient`. `cora_vnncomp_options(category)` is CORA's
+`getDefaultVNNCOMPoptions` with the benchmark's own changes. `vnncomp_options(category)` adds
+Phase 2's bounds (`zonotope-alpha`, `backward_bound`; `alpha_method` `zonotope` for acasxu, `crown`
+else), except for sat_relu: its many small boxes keep CORA's `conzonotope` bounding without CROWN,
+which scores 980 on dev seeds 1001 and 1002 against 960 and 940 (the slopes cost more than they
+decide). traffic_signs gives the attack nine tenths of the time (`attack_time_share` 0.9): its
+binarized networks' bounds rarely decide, and the share scores 330 and 250 on seeds 1001 and 1002
+against 300 and 240. metaroom, soundnessbench and tinyimagenet take no alpha-CROWN steps
+(`alpha_iterations` 0): on the first 40 instances of seed 1001 they score 380, 60 and 60 against
+370, 50 and 50, tinyimagenet in half the time; cifar100 keeps them (70 against 60), and cgan and
+collins score the same either way. On the three, 3 steps or `optimize_gap` 0.1 score no more.
 
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per
   polytope the violated rows' excess plus a tenth of the worst row, the best polytope of the case),
   decayed by `pgd_decay` at `pgd_decay_at`, projected into the box, in rounds until the deadline.
-  **FGSM** is one step of the full radius from the center, **center** the centers.
+  When the first step shows that `pgd_min_steps` steps would not fit in the time left (a wide conv
+  net), each box keeps fewer restarts (CORA.cpp only; small networks never shrink). **FGSM** is one step of the full radius from the center, **center** the centers.
 - **zonotope:** the output zonotope of `NeuralNetwork::evaluate` (DeepZ) per box, the naive branch and
   bound of input splits (`num_splits` pieces), the centers of the open boxes as candidates.
 
@@ -109,7 +166,9 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
   the radius `dr (B, n)` of CORA's interval center. The input gets `num_init_gens` generators (chosen
   by `input_generator_heuristic`), each activation layer at most `num_approx_err` error generators
   (chosen by `approx_error_order`); the rest of the errors goes into `dr`. The output's first factors
-  are the input's, so constraints on the output are constraints on the input.
+  are the input's, so constraints on the output are constraints on the input. The sensitivity that
+  orders the slots (`sensitivity*length`) is computed only if some layer has slots for some but not
+  all of its neurons (tinyimagenet's preset has none, and the 200-output Jacobian costs a pass).
 - **Lines:** a ReLU takes CORALean's relaxation, which is CORA's `poly_method` `bounds` in the reals.
   Sigmoid and tanh take CORA's `bounds` (the secant, the errors at the extreme points of
   `f(x) - m x`) or CORALean's `singh`.
@@ -129,6 +188,12 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
   the children in front (`verify_enqueue_type`), at most what `memory_budget` holds; a batch starts
   only if the last one's time fits before the deadline, and the deadline is checked per chunk. Out
   of memory, the ReLU rows and then the batch shrink as in CORA.
+- **Deadline inside the steps:** every pass (the zonotope forward, the sensitivity, the reverse and
+  backward passes, the interval gradient, the attack's gradient) checks the deadline once per layer
+  (`check_deadline`), and candidate points are evaluated in chunks. A pass that reaches it raises
+  `special_error` (`is_deadline` tells it apart): the batch stays open, an attack step finds
+  nothing, and verify answers within about one layer's time of its budget (a cifar100 ResNet: 26.3 s for 26 s, was 39.6 s; tinyimagenet:
+  30.5 s for 30 s, was 114 s). alpha-CROWN returns its best bound instead, once it has one.
 - **Fourier-Motzkin:** `fourier_motzkin_order` `cora` takes a row's sum minus the term (fast);
   `coralean` sums the other terms in CORALean's order (`contractHalfspace`), bit for bit the oracle's
   on lean. `ConZonotope::approximate_bounds` has the same switch (`BoundsOptions::order`).
@@ -154,8 +219,10 @@ CORA's ten heuristics: `input-radius`, `least-unstable`, `least-unstable-gradien
 - **optimize_gap:** the slopes and the dual multipliers are optimized only for open sets whose worst
   open polytope's best row is below 0 by at most this share of the row's width (inf: all).
 - **backward_bound:** the check also bounds every row by CROWN's backward pass over the input box and
-  takes the better of it and the zonotope's bound. Its cost is `(B, P K, n)` per layer, so it stays
-  cheap on wide layers.
+  takes the better of it and the zonotope's bound. Its cost is `(B, R, n)` per layer, so it stays
+  cheap on wide layers. R counts only the rows of the polytopes that the zonotope left open in some
+  set of the batch (each row's bound is its own, so the verdicts do not change); alpha-CROWN does
+  the same. A robustness property of 199 rows whose zonotope excludes most classes costs a few.
 - **dual_certificate:** the check also bounds every row of the open sets by weak duality under the
   rows `C beta <= d` of the factors: each split of the set (`x >= 0` or `x <= 0` of the neuron's
   input) and the three faces of the `dual_relu_rows` crossing ReLUs of the largest error. For any

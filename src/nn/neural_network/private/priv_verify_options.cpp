@@ -17,7 +17,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   22-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -109,6 +109,7 @@ void NnVerifyOptions::validate() const {
     aux_at_least("refinement_max_iter", double(refinement_max_iter), 1);
     aux_at_least("polytope_bound_approx_max_iter", double(polytope_bound_approx_max_iter), 0);
     aux_at_least("max_candidates", double(max_candidates), 1);
+    aux_at_least("pgd_min_steps", double(pgd_min_steps), 1);
     aux_at_least("pgd_steps", double(pgd_steps), 1);
     aux_at_least("pgd_restarts", double(pgd_restarts), 1);
     // the counts of Phase 2's steps
@@ -201,6 +202,16 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
     o.backward_bound = true;
     // acasxu's few inputs: the zonotope's slopes, which move every later bound; else alpha-CROWN
     o.alpha_method = name == "acasxu" ? "zonotope" : "crown";
+    // sat_relu: CORA's bounding alone (docs/nn_verification.md, the dev seeds' scores)
+    if (name == "sat_relu") {
+        o.bounding_method = "conzonotope";
+        o.backward_bound = false;
+    }
+    // the wide conv nets whose alpha-CROWN steps cost more than they decide (the dev sets)
+    if (name == "metaroom" || name == "soundnessbench" || name == "tinyimagenet")
+        o.alpha_iterations = 0;
+    // traffic_signs' binarized networks: the bounds rarely decide, the attack finds more
+    if (name == "traffic_signs_recognition") o.attack_time_share = 0.9;
     return o;
 }
 

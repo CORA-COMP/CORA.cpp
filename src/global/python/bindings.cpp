@@ -19,7 +19,7 @@
 // CORA.cpp only: the Python package has no CORA counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       01-October-2026
-// Last update:   21-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "global/python/convert.h"
@@ -4369,14 +4369,19 @@ void bind_nonlin_das_sys(py::module_ &m) {
             "The states (steps + 1, n) and the algebraic variables (steps + 1, p) of a trajectory");
 }
 
-/// The activation of a name: identity, relu, sigmoid or tanh.
+/// The activation of a name: identity, relu, sigmoid, tanh, square, sign, exp or reciprocal.
 Activation activation_of(const std::string &name) {
     if (name == "identity") return Activation::identity;
     if (name == "relu") return Activation::relu;
     if (name == "sigmoid") return Activation::sigmoid;
     if (name == "tanh") return Activation::tanh;
-    CORA_FAIL(Error::wrong_value,
-              "NeuralNetwork: the activation must be identity, relu, sigmoid or tanh, got " + name);
+    if (name == "square") return Activation::square;
+    if (name == "sign") return Activation::sign;
+    if (name == "exp") return Activation::exp;
+    if (name == "reciprocal") return Activation::reciprocal;
+    CORA_FAIL(Error::wrong_value, "NeuralNetwork: the activation must be identity, relu, sigmoid, "
+                                  "tanh, square, sign, exp or reciprocal, got " +
+                                      name);
 }
 
 /// The error of the regression line from its name.
@@ -4490,17 +4495,40 @@ py::dict closed_loop_dict(const ClosedLoopReach<S> &R) {
     return out;
 }
 
-/// A layer of the NeuralNetwork constructor: a pair (W, b), or a dict of a conv2d or a gather.
+NeuralNetwork::Layer aux_nn_map(const py::object &layer);
+
+/// A layer of the NeuralNetwork constructor: a pair (W, b), or a dict of a conv2d, a gather or a
+/// dense map ('W'), with its graph keys: 'source' and 'residuals' [{'source', 'map' (or None)}].
 NeuralNetwork::Layer aux_nn_layer(const py::object &layer) {
+    NeuralNetwork::Layer out = aux_nn_map(layer);
+    if (!py::isinstance<py::dict>(layer)) return out;
+    const py::dict d = layer.cast<py::dict>();
+    if (d.contains("source") && !d["source"].is_none()) out.source = d["source"].cast<int64_t>();
+    if (d.contains("residuals"))
+        for (const py::handle r : d["residuals"]) {
+            const py::dict rd = r.cast<py::dict>();
+            NeuralNetwork::Residual res{rd["source"].cast<int64_t>(), nullptr};
+            if (rd.contains("map") && !rd["map"].is_none())
+                res.map = std::make_shared<NeuralNetwork::Layer>(aux_nn_map(rd["map"]));
+            out.residuals.push_back(res);
+        }
+    return out;
+}
+
+/// The linear map of a layer: a pair (W, b), or a dict of a conv2d, a gather or a matrix ('W').
+NeuralNetwork::Layer aux_nn_map(const py::object &layer) {
     if (!py::isinstance<py::dict>(layer)) {
         const auto [W, b] = layer.cast<std::pair<py::object, py::object>>();
         return {tensor_of(W, "the weights"), point_of(b, "the bias")};
     }
     const py::dict d = layer.cast<py::dict>();
     const Tensor bias = point_of(d["bias"], "the bias");
+    if (d.contains("W")) return {tensor_of(d["W"], "the weights"), bias};
     if (d.contains("gather"))
-        return NeuralNetwork::Layer::gather(d["gather"].cast<std::vector<int64_t>>(),
-                                            d["inputs"].cast<int64_t>(), bias);
+        return NeuralNetwork::Layer::gather(
+            d["gather"].cast<std::vector<int64_t>>(), d["inputs"].cast<int64_t>(), bias,
+            d.contains("scale") && !d["scale"].is_none() ? point_of(d["scale"], "the scale")
+                                                         : Tensor());
     // a convolution with ONNX's attributes
     NeuralNetwork::Conv2d spec;
     if (d.contains("stride")) spec.stride = d["stride"].cast<std::array<int64_t, 2>>();
@@ -4534,8 +4562,11 @@ void bind_neural_network(py::module_ &m) {
              py::arg("layers"), py::arg("activations") = py::none(),
              "the layers as (W (out, in), b (out,)) pairs, first to last, or dicts {'conv2d': "
              "kernel, 'bias', 'input': (C, H, W), 'stride', 'dilation', 'pads', 'groups'} and "
-             "{'gather': index, 'inputs', 'bias'}, and optionally the activation of each: "
-             "'identity', 'relu', 'sigmoid' or 'tanh'")
+             "{'gather': index, 'inputs', 'bias', optional 'scale'} or {'W', 'bias'}, each with "
+             "the optional graph keys "
+             "'source' (the layer it reads, -1 the input) and 'residuals' ([{'source', 'map': a "
+             "layer or None for the identity}], added), and optionally the activation of each: "
+             "'identity', 'relu', 'sigmoid', 'tanh', 'square', 'sign', 'exp' or 'reciprocal'")
         .def_property_readonly("input_dim", &NeuralNetwork::input_dim, "The number of inputs")
         .def_property_readonly("output_dim", &NeuralNetwork::output_dim, "The number of outputs")
         // the outputs at points, the enclosure of the outputs over a set, and the pairs
@@ -4886,6 +4917,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(pgd_decay, "PGD: the factor of the step at each decay point");
     CORA_VERIFY_FIELD(pgd_decay_at, "PGD: the decay points as shares of the steps");
     CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
+    CORA_VERIFY_FIELD(pgd_min_steps, "The PGD steps that the shrunk restarts fit in the time");
     CORA_VERIFY_FIELD(seed, "The seed of the restarts");
     // the bounding and its splits
     CORA_VERIFY_FIELD(bounding_method, "'zonotope', 'conzonotope' or 'zonotope-alpha'");
