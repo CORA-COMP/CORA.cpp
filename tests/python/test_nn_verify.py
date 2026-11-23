@@ -4,11 +4,12 @@ A ReLU network of 2 inputs with a sat property (PGD finds a counterexample that 
 scoring's check through the callback), an unsat one (CORA's verify and the zonotope bounding)
 and a zero budget (unknown), on the eigen and the torch backend. A network that does not lower to
 dense layers (a max pool) is unknown with the reason; one with a layer that C++ cannot take (a
-sine) is unknown at once, without reading the property.
+sine) is unknown at once, without reading the property; a mean masked by inputs that the
+property fixes lowers once they are folded (nn4sys' mscn), equal to the graph, and falsifies.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -104,6 +105,42 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(result.status, "unknown")
         self.assertIn("Sin", result.stats["bounding"])
 
+    def test_fixed_inputs_fold(self):
+        # nn4sys' mscn: a mean masked by inputs that the property fixes (the file's docstring)
+        path = os.path.join(self.dir.name, "mask.onnx")
+        masked_mean_network(path)
+        mask = (1.0, 1.0, 0.0)
+        box = "".join(
+            f"(assert (<= X[0,{i},{j}] 1.0))\n(assert (>= X[0,{i},{j}] -1.0))\n"
+            for i in range(3) for j in range(2)
+        ) + "".join(
+            f"(assert (<= X[0,{i},2] {m}))\n(assert (>= X[0,{i},2] {m}))\n" for i, m in enumerate(mask)
+        )
+        head = ("(vnnlib-version <2.0>)\n(declare-network N\n (declare-input X float32 [1, 3, 3])\n"
+                " (declare-output Y float32 [1, 1])\n)\n")
+        prop = os.path.join(self.dir.name, "mask.vnnlib")
+        with open(prop, "w") as out:
+            out.write(head + box + "(assert (<= Y[0,0] 100.0))\n")
+        # it lowers and equals the graph at points of the box
+        instance = nn_verify.load(path, prop)
+        self.assertIsNotNone(instance.network, instance.why)
+        rng = np.random.default_rng(5)
+        for _ in range(5):
+            x = np.concatenate([rng.uniform(-1, 1, (3, 2)), np.array(mask)[:, None]], 1)
+            want = masked_mean(x)
+            got = np.asarray(instance.network.evaluate(x.reshape(1, -1))).ravel()
+            np.testing.assert_allclose(got, want, rtol=1e-6, atol=1e-6)
+        # the attack's counterexample passes the scoring's check
+        result = nn_verify.verify(instance, 20, cora.vnncomp_options("test"))
+        self.assertEqual(result.status, "sat")
+        check, why = counterexample.check_counterexample(path, prop, result.counterexample)
+        self.assertEqual(check, counterexample.CORRECT, why)
+        # a free mask: no constant to fold, unknown with the reason
+        with open(prop, "w") as out:
+            out.write(head + box.replace("(>= X[0,2,2] 0.0)", "(>= X[0,2,2] -1.0)")
+                      + "(assert (<= Y[0,0] 100.0))\n")
+        self.assertIsNone(nn_verify.load(path, prop).network)
+
 
 class Precision(unittest.TestCase):
     def test_tf32_off_at_first_torch_tensor(self):
@@ -150,6 +187,46 @@ def network(path, activation="Relu"):
     m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
     m.ir_version = 8
     onnx.save(m, path)
+
+
+WF = RNG.standard_normal((2, 4)).astype(np.float32)
+
+WO = RNG.standard_normal((1, 4)).astype(np.float32)
+
+
+def masked_mean_network(path):
+    """mscn's set mean: X (1, 3, 3) split into features (1, 3, 2) and a mask (1, 3, 1);
+    y = WO (sum_i mask_i relu(f_i WF)) / sum_i mask_i."""
+    # the mean of the masked features, then one output
+    nodes = [
+        helper.make_node("Split", ["x"], ["f", "m"], axis=-1, split=[2, 1]),
+        helper.make_node("MatMul", ["f", "WF"], ["h"]),
+        helper.make_node("Relu", ["h"], ["r"]),
+        helper.make_node("Mul", ["r", "m"], ["rm"]),
+        helper.make_node("ReduceSum", ["rm"], ["s"], axes=[1], keepdims=0),
+        helper.make_node("ReduceSum", ["m"], ["c"], axes=[1], keepdims=0),
+        helper.make_node("Div", ["s", "c"], ["mean"]),
+        helper.make_node("Gemm", ["mean", "WO"], ["y"], transB=1),
+    ]
+    # the graph of opset 11 (Split's sizes an attribute)
+    init = [numpy_helper.from_array(WF, "WF"), numpy_helper.from_array(WO, "WO")]
+    graph = helper.make_graph(
+        nodes,
+        "g",
+        [helper.make_tensor_value_info("x", TensorProto.FLOAT, [1, 3, 3])],
+        [helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 1])],
+        init,
+    )
+    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 11)])
+    m.ir_version = 7
+    onnx.save(m, path)
+
+
+def masked_mean(x):
+    """masked_mean_network on one input (3, 3) in float64."""
+    f, m = x[:, :2], x[:, 2:]
+    mean = (np.maximum(f @ WF.astype(np.float64), 0) * m).sum(0) / m.sum()
+    return WO.astype(np.float64) @ mean
 
 
 def outputs(x):
