@@ -2,12 +2,15 @@
 //
 // Syntax:     lean::Zonotope Y = lean::evaluate_network({lean::NnLayer::linear(W, b),
 //                                                       lean::NnLayer::relu()}, X, "singh");
+//             lean::Zonotope Y = lean::evaluate_graph({{W1, b1}, {W2, b2, -2, {{-1}}}}, X);
 // Meaning:    nnLayer.evaluateZonotope and neuralNetwork.evaluate: the layers of CORALean in order
 //             on the zonotope, each activation by its relaxation at poly_method "singh" (CORA's
 //             line) or "curvature" (CORALean's tighter sigmoid and tanh); the layer "poly" (the
 //             fit of order k given) on a polynomial zonotope by nnLayer.evaluatePolyZonotope;
 //             nnLayer.relaxation, the line of an activation over boxes; nn_evaluate_taylm the
-//             layers on Taylor models (neuralNetwork.evaluateTaylm)
+//             layers on Taylor models (neuralNetwork.evaluateTaylm); neuralNetwork.evaluateGraph:
+//             a graph network (sources, residuals) in the order of CORA.cpp's ZonoNet::forward,
+//             the radii of the interval center as the error box
 // See also:   lean/request.h, cora/nn/neural_network/neural_network.h
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
@@ -145,6 +148,29 @@ std::vector<Taylm> nn_evaluate_taylm(const std::vector<NnLayer> &layers,
                                      const std::vector<Taylm> &x,
                                      const std::string &poly_method = "singh",
                                      const std::string &regression_error = "");
+
+/// A residual of a graph layer: the output of layer `source` (-1: the input) through R (undefined:
+/// the identity).
+struct NnGraphResidual {
+    int64_t source = -1;
+    cora::Tensor R = {};
+};
+
+/// A graph layer: W times the output `source` (-1: the input, kPrevious: the one before), plus b
+/// and the residuals, then the activation; its errors as generators ("all") or in the error box.
+/// activation: "identity", "relu", "sign", "square" or "product" (of the halves).
+struct NnGraphLayer {
+    static constexpr int64_t kPrevious = -2;
+    cora::Tensor W, b;
+    int64_t source = kPrevious;
+    std::vector<NnGraphResidual> residuals = {};
+    std::string activation = "identity";
+    std::string slots = "all";
+};
+
+/// The graph network on the zonotope (neuralNetwork.evaluateGraph): the last layer's output, the
+/// radii of its interval center in the error box.
+Zonotope evaluate_graph(const std::vector<NnGraphLayer> &layers, const Zonotope &Z);
 
 } // namespace cora::lean
 

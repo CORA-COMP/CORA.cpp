@@ -104,6 +104,35 @@ Json aux_layer(const NnLayer &layer, std::string &dtype) {
     return j;
 }
 
+// A column (n, 1) of a vector, the wire's form of a bias.
+Json aux_column(const cora::Tensor &b) {
+    return Tensor(b.ndim() == 1 ? b.expand_dims(-1) : b).to_json();
+}
+
+// A graph layer in wire form, and the dtype of its weights.
+Json aux_graph_layer(const NnGraphLayer &layer, std::string &dtype) {
+    const Tensor W(layer.W);
+    dtype = W.dtype();
+    Json j = Json::object();
+    j.set("W", W.to_json()).set("b", aux_column(layer.b));
+    if (layer.source != NnGraphLayer::kPrevious) j.set("source", layer.source);
+    // each residual's source, and its map unless the identity
+    if (!layer.residuals.empty()) {
+        Json residuals = Json::array();
+        for (const NnGraphResidual &r : layer.residuals) {
+            Json e = Json::object();
+            e.set("source", r.source);
+            if (r.R.defined()) e.set("R", Tensor(r.R).to_json());
+            residuals.push(e);
+        }
+        j.set("residuals", residuals);
+    }
+    j.set("activation", layer.activation).set("slots", layer.slots);
+    // a product's line takes CORA.cpp's square root (the precision of nnLayer.productLine)
+    if (layer.activation == "product") j.set("p", int64_t(60));
+    return j;
+}
+
 } // namespace
 
 
@@ -402,6 +431,15 @@ std::vector<Taylm> nn_evaluate_taylm(const std::vector<NnLayer> &layers,
     for (const Reply &T : ask("neuralNetwork.evaluateTaylm", args).list("Y"))
         out.push_back(Taylm::from_model(T));
     return out;
+}
+
+// the graph network on the zonotope, the last output with its error box
+Zonotope evaluate_graph(const std::vector<NnGraphLayer> &layers, const Zonotope &Z) {
+    std::string dtype;
+    Json list = Json::array();
+    for (const NnGraphLayer &layer : layers) list.push(aux_graph_layer(layer, dtype));
+    return ask("neuralNetwork.evaluateGraph", {{"layers", Wire(list, dtype)}, {"Z", Z}})
+        .get<Zonotope>("Z");
 }
 
 } // namespace cora::lean
