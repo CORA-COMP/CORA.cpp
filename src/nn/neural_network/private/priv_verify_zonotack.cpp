@@ -361,14 +361,16 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     while (bytes(*net_) > problem.memory_budget && net_->q > net_->q0) {
         int64_t widest = 0;
         for (const int64_t s : net_->slots) widest = std::max(widest, s);
-        slots = double(widest / 2);
+        const int64_t half = widest / 2; // (whole slots)
+        slots = double(half);
         net_ = std::make_unique<ZonoNet>(problem.net(), o_.num_init_gens, slots, o_.poly_method,
                                          o_.approx_error_order);
     }
     // then fewer input generators, the rest of the input box in the interval center too
     double gens = o_.num_init_gens;
     while (bytes(*net_) > problem.memory_budget && net_->q0 > 1) {
-        gens = double(net_->q0 / 2);
+        const int64_t half = net_->q0 / 2;
+        gens = double(half);
         net_ = std::make_unique<ZonoNet>(problem.net(), gens, slots, o_.poly_method,
                                          o_.approx_error_order);
     }
