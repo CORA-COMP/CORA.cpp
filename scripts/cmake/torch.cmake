@@ -28,9 +28,26 @@ if(NOT CORACPP_TORCH STREQUAL "OFF")
     else()
       set(torch_url "${torch_root}/libtorch-shared-with-deps-${CORACPP_TORCH_VERSION}%2B${CORACPP_TORCH_VARIANT}.zip")
     endif()
+    # the archive is fetched here, not by FetchContent, so that a failure can name the other way
+    get_filename_component(torch_archive "${torch_url}" NAME)
+    set(torch_archive "${CMAKE_BINARY_DIR}/_deps/${torch_archive}")
+    # a .part file until it is complete, so that an interrupted download is not taken for one
+    if(NOT EXISTS "${torch_archive}")
+      message(STATUS "fetching libtorch: ${torch_url}")
+      file(DOWNLOAD "${torch_url}" "${torch_archive}.part" STATUS torch_status)
+      list(GET torch_status 0 torch_code)
+      if(NOT torch_code EQUAL 0)
+        list(GET torch_status 1 torch_error)
+        file(REMOVE "${torch_archive}.part")
+        message(FATAL_ERROR "CORACPP_TORCH=DOWNLOAD: ${torch_url} failed (${torch_error}). Where "
+                            "pytorch.org/libtorch is not reachable, the torch wheel is: use the "
+                            "python-torch or python-torch-cuda preset, or pip install torch and give "
+                            "-DCORACPP_TORCH=ON -DPython3_EXECUTABLE=<that Python> (see README.md)")
+      endif()
+      file(RENAME "${torch_archive}.part" "${torch_archive}")
+    endif()
     include(FetchContent)
-    message(STATUS "fetching libtorch: ${torch_url}")
-    FetchContent_Declare(libtorch URL "${torch_url}" SOURCE_SUBDIR headers-only DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+    FetchContent_Declare(libtorch URL "${torch_archive}" SOURCE_SUBDIR headers-only DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
     FetchContent_MakeAvailable(libtorch)
     set(torch_dir "${libtorch_SOURCE_DIR}")
   endif()

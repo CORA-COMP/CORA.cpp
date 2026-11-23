@@ -31,7 +31,13 @@ import shutil
 import subprocess
 import sys
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:  # the generators have their own Python (--python); this script needs NumPy too
+    raise SystemExit(
+        f"make_dev_set: {sys.executable} has no NumPy; run it with the Python of the built cora "
+        "package (e.g. .venv/bin/python with PYTHONPATH=build/python)"
+    ) from None
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -57,6 +63,7 @@ def main():
     )
     parser.add_argument("--keep-official", action="store_true")
     args = parser.parse_args()
+    require_cora()
     # the generator works in a copy of its source tree
     work = os.path.join(args.out, args.benchmark, "work")
     # the benchmark's own generator, else a sampler of the official instances' structure
@@ -182,6 +189,18 @@ def read_rows(path):
             for r in csv.reader(stream)
             if r
         ]
+
+
+def require_cora():
+    """Stop before the generator runs if the cora package, which writes VNN-LIB 2.0, is missing."""
+    try:
+        import cora.onnx_network  # noqa: F401
+        import cora.vnnlib  # noqa: F401
+    except ImportError as error:
+        raise SystemExit(
+            f"make_dev_set: {sys.executable} cannot import cora ({error}); build a python preset "
+            "and set PYTHONPATH=build/python"
+        ) from None
 
 
 def run_generator(args, work):

@@ -16,19 +16,32 @@
 # torch, else from the Python environment, else it is fetched.
 
 set(python_ok OFF)
-if(NOT CORACPP_PYTHON STREQUAL "OFF" AND Python3_Development.Module_FOUND)
-  # the package imports numpy, and the build imports the package to write its type stubs
-  # the module carries the file name extension of the Python found
-  execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import numpy"
-                  RESULT_VARIABLE numpy_result OUTPUT_QUIET ERROR_QUIET)
-  if(numpy_result EQUAL 0)
-    set(python_ok ON)
-  elseif(CORACPP_PYTHON STREQUAL "AUTO")
-    message(STATUS "Python: ${Python3_EXECUTABLE} has no numpy, so the Python package is not built")
+set(python_missing "")
+if(NOT CORACPP_PYTHON STREQUAL "OFF")
+  if(NOT Python3_EXECUTABLE)
+    set(python_missing "no Python 3 interpreter was found")
+  elseif(NOT Python3_Development.Module_FOUND)
+    # e.g. a system Python without its -dev package; a standalone Python (uv, conda) ships them
+    string(CONCAT python_missing "${Python3_EXECUTABLE} has no development files (Python.h); install them "
+                       "(e.g. python3-dev), or point -DPython3_EXECUTABLE=... at a Python that has them "
+                       "(`uv python install 3.11`, conda)")
+  else()
+    # the package imports numpy, and the build imports the package to write its type stubs
+    # the module carries the file name extension of the Python found
+    execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import numpy"
+                    RESULT_VARIABLE numpy_result OUTPUT_QUIET ERROR_QUIET)
+    if(numpy_result EQUAL 0)
+      set(python_ok ON)
+    else()
+      set(python_missing "${Python3_EXECUTABLE} has no numpy")
+    endif()
+  endif()
+  if(NOT python_ok AND CORACPP_PYTHON STREQUAL "AUTO")
+    message(STATUS "Python: ${python_missing}, so the Python package is not built")
   endif()
 endif()
 if(CORACPP_PYTHON STREQUAL "ON" AND NOT python_ok)
-  message(FATAL_ERROR "CORACPP_PYTHON=ON needs Python with development files and numpy")
+  message(FATAL_ERROR "CORACPP_PYTHON=ON, but ${python_missing}")
 endif()
 
 if(python_ok)

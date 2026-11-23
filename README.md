@@ -66,6 +66,17 @@ ctest --preset core
 - Use the package with `.venv`'s Python and `PYTHONPATH=build/python` (Windows: `set PYTHONPATH=build\python`).
 - The nightly CI builds `core`, `python` on Linux, macOS and Windows, and `torch`, `python-torch` on Linux only;
   the CUDA presets (CUDA 12.6) are not built there.
+- **Without admin rights** (no CMake, no Python headers):
+  - `python3 -m venv ~/tools && ~/tools/bin/pip install cmake ninja clang-format clang-tidy` gives the
+    build tools; put `~/tools/bin` on `PATH`.
+  - A system Python without its development files (no `python3-dev`) cannot build the Python package.
+    A standalone Python ships them: `uv python install 3.11` (or conda), then configure with
+    `-DPython3_EXECUTABLE=<that python>`. CMake otherwise takes the first Python on `PATH`.
+- **GPU hosts:** `python-torch-cuda` builds against the libtorch inside the CUDA torch wheel; no CUDA toolkit
+  (nvcc) is needed, only the NVIDIA driver. `torch-cuda` downloads libtorch (about 2.5 GB) from
+  `download.pytorch.org/libtorch`; if that fails, use `python-torch-cuda`, or pip install a CUDA torch and
+  configure with `-DCORACPP_TORCH=ON -DPython3_EXECUTABLE=<that python>`.
+- Use the system compiler: a conda gcc 16 fails with `-Werror=stringop-overflow`.
 - Linux and WSL2 also have `scripts/setup_local.sh` (a conda environment). In VS Code, open an example
   and press `F5`.
 
