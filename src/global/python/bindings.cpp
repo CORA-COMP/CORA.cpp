@@ -5050,7 +5050,8 @@ void bind_verify(py::module_ &m) {
     // relu-bab: the root and the nodes
     CORA_VERIFY_FIELD(relu_bab_dual_steps, "relu-bab: dual steps per node from its parent's");
     CORA_VERIFY_FIELD(relu_bab_witnesses, "relu-bab: nodes per depth whose factors are candidates");
-    CORA_VERIFY_FIELD(relu_bab_frontier_bytes, "relu-bab: open nodes' bytes at most; 0: 8 budgets");
+    CORA_VERIFY_FIELD(relu_bab_frontier_bytes,
+                      "relu-bab: open nodes' bytes at most; 0: 1/4 budget");
     CORA_VERIFY_FIELD(relu_bab_memory_budget,
                       "relu-bab: the root set's bytes; 0: 3/4 of the batch budget");
     CORA_VERIFY_FIELD(relu_bab_init_gens, "relu-bab: the root's input generators at most");

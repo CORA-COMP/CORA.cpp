@@ -130,7 +130,7 @@ struct NnVerifyOptions {
     // refinement_method "relu-bab": ReLU splits on the frozen root zonotope (nn_verification.md)
     int64_t relu_bab_dual_steps = 10;    ///< dual steps per node, from its parent's multipliers
     int64_t relu_bab_witnesses = 32;     ///< nodes per depth whose factors are confirm candidates
-    int64_t relu_bab_frontier_bytes = 0; ///< the open nodes' bytes at most; 0: 8 batch budgets
+    int64_t relu_bab_frontier_bytes = 0; ///< the open nodes' bytes at most; 0: 1/4 batch budget
     int64_t relu_bab_memory_budget = 0;  ///< the root set's bytes; 0: 3/4 of the batch budget
     double relu_bab_init_gens = std::numeric_limits<double>::infinity(); ///< the root's at most
     std::string relu_bab_order = "output"; ///< the splits: "output" (|w| at the slot), "error"

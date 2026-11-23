@@ -330,10 +330,12 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     open ends the search (unknown).
   - **Nodes:** the crossing neurons split in the order `relu_bab_order`: `output`, the largest
     `|w_k|` at the neuron's slot factor first (its error's slack in the polytope's row), or `error`,
-    the largest line error first; breadth first. Each node is a sign vector, its bound
-    `priv_dual_lower_phases` (`relu_bab_dual_steps` steps from its parent's multipliers; the root
-    `relu_bab_root_steps`), in chunks of a quarter of the batch budget, the open nodes at most
-    `relu_bab_frontier_bytes`. Besides its splits a node holds the triangle faces of the next
+    the largest line error first. The open nodes are parts of at most 1/16 of
+    `relu_bab_frontier_bytes` (0: a quarter of the batch budget), all of them at most that: the
+    last part's children first, so breadth first while they fit, then deeper. Each node is a sign
+    vector, its bound `priv_dual_lower_phases` (`relu_bab_dual_steps` steps from its parent's
+    multipliers, kept in the search dtype; the root `relu_bab_root_steps`), in chunks of a quarter
+    of the batch budget. Besides its splits a node holds the triangle faces of the next
     `relu_bab_faces` neurons of the order. A node is verified when some row's float64 bound exceeds
     `verified_margin`; it is dropped as infeasible when Farkas' certificate holds
     (`relu_bab_farkas_steps`, 0: off; on cifar100 it pruned almost no node at the cost of a second

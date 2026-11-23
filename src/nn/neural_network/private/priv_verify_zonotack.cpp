@@ -1008,17 +1008,17 @@ int ConZonotopeBounding::aux_relu_bab_polytope(NnProblem &problem, int64_t p,
         return base.expand_dims(0) + priv_dual_lower_phases(w, sub, signs(sg, m), steps,
                                                             o_.dual_step_size, dtype, l0, best);
     };
-    // the root: no split, the faces only, with more steps
-    Tensor S = w.zeros_like({1, 0}), L;
-    Tensor lows;
+    // the root: no split, the faces only, with more steps (the multipliers in the search dtype)
+    Tensor L;
     {
         const int64_t m = faces(0);
+        Tensor lows;
         if (m > 0) {
-            lows = bound(subset(m), S, m, w.zeros_like({1, K_, 3 * m}), &L, o_.relu_bab_root_steps);
-            L = L.to(S.dtype());
+            lows = bound(subset(m), w.zeros_like({1, 0}), m, w.zeros_like({1, K_, 3 * m}), &L,
+                         o_.relu_bab_root_steps);
         } else {
             lows = (base - w.abs().sum(-1)).expand_dims(0);
-            L = w.zeros_like({1, K_, 0});
+            L = w.zeros_like({1, K_, 0}).to(dtype);
         }
         // decided at the root: no split
         stats["relu_bab_root_faces_margin"] = lows.max(1).min().item();
@@ -1027,28 +1027,44 @@ int ConZonotopeBounding::aux_relu_bab_polytope(NnProblem &problem, int64_t p,
             return 1;
         }
     }
-    // breadth first, the open nodes at most cap bytes
+    // the open nodes in parts, the last part's children first (breadth first while they fit)
+    struct Part {
+        Tensor S, L;
+        int64_t d = 0;
+    };
+    const auto bytes = [&](const Part &x) {
+        const int64_t D = x.d + faces(x.d);
+        return x.S.shape()[0] * (8 * x.d + 4 * 3 * K_ * D);
+    };
     const int64_t cap = o_.relu_bab_frontier_bytes > 0 ? o_.relu_bab_frontier_bytes
-                                                       : 8 * problem.batch_memory_budget;
-    for (int64_t d = 0; d < U; ++d) {
+                                                       : problem.batch_memory_budget / 4;
+    const int64_t part_cap = std::max<int64_t>(1, cap / 16);
+    std::vector<Part> parts{{w.zeros_like({1, 0}), L, 0}};
+    int64_t held = bytes(parts.back());
+    while (!parts.empty()) {
         if (aux_late()) return 0;
+        const Part x = parts.back();
+        parts.pop_back();
+        held -= bytes(x);
+        const int64_t d = x.d;
+        if (d >= U) return 0; // every crossing neuron split, still open: the lines cannot decide
         // the children split neuron order[d]: s = +1: inactive, z <= 0; -1: active, z >= 0
         const int64_t m0 = faces(d), m1 = faces(d + 1), D1 = d + 1 + m1;
         const PrivSplitTable sub = subset(D1);
-        const int64_t F = S.shape()[0];
-        const Tensor plus = S.ones_like({F, 1});
+        const int64_t F = x.S.shape()[0];
+        const Tensor plus = x.S.ones_like({F, 1});
         const Tensor S2 = Tensor::concat(
-            {Tensor::concat({S, plus}, 1), Tensor::concat({S, plus.negative()}, 1)}, 0);
+            {Tensor::concat({x.S, plus}, 1), Tensor::concat({x.S, plus.negative()}, 1)}, 0);
         // the parents' multipliers: the splits', 0 for the new split, the faces left, 0 for a new
-        const Tensor z1 = L.zeros_like({F, K_, 1});
+        const Tensor z1 = x.L.zeros_like({F, K_, 1});
         const int64_t D0 = d + m0;
         std::vector<Tensor> blocks;
         for (int64_t k = 0; k < 3; ++k) {
-            blocks.push_back(L.slice(2, k * D0, k * D0 + d));
+            blocks.push_back(x.L.slice(2, k * D0, k * D0 + d));
             blocks.push_back(z1);
-            if (m0 > 1) blocks.push_back(L.slice(2, k * D0 + d + 1, (k + 1) * D0));
+            if (m0 > 1) blocks.push_back(x.L.slice(2, k * D0 + d + 1, (k + 1) * D0));
             const int64_t fresh = m1 - std::max<int64_t>(m0 - 1, 0);
-            if (fresh > 0) blocks.push_back(L.zeros_like({F, K_, fresh}));
+            if (fresh > 0) blocks.push_back(x.L.zeros_like({F, K_, fresh}));
         }
         const Tensor L1 = Tensor::concat(blocks, 2);
         const Tensor L2 = Tensor::concat({L1, L1}, 0);
@@ -1086,26 +1102,20 @@ int ConZonotopeBounding::aux_relu_bab_polytope(NnProblem &problem, int64_t p,
             if (open.empty()) continue;
             // the open children stay, with their multipliers and bounds
             keep_s.push_back(s.take(open, 0));
-            keep_l.push_back(best.to(S.dtype()).take(open, 0));
+            keep_l.push_back(best.take(open, 0));
             keep_low.push_back(low.take(open, 0));
         }
         stats["relu_bab_depth"] = std::max(stats["relu_bab_depth"], double(d + 1));
-        if (keep_s.empty()) {
-            stats["relu_bab_polytopes_verified"] += 1;
-            return 1;
-        }
-        S = Tensor::concat(keep_s, 0);
-        L = Tensor::concat(keep_l, 0);
-        lows = Tensor::concat(keep_low, 0);
+        if (keep_s.empty()) continue;
+        const Tensor S = Tensor::concat(keep_s, 0), Lk = Tensor::concat(keep_l, 0);
+        const Tensor lows = Tensor::concat(keep_low, 0);
         stats["relu_bab_open_margin"] = lows.max(1).min().item(); // the weakest open node's
-        stats["relu_bab_frontier_peak"] =
-            std::max(stats["relu_bab_frontier_peak"], double(S.shape()[0]));
         // witnesses: the factors minimizing the row nearest to deciding, at the weakest nodes
         if (o_.relu_bab_witnesses > 0) {
             const StepTimer timer(&stats, "relu_bab_witness_seconds");
             const int64_t M = std::min<int64_t>(o_.relu_bab_witnesses, S.shape()[0]);
             const Tensor pick = lows.max(1).negative().topk(M, 0).second;
-            const Tensor sp = S.take(pick, 0), lp = L.take(pick, 0);
+            const Tensor sp = S.take(pick, 0), lp = Lk.take(pick.to(Lk.dtype()), 0);
             // the Lagrangian's minimizer for the row k* nearest to deciding (all rows must hold)
             const Tensor hot = aux_onehot(lows.take(pick, 0).argmax(1, true), K_).squeeze(1);
             Tensor mins;
@@ -1113,17 +1123,30 @@ int ConZonotopeBounding::aux_relu_bab_polytope(NnProblem &problem, int64_t p,
                                    &mins);
             const Tensor beta = mins.multiply(hot.expand_dims(-1)).sum(1); // (M, q)
             const int64_t q0 = in.G.shape()[1];
-            const Tensor x = in.c + beta.slice(1, 0, q0).matmul(in.G.squeeze(0));
-            if (priv_check_points(problem, x.reshape({M, n0}), ci.broadcast_to({M}), *found_))
+            const Tensor xs = in.c + beta.slice(1, 0, q0).matmul(in.G.squeeze(0));
+            if (priv_check_points(problem, xs.reshape({M, n0}), ci.broadcast_to({M}), *found_))
                 return 2;
         }
-        // the frontier's bytes: the signs and the multipliers
-        if (8 * S.shape()[0] * (d + 1 + 3 * K_ * D1) > cap) {
+        // the children as parts of at most part_cap bytes, all the parts at most cap
+        const Part all{S, Lk, d + 1};
+        const int64_t n = S.shape()[0], b = bytes(all);
+        const int64_t pieces = std::max<int64_t>(1, (b + part_cap - 1) / part_cap);
+        const int64_t size = (n + pieces - 1) / pieces;
+        for (int64_t at = 0; at < n; at += size) {
+            const int64_t to = std::min(n, at + size);
+            parts.push_back({S.slice(0, at, to), Lk.slice(0, at, to), d + 1});
+            held += bytes(parts.back());
+        }
+        double nodes = 0;
+        for (const Part &y : parts) nodes += double(y.S.shape()[0]);
+        stats["relu_bab_frontier_peak"] = std::max(stats["relu_bab_frontier_peak"], nodes);
+        if (held > cap) {
             stats["relu_bab_frontier_cut"] = 1;
             return 0;
         }
     }
-    return 0; // every crossing neuron split, still open: the frozen lines cannot decide
+    stats["relu_bab_polytopes_verified"] += 1;
+    return 1;
 }
 
 // One batch ---------------------------------------------------------------------------------------
