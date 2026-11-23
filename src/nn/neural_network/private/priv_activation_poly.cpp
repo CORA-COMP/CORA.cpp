@@ -171,6 +171,8 @@ double aux_f(Activation a, double x) {
         return std::tanh(x);
     case Activation::square:
         return x * x;
+    case Activation::sign:
+        return x > 0 ? 1.0 : x < 0 ? -1.0 : 0.0;
     }
     CORA_FAIL(Error::wrong_value, "computeApproxPoly: an unknown activation");
 }
@@ -182,6 +184,7 @@ double aux_df(Activation a, int i, double x) {
     if (a == Activation::identity) return i == 1 ? 1.0 : 0.0;
     if (a == Activation::relu) return i == 1 && x > 0 ? 1.0 : 0.0;
     if (a == Activation::square) return i == 1 ? 2.0 * x : i == 2 ? 2.0 : 0.0;
+    if (a == Activation::sign) return 0.0;
     // P as ascending coefficients, starting with P(s) = s
     std::vector<double> P{0.0, 1.0};
     const std::vector<double> factor = a == Activation::sigmoid

@@ -58,6 +58,9 @@ PrivLine priv_line(Activation activation, const Tensor &l, const Tensor &u,
 /// tangent, the radius (u - l)^2 / 8 widened by the rounding (sound in floats).
 PrivLine priv_square_line(const Tensor &l, const Tensor &u);
 
+/// The line of sign over [l, u]: slope 0, the middle and half the gap of sign(l) and sign(u).
+PrivLine priv_sign_line(const Tensor &l, const Tensor &u);
+
 /// The mask (1, h) of the generators whose exponents are all even.
 Tensor priv_even_mask(const Tensor &like, const Exponents &E);
 

@@ -132,11 +132,24 @@ class OnnxNetwork:
         lowered, why = self.layers(max_elements)
         return (cora.NeuralNetwork(*lowered), None) if lowered else (None, why)
 
-    def layers(self, max_elements=2**27):
+    def layers(self, max_elements=2**27, drop_output_softmax=False):
         """(([layer], activation names), None) of the network in float64, or (None, why): a chain
         without a Conv or an AveragePool as dense layers; else one layer per linear node
         (cora.NeuralNetwork's conv2d, gather and dense dicts, never a matrix of a convolution),
-        with the graph keys of a residual connection."""
+        with the graph keys of a residual connection. drop_output_softmax lowers a Softmax that
+        makes the output as the identity (it keeps the order of the outputs: a property that only
+        compares outputs holds for the logits iff for the probabilities); dropped_softmax tells."""
+        self.dropped_softmax = False
+        last = self.nodes[-1] if self.nodes else None
+        softmax = last and last[0] == "Softmax" and last[2][0] == self.output_name
+        if drop_output_softmax and softmax:
+            # the logits as the output, then the graph as it is
+            nodes, output = self.nodes, self.output_name
+            self.nodes, self.output_name, self.dropped_softmax = nodes[:-1], last[1][0], True
+            try:
+                return self.layers(max_elements)
+            finally:
+                self.nodes, self.output_name, self.dropped_softmax = nodes, output, True
         if not any(op in STRUCTURED_OPS for op, _, _, _ in self.nodes):
             dense, why = self.dense_layers(max_elements)
             # a graph (two branches joined, a product of two values) goes layer by layer
@@ -190,6 +203,9 @@ class OnnxNetwork:
 
     def _op_Neg(self, a, _):
         return -a[0]
+
+    def _op_Sign(self, a, _):
+        return torch.sign(a[0])
 
     def _op_ReduceSum(self, a, attrs):
         # the axes from the input (opset 13) or the attribute; none: all (or noop_with_empty_axes)
@@ -868,7 +884,7 @@ MAX_PRODUCT = 4096  # entries of a product of two values at most (its maps are d
 
 UNIT_VECTOR_CHUNK = 2**22  # entries of unit vectors per batch of a Gemm's or a MatMul's matrix
 
-ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh"}  # what cora's layers know
+ACTIVATIONS = {"Relu": "relu", "Sigmoid": "sigmoid", "Tanh": "tanh", "Sign": "sign"}  # cora's
 
 LINEAR_OPS = {
     "Add",

@@ -9,7 +9,8 @@ padded max pool and a quotient of two values do not lower and say why; a batch n
 and a slice of the input concatenated with a branch lower; a product of two values lowers to x^2
 layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
 builds its matrix in chunks of unit vectors, far below the identity's memory; the verifier's
-backend is torch for a convolution, eigen for a dense network.
+backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
+layers, its output Softmax dropped for a property that only compares outputs.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -200,6 +201,29 @@ class Lowering(unittest.TestCase):
             self.assertLess(float(grown), 400.0)  # MiB
             W = numpy_helper.to_array(m.graph.initializer[2])
             self.assertTrue(np.array_equal(np.load(out), W.astype(np.float64)))
+
+    def test_signs_and_an_output_softmax(self):
+        # a binarized network: sign layers; its output Softmax dropped, the logits equal the graph's
+        m = sign_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        self.assertIsNotNone(net.layers()[1])  # the Softmax does not lower by itself
+        (layers, acts), why = net.layers(drop_output_softmax=True)
+        self.assertIsNone(why)
+        self.assertTrue(net.dropped_softmax)
+        self.assertEqual(acts.count("sign"), 2)
+        nn = cora.NeuralNetwork(layers, acts)
+        x = torch.as_tensor(RNG.uniform(-1, 1, (6, net.num_inputs)))
+        logits = torch.softmax(torch.as_tensor(np.asarray(nn.evaluate(x))), -1)
+        np.testing.assert_allclose(logits.numpy(), net(x).numpy(), rtol=1e-12, atol=1e-12)
+        # a property of comparisons only keeps the order of the outputs; one with a constant not
+        from cora.nn_verify import _compares_outputs
+        from cora.vnnlib import parse_vnnlib
+
+        box = "".join(f"(declare-const X_{i} Real)\n(assert (<= X_{i} 1))\n(assert (>= X_{i} 0))\n"
+                      for i in range(3))
+        outs = "(declare-const Y_0 Real)\n(declare-const Y_1 Real)\n"
+        self.assertTrue(_compares_outputs(parse_vnnlib(box + outs + "(assert (>= Y_0 Y_1))\n", 3, 2)))
+        self.assertFalse(_compares_outputs(parse_vnnlib(box + outs + "(assert (>= Y_0 0.5))\n", 3, 2)))
 
     def test_backend_by_network(self):
         # torch for a convolution (or a GPU), eigen for a dense network (cora.nn_verify.load)
@@ -394,6 +418,20 @@ def product_net():
         helper.make_node("Mul", ["r", "x"], ["y"]),
     ]
     return model(nodes, [("x", [1, 3])], [("y", [1, 3])], {"W1": weight(3, 3)})
+
+
+def sign_net():
+    """A binarized network: sign(x W1), + 0.1, sign, then W2 and a Softmax (traffic_signs')."""
+    nodes = [
+        helper.make_node("MatMul", ["x", "W1"], ["h"]),
+        helper.make_node("Sign", ["h"], ["s"]),
+        helper.make_node("Add", ["s", "eps"], ["a"]),
+        helper.make_node("Sign", ["a"], ["t"]),
+        helper.make_node("MatMul", ["t", "W2"], ["z"]),
+        helper.make_node("Softmax", ["z"], ["y"]),
+    ]
+    init = {"W1": weight(3, 4), "eps": np.full((1, 4), 0.1, np.float32), "W2": weight(4, 2)}
+    return model(nodes, [("x", [1, 3])], [("y", [1, 2])], init)
 
 
 def quotient_net():

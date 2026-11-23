@@ -64,6 +64,11 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
             h = z.tanh();
             derivative = one - h.multiply(h);
             break;
+        case Activation::sign:
+            // a step: the derivative 0
+            h = z.sign();
+            derivative = zero;
+            break;
         case Activation::square:
             // x^2 and 2 x
             h = z.square();
