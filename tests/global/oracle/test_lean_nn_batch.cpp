@@ -38,6 +38,7 @@ lean::Zonotope aux_without_bias(const lean::Zonotope &Y, int64_t m,
     const Tensor G = Y.generators().gather();
     // the input's columns, then the activations' (every layer adds one per output)
     std::vector<int64_t> keep;
+    keep.reserve(static_cast<std::size_t>(m));
     for (int64_t j = 0; j < m; ++j) keep.push_back(j);
     int64_t h = m;
     for (std::size_t k = 0; k < layers.size(); ++k) {
