@@ -7,12 +7,11 @@ for bit; a residual connection and a ResNet block lower to layers with residuals
 folded into the convolutions) and max pools to pairs of b + relu(a - b), equal to the graph; a
 padded max pool and a quotient of two values do not lower and say why; a batch norm of features
 and a slice of the input concatenated with a branch lower; a product of two values lowers to x^2
-layers, as do a ReduceSum, a difference of branches and scalings; a Gemm after a wide convolution
-builds its matrix far below the identity's memory, a Gemm or a MatMul of a row and a constant
-matrix from the weights themselves; the verifier's
-backend is torch for a convolution, eigen for a dense network; a binarized network lowers to sign
-layers, its output Softmax dropped for a property that only compares outputs; vit_2023's,
-nn4sys' and ml4acopf's shapes lower and equal the graph.
+layers, as do a ReduceSum, a difference of branches and scalings; a Gemm or a MatMul of a row
+and a constant matrix takes the weights themselves, far below the identity's memory; the
+verifier's backend is torch for a convolution, eigen for a dense network; a binarized network
+lowers to sign layers, its output Softmax dropped for a property that only compares outputs;
+vit_2023's, nn4sys' and ml4acopf's shapes lower and equal the graph.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -205,9 +204,7 @@ class Lowering(unittest.TestCase):
             self.assertTrue(np.array_equal(np.load(out), W.astype(np.float64)))
 
     def test_constant_matrices_without_unit_vectors(self):
-        # a Gemm (alpha, B not transposed) and a MatMul after a convolution: their weights bit for
-        # bit, the network equal to the graph; a transA, a non-finite weight and a batch of rows
-        # keep the unit vectors
+        # a Gemm (alpha, B as is) and a MatMul after a convolution: their weights, bit for bit
         m = conv_gemm_matmul_net()
         net = OnnxNetwork(m, dtype=torch.float64)
         (layers, acts), why = net.layers()
@@ -218,6 +215,7 @@ class Lowering(unittest.TestCase):
         x = torch.as_tensor(RNG.uniform(-1, 1, (4, net.num_inputs)))
         np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
                                    net(x).numpy(), rtol=1e-12, atol=1e-12)
+        # a transA, a non-finite weight and a batch of rows keep the unit vectors
         B = torch.ones(3, 2, dtype=torch.float64)
         self.assertIsNone(_constant_matrix("Gemm", [None, B], {"transA": 1}, (1, 3)))
         self.assertIsNone(_constant_matrix("MatMul", [None, B * float("inf")], {}, (1, 3)))
