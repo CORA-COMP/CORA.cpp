@@ -105,6 +105,24 @@ class Verdicts(unittest.TestCase):
         self.assertIn("Sin", result.stats["bounding"])
 
 
+class Precision(unittest.TestCase):
+    def test_tf32_off_at_first_torch_tensor(self):
+        # a fresh process: the first torch tensor handed to cora turns TensorFloat-32 off
+        import subprocess
+        import sys
+
+        code = (
+            "import torch, cora\n"
+            "torch.backends.cudnn.allow_tf32 = True\n"
+            "torch.backends.cuda.matmul.allow_tf32 = True\n"
+            "cora.Zonotope(torch.zeros(2, dtype=torch.float64), torch.eye(2, dtype=torch.float64))\n"
+            "print(torch.backends.cudnn.allow_tf32, torch.backends.cuda.matmul.allow_tf32)\n"
+        )
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                             env=dict(os.environ), check=True).stdout.split()
+        self.assertEqual(out[-2:], ["False", "False"])
+
+
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 RNG = np.random.default_rng(11)

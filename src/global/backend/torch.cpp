@@ -7,7 +7,7 @@
 // CORA.cpp only: the backends of Tensor replace MATLAB's matrices.
 // Authors:       Claude Sonnet 5.5
 // Written:       01-October-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cora/global/backend/torch.h"
@@ -15,6 +15,7 @@
 #include "cora/global/threads.h"
 
 #include <limits>
+#include <mutex>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -350,6 +351,20 @@ struct TorchBackend : Tensor::Backend {
     }
 };
 
+// Precision ---------------------------------------------------------------------------------------
+
+/// TensorFloat-32 in libtorch's float32 products and convolutions on CUDA (process-wide).
+void aux_set_tf32(bool on) {
+    at::globalContext().setAllowTF32CuBLAS(on);
+    at::globalContext().setAllowTF32CuDNN(on);
+}
+
+/// Off at CORA.cpp's first use of libtorch, through a backend or a wrapped tensor alike.
+void aux_tf32_default() {
+    static std::once_flag once;
+    std::call_once(once, [] { aux_set_tf32(false); });
+}
+
 } // namespace
 
 
@@ -358,12 +373,18 @@ struct TorchBackend : Tensor::Backend {
 // Conversion --------------------------------------------------------------------------------------
 
 std::shared_ptr<const Tensor::Backend> torch_backend(const torch::Device &device,
-                                                     bool custom_backward) {
+                                                     bool custom_backward, bool tf32) {
     configure_threads(); // libtorch's pools, before any work
+    // float32 on CUDA in full precision unless asked: an attack's point must hold in ONNX Runtime
+    aux_tf32_default();
+    aux_set_tf32(tf32);
     return std::make_shared<TorchBackend>(device, custom_backward);
 }
 
+bool torch_tf32() { return at::globalContext().allowTF32CuBLAS(); }
+
 Tensor from_torch(const torch::Tensor &t, bool custom_backward) {
+    aux_tf32_default();
     return Tensor(std::make_shared<TorchTensor>(aux_floating(t), custom_backward));
 }
 

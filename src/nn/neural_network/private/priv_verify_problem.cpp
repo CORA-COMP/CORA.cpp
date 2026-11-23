@@ -266,7 +266,8 @@ Tensor NnProblem::loss(const Tensor &y, const Tensor &cases) const {
     return Tensor::where(mine, worst, worst.full_like(worst.shape(), kInf)).min(1);
 }
 
-Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss) const {
+Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss,
+                                     const Tensor *targets) const {
     const NeuralNetwork &net = *net32_;
     // the forward pass, keeping the inputs of the activations and the outputs (outs[k + 1])
     const std::vector<NeuralNetwork::Layer> &layers = net.layers();
@@ -308,8 +309,10 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         per_case_ ? cm.valid : cases.expand_dims(1).equal(poly_case32_.expand_dims(0));
     if (loss)
         *loss = Tensor::where(mine, margin.max(2), value.full_like(value.shape(), kInf)).min(1);
+    // the polytope a sample aims at (targets, (S, 1)), else the best one of its case
     const Tensor best =
-        Tensor::where(mine, value, value.full_like(value.shape(), kInf)).argmin(1, true);
+        targets ? *targets
+                : Tensor::where(mine, value, value.full_like(value.shape(), kInf)).argmin(1, true);
     const Tensor rows = margin.take_along_axis(best.expand_dims(-1), 1).squeeze(1);
     // d/dy: the violated rows and a tenth of the worst row
     const Tensor worst = rows.argmax(1, true);
@@ -379,7 +382,7 @@ int64_t NnProblem::attack_batch() const {
     }
     elements += 2 * work;
     const int64_t itemsize = options_.dtype == DType::float32 ? 4 : 8; // NOLINT(backend): bytes
-    return std::max<int64_t>(1, memory_budget / (4 * elements * itemsize));
+    return std::max<int64_t>(1, batch_memory_budget / (4 * elements * itemsize));
 }
 
 // Candidates --------------------------------------------------------------------------------------
