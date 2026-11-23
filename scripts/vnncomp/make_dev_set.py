@@ -164,6 +164,11 @@ SOURCES = {
         "https://github.com/huanzhang12/vnncomp2024_tinyimagenet_benchmark.git",
         "771377743f16ee30ecb00029268ba62ec7e9e78c",
     ),
+    # vit: two CIFAR-10 vision transformers; the seed shuffles each model's pool of images
+    "vit_2023": (
+        "https://github.com/shizhouxing/ViT_vnncomp2023.git",
+        "0cc5c7f3e404e624c63643911d4350339f441dc5",
+    ),
 }
 
 

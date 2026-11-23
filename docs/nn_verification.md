@@ -252,6 +252,8 @@ come only at the very end.
   the copy), and beartype from `--libs` (`genlibs/relusplitter_2026`, outside the venv: torch 2.4's
   ONNX exporter type-checks with an installed beartype and fails). Its node names carry random ids,
   so a seed gives the same weights and properties, not the same bytes.
+  vit's generator shuffles each model's pool of CIFAR-10 images (242 for ibp_3_3_8, 4847 for
+  pgd_2_3_16) and takes 100 of each, so about 40 of a seed's 200 are official ones, left out.
 - **Data:** networks and instances stay outside the repository (e.g. `~/vnncomp/dev_sets`).
 
 ## Running
