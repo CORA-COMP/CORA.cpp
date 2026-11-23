@@ -425,13 +425,12 @@ class OnnxNetwork:
         return torch.tensor(list(a[0].shape), dtype=torch.int64, device=self.device)
 
     def _op_Gather(self, a, attrs):
-        # (a scalar index drops the axis: the shape as a tuple, which may be empty)
-        return torch.index_select(a[0], attrs.get("axis", 0), a[1].reshape(-1)).reshape(
-            (
-                *a[0].shape[: attrs.get("axis", 0)],
-                *a[1].shape,
-                *a[0].shape[attrs.get("axis", 0) + 1 :],
-            )
+        # (a scalar index drops the axis: the shape as a tuple, which may be empty; a negative
+        # index counts from the end)
+        axis = attrs.get("axis", 0) % a[0].dim()
+        index = a[1].reshape(-1) % a[0].shape[axis]
+        return torch.index_select(a[0], axis, index).reshape(
+            (*a[0].shape[:axis], *a[1].shape, *a[0].shape[axis + 1 :])
         )
 
     def _op_Slice(self, a, attrs):

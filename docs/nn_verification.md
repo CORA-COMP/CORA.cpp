@@ -104,6 +104,10 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   8 GiB budget keeps them all (2.6 GiB peak) and finishes a first iteration, but the margin's
   lower bound stays below -20 where the network's linearization varies by 0.33 over the box: the
   products and the softmax's lines are far too loose to verify yet.
+- **nn4sys (Phase 4).** A Gather's negative index counts from the end (pensieve's last entry of a
+  row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
+  output to 6e-7. Not yet: pensieve_parallel (a cube by Pow, a quotient of two values) and mscn
+  (Split, products of values with the inputs' masks, a quotient by their sum).
 - **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
   matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
   onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of
