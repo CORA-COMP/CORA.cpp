@@ -398,6 +398,71 @@ void dual_bounds(const std::string &b) {
         }
         check(holds, b + ": the dual certificate holds the sampled outputs, above the zonotope's");
     }
+    // the table of one set's crossing neurons: priv_dual_rows' rows of their splits
+    const ZonoNet net(nn, 3, 6.0, "bounds", "length");
+    const Tensor x0 = x.slice(0, 0, 1), r0 = r.slice(0, 0, 1);
+    const ZonoInput in = net.input_zonotope(x0, r0);
+    const ZonoPropagation root = net.forward(in.c, in.dr, in.G, Tensor(), nullptr, true);
+    const PrivSplitTable table = priv_split_table(root, net);
+    const std::vector<double> ids = table.ids.data();
+    const int64_t U = int64_t(ids.size());
+    check(U >= 2, b + ": the set has crossing neurons to split");
+    if (U < 2) return;
+    // the first and the last crossing neuron, below and above 0: priv_dual_rows' -id and +id
+    const Tensor some = Tensor::like(x0, {-ids.front(), ids.back()}, {1, 2});
+    const auto [Cd, dd] = priv_dual_rows(root, net, some, 0);
+    const int64_t L = Cd.shape()[1] / 2; // one block of the two splits per layer
+    const Tensor Cs = Cd.reshape({1, L, 2, net.q}).sum(1), ds = dd.reshape({1, L, 2}).sum(1);
+    const Tensor R = table.rows.take({0, U - 1}, 0), c = table.c.take({0, U - 1}, 0),
+                 dr = table.dr.take({0, U - 1}, 0);
+    const Tensor sg = Tensor::like(x0, {-1.0, 1.0}, {1, 2});
+    check(test::close(R.multiply(sg.reshape({2, 1})).expand_dims(0), Cs, 1e-12) &&
+              test::close(sg.multiply(c.negative()) + dr, ds, 1e-12),
+          b + ": the table's rows with the signs are priv_dual_rows'");
+    // the bound of nodes of shared rows: at 0 steps priv_dual_lower's, better with steps, sound
+    const Tensor wr = root.G.matmul(rows.matrix_transpose()).permute_dims({0, 2, 1}).squeeze(0);
+    const Tensor nodes = Tensor::like(x0, {-1.0, 1.0, 1.0, -1.0, 1.0, 1.0}, {3, 2});
+    const Tensor at0 = priv_dual_lower_signs(wr, R, c, dr, nodes, 0, 0.1, DType::float32);
+    bool same = true;
+    for (int64_t k = 0; k < 3; ++k) {
+        const Tensor sk = nodes.slice(0, k, k + 1);
+        const Tensor Ck = R.multiply(sk.reshape({2, 1})).expand_dims(0);
+        const Tensor dk = sk.multiply(c.negative()) + dr;
+        same =
+            same &&
+            test::close(at0.slice(0, k, k + 1),
+                        priv_dual_lower(wr.expand_dims(0), Ck, dk, 0, 0.1, DType::float32), 1e-10);
+    }
+    check(same, b + ": the nodes' bound at 0 steps is priv_dual_lower's");
+    Tensor best;
+    const Tensor at30 =
+        priv_dual_lower_signs(wr, R, c, dr, nodes, 30, 0.1, DType::float32, Tensor(), &best);
+    const Tensor warm = priv_dual_lower_signs(wr, R, c, dr, nodes, 0, 0.1, DType::float32, best);
+    check(at30.greater_equal(at0 - 1e-12).min().item() > 0 && test::close(warm, at30, 1e-6),
+          b + ": the steps raise the nodes' bound, a warm start keeps it");
+    // sound: below the sampled generator sums of the factors that satisfy each node's rows
+    std::vector<double> bs(std::size_t(20000 * net.q));
+    rng.uniform(bs.data(), bs.size(), -1.0, 1.0);
+    const Tensor beta = Tensor::from_data(bs, {20000, net.q});
+    const Tensor zs = beta.matmul(R.matrix_transpose()) + c; // the split neurons' inputs
+    const Tensor vals = beta.matmul(wr.matrix_transpose());  // (20000, K)
+    const std::vector<double> z = zs.data(), v = vals.data(), lo = at30.data(), ns = nodes.data(),
+                              rad = dr.data();
+    const int64_t K = wr.shape()[0];
+    bool sound = true;
+    for (int64_t k = 0; k < 3; ++k)
+        for (int64_t p = 0; p < 20000; ++p) {
+            bool in_node = true;
+            for (int64_t j = 0; j < 2; ++j) {
+                // s_j z_j <= dr_j: the input's side, its error at the worst
+                const double sj = ns[std::size_t(k * 2 + j)];
+                in_node = in_node && sj * z[std::size_t(p * 2 + j)] <= rad[std::size_t(j)];
+            }
+            if (!in_node) continue;
+            for (int64_t i = 0; i < K; ++i)
+                sound = sound && lo[std::size_t(k * K + i)] <= v[std::size_t(p * K + i)] + 1e-9;
+        }
+    check(sound, b + ": the nodes' bound holds the sampled factors in each node");
 }
 
 /// Fourier-Motzkin in both orders holds the feasible points, and the orders agree closely.
