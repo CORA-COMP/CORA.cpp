@@ -69,7 +69,7 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
         return Instance(str(onnx_path), None, why, None, "")
     layers, activations = lowered
     if backend == "auto":
-        backend = choose_backend(layers, device)
+        backend = choose_backend(layers, device, activations)
     convert = (lambda t: t.to(device)) if backend == "torch" else (lambda t: t.numpy())
 
     def one(layer):
@@ -104,10 +104,11 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     return Instance(str(onnx_path), network, "", prop, text, backend)
 
 
-def choose_backend(layers, device="cpu"):
+def choose_backend(layers, device="cpu", activations=()):
     """The faster Tensor backend of a lowered network, as measured on the dev sets: torch for a
-    network with a convolution (its GEMMs about twice Eigen's at CORACPP_NATIVE=OFF) or on a GPU,
-    eigen for dense networks; eigen if the module has no torch."""
+    network with a convolution (its GEMMs about twice Eigen's at CORACPP_NATIVE=OFF), with a
+    product (lsnc_relu's graph: 1.7 times the boxes per second) or on a GPU, eigen for the other
+    dense networks; eigen if the module has no torch."""
     import cora
 
     if not cora.has_torch:
@@ -116,7 +117,7 @@ def choose_backend(layers, device="cpu"):
         return "torch"
     conv = any(isinstance(la, dict) and ("conv2d" in la or "conv_transpose2d" in la)
                for la in layers)
-    return "torch" if conv else "eigen"
+    return "torch" if conv or "product" in activations else "eigen"
 
 
 def verify(instance, timeout, options=None):

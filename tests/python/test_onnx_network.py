@@ -275,6 +275,7 @@ class Lowering(unittest.TestCase):
         self.assertEqual(choose_backend(conv[0]), "torch")
         self.assertEqual(choose_backend(dense[0]), "eigen")
         self.assertEqual(choose_backend(dense[0], "cuda:0"), "torch")
+        self.assertEqual(choose_backend(dense[0], "cpu", ["relu", "product"]), "torch")
 
     def test_size_cap(self):
         # max_elements refuses unit-vector batches beyond it

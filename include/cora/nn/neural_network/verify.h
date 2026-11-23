@@ -99,6 +99,9 @@ struct NnVerifyOptions {
     std::string conzonotope_bounding_method = "fourier-motzkin"; ///< or "dual-iter" (the same)
     int64_t polytope_bound_approx_max_iter = 8;                  ///< Fourier-Motzkin passes
     int64_t refinement_max_iter = 8; ///< propagations of Prop. 2 per set, plus one
+    /// A child leaves Prop. 2's passes once its input box moves by at most this much in a pass, in
+    /// the factors' [-1, 1] (CORA.cpp only; 0: only a box that did not move, as CORA's results).
+    double refinement_min_move = 0;
     int64_t num_neuron_splits = 0;
     std::string neuron_split_position = "zero"; ///< or "middle"
     double num_relu_constraints = 0;

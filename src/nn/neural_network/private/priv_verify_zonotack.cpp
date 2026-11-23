@@ -1278,9 +1278,16 @@ std::pair<Children, int64_t> ConZonotopeBounding::aux_refine(const Tensor &ci, c
         for (std::size_t i = 0; i < act.size(); ++i)
             if (gone[i] > 0) empty[std::size_t(act[i])] = 1.0;
         if (it + 1 >= o_.refinement_max_iter) break;
-        // done: an empty child, or one whose input box did not move (a pass would repeat it)
+        // done: an empty child, or one whose box moved by at most refinement_min_move (0: not)
+        const double tol = o_.refinement_min_move;
         const std::vector<double> same =
-            bc0.equal(bc0.zeros_like()).multiply(br0.equal(br0.ones_like())).all(1).data();
+            tol > 0
+                ? bc0.abs()
+                      .less_equal(bc0.full_like(bc0.shape(), tol))
+                      .multiply(br0.greater_equal(br0.full_like(br0.shape(), 1.0 - tol)))
+                      .all(1)
+                      .data()
+                : bc0.equal(bc0.zeros_like()).multiply(br0.equal(br0.ones_like())).all(1).data();
         std::vector<int64_t> stay, done;
         for (std::size_t i = 0; i < act.size(); ++i)
             (gone[i] > 0 || same[i] > 0 ? done : stay).push_back(int64_t(i));

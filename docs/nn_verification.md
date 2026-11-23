@@ -169,7 +169,10 @@ collins score the same either way. On the three, 3 steps or `optimize_gap` 0.1 s
 lsnc_relu takes no alpha-CROWN steps either. Its boxes are verified by the refinement (an empty
 child), and on instance 0 of seed 1001 the steps took 27 s of 57 s and verified none of 7410 sets.
 Without them, the 8 sample rows of each dev seed (25 s) give 2 sat against 1 sat (0 unsat either
-way), and instance 0 closes as unsat in 250 s.
+way), and instance 0 closes as unsat in 250 s. Its children also leave the refinement once a pass
+moves their box by at most 0.03 (`refinement_min_move`), and its networks run on torch (a product:
+`choose_backend`). Together, instance 0 closes in 126 s (156 s on torch alone); the sample rows'
+verdicts stay the same (2 sat, 14 unknown), since the official timeout is 25 s.
 
 - **PGD** (CORA's `computePGDAttack`): per box `pgd_restarts` samples (as many as the memory budget
   holds), the center first, sign steps of `pgd_step_size` times the box radius on the objective (per
@@ -210,7 +213,9 @@ way), and instance 0 closes as unsat in 250 s.
      `refinement_max_iter - 1` times. An empty child is verified. A child that is empty, or whose
      input box did not move in a pass (the next pass would repeat it), leaves the passes (CORA.cpp
      only: the same children and boxes as CORA's fixed count, with fewer propagations; lsnc_relu
-     instance 0 needs half the Fourier-Motzkin and propagation time).
+     instance 0 needs half the Fourier-Motzkin and propagation time). `refinement_min_move` > 0
+     (CORA.cpp only, default 0) also lets a child leave once its box moves by at most that much in
+     the factors' `[-1, 1]` (a looser box, never an unsound one).
 - **Queue:** `mini_batch_size` sets per batch (`half-half`: half from the front, half from the back),
   the children in front (`verify_enqueue_type`), at most what `memory_budget` holds; a batch starts
   only if the last one's time fits before the deadline, and the deadline is checked per chunk. Out
