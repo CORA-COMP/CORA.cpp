@@ -42,6 +42,8 @@
 #include "cora/cont_set/zonotope/zonotope.h"
 
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -236,6 +238,34 @@ class PolyZonotope : public ContSet {
     bool isequal(const PolyZonotope &S, Tol tol = std::nullopt) const;
     bool isequal(const Zonotope &Z, Tol tol = std::nullopt) const;
     bool isequal(const Interval &I, Tol tol = std::nullopt) const;
+
+    /// The sum with polynomial zonotopes whose factors are the same where the identifiers are
+    /// (CORA's sum): the centers add, the generators join over the union of the identifiers.
+    PolyZonotope sum(const std::vector<PolyZonotope> &list) const;
+
+    /// The sets one below the other, in pairs, shared identifiers staying one factor (CORA's
+    /// stack).
+    static PolyZonotope stack(const std::vector<PolyZonotope> &sets);
+
+    /// The factors ids (default: all) set to the values x (CORA's resolve): constants move to the
+    /// center, equal exponents merge. A set without generators is a point, as a PolyZonotope here.
+    PolyZonotope resolve(const Tensor &x,
+                         const std::optional<std::vector<int64_t>> &ids = std::nullopt) const;
+
+    /// The factors ids (default: all) replaced by the coordinates of inner, polynomials in its own
+    /// factors, which are the same where the identifiers are (CORA's subs); inner has no
+    /// independent generators.
+    PolyZonotope subs(const PolyZonotope &inner,
+                      const std::optional<std::vector<int64_t>> &ids = std::nullopt) const;
+
+    /// A polynomial zonotope that contains the set and has no independent generators (CORALean's
+    /// restructure): the independent part is boxed to one generator per coordinate, made dependent.
+    PolyZonotope restructure() const;
+
+    /// Whether the set is also of the CORA type (CORA's representsa_), judged on the compact set;
+    /// the converted set is not returned. The vertex test of "polytope", "conZonotope" and
+    /// "zonoBundle" for a set that is no zonotope is Error::not_supported.
+    bool representsa(const std::string &type, Tol tol = std::nullopt) const;
 
 
   protected:
