@@ -39,6 +39,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 // the folder of the instance data, set before the benchmark header is read
 #define CORACPP_BENCHMARK_DATA "."
@@ -59,6 +60,7 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
     std::vector<lean::NnLayer> layers;
     for (std::size_t k = 0; k < nn.layers().size(); ++k) {
         layers.push_back(lean::NnLayer::linear(nn.layers()[k].W, nn.layers()[k].b));
+        // the oracle's layer of the activation
         switch (nn.activations()[k]) {
         case Activation::relu:
             layers.push_back(lean::NnLayer::relu());
@@ -71,6 +73,8 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
             break;
         case Activation::identity:
             break;
+        case Activation::square:
+            throw std::invalid_argument("aux_lean_layers: the oracle has no square layer");
         }
     }
     return layers;
