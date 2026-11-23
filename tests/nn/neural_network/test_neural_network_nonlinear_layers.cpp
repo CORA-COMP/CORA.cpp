@@ -64,6 +64,7 @@ std::vector<double> aux_softmax(const std::vector<double> &x) {
     double total = 0;
     for (const double v : x) total += std::exp(v - top);
     std::vector<double> y;
+    y.reserve(x.size());
     for (const double v : x) y.push_back(std::exp(v - top) / total);
     return y;
 }

@@ -1217,7 +1217,7 @@
   "nn/neuralNetwork/display": "todo",
   "nn/neuralNetwork/enumerateLayers": "todo",
   "nn/neuralNetwork/evaluate": "oracle",
-  "nn/neuralNetwork/evaluateZonotopeBatch": "ported",
+  "nn/neuralNetwork/evaluateZonotopeBatch": "oracle",
   "nn/neuralNetwork/evaluateZonotopeBatch_": "oracle",
   "nn/neuralNetwork/evaluate_": "oracle",
   "nn/neuralNetwork/explain": "todo",
