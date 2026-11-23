@@ -35,6 +35,7 @@
 // CORA: contSet/@polyZonotope/lift_.m
 // CORA: contSet/@polyZonotope/partZonotope.m
 // CORA: contSet/@polyZonotope/convHull_.m
+// CORA: contSet/@polyZonotope/outerApprox.m
 // CORA: contSet/@polyZonotope/jacobian.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
@@ -313,6 +314,11 @@ class PolyZonotope : public ContSet {
     /// with the exponent of k lowered by one, center 0.
     std::vector<PolyZonotope>
     jacobian(const std::optional<std::vector<int64_t>> &ids = std::nullopt) const;
+
+    /// A polynomial zonotope with the small dependent generators boxed (CORA's outerApprox): those
+    /// that depend on a factor outside ids, sorted by size, while their sum stays within tol times
+    /// the largest generator; they leave the dependent part and join the independent box.
+    PolyZonotope outer_approx(double tol, const std::vector<int64_t> &ids) const;
 
     /// The set in a space of dimension N with state i at position dims[i] (CORA's lift_, whose
     /// projection is the inverse permutation): a permutation of the coordinates.

@@ -527,7 +527,7 @@
   "contSet/polyZonotope/noIndep": "property",
   "contSet/polyZonotope/onlyId": "property",
   "contSet/polyZonotope/origin": "untested",
-  "contSet/polyZonotope/outerApprox": "todo",
+  "contSet/polyZonotope/outerApprox": "property",
   "contSet/polyZonotope/partZonotope": "property",
   "contSet/polyZonotope/plot3D": "todo",
   "contSet/polyZonotope/plus": "oracle",

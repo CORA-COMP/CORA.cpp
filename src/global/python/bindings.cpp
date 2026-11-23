@@ -3224,6 +3224,8 @@ void bind_poly_zonotope(py::module_ &m) {
              py::arg("I"), "The same for a box")
         .def("jacobian", &PolyZonotope::jacobian, py::arg("id") = py::none(),
              "The derivative of the dependent part along each factor id")
+        .def("outer_approx", &PolyZonotope::outer_approx, py::arg("tol"), py::arg("id"),
+             "The set with the dependent generators below tol boxed")
         // the grouping by exponents
         .def("part_zonotope", &PolyZonotope::part_zonotope, py::arg("id"),
              "A set that holds the set, its generators grouped by the exponents of the factors id")

@@ -53,6 +53,7 @@ Reviewed:      ---
 # CORA: contSet/@polyZonotope/partZonotope.m
 # CORA: contSet/@polyZonotope/convHull_.m
 # CORA: contSet/@polyZonotope/jacobian.m
+# CORA: contSet/@polyZonotope/outerApprox.m
 
 import unittest
 
@@ -269,6 +270,15 @@ class Maps(unittest.TestCase):
         self.assertEqual(len(P.jacobian([2])), 1)
         with self.assertRaises(cora.errors.WrongValue):
             P.jacobian([9])
+
+    def test_outer_approx(self):
+        P = known()
+        # a large tolerance boxes every generator that depends on a factor outside id
+        self.assertEqual(P.outer_approx(10.0, []).num_dependent, 0)
+        self.assertEqual(P.outer_approx(10.0, [1, 2]).num_dependent, 2)
+        self.assertEqual(P.outer_approx(0.0, []).num_dependent, 2)
+        with self.assertRaises(cora.errors.WrongValue):
+            P.outer_approx(-1.0, [])
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
