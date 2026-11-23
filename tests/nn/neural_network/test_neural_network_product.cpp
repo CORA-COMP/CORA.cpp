@@ -188,13 +188,57 @@ void verify_decides(const std::string &b) {
         o.exact_backprop = exact;
         presets.emplace_back(exact ? "gradients" : "held gradients", o);
     }
+    // x0 (x0 + x1) over [0, 1]^2 lies in [0, 2], its first bound is [-0.5625, 2]: splits decide
+    const NeuralNetwork split =
+        aux_product_network(Tensor({{1.0, 0.0}, {1.0, 1.0}}), Tensor({0.0, 0.0}));
+    const std::vector<double> lo2{0.0, 0.0}, hi2{1.0, 1.0};
     for (auto [name, o] : presets) {
         if (b == "lean") o.dtype = DType::float64;
         check(nn.verify(aux_property(lo, hi, 0.2, false), 20, o).status == "unsat",
               b + " " + name + ": x0 x1 >= 0.2 is unsat");
         check(nn.verify(aux_property(lo, hi, 0.1, false), 20, o).status == "sat",
               b + " " + name + ": x0 x1 >= 0.1 is sat");
+        check(split.verify(aux_property(lo2, hi2, -0.3, true), 20, o).status == "unsat",
+              b + " " + name + ": x0 (x0 + x1) <= -0.3 is unsat after splits");
+        check(split.verify(aux_property(lo2, hi2, 1.9, false), 20, o).status == "sat",
+              b + " " + name + ": x0 (x0 + x1) >= 1.9 is sat");
     }
+}
+
+/// The helpers: the halves of an odd width are refused, the derivative of every activation as a
+/// slope against central differences, and a product has no line of its bounds alone.
+void helpers(const std::string &b) {
+    check(test::raises([] { (void)priv_halves(Tensor({{1.0, 2.0, 3.0}})); },
+                       Error::dimension_mismatch),
+          b + ": the halves of an odd width are refused");
+    const Tensor x({{0.3, -0.7, 1.6, 2.4}});
+    int wrong = 0;
+    for (const Activation a : {Activation::identity, Activation::relu, Activation::sigmoid,
+                               Activation::tanh, Activation::square, Activation::sign,
+                               Activation::exp, Activation::reciprocal, Activation::product}) {
+        // d/dx_j of sum_i g_i f(x)_i with g = 1 for every j: the slope's transpose times ones
+        const Tensor g = priv_slope_times_t(a, priv_derivative(a, x), x.ones_like());
+        const std::vector<double> got = g.data();
+        for (int64_t j = 0; j < 4; ++j) {
+            // the central difference in x_j
+            std::vector<double> up = x.data(), down = x.data();
+            up[std::size_t(j)] += 1e-6;
+            down[std::size_t(j)] -= 1e-6;
+            const double fd = (priv_apply(a, Tensor::from_data(up, {1, 4})).sum() -
+                               priv_apply(a, Tensor::from_data(down, {1, 4})).sum())
+                                  .item() /
+                              2e-6;
+            wrong += std::abs(fd - got[std::size_t(j)]) > 1e-5;
+        }
+    }
+    check(wrong == 0, b + ": the derivatives of the nine activations as slopes");
+    check(test::raises(
+              [] {
+                  (void)priv_verify_line(Activation::product, Tensor({{0.0, 0.0}}),
+                                         Tensor({{1.0, 1.0}}), "singh");
+              },
+              Error::not_supported),
+          b + ": a product has no line of its bounds");
 }
 
 /// The interval center through a negative slope: (x0 + x1)^2 and 1 / max(x0 + x1, 1) with x1
@@ -231,6 +275,7 @@ int main() {
         tighter_than_squares(b);
         verify_decides(b);
         negative_slopes(b);
+        helpers(b);
     });
     return test::finish("neuralNetwork product");
 }
