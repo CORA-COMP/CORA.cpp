@@ -3,8 +3,9 @@
 The 1.0 reader on boxes, comparisons of two outputs and of an output with a constant (both
 directions), a disjunction of conjunctions, and a disjunction of input boxes (ACAS Xu's property
 6) merged per box; a 2.0 text, written by to_vnnlib2 from the 1.0 text (exponents as decimals),
-reads to the same arrays bit for bit; errors for unbounded and empty inputs; the specifications as
-cora objects.
+reads to the same arrays bit for bit; a 2.0 input fixed by ==, a scaled bound and a box of 2000
+inputs; errors for unbounded and empty inputs and for an input constraint that is no box; the
+specifications as cora objects.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -93,6 +94,24 @@ class Version2(unittest.TestCase):
         ((A, b),) = parse_vnnlib(text, 2, 2).cases[0].polytopes
         np.testing.assert_array_equal(A, [[-1, -2]])
         np.testing.assert_array_equal(b, [-1.5])
+
+    def test_input_atoms(self):
+        # an input fixed by ==, a scaled bound, and 2000 inputs of a box (sparse rows); a
+        # sum of two inputs is no box
+        n = 2000
+        head = (
+            "(vnnlib-version <2.0>)\n(declare-network N\n"
+            f" (declare-input X float32 [{n}])\n (declare-output Y float32 [1])\n)\n"
+        )
+        box = "".join(f"(assert (<= X[{i}] 1.0))\n(assert (>= X[{i}] -1.0))\n" for i in range(2, n))
+        text = head + "(assert (== X[0] 0.5))\n(assert (<= (* 2.0 X[1]) 1.0))\n"
+        text += "(assert (>= X[1] -1.0))\n" + box + "(assert (<= Y[0] 0.0))\n"
+        (case,) = parse_vnnlib(text, n, 1).cases
+        np.testing.assert_array_equal(case.lo[:3], [0.5, -1.0, -1.0])
+        np.testing.assert_array_equal(case.hi[:3], [0.5, 0.5, 1.0])
+        bad = head + "(assert (<= (+ X[0] X[1]) 1.0))\n" + box + "(assert (<= Y[0] 0.0))\n"
+        with self.assertRaisesRegex(NotImplementedError, "box constraints"):
+            parse_vnnlib(bad, n, 1)
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #

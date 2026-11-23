@@ -16,7 +16,7 @@ See also: cora.onnx_network, cora.counterexample, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -267,6 +267,12 @@ def _read_v2(text, n, m):
     conjuncts = [[]]
     for assertion in query.assertions:
         dnf = assertion.expr.to_dnf()
+        if len(dnf) == 1:
+            # one conjunct (a box's bound): appended in place, not every list copied (vggnet16's
+            # 301057 assertions made that quadratic)
+            for c in conjuncts:
+                c.extend(dnf[0])
+            continue
         conjuncts = [c + list(d) for c in conjuncts for d in dnf]
     # each atom's linear form once (a box atom is shared by every conjunct of the disjunction)
     forms = {}
@@ -290,7 +296,7 @@ def _read_v2(text, n, m):
 
 def _linear_atoms(atom, n, m):
     """A comparison as (op, coefficients, constant, 'input' or 'output'): row . v + constant op 0
-    with op '<=' (or two of them for '==')."""
+    with op '<=' (or two of them for '=='); an input's row as {index: coefficient}."""
     name = type(atom).__name__
     if name == "NotEqual":
         raise NotImplementedError("vnnlib: != is not supported")
@@ -307,14 +313,21 @@ def _linear_atoms(atom, n, m):
     if len(kinds) != 1 or kinds - {"Input", "Output"}:
         raise NotImplementedError("vnnlib: a constraint that mixes inputs and outputs")
     kind = kinds.pop()
-    row = np.zeros(n if kind == "Input" else m)
-    for (_, flat), c in coeffs.items():
-        row[flat] = c
+    # an input's row as its nonzero coefficients {index: c} (a dense row per atom of a box of
+    # vggnet16's 150528 inputs costs n^2: 734 s), an output's row dense
+    if kind == "Input":
+        row = {flat: c for (_, flat), c in coeffs.items() if c != 0}
+        neg = {i: -c for i, c in row.items()}
+    else:
+        row = np.zeros(m)
+        for (_, flat), c in coeffs.items():
+            row[flat] = c
+        neg = -row
     if name in ("LessEqual", "LessThan"):
         return [("<=", row, const, kind)]
     if name in ("GreaterEqual", "GreaterThan"):
-        return [("<=", -row, -const, kind)]
-    return [("<=", row, const, kind), ("<=", -row, -const, kind)]
+        return [("<=", neg, -const, kind)]
+    return [("<=", row, const, kind), ("<=", neg, -const, kind)]
 
 
 def _atom_form(op, row, const, kind):
@@ -322,11 +335,10 @@ def _atom_form(op, row, const, kind):
     del op  # always "<=" (_linear_atoms)
     if kind == "Output":
         return ("Output", list(row), -const)
-    nonzero = np.flatnonzero(row)
-    if len(nonzero) != 1:
+    if len(row) != 1:
         raise NotImplementedError("vnnlib: input constraints must be box constraints")
-    i, a = int(nonzero[0]), float(row[nonzero[0]])
-    return ("Input", i, -const / a, a > 0)
+    ((i, a),) = row.items()
+    return ("Input", int(i), -const / float(a), a > 0)
 
 
 def _add_atom(case, form):
