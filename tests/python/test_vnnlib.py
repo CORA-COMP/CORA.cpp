@@ -2,12 +2,13 @@
 
 The 1.0 reader on boxes, comparisons of two outputs and of an output with a constant (both
 directions), a disjunction of conjunctions, and a disjunction of input boxes (ACAS Xu's property
-6) merged per box; a 2.0 text, written by to_vnnlib2 from the 1.0 text, reads to the same arrays bit
-for bit; errors for unbounded and empty inputs; the specifications as cora objects.
+6) merged per box; a 2.0 text, written by to_vnnlib2 from the 1.0 text (exponents as decimals),
+reads to the same arrays bit for bit; errors for unbounded and empty inputs; the specifications as
+cora objects.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -72,6 +73,14 @@ class Version2(unittest.TestCase):
             p2 = parse_vnnlib(v2, 3, 3)
             self.assertEqual(p2.version, 2)
             same(self, parse_vnnlib(text, 3, 3), p2)
+
+    def test_exponents_become_decimals(self):
+        # 2.0 has no exponent: 1e-06 is written 0.000001, the same double, and the text parses
+        text = SIMPLE.replace("(assert", "(assert (<= Y_0 1e-06))\n(assert", 1)
+        v2 = to_vnnlib2(text, (1, 3), (1, 3))
+        self.assertNotIn("e-06", v2)
+        self.assertIn("0.000001", v2)
+        same(self, parse_vnnlib(text, 3, 3), parse_vnnlib(v2, 3, 3))
 
     def test_linear_rows(self):
         # a 2.0 comparison of a linear combination of outputs

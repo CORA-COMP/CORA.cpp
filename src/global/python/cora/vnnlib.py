@@ -109,6 +109,13 @@ def to_vnnlib2(text, input_shape, output_shape, input_type="float32", output_typ
     # the declarations of 1.0 go; every X_i and Y_j becomes an index
     body = [line for line in text.splitlines() if not DECLARE.match(line.strip())]
     body = [re.sub(r"\b([XY])_(\d+)\b", index, line) for line in body]
+    # an exponent is no 2.0 number: the shortest decimal of the same double (1e-06: 0.000001)
+    body = [
+        line
+        if line.lstrip().startswith(";")
+        else re.sub(r"(?<=[\s(])(-?\d+(?:\.\d*)?[eE][-+]?\d+)(?=[\s)])", _decimal, line)
+        for line in body
+    ]
     # an integer constant is a real one in 2.0 (its type checker refuses 1 for a float32)
     body = [
         line
@@ -120,6 +127,11 @@ def to_vnnlib2(text, input_shape, output_shape, input_type="float32", output_typ
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
+
+def _decimal(match):
+    """The number of a match in positional notation, the shortest that parses to the same double."""
+    return np.format_float_positional(float(match.group(1)), unique=True, trim="0")
 
 COMPARISON = r"\((<=|>=) (\S+) (\S+)\)"
 

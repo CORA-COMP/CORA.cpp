@@ -245,6 +245,13 @@ come only at the very end.
 - **Generator environments:** `--python` picks the Python of a generator, and the manifest records it.
   sat_relu needs a torch whose ONNX exporter writes the weights inline (torch 2.4; 2.15 writes external
   data files). safenlp needs NumPy < 1.25 (Python 3.10), because it compares an array with `[]`.
+  linearizenn needs h5py.
+  relusplitter's `generate_properties.py` installs uv by `curl | sh` and a CUDA torch, so
+  make_dev_set runs its `scripts/gen_props.py` in our venv with CPU torch instead. It needs
+  auto_LiRPA (`git submodule update --init` in the source; install.sh's one-line patch is applied to
+  the copy), and beartype from `--libs` (`genlibs/relusplitter_2026`, outside the venv: torch 2.4's
+  ONNX exporter type-checks with an installed beartype and fails). Its node names carry random ids,
+  so a seed gives the same weights and properties, not the same bytes.
 - **Data:** networks and instances stay outside the repository (e.g. `~/vnncomp/dev_sets`).
 
 ## Running

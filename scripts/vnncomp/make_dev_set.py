@@ -17,7 +17,7 @@ See also: scripts/vnncomp/run_dev_set.py, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   ---
+Last update:   23-November-2026
 Reviewed:      ---
 """
 
@@ -37,6 +37,7 @@ import numpy as np
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
 
 def main():
+    # the benchmark and seed, where the sources, Python and outputs are
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("benchmark", choices=sorted(SOURCES))
     parser.add_argument("--seed", type=int, required=True)
@@ -49,8 +50,14 @@ def main():
         "--python", default=os.path.join(HOME, "vnncomp", "genvenv", "bin", "python")
     )
     parser.add_argument("--cache", default=os.path.join(HOME, "vnncomp", "cache"))
+    # packages a generator needs that may not go into the venv (relusplitter's beartype)
+    parser.add_argument(
+        "--libs", default=os.path.join(HOME, "vnncomp", "genlibs"),
+        help="per-benchmark packages outside the venv (genlibs/<benchmark>, on the PYTHONPATH)",
+    )
     parser.add_argument("--keep-official", action="store_true")
     args = parser.parse_args()
+    # the generator works in a copy of its source tree
     work = os.path.join(args.out, args.benchmark, "work")
     # the benchmark's own generator, else a sampler of the official instances' structure
     if args.benchmark == "acasxu_2023":
@@ -64,7 +71,12 @@ def main():
         os.makedirs(work, exist_ok=True)
         rows = sampled_dist_shift(args, work)
     else:
-        args.method = "generator: generate_properties.py with the seed"
+        # (relusplitter: its gen_props.py, see _relusplitter)
+        args.method = (
+            "generator: scripts/gen_props.py with the seed, CPU torch"
+            if args.benchmark == "relusplitter_2026"
+            else "generator: generate_properties.py with the seed"
+        )
         run_generator(args, work)
         rows = generated_rows(args, work)
     manifest = write_set(args, work, rows)
@@ -82,6 +94,10 @@ SOURCES = {
     "acasxu_2023": (
         "https://github.com/kkaulen/acasxu_2023.git",
         "fb1e1899079f2d25a270c5523798e9fa1fca7750",
+    ),
+    "cersyve": (
+        "https://github.com/intelligent-control-lab/Cersyve.jl.git",
+        "d1a8e46e7de59c77ab1cd6852f853eeef7e3ce8a",
     ),
     # cgan's generator downloads its networks with gdown
     "cgan2026": (
@@ -105,19 +121,44 @@ SOURCES = {
         "https://github.com/toladnertum/dist-shift-vnn-comp.git",
         "5946000bd3e1ba89963e2d3ae341d17b89c8659b",
     ),
+    # linearizenn's generator reads its models with h5py
+    "linearizenn_2024": (
+        "https://github.com/aliabigdeli/LinearizeNN_benchmark2024.git",
+        "d695230914a0894da859c31d9f8b0dff141406e3",
+    ),
+    # lsnc_relu: a Lyapunov ring c1 < V(x) < c2 of a quadrotor's neural controller and dynamics
+    "lsnc_relu": (
+        "https://github.com/xiangruzh/LSNC-ReLU.git",
+        "3f1cb43f393cb2ef160815cf2ae1e87675499db7",
+    ),
+    "malbeware": (
+        "https://github.com/pkrobinette/MalBeWare.git",
+        "fc044fe46f4a6ed7ad7f22341e59bbf99e616c5f",
+    ),
     # metaroom: the commit of the 2026 README, not the repository's head
     "metaroom_2023": (
         "https://github.com/HanjiangHu/metaroom_vnn_comp2023",
         "80233c82c13ae795d0de7a9f87875dcca13e61ff",
     ),
+    # the text benchmark, the SAT encodings and the hidden counterexamples
     "safenlp_2024": (
         "https://github.com/ANTONIONLP/safeNLP.git",
         "a88c5784bf71a9aa3689ae2bd409f356e8af163b",
+    ),
+    # relusplitter: its install.sh fetches uv by curl | sh; gen_props.py runs in our venv instead
+    "relusplitter_2026": (
+        "https://github.com/dynaroars/relusplitter_vnncomp",
+        "03b28b5ae6e7d79947c7fc595d6fc65ff2937781",
     ),
     "sat_relu": ("https://github.com/emanino/neurocodebench", "ae1a535"),
     "soundnessbench_2026": (
         "https://github.com/Kevinyang555/SoundnessBench_vnncomp2026",
         "3ac608157866bc7409e37d89fcc564757037bc40",
+    ),
+    # traffic_signs: binarized networks; the generator reads the GTSRB test images of its tree
+    "traffic_signs_recognition_2023": (
+        "https://github.com/apostovan21/vnncomp2023.git",
+        "3587d3b11dc4ebffcf9784a93fb35a943eec5656",
     ),
     "tinyimagenet_2024": (
         "https://github.com/huanzhang12/vnncomp2024_tinyimagenet_benchmark.git",
@@ -160,9 +201,36 @@ def run_generator(args, work):
         os.makedirs(os.path.join(args.cache, "datasets"), exist_ok=True)
         os.symlink(os.path.join(args.cache, "datasets"), os.path.join(work, "tmp"))
     env = dict(os.environ, PYTHONHASHSEED="0", OMP_NUM_THREADS="2")
-    subprocess.run(
-        [args.python, "generate_properties.py", str(args.seed)], cwd=work, env=env, check=True
+    command = [args.python, "generate_properties.py", str(args.seed)]
+    if args.benchmark == "relusplitter_2026":
+        command = _relusplitter(args, work, env)
+    subprocess.run(command, cwd=work, env=env, check=True)
+
+
+def _relusplitter(args, work, env):
+    """relusplitter's gen_props.py with CPU torch in our venv (install.sh fetches uv by curl | sh
+    and a CUDA torch): auto_LiRPA of the source's submodule, patched as install.sh does."""
+    # beartype from genlibs, not the venv: torch 2.4's ONNX exporter fails with it installed
+    lirpa = os.path.join(work, "libs", "auto_LiRPA")
+    general = os.path.join(lirpa, "auto_LiRPA", "bound_general.py")
+    if not os.path.exists(general):
+        raise SystemExit(
+            "make_dev_set: run git submodule update --init in the relusplitter source (auto_LiRPA)"
+        )
+    # install.sh's patch: line 865 loads the state dict with strict=False
+    with open(general) as stream:
+        lines = stream.readlines()
+    lines[864] = lines[864].replace("self.ori_state_dict)", "self.ori_state_dict, strict=False)")
+    with open(general, "w") as stream:
+        stream.writelines(lines)
+    paths = [lirpa, os.path.join(work, "libs"), work, os.path.join(args.libs, args.benchmark)]
+    env.update(
+        PYTHONPATH=os.pathsep.join(paths),
+        TORCH_ONNX_EXPERIMENTAL_RUNTIME_TYPE_CHECK="DISABLED",
+        CUDA_VISIBLE_DEVICES="",
+        MKL_SERVICE_FORCE_INTEL="1",
     )
+    return [args.python, os.path.join("scripts", "gen_props.py"), str(args.seed)]
 
 
 def generated_rows(args, work):
