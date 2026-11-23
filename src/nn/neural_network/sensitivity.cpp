@@ -37,6 +37,9 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
         return "sensitivity: the point must be a vector (" + std::to_string(input_dim()) +
                "), got the shape " + shape_text(x.shape());
     });
+    CORA_CHECK(is_dense(), Error::not_supported, [] {
+        return std::string("sensitivity: the layers must be matrices (Layer::dense)");
+    });
     // the Jacobian of the layers so far, from the identity, and the value after them (a column)
     Tensor h = x.expand_dims(-1), J = x.eye_like(input_dim());
     for (std::size_t k = 0; k < layers_.size(); ++k) {

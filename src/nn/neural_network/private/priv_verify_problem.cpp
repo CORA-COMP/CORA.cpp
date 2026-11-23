@@ -52,11 +52,8 @@ constexpr int64_t kBudget = int64_t{1} << 30; // 1 GiB per batch, unless the opt
 std::shared_ptr<const NeuralNetwork> aux_network(const NeuralNetwork &net, DType dtype,
                                                  const std::string &device) {
     std::vector<NeuralNetwork::Layer> layers;
-    for (const NeuralNetwork::Layer &layer : net.layers()) {
-        Tensor W = device.empty() ? layer.W : layer.W.to(device);
-        Tensor b = device.empty() ? layer.b : layer.b.to(device);
-        layers.push_back({W.to(dtype), b.to(dtype)});
-    }
+    for (const NeuralNetwork::Layer &layer : net.layers())
+        layers.push_back(layer.to(dtype, device));
     return std::make_shared<const NeuralNetwork>(layers, net.activations());
 }
 
@@ -86,7 +83,7 @@ std::optional<std::vector<double>> aux_default_confirm(const NeuralNetwork &net,
                                                        const std::vector<double> &x) {
     const int64_t n = int64_t(x.size()), C = prop.lo.shape()[0];
     const std::vector<double> lo = prop.lo.data(), hi = prop.hi.data();
-    const std::vector<double> y = net.evaluate(Tensor::like(net.layers()[0].W, x, {1, n})).data();
+    const std::vector<double> y = net.evaluate(Tensor::like(net.layers()[0].b, x, {1, n})).data();
     const int64_t P = prop.A.shape()[0], K = prop.A.shape()[1], m = prop.A.shape()[2];
     const std::vector<double> A = prop.A.data(), b = prop.b.data();
     for (int64_t k = 0; k < C; ++k) {
@@ -123,7 +120,7 @@ NnProblem::NnProblem(const NeuralNetwork &net, const NnProperty &property,
     : property_(property), options_(options), confirm_(std::move(confirm)) {
     net_ = aux_network(net, DType::float64, options.device); // NOLINT(backend): the bounds
     net32_ = aux_network(net, options.dtype, options.device);
-    const Tensor &like64 = net_->layers()[0].W, &like32 = net32_->layers()[0].W;
+    const Tensor &like64 = net_->layers()[0].b, &like32 = net32_->layers()[0].b;
     // the search boxes inside the property's and the outer boxes of the bounds
     std::vector<double> in_lo, in_hi, out_lo, out_hi;
     aux_boxes(property.lo.data(), property.hi.data(), in_lo, in_hi, out_lo, out_hi);
@@ -164,7 +161,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
     std::vector<Tensor> pre;
     Tensor h = x;
     for (std::size_t k = 0; k < net.layers().size(); ++k) {
-        pre.push_back(h.matmul(net.layers()[k].W.matrix_transpose()) + net.layers()[k].b);
+        pre.push_back(net.layers()[k].rows(h) + net.layers()[k].b);
         const Activation a = net.activations()[k];
         h = a == Activation::relu      ? pre.back().maximum(0.0)
             : a == Activation::sigmoid ? pre.back().sigmoid()
@@ -196,7 +193,7 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         if (a == Activation::relu) g = g.multiply(z.greater(z.zeros_like()));
         if (a == Activation::sigmoid) g = g.multiply(z.sigmoid().multiply(1.0 - z.sigmoid()));
         if (a == Activation::tanh) g = g.multiply(1.0 - z.tanh().square());
-        g = g.matmul(net.layers()[k].W);
+        g = net.layers()[k].rows_t(g);
     }
     return g;
 }
@@ -212,7 +209,13 @@ std::optional<std::vector<double>> NnProblem::confirm(const Tensor &x) {
 
 int64_t NnProblem::attack_batch() const {
     int64_t elements = net_->input_dim();
-    for (const NeuralNetwork::Layer &layer : net_->layers()) elements += 2 * layer.W.shape()[0];
+    int64_t work = 0;
+    for (const NeuralNetwork::Layer &layer : net_->layers()) {
+        // the values and gradients of every layer, and the largest patches of a product
+        elements += 2 * layer.outputs();
+        work = std::max(work, layer.work());
+    }
+    elements += 2 * work;
     const int64_t itemsize = options_.dtype == DType::float32 ? 4 : 8; // NOLINT(backend): bytes
     return std::max<int64_t>(1, memory_budget / (4 * elements * itemsize));
 }

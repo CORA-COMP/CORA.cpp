@@ -11,7 +11,7 @@ Syntax:   net = OnnxNetwork.load("net.onnx", dtype=torch.float32, device="cpu")
           y = net(x)                       x (B, n) -> y (B, m), batched, autograd on
           net64 = net.cast(torch.float64)  the same graph in another dtype or on another device
           nn, why = net.to_neural_network()   a cora.NeuralNetwork, or None and the reason
-          (layers, acts), why = net.dense_layers()   the same as [(W, b)] and activation names
+          (layers, acts), why = net.layers()   the same as layer specs and activation names
 Inputs:   path - an .onnx or .onnx.gz file with one input and one output
 See also: cora.vnnlib, cora.nn_verify, docs/nn_verification.md
 
@@ -30,6 +30,7 @@ import torch.nn.functional as F
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
 
 class OnnxNetwork:
     """An ONNX graph run node by node on batched torch tensors; the constants are in one dtype and
@@ -127,8 +128,19 @@ class OnnxNetwork:
         affine maps and relu/sigmoid/tanh; max_elements caps the unit-vector batches."""
         import cora
 
-        lowered, why = self.dense_layers(max_elements)
+        lowered, why = self.layers(max_elements)
         return (cora.NeuralNetwork(*lowered), None) if lowered else (None, why)
+
+    def layers(self, max_elements=2**27):
+        """(([layer], activation names), None) of the chain in float64, or (None, why): with a
+        Conv or an AveragePool one layer per linear node (cora.NeuralNetwork's conv2d and gather
+        dicts, never a matrix of a convolution), else the dense layers."""
+        if not any(op in STRUCTURED_OPS for op, _, _, _ in self.nodes):
+            return self.dense_layers(max_elements)
+        try:
+            return self._lower_structured(), None
+        except (_NotAChain, NotImplementedError) as reason:
+            return None, str(reason)
 
     def dense_layers(self, max_elements=2**27):
         """(([(W, b)], activation names), None) of the chain in float64, or (None, why)."""
@@ -233,6 +245,41 @@ class OnnxNetwork:
             padding=pads[:k] if symmetric else 0,
             dilation=attrs.get("dilations", 1),
             groups=attrs.get("group", 1),
+        )
+
+    def _op_Upsample(self, a, attrs):
+        # nearest only: every entry repeated by the integer scales of the spatial axes
+        mode = attrs.get("mode", b"nearest")
+        if mode not in (b"nearest", "nearest"):
+            raise NotImplementedError("OnnxNetwork: Upsample other than nearest")
+        scales = [float(v) for v in (a[1].tolist() if len(a) > 1 else attrs["scales"])]
+        return F.interpolate(a[0], scale_factor=scales[2:], mode="nearest")
+
+    def _op_ConvTranspose(self, a, attrs):
+        x, w = a[0], a[1]
+        bias = a[2] if len(a) > 2 else None
+        k = w.dim() - 2
+        pads = list(attrs.get("pads", [0] * (2 * k)))
+        if (
+            pads[:k] != pads[k:]
+            or attrs.get("output_shape")
+            or attrs.get("auto_pad", b"NOTSET")
+            not in (
+                b"NOTSET",
+                "NOTSET",
+            )
+        ):
+            raise NotImplementedError("OnnxNetwork: ConvTranspose with asymmetric pads or a shape")
+        conv = {1: F.conv_transpose1d, 2: F.conv_transpose2d, 3: F.conv_transpose3d}[k]
+        return conv(
+            x,
+            w,
+            bias,
+            stride=attrs.get("strides", 1),
+            padding=pads[:k],
+            output_padding=attrs.get("output_padding", 0),
+            groups=attrs.get("group", 1),
+            dilation=attrs.get("dilations", 1),
         )
 
     def _op_BatchNormalization(self, a, attrs):
@@ -425,6 +472,133 @@ class OnnxNetwork:
             ), zero
         return self._run_batched(op, lin_args, tagged, attrs), zero
 
+    # ------------------------------------------------------------------- lowering with convolutions
+    def _lower_structured(self):
+        """The layers of a chain with convolutions, one per linear node, none made a matrix: a Conv
+        (and a BatchNormalization or an AveragePool, as a depthwise one) a conv2d layer, a Gemm or
+        MatMul a dense one, a data move (Transpose, Pad, Slice, Concat with constants) a gather,
+        found by running the node on the indices; Flatten and Reshape change only the shape.
+        Additive constants go into the bias of the layer before."""
+        net = self.cast(torch.float64, "cpu")
+        layers, activations = [], []
+        values = dict(net.constants)
+        chain = {self.input_name: tuple(self.input_shape)}  # the chain's values, batch first
+        latest = self.input_name
+        size = self.num_inputs
+
+        def push(layer, out_shape):
+            nonlocal size
+            layers.append(layer)
+            activations.append("identity")
+            size = math.prod(out_shape)
+
+        def bias_room():
+            # a layer whose output may take an additive constant (no activation after it yet)
+            if not layers or activations[-1] != "identity":
+                push(_gather(list(range(size)), size, torch.zeros(size)), (size,))
+
+        for op, ins, outs, attrs in net.nodes:
+            linked = [name for name in ins if name in chain]
+            if not linked:
+                values[outs[0]] = net._run(op, [values.get(n) if n else None for n in ins], attrs)
+                continue
+            if op in STRUCTURE_OPS:
+                # shape arithmetic on the chain: its shape only
+                probes = [
+                    torch.zeros(1, *chain[n][1:], dtype=torch.float64)
+                    if n in chain
+                    else values.get(n)
+                    if n
+                    else None
+                    for n in ins
+                ]
+                values[outs[0]] = net._run(op, probes, attrs)
+                continue
+            if len(set(linked)) > 1 or linked[0] != latest:
+                raise _NotAChain(f"{op} joins two layers (a residual connection)")
+            x_name = latest
+            shape = chain[x_name]
+            probe = torch.zeros(1, *shape[1:], dtype=torch.float64)
+            args = [probe if n == x_name else (values.get(n) if n else None) for n in ins]
+            out_shape = tuple(net._run(op, args, attrs).shape)
+            if op in ACTIVATIONS:
+                if not layers or activations[-1] != "identity":
+                    push(_gather(list(range(size)), size, torch.zeros(size)), shape)
+                activations[-1] = ACTIVATIONS[op]
+            elif op == "Conv":
+                w = args[1]
+                if w.dim() == 3:  # Conv1D as a 2-D convolution of width 1
+                    w = w.unsqueeze(-1)
+                b = args[2] if len(args) > 2 and args[2] is not None else torch.zeros(w.shape[0])
+                push(_conv(w, b, shape, attrs, out_shape), out_shape)
+            elif op == "ConvTranspose" and len(shape) == 4:
+                # the transpose of the convolution from the output back to the input
+                w = args[1]
+                cout = out_shape[1]
+                b = args[2] if len(args) > 2 and args[2] is not None else torch.zeros(cout)
+                spec = _conv(w, torch.zeros(w.shape[0]), out_shape, attrs, shape)
+                spec["bias"] = torch.broadcast_to(b.reshape(-1, 1, 1), out_shape[1:]).reshape(-1)
+                spec["bias"] = spec["bias"].to(torch.float64).contiguous()
+                spec["conv_transpose2d"] = spec.pop("conv2d")
+                spec["output"] = spec.pop("input")
+                push(spec, out_shape)
+            elif op == "BatchNormalization":
+                scale, shift, mean, var = args[1:5]
+                factor = scale / torch.sqrt(var + attrs.get("epsilon", 1e-5))
+                c = shape[1]
+                w = factor.reshape(c, 1, 1, 1)
+                push(_conv(w, shift - mean * factor, shape, {"group": c}, out_shape), out_shape)
+            elif (
+                op == "AveragePool"
+                and not attrs.get("ceil_mode", 0)
+                and (attrs.get("count_include_pad", 0) or not any(attrs.get("pads", [])))
+            ):
+                k, c = list(attrs["kernel_shape"]), shape[1]
+                w = torch.full((c, 1, *k), 1.0 / math.prod(k), dtype=torch.float64)
+                push(_conv(w, torch.zeros(c), shape, {**attrs, "group": c}, out_shape), out_shape)
+            elif op in ("Gemm", "MatMul"):
+                # the matrix of the unit vectors (small: one per input of a dense layer)
+                eye = torch.eye(size, dtype=torch.float64).reshape(size, *shape[1:])
+                zero = torch.zeros(1, *shape[1:], dtype=torch.float64)
+                lin = net._run_batched(op, [eye] + args[1:2], [True, False], attrs)
+                bias = net._run(op, [zero] + args[1:], attrs)
+                push((lin.reshape(size, -1).T.contiguous(), bias.reshape(-1)), out_shape)
+            elif op in ("Add", "Sub") and len(ins) == 2:
+                other = args[1] if ins[0] == x_name else args[0]
+                sign = -1.0 if op == "Sub" and ins[1] == x_name else 1.0
+                if sign < 0:
+                    raise _NotAChain("Sub of the chain from a constant")
+                delta = torch.broadcast_to(other * (-1.0 if op == "Sub" else 1.0), out_shape)
+                bias_room()
+                layers[-1] = _add_bias(layers[-1], delta.reshape(-1))
+            elif op in ("Flatten", "Reshape", "Squeeze", "Unsqueeze", "Identity", "Dropout"):
+                pass
+            elif op in ("Transpose", "Pad", "Slice", "Concat", "Upsample"):
+                # the input index + 1 of each output (0: a constant), and the constants
+                idx = torch.arange(1, size + 1, dtype=torch.float64).reshape(1, *shape[1:])
+                # a Concat's constant parts and a Pad's value are zeros of the moved indices
+                moved_args = [idx if n == x_name else values.get(n) if n else None for n in ins]
+                if op == "Concat":
+                    moved_args = [
+                        a if n == x_name else torch.zeros_like(a)
+                        for a, n in zip(moved_args, ins, strict=True)
+                    ]
+                if op == "Pad" and len(moved_args) > 2:
+                    moved_args[2] = None
+                moved = net._run(op, moved_args, {**attrs, "value": 0.0} if op == "Pad" else attrs)
+                const = net._run(op, args, attrs)
+                index = (moved.reshape(-1).round().long() - 1).tolist()
+                push(_gather(index, size, const.reshape(-1)), out_shape)
+            else:
+                raise _NotAChain(f"{op} on the chain is not a layer yet")
+            chain[outs[0]] = out_shape
+            latest = outs[0]
+        if self.output_name != latest:
+            raise _NotAChain("the output does not depend on the input")
+        if not layers:
+            push(_gather(list(range(size)), size, torch.zeros(size)), (size,))
+        return layers, activations
+
     def _run_batched(self, op, args, batched, attrs):
         """One node on per-sample values: the batched arguments mapped by vmap, the rest as is."""
         index = [i for i, b in enumerate(batched) if b and args[i] is not None]
@@ -469,7 +643,53 @@ LINEAR_OPS = {
     "Pad",
 }
 
+STRUCTURED_OPS = {
+    "Conv",
+    "ConvTranspose",
+    "AveragePool",
+}  # lowered layer by layer, never to a matrix
+
 STRUCTURE_OPS = {"Shape", "Gather", "Constant", "Cast", "Slice"}  # shape arithmetic, never data
+
+
+def _conv(w, b, shape, attrs, out_shape):
+    """The conv2d dict of cora.NeuralNetwork: a kernel (out, in / groups, kh, kw) on the input
+    (1, C, H[, W]) with ONNX's attributes; a Conv1D is a 2-D one of width 1."""
+    k = len(shape) - 2
+    pads = list(attrs.get("pads", [0] * (2 * k)))
+    stride = list(attrs.get("strides", [1] * k))
+    dilation = list(attrs.get("dilations", [1] * k))
+    if k == 1:
+        pads, stride, dilation = [pads[0], 0, pads[1], 0], stride + [1], dilation + [1]
+    if attrs.get("auto_pad", b"NOTSET") not in (b"NOTSET", "NOTSET"):
+        raise _NotAChain("Conv with auto_pad")
+    size = math.prod(out_shape[1:])
+    bias = torch.broadcast_to(b.reshape(-1, *([1] * k)), out_shape[1:]).reshape(size)
+    return {
+        "conv2d": w.reshape(w.shape[0], w.shape[1], w.shape[2], -1).contiguous(),
+        "bias": bias.contiguous(),
+        "input": [shape[1], shape[2], shape[3] if k == 2 else 1],
+        "stride": stride,
+        "dilation": dilation,
+        "pads": pads,
+        "groups": int(attrs.get("group", 1)),
+    }
+
+
+def _gather(index, inputs, bias):
+    """The gather dict of cora.NeuralNetwork: output i is input index[i] (negative: 0)."""
+    return {
+        "gather": list(index),
+        "inputs": int(inputs),
+        "bias": bias.to(torch.float64).contiguous(),
+    }
+
+
+def _add_bias(layer, delta):
+    """The layer with delta added to its bias."""
+    if isinstance(layer, dict):
+        return {**layer, "bias": layer["bias"] + delta}
+    return (layer[0], layer[1] + delta)
 
 
 def _load_model(path):
@@ -503,5 +723,6 @@ def _pool_padding(x, pads, value):
     for i in reversed(range(k)):  # torch's pad lists the last axis first
         flat += [pads[i], pads[i + k]]
     return F.pad(x, flat, value=value)
+
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

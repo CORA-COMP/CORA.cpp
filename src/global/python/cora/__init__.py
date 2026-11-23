@@ -75,6 +75,7 @@ from ._cora import (
     contains,
     convex_hull,
     cora_color,
+    cora_vnncomp_options,
     current_backend,
     current_tolerance,
     generate_random,
@@ -132,7 +133,8 @@ __all__ = [
     "set_default_backend", "set_default_tolerance", "set_num_threads", "strict_gradients",
     "subplots", "tensor_ops",
     "to_tikz", "tolerance", "unite",
-    "use_cora_colors", "verify_strategies", "vnncomp_options", "Tensor", "cos",
+    "use_cora_colors", "verify_strategies", "vnncomp_options", "cora_vnncomp_options",
+    "Tensor", "cos",
     "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
 ]
 

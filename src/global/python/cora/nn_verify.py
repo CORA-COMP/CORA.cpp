@@ -6,7 +6,7 @@ layers of a cora.NeuralNetwork (cora.onnx_network), the property's input boxes a
 polytopes stacked (cora.vnnlib), and the scoring's counterexample check, which C++ calls back for
 every candidate (onnxruntime on the float32 point, then VNN-COMP's own check of the written
 counterexample). A network that is no chain of affine maps and activations is "unknown" with the
-reason. The options are cora.NnVerifyOptions; cora.vnncomp_options(category) gives CORA's presets.
+reason. The options are cora.NnVerifyOptions; cora.vnncomp_options(category) gives the preset.
 
 Syntax:   instance = load("net.onnx", "prop.vnnlib")
           result = verify(instance, 60, cora.vnncomp_options("acasxu_2023"))   result.status
@@ -21,6 +21,7 @@ Reviewed:      ---
 from dataclasses import dataclass, field
 
 import numpy as np
+import torch
 
 from . import counterexample
 from .onnx_network import OnnxNetwork
@@ -28,6 +29,7 @@ from .vnnlib import parse_vnnlib, read_text
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
+
 
 @dataclass
 class VerifyResult:
@@ -60,12 +62,19 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     net = OnnxNetwork.load(onnx_path)
     text = read_text(vnnlib_path)
     prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
-    lowered, why = net.dense_layers()
+    lowered, why = net.layers()
     network = None
     if lowered:
         layers, activations = lowered
         convert = (lambda t: t.to(device)) if backend == "torch" else (lambda t: t.numpy())
-        network = cora.NeuralNetwork([(convert(W), convert(b)) for W, b in layers], activations)
+
+        def one(layer):
+            # a dense pair, or a conv2d or gather dict whose tensors move
+            if not isinstance(layer, dict):
+                return (convert(layer[0]), convert(layer[1]))
+            return {k: convert(v) if torch.is_tensor(v) else v for k, v in layer.items()}
+
+        network = cora.NeuralNetwork([one(layer) for layer in layers], activations)
     return Instance(str(onnx_path), network, why or "", prop, text)
 
 
@@ -80,8 +89,7 @@ def verify(instance, timeout, options=None):
     lo = np.stack([c.lo for c in instance.prop.cases])
     hi = np.stack([c.hi for c in instance.prop.cases])
     confirm = _Confirm(instance)
-    out = instance.network.verify(lo, hi, [int(k) for k in case], A, b, timeout, options,
-                                  confirm)
+    out = instance.network.verify(lo, hi, [int(k) for k in case], A, b, timeout, options, confirm)
     stats = dict(out["stats"], bounding=options.bounding_method)
     if out["note"]:
         stats["bounding"] = f"none ({out['note']})"
@@ -93,6 +101,7 @@ def verify(instance, timeout, options=None):
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
+
 
 class _Confirm:
     """The scoring's check of a candidate: onnxruntime's output of the float32 point, and the
@@ -110,7 +119,9 @@ class _Confirm:
         y = self.session.run(None, {self.name: x.reshape(self.shape)})[0].reshape(-1)
         text = counterexample.write_counterexample(x, y, self.instance.prop)
         result, _ = counterexample.check_counterexample(
-            self.instance.onnx_path, None, text, self.instance.vnnlib_text)
+            self.instance.onnx_path, None, text, self.instance.vnnlib_text
+        )
         return y.astype(np.float64) if result == counterexample.CORRECT else None
+
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

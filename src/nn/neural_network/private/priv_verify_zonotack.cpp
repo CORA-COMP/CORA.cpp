@@ -162,8 +162,8 @@ Tensor aux_pieces_offsets(const Tensor &lo, const Tensor &hi, const Tensor &cent
 Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &r) {
     std::vector<Tensor> lo{x - r}, hi{x + r}, plo, phi;
     for (std::size_t k = 0; k < net.W.size(); ++k) {
-        const Tensor mid = ((lo.back() + hi.back()) * 0.5).matmul(net.W[k]) + net.b[k];
-        const Tensor rad = ((hi.back() - lo.back()) * 0.5).matmul(net.abs_w[k]);
+        const Tensor mid = net.map(k, (lo.back() + hi.back()) * 0.5) + net.b[k];
+        const Tensor rad = net.map_abs(k, (hi.back() - lo.back()) * 0.5);
         plo.push_back(mid - rad);
         phi.push_back(mid + rad);
         lo.push_back(net.activations[k] == Activation::identity  ? plo.back()
@@ -196,8 +196,8 @@ Tensor aux_interval_gradient(const ZonoNet &net, const Tensor &x, const Tensor &
         g_hi = g_hi.multiply(slope(phi[k]));
         g_lo = g_lo.multiply(slope(plo[k]));
         // lo = mid - rad, hi = mid + rad, mid and rad of the layer's input box
-        const Tensor g_mid = (g_lo + g_hi).matmul(net.W[k].matrix_transpose()) * 0.5;
-        const Tensor g_rad = (g_hi - g_lo).matmul(net.abs_w[k].matrix_transpose()) * 0.5;
+        const Tensor g_mid = net.map_t(k, g_lo + g_hi) * 0.5;
+        const Tensor g_rad = net.map_abs_t(k, g_hi - g_lo) * 0.5;
         g_lo = g_mid - g_rad;
         g_hi = g_mid + g_rad;
     }
@@ -320,6 +320,8 @@ class ConZonotopeBounding : public Bounding {
     std::unique_ptr<ZonoNet> net_;
     Tensor A_, b_, AT_, abs_at_, abs_a_, real_row_, poly_case_;
     int64_t P_ = 0, K_ = 0, n_relu_ = 0, batch_ = 1;
+    double slot_budget_ = -1;     ///< the error slots per layer the memory budget left (-1: all)
+    double init_gen_budget_ = -1; ///< the input generators it left (-1: as the options say)
     double deadline_ = kInf;
     bool timed_out_ = false;
     AttackResult *found_ = nullptr;
@@ -348,11 +350,35 @@ bool ConZonotopeBounding::prepare(NnProblem &problem) {
     } else {
         n_relu_ = int64_t(o_.num_relu_constraints);
     }
-    // CORA's batch size, at most what the memory budget holds
-    int64_t elements = net_->n0;
+    // the entries of one set per generator: every layer's values, and a convolution's patches
+    int64_t elements = net_->n0, work = 0;
     for (const int64_t w : net_->widths) elements += w;
-    const int64_t box_bytes = 8 * 4 * net_->q * elements;
-    batch_ = std::min(o_.mini_batch_size, std::max<int64_t>(1, problem.memory_budget / box_bytes));
+    for (const NeuralNetwork::Layer &layer : net_->maps) work = std::max(work, layer.work());
+    elements += work;
+    // the slot budget: fewer error slots per layer until one set fits (docs/nn_verification.md)
+    double slots = o_.num_approx_err;
+    const auto bytes = [&](const ZonoNet &net) { return 8 * 4 * net.q * elements; };
+    while (bytes(*net_) > problem.memory_budget && net_->q > net_->q0) {
+        int64_t widest = 0;
+        for (const int64_t s : net_->slots) widest = std::max(widest, s);
+        const int64_t half = widest / 2; // (whole slots)
+        slots = double(half);
+        net_ = std::make_unique<ZonoNet>(problem.net(), o_.num_init_gens, slots, o_.poly_method,
+                                         o_.approx_error_order);
+    }
+    // then fewer input generators, the rest of the input box in the interval center too
+    double gens = o_.num_init_gens;
+    while (bytes(*net_) > problem.memory_budget && net_->q0 > 1) {
+        const int64_t half = net_->q0 / 2;
+        gens = double(half);
+        net_ = std::make_unique<ZonoNet>(problem.net(), gens, slots, o_.poly_method,
+                                         o_.approx_error_order);
+    }
+    if (slots != o_.num_approx_err) slot_budget_ = slots;
+    if (gens != o_.num_init_gens) init_gen_budget_ = gens;
+    // CORA's batch size, at most what the memory budget holds
+    batch_ =
+        std::min(o_.mini_batch_size, std::max<int64_t>(1, problem.memory_budget / bytes(*net_)));
     return true;
 }
 
@@ -542,6 +568,8 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     deadline_ = deadline;
     found_ = &found;
     stats_ = &stats;
+    if (slot_budget_ >= 0) stats["slot_budget"] = slot_budget_;
+    if (init_gen_budget_ >= 0) stats["init_gen_budget"] = init_gen_budget_;
     Tensor xs = (problem.outer_lo + problem.outer_hi) * 0.5;
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;

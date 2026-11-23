@@ -71,11 +71,16 @@ class ZonotopeBounding : public Bounding {
     explicit ZonotopeBounding(const NnVerifyOptions &o) : o_(o) {}
 
     bool prepare(NnProblem &problem) override {
+        // the set operations of NeuralNetwork take matrices only
+        if (!problem.net().is_dense()) {
+            why = "the bounding 'zonotope' takes dense layers; use 'conzonotope'";
+            return false;
+        }
         int64_t widest = problem.net().input_dim(), q = problem.net().input_dim();
         const auto &layers = problem.net().layers();
         for (std::size_t k = 0; k < layers.size(); ++k) {
-            widest = std::max(widest, layers[k].W.shape()[0]);
-            if (k + 1 < layers.size()) q += layers[k].W.shape()[0];
+            widest = std::max(widest, layers[k].outputs());
+            if (k + 1 < layers.size()) q += layers[k].outputs();
         }
         box_bytes_ = 8 * 3 * q * widest;
         return true;

@@ -9,7 +9,7 @@
 // On a polynomial zonotope the dependency on its factors stays, evaluate_with_input returns the
 // pairs (x, N(x)) of a set, and a neuron may have an order k (NnOptions::orders): its activation
 // is enclosed by a polynomial of that order, evaluated on the powers of its set, and refine
-// raises the orders where the errors are large. Everything is computed on tensors.
+// raises the orders. A layer may be a convolution or a gather (conv2d.cpp), for points and verify.
 //
 // Syntax:     NeuralNetwork nn({{W1, b1}, {W2, b2}});   Zonotope Y = nn.evaluate(X);
 //             PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(X));
@@ -38,7 +38,10 @@
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/nn/neural_network/verify.h"
 
+#include <array>
+#include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -100,6 +103,8 @@ struct NnOptions {
     bool use_approx_error = true;
 };
 
+// The refinement ----------------------------------------------------------------------------------
+
 /// How refine raises the orders (CORA's neuralNetwork/refine).
 struct RefineOptions {
     int max_order = 5;
@@ -112,9 +117,50 @@ struct RefineOptions {
 
 class NeuralNetwork {
   public:
-    /// One layer: the weights W (out, in) and the bias b (out).
+    /// A 2-D convolution's strides, dilations, pads (top, left, bottom, right) and groups.
+    struct Conv2d {
+        std::array<int64_t, 2> stride{1, 1}, dilation{1, 1};
+        std::array<int64_t, 4> pads{0, 0, 0, 0};
+        int64_t groups = 1;
+    };
+
+    /// The index lists and kernel matrices of a convolution or a gather (conv2d.cpp).
+    struct LinearPlan;
+
+    /// One layer: the weights W (out, in) and the bias b (out); or, with W undefined, a
+    /// convolution or a gather (plan), which is never made a matrix (conv2d.cpp).
     struct Layer {
         Tensor W, b;
+        std::shared_ptr<const LinearPlan> plan = nullptr;
+
+        /// ONNX's Conv of the input (channels, height, width) in C order: kernel (out, in /
+        /// groups, kh, kw), the bias one entry per output (out channels times pixels).
+        static Layer conv2d(const Tensor &kernel, const Tensor &bias,
+                            const std::vector<int64_t> &input, const Conv2d &spec,
+                            bool check_bias = true);
+        /// ONNX's ConvTranspose (kernel (in, out / groups, kh, kw)): the transpose of the conv2d
+        /// from its output (channels, height, width) back to its input, with the same spec.
+        static Layer conv_transpose2d(const Tensor &kernel, const Tensor &bias,
+                                      const std::vector<int64_t> &output, const Conv2d &spec);
+        /// Output i is input index[i] (negative: 0), plus the bias; an input may repeat.
+        static Layer gather(const std::vector<int64_t> &index, int64_t inputs, const Tensor &bias);
+
+        int64_t inputs() const;
+        int64_t outputs() const;
+        /// The entries per row of a product's largest intermediate (a convolution's patches).
+        int64_t work() const;
+        /// W times each row of x (..., in) without the bias; |W|; W^T times rows (..., out); |W|^T.
+        Tensor rows(const Tensor &x) const { return aux_product(x, false, false); }
+        Tensor abs_rows(const Tensor &x) const { return aux_product(x, true, false); }
+        Tensor rows_t(const Tensor &y) const { return aux_product(y, false, true); }
+        Tensor abs_rows_t(const Tensor &y) const { return aux_product(y, true, true); }
+        /// The layer in the dtype, on the device (empty: where it is).
+        Layer to(DType dtype, const std::string &device = "") const;
+        /// The matrix W (out, in), built from the unit vectors for a convolution or a gather.
+        Tensor dense() const;
+
+      private:
+        Tensor aux_product(const Tensor &x, bool absolute, bool transposed) const;
     };
 
     /// The network of the layers, first to last; the sizes of consecutive layers must match. Every
@@ -125,8 +171,10 @@ class NeuralNetwork {
     NeuralNetwork(std::vector<Layer> layers, std::vector<Activation> activations);
 
     int64_t num_layers() const { return static_cast<int64_t>(layers_.size()); }
-    int64_t input_dim() const { return layers_.front().W.shape()[1]; }
-    int64_t output_dim() const { return layers_.back().W.shape()[0]; }
+    int64_t input_dim() const { return layers_.front().inputs(); }
+    int64_t output_dim() const { return layers_.back().outputs(); }
+    /// Whether every layer is a matrix (the set operations other than verify need that).
+    bool is_dense() const;
     const std::vector<Layer> &layers() const { return layers_; }
     const std::vector<Activation> &activations() const { return activations_; }
 

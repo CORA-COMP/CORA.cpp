@@ -44,23 +44,37 @@ NeuralNetwork::NeuralNetwork(std::vector<Layer> layers, std::vector<Activation> 
         const Tensor &bias = layers_[k].b;
         CORA_CHECK(bias.defined(), Error::wrong_input_in_constructor,
                    [&] { return "NeuralNetwork: layer " + std::to_string(k) + " needs a bias"; });
-        const std::vector<int64_t> w = layers_[k].W.shape(), b = bias.shape();
-        CORA_CHECK(w.size() == 2, Error::wrong_input_in_constructor, [&] {
-            return "NeuralNetwork: the weights of layer " + std::to_string(k) +
-                   " must be a matrix (out, in), got the shape " + shape_text(w);
-        });
-        CORA_CHECK(b == std::vector<int64_t>({w[0]}), Error::wrong_input_in_constructor, [&] {
-            return "NeuralNetwork: the bias of layer " + std::to_string(k) + " must be a vector (" +
-                   std::to_string(w[0]) + "), one entry per output, got " + shape_text(b);
-        });
-        CORA_CHECK(k == 0 || w[1] == layers_[k - 1].W.shape()[0], Error::wrong_input_in_constructor,
+        // a convolution or a gather checked its own sizes
+        if (!layers_[k].plan) {
+            CORA_CHECK(layers_[k].W.defined(), Error::wrong_input_in_constructor, [&] {
+                return "NeuralNetwork: layer " + std::to_string(k) + " needs weights";
+            });
+            const std::vector<int64_t> w = layers_[k].W.shape(), b = bias.shape();
+            CORA_CHECK(w.size() == 2, Error::wrong_input_in_constructor, [&] {
+                return "NeuralNetwork: the weights of layer " + std::to_string(k) +
+                       " must be a matrix (out, in), got the shape " + shape_text(w);
+            });
+            CORA_CHECK(b == std::vector<int64_t>({w[0]}), Error::wrong_input_in_constructor, [&] {
+                return "NeuralNetwork: the bias of layer " + std::to_string(k) +
+                       " must be a vector (" + std::to_string(w[0]) +
+                       "), one entry per output, got " + shape_text(b);
+            });
+        }
+        const int64_t inputs = layers_[k].inputs();
+        CORA_CHECK(k == 0 || inputs == layers_[k - 1].outputs(), Error::wrong_input_in_constructor,
                    [&] {
                        // a layer needs as many inputs as the one before gives
                        return "NeuralNetwork: layer " + std::to_string(k) + " takes " +
-                              std::to_string(w[1]) + " inputs, the layer before gives " +
-                              std::to_string(layers_[k - 1].W.shape()[0]);
+                              std::to_string(inputs) + " inputs, the layer before gives " +
+                              std::to_string(layers_[k - 1].outputs());
                    });
     }
+}
+
+bool NeuralNetwork::is_dense() const {
+    for (const Layer &layer : layers_)
+        if (layer.plan) return false;
+    return true;
 }
 
 } // namespace cora

@@ -1,9 +1,9 @@
 // test_neural_network_verify_options - the options of verify and its registries of strategies
 //
-// The options refuse unknown strategy names and option values, vnncomp_options gives CORA's
-// presets (the year of a benchmark dropped), the built-in strategies are registered, and a
-// program's own attack is used by its name. Every heuristic scores every entry, and an
-// out-of-memory error is recognized.
+// The options refuse unknown strategy names and option values, cora_vnncomp_options gives CORA's
+// presets (the year of a benchmark dropped) and vnncomp_options adds Phase 2's bounds, the built-in
+// strategies are registered, and a program's own attack is used by its name. Every heuristic scores
+// every entry, and an out-of-memory error is recognized.
 //
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Tobias Ladner, Lukas Koller
@@ -72,7 +72,7 @@ void options_and_strategies() {
     o.neuron_split_heuristic = "least-unstable";
     check(test::raises([&] { o.validate(); }, Error::wrong_field_value),
           "neuron splits need the conzonotope bounding");
-    // every other switch refuses an unknown value
+    // every other switch refuses an unknown value, each field set wrong on its own
     for (const std::string field :
          {"order", "dequeue", "enqueue", "refinement", "fm", "position"}) {
         NnVerifyOptions w = vnncomp_options("x");
@@ -88,13 +88,24 @@ void options_and_strategies() {
     for (const std::string field : {"alpha_iterations", "alpha_step_size", "candidates"}) {
         NnVerifyOptions w = vnncomp_options("x");
         w.bounding_method = "zonotope-alpha";
+        // one count out of range
         if (field == "alpha_iterations") w.alpha_iterations = -1;
         if (field == "alpha_step_size") w.alpha_step_size = 0;
         if (field == "candidates") w.look_ahead_candidates = 0;
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "a wrong " + field);
     }
     vnncomp_options("cora_2024").validate();
-    const NnVerifyOptions cora = vnncomp_options("cora_2024"), safe = vnncomp_options("safenlp");
+    const NnVerifyOptions cora = cora_vnncomp_options("cora_2024"),
+                          safe = cora_vnncomp_options("safenlp");
+    check(cora.bounding_method == "conzonotope" && !cora.backward_bound,
+          "CORA's presets stay CORA's");
+    // the competition's preset adds Phase 2's bounds to CORA's
+    const NnVerifyOptions ours = vnncomp_options("cora_2024"),
+                          acas = vnncomp_options("acasxu_2023");
+    check(ours.bounding_method == "zonotope-alpha" && ours.backward_bound &&
+              ours.alpha_method == "crown" && acas.alpha_method == "zonotope" &&
+              ours.num_neuron_splits == cora.num_neuron_splits,
+          "the VNN-COMP preset: CORA's with Phase 2's bounds");
     check(cora.num_neuron_splits == 1 && std::isinf(cora.num_relu_constraints) &&
               cora.mini_batch_size == 32 && safe.num_relu_constraints == 100,
           "CORA's presets, the year dropped");

@@ -35,7 +35,7 @@ NeuralNetwork (dense layers) + NnProperty (boxes, unsafe polytopes A y <= b) + c
 ## The front end (Python)
 
 ```
-onnx file ──> cora.onnx_network.OnnxNetwork ──> dense_layers() ──> cora.NeuralNetwork (eigen or torch)
+onnx file ──> cora.onnx_network.OnnxNetwork ──> layers() ──> cora.NeuralNetwork (eigen or torch)
 vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y : A y <= b}
                     └── cora.nn_verify.load ──> verify(instance, timeout, cora.vnncomp_options(...))
                               └── NeuralNetwork.verify (C++), confirm = the scoring's check
@@ -45,8 +45,24 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   at a time, the rows by `torch.func.vmap`), so ONNX shapes keep their meaning. A graph that is a
   chain of affine parts and relu/sigmoid/tanh lowers to dense layers: the layer's matrix is the image
   of the unit vectors with the additive constants dropped (a Gemm keeps its weights bit for bit), its
-  bias the image of zero. A residual connection, a max pool or a layer beyond `max_elements` does not
-  lower; such an instance is `unknown` with the reason, until conv layers come to the C++ side.
+  bias the image of zero. A graph with a Conv, ConvTranspose or AveragePool lowers layer by layer
+  instead, and no convolution becomes a matrix: Conv is a C++ `Layer::conv2d` (groups, strides,
+  dilations, asymmetric pads; Conv1D as width 1), ConvTranspose its transpose
+  (`Layer::conv_transpose2d`), BatchNormalization and AveragePool depthwise convolutions, the data
+  moves (Transpose, Pad, Slice, Concat with constants, nearest Upsample) a `Layer::gather` found by
+  running the node on the indices, Flatten and Reshape nothing, Gemm and MatMul dense layers, and an
+  added constant the bias of the layer before. A residual connection or a max pool does not lower;
+  such an instance is `unknown` with the reason.
+- **Convolutions in C++.** A convolution's rows are the patches of its input times the kernel as a
+  matrix (im2col); its transpose multiplies by the kernel's transpose and folds the patches back
+  onto the input pixels (col2im), so `W^T y` costs what `W x` does (`conv2d.cpp`). The generator rows of a batch of
+  zonotopes `(B, q, n)` are just more rows, so the propagation, the reverse pass, CROWN's bound and
+  the attacks run unchanged on them; the set operations other than `verify` take dense layers.
+- **Slot budget.** When one set of the batch does not fit `memory_budget` (a wide convolutional
+  net with an error slot per neuron), the conzonotope bounding halves the error slots per layer,
+  then the input generators, until it fits; the errors without a slot go to the interval center
+  (sound, looser) and the backward bound keeps the margin. `stats` reports `slot_budget` and
+  `init_gen_budget`.
 - **Property.** VNN-LIB 1.0 is read with the semantics of the scoring's parser, 2.0 by the
   reference parser (`vnnlib`), every assertion in DNF and the conjunction multiplied out; the cases'
   polytopes are stacked and padded with the rows `0 <= +inf`.

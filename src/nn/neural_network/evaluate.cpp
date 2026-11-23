@@ -336,6 +336,11 @@ Rows aux_layers(const std::vector<NeuralNetwork::Layer> &layers,
                 bool keep_zero, const NnOptions &options,
                 std::vector<std::vector<double>> *errors = nullptr) {
     for (std::size_t k = 0; k < layers.size(); ++k) {
+        // a set goes through matrices only (a convolution: evaluate at points or verify)
+        if (layers[k].plan)
+            CORA_FAIL(Error::not_supported,
+                      "evaluate: layer " + std::to_string(k) +
+                          " is a convolution or a gather; sets take matrices (Layer::dense)");
         r.c = layers[k].W.matmul(r.c) + layers[k].b.expand_dims(-1);
         r.G = layers[k].W.matmul(r.G);
         r.GI = layers[k].W.matmul(r.GI);
@@ -579,10 +584,13 @@ Tensor NeuralNetwork::evaluate(const Tensor &x) const {
                    return "evaluate: the points must be rows (N, " + std::to_string(input_dim()) +
                           "), got the shape " + shape_text(x.shape());
                });
-    // an affine map per layer on the columns of the points, then its activation
+    // per layer its map on the columns (a convolution's on the rows), then its activation
     Tensor h = x.matrix_transpose();
-    for (std::size_t k = 0; k < layers_.size(); ++k)
-        h = aux_apply(activations_[k], layers_[k].W.matmul(h) + layers_[k].b.expand_dims(-1));
+    for (std::size_t k = 0; k < layers_.size(); ++k) {
+        const Layer &L = layers_[k];
+        const Tensor z = L.plan ? L.rows(h.matrix_transpose()).matrix_transpose() : L.W.matmul(h);
+        h = aux_apply(activations_[k], z + L.b.expand_dims(-1));
+    }
     return h.matrix_transpose();
 }
 
