@@ -227,7 +227,10 @@ mscn the same).
   4. every combination of pieces is a child; per child and open polytope Prop. 2 turns the unsafe set
      into rows on the factors, Fourier-Motzkin (`polytope_bound_approx_max_iter` passes) bounds the
      factors, the hull over the polytopes rescales the input, which is propagated again,
-     `refinement_max_iter - 1` times. An empty child is verified.
+     `refinement_max_iter - 1` times. An empty child is verified. A child that is empty, or whose
+     input box did not move in a pass (the next pass would repeat it), leaves the passes (CORA.cpp
+     only: the same children and boxes as CORA's fixed count, with fewer propagations; lsnc_relu
+     instance 0 needs half the Fourier-Motzkin and propagation time).
 - **Queue:** `mini_batch_size` sets per batch (`half-half`: half from the front, half from the back),
   the children in front (`verify_enqueue_type`), at most what `memory_budget` holds; a batch starts
   only if the last one's time fits before the deadline, and the deadline is checked per chunk. Out
