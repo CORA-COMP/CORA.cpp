@@ -84,6 +84,10 @@ Exponents priv_extended_exponents(const Exponents &E, std::size_t rows);
 /// column per coordinate become dependent generators, each on a new factor. Nothing is merged.
 PolyZonotope priv_absorb_rounding(const PolyZonotope &set);
 
+/// The independent block of a linear combination (CORALean's pairSum then pairDiff): the half-sums
+/// of the rows of A and B, then the half-differences, the surplus rows of the longer one copied.
+Tensor priv_pair_independent(const Tensor &A, const Tensor &B);
+
 /// The coordinatewise product of two sets over the same identifiers (CORALean's mul at nearest):
 /// a generator per pair of columns of [c, G], the first slower, exponents added, center 0. Neither
 /// set has independent generators.

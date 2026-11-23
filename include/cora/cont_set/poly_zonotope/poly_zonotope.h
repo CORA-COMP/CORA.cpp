@@ -34,6 +34,8 @@
 // CORA: contSet/@polyZonotope/linComb.m
 // CORA: contSet/@polyZonotope/lift_.m
 // CORA: contSet/@polyZonotope/partZonotope.m
+// CORA: contSet/@polyZonotope/convHull_.m
+// CORA: contSet/@polyZonotope/jacobian.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
@@ -297,6 +299,20 @@ class PolyZonotope : public ContSet {
     PolyZonotope linear_combination(const PolyZonotope &S) const;
     PolyZonotope linear_combination(const Zonotope &Z) const;
     PolyZonotope linear_combination(const Interval &I) const;
+
+    /// A polynomial zonotope that contains the segments between two points of the set (CORA's
+    /// convHull_ of one argument: linear_combination with itself, no hull in general) or the union
+    /// of this set and S (CORA's convHull_ of two): the chords of each set, those with each other.
+    PolyZonotope convex_hull() const;
+    PolyZonotope convex_hull(const PolyZonotope &S) const;
+    PolyZonotope convex_hull(const Zonotope &Z) const;
+    PolyZonotope convex_hull(const Interval &I) const;
+
+    /// The derivative of the dependent part along each factor in ids (default: all), as a
+    /// polynomial zonotope over the same identifiers (CORA's jacobian): E[k, i] times generator i
+    /// with the exponent of k lowered by one, center 0.
+    std::vector<PolyZonotope>
+    jacobian(const std::optional<std::vector<int64_t>> &ids = std::nullopt) const;
 
     /// The set in a space of dimension N with state i at position dims[i] (CORA's lift_, whose
     /// projection is the inverse permutation): a permutation of the coordinates.

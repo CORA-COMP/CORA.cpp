@@ -31,24 +31,6 @@
 namespace cora {
 
 
-// ----------------------------------------  AUXILIARY  ----------------------------------------- //
-
-namespace {
-
-/// The independent block: pairSum then pairDiff, CORALean's pairing at a zero center.
-Tensor aux_independent(const Tensor &A, const Tensor &B) {
-    const int64_t qa = A.shape()[0], qb = B.shape()[0], common = std::min(qa, qb);
-    std::vector<Tensor> sums{(A.slice(-2, 0, common) + B.slice(-2, 0, common)) * 0.5};
-    std::vector<Tensor> diffs{(A.slice(-2, 0, common) - B.slice(-2, 0, common)) * 0.5};
-    if (qa > common) sums.push_back(A.slice(-2, common, qa));
-    if (qb > common) diffs.push_back(B.slice(-2, common, qb));
-    sums.insert(sums.end(), diffs.begin(), diffs.end());
-    return Tensor::concat(sums, -2);
-}
-
-} // namespace
-
-
 // ===========================================  MAIN  =========================================== //
 
 PolyZonotope PolyZonotope::linear_combination(const PolyZonotope &S) const {
@@ -82,7 +64,7 @@ PolyZonotope PolyZonotope::linear_combination(const PolyZonotope &S) const {
     // the identifiers 1, 2, ..., as CORA sets them
     std::vector<int64_t> id(p);
     std::iota(id.begin(), id.end(), int64_t(1));
-    return {(c_ + S.c_) * 0.5, G, aux_independent(GI_, S.GI_), std::move(E), std::move(id),
+    return {(c_ + S.c_) * 0.5, G, priv_pair_independent(GI_, S.GI_), std::move(E), std::move(id),
             detail::Verbatim{}};
 }
 
