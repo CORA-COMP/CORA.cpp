@@ -79,6 +79,7 @@ std::vector<std::vector<double>> aux_independent(const PolyZonotope &P) {
     const int64_t n = P.dim();
     const std::vector<double> g = P.independent_generators().data();
     std::vector<std::vector<double>> out;
+    out.reserve(std::size_t(P.independent_generators().shape()[0]));
     for (int64_t j = 0; j < P.independent_generators().shape()[0]; ++j)
         out.emplace_back(g.begin() + std::ptrdiff_t(j * n),
                          g.begin() + std::ptrdiff_t((j + 1) * n));

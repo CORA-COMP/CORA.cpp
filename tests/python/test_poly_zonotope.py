@@ -167,8 +167,8 @@ class Factors(unittest.TestCase):
     def test_get_subset(self):
         P = known()
         S = P.get_subset([1], np.array([0.5]))
-        np.testing.assert_allclose(S.c, [1.0, 0.0])
-        self.assertEqual(S.dim, 2)
+        # the generator on the factor alone becomes constant and joins the center
+        np.testing.assert_allclose(S.c, [1.5, 0.5])
         T = P.get_subset([1], cora.Interval(np.array([-1.0]), np.array([1.0])))
         self.assertTrue(T.isequal(P))
         U = P.get_subset([1], cora.Interval(np.array([0.0]), np.array([1.0])))
@@ -184,7 +184,9 @@ class Factors(unittest.TestCase):
         self.assertTrue(P.is_bounded())
         Z = cora.Zonotope(np.array([1.0, 1.0]), np.array([[1.0, 0.0], [0.0, 1.0]]))
         self.assertTrue(cora.PolyZonotope(Z).isequal(Z))
-        self.assertTrue(cora.PolyZonotope(Z).is_full_dim())
+        # no proof from the dependent generators alone; independent ones of rank 2 give one
+        self.assertFalse(cora.PolyZonotope(Z).is_full_dim())
+        self.assertTrue(P.plus(cora.Zonotope(np.zeros(2), np.eye(2))).is_full_dim())
         self.assertFalse(P.no_indep().is_full_dim())
         with self.assertRaises(cora.errors.NotSupported):
             cora.PolyZonotope.empty(2)

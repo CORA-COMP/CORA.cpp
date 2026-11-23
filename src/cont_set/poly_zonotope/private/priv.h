@@ -70,10 +70,6 @@ PolyZonotope priv_fold_constants(const PolyZonotope &set);
 PolyZonotope priv_merged_set(const Tensor &c, const Tensor &G, const Tensor &GI, const Exponents &E,
                              const std::vector<int64_t> &id);
 
-/// CORA's aux_isZonotope: the merged exponents have one factor per generator and none is shared,
-/// so that the dependent part is a zonotope.
-bool priv_is_zonotope(const PolyZonotope &set);
-
 /// The position of the identifier in ids, -1 if it is not there.
 int64_t priv_find_id(const std::vector<int64_t> &ids, int64_t id);
 

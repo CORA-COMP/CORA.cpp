@@ -292,23 +292,6 @@ PolyZonotope priv_merged_set(const Tensor &c, const Tensor &G, const Tensor &GI,
             std::move(E_out), std::move(id_out),   detail::Normalized{}};
 }
 
-bool priv_is_zonotope(const PolyZonotope &set) {
-    if (set.num_dependent() == 0) return true;
-    // the factors and the generators pair up one to one
-    if (set.exponents().size() != set.ids().size()) return false;
-    std::vector<int> per_factor(set.ids().size(), 0);
-    for (const std::vector<int> &col : set.exponents()) {
-        int used = 0;
-        for (std::size_t i = 0; i < col.size(); ++i)
-            if (col[i] != 0) {
-                ++used;
-                ++per_factor[i];
-            }
-        if (used > 1) return false;
-    }
-    return std::all_of(per_factor.begin(), per_factor.end(), [](int k) { return k <= 1; });
-}
-
 int64_t priv_find_id(const std::vector<int64_t> &ids, int64_t id) {
     const auto it = std::find(ids.begin(), ids.end(), id);
     return it == ids.end() ? -1 : int64_t(it - ids.begin());

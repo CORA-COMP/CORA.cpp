@@ -1,8 +1,8 @@
 // test_poly_zonotope_is_full_dim - PolyZonotope is_full_dim: whether the set has an interior
 //
-// A rank below n is false. The independent generators of rank n, or a zonotope as the dependent
-// part with rank n, are true. The parabola arc (a, a^2) has rank 2 and no interior: false, where
-// CORA says true (docs/cora-differences.md).
+// CORALean's certificate: true only for independent generators that have a checked right inverse.
+// A rank below n, the parabola arc (a, a^2) and a set full dimensional through its dependent
+// generators alone are false, where CORA says true for the last two (docs/cora-differences.md).
 //
 // CORA: contSet/@polyZonotope/isFullDim.m
 // PROPERTY: contSet/@polyZonotope/isFullDim.m
@@ -16,7 +16,6 @@
 
 using namespace cora;
 using test::check;
-using test::close;
 using test::vec;
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -33,7 +32,7 @@ int main() {
         // two factors, one per generator: a box
         const PolyZonotope box(vec({0.0, 0.0}), I2, Tensor::zeros({0, 2}), {{1, 0}, {0, 1}},
                                {1, 2});
-        check(box.is_full_dim(), b + ": a zonotope of full rank");
+        check(!box.is_full_dim(), b + ": full dimensional through dependent generators: no proof");
         // independent generators of rank n
         const PolyZonotope indep(vec({0.0, 0.0}), Tensor::from_data({1, 1}, {1, 2}), I2, {{1}},
                                  {1});

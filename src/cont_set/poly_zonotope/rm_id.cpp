@@ -37,11 +37,15 @@ PolyZonotope PolyZonotope::rm_id(const std::vector<int64_t> &ids) const {
     std::vector<std::size_t> keep;
     for (std::size_t i = 0; i < id_.size(); ++i)
         if (std::find(ids.begin(), ids.end(), id_[i]) == ids.end()) keep.push_back(i);
+    // the remaining identifiers and, per generator, the remaining exponents
     std::vector<int64_t> id;
+    id.reserve(keep.size());
     for (const std::size_t i : keep) id.push_back(id_[i]);
     Exponents E;
+    E.reserve(E_.size());
     for (const std::vector<int> &col : E_) {
         std::vector<int> kept;
+        kept.reserve(keep.size());
         for (const std::size_t i : keep) kept.push_back(col[i]);
         E.push_back(std::move(kept));
     }
