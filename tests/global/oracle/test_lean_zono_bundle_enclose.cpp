@@ -46,9 +46,9 @@ void aux_check(const ZonoBundle &mine, const lean::ZonoBundle &theirs) {
     for (std::size_t i = 0; i < mine.zonotopes().size(); ++i) {
         const Zonotope &a = mine.zonotopes()[i], &b = other.zonotopes()[i];
         test::check(a.nr_generators() == b.nr_generators(), "encloseCora: generator count");
-        test::check(oracle::agree("encloseCora.c", a.center().expand_dims(-1),
-                                  b.center().expand_dims(-1)),
-                    "encloseCora: the same center");
+        test::check(
+            oracle::agree("encloseCora.c", a.center().expand_dims(-1), b.center().expand_dims(-1)),
+            "encloseCora: the same center");
         test::check(aux_sorted_columns(a) == aux_sorted_columns(b),
                     "encloseCora: the same generators, in another order");
     }

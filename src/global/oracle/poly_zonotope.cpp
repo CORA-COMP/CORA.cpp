@@ -145,6 +145,7 @@ PolyZonotope PolyZonotope::quad_map(const std::vector<Tensor> &Q) const {
     return aux_set("polyZonotope.quadMap", {{"P", *this}, {"Q", Q}});
 }
 
+// the compaction and the projection
 PolyZonotope PolyZonotope::compact() const {
     return aux_set("polyZonotope.compact", {{"P", *this}});
 }

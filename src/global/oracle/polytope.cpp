@@ -91,8 +91,8 @@ Polytope Polytope::complement(double eps) const {
 }
 
 Polytope Polytope::normalize_constraints_cora(const Interval &dom) const {
-    return aux_set(ask("polytope.normalizeConstraintsCora",
-                       {{"P", *this}, {"dom", dom}, {"type", "b"}}));
+    return aux_set(
+        ask("polytope.normalizeConstraintsCora", {{"P", *this}, {"dom", dom}, {"type", "b"}}));
 }
 
 Polytope Polytope::mink_diff_cora(const Interval &I) const {

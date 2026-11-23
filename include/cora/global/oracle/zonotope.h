@@ -87,7 +87,8 @@ class Zonotope {
     Zonotope intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,
                              const Tensor &Lambda) const;
 
-    /// The same in CORA.cpp's order (`zonotope.intersectStripCora`): the center c + Lambda (y - C c).
+    /// The same in CORA.cpp's order (`zonotope.intersectStripCora`): the center c + Lambda (y - C
+    /// c).
     Zonotope intersect_strip_cora(const Tensor &C, const Tensor &phi, const Tensor &y,
                                   const Tensor &Lambda) const;
 

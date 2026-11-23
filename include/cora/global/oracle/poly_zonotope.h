@@ -32,6 +32,8 @@ namespace cora::lean {
 
 class PolyZonotope {
   public:
+    // Construction --------------------------------------------------------------------------------
+
     /// The exact set (empty error box) of a cora::PolyZonotope, in the current dtype.
     PolyZonotope(const cora::PolyZonotope &P);
 
@@ -55,7 +57,7 @@ class PolyZonotope {
     const cora::Exponents &exponents() const noexcept { return Exp_; }
     const std::vector<int64_t> &ids() const noexcept { return id_; }
 
-    // Operations -------------------------------------------------------------------------------
+    // Operations ----------------------------------------------------------------------------------
 
     /// The sum with a polynomial zonotope (its factors independent), a zonotope, a box or a point.
     PolyZonotope plus(const PolyZonotope &Q) const;

@@ -1,10 +1,10 @@
-// test_lean_polytope_normalize_constraints - Polytope::normalize_constraints against the CORALean
-// oracle, bit for bit
+// test_lean_polytope_normalize_constraints - Polytope::normalize_constraints against the oracle
 //
-// Type "b": an inequality row is divided by the magnitude of its offset, an equality row by its
-// offset, a row of offset zero by 1 (CORA.cpp divides; `polytope.normalizeConstraints` multiplies
-// by the reciprocal and is another set of bits). The oracle takes a box dom for the rounding of
-// the rows; at nearest the rounding is none. The offsets are of both signs, and one is zero.
+// Bit for bit. Type "b": an inequality row is divided by the magnitude of its offset, an equality
+// row by its offset, a row of offset zero by 1 (CORA.cpp divides; `polytope.normalizeConstraints`
+// multiplies by the reciprocal and is another set of bits). The oracle takes a box dom for the
+// rounding of the rows; at nearest the rounding is none. The offsets are of both signs, and one is
+// zero.
 //
 // ORACLE: contSet/@polytope/normalizeConstraints.m
 // Authors:       Claude Sonnet 5.5

@@ -1,11 +1,10 @@
-// test_lean_zonotope_intersect_strip - Zonotope::intersect_strip against the CORALean oracle, bit
-// for bit
+// test_lean_zonotope_intersect_strip - Zonotope::intersect_strip against the CORALean oracle
 //
-// For a given gain Lambda the oracle's `zonotope.intersectStripCora` has CORA.cpp's center
-// c + Lambda (y - C c) and the generators [(I - Lambda C) G, Lambda diag(phi)]. The rounding of the
-// interval matrix adds generators, all zero at nearest, which the test drops. (`zonotope.
-// intersectStrip` forms the center as (I - Lambda C) c + Lambda y and is only compared by its box in
-// test_lean_zonotope_measures_bound.) The choice of the gain is not compared.
+// Bit for bit. For a given gain Lambda the oracle's `zonotope.intersectStripCora` has CORA.cpp's
+// center c + Lambda (y - C c) and the generators [(I - Lambda C) G, Lambda diag(phi)]. The rounding
+// of the interval matrix adds generators, all zero at nearest, which the test drops. (`zonotope.
+// intersectStrip` forms the center as (I - Lambda C) c + Lambda y and is only compared by its box
+// in test_lean_zonotope_measures_bound.) The choice of the gain is not compared.
 //
 // ORACLE: contSet/@zonotope/intersectStrip.m
 // Authors:       Claude Sonnet 5.5
@@ -53,6 +52,7 @@ int main() {
             const Zonotope Z = rnd.zonotope(n, m);
             const Tensor C = rnd.matrix(k, n), Lambda = rnd.matrix(n, k), y = rnd.vector(k);
             const Tensor phi = Tensor::from_data({0.5, 1.5, 1.0}, {3, 1}).slice(-2, 0, k);
+            // CORA.cpp's result at the gain, and the oracle's
             const Zonotope mine = Z.intersect_strip(C, phi.squeeze(-1), y.squeeze(-1), Lambda);
             const auto [theirs, error] =
                 lean::Zonotope(Z).intersect_strip_cora(C, phi, y, Lambda).gather();
