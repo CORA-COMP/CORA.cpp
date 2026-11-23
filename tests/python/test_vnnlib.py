@@ -96,8 +96,7 @@ class Version2(unittest.TestCase):
         np.testing.assert_array_equal(b, [-1.5])
 
     def test_input_atoms(self):
-        # an input fixed by ==, a scaled bound, and 2000 inputs of a box (sparse rows); a
-        # sum of two inputs is no box
+        # an input fixed by ==, a scaled bound and 2000 inputs of a box; a sum of inputs is no box
         n = 2000
         head = (
             "(vnnlib-version <2.0>)\n(declare-network N\n"
