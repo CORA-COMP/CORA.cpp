@@ -77,7 +77,8 @@ NonlinearSys::NonlinearSys(const InputDynamics &f, int64_t n, int64_t m, int64_t
     f_ = f(x, u);
     CORA_CHECK(static_cast<int64_t>(f_.size()) == r, Error::wrong_input_in_constructor, [&] {
         return "NonlinearSys: the dynamics returned " + std::to_string(f_.size()) +
-               " components, expected " + std::to_string(r);
+               " components for a system of dimension " + std::to_string(n) +
+               (r == n ? "" : " with " + std::to_string(r) + " components");
     });
     // Row-major over z = (x, u): the Jacobian (i, j) and its symmetric Hessian (i, j, k).
     const int64_t d = n + m;
