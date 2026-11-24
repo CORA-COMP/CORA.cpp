@@ -213,4 +213,4 @@ AINNCS,NAV robust,CORA,2.271,,AINNCS report Tab. 1
 AINNCS,NAV robust,CROWN-Reach,22.461,,AINNCS report Tab. 2
 AINNCS,NAV robust,immrax,32.636,other-problem,AINNCS report Tab. 3 (continuous feedback)
 AINNCS,NAV robust,JuliaReach,7.576,,AINNCS report Tab. 4
-AINNCS,CartPole*,CORA,227.216,,AINNCS report Tab. 1
+AINNCS,CartPole*,CORA,227.216,other-problem,AINNCS report Tab. 1

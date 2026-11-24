@@ -43,21 +43,23 @@ def main():
         return 1
     rows = [table_row(category, label, readme[category][name], times.get(label, {}))
             for category, label, name, _ in ROWS]
-    text = render(rows, readme)
+    texts = {OUTPUT: render(rows, readme), SUMMARY: render_summary(rows)}
     # the medians, next to the README's summary, so that a reader of the log sees both
     for category in CATEGORIES:
         values = [r["speedup"] for r in rows if r["category"] == category and r["speedup"] and not r["indicative"]]
         print(f"{category}: median speedup {fmt_speedup(statistics.median(values))} over {len(values)} "
               f"instances (README summary: {readme['summary'].get(category, '?')})")
-    out = REPO / OUTPUT
+    # compare with the committed files, or write them
+    stale = [name for name, text in texts.items()
+             if not (REPO / name).exists() or (REPO / name).read_text(encoding="utf-8") != text]
     if args.check:
-        if not out.exists() or out.read_text(encoding="utf-8") != text:
-            print(f"  {OUTPUT} is stale; run python3 scripts/paper/arch_table.py")
-            return 1
-        return 0
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(text, encoding="utf-8")
-    print(f"arch_table: wrote {OUTPUT}")
+        for name in stale:
+            print(f"  {name} is stale; run python3 scripts/paper/arch_table.py")
+        return 1 if stale else 0
+    for name, text in texts.items():
+        (REPO / name).parent.mkdir(parents=True, exist_ok=True)
+        (REPO / name).write_text(text, encoding="utf-8")
+        print(f"arch_table: wrote {name}")
     return 0
 
 
@@ -70,6 +72,8 @@ README = "examples/benchmarks/README.md"
 TIMES = "examples/benchmarks/data/arch26_tool_times.csv"
 
 OUTPUT = "paper/generated/arch-comp-table.tex"
+
+SUMMARY = "paper/generated/arch-comp-summary.tex"
 
 CATEGORIES = ("AFF", "NLN", "AINNCS")
 
@@ -120,21 +124,21 @@ ROWS = ([("AFF", name.replace("_", "-"), name, note) for name, note in (
         ("Docking", "Docking constraint", "g"),
         ("NAV standard", "NAV standard", "i"),
         ("NAV robust", "NAV robust", ""),
-        ("CartPole*", "CartPole* reach", "hi"))])
+        ("CartPole*", "CartPole reach, the report's set", "hi"))])
 
 # the rows of the README tables that are not rows of the paper's table, and why
 EXCLUDED = {
     "ISSC01_ISS02": "not in ARCH26", "ISSC01_ISU02": "not in ARCH26", "ISSF01_ISS01": "not in ARCH26",
     "ISSF01_ISU01": "not in ARCH26", "RAND01": "not in ARCH26", "RAND02": "not in ARCH26",
-    "Unicycle reach": "the script without the report's disturbance (note e)",
-    "Double Pendulum less-robust, the script (no splitting)": "note f",
-    "Docking constraint, polytope and splitting": "note g",
-    "CartPole reach, the report's set": "note h",
+    # variants that are not the problem of the specification (the user, 2026-11-24: only the specification's)
+    "Unicycle reach": "the script without the specification's disturbance",
+    "Double Pendulum less-robust, the script (no splitting)": "the same problem; the row splits",
+    "Docking constraint, polytope and splitting": "another constraint set than the specification's",
+    "CartPole* reach": "the script's smaller initial set, not the specification's",
 }
 
 # README rows quoted by the notes (their CORA.cpp times)
-QUOTED = {"e": "Unicycle reach", "f": "Double Pendulum less-robust, the script (no splitting)",
-          "g": "Docking constraint, polytope and splitting", "h": "CartPole reach, the report's set"}
+QUOTED = {}
 
 # the notes on single rows; {t} is the CORA.cpp time of the README row that QUOTED names
 NOTES = {
@@ -146,14 +150,11 @@ NOTES = {
     "c": "PLAN01, BRKNP01: the report verifies them with another setup than CORA's ARCH23 script, which does not "
          "verify them, neither in MATLAB nor in CORA++ (\\ddag).",
     "d": "LOVO25: CORA++ gives a sound verdict; CORA's script sets the result to true without a test.",
-    # the rows of the report's problem whose README variants the note quotes
-    "e": "Unicycle: CORA++ with the report's disturbance $w$; with $w = 0$, as CORA's script, {t}\\,s.",
-    "f": "DP less-robust: CORA++ splits the initial set (depth 14); without splitting, as CORA's "
-         "script, the verdict is UNKNOWN ({t}\\,s).",
-    "g": "Docking: UNKNOWN for CORA, JuliaReach and CORA++ on the whole initial set; CORA++ verifies it with a "
-         "polytope inside the constraint and a splitting of the initial set in {t}\\,s, which no other tool does.",
-    "h": "CartPole*: the initial set has 0.4 times the radius of the report's, as CORA ran it; CORA++ verifies "
-         "the report's set in {t}\\,s, which no tool ran.",
+    # the rows where the specification's problem needs a word
+    "e": "Unicycle: with the disturbance $w$ of the specification.",
+    "f": "DP less-robust: CORA++ splits the initial set (depth 14).",
+    "g": "Docking: UNKNOWN for CORA, JuliaReach and CORA++.",
+    "h": "CartPole*: the initial set of the specification; CORA's time is for 0.4 times its radius (\\dag).",
     "i": "CORA++ runs the 13 boxes of the initial set of CVDP23 and the pieces of a split initial set (DP "
          "less-robust, QUAD, NAV standard, CartPole*) on 8 threads.",
 }
@@ -247,13 +248,15 @@ def table_row(category, label, readme_row, entries):
     cpp_time = number(readme_row["CORA.cpp [s]"])
     expected = first_token(readme_row["expected (ARCH26)"])
     verdict = first_token(readme_row["CORA.cpp"])
-    cpp_counts = verdict == expected and verdict not in ("U", "-")
+    # a verdict counts if it is the expected one, or a verified one where no tool has a verdict
+    cpp_counts = verdict not in ("U", "-") and (verdict == expected or (expected == "-" and verdict in ("V", "1")))
     # only the shown tools take part in the bold time and the speedup
     entries = {tool: entries[tool] for tool, _ in TOOLS if tool in entries}
     counted = [float(t) for t, note in entries.values() if not note]
     best_other = min(counted) if counted else None
     fastest = min(counted + ([float(cpp_time)] if cpp_counts else []), default=None)
     speedup = best_other / float(cpp_time) if cpp_counts and best_other is not None else None
+    # each tool's cell, bold where it is the fastest counted time
     tool_cells = []
     for tool, _ in TOOLS:
         if tool not in entries:
@@ -261,7 +264,12 @@ def table_row(category, label, readme_row, entries):
             continue
         value, note = entries[tool]
         tool_cells.append(cell(value, MARKS.get(note, ""), not note and float(value) == fastest))
-    return {"category": category, "label": label, "tools": tool_cells, "speedup": speedup,
+    # the tools with the fastest counted time, for the summary table
+    winners = [tool for tool, _ in TOOLS if tool in entries and not entries[tool][1]
+               and float(entries[tool][0]) == fastest]
+    if cpp_counts and float(cpp_time) == fastest:
+        winners.append("CORA++")
+    return {"category": category, "label": label, "tools": tool_cells, "speedup": speedup, "winners": winners,
             "cpp": cell(cpp_time, "" if cpp_counts else MARKS["verdict"],
                         cpp_counts and float(cpp_time) == fastest),
             "indicative": label.startswith("RND")}
@@ -341,6 +349,33 @@ def render(rows, readme):
     out.append((" \\\\\n").join([*lines, *marks]))
     out.append(r"\par")
     out.append(r"\endgroup")
+    return "\n".join(out) + "\n"
+
+
+def render_summary(rows):
+    """The table of the main body: per category the instances, how often each tool is the fastest, and the
+    median and quartiles of the speedup (the instances with a speedup, RND left out as in the long table)."""
+    names = [t for t, _ in TOOLS] + ["CORA++"]
+    out = [
+        f"% Generated by {Path(__file__).relative_to(REPO).as_posix()} from {README} and {TIMES};",
+        "% do not edit. Needs booktabs; the long table is tab:arch-comp-long.",
+        r"\begin{tabular}{@{}lr" + "r" * len(names) + "rrr@{}}",
+        r"\toprule",
+        r" & & \multicolumn{" + str(len(names)) + r"}{c}{fastest} & \multicolumn{3}{c@{}}{speedup} \\",
+        r"\cmidrule(lr){3-" + str(2 + len(names)) + r"}\cmidrule(l){" + str(3 + len(names)) + "-"
+        + str(5 + len(names)) + "}",
+        "Category & Instances & " + " & ".join(names) + r" & $Q_1$ & median & $Q_3$ \\",
+        r"\midrule",
+    ]
+    # one row per category: the counts, then the quartiles of the speedups
+    for category in CATEGORIES:
+        mine = [r for r in rows if r["category"] == category]
+        wins = [sum(name in r["winners"] for r in mine) for name in names]
+        values = sorted(r["speedup"] for r in mine if r["speedup"] and not r["indicative"])
+        q1, median, q3 = statistics.quantiles(values, n=4, method="inclusive")
+        cells = [category, str(len(mine)), *map(str, wins), fmt_speedup(q1), fmt_speedup(median), fmt_speedup(q3)]
+        out.append(" & ".join(cells) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(out) + "\n"
 
 
