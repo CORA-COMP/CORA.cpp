@@ -5646,6 +5646,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(pgd_step_size, "PGD: the step as a share of the box radius");
     CORA_VERIFY_FIELD(pgd_decay, "PGD: the factor of the step at each decay point");
     CORA_VERIFY_FIELD(pgd_decay_at, "PGD: the decay points as shares of the steps");
+    // the PGD steps, hops and polish
     CORA_VERIFY_FIELD(pgd_step_sizes,
                       "PGD: the steps of the restarts as shares of the radius, cycled");
     CORA_VERIFY_FIELD(pgd_step_decay, "PGD: the factor of the step at every step");
@@ -5657,6 +5658,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(pgd_polish_steps,
                       "PGD: the Adam steps polishing the best points near a basin");
     CORA_VERIFY_FIELD(pgd_polish_step, "PGD: the polish's step as a share of the radius");
+    CORA_VERIFY_FIELD(pgd_polish_every, "PGD: the hops between polishes");
     CORA_VERIFY_FIELD(pgd_polish_keep, "PGD: the best points that are polished");
     CORA_VERIFY_FIELD(pgd_sign_windows,
                       "PGD: the half-width of the sign's straight-through gradient, per round");

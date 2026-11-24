@@ -96,6 +96,7 @@ struct NnVerifyOptions {
     int64_t pgd_polish_steps = 0;
     double pgd_polish_step = 0.0006;
     int64_t pgd_polish_keep = 8;
+    int64_t pgd_polish_every = 1; ///< the hops between polishes (after each round, always)
     /// The half-widths of the sign activation's straight-through gradient (1 on |z| <= w), one per
     /// round of restarts in turn (alpha-beta-CROWN's tight 0.1 and loose 5 SignMerge on
     /// traffic_signs); the candidates are always checked on the true network.

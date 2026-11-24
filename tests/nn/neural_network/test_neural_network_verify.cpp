@@ -1150,8 +1150,7 @@ void pgd_momentum_steps(const std::string &b) {
     check(make_attack("pgd", hop)->run(none, now_seconds() + 10.0, 1).iterations ==
               hop.pgd_steps + 3 * hop.pgd_hop_steps,
           b + ": PGD hops with the default jump");
-    // the polish: Adam's steps from the best points once one is near the unsafe set (every point
-    // is, below +1000, but the check rejects them all), never far from it
+    // the polish near the unsafe set (the check rejects every point below +1000), not far from it
     NnVerifyOptions pol = o;
     pol.pgd_polish_steps = 6;
     pol.pgd_polish_keep = 3;
@@ -1170,7 +1169,7 @@ void pgd_momentum_steps(const std::string &b) {
     NnProblem slow(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), o, ConfirmFn{});
     check(make_attack("pgd", o)->run(slow, now_seconds() + 10.0, 1).iterations == o.pgd_steps,
           b + ": PGD with momentum shrinks its restarts");
-    // the options must be in range
+    // the options must be in range, each tried by itself
     const auto invalid = [&](const NnVerifyOptions &q) {
         try {
             q.validate();
@@ -1181,6 +1180,7 @@ void pgd_momentum_steps(const std::string &b) {
     };
     NnVerifyOptions bad = o;
     bad.pgd_step_sizes = {0.1, 0.0};
+    // each option out of range alone
     const bool sizes = invalid(bad);
     bad = o;
     bad.pgd_step_decay = 1.5;

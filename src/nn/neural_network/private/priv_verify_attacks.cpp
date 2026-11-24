@@ -81,7 +81,7 @@ class PgdAttack : public Attack {
           hops_(fgsm ? 0 : o.pgd_hops), hop_steps_(o.pgd_hop_steps), hop_keep_(o.pgd_hop_keep),
           hop_jumps_(o.pgd_hop_jumps.empty() ? std::vector<double>{0.4} : o.pgd_hop_jumps),
           polish_steps_(fgsm ? 0 : o.pgd_polish_steps), polish_step_(o.pgd_polish_step),
-          polish_keep_(o.pgd_polish_keep) {
+          polish_keep_(o.pgd_polish_keep), polish_every_(o.pgd_polish_every) {
         if (!fgsm)
             for (const double f : o.pgd_decay_at) decay_steps_.insert(int64_t(f * double(steps_)));
     }
@@ -151,7 +151,9 @@ class PgdAttack : public Attack {
                 if (aux_descend(problem, deadline, h, hx, hbest_x, hbest_loss, hop_steps_, &none,
                                 window, {nullptr, nullptr}, result))
                     return;
-                if (aux_polish(problem, deadline, h, hbest_x, hbest_loss, window, result)) return;
+                if ((hop + 1) % polish_every_ == 0 &&
+                    aux_polish(problem, deadline, h, hbest_x, hbest_loss, window, result))
+                    return;
                 // the elite: the hop's points replace the worst ones of the round
                 const Tensor all_loss = Tensor::concat({best_loss, hbest_loss}, 0);
                 const Tensor all_x = Tensor::concat({best_x, hbest_x}, 0);
@@ -166,7 +168,7 @@ class PgdAttack : public Attack {
     /// 1e-4 of the unsafe set; true once a candidate passes the confirm check.
     bool aux_polish(NnProblem &problem, double deadline, const Rows &r, const Tensor &best_x,
                     const Tensor &best_loss, double window, AttackResult &result) {
-        if (polish_steps_ <= 0 || best_loss.min(0).data()[0] > 1e-4) return false;
+        if (polish_steps_ <= 0 || best_loss.min(0).data()[0] > numerics::kPolishGate) return false;
         const Tensor order = best_loss.argsort(0, false).slice(0, 0, polish_keep_);
         Rows p = aux_take(r, order);
         Tensor px = best_x.take(order, 0), pbest_x = px, pbest_loss = best_loss.take(order, 0);
@@ -203,7 +205,7 @@ class PgdAttack : public Attack {
                 best_x = Tensor::where(better.expand_dims(-1), before, best_x);
                 best_loss = Tensor::where(better, loss, best_loss);
             }
-            // the sign of the running mean of the gradients (momentum 0: of the gradient)
+            // Adam's step (the polish), else the sign of the running mean of the gradients
             if (adam) {
                 mean = mean * 0.9 + g * 0.1;
                 square = square * 0.999 + g.square() * 0.001;
@@ -211,7 +213,7 @@ class PgdAttack : public Attack {
                     (mean * (1.0 / (1.0 - std::pow(0.9, double(step + 1)))))
                         .divide(
                             (square * (1.0 / (1.0 - std::pow(0.999, double(step + 1))))).sqrt() +
-                            1e-8);
+                            numerics::kAdamFloor);
                 x = (x - alpha.multiply(direction)).maximum(r.lo).minimum(r.hi);
                 alpha = alpha * 0.999;
             } else if (momentum_ > 0) {
@@ -221,12 +223,14 @@ class PgdAttack : public Attack {
                 x = priv_sign_step(x, g, alpha).maximum(r.lo).minimum(r.hi);
             }
             if (!adam && step_decay_ < 1.0) alpha = alpha * step_decay_;
+            // the counts, and the candidates of this step's points
             ++result.iterations;
             result.evaluations += x.shape()[0];
             if (priv_confirm_rows(problem, before, loss, result)) return true;
             if (now_seconds() >= deadline) break;
             // too slow for pgd_min_steps steps in the time left: fewer restarts per box
             const double took = now_seconds() - started, left = deadline - now_seconds();
+            // the shrunk rows, each state with them
             if (step == 0 && shrink.per_box && *shrink.per_box > 1 &&
                 took * double(min_steps_) > left) {
                 const double share = left / (took * double(min_steps_));
@@ -300,6 +304,7 @@ class PgdAttack : public Attack {
         r.cases = problem.search_case.take(rows, 0);
         r.radius = (r.hi - r.lo) * 0.5;
         r.center = (r.lo + r.hi) * 0.5;
+        // the marks and the steps
         r.is_first = Tensor::like(r.lo, first, {int64_t(first.size()), 1});
         r.targets = Tensor::like(r.lo, target, {int64_t(target.size()), 1});
         r.fraction = Tensor::like(r.lo, fraction, {int64_t(fraction.size()), 1});
@@ -316,7 +321,7 @@ class PgdAttack : public Attack {
     std::vector<double> hop_jumps_;
     int64_t polish_steps_;
     double polish_step_;
-    int64_t polish_keep_;
+    int64_t polish_keep_, polish_every_;
     std::set<int64_t> decay_steps_;
 };
 

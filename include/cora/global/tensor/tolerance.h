@@ -96,6 +96,10 @@ inline constexpr double kKrylovMinTimeStep = 1e-10; ///< Krylov verify: below th
 inline constexpr double kKrylovError = 1e-10;       ///< Krylov: default tolerance of the bound
 inline constexpr double kTaylorStepMatch = 1e-10;   ///< step sizes this close share a cache entry
 inline constexpr double kBatchNormEpsilon = 1e-5;   ///< nnBatchNormLayer: the variance's offset
+inline constexpr double kAdamFloor =
+    1e-8; ///< PGD's polish: added to the root of Adam's second moment
+inline constexpr double kPolishGate =
+    1e-4; ///< PGD's polish starts within this loss of the unsafe set
 inline constexpr double kBoxMargin = 1e-10;  ///< the absolute margin of an inflated enclosure
 inline constexpr double kNewtonStep = 1e-10; ///< a Newton step of this 2-norm ends the iteration
 inline constexpr double kInternalConsistency = 1e-9; ///< recomputed bounds agree up to this
