@@ -71,7 +71,10 @@ class PgdAttack : public Attack {
           rounds_(fgsm ? 1 : -1), min_steps_(fgsm ? 1 : o.pgd_min_steps),
           step_size_(fgsm ? 1.0 : o.pgd_step_size), decay_(o.pgd_decay), seed_(o.seed),
           targeted_(!fgsm && o.pgd_targeted),
-          windows_(o.pgd_sign_windows.empty() ? std::vector<double>{1.0} : o.pgd_sign_windows) {
+          windows_(o.pgd_sign_windows.empty() ? std::vector<double>{1.0} : o.pgd_sign_windows),
+          sizes_(o.pgd_step_sizes.empty() || fgsm ? std::vector<double>{step_size_}
+                                                  : o.pgd_step_sizes),
+          step_decay_(fgsm ? 1.0 : o.pgd_step_decay), momentum_(fgsm ? 0.0 : o.pgd_momentum) {
         if (!fgsm)
             for (const double f : o.pgd_decay_at) decay_steps_.insert(int64_t(f * double(steps_)));
     }
@@ -104,7 +107,8 @@ class PgdAttack : public Attack {
             rng.uniform(u.data(), u.size(), 0.0, 1.0);
             Tensor x = r.lo + Tensor::like(r.lo, u, r.lo.shape()).multiply(r.hi - r.lo);
             if (round == 0) x = Tensor::where(r.is_first, r.center, x);
-            Tensor alpha = r.radius * step_size_;
+            Tensor alpha = r.radius.multiply(r.fraction);
+            Tensor mean = x.zeros_like();
             const double window = windows_[std::size_t(round) % windows_.size()];
             for (int64_t step = 0; step < steps_; ++step) {
                 if (decay_steps_.count(step)) alpha = alpha * decay_;
@@ -114,7 +118,14 @@ class PgdAttack : public Attack {
                 const Tensor g = problem.objective_gradient(
                     x, r.cases, &loss, targeted_ ? &r.targets : nullptr, window);
                 const Tensor before = x;
-                x = priv_sign_step(x, g, alpha).maximum(r.lo).minimum(r.hi);
+                // the sign of the running mean of the gradients (momentum 0: of the gradient)
+                if (momentum_ > 0) {
+                    mean = mean * momentum_ + g * (1.0 - momentum_);
+                    x = priv_sign_step(x, mean, alpha).maximum(r.lo).minimum(r.hi);
+                } else {
+                    x = priv_sign_step(x, g, alpha).maximum(r.lo).minimum(r.hi);
+                }
+                if (step_decay_ < 1.0) alpha = alpha * step_decay_;
                 ++result.iterations;
                 result.evaluations += x.shape()[0];
                 if (priv_confirm_rows(problem, before, loss, result)) return;
@@ -131,6 +142,7 @@ class PgdAttack : public Attack {
                     r = aux_rows(problem, groups, per_box);
                     x = x.take(kept, 0);
                     alpha = alpha.take(kept, 0);
+                    mean = mean.take(kept, 0);
                 }
             }
             // the last iterate too
@@ -161,12 +173,12 @@ class PgdAttack : public Attack {
 
     /// The boxes of the samples, per_box of each group in a row, the first of each box marked.
     struct Rows {
-        Tensor lo, hi, cases, radius, center, is_first, targets;
+        Tensor lo, hi, cases, radius, center, is_first, targets, fraction;
     };
-    static Rows aux_rows(const NnProblem &problem, const std::vector<Group> &groups,
-                         int64_t per_box) {
+    Rows aux_rows(const NnProblem &problem, const std::vector<Group> &groups,
+                  int64_t per_box) const {
         std::vector<int64_t> rows;
-        std::vector<double> first, target;
+        std::vector<double> first, target, fraction;
         for (std::size_t g = 0; g < groups.size(); ++g)
             for (int64_t j = 0; j < per_box; ++j) {
                 rows.push_back(groups[g].box);
@@ -174,6 +186,8 @@ class PgdAttack : public Attack {
                 const bool new_box = g == 0 || groups[g - 1].box != groups[g].box;
                 first.push_back(j == 0 && new_box ? 1.0 : 0.0);
                 target.push_back(double(std::max<int64_t>(0, groups[g].target)));
+                // the step of this restart, cycled over the sizes
+                fraction.push_back(sizes_[std::size_t(j) % sizes_.size()]);
             }
         // their boxes, centers and radii
         Rows r;
@@ -184,6 +198,7 @@ class PgdAttack : public Attack {
         r.center = (r.lo + r.hi) * 0.5;
         r.is_first = Tensor::like(r.lo, first, {int64_t(first.size()), 1});
         r.targets = Tensor::like(r.lo, target, {int64_t(target.size()), 1});
+        r.fraction = Tensor::like(r.lo, fraction, {int64_t(fraction.size()), 1});
         return r;
     }
 
@@ -191,7 +206,8 @@ class PgdAttack : public Attack {
     double step_size_, decay_;
     uint64_t seed_;
     bool targeted_ = false;
-    std::vector<double> windows_;
+    std::vector<double> windows_, sizes_;
+    double step_decay_, momentum_;
     std::set<int64_t> decay_steps_;
 };
 

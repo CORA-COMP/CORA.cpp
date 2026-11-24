@@ -74,6 +74,15 @@ struct NnVerifyOptions {
     double pgd_step_size = 0.25; ///< times the box radius
     double pgd_decay = 0.5;
     std::vector<double> pgd_decay_at = {0.5, 0.75}; ///< fractions of the steps
+    /// The step of each restart as a share of the box radius, cycled over a box's restarts (a
+    /// basin only a certain step reaches, alpha-beta-CROWN's multi-alpha PGD); empty:
+    /// pgd_step_size.
+    std::vector<double> pgd_step_sizes = {};
+    /// The factor of the step at every step (alpha-beta-CROWN's pgd_lr_decay), besides pgd_decay.
+    double pgd_step_decay = 1.0;
+    /// The sign step takes the sign of the running mean of the gradients with this momentum (the
+    /// sign of Adam's step, alpha-beta-CROWN's attack): 0 is the sign of the gradient itself.
+    double pgd_momentum = 0.0;
     /// The half-widths of the sign activation's straight-through gradient (1 on |z| <= w), one per
     /// round of restarts in turn (alpha-beta-CROWN's tight 0.1 and loose 5 SignMerge on
     /// traffic_signs); the candidates are always checked on the true network.

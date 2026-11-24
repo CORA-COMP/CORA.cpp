@@ -5646,6 +5646,10 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(pgd_step_size, "PGD: the step as a share of the box radius");
     CORA_VERIFY_FIELD(pgd_decay, "PGD: the factor of the step at each decay point");
     CORA_VERIFY_FIELD(pgd_decay_at, "PGD: the decay points as shares of the steps");
+    CORA_VERIFY_FIELD(pgd_step_sizes,
+                      "PGD: the steps of the restarts as shares of the radius, cycled");
+    CORA_VERIFY_FIELD(pgd_step_decay, "PGD: the factor of the step at every step");
+    CORA_VERIFY_FIELD(pgd_momentum, "PGD: the momentum of the gradient whose sign is the step");
     CORA_VERIFY_FIELD(pgd_sign_windows,
                       "PGD: the half-width of the sign's straight-through gradient, per round");
     CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
