@@ -42,6 +42,10 @@ struct PrivApprox {
 PrivApprox priv_approx_poly(Activation activation, double l, double u, int order,
                             PolyMethod method);
 
+/// CORA's computeApproxError of a given polynomial: p moved by the middle of its difference to
+/// the activation over [l, u], and the radius of what is left.
+PrivApprox priv_approx_error(Activation activation, std::vector<double> coeffs, double l, double u);
+
 /// The values of p (highest power first) at x.
 double priv_polyval(const std::vector<double> &p, double x);
 

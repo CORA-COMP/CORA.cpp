@@ -173,6 +173,14 @@ NnVerifyResult NeuralNetwork::verify(const NnProperty &property, double timeout,
                                      const ConfirmFn &confirm) const {
     detail::Entry entry;
     const double start = now_seconds();
+    // the activations of this port's layers beyond VNN-COMP's: sets and points only
+    for (const Activation a : activations_)
+        CORA_CHECK(a != Activation::softplus && a != Activation::root &&
+                       a != Activation::inv_sqrt_root && a != Activation::group_sort,
+                   Error::not_supported, [] {
+                       return std::string("verify: softplus, root, inv_sqrt_root and group_sort "
+                                          "layers are not in the verifier's activations");
+                   });
     // the boxes have the input dimension, the polytopes the output dimension
     CORA_CHECK(property.lo.ndim() == 2 && property.lo.shape() == property.hi.shape() &&
                    property.lo.shape()[1] == input_dim() && property.lo.shape()[0] > 0,

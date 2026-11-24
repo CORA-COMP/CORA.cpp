@@ -119,8 +119,18 @@ Tensor aux_apply(Activation activation, const Tensor &x, int axis = -1) {
         return x.exp();
     case Activation::reciprocal:
         return x.ones_like().divide(x.maximum(1.0));
+    // CORA's softplus (sharpness 1), root and inverse square root layers
+    case Activation::softplus:
+        return (x.ones_like() + x.exp()).log();
+    case Activation::root:
+        return x.sqrt();
+    case Activation::inv_sqrt_root:
+        return x.pow(-0.5);
+    case Activation::group_sort:
+        break;
     }
-    CORA_FAIL(Error::wrong_value, "evaluate: an unknown activation");
+    CORA_FAIL(Error::not_supported, "evaluate: group_sort sorts the neurons of a layer; only "
+                                    "NeuralNetwork::evaluate at points takes it (its group size)");
 }
 
 /// The sigmoid's value from below, 1 - 1 / (1 + exp x), and from above, 1 / (1 + exp(-x)): the
@@ -182,6 +192,7 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         return priv_cube_line(l, u);
     case Activation::inverse:
         return priv_inverse_line(l, u);
+    // sin and cos (ml4acopf)
     case Activation::sin:
     case Activation::cos:
         return priv_trig_line(l, u, activation == Activation::cos);
@@ -189,35 +200,26 @@ Line aux_line_singh(Activation activation, const Tensor &l, const Tensor &u) {
         return priv_exp_line(l, u);
     case Activation::reciprocal:
         return priv_reciprocal_line(l, u);
+    case Activation::softplus:
+    case Activation::root:
+    case Activation::inv_sqrt_root:
+        return priv_monotone_line(activation, l, u, false);
     case Activation::product:
+    case Activation::group_sort:
         break;
     }
-    CORA_FAIL(Error::not_supported, "evaluate: a product layer has no line of its bounds; only "
-                                    "NeuralNetwork::verify takes it (priv_product_line)");
+    CORA_FAIL(Error::not_supported, "evaluate: a product or group_sort layer has no line of its "
+                                    "bounds; a product only NeuralNetwork::verify takes it, a "
+                                    "group sort only points");
 }
 
 // The regression line, CORALean's ----------------------------------------------------------------
 
-/// The least-squares slope through 20 points of [l, u] (CORALean's regressionSlope, bit for bit at
-/// nearest): the step h, the points x_i = l + i h, the middles y_i of the enclosure, the weights
-/// w_i = 2 i - 19, their sum with y_i from the right, the quotient; zero where u <= l.
+/// The least-squares slope through 20 points of [l, u] of the sigmoid's enclosure (CORALean's
+/// regressionSlope, bit for bit at nearest): priv_regression_slope with the middles of sigmoid.
 Tensor aux_regression_slope(const Tensor &l, const Tensor &u) {
-    constexpr int64_t kPoints = 20;
-    const Tensor zero = l.zeros_like(), one = l.ones_like();
-    std::vector<double> index(kPoints), weight(kPoints);
-    for (int64_t i = 0; i < kPoints; ++i) {
-        index[std::size_t(i)] = double(i);
-        weight[std::size_t(i)] = double(2 * i - (kPoints - 1));
-    }
-    const Tensor h = (u - l).divide(one * double(kPoints - 1));
-    const Tensor X = l + h.multiply(Tensor::like(l, index, {1, kPoints}));
-    const Tensor Y = (aux_sigmoid_lo(X) + aux_sigmoid_hi(X)) * 0.5;
-    const Tensor T = Y.multiply(Tensor::like(l, weight, {1, kPoints}));
-    Tensor S = zero;
-    for (int64_t i = kPoints - 1; i >= 0; --i) S = T.slice(-1, i, i + 1) + S;
-    const Tensor empty = u.less_equal(l);
-    const Tensor denominator = Tensor::where(empty, one, (u - l) * 70.0);
-    return Tensor::where(empty, zero, S.divide(denominator));
+    return priv_regression_slope(
+        l, u, [](const Tensor &X) { return (aux_sigmoid_lo(X) + aux_sigmoid_hi(X)) * 0.5; });
 }
 
 /// The sigmoid's line at the clamped regression slope with the bracket's error (CORALean's
@@ -302,6 +304,7 @@ Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u
         return error == RegressionError::extremum ? aux_line_sigmoid_extremum(a, b)
                                                   : aux_line_sigmoid_bracket(a, b);
     };
+    // sigmoid and tanh by their errors, the monotone layers by theirs, the others by Singh's
     switch (activation) {
     case Activation::sigmoid:
         return sigmoid(l, u);
@@ -310,6 +313,10 @@ Line aux_line_regression(Activation activation, const Tensor &l, const Tensor &u
         const Tensor four = (s.slope + s.slope) + (s.slope + s.slope);
         return {four, (s.offset + s.offset) + (-1.0), s.radius + s.radius};
     }
+    case Activation::softplus:
+    case Activation::root:
+    case Activation::inv_sqrt_root:
+        return priv_monotone_line(activation, l, u, true);
     default:
         return aux_line_singh(activation, l, u);
     }
@@ -699,6 +706,16 @@ Tensor priv_derivative(Activation activation, const Tensor &x) {
         const Tensor y = x.ones_like().divide(x.maximum(1.0));
         return Tensor::where(x.greater(x.ones_like()), y.square().negative(), x.zeros_like());
     }
+    // sigmoid, 1 / (2 sqrt x), -1 / (2 x^(3/2))
+    case Activation::softplus:
+        return x.sigmoid();
+    case Activation::root:
+        return x.ones_like().divide(x.sqrt()) * 0.5;
+    case Activation::inv_sqrt_root:
+        return x.ones_like().divide(x.square().multiply(x).sqrt()).negative() * 0.5;
+    case Activation::group_sort:
+        CORA_FAIL(Error::not_supported, "verify: group_sort permutes the neurons of its group; "
+                                        "only backprop at points takes it");
     case Activation::product: {
         // d(a b) / da = b, d(a b) / db = a
         const auto [a, b] = aux_halves(x, -1);
@@ -939,7 +956,11 @@ Tensor NeuralNetwork::evaluate(const Tensor &x) const {
             const Tensor &hr = outs[std::size_t(r.source + 1)];
             z = z + (r.map ? apply(*r.map, hr) : hr);
         }
-        h = aux_apply(activations_[k], z + L.b.expand_dims(-1), 0);
+        const Tensor pre = z + L.b.expand_dims(-1);
+        // a group sort permutes the neurons within groups of its layer
+        h = activations_[k] == Activation::group_sort
+                ? priv_group_sort(pre.matrix_transpose(), L.group_size).matrix_transpose()
+                : aux_apply(activations_[k], pre, 0);
         if (!outs.empty()) outs[k + 1] = h;
     }
     return h.matrix_transpose();

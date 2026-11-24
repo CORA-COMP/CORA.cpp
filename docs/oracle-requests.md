@@ -586,3 +586,81 @@ keep the original proposals; read `id` as `ids` and `pZ` as `P`.
 | `polyZonotope.convHull` | `PolyZonotope.convHull` (`Float/Operations/ConvHull.lean`) | `pZ1`, `pZ2` | `linComb(linComb(pZ1', pZ1'), linComb(pZ2', pZ2'))` of the sets without independent generators, the independent block `pairSum` then `pairDiff` then one zero column |
 | `polyZonotope.jacobian` | `PolyZonotope.jacobian` (`Float/Operations/Jacobian.lean`) | `pZ`, `k` | every column kept, `E k i` copies added from the right, the exponent of `k` lowered (not below 0), center 0 |
 | `polyZonotope.outerApprox` | `PolyZonotope.outerApprox`, `boxOut` (`Float/Operations/OuterApprox.lean`, `BoxOut.lean`) | `pZ`, `tol`, `id` | the dependent generators left, then the independent ones with the diagonal of the box appended; the box radius the removed magnitudes plus the taken ones, each sum added up |
+
+
+
+## NN nonlinear layers, gradients and forms (PR "nn/port-rest-2", batch 2)
+
+`NeuralNetwork::exp_layer`, `softmax_layer` (1 / sum_j exp(x_j - x_i), two layers; CORA's exp(x - max)
+/ sum is the same function but not the same floating-point steps), `max_pool2d_layer` (b + relu(a - b)
+over the window's pairs), `evaluate_zonotope_batch`, `backprop`, `backprop_interval_batch`,
+`propagate_bounds`, `input_neuron_order` and `normal_form` are tested by hand-computed cases, samples
+and the Jacobian of `sensitivity`. `evaluate_zonotope_batch` of dense, conv, relu, sign and square layers
+is bit-identical to the oracle's `neuralNetwork.evaluate` (`test_lean_nn_batch`, pin f5ff0c401); exp,
+softmax and max pool have no layer kind there. CORALean has float models of the activations and of
+`neuralNetwork.backwardBound`, but no op for the gradient passes or the forms, so their rows are
+oracle debt.
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.backprop` | `layers`, `x`, `gradOut` | the input gradient |
+| `neuralNetwork.backpropIntervalBatch` | `layers`, `l`, `u`, `gl`, `gu` | `gl`, `gu` (Gowal et al. 2019) |
+| `neuralNetwork.propagateBounds` | `layers`, per-layer `l`, `u`, `i` | the bounds per layer |
+| `neuralNetwork.normalForm` | `layers` | the merged layers |
+
+## NN softplus, root, inverse square root, group sort and the reduction (PR "nn/port-rest-3", batch 3)
+
+`Activation::softplus`, `root`, `inv_sqrt_root` (lines in `activation_lines.cpp`), `group_sort`
+(points and backprop only, as CORA), `composite_layer`, `reduce_generators`, `merge_buckets`,
+`find_region_polys` and `compute_reduced_network` have no op in the oracle (newest tag
+oracle-20261123-feef03ae2), so they are tested by properties: the line encloses the function and its
+radius is half the range of f(x) - m x, sampled (closed-form extrema, no search); a sort is a
+permutation whose gradient matches finite differences; the reduced network's output set contains the
+original outputs. The lines read: Singh's slope f'(l) (softplus) or f'(u) (root, inv_sqrt_root) with the
+offset and radius of the monotone f(x) - m x, or the 20-point regression slope m with the extremes of
+f(x) - m x at the ends and at f'(x) = m (softplus: log(m / (1 - m)); root: 1 / (4 m^2); inv_sqrt_root:
+(-1 / (2 m))^(2/3)). CORALean's `NN/Relaxations` have no softplus, root or inverse square root.
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `nnLayer.relaxation`, kinds `softplus`, `root`, `invSqrt` | `l`, `u`, `method` (`singh` or `regression`) | slope, offset, radius, as above |
+| `nnLayer.evaluate`, kind `groupSort` | `groupSize`, `x` | the sorted points (stable, padded with inf) |
+| `nnLayer.evaluateZonotopeBatch`, kind `generatorReduction` | `maxGens`, `c`, `G` | `c`, `G` (CORA keeps the shortest generators) |
+| `neuralNetwork.computeReducedNetwork` | `layers`, `Z`, `bucketType`, `bucketTol`, `reductionRate` | reduced layers, error intervals, output set |
+
+## NN on Taylor models and constrained zonotopes (PR "nn/port-rest-4", batch 4)
+
+`NeuralNetwork::evaluate_taylm` and `evaluate(ConZonotope)` have no op in the oracle (newest tag
+oracle-20261123-feef03ae2); the Taylor model's arithmetic (`taylm.plus`, `times`, `power`) is served, so
+`evaluate_taylm` is the composition of those with the polynomials of `nnLayer.relaxation`'s regression
+and Singh lines at order 1 only (CORA's `computeApproxPoly` of higher order has none). They are tested
+by properties: the sampled outputs lie in the result, exact cases by hand.
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.evaluateTaylm` | `layers`, `x` (one model per input), `polyMethod`, `orders` | one model per output |
+| `neuralNetwork.evaluateConZonotope` | `layers` (identity, ReLU), `c`, `G`, `A`, `b`, `boundApprox` | `c`, `G`, `A`, `b` of the output set |
+
+## Explanation of a classification (PR "nn/port-explain", batch 5)
+
+`NeuralNetwork::explain` and `compute_fgsm_attack` have no op in the oracle (newest tag
+oracle-20261123-feef03ae2). `explain` is a loop over `neuralNetwork.evaluate` on zonotopes (served) and
+`computeReducedNetwork` (requested above), so it is tested by properties: a hand-computed linear case,
+the standard method equal to the abstract one at the rate 1, and sampled soundness of the freed set.
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.explain` | `layers`, `x`, `label`, `epsilon`, `method`, `featOrder`, `refineSteps`, `outputThreshold` | the freed features, the order tried |
+| `neuralNetwork.fgsmAttack` | `layers`, `x`, `t`, `epsilon`, `mask` | the moved points `x - alpha sign(grad)` |
+
+## Zonotope batch gradients (PR "nn/port-rest-6", batch 6)
+
+`NeuralNetwork::backprop_zonotope_batch` has no op in the oracle (newest tag oracle-20261123-26a33fe5b):
+`neuralNetwork.backwardBound` is CROWN's bound, not a gradient of the output set, so it is tested by
+properties (the chain rule where all neurons are stable, central differences of the exact gradients, the
+held slopes by hand). The ConvTranspose layer is tested against the oracle's `conv` kind at stride 1
+(a convolution with the flipped kernel and the pads `k - 1 - p`).
+
+| op (proposed) | request fields | reply |
+|---|---|---|
+| `neuralNetwork.backpropZonotopeBatch` | `layers`, `c`, `G`, `gc`, `gG`, `exact` | the gradients at the input's `c` and `G` |

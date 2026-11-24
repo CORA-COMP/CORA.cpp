@@ -108,7 +108,8 @@ HEADS = {"List": "list", "Dict": "dict", "Tuple": "tuple", "Set": "set", "Frozen
          "Iterator": "collections.abc.Iterator", "Callable": "collections.abc.Callable"}
 
 SIMPLE = {"SupportsInt": "int", "SupportsFloat": "float", "object": "Any", "list": "list[Any]",
-          "tuple": "tuple[Any, ...]", "Callable": "collections.abc.Callable[..., Any]",
+          "tuple": "tuple[Any, ...]", "dict": "dict[str, Any]",
+          "Callable": "collections.abc.Callable[..., Any]",
           "collections.abc.Callable": "collections.abc.Callable[..., Any]"}
 
 

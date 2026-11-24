@@ -23,6 +23,7 @@
 
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"
+#include "nn/neural_network/private/priv_layers.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -31,7 +32,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-// The Jacobian at a point -------------------------------------------------------------------------
+// The Jacobian ------------------------------------------------------------------------------------
 
 Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
     detail::Entry entry;
@@ -49,70 +50,9 @@ Tensor NeuralNetwork::sensitivity(const Tensor &x) const {
         const Tensor z = layers_[k].W.matmul(h) + layers_[k].b.expand_dims(-1);
         // The activations -------------------------------------------------------------------------
         // the value after the activation and its derivative
-        const Tensor one = z.ones_like(), zero = z.zeros_like();
-        Tensor derivative = one;
-        switch (activations_[k]) {
-        case Activation::identity:
-            h = z;
-            break;
-        case Activation::relu:
-            h = z.maximum(0.0);
-            derivative = Tensor::where(z.greater(zero), one, zero);
-            break;
-        case Activation::sigmoid:
-            h = z.sigmoid();
-            derivative = h.multiply(one - h);
-            break;
-        case Activation::tanh:
-            h = z.tanh();
-            derivative = one - h.multiply(h);
-            break;
-        case Activation::sign:
-            // a step: the derivative 0
-            h = z.sign();
-            derivative = zero;
-            break;
-        case Activation::floor:
-            // steps: the derivative 0
-            h = z.floor();
-            derivative = zero;
-            break;
-        case Activation::square:
-            // x^2 and 2 x
-            h = z.square();
-            derivative = z + z;
-            break;
-        case Activation::cube:
-            // x^3 and 3 x^2
-            h = z.square().multiply(z);
-            derivative = z.square() * 3.0;
-            break;
-        case Activation::inverse:
-            // 1 / x and -1 / x^2
-            h = one.divide(z);
-            derivative = h.multiply(h).negative();
-            break;
-        case Activation::sin:
-            h = z.sin();
-            derivative = z.cos();
-            break;
-        case Activation::cos:
-            h = z.cos();
-            derivative = z.sin().negative();
-            break;
-        case Activation::exp:
-            h = z.exp();
-            derivative = h;
-            break;
-        case Activation::reciprocal:
-            // 1 / max(x, 1) and -1 / x^2 above 1
-            h = one.divide(z.maximum(1.0));
-            derivative = Tensor::where(z.greater(one), h.multiply(h).negative(), zero);
-            break;
-        case Activation::product:
-            CORA_FAIL(Error::not_supported, "sensitivity: a product layer is not neuron by "
-                                            "neuron; only NeuralNetwork::verify takes it");
-        }
+        const PrivDerivative d = priv_activation_derivative(activations_[k], z);
+        h = d.value;
+        const Tensor &derivative = d.derivative;
         // the chain rule: diag(a'(z)) W J
         J = derivative.multiply(layers_[k].W.matmul(J));
     }

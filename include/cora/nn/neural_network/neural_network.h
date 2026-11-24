@@ -14,7 +14,7 @@
 // Syntax:     NeuralNetwork nn({{W1, b1}, {W2, b2}});   Zonotope Y = nn.evaluate(X);
 //             PolyZonotope XY = nn.evaluate_with_input(PolyZonotope(X));
 // Operations: evaluate, evaluate_with_input, approx_errors (evaluate.cpp), refine (refine.cpp),
-//             sensitivity (sensitivity.cpp), verify (verify.cpp, verify.h)
+//             sensitivity, verify, evaluate_zonotope_batch, backprop (one file each), layers
 // See also:   cora/cont_set/zonotope/zonotope.h, cora/cont_set/poly_zonotope/poly_zonotope.h
 // References:
 //    [1] T. Ladner, M. Althoff. "Automatic abstraction refinement in neural network verification
@@ -33,6 +33,18 @@
 // CORA: nn/layers/linear/nnBatchNormLayer.m
 // CORA: nn/layers/linear/nnAvgPool2DLayer.m
 // CORA: nn/layers/linear/nnLipConstrLinearLayer.m
+// CORA: nn/layers/nonlinear/nnExpLayer.m
+// CORA: nn/layers/nonlinear/nnSoftmaxLayer.m
+// CORA: nn/layers/nonlinear/nnMaxPool2DLayer.m
+// CORA: nn/@neuralNetwork/evaluateZonotopeBatch.m
+// CORA: nn/@neuralNetwork/backprop.m
+// CORA: nn/@neuralNetwork/nonlinearSysDT.m
+// CORA: nn/layers/nonlinear/@nnActivationLayer/evaluateTaylm.m
+// CORA: nn/layers/nonlinear/@nnActivationLayer/evaluateConZonotope.m
+// CORA: nn/@neuralNetwork/backpropIntervalBatch.m
+// CORA: nn/@neuralNetwork/propagateBounds.m
+// CORA: nn/@neuralNetwork/getInputNeuronOrder.m
+// CORA: nn/@neuralNetwork/getNormalForm.m
 // CORA: nn/@neuralNetwork/verify.m
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
@@ -42,11 +54,14 @@
 
 #pragma once
 
+#include "cora/cont_set/con_zonotope/con_zonotope.h"
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/taylm/taylm.h"
 #include "cora/cont_set/zonotope/zonotope.h"
 #include "cora/nn/neural_network/verify.h"
 
 #include <array>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -58,9 +73,9 @@ namespace cora {
 
 // The activations ---------------------------------------------------------------------------------
 
-/// A layer's function: square x^2, sign, reciprocal 1 / max(x, 1) (a softmax's sums), product [a o
-/// b; 0] of the halves [a; b] (verify only), floor, cube x^3, inverse 1 / x (verify: x > 0 only, a
-/// bound l <= 0 is out of range; nn4sys' x^3 / sum x^3), sin and cos (ml4acopf).
+/// A layer's function: square, sign, reciprocal 1 / max(x, 1), product [a o b; 0] (verify only),
+/// floor, cube, inverse 1 / x (x > 0), sin, cos, softplus, root sqrt x (x >= 0), inv_sqrt_root
+/// x^(-1/2) (x > 0), group_sort (points only: Layer::group_size).
 enum class Activation {
     identity,
     relu,
@@ -75,7 +90,11 @@ enum class Activation {
     cube,
     inverse,
     sin,
-    cos
+    cos,
+    softplus,
+    root,
+    inv_sqrt_root,
+    group_sort
 };
 
 /// The polynomial over a neuron's range (CORA's poly_method): at order 1 singh or regression; of
@@ -104,6 +123,14 @@ enum class RefineHeuristic { approx_error, layer_bias, all };
 /// ends and the stationary points; bracket, the looser one of the derivative bracket.
 enum class RegressionError { extremum, bracket };
 
+/// The sizes of NeuralNetwork::random (0: drawn as CORA draws it), the activation of every layer
+/// and the seed.
+struct RandomOptions {
+    int64_t inputs = 0, outputs = 0, layers = 0, hidden = 0;
+    Activation activation = Activation::sigmoid;
+    uint64_t seed = 1;
+};
+
 /// What evaluate_with_input does with the error of the activations (CORA's options.nn).
 struct NnOptions {
     /// true: the errors are independent generators (add_approx_error_to_GI); false: new factors
@@ -128,6 +155,9 @@ struct NnOptions {
     std::optional<bool> remove_gi = std::nullopt;
     /// Whether the errors of the activations are added to the set (CORA's use_approx_error).
     bool use_approx_error = true;
+    /// Whether a constrained zonotope's neuron bounds come from the box of its factors instead of
+    /// two linear programs (CORA's options.nn.bound_approx).
+    bool bound_approx = true;
 };
 
 // The refinement ----------------------------------------------------------------------------------
@@ -139,6 +169,90 @@ struct RefineOptions {
     RefineHeuristic heuristic = RefineHeuristic::approx_error;
     double gamma = 0.1;
 };
+
+// The batches -------------------------------------------------------------------------------------
+
+/// The options of evaluate_zonotope_batch (CORA's options.nn of evaluateZonotopeBatch).
+struct ZonotopeBatchOptions {
+    /// The most approximation errors per activation layer that get a generator; the rest go to
+    /// the radius dr of the interval center (CORA's num_approx_err; inf: all).
+    double num_approx_err = std::numeric_limits<double>::infinity();
+    /// The line of an activation: "bounds" (CORA's batch default) or "singh".
+    std::string poly_method = "bounds";
+    /// Which errors get a generator: "sequential", "length" or "sensitivity*length".
+    std::string approx_error_order = "sequential";
+};
+
+/// A batch of B zonotopes in rows: the centers c (B, n), the generators G (B, q, n), and the
+/// radius dr (B, n) of the interval center (undefined when every error has a generator).
+struct ZonotopeBatch {
+    Tensor c, G, dr;
+};
+
+/// The input boxes of an activation layer's neurons (CORA's layer.l and layer.u): undefined, or
+/// with a NaN, for none.
+struct NnBounds {
+    Tensor l, u;
+};
+
+/// How a composite layer joins the outputs of its branches (CORA's aggregation).
+enum class Aggregation { add, concat };
+
+/// A polynomial p (highest power first) with |a(x) - p(x)| <= d on [l, u] (CORA's region polys).
+struct RegionPoly {
+    double l, u;
+    std::vector<double> p;
+    double d;
+};
+
+/// CORA's computeReducedNetwork name-value pairs: dynamic buckets (the shuffled centers) or the
+/// static ones, the tolerance (none: 0.01; one, or per layer), input compression, the target rate
+/// (none, one, or per layer), the least searches, the seed of the shuffle.
+struct ReduceOptions {
+    bool dynamic_buckets = false;
+    std::vector<double> bucket_tol = {};
+    bool input_compression = false;
+    std::vector<double> reduction_rate = {};
+    int min_searches = 10;
+    uint64_t seed = 1;
+};
+
+/// CORA's explain name-value pairs (no verbose output, no plots). A set of freed features keeps
+/// the class if the network on their box as a zonotope (poly_method regression, CORA's default)
+/// has every logit difference at most 0; a regression network: output radius <= output_threshold.
+struct ExplainOptions {
+    /// "standard" (the network itself) or "abstract+refine" (reduced networks, refined on failure).
+    std::string method = "standard";
+    /// "sensitivity", "in-order" or "snake" (input_neuron_order); feat_order, if set, is used.
+    std::string feat_order_method = "sensitivity";
+    std::vector<int64_t> feat_order = {};
+    /// "all" (the next reduction rate of refine_steps) or "rand" (a random rate); CORA's
+    /// "sensitivity" is not supported there either.
+    std::string refine_method = "all";
+    /// The input (C, H, W): a feature is a pixel, freed in all channels at once; empty: a value.
+    std::vector<int64_t> input_size = {};
+    /// The reduction rates of abstract+refine, ascending (1: the original network); empty: CORA's
+    /// 0.1, 0.2, ..., 1.
+    std::vector<double> refine_steps = {};
+    /// "static" or "dynamic" buckets of the reduction.
+    std::string bucket_type = "static";
+    /// A regression network is verified if the radius of its output box is at most this.
+    double output_threshold = 0.0;
+    /// Seconds: stop when freeing the next feature would take longer in total (CORA's rule).
+    double timeout = std::numeric_limits<double>::infinity();
+    /// The seed of the random rate and of the reduction.
+    uint64_t seed = 1;
+};
+
+/// The features that can be freed (in the order they were tried), the order itself, and the seconds
+/// to try each feature (NaN for those not reached).
+struct Explanation {
+    std::vector<int64_t> freed, feat_order;
+    std::vector<double> times;
+};
+
+struct ReducedNetwork;
+class NetworkSystemDT;
 
 // The network -------------------------------------------------------------------------------------
 
@@ -174,6 +288,8 @@ class NeuralNetwork {
         std::shared_ptr<const LinearPlan> plan = nullptr;
         int64_t source = kPrevious;
         std::vector<Residual> residuals = {};
+        /// The group of Activation::group_sort: consecutive neurons sorted ascending together.
+        int64_t group_size = 2;
 
         /// ONNX's Conv of the input (channels, height, width) in C order: kernel (out, in /
         /// groups, kh, kw), the bias one entry per output (out channels times pixels).
@@ -228,6 +344,66 @@ class NeuralNetwork {
         Tensor aux_product(const Tensor &x, bool absolute, bool transposed) const;
     };
 
+    /// CORA's nonlinear layers that this port lowers to several layers (as the ONNX front end
+    /// does), with their activations: a network of the block, or the layers after layer `previous`
+    /// of a larger one (their sources are absolute: -1 is the network's input).
+    struct Block {
+        std::vector<Layer> layers;
+        std::vector<Activation> activations;
+    };
+
+    /// CORA's nnExpLayer on n values: exp of each, after the layer `previous`.
+    static Block exp_layer(int64_t n, int64_t previous = -1);
+    /// CORA's nnSoftmaxLayer on n values, exp(x_i - max x) / sum_j exp(x_j - max x): as
+    /// 1 / sum_j exp(x_j - x_i), the differences exp layer then the sums and 1 / max(s, 1), which
+    /// is the same function (two layers).
+    static Block softmax_layer(int64_t n, int64_t previous = -1);
+    /// CORA's nnMaxPool2DLayer on the input (channels, height, width) in C order, for a pool
+    /// (kh, kw): max(a, b) = b + relu(a - b) over the window's items in pairs, round by round (an
+    /// empty stride is the pool size, as CORA's).
+    static Block max_pool2d_layer(const std::array<int64_t, 2> &pool,
+                                  const std::vector<int64_t> &input,
+                                  const std::array<int64_t, 2> &stride = {0, 0},
+                                  int64_t previous = -1);
+
+    /// CORA's nnSoftPlusLayer on n values, log(1 + e^(k x)) / k: k x, softplus, 1 / k (sharpness
+    /// k > 0; two layers unless k is 1).
+    static Block softplus_layer(int64_t n, double sharpness = 1.0, int64_t previous = -1);
+    /// CORA's nnRootLayer, sqrt x (x >= 0), and nnInvSqrtRootLayer, x^(-1/2) (x > 0), on n values.
+    static Block root_layer(int64_t n, int64_t previous = -1);
+    static Block inv_sqrt_root_layer(int64_t n, int64_t previous = -1);
+    /// CORA's nnGroupSortLayer on n values: groups of group_size consecutive neurons sorted
+    /// ascending. Points and backprop only (CORA has no set version either).
+    static Block group_sort_layer(int64_t n, int64_t group_size = 2, int64_t previous = -1);
+    /// CORA's nnCompositeLayer: the branches (blocks whose sources are -1 for the input, or
+    /// their own layers) on the same input of input_size values, their outputs added or
+    /// concatenated along concat_dim of the output shapes (default: flat vectors), as a graph.
+    static Block composite_layer(const std::vector<Block> &branches, Aggregation aggregation,
+                                 int64_t input_size,
+                                 const std::vector<std::vector<int64_t>> &output_shapes = {},
+                                 int64_t concat_dim = 0, int64_t previous = -1);
+    /// CORA's nnGeneratorReductionLayer.evaluateZonotopeBatch: of the batch's generators keep the
+    /// max_gens - n first of the ascending lengths (CORA's order), the others become the box
+    /// diag(sum |g|); (B, max_gens, n). A batch with at most max_gens - n generators is kept.
+    static ZonotopeBatch reduce_generators(const ZonotopeBatch &Z, int64_t max_gens);
+    /// CORA's getMergeBuckets of an activation layer: its values at -inf and inf that are finite
+    /// (the ReLU's: 0).
+    static std::vector<double> merge_buckets(Activation activation);
+    /// CORA's findRegionPolys: regions of [-inf, inf] with a polynomial of the order each (the
+    /// regression fit) whose error is below tol, from (pStart, dStart) below l_max to (pEnd, dEnd)
+    /// above u_max.
+    static std::vector<RegionPoly>
+    find_region_polys(Activation activation, double tol, int order, double l_max, double u_max,
+                      const std::vector<double> &p_start, double d_start,
+                      const std::vector<double> &p_end, double d_end);
+
+    /// A random dense network (CORA's generateRandom): layers of random affine maps (entries in
+    /// [-1, 1)), each followed by the activation.
+    static NeuralNetwork random(const RandomOptions &options = {});
+
+    /// The network of a block.
+    explicit NeuralNetwork(const Block &block) : NeuralNetwork(block.layers, block.activations) {}
+
     /// The network of the layers, first to last; each layer's inputs must match the outputs of
     /// its source and residuals, and every layer but the last must be read by a later one. Every
     /// layer but the last is followed by a ReLU.
@@ -277,6 +453,88 @@ class NeuralNetwork {
     /// are exact linear images in them, and the errors of the activations are added by options.
     PolyZonotope evaluate_with_input(const PolyZonotope &X, const NnOptions &options = {}) const;
 
+    /// The outputs on Taylor models, one per input (CORA's evaluateTaylm): per neuron the
+    /// polynomial of poly_method and orders over its bounds, the error as the remainder. A chain.
+    std::vector<Taylm> evaluate_taylm(const std::vector<Taylm> &x,
+                                      const NnOptions &options = {}) const;
+
+    /// A constrained zonotope that contains the outputs of every point of X (CORA's
+    /// evaluateConZonotope): a chain of identity and ReLU layers, an unstable ReLU a new factor.
+    ConZonotope evaluate_con_zonotope(const ConZonotope &X, const NnOptions &options = {}) const;
+
+    /// A batch of zonotopes through the network, an activation by its line (CORA's
+    /// evaluateZonotopeBatch): the sets (B, n) and (B, q, n), a graph or a chain, any layer.
+    ZonotopeBatch evaluate_zonotope_batch(const Tensor &c, const Tensor &G,
+                                          const ZonotopeBatchOptions &options = {}) const;
+
+    /// The gradients at the input sets (c, G) of a loss with the gradients grad_c (B, m), grad_gen
+    /// (B, q + errors, m), grad_dr (B, m) at the output of evaluate_zonotope_batch (CORA's
+    /// backpropZonotopeBatch). exact: through the lines' bounds, else the lines are held.
+    ZonotopeBatch backprop_zonotope_batch(const Tensor &c, const Tensor &G, const Tensor &grad_c,
+                                          const Tensor &grad_gen, const Tensor &grad_dr = Tensor(),
+                                          const ZonotopeBatchOptions &options = {},
+                                          bool exact = false) const;
+
+    /// The gradient of the loss at the input (B, in) for the loss's gradient grad_out (B, out) at
+    /// the output of the network at the points x (B, in) (CORA's backprop; the weights are not
+    /// updated). A chain of any layers but a product.
+    Tensor backprop(const Tensor &x, const Tensor &grad_out) const;
+
+    /// The bounds [gl, gu] (B, in) of the gradients at the input over the box [l, u] (B, in)
+    /// from the bounds (B, out) at the output (CORA's backpropIntervalBatch, Gowal et al. 2019):
+    /// each layer's input box is that of interval arithmetic.
+    std::pair<Tensor, Tensor> backprop_interval_batch(const Tensor &l, const Tensor &u,
+                                                      const Tensor &gl, const Tensor &gu) const;
+
+    /// CORA's propagateBounds as a function: the bounds (one per layer; those of a layer without
+    /// an activation are never read) after the bounds of layer i's activation input went through
+    /// the layers up to the next activation, whose bounds are set or intersected.
+    std::vector<NnBounds> propagate_bounds(std::vector<NnBounds> bounds, int64_t i) const;
+
+    /// CORA's getInputNeuronOrder (0-based, a pixel is y * W + x): "in-order", "snake" or
+    /// "sensitivity" (the least mean absolute Jacobian at x first); input_size is (C, H, W).
+    std::vector<int64_t> input_neuron_order(const std::string &method, const Tensor &x,
+                                            const std::vector<int64_t> &input_size = {}) const;
+
+    /// The same function with the linear layers merged, so that every activation follows one
+    /// linear layer (CORA's getNormalForm); a chain of dense layers or convolutions.
+    NeuralNetwork normal_form() const;
+
+    /// CORA's computeReducedNetwork of the normal form: neurons whose output range lies within a
+    /// bucket's tolerance are merged away, their range added to the next layer as an interval;
+    /// the set X through the reduced network is in the result (a chain of ReLU, sigmoid, tanh).
+    ReducedNetwork compute_reduced_network(const Zonotope &X,
+                                           const ReduceOptions &options = {}) const;
+
+    /// CORA's computeFGSMAttack: the points x (B, in) moved by epsilon along the sign of the
+    /// gradient of the loss whose derivative at the output is softmax(y) - t (t (B, out)). A mask
+    /// (in) of 0 and 1 keeps the features with 0 in place (CORA moves all of them).
+    Tensor compute_fgsm_attack(const Tensor &x, const Tensor &t, double epsilon,
+                               const Tensor &mask = Tensor()) const;
+
+    /// CORA's explain: a minimal abductive explanation of the point x (in) of class label within
+    /// the noise radius epsilon, as the features that can be freed (Bassan et al., ICML 2025).
+    /// The network needs to be a chain of dense layers or convolutions (normal_form).
+    Explanation explain(const Tensor &x, int64_t label, double epsilon,
+                        const ExplainOptions &options = {}) const;
+
+    // The weights ------------------------------------------------------------------------------
+
+    /// The network with the weights of the dense layers `which` (empty: all) drawn again, and
+    /// their biases 0 (CORA's initWeights): "glorot" uniform in +-1 / sqrt(inputs), "shi" normal
+    /// with the standard deviation sqrt(2 pi) / inputs. Other layers keep their weights.
+    NeuralNetwork init_weights(const std::string &method = "glorot", uint64_t seed = 1,
+                               const std::vector<int64_t> &which = {}) const;
+
+    /// The network with every weight in the dtype, on the device (empty: where it is), CORA's
+    /// castWeights. The copy of a network (CORA's copyNeuralNetwork) is the copy constructor.
+    NeuralNetwork to(DType dtype, const std::string &device = "") const;
+
+    /// The orders of the refinable layers' neurons (CORA's getOrderPattern); orders are indexed by
+    /// layer as NnOptions::orders, and without them every order is 1 (resetApproxOrder).
+    std::vector<std::vector<int>>
+    order_pattern(const std::vector<std::vector<int>> &orders = {}) const;
+
     /// The layers that refine can raise: those with an activation other than the identity (CORA's
     /// getRefinableLayers), as indices into layers().
     std::vector<int64_t> refinable_layers() const;
@@ -297,6 +555,9 @@ class NeuralNetwork {
     /// calcSensitivity of one point, whose mean(abs(S), 1) is the sensitivity of each input).
     Tensor sensitivity(const Tensor &x) const;
 
+    /// The network as a discrete-time system (CORA's nonlinearSysDT): see NetworkSystemDT.
+    NetworkSystemDT nonlinear_sys_dt() const;
+
     /// CORA's verify of a VNN-COMP property within timeout seconds: "sat" with a counterexample
     /// that confirm accepts (unset: the float64 output check), "unsat" or "unknown" (verify.h).
     NnVerifyResult verify(const NnProperty &property, double timeout,
@@ -305,6 +566,44 @@ class NeuralNetwork {
   private:
     std::vector<Layer> layers_;
     std::vector<Activation> activations_;
+};
+
+/// The result of compute_reduced_network: the merged layers (biases are CORA's b), each layer's
+/// error interval d = center +- radius (CORA's layer.d, added after its affine map), the neurons
+/// merged per layer (1), the rate of neurons that stay, and the set X through the reduced network.
+struct ReducedNetwork {
+    NeuralNetwork net;
+    std::vector<Tensor> offset_center, offset_radius, merged;
+    std::vector<double> reduction_rate;
+    Zonotope output;
+};
+
+// The system --------------------------------------------------------------------------------------
+
+/// CORA's nonlinearSysDT of a network: the state x stays, the output is y = f(x, u) with an offset
+/// u_k added to the bias of each layer k (nonlinear_sys_dt.cpp), and C = dy / dx, D = dy / du.
+class NetworkSystemDT {
+  public:
+    explicit NetworkSystemDT(NeuralNetwork net);
+
+    int64_t num_states() const { return net_.input_dim(); }
+    int64_t num_inputs() const { return num_inputs_; }
+    int64_t num_outputs() const { return net_.output_dim(); }
+    const NeuralNetwork &network() const { return net_; }
+
+    /// The next state: the state x (CORA's `@(x, u) x`, step size 1).
+    Tensor next_state(const Tensor &x, const Tensor &u) const;
+    /// The output y = f(x, u) (out) of the state x (in) and the offsets u.
+    Tensor output(const Tensor &x, const Tensor &u) const;
+    /// C = dy / dx (out, in), the network's Jacobian at x.
+    Tensor output_jacobian_x(const Tensor &x) const;
+    /// D = dy / du (out, inputs): the block of layer k is the Jacobian of the output by that
+    /// layer's pre-activation.
+    Tensor output_jacobian_u(const Tensor &x, const Tensor &u) const;
+
+  private:
+    NeuralNetwork net_;
+    int64_t num_inputs_ = 0;
 };
 
 } // namespace cora

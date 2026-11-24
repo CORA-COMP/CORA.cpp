@@ -7,6 +7,10 @@
 // CORA: nn/@neuralNetwork/refine.m
 // CORA: nn/@neuralNetwork/getRefinableLayers.m
 // PROPERTY: nn/@neuralNetwork/refine.m
+// CORA: nn/@neuralNetwork/getOrderPattern.m
+// CORA: nn/@neuralNetwork/resetApproxOrder.m
+// PROPERTY: nn/@neuralNetwork/getOrderPattern.m
+// PROPERTY: nn/@neuralNetwork/resetApproxOrder.m
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
@@ -76,6 +80,23 @@ void refine_raises_the_orders_of_the_heuristic(const std::string &b) {
 }
 
 /// A max_order below 1 is refused.
+/// The pattern holds the refinable layers' orders; without orders it is the reset (all 1).
+void order_pattern_of_the_refinable_layers(const std::string &b) {
+    const NeuralNetwork nn(
+        {{Tensor({{1.0, -1.0}, {2.0, 1.0}, {0.5, 0.5}}), Tensor({0.0, 0.1, 0.0})},
+         {Tensor({{1.0, 0.5, 1.0}}), Tensor({0.0})},
+         {Tensor({{1.0}}), Tensor({0.0})}},
+        {Activation::tanh, Activation::identity, Activation::relu});
+    const std::vector<std::vector<int>> reset = nn.order_pattern();
+    check(reset == std::vector<std::vector<int>>{{1, 1, 1}, {1}}, b + ": the reset pattern is 1");
+    // layer 1 is the identity: its orders are not part of the pattern; one value is every neuron's
+    const auto got = nn.order_pattern({{3, 1, 2}, {5}, {4}});
+    check(got == std::vector<std::vector<int>>{{3, 1, 2}, {4}},
+          b + ": the refinable layers' orders");
+    check(nn.order_pattern({{2}})[0] == std::vector<int>(3, 2),
+          b + ": one order is every neuron's");
+}
+
 void wrong_arguments_are_described(const std::string &b) {
     const NeuralNetwork nn({{Tensor({{1.0}}), Tensor({0.0})}}, {Activation::sigmoid});
     check(test::raises([&] { nn.refine({}, {{1.0}}, {.max_order = 0}); }, Error::wrong_value),
@@ -98,6 +119,7 @@ void checks_and_their_switch() {
 int main() {
     test::for_each_backend([](const std::string &b) {
         refine_raises_the_orders_of_the_heuristic(b);
+        order_pattern_of_the_refinable_layers(b);
         wrong_arguments_are_described(b);
     });
     checks_and_their_switch();

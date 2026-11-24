@@ -8,6 +8,7 @@
 // See also: cora/nn/neural_network/neural_network.h, conv2d.cpp
 // References: none (CORA's layers of a network, no paper's algorithm)
 //
+// CORA: nn/layers/nnLayer.m
 // CORA: nn/layers/linear/nnLinearLayer.m
 // CORA: nn/layers/linear/nnIdentityLayer.m
 // CORA: nn/layers/linear/nnElementwiseAffineLayer.m

@@ -6,6 +6,9 @@ Written:       23-November-2026
 Last update:   ---
 Reviewed:      ---
 """
+# CORA: nn/layers/nnLayer.m
+# CORA: nn/layers/linear/nnConvTranspose2DLayer.m
+# CORA: nn/layers/other/nnReshapeLayer.m
 # CORA: nn/layers/linear/nnLinearLayer.m
 # CORA: nn/layers/linear/nnIdentityLayer.m
 # CORA: nn/layers/linear/nnElementwiseAffineLayer.m
@@ -32,6 +35,14 @@ def run(layer, x):
 
 # the layers on points, by the definitions of CORA's layers
 class LinearLayers(unittest.TestCase):
+    # a ConvTranspose of a 2 x 2 input of ones by a 2 x 2 kernel of ones overlaps in the middle
+    def test_conv_transpose_and_reshape(self):
+        layer = {"conv_transpose2d": np.ones((1, 1, 2, 2)), "bias": np.zeros(9), "output": [1, 3, 3]}
+        np.testing.assert_allclose(run(layer, np.ones(4)), [1, 2, 1, 2, 4, 2, 1, 2, 1])
+        # a reshape of a 2 x 3 matrix to its transpose is a gather
+        reshape = {"gather": [0, 3, 1, 4, 2, 5], "inputs": 6, "bias": np.zeros(6)}
+        np.testing.assert_allclose(run(reshape, np.arange(6.0)), [0, 3, 1, 4, 2, 5])
+
     def test_identity_and_elementwise_affine(self):
         np.testing.assert_allclose(run({"identity": 3}, [1.0, -2.0, 3.0]), [1.0, -2.0, 3.0])
         layer = {"elementwise_affine": [2.0, -1.0, 0.5], "offset": [1.0], "inputs": 3}
