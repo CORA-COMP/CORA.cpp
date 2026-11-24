@@ -74,23 +74,23 @@ double aux_root(double x, int n) {
 // The periodic functions -------------------------------------------------------------------------
 
 /// pi bounded on both sides: the double below it and the next one above.
-const Iv kPi = {M_PI, std::nextafter(M_PI, kInf)};
+const Iv kPiIv = {M_PI, std::nextafter(M_PI, kInf)};
 
 /// R shifted by m periods of 2 pi, widened against rounding.
 Iv aux_shift(const Iv &R, double m) {
-    const Iv period = {2 * kPi.lo, 2 * kPi.hi};
+    const Iv period = {2 * kPiIv.lo, 2 * kPiIv.hi};
     return detail::widen(R + detail::times_zero_inf({m, m}, period));
 }
 
 /// The upper bound below b that a branch R + 2 pi k allows (CORALean's step_periodicFloat_upper).
 double aux_upper(const Iv &R, double b) {
-    const double ind = std::ceil((b - R.hi) / (2 * kPi.lo));
+    const double ind = std::ceil((b - R.hi) / (2 * kPiIv.lo));
     return b < aux_shift(R, ind).lo ? aux_shift(R, ind - 1).hi : b;
 }
 
 /// The lower bound above a that a branch R + 2 pi k allows (CORALean's step_periodicFloat_lower).
 double aux_lower(const Iv &R, double a) {
-    const double ind = std::floor((a - R.lo) / (2 * kPi.lo));
+    const double ind = std::floor((a - R.lo) / (2 * kPiIv.lo));
     return aux_shift(R, ind).hi < a ? aux_shift(R, ind + 1).lo : a;
 }
 
@@ -195,6 +195,7 @@ class Contractor {
             return backward_branch(v, t, {0.0, kInf}, [](double y) { return std::cosh(y); });
         case ExprOp::atanh:
             return backward_branch(v, t, {-kInf, kInf}, [](double y) { return std::tanh(y); });
+        // cosh: the two mirrored branches of acosh
         case ExprOp::cosh: {
             const Iv nonneg = detail::meet(t, {1.0, kInf});
             if (nonneg.empty()) return false;
@@ -239,14 +240,14 @@ class Contractor {
         if (v.op == ExprOp::tan) {
             // atan(t) and atan(t) + pi
             r1 = detail::widen({std::atan(t.lo), std::atan(t.hi)});
-            r2 = detail::widen(r1 + kPi);
+            r2 = detail::widen(r1 + kPiIv);
         } else {
             const Iv cut = detail::meet(t, {-1.0, 1.0});
             if (cut.empty()) return false;
             if (v.op == ExprOp::sin) {
                 // asin(t) and pi - asin(t)
                 r1 = detail::widen({std::asin(cut.lo), std::asin(cut.hi)});
-                r2 = detail::widen(kPi - r1);
+                r2 = detail::widen(kPiIv - r1);
             } else {
                 // acos(t) and -acos(t)
                 r1 = detail::widen({std::acos(cut.hi), std::acos(cut.lo)});
