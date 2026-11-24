@@ -306,6 +306,11 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.alpha_iterations = 0;
         o.crown_softmax_lse = true;
     }
+    // the wide nets that crown-bab closes (dev seed 1001): ReLU splits under CROWN's node bound
+    if (name == "cifar100" || name == "tinyimagenet" || name == "vit")
+        o.refinement_method = "crown-bab";
+    if (name == "vit") o.relu_bab_crown_iterations = 0; // plain CROWN's layer bounds at the root
+    if (name == "tinyimagenet") o.relu_bab_init_gens = 256; // the root net within the GPU's memory
     return o;
 }
 
