@@ -185,7 +185,31 @@ void inverse_and_hyperbolic_functions() {
           "acosh below 1");
 }
 
+/// Expr::function builds the node of each named function; the oracle's JSON names it.
+void functions_by_operation_and_in_json() {
+    const Expr x = Expr::var(0);
+    // every function of one operand with its name
+    const std::vector<std::pair<ExprOp, std::string>> ops = {
+        {ExprOp::sin, "sin"},     {ExprOp::cos, "cos"},    {ExprOp::tan, "tan"},
+        {ExprOp::exp, "exp"},     {ExprOp::log, "log"},    {ExprOp::asin, "asin"},
+        {ExprOp::acos, "acos"},   {ExprOp::atan, "atan"},  {ExprOp::sinh, "sinh"},
+        {ExprOp::cosh, "cosh"},   {ExprOp::tanh, "tanh"},  {ExprOp::asinh, "asinh"},
+        {ExprOp::acosh, "acosh"}, {ExprOp::atanh, "atanh"}};
+    for (const auto &[op, name] : ops) {
+        // the node has the operation and its operand, and prints as the oracle names it
+        const Expr f = Expr::function(op, x);
+        check(f.view().op == op, name + ": the node of the function");
+        const std::string json = f.to_json(1, [](double v) { return std::to_string(v); });
+        check(json.find("\"op\":\"" + name + "\"") != std::string::npos,
+              name + ": the oracle's name");
+    }
+    // an operation of two operands is no function
+    check(test::raises([&] { Expr::function(ExprOp::add, x); }, Error::wrong_value),
+          "function: an operation of two operands");
+}
+
 void errors_are_described() {
+    // the errors of the operations
     const Expr x = Expr::var(0);
     check(test::throws([&] { (1 / x).enclose({span(-1.0, 1.0)}); }),
           "dividing by a range around 0");
@@ -212,6 +236,7 @@ int main() {
     range_arithmetic_takes_the_extremes();
     tan_sqrt_and_real_powers();
     inverse_and_hyperbolic_functions();
+    functions_by_operation_and_in_json();
     errors_are_described();
     return test::finish("expr");
 }

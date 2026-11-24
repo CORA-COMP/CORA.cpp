@@ -85,6 +85,10 @@ int main() {
             check(inside, b + ": an inverse or hyperbolic function is enclosed");
         }
         check(Taylm::evaluate(acosh(x), v).bounds()[0] <= std::acosh(1.0) + 1e-12, b + ": acosh");
+        // CORA's asin(taylm([-1, 1], 7)) ends at 1.28723, below pi/2; the range fallback holds it
+        const auto one = Taylm::from_interval(Interval(vec({-1.0}), vec({1.0})));
+        check(Taylm::evaluate(asin(x), one).bounds()[1] >= std::asin(1.0) - 1e-12,
+              b + ": asin over [-1, 1] holds pi/2 (a case where CORA is unsound)");
         flow_property(b);
     });
     check(test::raises([] { Taylm::evaluate(Expr::var(0), {}); }, Error::wrong_value),

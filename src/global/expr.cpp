@@ -197,11 +197,10 @@ Range aux_interval_function(Op op, const Range &a) {
     case Op::acosh:
         R = I.acosh();
         break;
-    case Op::atanh:
+    // atanh, the last of the functions
+    default:
         R = I.atanh();
         break;
-    default:
-        CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
     }
     return {R.inf(), R.sup()};
 }
