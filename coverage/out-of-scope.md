@@ -20,7 +20,7 @@ coverage tables count them separately; a method that a source tags cannot be lis
 | `contSet/zonotope/deleteZeros` | deprecated in CORA: replaced by compact(Z,'zeros') |
 | `contSet/zonotope/deleteAligned` | deprecated in CORA: replaced by compact(Z,'aligned') |
 | `nn/layers/instantiateFromString` | MATLAB string-to-layer dispatch for the legacy constructors; CORA.cpp builds the layer classes directly (and the Python front end lowers networks through `cora.OnnxNetwork.load`) |
-| `nn/layers/nnActLayerFromHandle` | activation layer from a MATLAB function handle: its derivatives come from MATLAB symbolic differentiation of the handle, which CORA.cpp does not have; the activations it is used for (sin, cos, groupsort) are not ported |
+| `nn/layers/nnActLayerFromHandle` | activation layer from a MATLAB function handle: its derivatives come from MATLAB symbolic differentiation of the handle, which CORA.cpp does not have; CORA.cpp has the activations it is used for as their own layers (`Activation::sin`, `Activation::cos`, and the GroupSort layer) |
 | `nn/layers/nnGCNLayer` | graph-neural-network layer on MATLAB graph objects: CORA.cpp ports no GNN |
 | `nn/layers/nnGNNGlobalPoolingLayer` | graph-neural-network layer on MATLAB graph objects: CORA.cpp ports no GNN |
 | `nn/layers/nnGNNLayer` | abstract base of the graph-neural-network layers: CORA.cpp ports no GNN |
