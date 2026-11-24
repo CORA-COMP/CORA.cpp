@@ -118,6 +118,16 @@ void layers(const std::string &b) {
         NeuralNetwork::Layer::gather({1, 1, 0}, 2, Tensor({0.0, 0.0, 0.0}));
     check(aux_gap(U.rows_t(Tensor({{1.0, 2.0, 5.0}})), Tensor({{5.0, 3.0}})) == 0,
           b + ": a repeated input's transpose sums its outputs");
+    // the signs of the weights: a convolution's kernel, a gather's factors, a matrix
+    const NeuralNetwork::Layer S =
+        NeuralNetwork::Layer::gather({0, 1}, 2, Tensor({0.0, 0.0}), Tensor({1.0, -2.0}));
+    const NeuralNetwork::Layer D =
+        NeuralNetwork::Layer::linear(Tensor({{1.0, 0.0}}), Tensor({0.0}));
+    const NeuralNetwork::Layer N =
+        NeuralNetwork::Layer::linear(Tensor({{1.0, -1e-30}}), Tensor({0.0}));
+    check(G.nonnegative() && U.nonnegative() && !S.nonnegative() && D.nonnegative() &&
+              !N.nonnegative() && L.nonnegative() == (M.min().item() >= 0),
+          b + ": whether every weight is at least 0, of each kind of layer");
     // a wrong index is refused while the checks are on
     if (checks_enabled())
         check(test::raises([&] { NeuralNetwork::Layer::gather({2}, 2, Tensor({0.0})); },
