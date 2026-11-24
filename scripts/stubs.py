@@ -197,6 +197,9 @@ def functions(name, doc, module, indent, kind, text=None):
     for params, ret, text in found:
         parts = split_top(params)
         shown = [parameter(p, module, kind in ("method", "property") and i == 0) for i, p in enumerate(parts)]
+        # == and != override object's, whose argument is any object (mypy refuses a narrower one)
+        if name in ("__eq__", "__ne__") and len(shown) == 2:
+            shown[1] = shown[1].split(":")[0] + ": object"
         if len(found) > 1:
             out.append(pad + "@overload")
         if kind in ("static", "property"):
