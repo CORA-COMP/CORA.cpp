@@ -226,8 +226,8 @@ FOLDABLE = ("of two values", "Div by a value")  # refusals that fixed inputs may
 # a property folded in groups: 10 error slots per layer (of up to 768 neurons) and batches of up
 # to 4096 boxes; mscn_128d's 3800 cases unsat in 27 s against unknown at 50 s with all slots and
 # 1024 (each box 1 to 3 free inputs); pensieve_big (one group) needs its slots: unknown at 59 s.
-# mscn's outputs come within 4e-5 of its bounds: the margin 1e-5 with the search in float64 (the
-# float32 search's bounds have no rounding control; 1e-4 is their buffer)
+# mscn's outputs come within 4e-5 of its bounds: the margin 1e-5, with the search in float64 so
+# that no part of the verdict rests on float32 (docs/nn_verification.md)
 FOLDED_PARTS = {"num_approx_err": 10, "mini_batch_size": 4096, "verified_margin": 1e-5}
 MAX_FOLD_GROUPS = 32  # groups of cases folded apart at most (mscn: 10 to 12 masks, 0.7 s each)
 

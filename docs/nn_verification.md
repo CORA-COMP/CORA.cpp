@@ -159,11 +159,13 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   error slots per layer and batches of up to 4096 boxes (`FOLDED_PARTS`): each box is cheap, and
   there are many. mscn's outputs come within 4e-5 of the property's bounds (cardinality_0_3800:
   0.67690 against 0.67695 at a corner of a case's box), below the default `verified_margin` of
-  1e-4, so no box there could ever verify. That margin is the float32 search's buffer (its
-  bounds have no rounding control), so a folded property takes `verified_margin` 1e-5 only with
-  the search in float64 (`dtype`): every unsat of a folded group comes from float64 bounds, and
-  1e-5 is far above their rounding. nn4sys' other networks keep 1e-4 and float32. Then
-  three of the four mscn instances of seed 213 are unsat (27, 50 and 117 s of 50, 100 and 160);
+  1e-4, so no box there could ever verify. A folded property takes `verified_margin` 1e-5, and
+  with it the search in float64 (`dtype`), so nothing of its verdict rests on float32: the
+  conzonotope bounding already bounds over the float64 network and the outer float64 boxes
+  (`NnProblem::net`), and the float64 search changes neither a box count nor a verdict on the four
+  mscn instances (9352, 7170 and 22929 boxes either way). 1e-5 stays far above float64's rounding
+  of bounds of size 1. nn4sys' other networks keep 1e-4 and float32. Then
+  three of the four mscn instances of seed 213 are unsat (26, 49 and 121 s of 50, 100 and 160);
   cardinality_1_240 needs about 19 s of verification for its 10 groups (about 1 s each to start)
   and has 14 s of its 20.
 - **ReLU pairs (relusplitter).** ReluSplitter inserts before the first ReLU layer a layer of
