@@ -48,6 +48,7 @@
 #include "cora/specification/specification.h"
 
 #include <limits>
+#include <map>
 
 
 using namespace cora;
@@ -4497,7 +4498,8 @@ void bind_nonlinear_sys_dt(py::module_ &m) {
         .def(
             "simulate",
             [](const NonlinearSysDT &sys, const py::object &initial_state, double t_final,
-               const py::object &input, const py::object &input_signal, bool with_output) {
+               const py::object &input, const py::object &input_signal,
+               bool with_output) -> std::map<std::string, py::object> {
                 DiscreteSimulationProblem p{.initial_state =
                                                 point_of(initial_state, "initial_state"),
                                             .t_final = t_final,
@@ -4511,7 +4513,7 @@ void bind_nonlinear_sys_dt(py::module_ &m) {
                     p.input_signal = std::move(signal);
                 }
                 const DiscreteTrajectory T = sys.simulate(p);
-                py::dict out;
+                std::map<std::string, py::object> out;
                 out["x"] = stack_time(T.x);
                 if (with_output) out["y"] = stack_time(T.y);
                 return out;
