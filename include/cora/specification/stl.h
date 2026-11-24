@@ -14,6 +14,9 @@
 // Operations: the node builders are in stl.cpp (and_, or_, not_, implies, lt, le, gt, ge, plus,
 //             minus, times, isequal); the others are one file each in src/specification/stl/
 // See also: specification/stl_interval.h
+// References:
+//    [1] S. Sankaranarayanan et al. "Falsification of temporal properties of hybrid systems using
+//        the cross-entropy method", HSCC 2012.
 //
 // CORA: specification/@stl/stl.m
 // CORA: specification/@stl/and.m
@@ -28,6 +31,8 @@
 // CORA: specification/@stl/minus.m
 // CORA: specification/@stl/times.m
 // CORA: specification/@stl/isequal.m
+// CORA: specification/@stl/modelCheckTrace.m
+// CORA: specification/@stl/robustness.m
 // CORA authors: Florian Lercher
 // Authors:       Claude Sonnet 5.5
 // Written:       24-November-2026
@@ -36,6 +41,7 @@
 
 #pragma once
 
+#include "cora/global/tensor/tensor.h"
 #include "cora/specification/stl_interval.h"
 
 #include <cstdint>
@@ -262,6 +268,16 @@ class Stl {
     /// Whether the formula is a conjunction of comparisons; and whether those are linear.
     bool is_predicate() const;
     bool is_linear_predicate() const;
+
+    /// Whether the uniformly sampled trace satisfies the formula at its first time: x is (m, n),
+    /// one state per row (column k holds the k-th variable), t the m times. Not uniform:
+    /// Error::not_supported.
+    bool model_check_trace(const Tensor &x, const std::vector<double> &t) const;
+
+    /// The robustness of the trace (CORA's robustness on x, t): positive if it satisfies the
+    /// formula, negative if not, the distance of the predicates' states to the boundary
+    /// at best; a trace not uniformly sampled is interpolated linearly.
+    double robustness(const Tensor &x, const std::vector<double> &t) const;
 
     /// CORA's display: "(x1 < 5 & F[0, 2](x2 >= 0))".
     std::string to_string() const;

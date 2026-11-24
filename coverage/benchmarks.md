@@ -11,7 +11,7 @@ column of its own and is left out of the bit-exact numerator and denominator, as
 rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 
-Over the 86 instances, 2337 of 2408 rows (97.1%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2337 of 2428 rows (96.3%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 
 ## Per instance
 
@@ -56,8 +56,8 @@ Over the 86 instances, 2337 of 2408 rows (97.1%) that they execute and that can 
 | LALO20_W001 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
 | LALO20_W005 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
 | LALO20_W01 | 35 | 24 | 2 | 8 | 1 | 0 | 0 | 7 | 6 | 21/22 |
-| LOVO25 | 98 | 64 | 4 | 28 | 2 | 0 | 0 | 15 | 16 | 60/67 |
-| LOVO25-script | 109 | 73 | 5 | 28 | 3 | 0 | 0 | 16 | 16 | 69/77 |
+| LOVO25 | 108 | 64 | 4 | 28 | 12 | 0 | 0 | 15 | 16 | 60/77 |
+| LOVO25-script | 119 | 73 | 5 | 28 | 13 | 0 | 0 | 16 | 16 | 69/87 |
 | NAV-robust | 68 | 44 | 2 | 20 | 2 | 0 | 0 | 17 | 11 | 39/40 |
 | NAV-standard | 74 | 49 | 3 | 20 | 2 | 0 | 0 | 17 | 11 | 44/46 |
 | PLAA01_BND42 | 43 | 27 | 5 | 11 | 0 | 0 | 0 | 8 | 6 | 26/29 |
@@ -137,6 +137,16 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contSet/levelSet/isIntersecting_` | ported | float | 2 | LOVO25, LOVO25-script |
 | `contSet/levelSet/tightenDomain` | property | proved | 2 | LOVO25, LOVO25-script |
 | `hybridDynamics/location/guardIntersect_levelSet` | untested | bound | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/backpropagation` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/cos` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/exp` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/minus` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/plus` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/power` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/sin` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/sqrt` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/tan` | untested | float | 2 | LOVO25, LOVO25-script |
+| `specification/syntaxTree/times` | untested | float | 2 | LOVO25, LOVO25-script |
 | `contDynamics/linearSys/initReach_adaptive` | untested | float | 1 | LALO20_W01 |
 | `contDynamics/nonlinDASys/consistentInitialState` | ported | float | 1 | TSPS25 |
 | `contDynamics/nonlinDASys/initReach` | property | proved | 1 | TSPS25 |
@@ -520,15 +530,15 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>LOVO25: 60/67</summary>
+<details><summary>LOVO25: 60/77</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/syntaxTree` (untested)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/backpropagation` (untested), `specification/syntaxTree/cos` (untested), `specification/syntaxTree/exp` (untested), `specification/syntaxTree/minus` (untested), `specification/syntaxTree/plus` (untested), `specification/syntaxTree/power` (untested), `specification/syntaxTree/sin` (untested), `specification/syntaxTree/sqrt` (untested), `specification/syntaxTree/syntaxTree` (untested), `specification/syntaxTree/tan` (untested), `specification/syntaxTree/times` (untested)
 
 </details>
 
-<details><summary>LOVO25-script: 69/77</summary>
+<details><summary>LOVO25-script: 69/87</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/syntaxTree` (untested)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/backpropagation` (untested), `specification/syntaxTree/cos` (untested), `specification/syntaxTree/exp` (untested), `specification/syntaxTree/minus` (untested), `specification/syntaxTree/plus` (untested), `specification/syntaxTree/power` (untested), `specification/syntaxTree/sin` (untested), `specification/syntaxTree/sqrt` (untested), `specification/syntaxTree/syntaxTree` (untested), `specification/syntaxTree/tan` (untested), `specification/syntaxTree/times` (untested)
 
 </details>
 

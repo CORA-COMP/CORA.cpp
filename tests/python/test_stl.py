@@ -40,10 +40,13 @@ Reviewed:      ---
 # CORA: specification/@stl/isPredicate.m
 # CORA: specification/@stl/isLinearPredicate.m
 # CORA: specification/@stl/disp.m
+# CORA: specification/@stl/modelCheckTrace.m
+# CORA: specification/@stl/robustness.m
 
 import unittest
 
 import cora
+import numpy as np
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -127,6 +130,20 @@ class Operations(unittest.TestCase):
             p.get_clauses("nnf")
         self.assertTrue((p & q).is_predicate() and not (p | q).is_predicate())
         self.assertTrue((p & q).is_linear_predicate())
+
+
+class Traces(unittest.TestCase):
+    def test_trace_checks(self):
+        # the values MATLAB's CORA gives on the trace (sin t, cos 3t), t = 0, 0.1, ..., 2
+        x1, x2 = cora.StlExpr.variables("x", 2)
+        t = np.arange(21) * 0.1
+        x = np.stack([np.sin(t), np.cos(3 * t)], axis=1)
+        phi = (x1 > 0.8).finally_(cora.StlInterval(0, 1))
+        self.assertTrue(phi.model_check_trace(x, t.tolist()))
+        self.assertAlmostEqual(phi.robustness(x, t.tolist()), 0.041470984807896683, places=12)
+        psi = (x2 > -0.9).globally(cora.StlInterval(0.5, 1.2))
+        self.assertFalse(psi.model_check_trace(x, t.tolist()))
+        self.assertAlmostEqual(psi.robustness(x, t.tolist()), -0.089992496600445171, places=12)
 
 
 if __name__ == "__main__":

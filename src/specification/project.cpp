@@ -23,9 +23,8 @@ namespace cora {
 
 Specification Specification::project(const std::vector<int64_t> &dims) const {
     detail::Entry entry;
-    CORA_CHECK(type_ != SpecType::custom, Error::not_supported, [] {
-        return std::string("project: the projection of a custom specification is not supported");
-    });
+    CORA_CHECK(type_ != SpecType::custom && type_ != SpecType::logic, Error::not_supported,
+               [] { return std::string("project: only a set specification can be projected"); });
     entry.release(); // the set checks its dimensions
     Specification out = *this;
     out.set_ = set_->get().project(dims);

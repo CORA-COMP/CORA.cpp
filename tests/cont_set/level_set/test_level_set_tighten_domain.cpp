@@ -1,6 +1,16 @@
 // test_level_set_tighten_domain - LevelSet tighten_domain: the forward-backward contractor
 //
 // CORA: contSet/@levelSet/tightenDomain.m
+// CORA: specification/syntaxTree.m:backpropagation
+// CORA: specification/syntaxTree.m:plus
+// CORA: specification/syntaxTree.m:minus
+// CORA: specification/syntaxTree.m:times
+// CORA: specification/syntaxTree.m:power
+// CORA: specification/syntaxTree.m:sqrt
+// CORA: specification/syntaxTree.m:exp
+// CORA: specification/syntaxTree.m:sin
+// CORA: specification/syntaxTree.m:cos
+// CORA: specification/syntaxTree.m:tan
 // PROPERTY: contSet/@levelSet/tightenDomain.m
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
@@ -79,6 +89,25 @@ void elementary_contractors(const std::string &name) {
           name + ": cosh below 1 has no solution");
 }
 
+
+/// Stated property: every solution of sin, cos or tan of x = c in the box lies in the contracted
+/// box.
+void periodic_property(const std::string &name) {
+    Rng rng(5);
+    for (int k = 0; k < 30; ++k) {
+        double u[3];
+        rng.uniform(u, 3, -8.0, 8.0);
+        const double c = std::sin(u[2]) * 0.9, lo = std::min(u[0], u[1]), hi = std::max(u[0], u[1]);
+        const LevelSet ls(sin(Expr::var(0)) - c, 1, CompOp::eq);
+        const auto J = ls.tighten_domain(test::box({lo}, {hi}));
+        // the solutions of sin x = c on a fine grid of the box, where the sign of sin x - c flips
+        for (double x = lo; x < hi; x += 0.01)
+            if ((std::sin(x) - c) * (std::sin(x + 0.01) - c) <= 0)
+                check(J.has_value() && J->contains(vec({x}), 1e-2),
+                      name + ": a sine solution stays");
+    }
+}
+
 } // namespace
 
 
@@ -109,10 +138,34 @@ int main() {
         const auto P = prod.tighten_domain(test::box({1, 0}, {2, 4}));
         check(P && close(P->inf(), {1.0, 0.5}, 1e-12) && close(P->sup(), {2.0, 1.0}, 1e-12),
               b + ": a product");
-        // sin is left as it is: no narrowing, no unsound cut
-        const LevelSet sn(sin(Expr::var(0)), 1, CompOp::eq);
-        const auto N = sn.tighten_domain(test::box({-4}, {4}));
-        check(N && close(N->inf(), {-4.0}) && close(N->sup(), {4.0}), b + ": sin does not narrow");
+        // sin(x) = 1/2 on [-10, 10]: the solutions pi/6 + 2 pi k and 5 pi/6 + 2 pi k
+        const LevelSet sn(sin(Expr::var(0)) - 0.5, 1, CompOp::eq);
+        const auto N = sn.tighten_domain(test::box({-10}, {10}));
+        check(N && close(N->inf(), {5 * M_PI / 6 - 4 * M_PI}, 1e-12) &&
+                  close(N->sup(), {5 * M_PI / 6 + 2 * M_PI}, 1e-12),
+              b + ": sin narrows to the first and last solution");
+        // cos(x) = 2 has no solution; tan(x) = 5 keeps atan(5) + k pi, also above 1
+        check(!LevelSet(cos(Expr::var(0)) - 2.0, 1, CompOp::eq).tighten_domain(test::box({0}, {9})),
+              b + ": cos = 2");
+        const auto T = LevelSet(tan(Expr::var(0)) - 5.0, 1, CompOp::eq)
+                           .tighten_domain(test::box({0.1}, {1.4}));
+        check(T && close(T->inf(), {std::atan(5.0)}, 1e-12) &&
+                  close(T->sup(), {std::atan(5.0)}, 1e-12),
+              b + ": tan keeps a value above 1");
+        // x + y = 3, sqrt(x) = 2 and exp(x) = 1
+        const auto S2 = LevelSet(Expr::var(0) + Expr::var(1) - 3.0, 2, CompOp::eq)
+                            .tighten_domain(test::box({0, 0}, {1, 5}));
+        check(S2 && close(S2->inf(), {0.0, 2.0}, 1e-12) && close(S2->sup(), {1.0, 3.0}, 1e-12),
+              b + ": a sum");
+        const auto R2 =
+            LevelSet(sqrt(Expr::var(0)) - 2.0, 1, CompOp::eq).tighten_domain(test::box({0}, {10}));
+        check(R2 && close(R2->inf(), {4.0}, 1e-12) && close(R2->sup(), {4.0}, 1e-12),
+              b + ": a square root");
+        const auto E2 =
+            LevelSet(exp(Expr::var(0)) - 1.0, 1, CompOp::eq).tighten_domain(test::box({-2}, {2}));
+        check(E2 && close(E2->inf(), {0.0}, 1e-12) && close(E2->sup(), {0.0}, 1e-12),
+              b + ": an exponential");
+        periodic_property(b);
         // the stated property, on random circles
         contractor_property(b);
         elementary_contractors(b);

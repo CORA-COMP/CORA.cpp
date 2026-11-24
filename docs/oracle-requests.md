@@ -762,3 +762,21 @@ CORALean has float definitions of the syntax and the rewriting of CORA's `stl` c
 | `stl.assignIdentifiers`, `getClauses` | `STL.Tree.assignIdentifiers`, `getClauses` | `phi`, `type` | the numbered parts, the clauses |
 | `stl.getVariables`, `isPredicate`, `isLinearPredicate` | `STL.Tree.getVariables`, `isPredicate`, `isLinearPredicate` | `phi` | the variable indices, the bool |
 | `stl.maximumTime`, `minimumTime` | `STL.Tree.maximumTimeFloat`, `minimumTimeFloat` | `phi` | the time |
+
+## STL on traces (PR "port/spec4")
+
+CORALean has no definition of `modelCheckTrace` or the trace `robustness` of `stl` (`STL.Tree.Satisfies` is the semantics over real traces, `STL.robustnessReachSetGloballyCora` one reach-set path); the oracle serves none. CORA.cpp follows CORA's code; the tests are values run in MATLAB's CORA and, for the nearest-point program, a reference by enumeration (quadprog is exact to 1e-8 only). Same tree encoding as the section above.
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `stl.modelCheckTrace` | none (`STL.Tree.Satisfies` with `HasUntilWitness` on sampled traces) | `phi`, `x` (m, n), `t` (m) | the bool |
+| `stl.robustness` | none | `phi`, `x`, `t` | the value of Definition 2.3 of Sankaranarayanan et al. on the trace, predicates by the signed distance to the unsafe sets |
+
+## Syntax tree backward steps and logic specifications (PR "port/spec4b")
+
+CORALean has float definitions of the backward steps of CORA's `syntaxTree` (`SyntaxTree.funHanSinFloat`, `funHanCosFloat`, `funHanTanFloat` with `periodicFloat`, `SyntaxTree.backpropagationFloat`), generic over the scalar with outward rounding; the oracle serves none. CORA.cpp's contractor (`LevelSet::tighten_domain`) follows their structure with one ulp of widening instead of directed rounding, so it is checked by the stated property (every solution in the box stays) and by hand cases, not bit for bit. `splitLogic` has no CORALean counterpart.
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `levelSet.tightenDomain` (sin, cos, tan) | `SyntaxTree.backpropagationFloat`, `funHanSinFloat`, `funHanCosFloat`, `funHanTanFloat` | `eq` (expression tree), `I` (box) | the contracted box, or none |
+| `specification.splitLogic` | none | the list of specifications | the two lists |

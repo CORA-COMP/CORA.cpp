@@ -4,8 +4,9 @@
 // value 0 is pushed back through every operation (backward): a + b = t gives a in t - range(b),
 // a * b = t gives a in t / range(b) where range(b) excludes 0, an even power a^n = t gives the
 // two roots, and so on down to the variables, whose boxes are cut. Each operation narrows only
-// where the inverse is sound: sin, cos, tan, a real power other than the square root, and a
-// divisor are left as they are (CORA's backward tan intersects with [-1, 1], which cuts away
+// where the inverse is sound: a real power other than the square root and a divisor are left as
+// they are. sin, cos and tan invert on their two branches shifted by whole periods of 2 pi, as
+// CORALean's periodicFloat does (CORA's backward tan intersects with [-1, 1], which cuts away
 // solutions, docs/cora-differences.md). A root is widened by one ulp against rounding. All
 // constraints must be '=='; with several, the box is contracted by each in turn. CORA raises
 // emptySet when the contraction empties the box, here the result is none. The methods split,
@@ -22,6 +23,16 @@
 //
 // CORA: contSet/@levelSet/tightenDomain.m
 // CORA: specification/syntaxTree.m
+// CORA: specification/syntaxTree.m:backpropagation
+// CORA: specification/syntaxTree.m:plus
+// CORA: specification/syntaxTree.m:minus
+// CORA: specification/syntaxTree.m:times
+// CORA: specification/syntaxTree.m:power
+// CORA: specification/syntaxTree.m:sqrt
+// CORA: specification/syntaxTree.m:exp
+// CORA: specification/syntaxTree.m:sin
+// CORA: specification/syntaxTree.m:cos
+// CORA: specification/syntaxTree.m:tan
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Zhuoling Li
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
@@ -58,6 +69,40 @@ Iv aux_div(const Iv &a, const Iv &b) { return detail::times_zero_inf(a, {1.0 / b
 /// The signed n-th root of x for odd n.
 double aux_root(double x, int n) {
     return std::isinf(x) ? x : std::copysign(std::pow(std::abs(x), 1.0 / n), x);
+}
+
+// The periodic functions -------------------------------------------------------------------------
+
+/// pi bounded on both sides: the double below it and the next one above.
+const Iv kPiIv = {M_PI, std::nextafter(M_PI, kInf)};
+
+/// R shifted by m periods of 2 pi, widened against rounding.
+Iv aux_shift(const Iv &R, double m) {
+    const Iv period = {2 * kPiIv.lo, 2 * kPiIv.hi};
+    return detail::widen(R + detail::times_zero_inf({m, m}, period));
+}
+
+/// The upper bound below b that a branch R + 2 pi k allows (CORALean's step_periodicFloat_upper).
+double aux_upper(const Iv &R, double b) {
+    const double ind = std::ceil((b - R.hi) / (2 * kPiIv.lo));
+    return b < aux_shift(R, ind).lo ? aux_shift(R, ind - 1).hi : b;
+}
+
+/// The lower bound above a that a branch R + 2 pi k allows (CORALean's step_periodicFloat_lower).
+double aux_lower(const Iv &R, double a) {
+    const double ind = std::floor((a - R.lo) / (2 * kPiIv.lo));
+    return aux_shift(R, ind).hi < a ? aux_shift(R, ind + 1).lo : a;
+}
+
+/// The part of prev whose points lie in a branch R1 or R2 shifted by whole periods (CORA's
+/// aux_sin_ with the float definition of CORALean's periodicFloat); an infinite end stays.
+Iv aux_periodic(const Iv &R1, const Iv &R2, const Iv &prev) {
+    double sup_new = prev.hi, inf_new = prev.lo;
+    if (std::isfinite(prev.hi))
+        sup_new = std::min(prev.hi, std::max(aux_upper(R1, prev.hi), aux_upper(R2, prev.hi)));
+    if (std::isfinite(prev.lo))
+        inf_new = std::max(prev.lo, std::min(aux_lower(R1, prev.lo), aux_lower(R2, prev.lo)));
+    return {inf_new, sup_new};
 }
 
 /// The box as the ranges of the variables of an expression.
@@ -150,14 +195,19 @@ class Contractor {
             return backward_branch(v, t, {0.0, kInf}, [](double y) { return std::cosh(y); });
         case ExprOp::atanh:
             return backward_branch(v, t, {-kInf, kInf}, [](double y) { return std::tanh(y); });
+        // cosh: the two mirrored branches of acosh
         case ExprOp::cosh: {
             const Iv nonneg = detail::meet(t, {1.0, kInf});
             if (nonneg.empty()) return false;
             return backward_mirror(v,
                                    detail::widen({std::acosh(nonneg.lo), std::acosh(nonneg.hi)}));
         }
+        case ExprOp::sin:
+        case ExprOp::cos:
+        case ExprOp::tan:
+            return backward_periodic(v, t);
         default:
-            // constants, sin, cos and tan: nothing to narrow
+            // constants: nothing to narrow
             return true;
         }
     }
@@ -182,6 +232,30 @@ class Contractor {
         if (pos.empty()) return backward(v.a, neg);
         if (neg.empty()) return backward(v.a, pos);
         return backward(v.a, {neg.lo, pos.hi});
+    }
+
+    /// sin(a) = t, cos(a) = t or tan(a) = t: the two branches of the inverse, shifted by periods.
+    bool backward_periodic(const ExprView &v, const Iv &t) {
+        Iv r1, r2;
+        if (v.op == ExprOp::tan) {
+            // atan(t) and atan(t) + pi
+            r1 = detail::widen({std::atan(t.lo), std::atan(t.hi)});
+            r2 = detail::widen(r1 + kPiIv);
+        } else {
+            const Iv cut = detail::meet(t, {-1.0, 1.0});
+            if (cut.empty()) return false;
+            if (v.op == ExprOp::sin) {
+                // asin(t) and pi - asin(t)
+                r1 = detail::widen({std::asin(cut.lo), std::asin(cut.hi)});
+                r2 = detail::widen(kPiIv - r1);
+            } else {
+                // acos(t) and -acos(t)
+                r1 = detail::widen({std::acos(cut.hi), std::acos(cut.lo)});
+                r2 = -r1;
+            }
+        }
+        const Iv res = aux_periodic(r1, r2, forward(v.a));
+        return !res.empty() && backward(v.a, res);
     }
 
     /// a^n = t for an integer n >= 1: the roots, two of them for an even n.

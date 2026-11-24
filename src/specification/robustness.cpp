@@ -205,8 +205,9 @@ void aux_window(const Specification &spec, const Tensor &points, const std::vect
 std::vector<double> aux_values(const Specification &spec, const Tensor &points,
                                const std::vector<double> &times, double tol) {
     // the inputs, which the public entries pass on
-    if (spec.type() == SpecType::custom)
-        CORA_FAIL(Error::not_supported, "robustness: not supported for custom specifications");
+    if (spec.type() == SpecType::custom || spec.type() == SpecType::logic)
+        CORA_FAIL(Error::not_supported,
+                  "robustness: not supported for custom or logic specifications");
     if (points.ndim() != 2)
         CORA_FAIL(Error::wrong_value, "robustness: give the points as (N, n), one per row");
     if (spec.time() && times.size() != static_cast<std::size_t>(points.shape()[0]))

@@ -30,6 +30,10 @@ bool Specification::isequal(const Specification &other, Tol tol) const {
     resolve_tol(entry, tol, "isequal"); // refuses a negative tolerance
     CORA_CHECK(type_ != SpecType::custom && other.type_ != SpecType::custom, Error::not_supported,
                [] { return std::string("isequal: custom predicates cannot be compared"); });
+    // two logic specifications are the same when their formulas are, and the window and locations
+    if (type_ == SpecType::logic && other.type_ == SpecType::logic)
+        return formula_->isequal(*other.formula_) && time_ == other.time_ &&
+               locations_ == other.locations_;
     entry.release(); // the sets check their operands
     if (type_ != other.type_ || time_.has_value() != other.time_.has_value()) return false;
     if (time_ && !(within_tol(time_->first, other.time_->first, tol) &&

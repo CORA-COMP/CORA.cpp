@@ -9,7 +9,7 @@
 | AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 16.8 / 11.7 | 27 / 22 (23 instances) |
 
 <!-- BEGIN overall -->
-Over the 86 instances, 2337 of 2408 rows (97.1%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2337 of 2428 rows (96.3%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 <!-- END overall -->
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
@@ -371,7 +371,7 @@ width of s, LOVO area) belong to the instances that have one; TRAF22, SPRE22 and
 | LALO20 W005 | 1 | 1 | 10.8 | 18/18 bit-exact, 0 property | 21.9 | 17 | 17 (CORA) [c] | 1.57 |
 | LALO20 W01 | 1 | 1 | 249 | 21/22 bit-exact, 0 property | 208 | 248 | 248 (CORA) [c] | 0.997 |
 | TSPS25 | 1 | 1 | 62.1 | 29/35 bit-exact, 4 property | 312 | 299 | 299 (CORA) | 4.82 |
-| LOVO25 | 1 | 1 [e] | 4.28 | 60/67 bit-exact, 2 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.25 |
+| LOVO25 | 1 | 1 [e] | 4.28 | 60/77 bit-exact, 2 property | 11.4 | 9.6 | 9.6 (CORA) [d] | 2.25 |
 
 [a] TRAF22: JuliaReach's ARCH-COMP 2026 repeatability code (32 s, `vehicle.jl`) holds the disturbances w constant (w' = 0), where the problem lets them vary arbitrarily over time, as the report states (p. 58).
 
@@ -848,8 +848,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LALO20_W001 | 18/18 | 0 | 13 |
 | LALO20_W005 | 18/18 | 0 | 13 |
 | LALO20_W01 | 21/22 | 1 | 13 |
-| LOVO25 | 60/67 | 7 | 31 |
-| LOVO25-script | 69/77 | 8 | 32 |
+| LOVO25 | 60/77 | 17 | 31 |
+| LOVO25-script | 69/87 | 18 | 32 |
 | NAV-robust | 39/40 | 1 | 28 |
 | NAV-standard | 44/46 | 2 | 28 |
 | PLAA01_BND42 | 26/29 | 3 | 14 |

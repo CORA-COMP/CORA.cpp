@@ -6379,6 +6379,20 @@ void bind_stl(py::module_ &m) {
         .def("combine_next", &Stl::combine_next, "Nested next operators merged")
         .def("get_clauses", &Stl::get_clauses, py::arg("type") = "cnf",
              "The conjuncts or disjuncts")
+        // the trace checks: x is (m, n), one state per row, t the m times
+        .def(
+            "model_check_trace",
+            [](const Stl &phi, const py::object &x, const std::vector<double> &t) {
+                return phi.model_check_trace(matrix_of(x, "the states"), t);
+            },
+            py::arg("x"), py::arg("t"), "Whether the uniformly sampled trace satisfies the formula")
+        .def(
+            "robustness",
+            [](const Stl &phi, const py::object &x, const std::vector<double> &t) {
+                return phi.robustness(matrix_of(x, "the states"), t);
+            },
+            py::arg("x"), py::arg("t"),
+            "The robustness of the trace: positive if it satisfies the formula")
         // the predicates and the Python operators
         .def("is_predicate", &Stl::is_predicate, "Whether it is a conjunction of comparisons")
         .def("is_linear_predicate", &Stl::is_linear_predicate,
@@ -6423,18 +6437,27 @@ void bind_specification(py::module_ &m) {
             .def_property_readonly(
                 "type",
                 [](const Specification &spec) {
+                    // the name of the type as CORA spells it, in snake case
                     switch (spec.type()) {
                     case SpecType::custom:
                         return "custom";
                     case SpecType::invariant:
                         return "invariant";
+                    case SpecType::logic:
+                        return "logic";
                     case SpecType::safe_set:
                         return "safe_set";
                     default:
                         return "unsafe_set";
                     }
                 },
-                "'safe_set', 'unsafe_set', 'invariant' or 'custom'")
+                "'safe_set', 'unsafe_set', 'invariant', 'custom' or 'logic'")
+            // the logic specification and its formula
+            .def_static("logic", &Specification::logic, py::arg("formula"),
+                        "A temporal logic specification: traces must satisfy the formula")
+            .def_property_readonly("formula", &Specification::formula,
+                                   py::return_value_policy::copy,
+                                   "The formula of a logic specification")
             .def_static(
                 "invariant",
                 [](const py::object &S) { return Specification::invariant(set_of(S)); },
@@ -6511,6 +6534,8 @@ void bind_specification(py::module_ &m) {
     // the operations on lists of specifications
     specification.def_static("add", &add, py::arg("specs1"), py::arg("specs2"),
                              "The specifications of both lists in one list");
+    specification.def_static("split_logic", &split_logic, py::arg("specs"),
+                             "The specifications that are no logic, and those that are");
     specification.def_static("is_empty", &is_empty, py::arg("specs"),
                              "Whether the list holds no specification");
     specification.def_static(

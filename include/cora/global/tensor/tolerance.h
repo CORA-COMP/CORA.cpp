@@ -205,7 +205,11 @@ inline constexpr double kColorEqual = 5e-5;     ///< colors this close in every 
 inline constexpr double kPlotEqual = 1e-9;      ///< a style number this close to its default is it
 inline constexpr double kAxisRange = 1e-12;     ///< an axis range below this is a point
 inline constexpr double kPrintZero = 1e-12;     ///< a coordinate below this prints as 0
-inline constexpr double kTickSlack = 1e-9;      ///< part of a step that the last tick may overshoot
+inline constexpr double kParallelRows = 1e-12;  ///< unit rows this close (per entry) are parallel
+inline constexpr double kRankDrop = 1e-12; ///< a pivot below this part of the largest entry is zero
+inline constexpr double kStlPolytopeMeet =
+    1e-8;                                  ///< CORA robustness: tolerance of the intersection test
+inline constexpr double kTickSlack = 1e-9; ///< part of a step that the last tick may overshoot
 
 } // namespace numerics
 
