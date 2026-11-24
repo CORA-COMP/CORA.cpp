@@ -78,9 +78,9 @@ int main() {
             for (int k = 0; k <= 10; ++k) {
                 // a sample point, as the first variable
                 const double a = 0.1 + 0.05 * k;
-                const double v = f.eval({a, 0.0});
+                const double fa = f.eval({a, 0.0});
                 // the value of the function lies in the bounds
-                inside = inside && l - 1e-12 <= v && v <= u + 1e-12;
+                inside = inside && l - 1e-12 <= fa && fa <= u + 1e-12;
             }
             check(inside, b + ": an inverse or hyperbolic function is enclosed");
         }
