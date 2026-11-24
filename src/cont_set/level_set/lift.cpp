@@ -13,7 +13,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/level_set/level_set.h"
@@ -28,6 +28,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// The renaming ------------------------------------------------------------------------------------
 
 using Memo = std::unordered_map<const void *, Expr>;
 
@@ -70,16 +72,21 @@ Expr aux_rename(const Expr &e, const std::vector<int64_t> &dims, Memo &memo) {
             break;
         // the transcendental functions rename their argument
         case ExprOp::sin:
-            out = sin(a);
-            break;
         case ExprOp::cos:
-            out = cos(a);
-            break;
         case ExprOp::tan:
-            out = tan(a);
-            break;
         case ExprOp::exp:
-            out = exp(a);
+        // the logarithm, the inverse and the hyperbolic functions
+        case ExprOp::log:
+        case ExprOp::asin:
+        case ExprOp::acos:
+        case ExprOp::atan:
+        case ExprOp::sinh:
+        case ExprOp::cosh:
+        case ExprOp::tanh:
+        case ExprOp::asinh:
+        case ExprOp::acosh:
+        case ExprOp::atanh:
+            out = Expr::function(v.op, a);
             break;
         default:
             CORA_FAIL(Error::report_to_dev, "lift: an expression node of an unknown operation");
@@ -93,6 +100,8 @@ Expr aux_rename(const Expr &e, const std::vector<int64_t> &dims, Memo &memo) {
 
 
 // ===========================================  MAIN  =========================================== //
+
+// The lift ----------------------------------------------------------------------------------------
 
 Set LevelSet::lift_impl(int64_t N, const std::vector<int64_t> &proj) const {
     Memo memo;

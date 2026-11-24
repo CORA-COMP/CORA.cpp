@@ -104,7 +104,29 @@ from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
 from .figure import Figure, subplots, to_tikz
 from .plot import plot, plot_over_time, plot_rand_point
-from .tensor import Tensor, cos, default_tol, exp, eye, log, ones, randn, sin, sqrt, tan, zeros
+from .tensor import (
+    Tensor,
+    acos,
+    acosh,
+    asin,
+    asinh,
+    atan,
+    atanh,
+    cos,
+    cosh,
+    default_tol,
+    exp,
+    eye,
+    log,
+    ones,
+    randn,
+    sin,
+    sinh,
+    sqrt,
+    tan,
+    tanh,
+    zeros,
+)
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -136,6 +158,7 @@ __all__ = [
     "use_cora_colors", "verify_strategies", "vnncomp_options", "cora_vnncomp_options",
     "Tensor", "cos",
     "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
+    "asin", "acos", "atan", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
 ]
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

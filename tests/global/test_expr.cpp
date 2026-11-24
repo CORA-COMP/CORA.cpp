@@ -2,7 +2,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   09-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/expr.h"
@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <functional>
+#include <string>
 
 using namespace cora;
 using test::check;
@@ -136,6 +137,54 @@ void tan_sqrt_and_real_powers() {
           "a list of enclosures");
 }
 
+/// The ten new functions: values, derivatives (against finite differences), the range of a
+/// sampled box, and the refusal of a range outside the domain.
+void inverse_and_hyperbolic_functions() {
+    const Expr x = Expr::var(0);
+    struct Case {
+        const char *name;
+        Expr f;
+        double (*g)(double);
+        double lo, hi; // a box inside the domain
+    };
+    const std::vector<Case> cases = {
+        {"log", log(x), [](double v) { return std::log(v); }, 0.5, 3.0},
+        {"asin", asin(x), [](double v) { return std::asin(v); }, -0.7, 0.8},
+        {"acos", acos(x), [](double v) { return std::acos(v); }, -0.7, 0.8},
+        {"atan", atan(x), [](double v) { return std::atan(v); }, -2.0, 3.0},
+        {"sinh", sinh(x), [](double v) { return std::sinh(v); }, -1.0, 2.0},
+        {"cosh", cosh(x), [](double v) { return std::cosh(v); }, -1.0, 2.0},
+        {"tanh", tanh(x), [](double v) { return std::tanh(v); }, -1.0, 2.0},
+        {"asinh", asinh(x), [](double v) { return std::asinh(v); }, -2.0, 3.0},
+        {"acosh", acosh(x), [](double v) { return std::acosh(v); }, 1.2, 4.0},
+        {"atanh", atanh(x), [](double v) { return std::atanh(v); }, -0.7, 0.8}};
+    for (const Case &c : cases) {
+        const double p = 0.5 * (c.lo + c.hi);
+        check(close(c.f.eval({p}), c.g(p)), std::string(c.name) + ": value");
+        const double h = 1e-6;
+        check(close(c.f.diff(0).eval({p}), (c.g(p + h) - c.g(p - h)) / (2 * h), 1e-6),
+              std::string(c.name) + ": derivative");
+        // the range holds every sampled value, and is tight at the ends of a monotone function
+        const Range r = c.f.enclose({span(c.lo, c.hi)});
+        bool inside = true;
+        for (int k = 0; k <= 50; ++k) {
+            const double v = c.g(c.lo + (c.hi - c.lo) * k / 50);
+            inside = inside && lower(r) <= v && v <= upper(r);
+        }
+        check(inside, std::string(c.name) + ": the range holds the samples");
+    }
+    // cosh dips to 1 where its range holds 0; acos falls
+    check(close(lower(cosh(x).enclose({span(-1.0, 2.0)})), 1.0), "cosh around 0");
+    check(close(lower(acos(x).enclose({span(0.0, 0.5)})), std::acos(0.5)), "acos falls");
+    // outside the domain
+    check(test::raises([&] { log(x).enclose({span(-1.0, 1.0)}); }, Error::out_of_domain),
+          "log of a range with a negative number");
+    check(test::raises([&] { asin(x).enclose({span(0.0, 1.5)}); }, Error::out_of_domain),
+          "asin beyond 1");
+    check(test::raises([&] { acosh(x).enclose({span(0.5, 2.0)}); }, Error::out_of_domain),
+          "acosh below 1");
+}
+
 void errors_are_described() {
     const Expr x = Expr::var(0);
     check(test::throws([&] { (1 / x).enclose({span(-1.0, 1.0)}); }),
@@ -162,6 +211,7 @@ int main() {
     tensors_evaluate_elementwise();
     range_arithmetic_takes_the_extremes();
     tan_sqrt_and_real_powers();
+    inverse_and_hyperbolic_functions();
     errors_are_described();
     return test::finish("expr");
 }

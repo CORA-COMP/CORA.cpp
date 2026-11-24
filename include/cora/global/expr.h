@@ -15,7 +15,7 @@
 //
 // Authors:       Tobias Ladner, Claude Opus 5.5, Claude Sonnet 5.5
 // Written:       02-November-2026
-// Last update:   11-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -58,7 +58,33 @@ Range square(const Range &a);
 // Expressions -------------------------------------------------------------------------------------
 
 /// The operation of a node of the tree (see Expr::view).
-enum class ExprOp { constant, var, add, sub, mul, div, neg, pow, rpow, sin, cos, tan, exp };
+enum class ExprOp {
+    constant,
+    var,
+    add,
+    sub,
+    mul,
+    div,
+    neg,
+    pow,
+    rpow,
+    sin,
+    cos,
+    tan,
+    exp,
+    log,
+    // the inverse functions
+    asin,
+    acos,
+    atan,
+    // the hyperbolic functions and their inverses
+    sinh,
+    cosh,
+    tanh,
+    asinh,
+    acosh,
+    atanh
+};
 
 struct ExprView;
 
@@ -102,6 +128,10 @@ class Expr {
     /// of a constant, the real exponent of an rpow), its index (the variable of a var, the integer
     /// exponent of a pow) and the operands `a` and `b` (empty where the operation has none).
     ExprView view() const;
+
+    /// The function of operand a that `op` names (sin, cos, tan, exp, log, asin, acos, atan, sinh,
+    /// cosh, tanh, asinh, acosh or atanh).
+    static Expr function(ExprOp op, const Expr &a);
 
     /// The identity of the node: two expressions that share a subtree have the same id there.
     const void *id() const noexcept { return node_.get(); }
@@ -151,6 +181,16 @@ Expr sin(const Expr &a);
 Expr cos(const Expr &a);
 Expr tan(const Expr &a);
 Expr exp(const Expr &a);
+Expr log(const Expr &a);
+Expr asin(const Expr &a);
+Expr acos(const Expr &a);
+Expr atan(const Expr &a);
+Expr sinh(const Expr &a);
+Expr cosh(const Expr &a);
+Expr tanh(const Expr &a);
+Expr asinh(const Expr &a);
+Expr acosh(const Expr &a);
+Expr atanh(const Expr &a);
 
 } // namespace cora
 

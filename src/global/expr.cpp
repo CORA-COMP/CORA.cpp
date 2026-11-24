@@ -8,10 +8,11 @@
 // CORA.cpp only: CORA derives the dynamics with the symbolic toolbox.
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       29-September-2026
-// Last update:   11-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/expr.h"
+#include "cora/cont_set/interval/interval.h"
 #include "cora/global/error.h"
 
 #include <algorithm>
@@ -160,6 +161,51 @@ Range aux_tan(const Range &a) {
     return {a.lo.tan(), a.hi.tan()};
 }
 
+/// The range of an elementary function over the range a, as the box operation of CORA's interval
+/// (so the domain checks, the monotone branches and the oracle-checked rounding are its).
+Range aux_interval_function(Op op, const Range &a) {
+    const Interval I(a.lo, a.hi);
+    Interval R = I;
+    switch (op) {
+    case Op::log:
+        R = I.log();
+        break;
+    // the inverse trigonometric functions
+    case Op::asin:
+        R = I.asin();
+        break;
+    case Op::acos:
+        R = I.acos();
+        break;
+    case Op::atan:
+        R = I.atan();
+        break;
+    // the hyperbolic functions and their inverses
+    case Op::sinh:
+        R = I.sinh();
+        break;
+    // cosh falls to 1 where the range holds 0; the interval operation knows
+    case Op::cosh:
+        R = I.cosh();
+        break;
+    case Op::tanh:
+        R = I.tanh();
+        break;
+    case Op::asinh:
+        R = I.asinh();
+        break;
+    case Op::acosh:
+        R = I.acosh();
+        break;
+    case Op::atanh:
+        R = I.atanh();
+        break;
+    default:
+        CORA_FAIL(Error::report_to_dev, "cora: an expression node of an unknown operation");
+    }
+    return {R.inf(), R.sup()};
+}
+
 // Evaluation --------------------------------------------------------------------------------------
 
 /// The value of a node from the values of its operands.
@@ -188,6 +234,28 @@ Tensor aux_apply(const Expr::Node &n, const Tensor &a, const Tensor &b) {
         return a.tan();
     case Op::exp:
         return a.exp();
+    case Op::log:
+        return a.log();
+    // the inverse trigonometric functions
+    case Op::asin:
+        return a.asin();
+    case Op::acos:
+        return a.acos();
+    case Op::atan:
+        return a.atan();
+    // the hyperbolic functions and their inverses
+    case Op::sinh:
+        return a.sinh();
+    case Op::cosh:
+        return a.cosh();
+    case Op::tanh:
+        return a.tanh();
+    case Op::asinh:
+        return a.asinh();
+    case Op::acosh:
+        return a.acosh();
+    case Op::atanh:
+        return a.atanh();
     default:
         break;
     }
@@ -220,6 +288,19 @@ Range aux_apply(const Expr::Node &n, const Range &a, const Range &b) {
         return aux_tan(a);
     case Op::exp:
         return {a.lo.exp(), a.hi.exp()};
+    case Op::log:
+    // the inverse trigonometric functions
+    case Op::asin:
+    case Op::acos:
+    case Op::atan:
+    // the hyperbolic functions and their inverses
+    case Op::sinh:
+    case Op::cosh:
+    case Op::tanh:
+    case Op::asinh:
+    case Op::acosh:
+    case Op::atanh:
+        return aux_interval_function(n.op, a);
     default:
         break;
     }
@@ -382,6 +463,56 @@ Expr sin(const Expr &a) { return M::make(Op::sin, a); }
 Expr cos(const Expr &a) { return M::make(Op::cos, a); }
 Expr tan(const Expr &a) { return M::make(Op::tan, a); }
 Expr exp(const Expr &a) { return M::make(Op::exp, a); }
+Expr log(const Expr &a) { return M::make(Op::log, a); }
+Expr asin(const Expr &a) { return M::make(Op::asin, a); }
+Expr acos(const Expr &a) { return M::make(Op::acos, a); }
+Expr atan(const Expr &a) { return M::make(Op::atan, a); }
+Expr sinh(const Expr &a) { return M::make(Op::sinh, a); }
+Expr cosh(const Expr &a) { return M::make(Op::cosh, a); }
+Expr tanh(const Expr &a) { return M::make(Op::tanh, a); }
+Expr asinh(const Expr &a) { return M::make(Op::asinh, a); }
+Expr acosh(const Expr &a) { return M::make(Op::acosh, a); }
+Expr atanh(const Expr &a) { return M::make(Op::atanh, a); }
+
+// The functions of one operand --------------------------------------------------------------------
+
+Expr Expr::function(ExprOp op, const Expr &a) {
+    switch (op) {
+    case Op::sin:
+        return sin(a);
+    case Op::cos:
+        return cos(a);
+    case Op::tan:
+        return tan(a);
+    case Op::exp:
+        return exp(a);
+    case Op::log:
+        return log(a);
+    // the inverse trigonometric functions
+    case Op::asin:
+        return asin(a);
+    case Op::acos:
+        return acos(a);
+    case Op::atan:
+        return atan(a);
+    // the hyperbolic functions and their inverses
+    case Op::sinh:
+        return sinh(a);
+    case Op::cosh:
+        return cosh(a);
+    case Op::tanh:
+        return tanh(a);
+    case Op::asinh:
+        return asinh(a);
+    case Op::acosh:
+        return acosh(a);
+    case Op::atanh:
+        return atanh(a);
+    default:
+        break;
+    }
+    CORA_FAIL(Error::wrong_value, "Expr::function: the operation is not a function of one operand");
+}
 
 // Derivative and evaluation -------------------------------------------------------------------
 
@@ -389,6 +520,7 @@ Expr Expr::diff(int i) const {
     const Node &n = *node_;
     if (n.op == Op::constant) return Expr(0.0);
     if (n.op == Op::var) return Expr(n.index == i ? 1.0 : 0.0);
+    const Expr one(1.0);
     const Expr da = n.a.diff(i); // the chain rule needs the inner derivative for every operation
     switch (n.op) {
     case Op::add:
@@ -414,6 +546,28 @@ Expr Expr::diff(int i) const {
         return (1 + pow(tan(n.a), 2)) * da; // CORA's symbolic derivative, tan^2 + 1
     case Op::exp:
         return exp(n.a) * da;
+    case Op::log:
+        return (one / n.a) * da;
+    // the inverse trigonometric functions
+    case Op::asin:
+        return (one / sqrt(one - pow(n.a, 2))) * da;
+    case Op::acos:
+        return (-(one / sqrt(one - pow(n.a, 2)))) * da;
+    case Op::atan:
+        return (one / (pow(n.a, 2) + one)) * da;
+    // the hyperbolic functions and their inverses
+    case Op::sinh:
+        return (cosh(n.a))*da;
+    case Op::cosh:
+        return (sinh(n.a))*da;
+    case Op::tanh:
+        return (one - pow(tanh(n.a), 2)) * da;
+    case Op::asinh:
+        return (one / sqrt(pow(n.a, 2) + one)) * da;
+    case Op::acosh:
+        return (one / (sqrt(n.a - one) * sqrt(n.a + one))) * da;
+    case Op::atanh:
+        return (-(one / (pow(n.a, 2) - one))) * da;
     default:
         break;
     }
@@ -480,6 +634,28 @@ std::string Expr::to_json(int states, const std::function<std::string(double)> &
         return one("tan", n.a);
     case Op::exp:
         return one("exp", n.a);
+    case Op::log:
+        return one("log", n.a);
+    // the inverse trigonometric functions
+    case Op::asin:
+        return one("asin", n.a);
+    case Op::acos:
+        return one("acos", n.a);
+    case Op::atan:
+        return one("atan", n.a);
+    // the hyperbolic functions and their inverses
+    case Op::sinh:
+        return one("sinh", n.a);
+    case Op::cosh:
+        return one("cosh", n.a);
+    case Op::tanh:
+        return one("tanh", n.a);
+    case Op::asinh:
+        return one("asinh", n.a);
+    case Op::acosh:
+        return one("acosh", n.a);
+    case Op::atanh:
+        return one("atanh", n.a);
     }
     return {};
 }

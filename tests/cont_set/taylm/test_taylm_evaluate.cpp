@@ -4,7 +4,7 @@
 // PROPERTY: contSet/@taylm/times.m
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   19-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -65,6 +65,26 @@ int main() {
         // exp falls back to the range: e^1 .. e^3
         const auto e = Taylm::evaluate(exp(x), v).bounds();
         check(e[0] <= std::exp(1.0) + 1e-12 && e[1] >= std::exp(3.0) - 1e-12, b + ": exp");
+        // the inverse and hyperbolic functions fall back to the range too
+        const Interval S(vec({0.1, 0.2}), vec({0.6, 0.5}));
+        const std::vector<Taylm> w = Taylm::from_interval(S);
+        // each model holds the values of a sample of the box
+        const std::vector<Expr> fs = {log(x),  asin(x), acos(x),  atan(x), sinh(x),
+                                      cosh(x), tanh(x), asinh(x), atanh(x)};
+        for (const Expr &f : fs) {
+            // the bounds of the model and the function at samples of the box
+            const auto [l, u] = Taylm::evaluate(f, w).bounds();
+            bool inside = true;
+            for (int k = 0; k <= 10; ++k) {
+                // a sample point, as the first variable
+                const double a = 0.1 + 0.05 * k;
+                const double v = f.eval({a, 0.0});
+                // the value of the function lies in the bounds
+                inside = inside && l - 1e-12 <= v && v <= u + 1e-12;
+            }
+            check(inside, b + ": an inverse or hyperbolic function is enclosed");
+        }
+        check(Taylm::evaluate(acosh(x), v).bounds()[0] <= std::acosh(1.0) + 1e-12, b + ": acosh");
         flow_property(b);
     });
     check(test::raises([] { Taylm::evaluate(Expr::var(0), {}); }, Error::wrong_value),
