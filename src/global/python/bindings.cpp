@@ -5662,6 +5662,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(pgd_polish_keep, "PGD: the best points that are polished");
     CORA_VERIFY_FIELD(pgd_sign_windows,
                       "PGD: the half-width of the sign's straight-through gradient, per round");
+    CORA_VERIFY_FIELD(root_check_first, "The bounding's first batch before the first attack");
     CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
     CORA_VERIFY_FIELD(pgd_min_steps, "The PGD steps that the shrunk restarts fit in the time");
     CORA_VERIFY_FIELD(seed, "The seed of the restarts");

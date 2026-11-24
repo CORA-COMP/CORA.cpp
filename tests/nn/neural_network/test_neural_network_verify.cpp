@@ -109,6 +109,15 @@ void verdicts(const std::string &b) {
                 nn.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
             check(unsafe.status == "sat" && unsafe.y.size() == 2 && unsafe.y[0] <= least + 0.01,
                   b + " " + bounding + ": around the least output is sat, with its output");
+            // the root check first: far below, the bounds decide before any attack; near, sat still
+            o.falsification_order = "attack-first";
+            o.root_check_first = true;
+            const NnVerifyResult early = nn.verify(aux_below(3, 2, -0.2, 0.2, least - 1.0), 20, o);
+            check(early.status == "unsat" && early.stats.count("attack_seconds") == 0,
+                  b + " " + bounding + ": the root check decides unsat before the attack");
+            const NnVerifyResult near_sat =
+                nn.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
+            check(near_sat.status == "sat", b + " " + bounding + ": sat after the root check");
         }
     }
     // the look-ahead neuron splits (fsb), the backward bound and the chord rows, on a ReLU network

@@ -275,6 +275,7 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.attack_first_rounds = 1000000; // the share, not three rounds
         o.pgd_hops = 16;
         o.pgd_polish_every = 4;
+        o.root_check_first = true;
         o.pgd_polish_steps = 600;
         o.pgd_steps = 1000;
         o.pgd_restarts = 512;

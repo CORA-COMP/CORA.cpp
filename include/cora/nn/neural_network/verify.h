@@ -101,6 +101,9 @@ struct NnVerifyOptions {
     /// round of restarts in turn (alpha-beta-CROWN's tight 0.1 and loose 5 SignMerge on
     /// traffic_signs); the candidates are always checked on the true network.
     std::vector<double> pgd_sign_windows = {1.0};
+    /// attack-first: the bounding's first batch over the root boxes comes before the attack (an
+    /// unsat the bounds decide at once is not left to a long attack).
+    bool root_check_first = false;
     int64_t max_candidates = 8; ///< confirm checks per attack step
     /// PGD's restarts shrink until this many steps fit in the attack's time (a slow, wide network).
     int64_t pgd_min_steps = 10;

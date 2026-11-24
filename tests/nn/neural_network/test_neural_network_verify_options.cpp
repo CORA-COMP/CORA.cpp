@@ -127,8 +127,8 @@ void options_and_strategies() {
     const NnVerifyOptions sb = vnncomp_options("soundnessbench_2026");
     check(sb.pgd_momentum == 0.9 && sb.pgd_step_sizes.size() == 6 && sb.pgd_restarts == 512 &&
               sb.pgd_steps == 1000 && sb.attack_time_share == 0.85 && sb.pgd_polish_every == 4 &&
-              sb.pgd_hops == 16 && sb.pgd_polish_steps == 600 && ours.pgd_momentum == 0.0 &&
-              ours.pgd_step_sizes.empty(),
+              sb.root_check_first && !ours.root_check_first && sb.pgd_hops == 16 &&
+              sb.pgd_polish_steps == 600 && ours.pgd_momentum == 0.0 && ours.pgd_step_sizes.empty(),
           "soundnessbench' preset: multi-step momentum PGD");
     // nn4sys: lindex's many cases
     const NnVerifyOptions sys = vnncomp_options("nn4sys");

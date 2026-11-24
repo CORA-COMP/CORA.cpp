@@ -47,6 +47,8 @@ namespace cora {
 namespace {
 
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
+/// The polish: Adam's floor of the second moment's root, and the loss within which it starts.
+const double kAdamFloor = 5.0e7 * machine_eps(), kPolishGate = 5.0e11 * machine_eps();
 
 // The center --------------------------------------------------------------------------------------
 
@@ -168,7 +170,7 @@ class PgdAttack : public Attack {
     /// 1e-4 of the unsafe set; true once a candidate passes the confirm check.
     bool aux_polish(NnProblem &problem, double deadline, const Rows &r, const Tensor &best_x,
                     const Tensor &best_loss, double window, AttackResult &result) {
-        if (polish_steps_ <= 0 || best_loss.min(0).data()[0] > numerics::kPolishGate) return false;
+        if (polish_steps_ <= 0 || best_loss.min(0).data()[0] > kPolishGate) return false;
         const Tensor order = best_loss.argsort(0, false).slice(0, 0, polish_keep_);
         Rows p = aux_take(r, order);
         Tensor px = best_x.take(order, 0), pbest_x = px, pbest_loss = best_loss.take(order, 0);
@@ -213,7 +215,7 @@ class PgdAttack : public Attack {
                     (mean * (1.0 / (1.0 - std::pow(0.9, double(step + 1)))))
                         .divide(
                             (square * (1.0 / (1.0 - std::pow(0.999, double(step + 1))))).sqrt() +
-                            numerics::kAdamFloor);
+                            kAdamFloor);
                 x = (x - alpha.multiply(direction)).maximum(r.lo).minimum(r.hi);
                 alpha = alpha * 0.999;
             } else if (momentum_ > 0) {
