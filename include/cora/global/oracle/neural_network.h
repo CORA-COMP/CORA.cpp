@@ -29,6 +29,8 @@
 
 namespace cora::lean {
 
+// Layers and their lines --------------------------------------------------------------------------
+
 /// One layer of the oracle: a kind and its weights.
 struct NnLayer {
     std::string kind; // "linear", "relu", "leakyRelu", "sigmoid", "tanh", "sign", "square", "poly",
@@ -77,6 +79,8 @@ NnLine product_line(const cora::Tensor &c, const cora::Tensor &G,
 /// nnLayer.softmaxSumBounds: the box (inf, sup) of W exp(d) + b for l <= d <= u (columns).
 std::pair<Tensor, Tensor> softmax_sum_bounds(const cora::Tensor &W, const cora::Tensor &b,
                                              const cora::Tensor &l, const cora::Tensor &u);
+
+// Networks on sets and Taylor models --------------------------------------------------------------
 
 /// The layers as the wire's list, and in `dtype` the scalar type of their weights.
 Json layers_json(const std::vector<NnLayer> &layers, std::string &dtype);
