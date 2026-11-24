@@ -9,7 +9,7 @@
 | AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 16.8 / 11.7 | 27 / 22 (23 instances) |
 
 <!-- BEGIN overall -->
-Over the 86 instances, 2337 of 2428 rows (96.3%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2341 of 2428 rows (96.4%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 <!-- END overall -->
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
@@ -572,7 +572,7 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | TORA reach-tanh | V | V | 0.168 | 41/42 bit-exact, 0 property | 2.28 | 2.356 | 0.115 (JuliaReach) [a] | 0.684 |
 | TORA reach-sigmoid | V | V | 0.304 | 56/57 bit-exact, 0 property | 5.09 | 4.73 | 0.146 (JuliaReach) [a] | 0.48 |
 | Single Pendulum reach | V | V | 0.0425 | 41/42 bit-exact, 0 property | 4.03 | 4.083 | 4.083 (CORA) [b] | 96.1 |
-| Double Pendulum less-robust | V (CORA: U) | V | 42.3 | 38/40 bit-exact, 1 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.59 |
+| Double Pendulum less-robust | V (CORA: U) | V | 42.3 | 39/40 bit-exact, 0 property | - | 5.604 (U) | 67.334 (CROWN-Reach) [d] | 1.59 |
 | Double Pendulum less-robust, the script (no splitting) | U (script) | U | 0.139 | 33/34 bit-exact, 0 property | 5.06 | 5.604 | - | - |
 | Double Pendulum more-robust | F | F | 0.111 | 41/42 bit-exact, 0 property | 4.76 | 5.589 | 0.394 (JuliaReach) | 3.54 |
 | Airplane continuous | F | F | 0.574 | 41/42 bit-exact, 0 property | 6.78 | 6.809 | 1.923 (JuliaReach) | 3.35 |
@@ -585,13 +585,13 @@ point does not verify, `U` is UNKNOWN, `V` VERIFIED.
 | VCAS worst-25.5 | F | F | 0.00118 | 10/10 bit-exact, 0 property | 0.047 | 0.042 | 0.030 (CROWN-Reach) | 25.5 |
 | VCAS worst-28.5 | F | F | 0.00117 | 10/10 bit-exact, 0 property | 0.047 | 0.032 | 0.032 (CORA) | 27.2 |
 | Attitude Control avoid | V | V | 0.436 | 42/43 bit-exact, 0 property | 5.71 | 5.226 | 5.226 (CORA) [c] | 12 |
-| QUAD reach | V | V | 1.98 | 46/48 bit-exact, 1 property | 34.7 | 33.415 | 33.415 (CORA) | 16.8 |
+| QUAD reach | V | V | 1.98 | 47/48 bit-exact, 0 property | 34.7 | 33.415 | 33.415 (CORA) | 16.8 |
 | Docking constraint | U | U | 5.16 | 38/38 bit-exact, 0 property | 594 [m] | 95.038 | - [f] | - |
 | Docking constraint, polytope and splitting | U (script) | V | 154 | 27/60 bit-exact, 8 property | - | 95.038 (U) | - [f] | - |
-| NAV standard | V | V | 4.62 | 44/46 bit-exact, 1 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 29.2 |
+| NAV standard | V | V | 4.62 | 45/46 bit-exact, 0 property | 514 [m] | 411.641 | 134.850 (CROWN-Reach) | 29.2 |
 | NAV robust | V | V | 0.314 | 39/40 bit-exact, 0 property | 8.71 | 2.271 | 2.271 (CORA) | 7.24 |
 | CartPole* reach | V | V | 1.47 | 41/42 bit-exact, 0 property | 249 [m] | 227.216 | 227.216 (CORA) [g] | 154 |
-| CartPole reach, the report's set | - | V | 32.7 | 46/48 bit-exact, 1 property | - | - | - [g] | - |
+| CartPole reach, the report's set | - | V | 32.7 | 47/48 bit-exact, 0 property | - | - | - [g] | - |
 
 [a] ACC, TORA reach-tanh and reach-sigmoid: immrax (0.120, 0.040 and 0.043 s) analyses continuous feedback, as the report states (p. 89), instead of sample-and-hold control.
 
@@ -823,7 +823,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | CBF03 | 3/3 | 0 | 11 |
 | CVDP23 | 63/63 | 0 | 26 |
 | CartPole-reach | 41/42 | 1 | 23 |
-| CartPole-reach-report | 46/48 | 2 | 23 |
+| CartPole-reach-report | 47/48 | 1 | 23 |
 | DTN01 | 30/30 | 0 | 18 |
 | DTN02 | 30/30 | 0 | 18 |
 | DTN03 | 29/29 | 0 | 18 |
@@ -832,7 +832,7 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | DTN06 | 30/30 | 0 | 18 |
 | Docking-constraint | 38/38 | 0 | 19 |
 | Docking-constraint-polygon | - | not measured | - |
-| Double_Pendulum-less-robust | 38/40 | 2 | 23 |
+| Double_Pendulum-less-robust | 39/40 | 1 | 23 |
 | Double_Pendulum-less-robust-script | 33/34 | 1 | 23 |
 | Double_Pendulum-more-robust | 41/42 | 1 | 23 |
 | GRBX01 | 42/45 | 3 | 24 |
@@ -851,13 +851,13 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | LOVO25 | 60/77 | 17 | 31 |
 | LOVO25-script | 69/87 | 18 | 32 |
 | NAV-robust | 39/40 | 1 | 28 |
-| NAV-standard | 44/46 | 2 | 28 |
+| NAV-standard | 45/46 | 1 | 28 |
 | PLAA01_BND42 | 26/29 | 3 | 14 |
 | PLAA01_BND50 | 26/29 | 3 | 14 |
 | PLAD01_BND30 | 17/18 | 1 | 12 |
 | PLAD01_BND42 | 17/18 | 1 | 12 |
 | PLAN01 | - | not measured | - |
-| QUAD-reach | 46/48 | 2 | 23 |
+| QUAD-reach | 47/48 | 1 | 23 |
 | RAND01 | 11/11 | 0 | 11 |
 | RAND02 | 11/11 | 0 | 11 |
 | RND01 | 11/11 | 0 | 11 |

@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/request.h"
@@ -144,6 +144,11 @@ struct Decode<std::vector<double>> {
         for (const Json &v : j.items) values.push_back(Tensor::decode(v.text));
         return values;
     }
+};
+// A string, a name of the reply (a layer's kind).
+template <>
+struct Decode<std::string> {
+    static std::string of(const std::string &, const Json &j) { return j.text; }
 };
 // A list of strings, the exact texts of values that are not doubles (the times of a stay).
 template <>
@@ -300,6 +305,7 @@ template Polytope Reply::get<Polytope>(const char *) const;
 template Ellipsoid Reply::get<Ellipsoid>(const char *) const;
 template Capsule Reply::get<Capsule>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
+template std::string Reply::get<std::string>(const char *) const;
 // the lists
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<double> Reply::get<std::vector<double>>(const char *) const;
