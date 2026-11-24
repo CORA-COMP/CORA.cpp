@@ -46,6 +46,7 @@
 #include "cora/hybrid_dynamics/hybrid_automaton/hybrid_automaton.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
+#include "cora/specification/stl.h"
 #include "cora/specification/stl_interval.h"
 
 #include <limits>
@@ -6273,6 +6274,120 @@ void bind_stl_interval(py::module_ &m) {
         .def("__repr__", [](const StlInterval &I) { return "StlInterval" + I.to_string(); });
 }
 
+/// An STL expression from a Python operand: an StlExpr, or a number as a constant.
+StlExpr stl_expr(const py::object &o) {
+    if (py::isinstance<StlExpr>(o)) return o.cast<StlExpr>();
+    return StlExpr(o.cast<double>());
+}
+
+/// The expressions and formulas of signal temporal logic.
+void bind_stl(py::module_ &m) {
+    py::class_<StlExpr>(
+        m, "StlExpr",
+        "An arithmetic expression over the state: variables, numbers, +, -, *, integer powers")
+        .def(py::init<double>(), py::arg("c"), "The number c")
+        .def_static("variable", &StlExpr::variable, py::arg("name"), py::arg("index"),
+                    "The variable of that name and 0-based index")
+        .def_static("variables", &StlExpr::variables, py::arg("name"), py::arg("n"),
+                    "The variables name1, ..., namen (CORA's stl(name, n))")
+        .def_property_readonly("name", &StlExpr::name, "The name of a variable")
+        .def_property_readonly("index", &StlExpr::index, "The 0-based index of a variable")
+        .def_property_readonly("value", &StlExpr::value, "The value of a number")
+        // the queries, the arithmetic operators and the comparisons
+        .def("variable_names", &StlExpr::variable_names, "The names of the variables in it")
+        .def("is_linear", &StlExpr::is_linear, "Whether it is linear in the variables")
+        .def("power", &StlExpr::power, py::arg("k"), "The power with the integer exponent k")
+        .def("isequal", &StlExpr::isequal, py::arg("other"),
+             "Same structure up to commuting + and *")
+        .def("__add__", [](const StlExpr &a, const py::object &b) { return a.plus(stl_expr(b)); })
+        .def("__radd__", [](const StlExpr &a, const py::object &c) { return stl_expr(c).plus(a); })
+        .def("__sub__", [](const StlExpr &a, const py::object &b) { return a.minus(stl_expr(b)); })
+        .def("__rsub__", [](const StlExpr &a, const py::object &c) { return stl_expr(c).minus(a); })
+        .def("__mul__", [](const StlExpr &a, const py::object &b) { return a.times(stl_expr(b)); })
+        .def("__rmul__", [](const StlExpr &a, const py::object &c) { return stl_expr(c).times(a); })
+        .def("__pow__", [](const StlExpr &a, double k) { return a.power(k); })
+        // a comparison of expressions is a formula
+        .def("__lt__", [](const StlExpr &a, const py::object &b) { return a.lt(stl_expr(b)); })
+        .def("__le__", [](const StlExpr &a, const py::object &b) { return a.le(stl_expr(b)); })
+        .def("__gt__", [](const StlExpr &a, const py::object &b) { return a.gt(stl_expr(b)); })
+        .def("__ge__", [](const StlExpr &a, const py::object &b) { return a.ge(stl_expr(b)); })
+        .def("__str__", &StlExpr::to_string)
+        .def("__repr__", [](const StlExpr &e) { return "StlExpr(" + e.to_string() + ")"; });
+    // the formulas: construction, the logic, the temporal operators and the rewriting
+    py::class_<Stl>(m, "Stl", "A formula of signal temporal logic")
+        .def(py::init<bool>(), py::arg("value"), "The formula true or false")
+        // the properties of a node
+        .def_property_readonly("temporal", &Stl::temporal, "Whether a temporal operator occurs")
+        .def_property_readonly("id", &Stl::id, "The identifier of an atomic part (0: none)")
+        .def_property_readonly("lower", &Stl::from,
+                               "The start of the window of a temporal operator")
+        .def_property_readonly("upper", &Stl::to, "The end of the window of a temporal operator")
+        // the logic and the temporal operators
+        .def("not_", &Stl::not_, "The negation")
+        .def("and_", &Stl::and_, py::arg("other"), "The conjunction")
+        .def("or_", &Stl::or_, py::arg("other"), "The disjunction")
+        .def("implies", &Stl::implies, py::arg("other"), "The implication ~self | other")
+        .def("next", &Stl::next, py::arg("a"), "The formula holds a time units later")
+        .def("finally_", &Stl::finally, py::arg("time"),
+             "The formula holds at some time of the window")
+        .def("globally", &Stl::globally, py::arg("time"),
+             "The formula holds at every time of the window")
+        .def("until", &Stl::until, py::arg("other"), py::arg("time"),
+             "self until other within the window")
+        .def("release", &Stl::release, py::arg("other"), py::arg("time"),
+             "self releases other within the window")
+        .def("isequal", &Stl::isequal, py::arg("other"), "Same structure up to commuting & and |")
+        // the queries on a formula
+        .def("get_variables", &Stl::get_variables, "The names of the variables occurring")
+        .def(
+            "get_times",
+            [](const Stl &phi) {
+                const StlTimes t = phi.get_times();
+                return py::make_tuple(t.time_int, t.time_point);
+            },
+            "The windows and the points at which the identified parts are evaluated")
+        .def("maximum_time", &Stl::maximum_time, "The latest time the formula looks at")
+        .def("minimum_time", &Stl::minimum_time, "The earliest time the formula looks at")
+        // the normal forms
+        .def("desugar", &Stl::desugar, "Only until and the logic")
+        .def("negation_normal_form", &Stl::negation_normal_form,
+             "Negations at the comparisons only")
+        // the normal forms of the logic
+        .def("eliminate_true_false", &Stl::eliminate_true_false,
+             "Without true and false below operators")
+        .def(
+            "conjunctive_normal_form",
+            [](const Stl &phi, bool nnf) {
+                return phi.conjunctive_normal_form(nnf ? StlNnf::given : StlNnf::compute);
+            },
+            py::arg("nnf") = false,
+            "The conjunctive normal form; nnf: the formula is in negation normal form")
+        // the disjunctive form takes the same flag
+        .def(
+            "disjunctive_normal_form",
+            [](const Stl &phi, bool nnf) {
+                return phi.disjunctive_normal_form(nnf ? StlNnf::given : StlNnf::compute);
+            },
+            py::arg("nnf") = false,
+            "The disjunctive normal form; nnf: the formula is in negation normal form")
+        .def("assign_identifiers", &Stl::assign_identifiers,
+             "The formula with its non-temporal parts numbered, and those parts")
+        .def("combine_next", &Stl::combine_next, "Nested next operators merged")
+        .def("get_clauses", &Stl::get_clauses, py::arg("type") = "cnf",
+             "The conjuncts or disjuncts")
+        // the predicates and the Python operators
+        .def("is_predicate", &Stl::is_predicate, "Whether it is a conjunction of comparisons")
+        .def("is_linear_predicate", &Stl::is_linear_predicate,
+             "Whether it is a conjunction of linear comparisons")
+        .def("__and__", [](const Stl &a, const Stl &b) { return a.and_(b); })
+        .def("__or__", [](const Stl &a, const Stl &b) { return a.or_(b); })
+        .def("__invert__", [](const Stl &a) { return a.not_(); })
+        .def("__eq__", &Stl::isequal)
+        .def("__ne__", [](const Stl &a, const Stl &b) { return !a.isequal(b); })
+        .def("__str__", &Stl::to_string)
+        .def("__repr__", [](const Stl &phi) { return "Stl(" + phi.to_string() + ")"; });
+}
+
 void bind_specification(py::module_ &m) {
     auto specification =
         py::class_<Specification>(
@@ -6956,6 +7071,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_plot(m);
     bind_specification(m);
     bind_stl_interval(m);
+    bind_stl(m);
     bind_hybrid(m);
     // the oracle and the other modules
     bind_lean(m);

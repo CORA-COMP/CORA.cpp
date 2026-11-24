@@ -739,3 +739,18 @@ CORALean has float definitions of `STLInterval` (`Specification/STLInterval/Oper
 | `stlInterval.contains_` | `STLInterval.containsFloat` | `I`, `S` (interval), `tol` | the bool |
 | `stlInterval.isequal` | `STLInterval.isequalFloat` | `I`, `J`, `tol` | the bool |
 | `stlInterval.representsa_` | `STLInterval.representsaFloat` | `I`, `type`, `tol` | the bool |
+
+## STL formulas (PR "port/spec3")
+
+CORALean has float definitions of the syntax and the rewriting of CORA's `stl` class (`STL.Expr`, `STL.Tree`, `Specification/STL/Operations/*.lean`), generic over the scalar and independent of any rounding except `maximumTimeFloat`, `minimumTimeFloat` and `combineNextFloat`, but the oracle serves none of them. CORA.cpp follows those definitions; its tests are hand-computed cases and property tests (the meaning of random non-temporal formulas on a grid of states). A formula travels as a tree `{"op": "and" | "or" | "not" | "until" | "release" | "finally" | "globally" | "next" | "true" | "false" | "cmp", ...}` with the window as `{"lb","ub"}`, a comparison as `{"cmp": "<" | "<=" | ">" | ">=", "lhs": expr, "rhs": expr}` and an expression as `{"var": i}`, `{"num": c}`, `{"op": "+" | "-" | "*" | "^", ...}`; every op returns a tree, a list of trees, a bool or a number.
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `stl.lt`, `le`, `gt`, `ge` | `STL.Tree.compare` (`lt`, `le`, `gt`, `ge`) | `e1`, `e2` | the comparison node, the sides arranged as CORA does |
+| `stl.plus`, `minus`, `times`, `power` | `STL.Expr.plus`, `minus`, `times`, `power` | `e1`, `e2` or `e`, `k` | the expression, a numeric operand moved as CORA's operators do |
+| `stl.desugar`, `negationNormalForm`, `eliminateTrueFalse` | `STL.Tree.desugar`, `negationNormalForm`, `eliminateTrueFalse` | `phi` | the rewritten formula |
+| `stl.conjunctiveNormalForm`, `disjunctiveNormalForm` | `STL.Tree.conjunctiveNormalForm`, `disjunctiveNormalForm` | `phi`, `nnf` | the normal form |
+| `stl.combineNext` | `STL.Tree.combineNextFloat` | `phi` | the formula with nested `next` merged where the sum is exact |
+| `stl.assignIdentifiers`, `getClauses` | `STL.Tree.assignIdentifiers`, `getClauses` | `phi`, `type` | the numbered parts, the clauses |
+| `stl.getVariables`, `isPredicate`, `isLinearPredicate` | `STL.Tree.getVariables`, `isPredicate`, `isLinearPredicate` | `phi` | the variable indices, the bool |
+| `stl.maximumTime`, `minimumTime` | `STL.Tree.maximumTimeFloat`, `minimumTimeFloat` | `phi` | the time |
