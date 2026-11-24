@@ -2,7 +2,7 @@
 
 Files of the CORA++ paper that a script writes from the tree; never edited by hand. Copy them into
 the paper repository under the path the paper names; rerun the generator after the tree changes.
-`python3 scripts/paper/arch_table.py --check` and `python3 scripts/paper/status_figure.py --check`
+`python3 scripts/paper/arch_table.py --check`, `python3 scripts/paper/status_figure.py --check` and `python3 scripts/paper/vnn_table.py --check`
 fail in CI when their files are stale.
 
 | File | Generator | Paper path |
@@ -12,3 +12,5 @@ fail in CI when their files are stale.
 | `appendix-status.tex` | `scripts/paper/status_figure.py` | `figures/status/`: the appendix section with those figures |
 | `arch-comp-table.tex` | `scripts/paper/arch_table.py` | `sections/arch-comp-table.tex`: the ARCH-COMP26 results table of the appendix, `tab:arch-comp-long` |
 | `arch-comp-summary.tex` | `scripts/paper/arch_table.py` | `sections/arch-comp-summary.tex`: the per-category summary of the main body, `tab:arch-comp-results` |
+| `vnn-comp-table.tex` | `scripts/paper/vnn_table.py` | `sections/vnn-comp-table.tex`: the preliminary VNN-COMP results per benchmark of the appendix, `tab:vnn-comp-long` |
+| `vnn-comp-summary.tex` | `scripts/paper/vnn_table.py` | `sections/vnn-comp-summary.tex`: the solved instances of selected benchmarks in the main body, `tab:vnn-comp-results` |
