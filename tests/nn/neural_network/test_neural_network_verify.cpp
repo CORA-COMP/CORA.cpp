@@ -555,6 +555,13 @@ void crown_bab_other_layers(const std::string &b) {
         nets.emplace_back(base.layers(), acts);
     }
     nets.push_back(aux_softmax_network(rng, 1.0, false));
+    {
+        // a residual: layer 1 adds layer 0's output
+        NeuralNetwork base = aux_network(rng, {3, 6, 6, 2}, Activation::relu);
+        std::vector<NeuralNetwork::Layer> layers = base.layers();
+        layers[1].residuals.push_back({0, nullptr});
+        nets.emplace_back(layers, base.activations());
+    }
     int wrong = 0, decided = 0;
     double nodes = 0;
     for (const NeuralNetwork &nn : nets) {
@@ -581,9 +588,15 @@ void crown_bab_other_layers(const std::string &b) {
                 std::map<std::string, double> stats;
                 const Tensor rows = Tensor({{1.0, 0.0}});
                 const Tensor offsets = Tensor::from_data(std::vector<double>{least - gap}, {1});
+                // the steps in float32 where the backend has it (not lean)
+                const ZonoNet net_s = priv_zono_net_to(net, DType::float32);
+                const ZonoPropagation out_s = priv_record_to(out, DType::float32);
+                const ZonoBounds bounds_s = priv_bounds_to(ZonoBounds{}, DType::float32);
+                const CrownBabSearch search{&out_s, &net_s, &bounds_s};
                 const int res = priv_crown_bab(
                     out, net, ZonoBounds{}, x, r, rows, offsets, o,
-                    [](const Tensor &) { return false; }, stats);
+                    [](const Tensor &) { return false; }, stats,
+                    b != "lean" && lse ? &search : nullptr);
                 decided += res == 1 ? 1 : 0;
                 if (res == 1)
                     for (std::size_t i = 0; i < 4000; ++i) wrong += y[i * 2] <= least - gap;

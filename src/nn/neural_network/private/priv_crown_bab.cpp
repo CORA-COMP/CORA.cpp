@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -440,6 +441,9 @@ ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype) {
     to(copy.WT);
     to(copy.abs_wT);
     for (NeuralNetwork::Layer &layer : copy.maps) layer = layer.to(dtype);
+    for (std::vector<NeuralNetwork::Residual> &rs : copy.residuals)
+        for (NeuralNetwork::Residual &r : rs)
+            if (r.map) r.map = std::make_shared<const NeuralNetwork::Layer>(r.map->to(dtype));
     return copy;
 }
 
