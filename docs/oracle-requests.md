@@ -664,3 +664,16 @@ held slopes by hand). The ConvTranspose layer is tested against the oracle's `co
 | op (proposed) | request fields | reply |
 |---|---|---|
 | `neuralNetwork.backpropZonotopeBatch` | `layers`, `c`, `G`, `gc`, `gG`, `exact` | the gradients at the input's `c` and `G` |
+
+
+## Specifications (PR "port/spec")
+
+CORALean has `Specification` and `Specification.check` only (route b, no scalar of its own); the
+operations below have no Lean definition yet, so their CORA.cpp tests are property tests. A request
+would need the definition first; the oracle then serves them over a polytope `{"A","b"}`.
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `specification.robustness` | none (`Specification.distancePolyPointCora` models `aux_distancePolyPoint` only) | `kind`, `A`, `b`, `Ae`, `be`, `p` | the signed distance; the three branches (one hyperplane, the vertex of `n` rows, the 1-norm program) and the equalities as two rows each |
+| `specification.inverse` | none | `kind`, the polytopes | the unsafe polytopes covering the complement of the intersection, in CORA's order (`safeSet2unsafeSet`) |
+| `specification.project` | none (`polytope.project` is served) | `kind`, `A`, `b`, `dims` | the projected polytope |

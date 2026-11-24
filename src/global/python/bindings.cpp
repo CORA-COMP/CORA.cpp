@@ -6032,54 +6032,147 @@ void bind_hybrid(py::module_ &m) {
 }
 
 void bind_specification(py::module_ &m) {
-    py::class_<Specification>(m, "Specification",
-                              "A set the reachable sets must lie in (safe_set) or must not touch "
-                              "(unsafe_set), typically a Polytope.")
-        // the set is of any class; the set classes decide
-        .def_static(
-            "safe_set", [](const py::object &S) { return Specification::safe_set(set_of(S)); },
-            py::arg("S"), "A safe set: the reachable sets must lie in the set S")
-        .def_static(
-            "unsafe_set", [](const py::object &S) { return Specification::unsafe_set(set_of(S)); },
-            py::arg("S"), "An unsafe set: the reachable sets must not touch the set S")
-        .def_static(
-            "custom",
-            [](const py::function &holds) {
-                // the predicate gets the set as its Python class, under the GIL
-                return Specification::custom([holds](const ContSet &S) {
-                    py::gil_scoped_acquire gil;
-                    return py::cast<bool>(holds(py::cast(&S, py::return_value_policy::reference)));
-                });
-            },
-            py::arg("holds"),
-            // the predicate is the whole specification
-            "A predicate on the set: holds(S) is True where the specification holds")
-        .def_property_readonly(
-            "type",
-            [](const Specification &spec) {
-                if (spec.type() == SpecType::custom) return "custom";
-                return spec.type() == SpecType::safe_set ? "safe_set" : "unsafe_set";
-            },
-            "'safe_set', 'unsafe_set' or 'custom'")
-        .def_property_readonly(
-            "set", [](const Specification &spec) { return object_of(spec.set()); },
-            "The set of a safe or unsafe specification")
-        .def(
-            "check", [](const Specification &spec, const ContSet &S) { return spec.check(S); },
-            py::arg("S"), "Whether the set satisfies the specification")
-        .def(
-            "check",
-            [](const Specification &spec, const std::vector<Zonotope> &sets) {
-                // whether every set of a list satisfies the specification
-                return spec.check(sets);
-            },
-            py::arg("sets"), "Whether every set of a list (such as R.time_interval) does")
-        .def(
-            "first_violation",
-            [](const Specification &spec, const std::vector<Zonotope> &sets) {
-                return spec.first_violation(sets);
-            },
-            py::arg("sets"), "The index of the first violating set, or -1");
+    auto specification =
+        py::class_<Specification>(
+            m, "Specification",
+            "A set the reachable sets must lie in (safe_set) or must not touch "
+            "(unsafe_set), typically a Polytope.")
+            // the set is of any class; the set classes decide
+            .def_static(
+                "safe_set", [](const py::object &S) { return Specification::safe_set(set_of(S)); },
+                py::arg("S"), "A safe set: the reachable sets must lie in the set S")
+            .def_static(
+                "unsafe_set",
+                [](const py::object &S) { return Specification::unsafe_set(set_of(S)); },
+                py::arg("S"), "An unsafe set: the reachable sets must not touch the set S")
+            .def_static(
+                "custom",
+                [](const py::function &holds) {
+                    // the predicate gets the set as its Python class, under the GIL
+                    return Specification::custom([holds](const ContSet &S) {
+                        py::gil_scoped_acquire gil;
+                        return py::cast<bool>(
+                            holds(py::cast(&S, py::return_value_policy::reference)));
+                    });
+                },
+                py::arg("holds"),
+                // the predicate is the whole specification
+                "A predicate on the set: holds(S) is True where the specification holds")
+            // the type, the window and the locations
+            .def_property_readonly(
+                "type",
+                [](const Specification &spec) {
+                    switch (spec.type()) {
+                    case SpecType::custom:
+                        return "custom";
+                    case SpecType::invariant:
+                        return "invariant";
+                    case SpecType::safe_set:
+                        return "safe_set";
+                    default:
+                        return "unsafe_set";
+                    }
+                },
+                "'safe_set', 'unsafe_set', 'invariant' or 'custom'")
+            .def_static(
+                "invariant",
+                [](const py::object &S) { return Specification::invariant(set_of(S)); },
+                py::arg("S"), "An invariant: the reachable sets must intersect the set S")
+            // the window and the locations
+            .def("with_time", &Specification::with_time, py::arg("t0"), py::arg("t1"),
+                 "The same specification, active in the time window [t0, t1]")
+            .def("with_locations", &Specification::with_locations, py::arg("locations"),
+                 "The same specification, active in these locations (0-based)")
+            .def_property_readonly(
+                "time",
+                [](const Specification &spec) -> py::object {
+                    if (!spec.time()) return py::none();
+                    return py::make_tuple(spec.time()->first, spec.time()->second);
+                },
+                "The window (t0, t1) in which it is active, or None")
+            .def_property_readonly("locations", &Specification::locations,
+                                   "The locations in which it is active (empty: everywhere)")
+            // checks against a time, a reach set and points
+            .def(
+                "check",
+                [](const Specification &spec, const ContSet &S,
+                   const std::pair<double, double> &time) { return spec.check(S, time); },
+                py::arg("S"), py::arg("time"),
+                "Whether the set S over the time (t0, t1) satisfies it")
+            .def(
+                "check",
+                [](const Specification &spec, const ReachSet &R, double tol) {
+                    return spec.check(R, tol);
+                },
+                py::arg("reach_set"), py::arg("tol") = py::none(),
+                "Whether the reachable sets satisfy it, steps and time points against its time "
+                "window")
+            // points, with the times of a timed specification
+            .def(
+                "check_points",
+                [](const Specification &spec, const py::object &points,
+                   const std::vector<double> &times) {
+                    return spec.check_points(matrix_of(points, "the points"), times);
+                },
+                py::arg("points"), py::arg("times") = std::vector<double>(),
+                "Whether the points (N, n) satisfy it; times: none, one or one per point")
+            // projection and equality
+            .def("project", &Specification::project, py::arg("dims"),
+                 "The specification with the set projected onto dims (0-based)")
+            .def("isequal", &Specification::isequal, py::arg("other"), py::arg("tol") = py::none(),
+                 "Whether the specifications are equal up to tol")
+            // == and != compare up to the default tolerance
+            .def("__eq__",
+                 [](const Specification &a, const Specification &b) { return a.isequal(b); })
+            .def("__ne__",
+                 [](const Specification &a, const Specification &b) { return !a.isequal(b); })
+            .def_property_readonly(
+                "set", [](const Specification &spec) { return object_of(spec.set()); },
+                "The set of a safe or unsafe specification")
+            .def(
+                "check", [](const Specification &spec, const ContSet &S) { return spec.check(S); },
+                py::arg("S"), "Whether the set satisfies the specification")
+            .def(
+                "check",
+                [](const Specification &spec, const std::vector<Zonotope> &sets) {
+                    // whether every set of a list satisfies the specification
+                    return spec.check(sets);
+                },
+                py::arg("sets"), "Whether every set of a list (such as R.time_interval) does")
+            // the first set that violates it
+            .def(
+                "first_violation",
+                [](const Specification &spec, const std::vector<Zonotope> &sets) {
+                    return spec.first_violation(sets);
+                },
+                py::arg("sets"), "The index of the first violating set, or -1");
+
+    // the operations on lists of specifications
+    specification.def_static("add", &add, py::arg("specs1"), py::arg("specs2"),
+                             "The specifications of both lists in one list");
+    specification.def_static("is_empty", &is_empty, py::arg("specs"),
+                             "Whether the list holds no specification");
+    specification.def_static(
+        "isequal_lists",
+        [](const std::vector<Specification> &a, const std::vector<Specification> &b, Tol tol) {
+            return isequal(a, b, tol);
+        },
+        py::arg("specs1"), py::arg("specs2"), py::arg("tol") = py::none(),
+        "Whether two lists hold the same specifications in any order");
+    // the inverse and the robustness
+    specification.def_static("inverse", &inverse, py::arg("specs"),
+                             "The inverse of untimed safe sets, or of untimed unsafe sets");
+    specification.def_static(
+        "robustness",
+        [](const std::vector<Specification> &specs, const py::object &points,
+           const std::optional<std::vector<double>> &times) -> py::object {
+            const Tensor P = matrix_of(points, "the points");
+            if (times) return py::float_(robustness(specs, P, *times));
+            return values(robustness(specs, P));
+        },
+        py::arg("specs"), py::arg("points"), py::arg("times") = py::none(),
+        "The signed distance of the points (N, n) to the specifications (the least over a list): "
+        "one value per point, or with times the least over the points in the windows");
 }
 
 /// The oracle of CORALean as `cora.lean`: the same names as cora::lean; vectors are 1-D arrays.
