@@ -45,6 +45,7 @@
 #include "cora/hybrid_dynamics/hybrid_automaton/hybrid_automaton.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
+#include "cora/specification/stl_interval.h"
 
 #include <limits>
 
@@ -6031,6 +6032,79 @@ void bind_hybrid(py::module_ &m) {
             "(Specification, [locations]) pairs");
 }
 
+/// The time intervals of signal temporal logic.
+void bind_stl_interval(py::module_ &m) {
+    py::class_<StlInterval>(m, "StlInterval",
+                            "A time interval [lb, ub] with open or closed ends, or the empty one")
+        .def(py::init<>())
+        .def(py::init<double>(), py::arg("x"))
+        .def(py::init<double, double, bool>(), py::arg("lb"), py::arg("ub"),
+             py::arg("closed") = true)
+        .def(py::init<double, double, bool, bool>(), py::arg("lb"), py::arg("ub"), py::arg("lc"),
+             py::arg("rc"))
+        .def_static("empty", &StlInterval::empty, py::arg("n") = 1, "The empty interval")
+        // the bounds and the ends
+        .def_property_readonly("lower", &StlInterval::lower, "The lower bound")
+        .def_property_readonly("upper", &StlInterval::upper, "The upper bound (may be inf)")
+        .def_property_readonly("left_closed", &StlInterval::left_closed)
+        .def_property_readonly("right_closed", &StlInterval::right_closed)
+        .def_property_readonly("is_empty_object", &StlInterval::is_empty_object,
+                               "Whether it is the empty interval")
+        // the bounds as numbers
+        .def("dim", &StlInterval::dim, "Always 1")
+        .def(
+            "infimum",
+            [](const StlInterval &I) {
+                const StlEndpoint e = I.infimum();
+                return py::make_tuple(e.value, e.closed);
+            },
+            "The lower bound and whether it belongs to the interval")
+        .def(
+            "supremum",
+            [](const StlInterval &I) {
+                const StlEndpoint e = I.supremum();
+                return py::make_tuple(e.value, e.closed);
+            },
+            "The upper bound and whether it belongs to the interval")
+        .def(
+            "interval", [](const StlInterval &I) { return py::cast(I.interval()); },
+            "The closed Interval of the bounds")
+        // the operations
+        .def("and_", &StlInterval::and_, py::arg("other"), "The intersection")
+        .def("plus", py::overload_cast<const StlInterval &>(&StlInterval::plus, py::const_),
+             py::arg("other"), "The sum of the times")
+        .def("plus", py::overload_cast<double>(&StlInterval::plus, py::const_), py::arg("c"),
+             "The times moved by c")
+        .def("plus", py::overload_cast<const Interval &>(&StlInterval::plus, py::const_),
+             py::arg("J"), "The bounds moved by an Interval")
+        .def("minus", py::overload_cast<const StlInterval &>(&StlInterval::minus, py::const_),
+             py::arg("other"), "The differences of the times, clamped at 0")
+        .def("minus", py::overload_cast<double>(&StlInterval::minus, py::const_), py::arg("c"),
+             "The times moved down by c, clamped at 0")
+        .def("minus", py::overload_cast<const Interval &>(&StlInterval::minus, py::const_),
+             py::arg("J"), "The times moved down by an Interval, clamped at 0")
+        // the Minkowski difference, closures and the halves of the time axis
+        .def("minkowski_difference", &StlInterval::minkowski_difference, py::arg("sub"),
+             py::arg("type") = "exact", "The Minkowski difference; type 'exact' or 'inner'")
+        .def("left_closure", &StlInterval::left_closure, "Its lower end closed")
+        .def("right_closure", &StlInterval::right_closure, "Its upper end closed")
+        .def("to_left", &StlInterval::to_left, "The times from 0 up to its start")
+        .def("to_right", &StlInterval::to_right, "The times after its end")
+        // the comparisons
+        .def("contains", py::overload_cast<double, Tol>(&StlInterval::contains, py::const_),
+             py::arg("t"), py::arg("tol") = py::none(), "Whether the time t lies in it")
+        .def("contains",
+             py::overload_cast<const StlInterval &, Tol>(&StlInterval::contains, py::const_),
+             py::arg("S"), py::arg("tol") = py::none(), "Whether the interval S lies in it")
+        .def("isequal", &StlInterval::isequal, py::arg("other"), py::arg("tol") = py::none(),
+             "Whether the intervals are equal up to tol")
+        .def("representsa", &StlInterval::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether it is a set of the type 'emptySet', 'stlInterval', 'point' or 'origin'")
+        .def("__eq__", [](const StlInterval &a, const StlInterval &b) { return a.isequal(b); })
+        .def("__ne__", [](const StlInterval &a, const StlInterval &b) { return !a.isequal(b); })
+        .def("__repr__", [](const StlInterval &I) { return "StlInterval" + I.to_string(); });
+}
+
 void bind_specification(py::module_ &m) {
     auto specification =
         py::class_<Specification>(
@@ -6712,6 +6786,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_verify(m);
     bind_plot(m);
     bind_specification(m);
+    bind_stl_interval(m);
     bind_hybrid(m);
     // the oracle and the other modules
     bind_lean(m);
