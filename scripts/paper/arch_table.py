@@ -379,7 +379,7 @@ def render_summary(rows):
         wins = [sum(name in r["winners"] for r in mine) for name in [*tools, "CORA++"]]
         values = sorted(r["speedup"] for r in mine if r["speedup"] and not r["indicative"])
         q1, median, q3 = statistics.quantiles(values, n=4, method="inclusive")
-        speedup = rf"{fmt_speedup(median)} [{fmt_speedup(q1)}, {fmt_speedup(q3)}]"
+        speedup = rf"$\times${fmt_speedup(median)} [{fmt_speedup(q1)}, {fmt_speedup(q3)}]"
         # the tool with the most fastest instances in bold, as the fastest time in the long table
         counts = [rf"\textbf{{{w}/{len(mine)}}}" if w == max(wins) else f"{w}/{len(mine)}" for w in wins]
         out.append(" & ".join([category, *counts, speedup]) + r" \\")
