@@ -6215,8 +6215,10 @@ void bind_stl_interval(py::module_ &m) {
         // the bounds and the ends
         .def_property_readonly("lower", &StlInterval::lower, "The lower bound")
         .def_property_readonly("upper", &StlInterval::upper, "The upper bound (may be inf)")
-        .def_property_readonly("left_closed", &StlInterval::left_closed)
-        .def_property_readonly("right_closed", &StlInterval::right_closed)
+        .def_property_readonly("left_closed", &StlInterval::left_closed,
+                               "Whether the lower bound is in the interval")
+        .def_property_readonly("right_closed", &StlInterval::right_closed,
+                               "Whether the upper bound is in the interval")
         .def_property_readonly("is_empty_object", &StlInterval::is_empty_object,
                                "Whether it is the empty interval")
         // the bounds as numbers
