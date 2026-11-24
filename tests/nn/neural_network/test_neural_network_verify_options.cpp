@@ -9,7 +9,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -120,6 +120,9 @@ void options_and_strategies() {
     check(vnncomp_options("traffic_signs_recognition_2023").pgd_sign_windows.size() == 2 &&
               ours.pgd_sign_windows == std::vector<double>{1.0},
           "traffic_signs' preset: the tight and the loose sign window");
+    check(vnncomp_options("relusplitter_2026").refinement_method == "relu-bab" &&
+              ours.refinement_method == "zonotack",
+          "relusplitter's preset: the ReLU-split branch and bound");
     // nn4sys: lindex's many cases
     const NnVerifyOptions sys = vnncomp_options("nn4sys");
     check(sys.bounding_method == "conzonotope" && !sys.backward_bound &&

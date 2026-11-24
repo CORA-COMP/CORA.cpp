@@ -139,6 +139,49 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   by chunk of cases of at most 256 rows (`NnProblem::subproblem`; unsat when every chunk is).
   lindex_60000 took 44 GiB and ran past its deadline; now 1.2 GiB within it, and lindex_10000 is
   unsat in 17 s with `conzonotope` bounding.
+- **Fixed inputs (nn4sys' mscn).** mscn multiplies each set's features by a mask of the input and
+  divides their sum by the mask's sum: a product of two values. A property that fixes the masks
+  (`lo = hi`) makes both linear: `fold_fixed_inputs` makes every value that reads only fixed inputs
+  a constant (computed at the box's center in float64), and the folded graph equals the network on
+  every point of the box. When all cases fix an input to one value, one network takes them all.
+  mscn's cases fix the masks to other values in other cases, so the loader groups the cases by
+  their values of the inputs that the products need fixed (`product_inputs`: a Div's divisor, the
+  factor of a Mul or MatMul that reads fewer inputs; mscn's 11 or 22 mask entries) and folds each
+  group apart, at most 32 groups (`MAX_FOLD_GROUPS`; mscn has 10 to 12). Each folded network
+  equals the network on the boxes of its group's cases (each input it takes as a constant has that
+  value in every case of the group), so the property holds iff it holds for each group on its
+  network: verify runs the groups one after the other, fewest cases first, each an equal share of
+  the time left (what an easy group leaves goes to the larger ones), sat as soon as one is (the
+  counterexample is a point of the original input, checked on the original graph), unsat only if
+  every group is. Each case leaves one to three of the 308 inputs free, so a property folded in
+  groups gives input generators to at most as many inputs as a case leaves free (`num_init_gens`;
+  a fixed input's generator is zero, and the heuristic ranks it last), 10 error slots per layer
+  and batches of up to 4096 boxes (`FOLDED_PARTS`): each box is cheap, and there are many.
+  pensieve_big, not folded, goes unknown at 59 s with either the cap or the 10 slots. mscn's outputs come within 4e-5 of the property's bounds (cardinality_0_3800:
+  0.67690 against 0.67695 at a corner of a case's box), below the default `verified_margin` of
+  1e-4, so no box there could ever verify. A folded property takes `verified_margin` 1e-5, and
+  with it the search in float64 (`dtype`), so nothing of its verdict rests on float32: the
+  conzonotope bounding already bounds over the float64 network and the outer float64 boxes
+  (`NnProblem::net`), and the float64 search changes neither a box count nor a verdict on the four
+  mscn instances (9352, 7170 and 22929 boxes either way). 1e-5 stays far above float64's rounding
+  of bounds of size 1. nn4sys' other networks keep 1e-4 and float32. Then
+  three of the four mscn instances of seed 213 are unsat (26, 49 and 121 s of 50, 100 and 160);
+  cardinality_1_240 needs about 19 s of verification for its 10 groups (about 1 s each to start)
+  and has 14 s of its 20.
+- **ReLU pairs (relusplitter).** ReluSplitter inserts before the first ReLU layer a layer of
+  pairs `h_r = relu(t)`, `h_s = relu(-t)` with `t = W1[r] x + b1[r]` and `W1[s] = -W1[r]`,
+  `b1[s] = -b1[r]`, which the next layer reads through the columns `c = W2[:, r]` and
+  `W2[:, s] = -c`. Then `c h_r + W2[:, s] h_s = c (relu(t) - relu(-t)) = c t` for every real `t`
+  (`relu(t) - relu(-t) = t`: one of the two is 0, the other `|t|` with the sign of `t`), so the
+  two layers are the one affine map `W2[:, P] (W1[P] x + b1[P]) + b2`, `P` one neuron of each pair,
+  with the next layer's activation. `_merge_relu_pairs` folds a dense ReLU layer whose neurons all
+  pair up so, exactly (the bits of the rows and columns compared, -0 as 0), and only those; the
+  product is float64's (exact for ReluSplitter: each row of `W2[:, P]` has one entry, 1 or -1).
+  The pairs are what made the split networks hard: each pair is two unstable neurons whose
+  relaxations add up to twice the error of the one linear map. After the merge the split
+  networks are their base networks with float64 sums of the biases. Four of seed 213's split
+  instances stay hard on the base networks (alpha,beta-CROWN: 20 to 33 s); relu-bab proves two of
+  them (4.7 and 55 s of 180, zonotack: unknown), so the relusplitter preset takes relu-bab.
 - **ml4acopf (Phase 4).** Its `linear-nonresidual` networks replace sin, cos and the sigmoid by
   sums of ReLUs over thresholds: `x - t_k` broadcasts a value against a constant to more entries,
   which lowers as a gather that repeats the value first. They also compute `C h^T` with the batch

@@ -5,11 +5,12 @@ scoring's check through the callback), an unsat one (CORA's verify and the zonot
 and a zero budget (unknown), on the eigen and the torch backend. A network that does not lower to
 dense layers (a max pool) is unknown with the reason; one with a layer that C++ cannot take (a
 sine) is unknown at once, without reading the property; a mean masked by inputs that the
-property fixes lowers once they are folded (nn4sys' mscn), equal to the graph, and falsifies.
+property fixes lowers once they are folded (nn4sys' mscn), equal to the graph, and falsifies;
+masks fixed to other values in other cases fold group by group (unsat only if every group is).
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   23-November-2026
+Last update:   24-November-2026
 Reviewed:      ---
 """
 
@@ -140,6 +141,57 @@ class Verdicts(unittest.TestCase):
             out.write(head + box.replace("(>= X[0,2,2] 0.0)", "(>= X[0,2,2] -1.0)")
                       + "(assert (<= Y[0,0] 100.0))\n")
         self.assertIsNone(nn_verify.load(path, prop).network)
+
+
+    def test_fixed_inputs_fold_in_groups(self):
+        # mscn's masks fixed to other values in other cases: one folded network per mask
+        path = os.path.join(self.dir.name, "mask.onnx")
+        masked_mean_network(path)
+        masks = [(1.0, 1.0, 0.0), (1.0, 0.0, 1.0), (1.0, 1.0, 0.0)]
+
+        def case(mask, k):
+            # the features in [-1, 1] (one fixed to k / 4), the mask fixed
+            bounds = [(-1.0, 1.0)] * 6
+            bounds[0] = (k / 4, k / 4)
+            bounds = [bounds[2 * i + j] if j < 2 else (m, m) for i, m in enumerate(mask)
+                      for j in range(3)]
+            return "(and " + " ".join(f"(>= X_{i} {lo}) (<= X_{i} {hi})"
+                                       for i, (lo, hi) in enumerate(bounds)) + ")"
+
+        def write(rhs):
+            prop = os.path.join(self.dir.name, "groups.vnnlib")
+            with open(prop, "w") as out:
+                out.write("".join(f"(declare-const X_{i} Real)\n" for i in range(9))
+                          + "(declare-const Y_0 Real)\n(assert (or "
+                          + " ".join(case(m, k) for k, m in enumerate(masks)) + "))\n"
+                          + f"(assert (>= Y_0 {rhs}))\n")
+            return prop
+
+        bound = float(np.abs(WO).ravel() @ np.abs(WF).sum(0)) + 1.0  # |y| < bound on the boxes
+        prop = write(bound)
+        instance = nn_verify.load(path, prop)
+        self.assertIsNotNone(instance.network, instance.why)
+        self.assertEqual([cases for _, cases in instance.parts], [[0, 2], [1]])
+        rng = np.random.default_rng(6)
+        for network, cases in instance.parts:
+            for k in cases:
+                for _ in range(3):
+                    x = np.concatenate([rng.uniform(-1, 1, (3, 2)), np.array(masks[k])[:, None]], 1)
+                    x[0, 0] = k / 4
+                    got = np.asarray(network.evaluate(x.reshape(1, -1))).ravel()
+                    np.testing.assert_allclose(got, masked_mean(x), rtol=1e-6, atol=1e-6)
+        options = cora.vnncomp_options("test")
+        result = nn_verify.verify(instance, 30, options)
+        self.assertEqual(result.status, "unsat")
+        self.assertEqual(result.stats["parts"], 2)
+        # the parts' margin of 1e-5 and float64 search were the call's own
+        self.assertEqual((options.verified_margin, options.dtype), (1e-4, "float32"))
+        # a reachable output: sat, the counterexample checked on the graph
+        prop = write(-bound)
+        result = nn_verify.verify(nn_verify.load(path, prop), 30, cora.vnncomp_options("test"))
+        self.assertEqual(result.status, "sat")
+        check, why = counterexample.check_counterexample(path, prop, result.counterexample)
+        self.assertEqual(check, counterexample.CORRECT, why)
 
 
 class Precision(unittest.TestCase):
