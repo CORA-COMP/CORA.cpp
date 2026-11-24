@@ -104,17 +104,12 @@ Json aux_layer(const NnLayer &layer, std::string &dtype) {
     return j;
 }
 
-// A column (n, 1) of a vector, the wire's form of a bias.
-Json aux_column(const cora::Tensor &b) {
-    return Tensor(b.ndim() == 1 ? b.expand_dims(-1) : b).to_json();
-}
-
 // A graph layer in wire form, and the dtype of its weights.
 Json aux_graph_layer(const NnGraphLayer &layer, std::string &dtype) {
     const Tensor W(layer.W);
     dtype = W.dtype();
     Json j = Json::object();
-    j.set("W", W.to_json()).set("b", aux_column(layer.b));
+    j.set("W", W.to_json()).set("b", aux_column(layer.b).to_json());
     if (layer.source != NnGraphLayer::kPrevious) j.set("source", layer.source);
     // each residual's source, and its map unless the identity
     if (!layer.residuals.empty()) {
