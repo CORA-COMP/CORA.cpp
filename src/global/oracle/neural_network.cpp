@@ -14,6 +14,8 @@
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"
 
+#include <utility>
+
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
 namespace cora::lean {
@@ -44,6 +46,15 @@ Json aux_ints(const std::vector<int64_t> &v) {
     Json a = Json::array();
     for (const int64_t x : v) a.push(x);
     return a;
+}
+
+// A linear layer of CORA.cpp's port: its kind, a tensor of its weights' dtype, its fields.
+NnLayer aux_port_layer(const std::string &kind, const cora::Tensor &weights, Json fields) {
+    NnLayer layer;
+    layer.kind = kind;
+    layer.W = weights;
+    layer.geometry = std::move(fields);
+    return layer;
 }
 
 // A layer in wire form, and the dtype of its weights ("" for a layer without).
@@ -192,58 +203,48 @@ NnLayer NnLayer::poly(const cora::Tensor &coeffs, const cora::Tensor &d) {
 
 // The linear layers of the port -------------------------------------------------------------------
 
-// their fields on the wire
+// each a kind, the tensor whose dtype the weights have, and its fields on the wire
 NnLayer NnLayer::elementwise_affine(const cora::Tensor &scale, const cora::Tensor &offset) {
-    NnLayer layer;
-    layer.kind = "elementwiseAffine";
-    layer.W = scale;
-    layer.geometry = Json::object();
-    layer.geometry.set("scale", aux_column(scale).to_json())
-        .set("offset", aux_column(offset).to_json());
-    return layer;
+    return aux_port_layer("elementwiseAffine", scale,
+                          Json::object()
+                              .set("scale", aux_column(scale).to_json())
+                              .set("offset", aux_column(offset).to_json()));
 }
 
 NnLayer NnLayer::batch_norm(const cora::Tensor &scale, const cora::Tensor &offset,
                             const cora::Tensor &mean, const cora::Tensor &var,
                             const std::vector<int64_t> &input, double epsilon) {
-    NnLayer layer;
-    layer.kind = "batchNorm";
-    layer.W = scale;
-    layer.geometry = Json::object();
     // the depth of the root's iteration is unused at nearest
-    layer.geometry.set("scale", aux_column(scale).to_json())
-        .set("offset", aux_column(offset).to_json())
-        .set("mean", aux_column(mean).to_json())
-        .set("var", aux_column(var).to_json())
-        .set("epsilon", Tensor::encode(epsilon))
-        .set("input", aux_ints(input))
-        .set("p", int64_t(60));
-    return layer;
+    return aux_port_layer("batchNorm", scale,
+                          Json::object()
+                              .set("scale", aux_column(scale).to_json())
+                              .set("offset", aux_column(offset).to_json())
+                              .set("mean", aux_column(mean).to_json())
+                              .set("var", aux_column(var).to_json())
+                              .set("epsilon", Tensor::encode(epsilon))
+                              .set("input", aux_ints(input))
+                              .set("p", int64_t(60)));
 }
 
 NnLayer NnLayer::avg_pool(const std::array<int64_t, 2> &pool, const std::vector<int64_t> &input,
                           const std::array<int64_t, 2> &stride,
                           const std::array<int64_t, 4> &pads) {
-    NnLayer layer;
-    layer.kind = "avgPool";
-    layer.geometry = Json::object();
-    layer.geometry.set("pool", aux_ints({pool[0], pool[1]}))
-        .set("input", aux_ints(input))
-        .set("pads", aux_ints({pads[0], pads[1], pads[2], pads[3]}));
     // an empty stride is the pool's, as CORA.cpp's
-    if (stride[0] > 0) layer.geometry.set("stride", aux_ints({stride[0], stride[1]}));
-    return layer;
+    const std::array<int64_t, 2> step = stride[0] > 0 ? stride : pool;
+    return aux_port_layer("avgPool", cora::Tensor(),
+                          Json::object()
+                              .set("pool", aux_ints({pool[0], pool[1]}))
+                              .set("input", aux_ints(input))
+                              .set("stride", aux_ints({step[0], step[1]}))
+                              .set("pads", aux_ints({pads[0], pads[1], pads[2], pads[3]})));
 }
 
 NnLayer NnLayer::lip_linear(const cora::Tensor &W, const cora::Tensor &b, double lambda) {
-    NnLayer layer;
-    layer.kind = "lipLinear";
-    layer.W = W;
-    layer.geometry = Json::object();
-    layer.geometry.set("W", Tensor(W).to_json())
-        .set("b", aux_column(b).to_json())
-        .set("lambda", Tensor::encode(lambda));
-    return layer;
+    return aux_port_layer("lipLinear", W,
+                          Json::object()
+                              .set("W", Tensor(W).to_json())
+                              .set("b", aux_column(b).to_json())
+                              .set("lambda", Tensor::encode(lambda)));
 }
 
 // The lines ---------------------------------------------------------------------------------------
