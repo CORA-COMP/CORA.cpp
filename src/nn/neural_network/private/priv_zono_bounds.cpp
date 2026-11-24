@@ -130,7 +130,10 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
                                             idx.begin() + std::ptrdiff_t(to));
             const int64_t c = int64_t(part.size());
             // the rows e_i and -e_i: the lower bound of -z_i is minus its upper bound
-            const Tensor ids = Tensor::like(l, std::vector<double>(part.begin(), part.end()), {c});
+            std::vector<double> part_d;
+            part_d.reserve(part.size());
+            for (const int64_t i : part) part_d.push_back(double(i));
+            const Tensor ids = Tensor::like(l, part_d, {c});
             const Tensor E = ids.expand_dims(-1).equal(l.arange_like(n).expand_dims(0)) + 0.0;
             const Tensor rows = Tensor::concat({E, E.negative()}, 0);
             const Tensor v =
