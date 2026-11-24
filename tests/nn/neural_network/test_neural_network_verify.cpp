@@ -514,6 +514,127 @@ void dual_bounds(const std::string &b) {
                 sound = sound && lo[std::size_t(k * K + i)] <= v[std::size_t(p * K + i)] + 1e-9;
         }
     check(sound, b + ": the nodes' bound holds the sampled factors in each node");
+    // z = beta, y = 2 beta - 0.5: inactive is infeasible by its y rows only (y = 0 at beta = 0.25)
+    PrivSplitTable one;
+    one.rows = Tensor::like(x0, {1.0}, {1, 1});
+    one.c = one.dr = one.dr_out = Tensor::like(x0, {0.0}, {1});
+    one.rows_out = Tensor::like(x0, {2.0}, {1, 1});
+    one.c_out = Tensor::like(x0, {-0.5}, {1});
+    const Tensor none = Tensor::like(x0, {0.0}, {1, 1}), inactive = Tensor::like(x0, {1.0}, {1, 1});
+    const double halfspace =
+        priv_dual_lower_signs(none, one.rows, one.c, one.dr, inactive, 20, 0.1, DType::float32)
+            .item();
+    const double phase =
+        priv_dual_lower_phases(none, one, inactive, 20, 0.1, DType::float32).item();
+    const double active =
+        priv_dual_lower_phases(none, one, inactive.negative(), 20, 0.1, DType::float32).item();
+    check(halfspace <= 0 && phase > 1e-3 && active <= 0,
+          b + ": an inactive phase infeasible by its output rows only gets Farkas' certificate");
+    // z = beta_0 over [-1, 1], y = z / 2 + 1/4 + beta_1 / 4: min y is -1/2, 0 with the faces
+    PrivSplitTable tri;
+    tri.rows = Tensor::like(x0, {1.0, 0.0}, {1, 2});
+    tri.rows_out = Tensor::like(x0, {0.5, 0.25}, {1, 2});
+    tri.c = tri.dr = tri.dr_out = Tensor::like(x0, {0.0}, {1});
+    tri.c_out = Tensor::like(x0, {0.25}, {1});
+    tri.l = Tensor::like(x0, {-1.0}, {1});
+    tri.u = Tensor::like(x0, {1.0}, {1});
+    const Tensor wy = Tensor::like(x0, {0.5, 0.25}, {1, 2}),
+                 unsplit = Tensor::like(x0, {0.0}, {1, 1});
+    const double plain = 0.25 - wy.abs().sum().item();
+    const double faced =
+        0.25 + priv_dual_lower_phases(wy, tri, unsplit, 200, 0.1, DType::float32).item();
+    check(plain < -0.49 && faced > -0.05 && faced <= 1e-12,
+          b + ": an unsplit neuron's faces raise the bound to the triangle's, not above");
+}
+
+/// Rows of norms 1e-6 and 1e6: the nodes' bounds are the Lagrangian of the returned multipliers on
+/// the unscaled rows (evaluated here on the host), below the sampled least value.
+void dual_bounds_unscaled(const std::string &b) {
+    Rng rng(29);
+    // two split neurons, the first of rows near 1e-6, the second near 1e6
+    PrivSplitTable t;
+    t.rows = Tensor::from_data({1e-6, -0.7e-6, 0.4e6, 1e6}, {2, 2});
+    t.c = Tensor::from_data({0.1e-6, -0.2e6}, {2});
+    t.dr = Tensor::from_data({0.3e-6, 0.5e6}, {2});
+    t.rows_out = Tensor::from_data({0.6e-6, -0.2e-6, 0.3e6, 0.9e6}, {2, 2});
+    t.c_out = Tensor::from_data({0.2e-6, 0.1e6}, {2});
+    t.dr_out = Tensor::from_data({0.2e-6, 0.4e6}, {2});
+    const Tensor w = Tensor::from_data({1.0, -0.5, 0.3, 1.0}, {2, 2});
+    // the four nodes of their signs, bounded with 30 steps
+    const std::vector<double> sv = {1, 1, 1, -1, -1, 1, -1, -1};
+    const Tensor nodes = Tensor::from_data(sv, {4, 2});
+    const std::vector<double> R = t.rows.data(), c = t.c.data(), dr = t.dr.data(),
+                              Ro = t.rows_out.data(), co = t.c_out.data(), dro = t.dr_out.data(),
+                              wv = w.data();
+    Tensor nu, lam;
+    const std::vector<double> phases =
+        priv_dual_lower_phases(w, t, nodes, 30, 0.1, DType::float32, Tensor(), &nu).data();
+    const std::vector<double> signs =
+        priv_dual_lower_signs(w, t.rows, t.c, t.dr, nodes, 30, 0.1, DType::float32, Tensor(), &lam)
+            .data();
+    // the Lagrangian of lambda = nu / norm on the host, from the unscaled rows
+    const std::vector<double> nv = nu.data(), lv = lam.data();
+    const auto norm = [](double a0, double a1) { return std::abs(a0) + std::abs(a1); };
+    bool same = true;
+    for (std::size_t n = 0; n < 4; ++n)
+        for (std::size_t k = 0; k < 2; ++k) {
+            // the halfspaces s_j (R_j beta + c_j) <= dr_j; the phases' rows of either side
+            double tp[2] = {wv[k * 2], wv[k * 2 + 1]}, ts[2] = {tp[0], tp[1]}, op = 0, os = 0;
+            for (std::size_t j = 0; j < 2; ++j) {
+                // the phase's row and offsets of split j at node n
+                const double sj = sv[n * 2 + j], r0 = R[j * 2], r1 = R[j * 2 + 1];
+                const bool on = sj < 0;
+                const double p0 = on ? Ro[j * 2] - r0 : Ro[j * 2],
+                             p1 = on ? Ro[j * 2 + 1] - r1 : Ro[j * 2 + 1];
+                const double e = on ? c[j] - co[j] : -co[j], D = on ? dr[j] + dro[j] : dro[j];
+                const auto at = [&](std::size_t blk) { return nv[(n * 2 + k) * 6 + blk * 2 + j]; };
+                // its multipliers in the rows' own units, and their terms
+                const double l1 = std::max(at(0), 0.0) / norm(r0, r1),
+                             l2 = std::max(at(1), 0.0) / norm(p0, p1),
+                             l3 = std::max(at(2), 0.0) / norm(p0, p1);
+                tp[0] += l1 * sj * r0 + (l2 - l3) * p0;
+                tp[1] += l1 * sj * r1 + (l2 - l3) * p1;
+                op += l1 * (-sj * c[j] + dr[j]) + l2 * (e + D) + l3 * (D - e);
+                const double ls = std::max(lv[(n * 2 + k) * 2 + j], 0.0) / norm(r0, r1);
+                ts[0] += ls * sj * r0;
+                ts[1] += ls * sj * r1;
+                os += ls * (-sj * c[j] + dr[j]);
+            }
+            const double free = -norm(wv[k * 2], wv[k * 2 + 1]);
+            const double ep = std::max(-norm(tp[0], tp[1]) - op, free),
+                         es = std::max(-norm(ts[0], ts[1]) - os, free);
+            same = same && std::abs(ep - phases[n * 2 + k]) <= 1e-12 * (1 + std::abs(ep)) &&
+                   std::abs(es - signs[n * 2 + k]) <= 1e-12 * (1 + std::abs(es));
+        }
+    check(same, b + ": the nodes' bounds are the Lagrangian on the unscaled rows");
+    // sound: below w beta at the sampled factors and input errors of the points of each node
+    std::vector<double> bs(std::size_t(200000 * 2)), ds(std::size_t(200000 * 2));
+    rng.uniform(bs.data(), bs.size(), -1.0, 1.0);
+    rng.uniform(ds.data(), ds.size(), -1.0, 1.0);
+    bool sound = true;
+    int64_t hits = 0;
+    for (std::size_t p = 0; p < 200000; ++p) {
+        const double b0 = bs[p * 2], b1 = bs[p * 2 + 1];
+        for (std::size_t n = 0; n < 4; ++n) {
+            bool in_node = true, in_half = true;
+            for (std::size_t j = 0; j < 2; ++j) {
+                const double z = R[j * 2] * b0 + R[j * 2 + 1] * b1 + c[j] + dr[j] * ds[p * 2 + j];
+                // the output y = z (active) or 0 (inactive) within its error of its affine form
+                const double y = Ro[j * 2] * b0 + Ro[j * 2 + 1] * b1 + co[j];
+                const bool on = sv[n * 2 + j] < 0;
+                in_half = in_half && (on ? z >= 0 : z <= 0);
+                in_node =
+                    in_node && (on ? z >= 0 : z <= 0) && std::abs((on ? z : 0.0) - y) <= dro[j];
+            }
+            for (std::size_t k = 0; k < 2; ++k) {
+                const double v = wv[k * 2] * b0 + wv[k * 2 + 1] * b1;
+                if (in_node) sound = sound && phases[n * 2 + k] <= v + 1e-9;
+                if (in_half) sound = sound && signs[n * 2 + k] <= v + 1e-9;
+            }
+            hits += in_node ? 1 : 0;
+        }
+    }
+    check(sound && hits > 0, b + ": the bounds of rows of very different norms hold the samples");
 }
 
 /// Fourier-Motzkin in both orders holds the feasible points, and the orders agree closely.
@@ -712,6 +833,65 @@ void targeted_attacks(const std::string &b) {
           b + ": targeted PGD runs its restarts per polytope");
 }
 
+/// relu-bab on random ReLU networks over a box: never unsat where a sampled point violates the
+/// property or zonotack confirms a counterexample; unsat where the margin is wide; nodes pruned as
+/// infeasible (Farkas) on some networks.
+void relu_bab_verdicts(const std::string &b) {
+    if (b == "lean") return; // many small verifications: slow on lean
+    Rng rng(31);
+    int wrong = 0, against_zonotack = 0, proved = 0, wide = 0;
+    bool slotted = true;
+    double infeasible = 0;
+    for (int net_i = 0; net_i < 6; ++net_i) {
+        const NeuralNetwork nn = aux_network(rng, {2, 10, 10, 2}, Activation::relu);
+        // the least sampled y_0 over [-1, 1]^2, and the samples to judge an unsat by
+        std::vector<double> xs(std::size_t(20000 * 2));
+        rng.uniform(xs.data(), xs.size(), -1.0, 1.0);
+        const std::vector<double> y = nn.evaluate(Tensor::from_data(xs, {20000, 2})).data();
+        double least = std::numeric_limits<double>::infinity();
+        for (std::size_t i = 0; i < 20000; ++i) least = std::min(least, y[i * 2]);
+        // relu-bab, zonotack, and relu-bab without faces from a net of one slot per layer
+        NnVerifyOptions o = aux_options("zonotope-alpha", b);
+        o.refinement_method = "relu-bab";
+        o.num_approx_err = 1000; // a slot for every neuron's error: the phases pin the outputs
+        NnVerifyOptions z = aux_options("zonotope-alpha", b), plain = o;
+        plain.relu_bab_faces = 0; // the nodes' splits only: Farkas prunes some of them
+        plain.num_approx_err = 1; // the root's own net: a slot per crossing neuron
+        plain.relu_bab_order = "error";
+        plain.relu_bab_alpha_iterations = 0; // the slopes may make more neurons cross
+        plain.relu_bab_farkas_steps = 10;
+        for (const double t : {least - 0.5, least - 0.02, least + 0.02}) {
+            // the wide margin with time to spare: its verdict depends on the nodes, not the load
+            const double timeout = t == least - 0.5 ? 120 : 3;
+            const NnVerifyResult r = nn.verify(aux_below(2, 2, -1.0, 1.0, t), timeout, o);
+            // a sample at most t makes an unsat wrong
+            if (r.status == "unsat")
+                for (std::size_t i = 0; i < 20000; ++i) wrong += y[i * 2] <= t ? 1 : 0;
+            if (r.status == "unsat")
+                against_zonotack +=
+                    nn.verify(aux_below(2, 2, -1.0, 1.0, t), 3, z).status == "sat" ? 1 : 0;
+            // the wide margin: proved; without faces from the root's own net, Farkas prunes
+            if (t != least - 0.5) continue;
+            ++wide;
+            proved += r.status == "unsat" ? 1 : 0;
+            const NnVerifyResult r0 = nn.verify(aux_below(2, 2, -1.0, 1.0, t), timeout, plain);
+            if (r0.status == "unsat")
+                for (std::size_t i = 0; i < 20000; ++i) wrong += y[i * 2] <= t ? 1 : 0;
+            // every crossing neuron with a slot, and the nodes Farkas pruned
+            slotted = slotted && r0.stats.count("relu_bab_slotless") &&
+                      r0.stats.at("relu_bab_slotless") == 0;
+            if (r0.stats.count("relu_bab_infeasible_nodes"))
+                infeasible += r0.stats.at("relu_bab_infeasible_nodes");
+        }
+    }
+    check(wrong == 0, b + ": relu-bab is never unsat where a sample violates the property");
+    check(against_zonotack == 0, b + ": relu-bab is never unsat where zonotack finds a sat");
+    check(2 * proved >= wide, b + ": relu-bab proves most properties of a wide margin");
+    check(infeasible > 0, b + ": relu-bab prunes nodes infeasible by Farkas' certificate");
+    check(slotted,
+          b + ": relu-bab's root has a slot for every crossing neuron, whatever the options");
+}
+
 /// Wrong inputs are refused; the checks off give the same verdict.
 void checks_and_their_switch() {
     Rng rng(2);
@@ -785,14 +965,17 @@ int main() {
         frad_gradients(b);
         alpha_gradients(b);
         backward_bounds(b);
+        // the dual certificates, on rows of very different norms too
         dual_bounds(b);
         dual_unscaled_rows(b);
         relu_chord_both_ends(b);
+        dual_bounds_unscaled(b);
         fourier_motzkin(b);
         switches(b);
         deadlines(b);
         many_cases(b);
         targeted_attacks(b);
+        relu_bab_verdicts(b);
     });
     checks_and_their_switch();
     return test::finish("neuralNetwork verify");

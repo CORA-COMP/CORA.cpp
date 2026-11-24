@@ -185,6 +185,11 @@ struct PrivSplitTable {
     Tensor rows;  ///< (U, q): the neuron's input generators, G_in's column padded to q
     Tensor c, dr; ///< (U): its input's center and the radius of its error term
     Tensor ids;   ///< (U): its global id
+    Tensor er;    ///< (U): the error of its line (the order of the splits: largest first)
+    Tensor rows_out, c_out, dr_out; ///< (U, q), (U), (U): its output's, as rows, c and dr
+    Tensor col;                     ///< (U): the factor of its error's slot (-1: none)
+    Tensor l, u;                    ///< (U): its input's bounds (the faces of an unsplit one)
+    int64_t slotless = 0;           ///< crossing neurons whose error has no slot (only in dr)
 };
 
 /// The table of the crossing ReLU neurons of out (B = 1), in global id order.
@@ -197,9 +202,18 @@ Tensor priv_dual_lower_signs(const Tensor &w, const Tensor &R, const Tensor &c, 
                              const Tensor &start = Tensor(), Tensor *best = nullptr);
 
 /// The certificate (B, R) of lambda (B, R, p): -|w + lambda C|_1 - lambda d at max(lambda, 0), at
-/// least -|w|_1, on the rows as given (weak duality, CORALean's ConZonotope.dualBound).
+/// least -|w|_1, on the rows as given (weak duality, CORALean's ConZonotope.dualBound); w (B, R,
+/// q) or (R, q), C (B, p, q), d (B, p); sum gets w + lambda C (its minimizer: -sign).
 Tensor priv_dual_certificate(const Tensor &w, const Tensor &C, const Tensor &d,
-                             const Tensor &lambda);
+                             const Tensor &lambda, Tensor *sum = nullptr);
+
+/// priv_dual_lower_signs with the phases: inactive (s = 1) y = 0, active (-1) y = z, unsplit (0)
+/// the triangle's faces over [l, u]; t: the d neurons' rows, start (N, K, 3d); minimizer: the
+/// factors (N, K, q) minimizing the Lagrangian of the best multipliers.
+Tensor priv_dual_lower_phases(const Tensor &w, const PrivSplitTable &t, const Tensor &s,
+                              int64_t iterations, double step, DType dtype,
+                              const Tensor &start = Tensor(), Tensor *best = nullptr,
+                              Tensor *minimizer = nullptr);
 
 /// The Lagrangian lower bound (B, R) of w (B, R, q) times beta over [-1, 1]^q with C beta <= d,
 /// lambda by `iterations` projected Adam steps in dtype; evaluated again in w's dtype.

@@ -85,7 +85,8 @@ void NnVerifyOptions::validate() const {
     aux_one_of("falsification_order", falsification_order, {"attack-first", "bound-first"});
     aux_one_of("verify_dequeue_type", verify_dequeue_type, {"front", "back", "half-half"});
     aux_one_of("verify_enqueue_type", verify_enqueue_type, {"prepend", "append"});
-    aux_one_of("refinement_method", refinement_method, {"zonotack", "naive"});
+    aux_one_of("refinement_method", refinement_method, {"zonotack", "naive", "relu-bab"});
+    aux_one_of("relu_bab_order", relu_bab_order, {"output", "error"});
     aux_one_of("bab_falsification_method", bab_falsification_method,
                {"zonotack", "center", "fgsm"});
     aux_one_of("approx_error_order", approx_error_order,
@@ -107,6 +108,16 @@ void NnVerifyOptions::validate() const {
     aux_at_least("num_approx_err", num_approx_err, 0);
     aux_at_least("mini_batch_size", double(mini_batch_size), 1);
     aux_at_least("batch_memory_budget", double(batch_memory_budget), 0);
+    // relu-bab's
+    aux_at_least("relu_bab_dual_steps", double(relu_bab_dual_steps), 0);
+    aux_at_least("relu_bab_witnesses", double(relu_bab_witnesses), 0);
+    aux_at_least("relu_bab_frontier_bytes", double(relu_bab_frontier_bytes), 0);
+    aux_at_least("relu_bab_memory_budget", double(relu_bab_memory_budget), 0);
+    aux_at_least("relu_bab_init_gens", relu_bab_init_gens, 1);
+    aux_at_least("relu_bab_faces", double(relu_bab_faces), 0);
+    aux_at_least("relu_bab_root_steps", double(relu_bab_root_steps), 0);
+    aux_at_least("relu_bab_farkas_steps", double(relu_bab_farkas_steps), 0);
+    aux_at_least("relu_bab_alpha_iterations", double(relu_bab_alpha_iterations), 0);
     aux_at_least("refinement_max_iter", double(refinement_max_iter), 1);
     aux_at_least("refinement_min_move", refinement_min_move, 0);
     aux_at_least("polytope_bound_approx_max_iter", double(polytope_bound_approx_max_iter), 0);

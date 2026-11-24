@@ -127,6 +127,17 @@ struct NnVerifyOptions {
     int64_t dual_iterations = 20; ///< projected Adam steps on the multipliers
     double dual_step_size = 0.1;  ///< Adam's step, times the row's largest coefficient
     int64_t dual_relu_rows = 32;  ///< crossing ReLUs whose faces are rows, by their error
+    // refinement_method "relu-bab": ReLU splits on the frozen root zonotope (nn_verification.md)
+    int64_t relu_bab_dual_steps = 20;    ///< dual steps per node, from its parent's multipliers
+    int64_t relu_bab_witnesses = 32;     ///< nodes per depth whose factors are confirm candidates
+    int64_t relu_bab_frontier_bytes = 0; ///< the open nodes' bytes at most; 0: 1/4 batch budget
+    int64_t relu_bab_memory_budget = 0;  ///< the root set's bytes; 0: 3/4 of the batch budget
+    double relu_bab_init_gens = std::numeric_limits<double>::infinity(); ///< the root's at most
+    std::string relu_bab_order = "output"; ///< the splits: "output" (|w| at the slot), "error"
+    int64_t relu_bab_faces = 64; ///< the next unsplit neurons' triangle faces as rows of a node
+    int64_t relu_bab_root_steps = 100; ///< dual steps of the root's faces
+    int64_t relu_bab_farkas_steps = 0; ///< dual steps of Farkas' certificate per node (0: none)
+    int64_t relu_bab_alpha_iterations = 50; ///< the root's slope steps (no patience)
     /// The candidates of a look-ahead neuron split heuristic ("fsb") per set.
     int64_t look_ahead_candidates = 8;
     // the bounding "zonotope-alpha": CORA's verify whose check optimizes the ReLU slopes

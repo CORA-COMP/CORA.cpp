@@ -5119,6 +5119,20 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(dual_iterations, "dual_certificate: Adam steps on the multipliers");
     CORA_VERIFY_FIELD(dual_step_size, "dual_certificate: Adam's step on the multipliers");
     CORA_VERIFY_FIELD(dual_relu_rows, "dual_certificate: crossing ReLUs whose faces are rows");
+    // relu-bab: the root and the nodes
+    CORA_VERIFY_FIELD(relu_bab_dual_steps, "relu-bab: dual steps per node from its parent's");
+    CORA_VERIFY_FIELD(relu_bab_witnesses, "relu-bab: nodes per depth whose factors are candidates");
+    CORA_VERIFY_FIELD(relu_bab_frontier_bytes,
+                      "relu-bab: open nodes' bytes at most; 0: 1/4 budget");
+    CORA_VERIFY_FIELD(relu_bab_memory_budget,
+                      "relu-bab: the root set's bytes; 0: 3/4 of the batch budget");
+    CORA_VERIFY_FIELD(relu_bab_init_gens, "relu-bab: the root's input generators at most");
+    CORA_VERIFY_FIELD(relu_bab_order, "relu-bab: the split order, 'output' or 'error'");
+    CORA_VERIFY_FIELD(relu_bab_faces, "relu-bab: the next unsplit neurons' faces per node");
+    CORA_VERIFY_FIELD(relu_bab_root_steps, "relu-bab: dual steps of the root's faces");
+    CORA_VERIFY_FIELD(relu_bab_farkas_steps,
+                      "relu-bab: dual steps of Farkas' certificate; 0: none");
+    CORA_VERIFY_FIELD(relu_bab_alpha_iterations, "relu-bab: the root's slope steps, no patience");
     CORA_VERIFY_FIELD(look_ahead_candidates, "The candidates of the look-ahead heuristic fsb");
     CORA_VERIFY_FIELD(alpha_iterations, "zonotope-alpha: Adam steps on the ReLU slopes");
     CORA_VERIFY_FIELD(alpha_patience, "zonotope-alpha: steps without progress before it stops");

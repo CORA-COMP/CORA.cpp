@@ -314,9 +314,53 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
   propagation's crossing ReLU neurons once (their input generators, centers and error radii). Split
   in a fixed order, the nodes of one depth share these rows `R` and differ in their signs `s`: node
   `n` holds `s_j G_j beta <= -s_j c_j + dr_j` (`s_j = -1`: the input at least 0, `+1`: at most 0,
-  as the splits above), so `lambda C` costs `(lambda * s) R` and no node needs its own matrix
-  (`priv_dual_lower_signs`; a child starts at its parent's multipliers, 0 for its new row). The bound
-  is the same weak duality, sound for any `lambda >= 0`, evaluated again in float64.
+  as the splits above), so a step's `lambda C` costs `(lambda * s) R` and no step needs a node's
+  own matrix (`priv_dual_lower_signs`; a child starts at its parent's multipliers, 0 for its new
+  row). The bound is the same weak duality, sound for any `lambda >= 0`, evaluated again in
+  float64. The steps work on rows of 1-norm 1; the bound takes `lambda / norm` on each node's
+  unscaled rows and offsets, so no rounded scaled row enters it: one certificate,
+  `priv_dual_certificate`, for `priv_dual_lower`, `priv_dual_lower_signs` and
+  `priv_dual_lower_phases`; the latter two on rows all nodes share, one per coefficient pair of
+  `G_in`, `G_out` (`R`, `-R`; the phases' seven: `G_in`, `-G_in`, `G_out`, `-G_out`, `G_out - G_in`,
+  `G_in - G_out`, `G_out - sigma G_in`), a node's multipliers and offsets on its own blocks' rows.
+- **relu-bab (`refinement_method`):** a ReLU-split branch and bound on the frozen root zonotope.
+  - **Root:** one propagation per input box, its slopes optimized (`zonotope-alpha`,
+    `relu_bab_alpha_iterations` steps without patience), with a generator for each input dimension
+    (at most `relu_bab_init_gens`) and a slot for every crossing neuron's error, as
+    `relu_bab_memory_budget` (0: 3/4 of the batch budget; the nodes' chunks take a quarter)
+    allows: fewer slots first, then fewer generators. Two passes count the crossing neurons per layer (the second, of the tighter net,
+    fewer), so no slot is spent on a stable neuron. `relu_bab_slotless` counts the crossing neurons
+    whose error stays in `dr` (slack in each row). The open polytopes go weakest first; one left
+    open ends the search (unknown).
+  - **Nodes:** the crossing neurons split in the order `relu_bab_order`: `output`, the largest
+    `|w_k|` at the neuron's slot factor first (its error's slack in the polytope's row), or `error`,
+    the largest line error first. The open nodes are parts of at most 1/16 of
+    `relu_bab_frontier_bytes` (0: a quarter of the batch budget), all of them at most that: the
+    last part's children first, so breadth first while they fit, then deeper. Each node is a sign
+    vector, its bound `priv_dual_lower_phases` (`relu_bab_dual_steps` steps from its parent's
+    multipliers, kept in the search dtype; the root `relu_bab_root_steps`), in chunks of a quarter
+    of the batch budget. Besides its splits a node holds the triangle faces of the next
+    `relu_bab_faces` neurons of the order. A node is verified when some row's float64 bound exceeds
+    `verified_margin`; it is dropped as infeasible when Farkas' certificate holds
+    (`relu_bab_farkas_steps`, 0: off; on cifar100 it pruned almost no node at the cost of a second
+    ascent per node), some `mu >= 0` with `min_beta mu^T (C beta - d) > verified_margin` over the
+    box (the same bound with `w = 0`; an infeasible node's own bound grows too). The weakest nodes' Lagrangian minimizers go to the
+    confirm check (`relu_bab_witnesses`).
+  - **Rows of split j:** `s_j = +1` (inactive, `y = 0`): `G_in beta <= -c_in + dr_in` and
+    `|G_out beta + c_out| <= dr_out`; `s_j = -1` (active, `y = z`): `-G_in beta <= c_in + dr_in`
+    and `|(G_out - G_in) beta + c_out - c_in| <= dr_in + dr_out`. They share the table's rows, so
+    `lambda C` is two products with the shared `G_in`, `G_out`. An unsplit neuron's faces over its
+    bounds `[l, u]`: `y >= 0`, `y >= z` and the chord `y <= sigma z + max(-sigma l, u - sigma u)`,
+    `sigma = u / (u - l)` rounded up (a larger slope is a true face too; the offset holds at both
+    ends, `priv_relu_chord_offset`), each with `delta` at its worst.
+  - **Soundness:** for every input of the box there is one `beta` (the input factors and the slots'
+    error factors) at which every layer is its affine form up to `delta`, `|delta| <= dr`:
+    `z = c_in + G_in beta + delta_in`, `y = c_out + G_out beta + delta_out`. A phase is a true fact
+    of the inputs on its side (inactive: `z <= 0`, `y = 0`; active: `z >= 0`, `y = z`), and its rows
+    are those facts with each `delta` at its worst, so a split only intersects. This needs every
+    error that is not a factor in `dr` (never dropped) and one `beta` for `G_in` and `G_out` (one
+    column order, later columns zero, as `priv_split_table` pads them). The frozen lines and clamps
+    of later layers are not re-derived. unsat only when every open polytope's frontier is empty.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
   triangle relaxation.
