@@ -53,7 +53,7 @@ class Windows(unittest.TestCase):
     def test_a_reach_set_is_checked_against_the_window(self):
         # the sets of three steps and the points at their borders
         R = cora.ReachSet([cora.Zonotope(np.array([x, 0.5]), 0.1 * np.eye(2)) for x in (0.5, 1.5, 2.5)],
-                          [cora.Zonotope(np.array([x, 0.5]), np.zeros((2, 0))) for x in (0.0, 1.0, 2.0, 3.0)],
+                          [cora.Zonotope(np.array([x, 0.5]), np.zeros((1, 2))) for x in (0.0, 1.0, 2.0, 3.0)],
                           1.0)
         band = box(1.4, 1.6, 0.0, 1.0)
         self.assertFalse(cora.Specification.unsafe_set(band).check(R))

@@ -6101,7 +6101,7 @@ void bind_specification(py::module_ &m) {
                 "Whether the set S over the time (t0, t1) satisfies it")
             .def(
                 "check",
-                [](const Specification &spec, const ReachSet &R, double tol) {
+                [](const Specification &spec, const ReachSet &R, Tol tol) {
                     return spec.check(R, tol);
                 },
                 py::arg("reach_set"), py::arg("tol") = py::none(),
