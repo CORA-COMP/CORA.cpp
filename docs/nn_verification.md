@@ -113,7 +113,13 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   keeps 768 of the 3072 input generators and boxes the rest, and an exp's bound then overflows; an
   8 GiB budget keeps them all (2.6 GiB peak) and finishes a first iteration, but the margin's
   lower bound stays below -20 where the network's linearization varies by 0.33 over the box: the
-  products and the softmax's lines are far too loose to verify yet.
+  products and the softmax's lines are far too loose to verify yet. Measured on a 40 GB A100:
+  the slot estimate is conservative (16 GiB kept 1536 input generators of ibp's 3072 and an
+  interval of radius 28 on the output; the zonotope's root margin -5.7, CROWN's -0.18), so the vit
+  preset's `memory_budget` is 32 GiB: all generators, 13 slots, ibp's root margins -0.03 to -0.06
+  (CROWN) and pgd's some roots verified at once. The ReLU-slope steps (`alpha_iterations`) left the
+  root bound unchanged (the softmax and the products are the loose part), so the preset turns them
+  off. The preset only changes the budgets, not an enclosure.
 - **nn4sys (Phase 4).** A Gather's negative index counts from the end (pensieve's last entry of a
   row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
   output to 6e-7. pensieve_parallel's input `[12, 8]` has no batch axis: only a Reshape to a batch
@@ -304,6 +310,9 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
   cheap on wide layers. R counts only the rows of the polytopes that the zonotope left open in some
   set of the batch (each row's bound is its own, so the verdicts do not change); alpha-CROWN does
   the same. A robustness property of 199 rows whose zonotope excludes most classes costs a few.
+- **check_crown_rounds (0: off):** the check's propagation takes CROWN's bounds of the layer inputs
+  as relu-bab's root does (below), `check_crown_iterations` alpha-CROWN steps per row; the split
+  clamps apply after the intersection (each is a true fact of its set), so it stays sound.
 - **dual_certificate:** the check also bounds every row of the open sets by weak duality under the
   rows `C beta <= d` of the factors: each split of the set (`x >= 0` or `x <= 0` of the neuron's
   input) and the three faces of the `dual_relu_rows` crossing ReLUs of the largest error. For any
@@ -325,7 +334,8 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
   `G_in - G_out`, `G_out - sigma G_in`), a node's multipliers and offsets on its own blocks' rows.
 - **relu-bab (`refinement_method`):** a ReLU-split branch and bound on the frozen root zonotope.
   - **Root:** one propagation per input box, its slopes optimized (`zonotope-alpha`,
-    `relu_bab_alpha_iterations` steps without patience), with a generator for each input dimension
+    `relu_bab_alpha_iterations` steps without patience, default 0: on cifar100 CROWN's bounds
+    below proved as many without the 20 s of steps), with a generator for each input dimension
     (at most `relu_bab_init_gens`) and a slot for every crossing neuron's error, as
     `relu_bab_memory_budget` (0: 3/4 of the batch budget; the nodes' chunks take a quarter)
     allows: fewer slots first, then fewer generators. Two passes count the crossing neurons per layer (the second, of the tighter net,
@@ -361,6 +371,31 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     error that is not a factor in `dr` (never dropped) and one `beta` for `G_in` and `G_out` (one
     column order, later columns zero, as `priv_split_table` pads them). The frozen lines and clamps
     of later layers are not re-derived. unsat only when every open polytope's frontier is empty.
+  - **CROWN's bounds at the root (`relu_bab_crown_rounds`, default 1, 20
+    `relu_bab_crown_iterations`):** before the slopes, the input `z_k` of every activation layer
+    after the first is bounded by `priv_backward_lower` started at layer k (`priv_crown_bounds`,
+    `ZonoBackward`): rows `e_i` and `-e_i` of the crossing neurons of a ReLU layer (every
+    neuron of another activation but a product, whose line is its input set's) go back through the
+    earlier layers, each by a relaxation at its bounds so far (a ReLU: the chord above with `priv_relu_chord_offset`, a slope in `[0, 1]` below, CROWN's
+    `1` where `u > -l` else `0`, or `relu_bab_crown_iterations` projected Adam steps of size
+    `relu_bab_crown_step` per row, each row's best bound over the steps; another activation: the
+    parallels of the zonotope's line at those bounds, a product's on the recorded input set), down to
+    the input box. Each bound is intersected with the zonotope's (`l = max(l_z, l_c)`,
+    `u = min(u_z, u_c)`; a non-finite or empty intersection keeps the zonotope's), and the zonotope is
+    propagated again with its lines, slots and clamps at the intersection (`ZonoNet::forward`'s
+    `bounds`, the slope steps' too); a round repeats both on the new record. The gradient of the
+    slope steps is 0 in a bound the intersection held (`held_l`, `held_u`). The slope steps return
+    the slopes of their best step (the weakest open polytope's best row), not the last.
+    **Soundness:** for every input `x` of the box, the true input `z_k(x)` of layer k satisfies
+    every earlier layer's relaxation at bounds that hold for the true inputs (induction over the
+    layers: a valid lower line `sl z + bl <= f(z)` and upper line hold on `[l, u]`, which contains
+    the true `z`), so `Lambda^T z_k(x)` is at least the backward pass's affine function of `x`, at
+    least its minimum over the box: `l_c <= z_k(x) <= u_c`. Both `[l_z, u_z]` (the zonotope's) and
+    `[l_c, u_c]` hold, so their intersection does. A line of the zonotope (ReLU, exp, ...) built
+    over any interval that contains the true input encloses the activation at it, which is all the
+    soundness of the zonotope (and of the frozen zonotope's faces over `[l, u]`) needs; the bounds
+    only narrow the lines' domains and may make crossing neurons stable (exact lines, no split).
+    Rounding: float64 nearest, as the backward bound.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
   triangle relaxation.

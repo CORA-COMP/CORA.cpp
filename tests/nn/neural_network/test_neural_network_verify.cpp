@@ -295,6 +295,106 @@ void alpha_gradients(const std::string &b) {
     }
 }
 
+/// priv_backward_lower as it was before ZonoBackward (CORALean's CrownNet.backwardBound_le):
+/// the default call must stay bit-identical to it.
+Tensor aux_reference_backward(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
+                              const Tensor &x, const Tensor &rad, const Tensor &rows,
+                              const std::vector<Tensor> *alpha) {
+    const int64_t B = x.shape()[0], R = rows.shape()[0];
+    std::vector<Tensor> lams(net.W.size() + 1);
+    lams.back() = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
+    Tensor constant = x.zeros_like({B, R});
+    const bool split = splits.defined() && splits.shape()[1] > 0;
+    std::size_t next = out.layers.size();
+    // from the output back: the activation's lines at the clamped bounds, then the linear layer
+    for (std::size_t k = net.W.size(); k-- > 0;) {
+        Tensor lam = std::move(lams[k + 1]);
+        if (net.activations[k] != Activation::identity) {
+            const ZonoLayerRecord &rec = out.layers[--next];
+            const auto [lc, uc] =
+                split ? net.clamp(rec.first_id, rec.l, rec.u, splits) : std::pair{rec.l, rec.u};
+            Tensor sl, su, bl, bu;
+            if (net.activations[k] == Activation::relu) {
+                // the chord above, CROWN's or the given slope below
+                const Tensor zero = lc.zeros_like();
+                const Tensor cross = uc.greater(zero).multiply(lc.less(zero));
+                const Tensor on = lc.greater_equal(zero);
+                const Tensor chord = uc.divide((uc - lc).maximum(numerics::kTiny));
+                su = Tensor::where(cross, chord, on);
+                bu = Tensor::where(cross, priv_relu_chord_offset(lc, uc, chord), zero);
+                const bool given = alpha && k < alpha->size() && (*alpha)[k].defined();
+                sl = Tensor::where(cross, given ? (*alpha)[k] : uc.greater(lc.negative()), on);
+                bl = zero;
+            } else {
+                // the zonotope line's parallels (a product's on its set)
+                const PrivLine line =
+                    net.activations[k] == Activation::product
+                        ? priv_product_line(rec.c_in, rec.G_in, rec.dr_in)
+                        : priv_verify_line(net.activations[k], lc, uc, net.poly_method);
+                sl = su = line.slope;
+                bl = line.offset - line.radius;
+                bu = line.offset + line.radius;
+            }
+            // Lambda's signs pick the line, the offsets into the constant
+            const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
+            constant = constant + pos.matmul(bl.expand_dims(-1)).squeeze(-1) +
+                       neg.matmul(bu.expand_dims(-1)).squeeze(-1);
+            lam = net.activations[k] != Activation::product
+                      ? pos.multiply(sl.expand_dims(1)) + neg.multiply(su.expand_dims(1))
+                      : priv_slope_times_t(Activation::product, sl.expand_dims(1), lam);
+        }
+        constant = constant + lam.multiply(net.b[k]).sum(-1);
+        net.linear_t(k, lam, lams);
+    }
+    const Tensor &lam = lams[0];
+    return lam.matmul(x.expand_dims(-1)).squeeze(-1) -
+           lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
+}
+
+/// The default priv_backward_lower is bit-identical to the reference on ReLU, sigmoid, tanh and
+/// product nets, with splits and given slopes.
+void backward_bit_identical(const std::string &b) {
+    Rng rng(41);
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
+                 r = Tensor({{0.4, 0.3, 0.5}, {0.25, 0.4, 0.3}});
+    const Tensor splits = Tensor({{-3.0, 5.0}, {0.0, 0.0}}),
+                 rows = Tensor({{1.0, -0.7}, {-0.3, 1.0}, {0.2, 0.9}});
+    // a net of each activation
+    std::vector<NeuralNetwork> nets;
+    for (const Activation a : {Activation::relu, Activation::sigmoid, Activation::tanh})
+        nets.push_back(aux_network(rng, {3, 6, 5, 2}, a));
+    {
+        // a product layer between two ReLU layers
+        NeuralNetwork base = aux_network(rng, {3, 6, 4, 2}, Activation::relu);
+        std::vector<Activation> acts = base.activations();
+        acts[1] = Activation::product;
+        nets.emplace_back(base.layers(), acts);
+    }
+    // with and without splits and given slopes: the same bits
+    bool same = true;
+    for (const NeuralNetwork &nn : nets) {
+        const ZonoNet net(nn, 3, 2, "bounds", "length");
+        const ZonoInput in = net.input_zonotope(x, r);
+        for (const bool split : {false, true}) {
+            const Tensor si = split ? splits : x.zeros_like({2, 0});
+            const ZonoPropagation out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
+            // the slopes 0.375 where given, CROWN's otherwise
+            std::vector<Tensor> half = priv_alpha_start(out, net, si);
+            for (Tensor &t : half)
+                if (t.defined()) t = t.full_like(t.shape(), 0.375);
+            for (const std::vector<Tensor> *alpha :
+                 {(const std::vector<Tensor> *)nullptr, (const std::vector<Tensor> *)&half}) {
+                const std::vector<double> got =
+                    priv_backward_lower(out, net, si, x, r, rows, alpha).data();
+                const std::vector<double> want =
+                    aux_reference_backward(out, net, si, x, r, rows, alpha).data();
+                same = same && got == want;
+            }
+        }
+    }
+    check(same, b + ": priv_backward_lower's default call is bit-identical to the reference");
+}
+
 /// CROWN's backward bound holds the sampled outputs of the boxes, with splits, for every
 /// activation and with given ReLU slopes; on a box around a point it is close to the output.
 void backward_bounds(const std::string &b) {
@@ -404,6 +504,98 @@ void dual_unscaled_rows(const std::string &b) {
         violations += (long double)h > opt + 1e-15L;
     }
     check(violations == 0, b + ": the dual certificate is at most the optimum on unequal rows");
+}
+
+/// CROWN's bounds of the layers' inputs (priv_crown_bounds) hold the sampled inputs of every
+/// activation layer, inside the zonotope's, alpha-CROWN's at least as tight; the zonotope with its
+/// lines at them holds the sampled outputs. ReLU nets and one of every other activation.
+void crown_bounds(const std::string &b) {
+    Rng rng(23);
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
+                 r = Tensor({{0.4, 0.3, 0.5}, {0.25, 0.4, 0.3}});
+    std::vector<double> pts(std::size_t(3000 * 3));
+    rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+    // a ReLU net, then one of every activation (small weights: exp and the products stay small)
+    const NeuralNetwork relu = aux_network(rng, {3, 8, 8, 6, 2}, Activation::relu);
+    std::vector<NeuralNetwork::Layer> layers;
+    const std::vector<Activation> acts{
+        Activation::relu,    Activation::tanh,    Activation::exp,    Activation::reciprocal,
+        Activation::sigmoid, Activation::product, Activation::square, Activation::identity};
+    const std::vector<int64_t> sizes{3, 8, 6, 6, 6, 6, 4, 4, 2};
+    for (std::size_t k = 0; k + 1 < sizes.size(); ++k) {
+        std::vector<double> W(static_cast<std::size_t>(sizes[k + 1] * sizes[k])),
+            c(static_cast<std::size_t>(sizes[k + 1]));
+        rng.normal(W.data(), W.size(), 0.8 / std::sqrt(double(sizes[k])));
+        rng.normal(c.data(), c.size(), 0.3);
+        layers.push_back(
+            {Tensor::from_data(W, {sizes[k + 1], sizes[k]}), Tensor::from_data(c, {sizes[k + 1]})});
+    }
+    const NeuralNetwork mixed(layers, acts);
+    bool holds = true, inside = true, tighter = true, outputs = true, narrower = false;
+    for (const NeuralNetwork *nn : {&relu, &mixed}) {
+        // few slots and input generators: the zonotope's bounds are loose
+        const ZonoNet net(*nn, 2, 2, "bounds", "length");
+        const ZonoInput in = net.input_zonotope(x, r);
+        const ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({2, 0}), nullptr, true);
+        const ZonoBounds crown = priv_crown_bounds(out, net, x, r, 0, 0.25, int64_t(1) << 30);
+        const ZonoBounds alpha = priv_crown_bounds(out, net, x, r, 10, 0.25, 2000);
+        const ZonoPropagation with =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({2, 0}), nullptr, true, nullptr, &crown);
+        for (int64_t i = 0; i < 2; ++i) {
+            // the samples' inputs of every layer
+            Tensor h = Tensor::from_data(pts, {3000, 3}).multiply(r.slice(0, i, i + 1)) +
+                       x.slice(0, i, i + 1);
+            const Tensor y = nn->evaluate(h);
+            std::size_t next = 0;
+            for (std::size_t k = 0; k < net.W.size(); ++k) {
+                const Tensor z = h.matmul(net.W[k]) + net.b[k];
+                h = priv_apply(net.activations[k], z);
+                if (net.activations[k] == Activation::identity) continue;
+                const ZonoLayerRecord &rec = out.layers[next++];
+                for (const ZonoBounds *bd : {&crown, &alpha}) {
+                    const Tensor l = bd->l[k].slice(0, i, i + 1), u = bd->u[k].slice(0, i, i + 1);
+                    holds = holds && z.greater_equal(l).min().item() > 0 &&
+                            z.less_equal(u).min().item() > 0;
+                    inside = inside && l.greater_equal(rec.l.slice(0, i, i + 1)).min().item() > 0 &&
+                             u.less_equal(rec.u.slice(0, i, i + 1)).min().item() > 0;
+                }
+                // the second activation layer: the same relaxation below, alpha-CROWN from CROWN's
+                if (next == 2)
+                    tighter = tighter &&
+                              alpha.l[k].greater_equal(crown.l[k] - 1e-9).min().item() > 0 &&
+                              alpha.u[k].less_equal(crown.u[k] + 1e-9).min().item() > 0;
+                narrower = narrower || (crown.u[k] - crown.l[k]).sum().item() <
+                                           (rec.u - rec.l).sum().item() - 1e-6;
+            }
+            // the output zonotope with the lines at CROWN's bounds holds the sampled outputs
+            Tensor lo = with.c - with.G.abs().sum(1), hi = with.c + with.G.abs().sum(1);
+            if (with.dr.defined()) {
+                lo = lo - with.dr;
+                hi = hi + with.dr;
+            }
+            outputs = outputs && y.greater_equal(lo.slice(0, i, i + 1)).min().item() > 0 &&
+                      y.less_equal(hi.slice(0, i, i + 1)).min().item() > 0;
+        }
+    }
+    check(holds, b + ": CROWN's bounds hold the sampled inputs of every activation layer");
+    check(inside, b + ": CROWN's bounds lie inside the zonotope's");
+    check(tighter, b + ": alpha-CROWN's bounds are at least CROWN's over the same relaxations");
+    check(narrower, b + ": CROWN's bounds narrow some layer's zonotope bounds");
+    check(outputs, b + ": the zonotope with its lines at CROWN's bounds holds the sampled outputs");
+    // the check with CROWN's bounds (check_crown_rounds): unsat far below, sat around the least
+    NnVerifyOptions o = aux_options("zonotope-alpha", b);
+    o.falsification_order = "bound-first";
+    o.check_crown_rounds = 2;
+    o.check_crown_iterations = 3;
+    o.num_init_gens = 1;
+    o.num_approx_err = 1;
+    const double least = aux_least_output(relu, rng, 3, -0.2, 0.2);
+    const NnVerifyResult safe = relu.verify(aux_below(3, 2, -0.2, 0.2, least - 1.0), 20, o);
+    const NnVerifyResult unsafe = relu.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
+    check(safe.status == "unsat" && unsafe.status == "sat" &&
+              safe.stats.count("check_crown_seconds") == 1,
+          b + ": the check with CROWN's bounds is unsat far below the outputs, sat around them");
 }
 
 /// The dual certificate holds the sampled outputs under the splits, is at least the zonotope's
@@ -860,6 +1052,9 @@ void relu_bab_verdicts(const std::string &b) {
         plain.relu_bab_order = "error";
         plain.relu_bab_alpha_iterations = 0; // the slopes may make more neurons cross
         plain.relu_bab_farkas_steps = 10;
+        plain.relu_bab_crown_rounds = 0; // the zonotope's bounds: more nodes for Farkas to prune
+        o.relu_bab_crown_rounds = 2;     // CROWN's bounds of the root twice, alpha-CROWN's
+        o.relu_bab_crown_iterations = 5;
         for (const double t : {least - 0.5, least - 0.02, least + 0.02}) {
             // the wide margin with time to spare: its verdict depends on the nodes, not the load
             const double timeout = t == least - 0.5 ? 120 : 3;
@@ -965,6 +1160,8 @@ int main() {
         frad_gradients(b);
         alpha_gradients(b);
         backward_bounds(b);
+        backward_bit_identical(b);
+        crown_bounds(b);
         // the dual certificates, on rows of very different norms too
         dual_bounds(b);
         dual_unscaled_rows(b);

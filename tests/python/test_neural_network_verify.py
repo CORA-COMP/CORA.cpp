@@ -57,6 +57,10 @@ class Verify(unittest.TestCase):
         self.assertTrue(math.isinf(o.num_relu_constraints))
         self.assertEqual(o.num_approx_err, 7)
         self.assertEqual(o.dtype, "float32")
+        # vit: the memory for all the input generators, no slope steps
+        v = cora.vnncomp_options("vit_2023")
+        self.assertEqual(v.memory_budget, 32 << 30)
+        self.assertEqual(v.alpha_iterations, 0)
         with self.assertRaises(cora.CORAError):
             cora.NnVerifyOptions(nope=1)
         with self.assertRaises(cora.CORAError):

@@ -5703,6 +5703,13 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(relu_bab_farkas_steps,
                       "relu-bab: dual steps of Farkas' certificate; 0: none");
     CORA_VERIFY_FIELD(relu_bab_alpha_iterations, "relu-bab: the root's slope steps, no patience");
+    CORA_VERIFY_FIELD(relu_bab_crown_rounds,
+                      "relu-bab: rounds of CROWN's bounds of the root's layers");
+    CORA_VERIFY_FIELD(relu_bab_crown_iterations, "relu-bab: alpha-CROWN steps of those bounds");
+    CORA_VERIFY_FIELD(relu_bab_crown_step, "relu-bab: Adam's step of those slopes");
+    // CROWN's bounds of the layer inputs in the check
+    CORA_VERIFY_FIELD(check_crown_rounds, "the check's rounds of CROWN's bounds of the layers");
+    CORA_VERIFY_FIELD(check_crown_iterations, "the check's alpha-CROWN steps of those bounds");
     CORA_VERIFY_FIELD(look_ahead_candidates, "The candidates of the look-ahead heuristic fsb");
     CORA_VERIFY_FIELD(alpha_iterations, "zonotope-alpha: Adam steps on the ReLU slopes");
     CORA_VERIFY_FIELD(alpha_patience, "zonotope-alpha: steps without progress before it stops");

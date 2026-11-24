@@ -118,6 +118,12 @@ void NnVerifyOptions::validate() const {
     aux_at_least("relu_bab_root_steps", double(relu_bab_root_steps), 0);
     aux_at_least("relu_bab_farkas_steps", double(relu_bab_farkas_steps), 0);
     aux_at_least("relu_bab_alpha_iterations", double(relu_bab_alpha_iterations), 0);
+    // CROWN's bounds of the layer inputs: relu-bab's root and the check
+    aux_at_least("relu_bab_crown_rounds", double(relu_bab_crown_rounds), 0);
+    aux_at_least("relu_bab_crown_iterations", double(relu_bab_crown_iterations), 0);
+    aux_at_least("relu_bab_crown_step", relu_bab_crown_step, 0);
+    aux_at_least("check_crown_rounds", double(check_crown_rounds), 0);
+    aux_at_least("check_crown_iterations", double(check_crown_iterations), 0);
     aux_at_least("refinement_max_iter", double(refinement_max_iter), 1);
     aux_at_least("refinement_min_move", refinement_min_move, 0);
     aux_at_least("polytope_bound_approx_max_iter", double(polytope_bound_approx_max_iter), 0);
@@ -236,8 +242,11 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.backward_bound = false;
         o.attack_time_share = 0.05;
     }
-    // vit's 3072 inputs: all a generator (16 GiB estimated, 2.5 GiB measured; docs/nn_verification)
-    if (name == "vit") o.memory_budget = int64_t(16) << 30;
+    // vit: all 3072 inputs a generator (32 GiB), no slope steps (docs/nn_verification.md)
+    if (name == "vit") {
+        o.memory_budget = int64_t(32) << 30;
+        o.alpha_iterations = 0;
+    }
     return o;
 }
 

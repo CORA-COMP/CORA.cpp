@@ -53,6 +53,14 @@ struct ZonoLayerRecord {
     Tensor c_in, dr_in, G_in, l, u, er, c_out, dr_out, G_out;
     Tensor slot_neurons, slot_values; ///< (B, dn): the neurons with a slot, their generators
     Tensor grad; ///< (B, n): the F-radius gradient of each neuron's error (0 without a slot)
+    /// (B, n): where a given bound of forward replaced the zonotope's (its gradient is 0).
+    Tensor held_l, held_u;
+};
+
+/// Sound bounds [l, u] (B, n) of the activation layers' inputs by layer (undefined: none), which
+/// ZonoNet::forward intersects with the zonotope's.
+struct ZonoBounds {
+    std::vector<Tensor> l, u;
 };
 
 /// The output zonotope and, when recorded, every activation layer's record.
@@ -124,10 +132,11 @@ class ZonoNet {
 
     /// The output of the batch: every linear layer exactly, every activation by its line, the
     /// errors in the slots and the rest in dr. layer_sens orders the slots ("sensitivity*length").
-    /// alpha (per layer, (B, n) or undefined) holds a ReLU's slope where it crosses zero.
+    /// alpha (per layer) holds a ReLU's slope where it crosses zero; bounds narrow the bounds.
     ZonoPropagation forward(const Tensor &c, const Tensor &dr, const Tensor &G,
                             const Tensor &splits, const std::vector<Tensor> *layer_sens,
-                            bool record, const std::vector<Tensor> *alpha = nullptr) const;
+                            bool record, const std::vector<Tensor> *alpha = nullptr,
+                            const ZonoBounds *bounds = nullptr) const;
 
     /// The bounds with the clamps of earlier splits (CORA's aux_setLayerBoundsFromPreviousSplits).
     std::pair<Tensor, Tensor> clamp(int64_t first_id, const Tensor &l, const Tensor &u,
@@ -165,12 +174,21 @@ std::vector<Tensor> priv_alpha_gradients(const ZonoPropagation &out, const ZonoN
 std::vector<Tensor> priv_alpha_start(const ZonoPropagation &out, const ZonoNet &net,
                                      const Tensor &splits);
 
+/// The options of priv_backward_lower's pass beyond the default (CROWN on the output).
+struct ZonoBackward {
+    int64_t top = -1; ///< the rows (R, n_top) bound layer top's input (-1: the output)
+    const ZonoBounds *bounds = nullptr; ///< the bounds of the layers' lines (else the record's)
+    const std::vector<Tensor> *row_alpha = nullptr; ///< a ReLU's lower slopes per row (B, R, n)
+    std::vector<Tensor> *g_alpha = nullptr;         ///< out: the bound's gradient in row_alpha
+};
+
 /// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
 /// with each activation's linear bounds at the record's clamped bounds: a ReLU's slope alpha (else
-/// CROWN's 0 or 1), a sigmoid or tanh between the zonotope line's two parallels.
+/// CROWN's 0 or 1), a sigmoid or tanh between the zonotope line's two parallels; opt: ZonoBackward.
 Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
-                           const std::vector<Tensor> *alpha = nullptr);
+                           const std::vector<Tensor> *alpha = nullptr,
+                           const ZonoBackward *opt = nullptr);
 
 /// CROWN's lower bounds as priv_backward_lower with a ReLU's lower slope per row optimized
 /// (alpha-CROWN): `iterations` projected Adam steps of size `step` on the slopes in [0, 1], the
@@ -179,6 +197,18 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
                            int64_t iterations, double step,
                            double deadline = std::numeric_limits<double>::infinity());
+
+/// CROWN's bounds of the activation layers' inputs over the boxes (x, rad) of a record without
+/// splits, intersected with its bounds (priv_zono_bounds.cpp): `iterations` alpha-CROWN steps of
+/// size `step` per row, the rows in chunks of about max_bytes, the record's after the deadline.
+ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
+                             const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
+                             double deadline = std::numeric_limits<double>::infinity());
+
+/// One projected Adam step t >= 1 of size `step` on the slopes alpha in [0, 1] (undefined ones and
+/// those without a gradient g are held), the moments m1, m2 updated.
+void priv_adam_slopes(std::vector<Tensor> &alpha, std::vector<Tensor> &m1, std::vector<Tensor> &m2,
+                      const std::vector<Tensor> &g, int64_t t, double step);
 
 /// The rows C beta <= d (B, p, q) on the factors of a recorded propagation (priv_verify_dual.cpp):
 /// one per split of splits, the three faces of the num_relu crossing ReLU neurons of largest error.
