@@ -180,9 +180,12 @@ class Verdicts(unittest.TestCase):
                     x[0, 0] = k / 4
                     got = np.asarray(network.evaluate(x.reshape(1, -1))).ravel()
                     np.testing.assert_allclose(got, masked_mean(x), rtol=1e-6, atol=1e-6)
-        result = nn_verify.verify(instance, 30, cora.vnncomp_options("test"))
+        options = cora.vnncomp_options("test")
+        result = nn_verify.verify(instance, 30, options)
         self.assertEqual(result.status, "unsat")
         self.assertEqual(result.stats["parts"], 2)
+        # the parts' margin of 1e-5 and float64 search were the call's own
+        self.assertEqual((options.verified_margin, options.dtype), (1e-4, "float32"))
         # a reachable output: sat, the counterexample checked on the graph
         prop = write(-bound)
         result = nn_verify.verify(nn_verify.load(path, prop), 30, cora.vnncomp_options("test"))

@@ -159,9 +159,10 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   error slots per layer and batches of up to 4096 boxes (`FOLDED_PARTS`): each box is cheap, and
   there are many. mscn's outputs come within 4e-5 of the property's bounds (cardinality_0_3800:
   0.67690 against 0.67695 at a corner of a case's box), below the default `verified_margin` of
-  1e-4, so no box there could ever verify; onnxruntime's float32 output is within 2.4e-7 of the
-  float64 graph on 3000 sampled points, so a folded property takes `verified_margin` 1e-5 (a
-  40-fold buffer). pensieve_big's float32 output is up to 2.8e-5 off: nn4sys keeps 1e-4. Then
+  1e-4, so no box there could ever verify. That margin is the float32 search's buffer (its
+  bounds have no rounding control), so a folded property takes `verified_margin` 1e-5 only with
+  the search in float64 (`dtype`): every unsat of a folded group comes from float64 bounds, and
+  1e-5 is far above their rounding. nn4sys' other networks keep 1e-4 and float32. Then
   three of the four mscn instances of seed 213 are unsat (27, 50 and 117 s of 50, 100 and 160);
   cardinality_1_240 needs about 19 s of verification for its 10 groups (about 1 s each to start)
   and has 14 s of its 20.
