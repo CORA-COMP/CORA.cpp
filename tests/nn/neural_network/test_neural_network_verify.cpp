@@ -423,10 +423,162 @@ void backward_bit_identical(const std::string &b) {
                 const std::vector<double> want =
                     aux_reference_backward(out, net, si, x, r, rows, alpha).data();
                 same = same && got == want;
+                // a node of no split and beta 0, its outputs asked for: the same bits
+                std::vector<Tensor> zero_sign, zero_beta, ic;
+                for (std::size_t k = 0; k < net.W.size(); ++k) {
+                    zero_sign.push_back(x.zeros_like({2, net.widths[k]}));
+                    zero_beta.push_back(x.zeros_like({2, 3, net.widths[k]}));
+                }
+                Tensor corner;
+                ZonoBackward node;
+                node.split_sign = &zero_sign;
+                node.beta = &zero_beta;
+                node.intercepts = &ic;
+                node.corner = &corner;
+                const std::vector<double> got_node =
+                    priv_backward_lower(out, net, si, x, r, rows, alpha, &node).data();
+                same = same && got_node == want && corner.shape()[1] == 3;
             }
         }
     }
     check(same, b + ": priv_backward_lower's default call is bit-identical to the reference");
+}
+
+/// priv_backward_lower's node of split signs and multipliers (beta-CROWN): the sampled inputs on
+/// the splits' sides lie above its bound at random slopes and multipliers, a negative multiplier
+/// counts as 0, and its gradient in beta is the difference quotient.
+void crown_split_nodes(const std::string &b) {
+    Rng rng(53);
+    const NeuralNetwork nn = aux_network(rng, {3, 8, 8, 2}, Activation::relu);
+    const ZonoNet net(nn, 3, 2, "bounds", "length");
+    const int64_t B = 6, R = 2, P = 6000;
+    const Tensor x0 = Tensor({{0.1, -0.2, 0.3}}), r0 = Tensor({{0.6, 0.5, 0.7}});
+    const Tensor rows = Tensor({{1.0, -0.7}, {-0.3, 1.0}});
+    const ZonoInput in = net.input_zonotope(x0, r0);
+    const ZonoPropagation out =
+        net.forward(in.c, in.dr, in.G, x0.zeros_like({1, 0}), nullptr, true);
+    const Tensor x = x0.broadcast_to({B, 3}) + 0.0, r = r0.broadcast_to({B, 3}) + 0.0;
+    // per node: random sides of random crossing neurons, random slopes and multipliers
+    std::vector<Tensor> sign(net.W.size()), alpha(net.W.size()), beta(net.W.size());
+    std::vector<std::vector<double>> sv(net.W.size());
+    for (const ZonoLayerRecord &rec : out.layers) {
+        const auto k = std::size_t(rec.index);
+        const int64_t n = net.widths[k];
+        const std::vector<double> l = rec.l.data(), u = rec.u.data();
+        sv[k].assign(std::size_t(B * n), 0.0);
+        std::vector<double> coin(sv[k].size());
+        rng.uniform(coin.data(), coin.size(), 0.0, 1.0);
+        for (std::size_t i = 0; i < sv[k].size(); ++i) {
+            const std::size_t j = i % std::size_t(n);
+            if (l[j] < 0 && u[j] > 0 && coin[i] < 0.4) sv[k][i] = coin[i] < 0.2 ? -1.0 : 1.0;
+        }
+        sign[k] = Tensor::from_data(sv[k], {B, n});
+        std::vector<double> a(std::size_t(B * R * n)), m(a.size());
+        rng.uniform(a.data(), a.size(), 0.0, 1.0);
+        rng.uniform(m.data(), m.size(), -0.5, 2.0); // below 0: as 0
+        alpha[k] = Tensor::from_data(a, {B, R, n});
+        beta[k] = Tensor::from_data(m, {B, R, n});
+    }
+    std::vector<Tensor> ga, gb;
+    ZonoBackward opt;
+    opt.row_alpha = &alpha;
+    opt.split_sign = &sign;
+    opt.beta = &beta;
+    opt.g_alpha = &ga;
+    opt.g_beta = &gb;
+    const Tensor none = x.zeros_like({B, 0});
+    const std::vector<double> lower =
+        priv_backward_lower(out, net, none, x, r, rows, nullptr, &opt).data();
+    // the samples and their layers' inputs
+    std::vector<double> pts(std::size_t(P * 3));
+    rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+    const Tensor xs = Tensor::from_data(pts, {P, 3}).multiply(r0) + x0;
+    const Tensor h0 = xs.matmul(net.W[0]) + net.b[0];
+    const Tensor h1 = h0.maximum(0.0).matmul(net.W[1]) + net.b[1];
+    const std::vector<double> hv0 = h0.data(), hv1 = h1.data();
+    const std::vector<double> y = nn.evaluate(xs).matmul(rows.matrix_transpose()).data();
+    bool holds = true;
+    int64_t counted = 0;
+    for (int64_t node = 0; node < B; ++node) {
+        for (int64_t p = 0; p < P; ++p) {
+            // on the node's sides: sigma z <= 0 for every split
+            bool inside = true;
+            for (int64_t i = 0; i < 8; ++i) {
+                const std::size_t at = std::size_t(node * 8 + i), pi = std::size_t(p * 8 + i);
+                inside = inside && sv[0][at] * hv0[pi] <= 0 && sv[1][at] * hv1[pi] <= 0;
+            }
+            if (!inside) continue;
+            ++counted;
+            for (int64_t j = 0; j < R; ++j)
+                holds = holds && lower[std::size_t(node * R + j)] <= y[std::size_t(p * R + j)];
+        }
+    }
+    check(holds && counted > 0, b + ": a node's beta-CROWN bound holds its sampled inputs");
+    // the gradient in beta: the difference quotient where beta > 0 and the pass is smooth
+    int64_t close = 0, compared = 0;
+    const std::vector<double> g1 = gb[1].data(), m1 = beta[1].data();
+    for (std::size_t i = 0; i < g1.size() && compared < 12; ++i) {
+        if (g1[i] == 0 || m1[i] <= 0.01) continue;
+        const double h = 1e-6;
+        std::vector<double> up = m1, down = m1;
+        up[i] += h;
+        down[i] -= h;
+        std::vector<Tensor> bu = beta, bd = beta;
+        bu[1] = Tensor::from_data(up, beta[1].shape());
+        bd[1] = Tensor::from_data(down, beta[1].shape());
+        ZonoBackward pu, pd;
+        pu.row_alpha = pd.row_alpha = &alpha;
+        pu.split_sign = pd.split_sign = &sign;
+        pu.beta = &bu;
+        pd.beta = &bd;
+        const std::size_t row = i / std::size_t(8);
+        const double fd =
+            (priv_backward_lower(out, net, none, x, r, rows, nullptr, &pu).data()[row] -
+             priv_backward_lower(out, net, none, x, r, rows, nullptr, &pd).data()[row]) /
+            (2 * h);
+        ++compared;
+        close += std::abs(fd - g1[i]) <= 1e-5 * std::max(1.0, std::abs(fd)) ? 1 : 0;
+    }
+    check(compared > 0 && 2 * close >= compared,
+          b + ": the gradient in beta is the difference quotient");
+}
+
+/// crown-bab is never unsat where a sample violates the property, proves most properties of a
+/// wide margin, and finds a checked counterexample of a violated one.
+void crown_bab_verdicts(const std::string &b) {
+    if (b == "lean") return; // many small verifications: slow on lean
+    Rng rng(37);
+    int wrong = 0, proved = 0, wide = 0, sat = 0, violated = 0;
+    double nodes = 0;
+    for (int net_i = 0; net_i < 6; ++net_i) {
+        const NeuralNetwork nn = aux_network(rng, {2, 10, 10, 2}, Activation::relu);
+        std::vector<double> xs(std::size_t(20000 * 2));
+        rng.uniform(xs.data(), xs.size(), -1.0, 1.0);
+        const std::vector<double> y = nn.evaluate(Tensor::from_data(xs, {20000, 2})).data();
+        double least = std::numeric_limits<double>::infinity();
+        for (std::size_t i = 0; i < 20000; ++i) least = std::min(least, y[i * 2]);
+        NnVerifyOptions o = aux_options("zonotope-alpha", b);
+        o.refinement_method = "crown-bab";
+        o.falsification_order = "bound-first";
+        o.crown_bab_batch = 8; // a few nodes at once: the stack and the batches' slicing
+        for (const double t : {least - 0.3, least - 0.02, least + 0.05}) {
+            const NnVerifyResult r = nn.verify(aux_below(2, 2, -1.0, 1.0, t), 30, o);
+            if (r.status == "unsat")
+                for (std::size_t i = 0; i < 20000; ++i) wrong += y[i * 2] <= t ? 1 : 0;
+            if (r.stats.count("crown_bab_nodes")) nodes += r.stats.at("crown_bab_nodes");
+            if (t == least + 0.05) {
+                ++violated;
+                sat += r.status == "sat" ? 1 : 0;
+            }
+            if (t != least - 0.3) continue;
+            ++wide;
+            proved += r.status == "unsat" ? 1 : 0;
+        }
+    }
+    check(wrong == 0, b + ": crown-bab is never unsat where a sample violates the property");
+    check(2 * proved >= wide, b + ": crown-bab proves most properties of a wide margin");
+    check(sat == violated, b + ": crown-bab finds the counterexample of a violated property");
+    check(nodes > 0, b + ": crown-bab splits nodes");
 }
 
 /// CROWN's backward bound holds the sampled outputs of the boxes, with splits, for every
@@ -1457,6 +1609,7 @@ int main() {
         alpha_gradients(b);
         backward_bounds(b);
         backward_bit_identical(b);
+        crown_split_nodes(b);
         crown_bounds(b);
         softmax_lse(b);
         // the dual certificates, on rows of very different norms too
@@ -1473,6 +1626,7 @@ int main() {
         sign_windows(b);
         pgd_momentum_steps(b);
         relu_bab_verdicts(b);
+        crown_bab_verdicts(b);
     });
     checks_and_their_switch();
     return test::finish("neuralNetwork verify");

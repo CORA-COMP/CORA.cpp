@@ -465,6 +465,48 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     soundness of the zonotope (and of the frozen zonotope's faces over `[l, u]`) needs; the bounds
     only narrow the lines' domains and may make crossing neurons stable (exact lines, no split).
     Rounding: float64 nearest, as the backward bound.
+- **crown-bab (`refinement_method`):** a ReLU-split branch and bound whose node bound is CROWN's
+  backward pass with the splits as Lagrange multipliers (beta-CROWN), `priv_crown_bab`.
+  - **Root:** as relu-bab's (its slots, CROWN's bounds of the layer inputs at
+    `relu_bab_crown_rounds`); the polytopes the zonotope leaves open go weakest first, each with its
+    own search over its real rows. The crossing ReLU neurons of the root's bounds (U of them) are
+    the only ones a node splits; the bounds of every layer stay the root's, a split neuron's
+    clamped to its side.
+  - **Node bound:** `priv_backward_lower` with `ZonoBackward::split_sign` (per ReLU layer, -1: the
+    input `z >= 0`, active; +1: `z <= 0`, inactive) and `beta`. A split neuron's bounds are clamped
+    to `[max(l, 0), u]` or `[l, min(u, 0)]`, so its line is the identity or zero; each row adds
+    `max(beta, 0) sigma z` to its Lagrangian at the layer's input (its Lambda there gains
+    `max(beta, 0) sigma`). `crown_bab_steps` projected Adam steps (`crown_bab_root_steps` at the
+    root) on the per-row lower slopes in `[0, 1]` (step `crown_bab_alpha_step`) and the
+    multipliers `>= 0` (`crown_bab_beta_step`); the gradient in beta is `sigma` times the row's
+    `z` at the minimizing corner (the reverse pass of the slopes'). A child starts at its parent's
+    slopes and multipliers (0 for its new split, whose gradient was 0). Each row keeps its best
+    bound over the steps and its parent's (the parent's inputs contain the child's). A node is
+    verified when some row's bound exceeds `verified_margin`.
+  - **Branching:** each open node splits the unsplit neuron of the largest chord loss
+    `-min(Lambda, 0) b_u` (`ZonoBackward::intercepts`, BaBSR's intercept score) in its best row; none
+    above 0: the widest one (`min(-l, u)`). Children: the inactive and the active side.
+  - **Search:** a stack of batches, the last batch's children first; at most `crown_bab_batch`
+    children per pass (fewer when the passes' estimated bytes exceed half the batch budget, halved
+    on out of memory). The open nodes' bytes are at most `relu_bab_frontier_bytes` (0: a quarter of
+    the batch budget), else unknown; a node with every crossing neuron split still open: unknown.
+  - **Counterexamples:** each row's minimizing corner of the input box (`ZonoBackward::corner`) at
+    the root and at the `crown_bab_witnesses` weakest open nodes of each batch goes to the
+    network's check; only a checked point is sat.
+  - **Soundness:** fix a node and an input `x` of the box on its sides (`sigma_j z_j(x) <= 0` for
+    every split j). Every layer's true input lies in its bounds: the root's bounds hold on the
+    whole box, and a split neuron's true input is on its side, so its clamped bounds hold. Hence
+    every line holds at the true inputs (the identity or zero is exact on the side), and for
+    every row `c^T y(x) >= c^T y(x) + sum_j max(beta_j, 0) sigma_j z_j(x)`, the right side being
+    at least the backward pass's affine function of `x` (each layer's line, Lambda's signs, as
+    CROWN), at least its minimum over the whole box. So for any slopes in `[0, 1]` and any beta
+    the bound holds on the node's inputs (weak duality: beta are the multipliers of the split
+    constraints), each step's does, and their maximum. An infeasible node's bound may grow without
+    limit, which is sound (no input). The parent's bound holds on a child's inputs (a subset). Each
+    split divides a node's inputs into its two sides, so the leaves' inputs cover the box: unsat
+    only when every leaf is verified. Rounding: float64 nearest, as the backward bound. The node bound at beta 0 can be
+    below the unsplit one (the identity of an active split is taken over the whole box, where `z`
+    can be negative); the multipliers recover it, and the parent's bound is kept.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
   triangle relaxation.

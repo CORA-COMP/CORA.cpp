@@ -85,7 +85,8 @@ void NnVerifyOptions::validate() const {
     aux_one_of("falsification_order", falsification_order, {"attack-first", "bound-first"});
     aux_one_of("verify_dequeue_type", verify_dequeue_type, {"front", "back", "half-half"});
     aux_one_of("verify_enqueue_type", verify_enqueue_type, {"prepend", "append"});
-    aux_one_of("refinement_method", refinement_method, {"zonotack", "naive", "relu-bab"});
+    aux_one_of("refinement_method", refinement_method,
+               {"zonotack", "naive", "relu-bab", "crown-bab"});
     aux_one_of("relu_bab_order", relu_bab_order, {"output", "error"});
     aux_one_of("bab_falsification_method", bab_falsification_method,
                {"zonotack", "center", "fgsm"});
@@ -118,6 +119,13 @@ void NnVerifyOptions::validate() const {
     aux_at_least("relu_bab_root_steps", double(relu_bab_root_steps), 0);
     aux_at_least("relu_bab_farkas_steps", double(relu_bab_farkas_steps), 0);
     aux_at_least("relu_bab_alpha_iterations", double(relu_bab_alpha_iterations), 0);
+    // crown-bab's
+    aux_at_least("crown_bab_steps", double(crown_bab_steps), 0);
+    aux_at_least("crown_bab_root_steps", double(crown_bab_root_steps), 0);
+    aux_at_least("crown_bab_alpha_step", crown_bab_alpha_step, 0);
+    aux_at_least("crown_bab_beta_step", crown_bab_beta_step, 0);
+    aux_at_least("crown_bab_batch", double(crown_bab_batch), 1);
+    aux_at_least("crown_bab_witnesses", double(crown_bab_witnesses), 0);
     // CROWN's bounds of the layer inputs: relu-bab's root and the check
     aux_at_least("relu_bab_crown_rounds", double(relu_bab_crown_rounds), 0);
     aux_at_least("relu_bab_crown_iterations", double(relu_bab_crown_iterations), 0);

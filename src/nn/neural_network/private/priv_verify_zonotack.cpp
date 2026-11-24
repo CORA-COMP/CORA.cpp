@@ -418,6 +418,8 @@ class ConZonotopeBounding : public Bounding {
                               const ZonoBounds *bounds = nullptr) const;
     // the ReLU-split branch and bound on a frozen zonotope (refinement_method "relu-bab")
     std::string aux_relu_bab(NnProblem &problem, std::map<std::string, double> &stats);
+    // the ReLU-split branch and bound with CROWN's node bound (refinement_method "crown-bab")
+    std::string aux_crown_bab(NnProblem &problem, std::map<std::string, double> &stats);
     void aux_relu_bab_slots(NnProblem &problem, const Tensor &xi, const Tensor &ri,
                             std::map<std::string, double> &stats);
     void aux_relu_bab_crown(const Tensor &xi, const Tensor &ri, const Tensor &si,
@@ -765,6 +767,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     if (slot_budget_ >= 0) stats["slot_budget"] = slot_budget_;
     if (init_gen_budget_ >= 0) stats["init_gen_budget"] = init_gen_budget_;
     if (o_.refinement_method == "relu-bab") return aux_relu_bab(problem, stats);
+    if (o_.refinement_method == "crown-bab") return aux_crown_bab(problem, stats);
     Tensor xs = (problem.outer_lo + problem.outer_hi) * 0.5;
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
@@ -914,6 +917,73 @@ std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
         }
     }
     return status;
+}
+
+// The branch and bound of ReLU splits with CROWN's node bound -------------------------------------
+
+// sound: each node's bound is weak duality over its inputs (nn_verification.md, crown-bab)
+
+std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
+                                               std::map<std::string, double> &stats) {
+    const int64_t boxes = problem.outer_lo.shape()[0];
+    for (int64_t i = 0; i < boxes; ++i) {
+        const Tensor lo = problem.outer_lo.slice(0, i, i + 1),
+                     hi = problem.outer_hi.slice(0, i, i + 1);
+        const Tensor xi = (lo + hi) * 0.5, ri = (hi - lo) * 0.5;
+        const Tensor ci = problem.box_case.slice(0, i, i + 1), si = xi.zeros_like({1, 0});
+        // the root as relu-bab's: the zonotope of its slots, CROWN's bounds of the layers' inputs
+        if (i == 0) aux_relu_bab_slots(problem, xi, ri, stats);
+        const ZonoNet &net = *net_;
+        Tensor excluded;
+        ZonoPropagation out;
+        ZonoBounds bounds;
+        {
+            const StepTimer timer(&stats, "crown_bab_root_seconds");
+            const ZonoInput in = net.input_zonotope(xi, ri);
+            out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
+            if (o_.relu_bab_crown_rounds > 0) aux_relu_bab_crown(xi, ri, si, out, bounds, stats);
+            excluded = aux_excluded(out, ci);
+        }
+        // every open polytope on its own, the weakest first (one left open: unknown)
+        const std::vector<double> ex = excluded.data();
+        const std::vector<double> root = aux_margins(out).max(2).squeeze(0).data();
+        std::vector<int64_t> open;
+        for (int64_t p = 0; p < P_; ++p)
+            if (ex[std::size_t(p)] == 0) open.push_back(p);
+        std::stable_sort(open.begin(), open.end(), [&](int64_t a, int64_t b) {
+            return root[std::size_t(a)] < root[std::size_t(b)];
+        });
+        stats["crown_bab_open_polytopes"] += double(open.size());
+        CrownBabOptions co;
+        co.steps = o_.crown_bab_steps;
+        co.root_steps = o_.crown_bab_root_steps;
+        co.batch = o_.crown_bab_batch;
+        co.witnesses = o_.crown_bab_witnesses;
+        co.alpha_step = o_.crown_bab_alpha_step;
+        co.beta_step = o_.crown_bab_beta_step;
+        co.margin = o_.verified_margin;
+        co.max_bytes = problem.batch_memory_budget / 2;
+        co.frontier_bytes = o_.relu_bab_frontier_bytes > 0 ? o_.relu_bab_frontier_bytes
+                                                           : problem.batch_memory_budget / 4;
+        co.softmax_lse = o_.crown_softmax_lse;
+        co.deadline = deadline_;
+        const auto check = [&](const Tensor &points) {
+            const StepTimer timer(&stats, "crown_bab_witness_seconds");
+            return priv_check_points(problem, points, ci.broadcast_to({points.shape()[0]}),
+                                     *found_);
+        };
+        for (const int64_t p : open) {
+            // the polytope's real rows a_k y - b_k
+            const std::vector<int64_t> real = real_row_.slice(0, p, p + 1).squeeze(0).nonzero();
+            const Tensor A = A_.slice(0, p, p + 1).squeeze(0).take(real, 0);
+            const Tensor b = b_.slice(0, p, p + 1).squeeze(0).take(real, 0);
+            const int res = priv_crown_bab(out, net, bounds, xi, ri, A, b, co, check, stats);
+            if (res == 2) return "sat";
+            if (res == 0 || aux_late()) return "unknown";
+            stats["crown_bab_polytopes_verified"] += 1;
+        }
+    }
+    return "unsat";
 }
 
 // The root of the ReLU splits ---------------------------------------------------------------------

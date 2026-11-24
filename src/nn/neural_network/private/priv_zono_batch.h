@@ -35,7 +35,9 @@
 
 #include "nn/neural_network/private/priv_layers.h"
 
+#include <functional>
 #include <limits>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -186,6 +188,17 @@ struct ZonoBackward {
     /// A softmax's reciprocal (ZonoNet::softmax) above by the log-sum-exp bound of its exps'
     /// inputs (docs/nn_verification.md, "The softmax's upper line"), not the two layers' lines.
     bool softmax_lse = false;
+    /// A node of ReLU splits (beta-CROWN): per ReLU layer the signs (B, n) of its split neurons
+    /// (-1: the input at least 0, +1: at most 0, 0: unsplit) clamp the layer's bounds, and with
+    /// beta (B, R, n) each row adds max(beta, 0) sigma z to its Lagrangian (z: the layer's input),
+    /// so the bound holds over the box's inputs on the splits' sides (docs/nn_verification.md).
+    const std::vector<Tensor> *split_sign = nullptr;
+    const std::vector<Tensor> *beta = nullptr;
+    std::vector<Tensor> *g_beta = nullptr; ///< out: the bound's gradient in beta (B, R, n)
+    /// out: per ReLU layer -min(Lambda, 0) times the chord's offset (B, R, n), each crossing
+    /// neuron's share of the bound's loss (the branching score); undefined for other layers.
+    std::vector<Tensor> *intercepts = nullptr;
+    Tensor *corner = nullptr; ///< out: the input box's corner minimizing each row (B, R, n0)
 };
 
 /// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
@@ -213,10 +226,34 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
                              double deadline = std::numeric_limits<double>::infinity(),
                              bool softmax_lse = false);
 
-/// One projected Adam step t >= 1 of size `step` on the slopes alpha in [0, 1] (undefined ones and
-/// those without a gradient g are held), the moments m1, m2 updated.
+/// The options of priv_crown_bab (NnVerifyOptions' crown_bab_*).
+struct CrownBabOptions {
+    int64_t steps = 20, root_steps = 100, batch = 1024, witnesses = 16;
+    double alpha_step = 0.1, beta_step = 0.05;
+    double margin = 0;                    ///< a node is verified when some row's bound exceeds it
+    int64_t max_bytes = int64_t(1) << 30; ///< the bytes of one batch's passes, about
+    int64_t frontier_bytes = int64_t(1) << 30; ///< the open nodes' bytes at most (else unknown)
+    bool softmax_lse = false;                  ///< ZonoBackward's
+    double deadline = std::numeric_limits<double>::infinity();
+};
+
+/// The ReLU-split branch and bound whose node bound is CROWN's backward pass with the splits'
+/// Lagrange multipliers (beta-CROWN, priv_crown_bab.cpp) for the rows (K, m) minus offsets (K) of
+/// one polytope over the box (x, rad) (B = 1) of a record without splits, the lines at `bounds`
+/// (the record's where undefined): it splits the crossing ReLU neurons, each node's bound by
+/// projected Adam steps on its lower slopes and multipliers from its parent's. A node is verified
+/// when some row's bound exceeds the margin. check(points (M, n0)) confirms a counterexample.
+/// 1: verified, 2: check confirmed one, 0: open (the deadline, the frontier's bytes, or a node
+/// with every crossing neuron split still open).
+int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
+                   const Tensor &x, const Tensor &rad, const Tensor &rows, const Tensor &offsets,
+                   const CrownBabOptions &o, const std::function<bool(const Tensor &)> &check,
+                   std::map<std::string, double> &stats);
+
+/// One projected Adam step t >= 1 of size `step` on the slopes alpha in [0, upper] (undefined ones
+/// and those without a gradient g are held), the moments m1, m2 updated.
 void priv_adam_slopes(std::vector<Tensor> &alpha, std::vector<Tensor> &m1, std::vector<Tensor> &m2,
-                      const std::vector<Tensor> &g, int64_t t, double step);
+                      const std::vector<Tensor> &g, int64_t t, double step, double upper = 1.0);
 
 /// The rows C beta <= d (B, p, q) on the factors of a recorded propagation (priv_verify_dual.cpp):
 /// one per split of splits, the three faces of the num_relu crossing ReLU neurons of largest error.

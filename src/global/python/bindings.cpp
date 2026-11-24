@@ -5726,6 +5726,14 @@ void bind_verify(py::module_ &m) {
                       "relu-bab: rounds of CROWN's bounds of the root's layers");
     CORA_VERIFY_FIELD(relu_bab_crown_iterations, "relu-bab: alpha-CROWN steps of those bounds");
     CORA_VERIFY_FIELD(relu_bab_crown_step, "relu-bab: Adam's step of those slopes");
+    // crown-bab: CROWN's node bound with the splits' multipliers
+    CORA_VERIFY_FIELD(crown_bab_steps, "crown-bab: Adam steps on a node's slopes and multipliers");
+    CORA_VERIFY_FIELD(crown_bab_root_steps, "crown-bab: the root's steps");
+    CORA_VERIFY_FIELD(crown_bab_alpha_step, "crown-bab: Adam's step on the lower slopes");
+    CORA_VERIFY_FIELD(crown_bab_beta_step, "crown-bab: Adam's step on the multipliers");
+    CORA_VERIFY_FIELD(crown_bab_batch, "crown-bab: nodes bounded at once at most");
+    CORA_VERIFY_FIELD(crown_bab_witnesses,
+                      "crown-bab: open nodes per batch whose corners are checked");
     // CROWN's bounds of the layer inputs in the check
     CORA_VERIFY_FIELD(check_crown_rounds, "the check's rounds of CROWN's bounds of the layers");
     CORA_VERIFY_FIELD(check_crown_iterations, "the check's alpha-CROWN steps of those bounds");

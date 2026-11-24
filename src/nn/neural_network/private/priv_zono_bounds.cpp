@@ -78,17 +78,17 @@ Tensor aux_optimized(const ZonoPropagation &out, const ZonoNet &net, const ZonoB
 // The slope steps ---------------------------------------------------------------------------------
 
 void priv_adam_slopes(std::vector<Tensor> &alpha, std::vector<Tensor> &m1, std::vector<Tensor> &m2,
-                      const std::vector<Tensor> &g, int64_t t, double step) {
+                      const std::vector<Tensor> &g, int64_t t, double step, double upper) {
     constexpr double kB1 = 0.9, kB2 = 0.999;
     const double c1 = 1.0 - std::pow(kB1, double(t)), c2 = 1.0 - std::pow(kB2, double(t));
     for (std::size_t k = 0; k < alpha.size(); ++k) {
         if (!alpha[k].defined() || k >= g.size() || !g[k].defined()) continue;
-        // the moments, then the step projected onto [0, 1]
+        // the moments, then the step projected onto [0, upper]
         m1[k] = m1[k].defined() ? m1[k] * kB1 + g[k] * (1.0 - kB1) : g[k] * (1.0 - kB1);
         const Tensor g2 = g[k].square() * (1.0 - kB2);
         m2[k] = m2[k].defined() ? m2[k] * kB2 + g2 : g2;
         const Tensor move = (m1[k] / c1).divide((m2[k] / c2).sqrt() + numerics::kAdamEpsilon);
-        alpha[k] = (alpha[k] + move * step).maximum(0.0).minimum(1.0);
+        alpha[k] = (alpha[k] + move * step).maximum(0.0).minimum(upper);
     }
 }
 
