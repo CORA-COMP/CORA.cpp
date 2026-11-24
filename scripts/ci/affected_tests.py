@@ -67,9 +67,9 @@ ALL_PATTERNS = (r"^src/global/(tensor|backend)/", r"^include/cora/global/", r"(^
                 r"^include/cora/config\.h\.in$", r"^tests/testing\.h$", r"^scripts/environment\.yml$",
                 r"^scripts/requirements.*\.txt$")
 
-# Changes no test of the core presets can see: documentation, the competition entry, other languages' examples.
+# Changes no test of the core presets can see: documentation, the competition entry, other examples, the paper.
 NO_TEST_PATTERNS = (r"\.md$", r"^docs/", r"^LICENSE", r"^\.gitignore$", r"^scripts/competition/",
-                    r"^tests/competition/", r"^examples/(matlab|benchmarks)/")
+                    r"^tests/competition/", r"^examples/(matlab|benchmarks)/", r"^paper/", r"^scripts/paper/")
 
 # What the libtorch runs of CI cannot see; anything else, a new or unknown file included, runs them.
 NO_TORCH_PATTERNS = NO_TEST_PATTERNS + (r"^benchmarks/", r"^coverage/", r"^scripts/(ci|coverage)/",

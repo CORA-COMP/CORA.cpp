@@ -88,6 +88,8 @@ jobs:
         run: python3 scripts/coverage/benchmarks.py --files
       - name: paper table
         run: python3 scripts/paper/arch_table.py --check
+      - name: paper figures
+        run: python3 scripts/paper/status_figure.py --check
       - name: select the affected tests
         id: select
         env:
