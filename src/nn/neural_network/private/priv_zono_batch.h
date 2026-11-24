@@ -35,7 +35,9 @@
 
 #include "nn/neural_network/private/priv_layers.h"
 
+#include <functional>
 #include <limits>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -96,6 +98,9 @@ class ZonoNet {
     std::vector<int64_t> sources;
     std::vector<std::vector<NeuralNetwork::Residual>> residuals;
     std::vector<bool> kept;
+    /// softmax[k]: layer k is a reciprocal of nonnegative sums (no residual) of the exps of layer
+    /// k - 1 alone (a softmax's 1 / sum_t exp(x_t - x_q)), for priv_backward_lower's softmax_lse.
+    std::vector<bool> softmax;
     bool chain = true;
     std::string poly_method, approx_error_order;
     int64_t n0 = 0, q0 = 0, q = 0, num_outputs = 0, num_neurons = 0;
@@ -180,6 +185,19 @@ struct ZonoBackward {
     const ZonoBounds *bounds = nullptr; ///< the bounds of the layers' lines (else the record's)
     const std::vector<Tensor> *row_alpha = nullptr; ///< a ReLU's lower slopes per row (B, R, n)
     std::vector<Tensor> *g_alpha = nullptr;         ///< out: the bound's gradient in row_alpha
+    /// A softmax's reciprocal (ZonoNet::softmax) above by the log-sum-exp bound of its exps'
+    /// inputs (docs/nn_verification.md, "The softmax's upper line"), not the two layers' lines.
+    bool softmax_lse = false;
+    /// A node of ReLU splits (beta-CROWN, nn_verification.md): per ReLU layer its signs (B, n)
+    /// (-1: z >= 0, +1: z <= 0, 0: unsplit) clamp the bounds, and each row adds max(beta, 0)
+    /// sigma z (beta (B, R, n)) to its Lagrangian: the bound holds on the splits' sides.
+    const std::vector<Tensor> *split_sign = nullptr;
+    const std::vector<Tensor> *beta = nullptr;
+    std::vector<Tensor> *g_beta = nullptr; ///< out: the bound's gradient in beta (B, R, n)
+    /// out: per ReLU layer -min(Lambda, 0) times the chord's offset (B, R, n), each crossing
+    /// neuron's share of the bound's loss (the branching score); undefined for other layers.
+    std::vector<Tensor> *intercepts = nullptr;
+    Tensor *corner = nullptr; ///< out: the input box's corner minimizing each row (B, R, n0)
 };
 
 /// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
@@ -200,15 +218,59 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
 
 /// CROWN's bounds of the activation layers' inputs over the boxes (x, rad) of a record without
 /// splits, intersected with its bounds (priv_zono_bounds.cpp): `iterations` alpha-CROWN steps of
-/// size `step` per row, the rows in chunks of about max_bytes, the record's after the deadline.
+/// `step` per row, rows in chunks of about max_bytes, the record's after the deadline.
 ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
                              const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
-                             double deadline = std::numeric_limits<double>::infinity());
+                             double deadline = std::numeric_limits<double>::infinity(),
+                             bool softmax_lse = false);
 
-/// One projected Adam step t >= 1 of size `step` on the slopes alpha in [0, 1] (undefined ones and
-/// those without a gradient g are held), the moments m1, m2 updated.
+// The branch and bound with the CROWN node bound --------------------------------------------------
+
+/// The options of priv_crown_bab (NnVerifyOptions' crown_bab_*).
+struct CrownBabOptions {
+    int64_t steps = 20, root_steps = 100, batch = 1024, witnesses = 16;
+    int64_t fsb = 0; ///< candidates of the look-ahead branching (<= 1: BaBSR's score alone)
+    double alpha_step = 0.1, beta_step = 0.05;
+    double margin = 0;                    ///< a node is verified when some row's bound exceeds it
+    int64_t max_bytes = int64_t(1) << 30; ///< the bytes of one batch's passes, about
+    int64_t frontier_bytes = int64_t(1) << 30; ///< the open nodes' bytes at most (else unknown)
+    bool softmax_lse = false;                  ///< ZonoBackward's
+    double deadline = std::numeric_limits<double>::infinity();
+};
+
+/// The copy of priv_crown_bab's search in another dtype (priv_zono_net_to, priv_record_to,
+/// priv_bounds_to): the steps run on it, the record's dtype decides.
+struct CrownBabSearch {
+    const ZonoPropagation *out = nullptr;
+    const ZonoNet *net = nullptr;
+    const ZonoBounds *bounds = nullptr;
+};
+/// beta-CROWN's branch and bound (priv_crown_bab.cpp) of the rows (K, m) minus offsets (K) of
+/// one polytope over the box (x, rad) (B = 1); check(points) confirms a counterexample. 1:
+/// verified, 2: confirmed, 0: open (the deadline, the frontier's bytes, a node fully split).
+int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
+                   const Tensor &x, const Tensor &rad, const Tensor &rows, const Tensor &offsets,
+                   const CrownBabOptions &o, const std::function<bool(const Tensor &)> &check,
+                   std::map<std::string, double> &stats, const CrownBabSearch *search = nullptr);
+
+/// The root's bounds (R) of rows (R, m) minus offsets (R) as priv_crown_bab's root: no split,
+/// o.root_steps steps on the per-row slopes, each row's best (in the record's dtype).
+Tensor priv_crown_bab_roots(const ZonoPropagation &out, const ZonoNet &net,
+                            const ZonoBounds &bounds, const Tensor &x, const Tensor &rad,
+                            const Tensor &rows, const Tensor &offsets, const CrownBabOptions &o,
+                            std::map<std::string, double> &stats,
+                            const CrownBabSearch *search = nullptr);
+
+/// The net's weights, the record's layer inputs and bounds (what priv_backward_lower reads), and
+/// the bounds in another dtype, for priv_crown_bab's search.
+ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype);
+ZonoPropagation priv_record_to(const ZonoPropagation &out, DType dtype);
+ZonoBounds priv_bounds_to(const ZonoBounds &bounds, DType dtype);
+
+/// One projected Adam step t >= 1 of size `step` on the slopes alpha in [0, upper] (undefined ones
+/// and those without a gradient g are held), the moments m1, m2 updated.
 void priv_adam_slopes(std::vector<Tensor> &alpha, std::vector<Tensor> &m1, std::vector<Tensor> &m2,
-                      const std::vector<Tensor> &g, int64_t t, double step);
+                      const std::vector<Tensor> &g, int64_t t, double step, double upper = 1.0);
 
 /// The rows C beta <= d (B, p, q) on the factors of a recorded propagation (priv_verify_dual.cpp):
 /// one per split of splits, the three faces of the num_relu crossing ReLU neurons of largest error.

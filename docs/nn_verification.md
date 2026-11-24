@@ -120,6 +120,28 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   (CROWN) and pgd's some roots verified at once. The ReLU-slope steps (`alpha_iterations`) left the
   root bound unchanged (the softmax and the products are the loose part), so the preset turns them
   off. The preset only changes the budgets, not an enclosure.
+- **The softmax's upper line (`crown_softmax_lse`, CORA.cpp only; the vit preset).** CROWN's
+  passes (`priv_backward_lower`: the check's backward bound, CROWN's layer bounds, relu-bab's
+  root) bound a softmax's `p_i = 1 / s_i`, `s_i = sum_t A_it exp(d_t) + b_i`, from above by the
+  log-sum-exp bound of Wei et al. (AISTATS 2023) on the exps' inputs `d` instead of the
+  reciprocal's chord over the exps' tangents (on random 17-term softmaxes half the gap). The layer
+  (`ZonoNet::softmax`) is a reciprocal whose sums read only the exp layer before it, with
+  nonnegative weights `A` and bias `b` and no residual (`Layer::nonnegative`). A row below 0 at
+  neuron `i` takes `p_i <= a'_i + c_i y_i - c_i sum_t w_it (d_t - d0_t)` with `y_i = -log s_i(d0)`,
+  where its sums' bounds `[l, u]` (`l > 0`) give `y = -log s in [-log u, -log l]`, `c_i >= 0` the
+  chord's slope of `exp` there and `a'_i` the larger of `1 / u - c y_lo`, `1 / l - c y_hi`, and
+  `d0 = (l_d + u_d) / 2` is the middle of the exps' input bounds, `w_it = A_it exp(d0_t) / s_i(d0)`.
+  The rows above 0 keep the reciprocal's tangent below and the exps' chords (the same family as Wei
+  et al.'s lower bound). **Soundness:** `p = 1 / max(s, 1) <= 1 / s = exp(y)` for `s > 0`; `exp`
+  is convex, so a line at or above it at both ends of `[y_lo, y_hi]` is above it between them;
+  `log s(d)` is convex in `d` (a log-sum-exp of `d_t + log A_it` and `log b_i`, `A, b >= 0`), so
+  `y <= y(d0) - grad log s(d0) (d - d0)` for every `d`, and `c >= 0` keeps the direction. Both hold
+  for the true `d` and `s` since `[l_d, u_d]` and `[l, u]` do. Rounding: the offset is widened by
+  16 ulps of `1 / l + c (|y_lo| + |y_hi|)` and by `4 (n + 4)` ulps (n the sums' inputs) of
+  `c (|log s0| + |w d0| + sum_t w_t (u_d - l_d) / 2 + 1)`, which covers the sums, the log and the
+  computed weights' error times `|d - d0|`; a neuron whose bounds or values are not finite, or
+  `l <= 0`, keeps the two layers' lines. The slope steps' reverse pass evaluates the same line at
+  the exps' inputs, so their gradient stays the bound's.
 - **nn4sys (Phase 4).** A Gather's negative index counts from the end (pensieve's last entry of a
   row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
   output to 6e-7. pensieve_parallel's input `[12, 8]` has no batch axis: only a Reshape to a batch
@@ -383,8 +405,12 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     `relu_bab_memory_budget` (0: 3/4 of the batch budget; the nodes' chunks take a quarter)
     allows: fewer slots first, then fewer generators. Two passes count the crossing neurons per layer (the second, of the tighter net,
     fewer), so no slot is spent on a stable neuron. `relu_bab_slotless` counts the crossing neurons
-    whose error stays in `dr` (slack in each row). The open polytopes go weakest first; one left
-    open ends the search (unknown).
+    whose error stays in `dr` (slack in each row). Another activation layer (exp, reciprocal,
+    product: vit_2023's attention) keeps the batch net's slots, so its errors stay factors and its
+    bounds finite (without them every exp's error went to `dr` and the exps' bounds overflowed).
+    With `backward_bound` the root also takes CROWN's backward bound of the rows the zonotope left
+    open, as the check does (it holds over the box, so a polytope it excludes needs no node). The
+    open polytopes go weakest first; one left open ends the search (unknown).
   - **Nodes:** the crossing neurons split in the order `relu_bab_order`: `output`, the largest
     `|w_k|` at the neuron's slot factor first (its error's slack in the polytope's row), or `error`,
     the largest line error first. The open nodes are parts of at most 1/16 of
@@ -439,6 +465,64 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     soundness of the zonotope (and of the frozen zonotope's faces over `[l, u]`) needs; the bounds
     only narrow the lines' domains and may make crossing neurons stable (exact lines, no split).
     Rounding: float64 nearest, as the backward bound.
+- **crown-bab (`refinement_method`):** a ReLU-split branch and bound whose node bound is CROWN's
+  backward pass with the splits as Lagrange multipliers (beta-CROWN), `priv_crown_bab`.
+  - **Root:** as relu-bab's (its slots, CROWN's bounds of the layer inputs at
+    `relu_bab_crown_rounds`); the polytopes the zonotope leaves open go weakest first, each with its
+    own search over its real rows. The crossing ReLU neurons of the root's bounds (U of them) are
+    the only ones a node splits; the bounds of every layer stay the root's, a split neuron's
+    clamped to its side.
+  - **Roots at once:** with several open polytopes, every real row of them is first bounded as
+    the search's root (`priv_crown_bab_roots`: no split, `crown_bab_root_steps` slope steps, rows
+    in chunks of the memory budget); a polytope with a row above `verified_margin` needs no search
+    (tinyimagenet_2024: 185 of 199 polytopes in 0.2 s, each before had its own root).
+  - **Measured settings:** vit_2023 with `relu_bab_crown_iterations` 0 (alpha-CROWN's layer
+    bounds took the whole 100 s on its attention; CROWN's take 4 s); tinyimagenet_2024 with
+    `relu_bab_init_gens` 256 (the root's slot net with every input a generator ran out of GPU
+    memory, in relu-bab too).
+  - **Node bound:** `priv_backward_lower` with `ZonoBackward::split_sign` (per ReLU layer, -1: the
+    input `z >= 0`, active; +1: `z <= 0`, inactive) and `beta`. A split neuron's bounds are clamped
+    to `[max(l, 0), u]` or `[l, min(u, 0)]`, so its line is the identity or zero; each row adds
+    `max(beta, 0) sigma z` to its Lagrangian at the layer's input (its Lambda there gains
+    `max(beta, 0) sigma`). `crown_bab_steps` projected Adam steps (`crown_bab_root_steps` at the
+    root) on the per-row lower slopes in `[0, 1]` (step `crown_bab_alpha_step`) and the
+    multipliers `>= 0` (`crown_bab_beta_step`); the gradient in beta is `sigma` times the row's
+    `z` at the minimizing corner (the reverse pass of the slopes'). A child starts at its parent's
+    slopes and multipliers (0 for its new split, whose gradient was 0). Each row keeps its best
+    bound over the steps and its parent's (the parent's inputs contain the child's). A node is
+    verified when some row's bound exceeds `verified_margin`.
+  - **Branching:** each open node splits the unsplit neuron of the largest chord loss
+    `-min(Lambda, 0) b_u` (`ZonoBackward::intercepts`, BaBSR's intercept score) in its best row; none
+    above 0: the widest one (`min(-l, u)`). Children: the inactive and the active side. With
+    `crown_bab_fsb` > 1 (filtered smart branching), the node's `crown_bab_fsb` best neurons by that
+    score each get their two children bounded by one pass at the node's slopes and multipliers,
+    and the neuron whose worse child is best is split (a choice only: no bound is taken from it).
+  - **Search:** a stack of batches, the last batch's children first; at most `crown_bab_batch`
+    children per pass (fewer when the passes' estimated bytes exceed `crown_bab_memory_budget`, 0:
+    half the batch budget; halved on out of memory). The open nodes' bytes are at most `relu_bab_frontier_bytes` (0: a quarter of
+    the batch budget), else unknown; a node with every crossing neuron split still open: unknown.
+  - **Search dtype (`crown_bab_search`):** the steps run on a copy of the net, the record's layer
+    inputs and bounds in the search `dtype` (float32); each batch's best slopes and multipliers per
+    row (clamped to `[0, 1]` and `>= 0`) are evaluated once more in float64 on the record itself,
+    and only that float64 bound decides, is kept and is compared with a parent's. The steps only
+    choose the slopes and multipliers, which any values make sound.
+  - **Counterexamples:** each row's minimizing corner of the input box (`ZonoBackward::corner`) at
+    the root and at the `crown_bab_witnesses` weakest open nodes of each batch goes to the
+    network's check; only a checked point is sat.
+  - **Soundness:** fix a node and an input `x` of the box on its sides (`sigma_j z_j(x) <= 0` for
+    every split j). Every layer's true input lies in its bounds: the root's bounds hold on the
+    whole box, and a split neuron's true input is on its side, so its clamped bounds hold. Hence
+    every line holds at the true inputs (the identity or zero is exact on the side), and for
+    every row `c^T y(x) >= c^T y(x) + sum_j max(beta_j, 0) sigma_j z_j(x)`, the right side being
+    at least the backward pass's affine function of `x` (each layer's line, Lambda's signs, as
+    CROWN), at least its minimum over the whole box. So for any slopes in `[0, 1]` and any beta
+    the bound holds on the node's inputs (weak duality: beta are the multipliers of the split
+    constraints), each step's does, and their maximum. An infeasible node's bound may grow without
+    limit, which is sound (no input). The parent's bound holds on a child's inputs (a subset). Each
+    split divides a node's inputs into its two sides, so the leaves' inputs cover the box: unsat
+    only when every leaf is verified. Rounding: float64 nearest, as the backward bound. The node bound at beta 0 can be
+    below the unsplit one (the identity of an active split is taken over the whole box, where `z`
+    can be negative); the multipliers recover it, and the parent's bound is kept.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
   triangle relaxation.

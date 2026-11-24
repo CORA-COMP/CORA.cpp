@@ -174,9 +174,27 @@ struct NnVerifyOptions {
     int64_t relu_bab_crown_iterations =
         20;                            ///< alpha-CROWN steps on their ReLU lower slopes per row
     double relu_bab_crown_step = 0.25; ///< Adam's step on those slopes in [0, 1]
+    // refinement_method "crown-bab": beta-CROWN's ReLU splits (nn_verification.md)
+    int64_t crown_bab_steps = 20;       ///< projected Adam steps on a node's slopes and multipliers
+    int64_t crown_bab_root_steps = 100; ///< the root's steps
+    double crown_bab_alpha_step = 0.1;  ///< Adam's step on the lower slopes in [0, 1]
+    double crown_bab_beta_step = 0.05;  ///< Adam's step on the multipliers >= 0
+    int64_t crown_bab_batch = 1024;     ///< nodes bounded at once at most (fewer if memory asks)
+    /// Look-ahead branching: the children of a node's best crown_bab_fsb neurons by BaBSR's score
+    /// are bounded by one pass each, the neuron of the best worse child taken (<= 1: BaBSR's).
+    int64_t crown_bab_fsb = 0;
+    /// The steps in the search dtype (dtype), each batch's best slopes and multipliers evaluated
+    /// once more in float64 (only those bounds decide); false: every step in float64.
+    bool crown_bab_search = false;
+    int64_t crown_bab_memory_budget = 0; ///< the bytes of one batch's passes; 0: half the batch's
+    int64_t crown_bab_witnesses =
+        16; ///< the weakest open nodes per batch whose corners are checked
     /// The check's rounds of CROWN's bounds of the layer inputs (0: none), as relu-bab's root.
     int64_t check_crown_rounds = 0;
     int64_t check_crown_iterations = 0; ///< their alpha-CROWN steps per row
+    /// CROWN's passes take a softmax's upper bound by its exps' log-sum-exp (nn_verification.md),
+    /// not by its exp and reciprocal lines (the check, CROWN's layer bounds, relu-bab's root).
+    bool crown_softmax_lse = false;
     /// The candidates of a look-ahead neuron split heuristic ("fsb") per set.
     int64_t look_ahead_candidates = 8;
     // the bounding "zonotope-alpha": CORA's verify whose check optimizes the ReLU slopes

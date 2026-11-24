@@ -324,6 +324,44 @@ std::pair<Tensor, Tensor> aux_box_image(const ZonoNet &net, std::size_t k, const
     return {c - w, c + w};
 }
 
+/// A softmax's upper line (ZonoNet::softmax layer k, nn_verification.md): p_i <= a_i - g_i
+/// sum_t A_it e0_t d_t on the exps' inputs d in [ld, ud], the chord of exp over -log s at the
+/// log-sum-exp's tangent at d0 = (ld + ud) / 2, e0 = exp(d0); ok: where it holds.
+struct SoftmaxLine {
+    Tensor ok, a, g, e0;
+};
+
+SoftmaxLine aux_softmax_line(const ZonoNet &net, std::size_t k, const Tensor &lc, const Tensor &uc,
+                             const Tensor &ld, const Tensor &ud) {
+    const double eps = machine_eps(lc.dtype());
+    const Tensor zero = lc.zeros_like(), one = lc.ones_like();
+    // the sums' range, y = -log s in [ylo, yhi] (a sum at most 0: none)
+    const Tensor pos = lc.greater(zero).multiply(lc.isfinite()).multiply(uc.isfinite());
+    const Tensor l = Tensor::where(pos, lc, one), u = Tensor::where(pos, uc.maximum(l), one);
+    const Tensor ylo = u.log().negative(), yhi = l.log().negative();
+    const Tensor plo = one.divide(u), phi = one.divide(l), width = yhi - ylo;
+    // the chord's slope c >= 0 (1 / l on a point; any c >= 0 holds with the offset below)
+    const Tensor wide = width.greater(phi.abs().maximum(1.0) * (16.0 * eps));
+    const Tensor c =
+        Tensor::where(wide, (phi - plo).divide(Tensor::where(wide, width, one)), phi).maximum(zero);
+    // the offset at both ends (exp is convex: then above it between them), widened by 16 ulps
+    const Tensor a = (plo - c.multiply(ylo)).maximum(phi - c.multiply(yhi)) +
+                     (phi + c.multiply(ylo.abs() + yhi.abs())) * (16.0 * eps);
+    // the log-sum-exp at d0: log S0, and S0's weighted d0 and half widths (sum_t w_t |d_t - d0_t|)
+    const Tensor d0 = (ld + ud) * 0.5, e0 = d0.exp();
+    const Tensor S0 = net.map(k, e0) + net.b[k];
+    const Tensor good = pos.multiply(S0.greater(zero)).multiply(S0.isfinite());
+    const Tensor S = Tensor::where(good, S0, one);
+    const Tensor lse = S.log(), wd = net.map(k, e0.multiply(d0)).divide(S),
+                 hw = net.map(k, e0.multiply((ud - ld) * 0.5)).divide(S);
+    // a_i - c_i (lse - wd), widened by the rounding of the sums, the log and the weights
+    const double terms = double(net.maps[k].inputs() + 4) * 4.0 * eps;
+    const Tensor off =
+        a - c.multiply(lse - wd) + c.multiply(lse.abs() + wd.abs() + hw + 1.0) * terms;
+    const Tensor ok = good.multiply(off.isfinite()).multiply(hw.isfinite());
+    return {ok, Tensor::where(ok, off, zero), Tensor::where(ok, c.divide(S), zero), e0};
+}
+
 /// The slopes' absolute values as a map of radii (the sign of a negative slope does not flip one).
 Tensor aux_abs_slope(const Tensor &m) { return m.abs(); }
 
@@ -621,6 +659,13 @@ ZonoNet::ZonoNet(const NeuralNetwork &net, double num_init_gens, double num_appr
         for (const NeuralNetwork::Residual &r : residuals[k])
             kept[std::size_t(r.source + 1)] = true;
     }
+    // the softmaxes: a reciprocal of nonnegative sums of the exps of the layer before alone
+    softmax.assign(sources.size(), false);
+    for (std::size_t k = 1; k < sources.size(); ++k)
+        softmax[k] = activations[k] == Activation::reciprocal &&
+                     activations[k - 1] == Activation::exp && sources[k] == int64_t(k) - 1 &&
+                     residuals[k].empty() && !kept[k] && maps[k].nonnegative() &&
+                     (b[k].numel() == 0 || b[k].reshape({b[k].numel()}).min(0).item() >= 0);
     // the factors, and whether an error has no slot
     num_neurons = id - 1;
     q = q0;
@@ -1013,6 +1058,16 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     const std::size_t top = inner ? std::size_t(opt->top) : net.W.size();
     const std::vector<Tensor> *row_alpha = opt ? opt->row_alpha : nullptr;
     std::vector<Tensor> *g_alpha = opt ? opt->g_alpha : nullptr;
+    // a node's split signs and multipliers (beta-CROWN), the gradient in them
+    const std::vector<Tensor> *signs = opt ? opt->split_sign : nullptr;
+    const std::vector<Tensor> *beta = opt ? opt->beta : nullptr;
+    std::vector<Tensor> *g_beta = opt && signs && beta ? opt->g_beta : nullptr;
+    const bool reverse = g_alpha || g_beta;
+    const auto sign_of = [&](std::size_t k) -> const Tensor * {
+        if (!signs || k >= signs->size() || !(*signs)[k].defined()) return nullptr;
+        return net.activations[k] == Activation::relu ? &(*signs)[k] : nullptr;
+    };
+    if (opt && opt->intercepts) opt->intercepts->assign(top, Tensor());
     // Lambda (B, R, n): each output's coefficients of the rows (summed over readers), the constant
     std::vector<Tensor> lams(top + 1);
     Tensor constant = x.zeros_like({B, R});
@@ -1026,12 +1081,24 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     } else {
         lams.back() = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
     }
-    // with g_alpha, each activation layer's lines and Lambda for the reverse below
+    // with g_alpha or g_beta, each activation layer's lines and Lambda for the reverse below
     struct Lines {
         Tensor sl, su, bl, bu, cross, lam;
+        SoftmaxLine soft; // a softmax's upper line (opt->softmax_lse)
+        Tensor sign;      // a node's split signs (opt->split_sign)
     };
-    std::vector<Lines> kept(g_alpha ? top : 0);
+    std::vector<Lines> kept(reverse ? top : 0);
     const bool split = splits.defined() && splits.shape()[1] > 0;
+    // the bounds of an activation layer's lines: given ones (opt->bounds), else the record's
+    const auto bounds_of = [&](std::size_t k, const ZonoLayerRecord &rec) {
+        const bool given =
+            opt && opt->bounds && k < opt->bounds->l.size() && opt->bounds->l[k].defined();
+        return given   ? std::pair{opt->bounds->l[k], opt->bounds->u[k]}
+               : split ? net.clamp(rec.first_id, rec.l, rec.u, splits)
+                       : std::pair{rec.l, rec.u};
+    };
+    // a softmax's upper line goes to the exps' inputs (Lambda after their layer's lines)
+    std::vector<Tensor> soft_lam(top);
     for (std::size_t k = top; k-- > 0;) {
         check_deadline(net.deadline);
         const bool active = net.activations[k] != Activation::identity;
@@ -1039,12 +1106,14 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
         Tensor lam = std::move(lams[k + 1]);
         if (!lam.defined()) continue; // an output that no layer of the pass reads
         if (active) {
-            // the bounds: given ones (opt->bounds), else the record's clamped
-            const bool given =
-                opt && opt->bounds && k < opt->bounds->l.size() && opt->bounds->l[k].defined();
-            const auto [lc, uc] = given   ? std::pair{opt->bounds->l[k], opt->bounds->u[k]}
-                                  : split ? net.clamp(rec->first_id, rec->l, rec->u, splits)
-                                          : std::pair{rec->l, rec->u};
+            auto [lc, uc] = bounds_of(k, *rec);
+            const Tensor *sign = sign_of(k);
+            if (sign) {
+                // a split neuron's bounds on its side: [max(l, 0), u] or [l, min(u, 0)] (clamp)
+                const Tensor zero = lc.zeros_like();
+                lc = Tensor::where(sign->less(zero), lc.maximum(uc.minimum(zero)), lc);
+                uc = Tensor::where(sign->greater(zero), uc.minimum(lc.maximum(zero)), uc);
+            }
             Tensor sl, su, bl, bu, cross;
             if (net.activations[k] == Activation::relu) {
                 // the chord above, a slope in [0, 1] below (alpha, else CROWN's 0 or 1)
@@ -1066,7 +1135,19 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                 bl = line.offset - line.radius;
                 bu = line.offset + line.radius;
             }
-            const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
+            const Tensor pos = lam.maximum(0.0);
+            Tensor neg = lam.minimum(0.0);
+            SoftmaxLine soft;
+            if (opt && opt->softmax_lse && net.softmax[k]) {
+                // a softmax's rows below 0 by its upper line on the exps' inputs, where it holds
+                const auto [ld, ud] = bounds_of(k - 1, out.layers[next - 1]);
+                soft = aux_softmax_line(net, k, lc, uc, ld, ud);
+                const Tensor taken = neg.multiply(soft.ok.expand_dims(1));
+                neg = neg - taken;
+                constant = constant + taken.matmul(soft.a.expand_dims(-1)).squeeze(-1);
+                soft_lam[k - 1] = net.map_t(k, taken.negative().multiply(soft.g.expand_dims(1)))
+                                      .multiply(soft.e0.expand_dims(1));
+            }
             constant = constant + pos.matmul(bl.expand_dims(-1)).squeeze(-1) +
                        neg.matmul(bu.expand_dims(-1)).squeeze(-1);
             // a ReLU's lower slopes per row (opt->row_alpha) where it crosses
@@ -1076,17 +1157,25 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                                    : nullptr;
             const Tensor slr = ra ? Tensor::where(cross.expand_dims(1), *ra, sl.expand_dims(1))
                                   : sl.expand_dims(1);
-            if (g_alpha)
+            if (opt && opt->intercepts && net.activations[k] == Activation::relu)
+                (*opt->intercepts)[k] = neg.negative().multiply(bu.expand_dims(1));
+            if (reverse)
                 kept[k] = {slr,
                            su.expand_dims(1),
                            bl.expand_dims(1),
                            bu.expand_dims(1),
                            ra ? cross.expand_dims(1) : Tensor(),
-                           lam};
+                           lam,
+                           soft,
+                           sign && beta ? *sign : Tensor()};
             // a product's one slope: Lambda through the line's transpose
             lam = net.activations[k] != Activation::product
                       ? pos.multiply(slr) + neg.multiply(su.expand_dims(1))
                       : priv_slope_times_t(Activation::product, sl.expand_dims(1), lam);
+            if (soft_lam[k].defined()) lam = lam + soft_lam[k];
+            // a split's Lagrangian term max(beta, 0) sigma z: sigma z <= 0 on the node's inputs
+            if (sign && beta && k < beta->size() && (*beta)[k].defined())
+                lam = lam + (*beta)[k].maximum(0.0).multiply(sign->expand_dims(1));
         }
         // the linear layer
         constant = constant + lam.multiply(net.b[k]).sum(-1);
@@ -1096,26 +1185,44 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     const Tensor &lam = lams[0];
     const Tensor value = lam.matmul(x.expand_dims(-1)).squeeze(-1) -
                          lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
-    if (!g_alpha) return value;
+    if (opt && opt->corner)
+        *opt->corner = x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1));
+    if (!reverse) return value;
     // the reverse: each layer's input at the box's minimizing corner through the linear bounds
-    g_alpha->assign(top, Tensor());
+    if (g_alpha) g_alpha->assign(top, Tensor());
+    if (g_beta) g_beta->assign(top, Tensor());
     std::vector<Tensor> gs{x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1))};
+    Tensor d_in; // the input of an exp layer that a softmax's upper line reads
     for (std::size_t k = 0; k < top; ++k) {
         check_deadline(net.deadline);
+        // layer k's input at the corner, through its linear part
         const Tensor g = net.linear(k, gs) + net.b[k];
         const Lines &L = kept[k];
+        if (k + 1 < top && kept[k + 1].soft.ok.defined()) d_in = g;
         if (!L.lam.defined()) {
             gs.push_back(g); // no activation, or an output off the pass (never read on it)
             continue;
         }
         const Tensor pos = L.lam.greater(L.lam.zeros_like()), neg = L.lam.less(L.lam.zeros_like());
+        // a split's multipliers' gradient: sigma times the row's input
+        if (g_beta && L.sign.defined()) (*g_beta)[k] = g.multiply(L.sign.expand_dims(1));
         // the slopes' gradient: the row's input times its positive Lambda where they are free
-        if (L.cross.defined())
+        if (g_alpha && L.cross.defined())
             (*g_alpha)[k] = Tensor::where(L.cross, g.multiply(L.lam.maximum(0.0)), g.zeros_like());
-        if (net.activations[k] != Activation::product) {
+        // the next layer's input at the corner: a softmax's, a product's or the lines'
+        if (L.soft.ok.defined()) {
+            // a softmax's rows below 0 on its upper line of the exps' inputs where it holds
+            const Tensor up =
+                L.soft.a.expand_dims(1) - net.map(k, d_in.multiply(L.soft.e0.expand_dims(1)))
+                                              .multiply(L.soft.g.expand_dims(1));
+            const Tensor lines = g.multiply(L.su) + L.bu;
+            gs.push_back(pos.multiply(g.multiply(L.sl) + L.bl) +
+                         neg.multiply(Tensor::where(L.soft.ok.expand_dims(1), up, lines)));
+        } else if (net.activations[k] != Activation::product) {
             gs.push_back(pos.multiply(g.multiply(L.sl) + L.bl) +
                          neg.multiply(g.multiply(L.su) + L.bu));
         } else {
+            // a product's one slope, then the offset of the side
             const Tensor gm = priv_slope_times(Activation::product, L.su, g);
             gs.push_back(pos.multiply(gm + L.bl) + neg.multiply(gm + L.bu));
         }

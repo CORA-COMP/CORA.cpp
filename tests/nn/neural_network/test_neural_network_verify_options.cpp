@@ -123,6 +123,13 @@ void options_and_strategies() {
     check(vnncomp_options("relusplitter_2026").refinement_method == "relu-bab" &&
               ours.refinement_method == "zonotack",
           "relusplitter's preset: the ReLU-split branch and bound");
+    check(vnncomp_options("cifar100_2024").refinement_method == "crown-bab" &&
+              vnncomp_options("tinyimagenet_2024").refinement_method == "crown-bab" &&
+              vnncomp_options("vit_2023").refinement_method == "crown-bab" &&
+              vnncomp_options("vit_2023").relu_bab_crown_iterations == 0 &&
+              vnncomp_options("tinyimagenet_2024").relu_bab_init_gens == 256 &&
+              vnncomp_options("metaroom_2023").refinement_method == "zonotack",
+          "the wide nets' preset: crown-bab");
     // soundnessbench: alpha-beta-CROWN's small, momentum steps and most of the time for the attack
     const NnVerifyOptions sb = vnncomp_options("soundnessbench_2026");
     check(sb.pgd_momentum == 0.9 && sb.pgd_step_sizes.size() == 6 && sb.pgd_restarts == 512 &&

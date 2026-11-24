@@ -331,6 +331,17 @@ CORA_FROM_NUMBERS Tensor NeuralNetwork::Layer::dense() const {
     return rows(eye).matrix_transpose();
 }
 
+bool NeuralNetwork::Layer::nonnegative() const {
+    detail::Entry entry;
+    // the weights themselves: a convolution's kernel, a gather's factors (undefined: all 1)
+    const auto least = [](const Tensor &t) {
+        return t.numel() == 0 ? 0.0 : t.reshape({t.numel()}).min(0).item();
+    };
+    if (!plan) return least(W) >= 0;
+    if (plan->conv) return least(plan->K) >= 0;
+    return !plan->scale.defined() || least(plan->scale) >= 0;
+}
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //
