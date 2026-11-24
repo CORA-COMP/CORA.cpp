@@ -237,6 +237,8 @@ NnVerifyOptions cora_vnncomp_options(const std::string &category) {
 
 // The competition preset --------------------------------------------------------------------------
 
+// The soundness attack ----------------------------------------------------------------------------
+
 NnVerifyOptions vnncomp_options(const std::string &category) {
     detail::Entry entry;
     const std::string name = std::regex_replace(category, std::regex("[_-](20[0-9][0-9])$"), "");
