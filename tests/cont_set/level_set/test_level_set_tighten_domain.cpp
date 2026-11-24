@@ -5,7 +5,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   19-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "level_set_testing.h"
@@ -47,6 +47,38 @@ void contractor_property(const std::string &name) {
     }
 }
 
+/// The contractor for f(x) = f(x0) with an elementary function f: x0 stays in the box, and the
+/// box shrinks (on both branches of cosh, to the two mirrored roots).
+void elementary_contractors(const std::string &name) {
+    const Expr x = Expr::var(0);
+    struct Case {
+        const char *op;
+        Expr f;
+        double x0, lo, hi;
+    };
+    const std::vector<Case> cases = {
+        {"log", log(x), 1.5, 0.5, 4.0},     {"asin", asin(x), 0.3, -0.9, 0.9},
+        {"acos", acos(x), 0.3, -0.9, 0.9},  {"atan", atan(x), 1.2, -3.0, 5.0},
+        {"sinh", sinh(x), 0.8, -2.0, 3.0},  {"cosh", cosh(x), 0.8, 0.1, 3.0},
+        {"tanh", tanh(x), 0.8, -2.0, 3.0},  {"asinh", asinh(x), 0.8, -2.0, 3.0},
+        {"acosh", acosh(x), 2.0, 1.1, 5.0}, {"atanh", atanh(x), 0.4, -0.9, 0.9}};
+    for (const Case &c : cases) {
+        const LevelSet ls(c.f - c.f.eval({c.x0}), 1, CompOp::eq);
+        const auto J = ls.tighten_domain(test::box({c.lo}, {c.hi}));
+        const std::string label = name + ": " + c.op;
+        check(J && J->contains(vec({c.x0}), 1e-12), label + " keeps the solution");
+        check(J && J->sup().data()[0] - J->inf().data()[0] < 1e-6, label + " narrows to the root");
+    }
+    // cosh x = cosh 0.8 on [-3, 3] keeps both mirrored roots, and misses a value below 1
+    const double v = std::cosh(0.8);
+    const auto B = LevelSet(cosh(x) - v, 1, CompOp::eq).tighten_domain(test::box({-3}, {3}));
+    check(B && B->inf().data()[0] < -0.79 && B->sup().data()[0] > 0.79 &&
+              B->sup().data()[0] - B->inf().data()[0] < 1.7,
+          name + ": cosh keeps both roots");
+    check(!LevelSet(cosh(x) - 0.5, 1, CompOp::eq).tighten_domain(test::box({-3}, {3})),
+          name + ": cosh below 1 has no solution");
+}
+
 } // namespace
 
 
@@ -83,6 +115,7 @@ int main() {
         check(N && close(N->inf(), {-4.0}) && close(N->sup(), {4.0}), b + ": sin does not narrow");
         // the stated property, on random circles
         contractor_property(b);
+        elementary_contractors(b);
     });
     const LevelSet line(Expr::var(0) - 1.0, 1, CompOp::eq);
     check(test::raises([&] { line.tighten_domain(test::box({0}, {1}), "bogus"); },

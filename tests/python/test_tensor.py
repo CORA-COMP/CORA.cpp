@@ -77,9 +77,14 @@ class Functions(unittest.TestCase):
         x = cora.Expr.var(0)
         self.assertAlmostEqual(cora.sin(x).eval([0.3]), math.sin(0.3))
         self.assertAlmostEqual(float(cora.sin(0.3)), math.sin(0.3))
-        with self.assertRaises(TypeError):
-            # functions follow the backend
-            cora.tan(x)
+        # the inverse and hyperbolic functions too, and numbers still follow the backend
+        for name, f in [("tan", math.tan), ("log", math.log), ("asin", math.asin),
+                        ("acos", math.acos), ("atan", math.atan), ("sinh", math.sinh),
+                        ("cosh", math.cosh), ("tanh", math.tanh), ("asinh", math.asinh),
+                        ("acosh", lambda v: math.acosh(v + 1)), ("atanh", math.atanh)]:
+            arg = 0.3 + (1 if name == "acosh" else 0)
+            self.assertAlmostEqual(getattr(cora, name)(x).eval([arg]), f(0.3), places=12)
+            self.assertAlmostEqual(float(getattr(cora, name)(arg)), f(0.3), places=12)
 
     def test_functions_follow_the_backend(self):
         self.enterContext(cora.backend("eigen"))

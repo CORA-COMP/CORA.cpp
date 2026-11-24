@@ -25,7 +25,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger, Zhuoling Li
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   19-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/level_set/level_set.h"
@@ -48,6 +48,7 @@ namespace {
 // Interval arithmetic on doubles ------------------------------------------------------------------
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
+constexpr double kPi = 3.14159265358979323846;
 
 using Iv = detail::ScalarInterval;
 
@@ -126,10 +127,61 @@ class Contractor {
         case ExprOp::exp:
             return t.hi > 0 &&
                    backward(v.a, detail::widen({std::log(std::max(t.lo, 0.0)), std::log(t.hi)}));
+        case ExprOp::log:
+            return backward(v.a, detail::widen({std::exp(t.lo), std::exp(t.hi)}));
+        // the value must lie in the range of the function; the operand is its inverse there
+        case ExprOp::asin:
+            return backward_branch(v, t, {-kPi / 2, kPi / 2}, [](double y) { return std::sin(y); });
+        case ExprOp::acos:
+            return backward_branch(v, t, {0.0, kPi}, [](double y) { return std::cos(y); });
+        case ExprOp::atan:
+            // tan is unbounded towards the ends of its branch
+            return backward_branch(v, t, {-kPi / 2, kPi / 2}, [](double y) {
+                return y >= kPi / 2 ? kInf : y <= -kPi / 2 ? -kInf : std::tan(y);
+            });
+        // the hyperbolic functions and their inverses
+        case ExprOp::sinh:
+            return backward_branch(v, t, {-kInf, kInf}, [](double y) { return std::asinh(y); });
+        case ExprOp::tanh:
+            return backward_branch(v, t, {-1.0, 1.0}, [](double y) { return std::atanh(y); });
+        case ExprOp::asinh:
+            return backward_branch(v, t, {-kInf, kInf}, [](double y) { return std::sinh(y); });
+        case ExprOp::acosh:
+            return backward_branch(v, t, {0.0, kInf}, [](double y) { return std::cosh(y); });
+        case ExprOp::atanh:
+            return backward_branch(v, t, {-kInf, kInf}, [](double y) { return std::tanh(y); });
+        case ExprOp::cosh: {
+            const Iv nonneg = detail::meet(t, {1.0, kInf});
+            if (nonneg.empty()) return false;
+            return backward_mirror(v,
+                                   detail::widen({std::acosh(nonneg.lo), std::acosh(nonneg.hi)}));
+        }
         default:
             // constants, sin, cos and tan: nothing to narrow
             return true;
         }
+    }
+
+    /// f(a) = t for a function f with the monotone inverse `inverse` on the values `image`: the
+    /// operand lies in the inverse of t cut to the image. Where the cut reaches an open end of
+    /// the image (the poles of tan, the asymptotes of tanh) the operand is unbounded there.
+    template <class Inverse>
+    bool backward_branch(const ExprView &v, const Iv &t, const Iv &image, Inverse inverse) {
+        const Iv cut = detail::meet(t, image);
+        if (cut.empty()) return false;
+        const double a = inverse(cut.lo), b = inverse(cut.hi);
+        // an inverse that falls (acos -> cos) swaps the ends
+        return backward(v.a, detail::widen({std::min(a, b), std::max(a, b)}));
+    }
+
+    /// The operand lies in r or in its mirror -r; the hull of what its range allows.
+    bool backward_mirror(const ExprView &v, const Iv &r) {
+        const Iv a = forward(v.a);
+        const Iv pos = detail::meet(a, r), neg = detail::meet(a, -r);
+        if (pos.empty() && neg.empty()) return false;
+        if (pos.empty()) return backward(v.a, neg);
+        if (neg.empty()) return backward(v.a, pos);
+        return backward(v.a, {neg.lo, pos.hi});
     }
 
     /// a^n = t for an integer n >= 1: the roots, two of them for an even n.
@@ -142,12 +194,7 @@ class Contractor {
         const Iv r =
             detail::widen({std::pow(nonneg.lo, 1.0 / v.index), std::pow(nonneg.hi, 1.0 / v.index)});
         // the operand is in [r.lo, r.hi] or in its mirror; take the hull of what the range allows
-        const Iv a = forward(v.a);
-        const Iv pos = detail::meet(a, r), neg = detail::meet(a, -r);
-        if (pos.empty() && neg.empty()) return false;
-        if (pos.empty()) return backward(v.a, neg);
-        if (neg.empty()) return backward(v.a, pos);
-        return backward(v.a, {neg.lo, pos.hi});
+        return backward_mirror(v, r);
     }
 
     /// sqrt(a) = t: a in [t.lo^2, t.hi^2] for t >= 0.

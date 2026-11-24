@@ -2,8 +2,8 @@
 //
 // Sums, differences, products and integer powers are the operations of the models, so a
 // polynomial keeps its dependency on the variables. A division by a constant is a product. Any
-// other operation (sin, cos, tan, exp, a real power, a division by a model) is evaluated on the
-// range of its operand: the result is a constant model with that range as remainder, an
+// other operation (a function such as sin or log, a real power, a division by a model) is evaluated
+// on the range of its operand: the result is a constant model with that range as remainder, an
 // enclosure that has forgotten the dependency (CORA expands them in Taylor series). A subtree
 // that occurs more than once is evaluated once.
 //
@@ -16,7 +16,7 @@
 // CORA.cpp only: CORA applies the function handle of the dynamics to the taylm objects directly
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/taylm/taylm.h"
@@ -44,23 +44,27 @@ CORA_FROM_NUMBERS Taylm aux_range_op(const ExprView &v, const Taylm &a, const Ta
     case ExprOp::div:
         e = x / y;
         break;
-    // the unary operations are the same function of the first operand
+    // a real power keeps its exponent
     case ExprOp::rpow:
         e = pow(x, v.value);
         break;
+    // the functions of one operand are the same function of the first operand
     case ExprOp::sin:
-        e = sin(x);
-        break;
-    // sin, cos, tan and exp are enclosed over the range of the operand
     case ExprOp::cos:
-        e = cos(x);
-        break;
     case ExprOp::tan:
-        e = tan(x);
-        break;
-    // a power with an integer exponent is the same function of the operand
     case ExprOp::exp:
-        e = exp(x);
+    // the logarithm, the inverse and the hyperbolic functions
+    case ExprOp::log:
+    case ExprOp::asin:
+    case ExprOp::acos:
+    case ExprOp::atan:
+    case ExprOp::sinh:
+    case ExprOp::cosh:
+    case ExprOp::tanh:
+    case ExprOp::asinh:
+    case ExprOp::acosh:
+    case ExprOp::atanh:
+        e = Expr::function(v.op, x);
         break;
     case ExprOp::pow:
         e = pow(x, v.index);

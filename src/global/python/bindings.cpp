@@ -4300,9 +4300,44 @@ void bind_nonlinear_sys(py::module_ &m) {
     m.def(
         "exp", [](const Expr &a) { return exp(a); }, py::arg("e"),
         "The exponential of a symbolic expression");
+    // tan and log
     m.def(
         "tan", [](const Expr &a) { return tan(a); }, py::arg("e"),
         "The tangent of a symbolic expression");
+    m.def(
+        "log", [](const Expr &a) { return log(a); }, py::arg("e"),
+        "The natural logarithm of a symbolic expression");
+    // the inverse functions and the hyperbolic ones
+    m.def(
+        "asin", [](const Expr &a) { return asin(a); }, py::arg("e"),
+        "The arcsine of a symbolic expression");
+    // the rest, one by one
+    m.def(
+        "acos", [](const Expr &a) { return acos(a); }, py::arg("e"),
+        "The arccosine of a symbolic expression");
+    m.def(
+        "atan", [](const Expr &a) { return atan(a); }, py::arg("e"),
+        "The arctangent of a symbolic expression");
+    // the hyperbolic functions
+    m.def(
+        "sinh", [](const Expr &a) { return sinh(a); }, py::arg("e"),
+        "The hyperbolic sine of a symbolic expression");
+    m.def(
+        "cosh", [](const Expr &a) { return cosh(a); }, py::arg("e"),
+        "The hyperbolic cosine of a symbolic expression");
+    m.def(
+        "tanh", [](const Expr &a) { return tanh(a); }, py::arg("e"),
+        "The hyperbolic tangent of a symbolic expression");
+    // the inverse hyperbolic functions
+    m.def(
+        "asinh", [](const Expr &a) { return asinh(a); }, py::arg("e"),
+        "The inverse hyperbolic sine of a symbolic expression");
+    m.def(
+        "acosh", [](const Expr &a) { return acosh(a); }, py::arg("e"),
+        "The inverse hyperbolic cosine of a symbolic expression");
+    m.def(
+        "atanh", [](const Expr &a) { return atanh(a); }, py::arg("e"),
+        "The inverse hyperbolic tangent of a symbolic expression");
     m.def(
         "sqrt", [](const Expr &a) { return sqrt(a); }, py::arg("e"),
         "The square root of a symbolic expression");

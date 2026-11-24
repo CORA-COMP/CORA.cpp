@@ -4,7 +4,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "level_set_testing.h"
@@ -30,6 +30,17 @@ int main() {
               b + ": the new state is free");
         check(close(L.fun_han(Tensor::from_data({1.0, -3.0, 0.0}, {1, 3})), {0.0}, 1e-12),
               b + ": a second point");
+        // every elementary function renames its argument: f(x0) on the state 2 of three
+        const Expr x = Expr::var(0);
+        const std::vector<Expr> fs = {log(x),  asin(x), acos(x),  atan(x),  sinh(x),
+                                      cosh(x), tanh(x), asinh(x), acosh(x), atanh(x)};
+        for (const Expr &f : fs) {
+            const Set moved = LevelSet(f, 1, CompOp::eq).lift(3, std::vector<int64_t>{2});
+            const double arg = (&f == &fs[8]) ? 1.5 : 0.4; // acosh needs at least 1
+            check(close(moved.as<LevelSet>().fun_han(Tensor::from_data({9.0, 9.0, arg}, {1, 3})),
+                        {f.eval({arg})}, 1e-12),
+                  b + ": an elementary function is renamed");
+        }
     });
     const LevelSet ls(test::circle(0, 0, 1), 2, CompOp::eq);
     check(test::raises([&] { ls.lift(1, std::vector<int64_t>{0, 1}); }, Error::wrong_value),

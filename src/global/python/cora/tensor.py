@@ -18,9 +18,20 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ._cora import Expr, _default_tol, current_backend
+from ._cora import acos as _acos_expr
+from ._cora import acosh as _acosh_expr
+from ._cora import asin as _asin_expr
+from ._cora import asinh as _asinh_expr
+from ._cora import atan as _atan_expr
+from ._cora import atanh as _atanh_expr
 from ._cora import cos as _cos_expr
+from ._cora import cosh as _cosh_expr
 from ._cora import exp as _exp_expr
+from ._cora import log as _log_expr
 from ._cora import sin as _sin_expr
+from ._cora import sinh as _sinh_expr
+from ._cora import tan as _tan_expr
+from ._cora import tanh as _tanh_expr
 
 
 if TYPE_CHECKING:
@@ -91,11 +102,14 @@ def randn(*shape, dtype="float64", device=None, seed=None):
     return draw.to(dtype=getattr(torch, _dtype(dtype)), device=_device(device) or "cpu")
 
 
+_NUMPY_NAMES = {n: "arc" + n[1:] for n in ("asin", "acos", "atan", "asinh", "acosh", "atanh")}
+
+
 def _unary(name, x):
     """The function `name` of numpy or torch applied to every element of x."""
     torch = _torch()
     if torch is None:
-        return getattr(np, name)(np.asarray(x, dtype=np.float64))
+        return getattr(np, _NUMPY_NAMES.get(name, name))(np.asarray(x, dtype=np.float64))
     return getattr(torch, name)(torch.as_tensor(x, dtype=torch.float64))
 
 
@@ -135,9 +149,27 @@ cos = _function("cos", _cos_expr)
 
 exp = _function("exp", _exp_expr)
 
-tan = _function("tan", None)
+tan = _function("tan", _tan_expr)
 
-log = _function("log", None)
+log = _function("log", _log_expr)
+
+asin = _function("asin", _asin_expr)
+
+acos = _function("acos", _acos_expr)
+
+atan = _function("atan", _atan_expr)
+
+sinh = _function("sinh", _sinh_expr)
+
+cosh = _function("cosh", _cosh_expr)
+
+tanh = _function("tanh", _tanh_expr)
+
+asinh = _function("asinh", _asinh_expr)
+
+acosh = _function("acosh", _acosh_expr)
+
+atanh = _function("atanh", _atanh_expr)
 
 sqrt = _function("sqrt", None)
 
