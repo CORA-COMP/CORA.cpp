@@ -166,6 +166,11 @@ class CrownBab {
     }
 
     int run(const std::function<bool(const Tensor &)> &check);
+    /// The root's best bound (K) of every row, no split.
+    Tensor roots() const {
+        return bound(root_nodes(), root_slopes(), root_slopes() * 0.0, o_.root_steps)
+            .best.squeeze(0);
+    }
 
   private:
     bool late() const { return now_seconds() >= std::min(o_.deadline, net_.deadline); }
@@ -177,6 +182,16 @@ class CrownBab {
     Tensor look_ahead(const Tensor &S, const Tensor &alpha, const Tensor &beta, const Bounded &b,
                       int64_t batch) const;
     int64_t per_node_bytes() const;
+    Tensor root_nodes() const { return x_.zeros_like({1, space_.U}); }
+    Tensor root_slopes() const {
+        // CROWN's lower slopes: 1 where u > -l
+        const int64_t U = space_.U;
+        return U > 0 ? space_.u.greater(space_.l.negative())
+                               .reshape({1, 1, U})
+                               .broadcast_to({1, K_, U}) +
+                           0.0
+                     : x_.zeros_like({1, K_, 0});
+    }
 
     const ZonoNet &net_;
     Tensor x_;
@@ -329,11 +344,8 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
     const int64_t U = space_.U;
     stats_["crown_bab_crossing"] = std::max(stats_["crown_bab_crossing"], double(U));
     // the root: no split, CROWN's lower slopes (1 where u > -l) and no multiplier
-    const Tensor S0 = x_.zeros_like({1, U});
-    const Tensor a0 =
-        U > 0 ? space_.u.greater(space_.l.negative()).reshape({1, 1, U}).broadcast_to({1, K_, U}) +
-                    0.0
-              : x_.zeros_like({1, K_, 0});
+    const Tensor S0 = root_nodes();
+    const Tensor a0 = root_slopes();
     const Bounded root = bound(S0, a0, a0.zeros_like(), o_.root_steps);
     const double margin = root.best.max(1).item();
     stats_["crown_bab_root_margin"] = std::min(
@@ -427,6 +439,15 @@ int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBou
     if (x.shape()[0] != 1) CORA_FAIL(Error::wrong_value, "verify: crown-bab bounds one box");
     CrownBab bab(out, net, bounds, x, rad, rows, offsets, o, stats, search);
     return bab.run(check);
+}
+
+Tensor priv_crown_bab_roots(const ZonoPropagation &out, const ZonoNet &net,
+                            const ZonoBounds &bounds, const Tensor &x, const Tensor &rad,
+                            const Tensor &rows, const Tensor &offsets, const CrownBabOptions &o,
+                            std::map<std::string, double> &stats, const CrownBabSearch *search) {
+    if (x.shape()[0] != 1) CORA_FAIL(Error::wrong_value, "verify: crown-bab bounds one box");
+    const CrownBab bab(out, net, bounds, x, rad, rows, offsets, o, stats, search);
+    return bab.roots();
 }
 
 ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype) {

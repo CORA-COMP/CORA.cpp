@@ -613,7 +613,7 @@ void crown_bab_other_layers(const std::string &b) {
 void crown_bab_verdicts(const std::string &b) {
     if (b == "lean") return; // many small verifications: slow on lean
     Rng rng(37);
-    int wrong = 0, proved = 0, wide = 0, sat = 0, violated = 0;
+    int wrong = 0, proved = 0, wide = 0, sat = 0, violated = 0, two_roots = 0;
     double nodes = 0;
     for (int net_i = 0; net_i < 6; ++net_i) {
         const NeuralNetwork nn = aux_network(rng, {2, 10, 10, 2}, Activation::relu);
@@ -640,12 +640,23 @@ void crown_bab_verdicts(const std::string &b) {
             if (t != least - 0.3) continue;
             ++wide;
             proved += r.status == "unsat" ? 1 : 0;
+            // two polytopes, y_0 <= t or -y_0 <= -(least + 2): their roots at once first
+            NnProperty two = aux_below(2, 2, -1.0, 1.0, t);
+            two.A = Tensor::from_data(std::vector<double>{1.0, 0.0, -1.0, 0.0}, {2, 1, 2});
+            two.b = Tensor({{t}, {-(least + 2.0)}});
+            two.poly_case = {0, 0};
+            const NnVerifyResult r2 = nn.verify(two, 30, o);
+            if (r2.status == "unsat")
+                for (std::size_t i = 0; i < 20000; ++i)
+                    wrong += y[i * 2] <= t || y[i * 2] >= least + 2.0 ? 1 : 0;
+            if (r2.stats.count("crown_bab_roots_seconds")) ++two_roots;
         }
     }
     check(wrong == 0, b + ": crown-bab is never unsat where a sample violates the property");
     check(2 * proved >= wide, b + ": crown-bab proves most properties of a wide margin");
     check(sat == violated, b + ": crown-bab finds the counterexample of a violated property");
     check(nodes > 0, b + ": crown-bab splits nodes");
+    check(two_roots > 0, b + ": crown-bab bounds the roots of several polytopes at once");
 }
 
 /// CROWN's backward bound holds the sampled outputs of the boxes, with splits, for every

@@ -982,6 +982,48 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         const ZonoBounds bounds_s = searching ? priv_bounds_to(bounds, sdt) : ZonoBounds();
         net_s.deadline = net.deadline;
         const CrownBabSearch search{&out_s, &net_s, &bounds_s};
+        // the roots of all open polytopes' rows at once, in chunks: a polytope one of whose rows
+        // is verified needs no search
+        if (open.size() > 1) {
+            const StepTimer timer(&stats, "crown_bab_roots_seconds");
+            std::vector<int64_t> rows, owner;
+            const std::vector<double> real = real_row_.data();
+            for (const int64_t p : open)
+                for (int64_t k = 0; k < K_; ++k)
+                    if (real[std::size_t(p * K_ + k)] > 0) {
+                        rows.push_back(p * K_ + k);
+                        owner.push_back(p);
+                    }
+            int64_t width = net.n0;
+            for (const int64_t w : net.widths) width += w;
+            for (const NeuralNetwork::Layer &layer : net.maps) width += layer.work();
+            const int64_t chunk =
+                std::max<int64_t>(1, co.max_bytes / std::max<int64_t>(1, 8 * 32 * width));
+            const Tensor Aall = A_.reshape({P_ * K_, A_.shape()[2]});
+            const Tensor ball = b_.reshape({P_ * K_});
+            std::vector<double> root_low;
+            for (std::size_t at = 0; at < rows.size(); at += std::size_t(chunk)) {
+                const std::size_t to = std::min(rows.size(), at + std::size_t(chunk));
+                const std::vector<int64_t> part(rows.begin() + std::ptrdiff_t(at),
+                                                rows.begin() + std::ptrdiff_t(to));
+                const std::vector<double> v =
+                    priv_crown_bab_roots(out, net, bounds, xi, ri, Aall.take(part, 0),
+                                         ball.take(part, 0), co, stats,
+                                         searching ? &search : nullptr)
+                        .data();
+                root_low.insert(root_low.end(), v.begin(), v.end());
+            }
+            std::vector<int64_t> still;
+            for (const int64_t p : open) {
+                bool done = false;
+                for (std::size_t j = 0; j < owner.size(); ++j)
+                    done = done || (owner[j] == p && root_low[j] > o_.verified_margin);
+                if (!done) still.push_back(p);
+            }
+            stats["crown_bab_roots_verified"] += double(open.size() - still.size());
+            stats["crown_bab_polytopes_verified"] += double(open.size() - still.size());
+            open = still;
+        }
         for (const int64_t p : open) {
             // the polytope's real rows a_k y - b_k
             const std::vector<int64_t> real = real_row_.slice(0, p, p + 1).squeeze(0).nonzero();
