@@ -22,6 +22,7 @@
 #include "cora/global/oracle/zonotope.h"
 #include "cora/nn/neural_network/neural_network.h"
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -57,6 +58,17 @@ struct NnLayer {
     /// neuron's box: "exp", "reciprocal", "cube", "inverse", "softplus", "root" or "invSqrt"; the
     /// monotone lines take the regression slope at poly_method "regression", else Singh's.
     static NnLayer line(const std::string &kind);
+    /// CORA.cpp's port's linear layers as it folds them (fields in `geometry`): scale .* x +
+    /// offset; batch norm per channel of (C, H, W); the pool windows' means; the rows of W x + b
+    /// over max(|W_i| 1 / lambda, 1).
+    static NnLayer elementwise_affine(const cora::Tensor &scale, const cora::Tensor &offset);
+    static NnLayer batch_norm(const cora::Tensor &scale, const cora::Tensor &offset,
+                              const cora::Tensor &mean, const cora::Tensor &var,
+                              const std::vector<int64_t> &input, double epsilon);
+    static NnLayer avg_pool(const std::array<int64_t, 2> &pool, const std::vector<int64_t> &input,
+                            const std::array<int64_t, 2> &stride,
+                            const std::array<int64_t, 4> &pads);
+    static NnLayer lip_linear(const cora::Tensor &W, const cora::Tensor &b, double lambda);
 };
 
 /// A line per neuron: slope x + offset +- error.

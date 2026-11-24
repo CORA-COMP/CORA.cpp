@@ -544,7 +544,11 @@ The oracle (`oracle-20261123-722cbe1e7`) serves the layer kinds `linear`, `relu`
 `tanh` and `poly`, and no other linear layer. CORALean has float definitions of the layers below
 (`NN/Layers/Definitions/`: `BatchNormLayer`, `AvgPoolLayer`, `WeightLayerFloat`); CORA.cpp's
 `NeuralNetwork::Layer::identity`, `elementwise_affine`, `batch_norm` (inference, folded into one map),
-`avg_pool2d` and `lip_constr_linear` are tested by hand-computed cases only, so their rows are oracle debt.
+`avg_pool2d` and `lip_constr_linear` were tested by hand-computed cases only. **Served** since
+oracle-20261124-3013bdbc0 (the layer kinds `elementwiseAffine`, `batchNorm`, `avgPool` and `lipLinear` of
+`nnLayer.evaluateZonotope` / `neuralNetwork.evaluate`): `test_lean_nn_layers` compares each, `linear` and the
+identity (the unit matrix) bit for bit through `evaluate_zonotope_batch`, each followed by a ReLU. The rows below
+keep the original proposals.
 
 | op (proposed) | request fields | reply |
 |---|---|---|
