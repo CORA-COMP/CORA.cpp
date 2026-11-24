@@ -707,3 +707,16 @@ Recipe of `post` (CORA's `linReach`, `priv_linearize`, `priv_linError_mixed_noIn
 The output set follows `outputSet.m` the same way: `y0 = g(p_x, p_u)`, `J (R - p_x) + D (U - p_u) + y0`, plus the error of the
 tensor order of the output equation (order 2: the box `0.5 dz' max|H_i| dz` over `R` and `U` themselves; order 3: the Hessian at the
 point maps `Z - p` and the third derivatives over the boxes give the box).
+
+
+## Specifications (PR "port/spec")
+
+CORALean has `Specification` and `Specification.check` only (route b, no scalar of its own); the
+operations below have no Lean definition yet, so their CORA.cpp tests are property tests. A request
+would need the definition first; the oracle then serves them over a polytope `{"A","b"}`.
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `specification.robustness` | none (`Specification.distancePolyPointCora` models `aux_distancePolyPoint` only) | `kind`, `A`, `b`, `Ae`, `be`, `p` | the signed distance; the three branches (one hyperplane, the vertex of `n` rows, the 1-norm program) and the equalities as two rows each |
+| `specification.inverse` | none | `kind`, the polytopes | the unsafe polytopes covering the complement of the intersection, in CORA's order (`safeSet2unsafeSet`) |
+| `specification.project` | none (`polytope.project` is served) | `kind`, `A`, `b`, `dims` | the projected polytope |
