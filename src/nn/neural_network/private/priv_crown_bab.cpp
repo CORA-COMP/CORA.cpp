@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -170,7 +171,8 @@ Bounded CrownBab::bound(const Tensor &S, Tensor alpha, Tensor beta, int64_t step
     const Tensor xs = x_.broadcast_to({N, n0}) + 0.0, rs = rad_.broadcast_to({N, n0}) + 0.0;
     const Tensor none = x_.zeros_like({N, 0});
     const std::vector<Tensor> signs = aux_expand(space_, S);
-    std::vector<Tensor> a1{alpha}, a_m1(1), a_m2(1), b1{beta}, b_m1(1), b_m2(1);
+    std::vector<Tensor> a1{std::move(alpha)}, a_m1(1), a_m2(1), b1{std::move(beta)}, b_m1(1),
+        b_m2(1);
     Bounded r;
     for (int64_t t = 0;; ++t) {
         const bool more = t < steps && !late();
