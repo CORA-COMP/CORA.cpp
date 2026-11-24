@@ -19,6 +19,45 @@ coverage tables count them separately; a method that a source tags cannot be lis
 | `contSet/polyZonotope/deleteZeros` | deprecated in CORA: replaced by compact(pZ,'zeros') |
 | `contSet/zonotope/deleteZeros` | deprecated in CORA: replaced by compact(Z,'zeros') |
 | `contSet/zonotope/deleteAligned` | deprecated in CORA: replaced by compact(Z,'aligned') |
+| `nn/layers/instantiateFromString` | MATLAB string-to-layer dispatch for the legacy constructors; CORA.cpp builds the layer classes directly (and the Python front end lowers networks through `cora.OnnxNetwork.load`) |
+| `nn/layers/nnActLayerFromHandle` | activation layer from a MATLAB function handle: its derivatives come from MATLAB symbolic differentiation of the handle, which CORA.cpp does not have; the activations it is used for (sin, cos, groupsort) are not ported |
+| `nn/layers/nnGCNLayer` | graph-neural-network layer on MATLAB graph objects: CORA.cpp ports no GNN |
+| `nn/layers/nnGNNGlobalPoolingLayer` | graph-neural-network layer on MATLAB graph objects: CORA.cpp ports no GNN |
+| `nn/layers/nnGNNLayer` | abstract base of the graph-neural-network layers: CORA.cpp ports no GNN |
+| `nn/layers/nnGNNLinearLayer` | graph-neural-network layer on MATLAB graph objects: CORA.cpp ports no GNN |
+| `nn/layers/nnGNNProjectionLayer` | graph-neural-network layer on MATLAB graph objects: CORA.cpp ports no GNN |
+| `nn/layers/nnVisualizationLayer` | plotting layer of the MATLAB visualization tools: display only |
+| `nn/neuralNetwork/addVisualizationLayers` | inserts plotting layers: display only |
+| `nn/neuralNetwork/clearVisualizationLayerPlots` | clears MATLAB figures: display only |
+| `nn/neuralNetwork/convertDLToolboxNetwork` | converts a MATLAB Deep Learning Toolbox network; CORA.cpp's Python front end loads networks with `cora.OnnxNetwork.load` instead |
+| `nn/neuralNetwork/convertToDLToolboxNetwork` | converts to a MATLAB Deep Learning Toolbox network; CORA.cpp exports no networks (it loads them with `cora.OnnxNetwork.load`) |
+| `nn/neuralNetwork/display` | prints the network in MATLAB: display only |
+| `nn/neuralNetwork/enumerateLayers` | assigns running layer ids for the MATLAB bookkeeping of derivative caches: plumbing, CORA.cpp indexes its layers directly |
+| `nn/neuralNetwork/exportAsJSON` | writer of a MATLAB-specific JSON format; CORA.cpp exports no networks (it loads them with `cora.OnnxNetwork.load`) |
+| `nn/neuralNetwork/exportAsStruct` | writer to a MATLAB struct; CORA.cpp exports no networks |
+| `nn/neuralNetwork/exportNetworkAsCellArray` | writer to MATLAB cell arrays; CORA.cpp exports no networks |
+| `nn/neuralNetwork/exportONNXNetwork` | writer through the MATLAB Deep Learning Toolbox; CORA.cpp exports no networks (it loads them with `cora.OnnxNetwork.load`) |
+| `nn/neuralNetwork/generateFromString` | MATLAB string-to-network constructor for the legacy layer names; CORA.cpp builds the layer classes directly |
+| `nn/neuralNetwork/getFromCellArray` | legacy constructor from MATLAB cell arrays of weights and biases; CORA.cpp's NeuralNetwork takes its layers directly |
+| `nn/neuralNetwork/getNumMessagePassingSteps` | counts GNN message-passing layers: CORA.cpp ports no GNN |
+| `nn/neuralNetwork/importFromJSON` | reader of a MATLAB-specific JSON format; CORA.cpp's Python front end loads networks with `cora.OnnxNetwork.load` |
+| `nn/neuralNetwork/importFromStruct` | reader of a MATLAB struct; CORA.cpp's Python front end loads networks with `cora.OnnxNetwork.load` |
+| `nn/neuralNetwork/readGNNdata` | reader of GNN datasets: CORA.cpp ports no GNN |
+| `nn/neuralNetwork/readGNNetwork` | reader of GNN networks: CORA.cpp ports no GNN |
+| `nn/neuralNetwork/readGNNnetwork` | reader of GNN networks: CORA.cpp ports no GNN |
+| `nn/neuralNetwork/readJSONNetwork` | reader of a MATLAB-specific JSON format; CORA.cpp's Python front end loads networks with `cora.OnnxNetwork.load` |
+| `nn/neuralNetwork/readNNetNetwork` | reader of the .nnet format; CORA.cpp's Python front end loads networks with `cora.OnnxNetwork.load` (the benchmarks read theirs through `bench::load_network`) |
+| `nn/neuralNetwork/readNetwork` | dispatches on the file extension to the MATLAB readers; CORA.cpp's Python front end loads networks with `cora.OnnxNetwork.load` |
+| `nn/neuralNetwork/readONNXNetwork` | reader through the MATLAB Deep Learning Toolbox; CORA.cpp loads ONNX files with `cora.OnnxNetwork.load` |
+| `nn/neuralNetwork/readSherlockNetwork` | reader of the Sherlock text format; CORA.cpp's Python front end loads networks with `cora.OnnxNetwork.load` |
+| `nn/neuralNetwork/readYMLNetwork` | reader of the YML format; CORA.cpp's Python front end loads networks with `cora.OnnxNetwork.load` |
+| `nn/neuralNetwork/reduceGNNForNode` | reduces a GNN to the neighborhood of a node of a MATLAB graph: CORA.cpp ports no GNN |
+| `nn/neuralNetwork/reset` | clears the MATLAB-side caches of the layers (stored bounds and derivative handles): plumbing, CORA.cpp keeps no such caches |
+| `nn/neuralNetwork/resetBounds` | clears the MATLAB-side stored bounds of the layers: plumbing, CORA.cpp keeps no such state |
+| `nn/neuralNetwork/resetGNN` | resets GNN layer state: CORA.cpp ports no GNN |
+| `nn/neuralNetwork/setInputSize` | sets the MATLAB-side input size used by the visualization and GNN layers: plumbing |
+| `nn/neuralNetwork/train` | training with the MATLAB Deep Learning Toolbox: CORA.cpp verifies trained networks and does not train |
+| `nn/neuralNetwork/visLossLandscape` | plots a loss landscape: display only |
 
 ## Not comparable with CORALean
 
