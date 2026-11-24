@@ -827,11 +827,11 @@ PrivLine priv_inverse_line(const Tensor &l, const Tensor &u) {
     if (positive.numel() > 0 && positive.reshape({positive.numel()}).min(0).item() < 1)
         CORA_FAIL(Error::special_error, kOutOfRangeMessage);
     const Tensor one = l.ones_like(), il = one.divide(l), iu = one.divide(u);
-    // the chord's slope -1 / (l u); 1 / x - m x is convex: largest at l or u, least at sqrt(l u)
+    // the chord's slope -1 / (l u); g convex: at most g(l) or g(u), at least 2 sqrt(-m) (CORALean)
     const Tensor m = il.multiply(iu).negative();
     priv_check_finite(il, m);
     const auto g = [&](const Tensor &x) { return one.divide(x) - m.multiply(x); };
-    const Tensor hi = g(l).maximum(g(u)), lo = g(l.sqrt().multiply(u.sqrt()).maximum(l).minimum(u));
+    const Tensor hi = g(l).maximum(g(u)), lo = m.negative().sqrt() * 2.0;
     // the radius widened by the rounding (16 ulps of the largest term, 1 / l + |m| u = 2 / l)
     return {m, (hi + lo) * 0.5, (hi - lo) * 0.5 + il * (32.0 * machine_eps(l.dtype()))};
 }

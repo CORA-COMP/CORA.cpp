@@ -365,10 +365,9 @@ int main() {
 
     // the activations with a line of their own in networks, inputs in the domain, at both methods
     oracle::run("neuralNetwork.evaluate", [&](oracle::Random &rnd) {
-        // 1 / x waits for the lower end 2 sqrt(-m) of oracle/nn-layers-4 (CORALean's inverse)
         for (const Activation a :
-             {Activation::exp, Activation::reciprocal, Activation::cube, Activation::softplus,
-              Activation::root, Activation::inv_sqrt_root}) {
+             {Activation::exp, Activation::reciprocal, Activation::cube, Activation::inverse,
+              Activation::softplus, Activation::root, Activation::inv_sqrt_root}) {
             const Zonotope Z(rnd.point(3), rnd.matrix(3, 4).matrix_transpose() * 0.3);
             const NeuralNetwork nn =
                 aux_positive_network(rnd, {3, 6, 2}, {a, Activation::identity}, Z);

@@ -2,12 +2,15 @@
 //
 // Syntax:     lean::Zonotope Y = lean::evaluate_network({lean::NnLayer::linear(W, b),
 //                                                       lean::NnLayer::relu()}, X, "singh");
+//             lean::Zonotope Y = lean::evaluate_graph({{W1, b1}, {W2, b2, -2, {{-1}}}}, X);
 // Meaning:    nnLayer.evaluateZonotope and neuralNetwork.evaluate: the layers of CORALean in order
 //             on the zonotope, each activation by its relaxation at poly_method "singh" (CORA's
 //             line) or "curvature" (CORALean's tighter sigmoid and tanh); the layer "poly" (the
 //             fit of order k given) on a polynomial zonotope by nnLayer.evaluatePolyZonotope;
 //             nnLayer.relaxation, the line of an activation over boxes; nn_evaluate_taylm the
-//             layers on Taylor models (neuralNetwork.evaluateTaylm)
+//             layers on Taylor models (neuralNetwork.evaluateTaylm); neuralNetwork.evaluateGraph:
+//             a graph network (sources, residuals) in the order of CORA.cpp's ZonoNet::forward,
+//             the radii of the interval center as the error box
 // See also:   lean/request.h, cora/nn/neural_network/neural_network.h
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
@@ -76,9 +79,9 @@ struct NnLine {
     Tensor slope, offset, error;
 };
 
-/// nnLayer.relaxation: the line of `kind` ("sign", "square", "relu", a kind of NnLayer::line) over
-/// each box [l_i, u_i] (columns (n, 1)); relu: alpha (n, 1) the crossing neurons' slopes; softplus,
-/// root, invSqrt: method "regression" (empty: the oracle's default, the same) or "singh".
+/// nnLayer.relaxation: the line of `kind` ("sign", "square", "relu", "sin", "cos", an NnLayer::line
+/// kind) over each box [l_i, u_i] (columns); relu: alpha the crossing neurons' slopes; softplus,
+/// root, invSqrt: method "regression" or "singh" (empty: the oracle's default).
 NnLine relaxation(const std::string &kind, const cora::Tensor &l, const cora::Tensor &u,
                   const cora::Tensor &alpha = cora::Tensor(), const std::string &method = "");
 
@@ -91,6 +94,20 @@ NnLine product_line(const cora::Tensor &c, const cora::Tensor &G,
 /// nnLayer.softmaxSumBounds: the box (inf, sup) of W exp(d) + b for l <= d <= u (columns).
 std::pair<Tensor, Tensor> softmax_sum_bounds(const cora::Tensor &W, const cora::Tensor &b,
                                              const cora::Tensor &l, const cora::Tensor &u);
+
+/// A layer of neuralNetwork.backwardBound: an affine map, or a ReLU with the box [l, u] of its
+/// inputs and optionally the slopes alpha of its crossing neurons.
+struct CrownLayer {
+    std::string kind; // "linear" or "relu"
+    cora::Tensor W, b, l, u, alpha;
+    static CrownLayer linear(const cora::Tensor &W, const cora::Tensor &b);
+    static CrownLayer relu(const cora::Tensor &l, const cora::Tensor &u,
+                           const cora::Tensor &alpha = cora::Tensor());
+};
+/// neuralNetwork.backwardBound: CROWN's lower bound (q, 1) of every row of C (q, m) on the outputs
+/// over the box |x' - x| <= r (columns), CORA.cpp's priv_backward_lower.
+Tensor backward_bound(const std::vector<CrownLayer> &layers, const cora::Tensor &x,
+                      const cora::Tensor &r, const cora::Tensor &C);
 
 // Networks on sets and Taylor models --------------------------------------------------------------
 
@@ -131,6 +148,29 @@ std::vector<Taylm> nn_evaluate_taylm(const std::vector<NnLayer> &layers,
                                      const std::vector<Taylm> &x,
                                      const std::string &poly_method = "singh",
                                      const std::string &regression_error = "");
+
+/// A residual of a graph layer: the output of layer `source` (-1: the input) through R (undefined:
+/// the identity).
+struct NnGraphResidual {
+    int64_t source = -1;
+    cora::Tensor R = {};
+};
+
+/// A graph layer: W times the output `source` (-1: the input, kPrevious: the one before), plus b
+/// and the residuals, then the activation; its errors as generators ("all") or in the error box.
+/// activation: "identity", "relu", "sign", "square" or "product" (of the halves).
+struct NnGraphLayer {
+    static constexpr int64_t kPrevious = -2;
+    cora::Tensor W, b;
+    int64_t source = kPrevious;
+    std::vector<NnGraphResidual> residuals = {};
+    std::string activation = "identity";
+    std::string slots = "all";
+};
+
+/// The graph network on the zonotope (neuralNetwork.evaluateGraph): the last layer's output, the
+/// radii of its interval center in the error box.
+Zonotope evaluate_graph(const std::vector<NnGraphLayer> &layers, const Zonotope &Z);
 
 } // namespace cora::lean
 

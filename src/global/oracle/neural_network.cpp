@@ -33,7 +33,7 @@ bool aux_is_line(const std::string &kind) {
 
 // The depths of the line of `kind` (nnLayer.relaxation's k and p, unused at nearest).
 void aux_depths(const std::string &kind, std::vector<Operand> &args) {
-    if (kind == "exp" || kind == "softplus" || kind == "invSqrt")
+    if (kind == "exp" || kind == "softplus" || kind == "invSqrt" || kind == "sin" || kind == "cos")
         args.push_back({"k", int64_t(30)});
     if (aux_is_line(kind)) args.push_back({"p", int64_t(60)});
 }
@@ -104,12 +104,36 @@ Json aux_layer(const NnLayer &layer, std::string &dtype) {
     return j;
 }
 
+// A graph layer in wire form, and the dtype of its weights.
+Json aux_graph_layer(const NnGraphLayer &layer, std::string &dtype) {
+    const Tensor W(layer.W);
+    dtype = W.dtype();
+    Json j = Json::object();
+    j.set("W", W.to_json()).set("b", aux_column(layer.b).to_json());
+    if (layer.source != NnGraphLayer::kPrevious) j.set("source", layer.source);
+    // each residual's source, and its map unless the identity
+    if (!layer.residuals.empty()) {
+        Json residuals = Json::array();
+        for (const NnGraphResidual &r : layer.residuals) {
+            Json e = Json::object();
+            e.set("source", r.source);
+            if (r.R.defined()) e.set("R", Tensor(r.R).to_json());
+            residuals.push(e);
+        }
+        j.set("residuals", residuals);
+    }
+    j.set("activation", layer.activation).set("slots", layer.slots);
+    // a product's line takes CORA.cpp's square root (the precision of nnLayer.productLine)
+    if (layer.activation == "product") j.set("p", int64_t(60));
+    return j;
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
-// The layers ---------------------------------------------------------------------------------
+// The layers --------------------------------------------------------------------------------------
 
 NnLayer NnLayer::linear(const cora::Tensor &W, const cora::Tensor &b) {
     NnLayer layer;
@@ -262,6 +286,7 @@ NnLine relaxation(const std::string &kind, const cora::Tensor &l, const cora::Te
 
 // the product line of the pairs (a_i, b_i), and the box of a softmax's sums
 NnLine product_line(const cora::Tensor &c, const cora::Tensor &G, const cora::Tensor &dr) {
+    // the zonotope of the two halves, the root's Newton steps and the interval center's radii
     std::vector<Operand> args{{"Z", Zonotope(c, G)}, {"p", int64_t(60)}};
     if (dr.defined()) args.push_back({"dr", Tensor(dr)});
     const Reply r = ask("nnLayer.productLine", args);
@@ -278,7 +303,55 @@ std::pair<Tensor, Tensor> softmax_sum_bounds(const cora::Tensor &W, const cora::
     return {r.get<Tensor>("inf"), r.get<Tensor>("sup")};
 }
 
-// The evaluations ----------------------------------------------------------------------------
+// CROWN's backward bound --------------------------------------------------------------------------
+
+CrownLayer CrownLayer::linear(const cora::Tensor &W, const cora::Tensor &b) {
+    CrownLayer layer;
+    layer.kind = "linear";
+    layer.W = W;
+    layer.b = b.ndim() == 1 ? b.expand_dims(-1) : b;
+    return layer;
+}
+
+// a ReLU at its box, with the slopes of its crossing neurons if given
+CrownLayer CrownLayer::relu(const cora::Tensor &l, const cora::Tensor &u,
+                            const cora::Tensor &alpha) {
+    CrownLayer layer;
+    layer.kind = "relu";
+    // the boxes and the slopes as columns (n, 1)
+    const auto column = [](const cora::Tensor &t) { return t.reshape({t.numel(), 1}); };
+    layer.l = column(l);
+    layer.u = column(u);
+    if (alpha.defined()) layer.alpha = column(alpha);
+    return layer;
+}
+
+Tensor backward_bound(const std::vector<CrownLayer> &layers, const cora::Tensor &x,
+                      const cora::Tensor &r, const cora::Tensor &C) {
+    // the layers in wire form, the dtype of the first weights
+    std::string dtype;
+    Json list = Json::array();
+    for (const CrownLayer &layer : layers) {
+        Json j = Json::object();
+        j.set("kind", layer.kind);
+        if (layer.kind == "linear") {
+            const Tensor W(layer.W), b(layer.b);
+            dtype = W.dtype();
+            j.set("W", W.to_json()).set("b", b.to_json());
+        } else {
+            // a ReLU: its box and its slopes
+            j.set("l", Tensor(layer.l).to_json()).set("u", Tensor(layer.u).to_json());
+            if (layer.alpha.defined()) j.set("alpha", Tensor(layer.alpha).to_json());
+        }
+        list.push(j);
+    }
+    const Reply reply =
+        ask("neuralNetwork.backwardBound",
+            {{"layers", Wire(list, dtype)}, {"x", Tensor(x)}, {"r", Tensor(r)}, {"C", Tensor(C)}});
+    return reply.get<Tensor>("lower");
+}
+
+// The evaluations ---------------------------------------------------------------------------------
 
 Json layers_json(const std::vector<NnLayer> &layers, std::string &dtype) {
     Json list = Json::array();
@@ -353,6 +426,17 @@ std::vector<Taylm> nn_evaluate_taylm(const std::vector<NnLayer> &layers,
     for (const Reply &T : ask("neuralNetwork.evaluateTaylm", args).list("Y"))
         out.push_back(Taylm::from_model(T));
     return out;
+}
+
+// The graph networks ------------------------------------------------------------------------------
+
+// the graph network on the zonotope, the last output with its error box
+Zonotope evaluate_graph(const std::vector<NnGraphLayer> &layers, const Zonotope &Z) {
+    std::string dtype;
+    Json list = Json::array();
+    for (const NnGraphLayer &layer : layers) list.push(aux_graph_layer(layer, dtype));
+    return ask("neuralNetwork.evaluateGraph", {{"layers", Wire(list, dtype)}, {"Z", Z}})
+        .get<Zonotope>("Z");
 }
 
 } // namespace cora::lean

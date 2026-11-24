@@ -99,6 +99,24 @@ void lines_hold(const std::string &b) {
           b + ": x^3's line of a point is its tangent");
 }
 
+/// 1 / x's band reaches below g(x) = 1 / x - m x at its least point x* = 1 / sqrt(-m) (long
+/// double), where g at a rounded sqrt(l u) need not: the lower end is 2 sqrt(-m) (CORALean).
+void inverse_lower_end(const std::string &b) {
+    std::mt19937 rng(5);
+    std::uniform_real_distribution<double> V(0.0, 1.0);
+    int violations = 0;
+    for (int k = 0; k < 200; ++k) {
+        const double l = std::pow(10.0, -3.0 + 6.0 * V(rng)), u = l * (1.0 + 1e3 * V(rng) * V(rng));
+        const PrivLine line = priv_inverse_line(Tensor({l}), Tensor({u}));
+        const long double m = line.slope.reshape({1}).item();
+        const long double lo = (long double)line.offset.reshape({1}).item() -
+                               (long double)line.radius.reshape({1}).item();
+        const long double x = 1.0L / std::sqrt(-m);
+        violations += lo > 1.0L / x - m * x;
+    }
+    check(violations == 0, b + ": 1 / x's band is below its least value at 200 boxes");
+}
+
 /// 1 / x has no line where l <= 0 (or NaN): verify's out-of-range failure.
 void inverse_out_of_range(const std::string &b) {
     for (const double l : {0.0, -1.0, std::numeric_limits<double>::quiet_NaN()}) {
@@ -189,6 +207,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         points(b);
         lines_hold(b);
+        inverse_lower_end(b);
         inverse_out_of_range(b);
         inverse_reads_the_cubes(b);
         verify_decides(b);
