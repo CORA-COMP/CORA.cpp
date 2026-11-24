@@ -24,7 +24,7 @@
 // CORA.cpp only: the dual bound of the check (CORA bounds the factors' box by dual-iter only)
 // Authors:       Claude Opus 5.5
 // Written:       22-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
@@ -161,7 +161,8 @@ std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoN
             const Tensor l = bounds[i].first.take_along_axis(j, 1);
             const Tensor u = bounds[i].second.take_along_axis(j, 1);
             const Tensor s = u.divide((u - l).maximum(numerics::kTiny));
-            // y >= 0, y >= x, y <= s (x - l), each with delta at its worst
+            // y >= 0, y >= x, y <= s x + o (o: priv_relu_chord_offset), delta at its worst
+            const Tensor o = priv_relu_chord_offset(l, u, s);
             const Tensor co = rec.c_out.take_along_axis(j, 1), ci = rec.c_in.take_along_axis(j, 1);
             const Tensor ro =
                 rec.dr_out.defined() ? rec.dr_out.take_along_axis(j, 1) : j.zeros_like();
@@ -170,7 +171,7 @@ std::pair<Tensor, Tensor> priv_dual_rows(const ZonoPropagation &out, const ZonoN
             const Tensor face_rows[] = {go.negative(), gi - go,
                                         go - gi.multiply(s.expand_dims(-1))};
             const Tensor face_offs[] = {co + ro, co - ci + ro + ri,
-                                        s.multiply(ci - l) - co + ro + s.multiply(ri)};
+                                        s.multiply(ci) + o - co + ro + s.multiply(ri)};
             // each face a row of the neurons of this layer, zero for the others
             for (int f = 0; f < 3; ++f) {
                 Cs.push_back(

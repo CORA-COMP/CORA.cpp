@@ -31,11 +31,12 @@ namespace cora::lean {
 
 /// One layer of the oracle: a kind and its weights.
 struct NnLayer {
-    std::string kind;  // "linear", "relu", "leakyRelu", "sigmoid", "tanh", "sign", "square", "poly"
-    cora::Tensor W, b; // linear; poly: W the coefficients (n, k + 1, lowest first), b the errors
-    double alpha = 0.01;    // leakyRelu
-    int k = 3;              // sigmoid, tanh: the depth of the exponential's reduction
-    Json geometry;          // conv: the geometry (kshape, input, stride, dilation, pads, groups)
+    std::string kind; // "linear", "relu", "leakyRelu", "sigmoid", "tanh", "sign", "square", "poly",
+                      // "conv", or a line's (NnLayer::line)
+    cora::Tensor W, b;   // linear; poly: W the coefficients (n, k + 1, lowest first), b the errors
+    double alpha = 0.01; // leakyRelu
+    int k = 3;           // sigmoid, tanh: the depth of the exponential's reduction
+    Json geometry;       // conv: the geometry (kshape, input, stride, dilation, pads, groups)
     std::vector<int> order; // evaluate_taylm's activations: none, one, or one per neuron
 
     static NnLayer linear(const cora::Tensor &W, const cora::Tensor &b);
@@ -50,6 +51,10 @@ struct NnLayer {
     static NnLayer conv(const cora::Tensor &kernel, const cora::Tensor &bias,
                         const std::vector<int64_t> &input, const NeuralNetwork::Conv2d &spec);
     static NnLayer poly(const cora::Tensor &coeffs, const cora::Tensor &d);
+    /// CORA.cpp's activation with a line of its own, the relaxation of nnLayer.relaxation at every
+    /// neuron's box: "exp", "reciprocal", "cube", "inverse", "softplus", "root" or "invSqrt"; the
+    /// monotone lines take the regression slope at poly_method "regression", else Singh's.
+    static NnLayer line(const std::string &kind);
 };
 
 /// A line per neuron: slope x + offset +- error.
@@ -57,11 +62,11 @@ struct NnLine {
     Tensor slope, offset, error;
 };
 
-/// nnLayer.relaxation: the line of `kind` ("sign", "square", "exp", "reciprocal" or "relu") over
-/// each box [l_i, u_i] (columns (n, 1)); for "relu", alpha (n, 1) the slopes of the neurons that
-/// cross zero.
+/// nnLayer.relaxation: the line of `kind` ("sign", "square", "relu", a kind of NnLayer::line) over
+/// each box [l_i, u_i] (columns (n, 1)); relu: alpha (n, 1) the crossing neurons' slopes; softplus,
+/// root, invSqrt: method "regression" (empty: the oracle's default, the same) or "singh".
 NnLine relaxation(const std::string &kind, const cora::Tensor &l, const cora::Tensor &u,
-                  const cora::Tensor &alpha = cora::Tensor());
+                  const cora::Tensor &alpha = cora::Tensor(), const std::string &method = "");
 
 /// nnLayer.productLine: the line of a_i b_i on the zonotope of center c (2 n, 1), generators G
 /// (2 n, q) (a its first n rows), interval radii dr (2 n, 1; undefined: none): slope (2 n), offset,

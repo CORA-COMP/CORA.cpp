@@ -22,7 +22,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -1542,14 +1542,15 @@ std::pair<Tensor, Tensor> ConZonotopeBounding::aux_relu_constraints(const Tensor
         b1 = Tensor::where(inside, co_u, b1);
         b2 = Tensor::where(inside, co_u - ci_l, b2);
         if (triangle) {
-            // ReLU(x) <= s (x - l), s = u / (u - l), on a crossing neuron (the chord, the cut)
+            // ReLU(x) <= s x + o on a crossing neuron, s = u / (u - l), o priv_relu_chord_offset
             const auto [lc, uc] = net.clamp(rec->first_id, rec->l, rec->u, si);
             const Tensor l = aux_at(lc, j), u = aux_at(uc, j);
             const Tensor cross =
                 inside.multiply(l.less(l.zeros_like())).multiply(u.greater(u.zeros_like()));
             const Tensor slope = u.divide((u - l).maximum(numerics::kTiny));
             const Tensor gs = aux_pad(aux_columns(rec->G_in, j), q).multiply(slope.expand_dims(-1));
-            Tensor b = slope.multiply(aux_at(rec->c_in, j) - l) - aux_at(rec->c_out, j);
+            Tensor b = slope.multiply(aux_at(rec->c_in, j)) + priv_relu_chord_offset(l, u, slope) -
+                       aux_at(rec->c_out, j);
             if (rec->dr_out.defined()) b = b + aux_at(rec->dr_out, j);
             if (rec->dr_in.defined()) b = b + slope.multiply(aux_at(rec->dr_in, j));
             A3 = Tensor::where(cross.expand_dims(-1), go.negative() - gs, A3);

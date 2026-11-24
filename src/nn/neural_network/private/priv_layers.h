@@ -124,8 +124,9 @@ std::pair<Tensor, Tensor> priv_trig_box(const Tensor &l, const Tensor &u, bool c
 /// (|f''| <= 1), or slope 0 over priv_trig_box where that is narrower; widened by the rounding.
 PrivLine priv_trig_line(const Tensor &l, const Tensor &u, bool cosine);
 
-/// The line of softplus, root (x >= 0) or inv_sqrt_root (x > 0) over [l, u]: the regression slope
-/// with the closed-form range of f(x) - m x (CORA's default), or Singh's monotone parallelogram.
+/// The line of softplus, root (x >= 0) or inv_sqrt_root (x > 0) over [l, u] at the regression slope
+/// (CORA's default) or Singh's: the band of f(x) - m x over the ends and its closed-form inner
+/// extremum (CORALean's softplus/root/invSqrtRootLineRelaxation, bit for bit at nearest).
 PrivLine priv_monotone_line(Activation activation, const Tensor &l, const Tensor &u,
                             bool regression);
 

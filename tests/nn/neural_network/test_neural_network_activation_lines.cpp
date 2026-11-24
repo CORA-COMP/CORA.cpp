@@ -2,15 +2,17 @@
 //
 // A line y in slope x + offset +- radius must enclose the function over [l, u] and be tight: the
 // radius equals half the range of f(x) - slope x (sampled on a fine grid), for Singh's slope and
-// for the regression slope. A point range has no radius, and the domains are checked.
+// for the regression slope. A point range has no radius, and the domains are checked. On boxes of
+// every scale the band's ends are the exact range of f(x) - slope x in long double, the closed-form
+// inner extremum included.
 //
 // CORA: nn/layers/nonlinear/nnSoftPlusLayer.m
 // CORA: nn/layers/nonlinear/nnRootLayer.m
 // CORA: nn/layers/nonlinear/nnInvSqrtRootLayer.m
 // CORA authors: Tobias Ladner, Lukas Koller
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/nn/neural_network/neural_network.h"
@@ -20,6 +22,8 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <limits>
+#include <random>
 
 using namespace cora;
 using test::check;
@@ -34,7 +38,7 @@ namespace {
 std::function<double(double)> aux_f(Activation a) {
     if (a == Activation::softplus) return [](double x) { return std::log(1.0 + std::exp(x)); };
     if (a == Activation::root) return [](double x) { return std::sqrt(x); };
-    return [](double x) { return std::pow(x, -0.5); };
+    return [](double x) { return std::sqrt(1.0 / x); };
 }
 
 /// The range of f(x) - m x over a fine grid of [l, u]: its half width.
@@ -123,13 +127,74 @@ void lines(const std::string &b) {
     }
 }
 
+/// The extremes of f(x) - m x in long double over the ends and the point where f' = m, where it
+/// exists (softplus log(m / (1 - m)), root 1 / (4 m^2), inv_sqrt_root (-2 m)^(-2/3)): the range
+/// over [l, u], below (above) it only where a rounded slope puts that point outside.
+std::pair<long double, long double> aux_exact_band(Activation a, long double m, long double l,
+                                                   long double u) {
+    const auto f = [a](long double x) {
+        if (a == Activation::softplus) return logl(1.0L + expl(x));
+        return a == Activation::root ? sqrtl(x) : sqrtl(1.0L / x);
+    };
+    const auto g = [&](long double x) { return f(x) - m * x; };
+    long double lo = std::min(g(l), g(u)), hi = std::max(g(l), g(u));
+    if (a == Activation::softplus && m > 0 && m < 1) lo = std::min(lo, g(logl(m / (1.0L - m))));
+    if (a == Activation::root && m > 0) hi = std::max(hi, g(1.0L / (4.0L * m * m)));
+    if (a == Activation::inv_sqrt_root && m < 0)
+        lo = std::min(lo, g(powl(-2.0L * m, -2.0L / 3.0L)));
+    return {lo, hi};
+}
+
+/// The band offset -+ radius is the exact range of f(x) - m x at the line's own slope (Singh's,
+/// the regression's) on boxes of every scale, its inner end the closed-form extremum at f' = m,
+/// up to a few roundings of the line's terms.
+void extrema(const std::string &b) {
+    std::mt19937_64 rng(31);
+    std::normal_distribution<double> normal;
+    for (const Activation a : {Activation::softplus, Activation::root, Activation::inv_sqrt_root}) {
+        std::vector<double> lv, uv;
+        for (int i = 0; i < 300; ++i) {
+            // scales 1e-3 to 1e3; root and inv_sqrt_root on x > 0, softplus up to 40
+            const double scale = std::pow(10.0, double(i % 7) - 3.0);
+            double p = normal(rng) * scale, q = normal(rng) * scale;
+            if (a != Activation::softplus) p = std::abs(p) + 1e-3, q = std::abs(q) + 1e-3;
+            lv.push_back(std::min({p, q, 40.0}));
+            uv.push_back(std::min(std::max(p, q), 40.0));
+        }
+        for (const bool regression : {false, true}) {
+            const PrivLine line =
+                priv_monotone_line(a, test::column(lv), test::column(uv), regression);
+            const std::vector<double> m = line.slope.data(), o = line.offset.data(),
+                                      r = line.radius.data();
+            int misses = 0;
+            for (std::size_t i = 0; i < lv.size(); ++i) {
+                const auto [lo, hi] = aux_exact_band(a, m[i], lv[i], uv[i]);
+                // roundings of f(l), m l, f(u), m u and the halves (softplus: 1 + e^x at 1)
+                const long double scale = std::max(
+                    {std::abs(lo), std::abs(hi), std::abs((long double)m[i] * lv[i]),
+                     std::abs((long double)m[i] * uv[i]), a == Activation::softplus ? 1.0L : 0.0L});
+                const long double slack = 16.0L * std::numeric_limits<double>::epsilon() * scale;
+                const long double band_lo = (long double)o[i] - r[i],
+                                  band_hi = (long double)o[i] + r[i];
+                misses += std::abs(band_lo - lo) > slack || std::abs(band_hi - hi) > slack;
+            }
+            check(misses == 0, b + ": activation " + std::to_string(int(a)) +
+                                   (regression ? " regression" : " singh") +
+                                   ": the band is the true range of f(x) - m x");
+        }
+    }
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
 int main() {
-    test::for_each_backend([](const std::string &b) { lines(b); });
+    test::for_each_backend([](const std::string &b) {
+        lines(b);
+        extrema(b);
+    });
     return test::finish("neuralNetwork activation lines");
 }
 
