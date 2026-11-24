@@ -9,7 +9,7 @@
 // CORA.cpp only: the client of the CORALean oracle's `taylm.*` ops
 // Authors:       Claude Opus 5.5
 // Written:       20-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/taylm.h"
@@ -67,8 +67,9 @@ Json Taylm::to_json() const {
 }
 
 // the reply's model, its terms in the oracle's order
-Taylm Taylm::from_reply(const Reply &reply) {
-    const Reply T = reply.member("T");
+Taylm Taylm::from_reply(const Reply &reply) { return from_model(reply.member("T")); }
+
+Taylm Taylm::from_model(const Reply &T) {
     Taylm out;
     out.vars_ = T.get<int64_t>("vars");
     out.max_order_ = int(T.get<int64_t>("maxOrder"));
@@ -119,6 +120,21 @@ std::array<double, 2> Taylm::bounds() const {
     const Interval I = ask("taylm.interval", {{"T", aux_wire(*this)}}).get<Interval>("I");
     const auto [lo, hi] = I.gather();
     return {lo.data()[0], hi.data()[0]};
+}
+
+// The constructors ---------------------------------------------------------------------------
+
+Taylm taylm_constant(double c, int64_t vars, int max_order) {
+    return Taylm::from_model(
+        ask("taylm.constant", {{"c", c}, {"vars", vars}, {"maxOrder", int64_t(max_order)}})
+            .member("T"));
+}
+
+Taylm taylm_from_range(double lo, double hi, int64_t vars, int max_order) {
+    return Taylm::from_model(
+        ask("taylm.fromRange",
+            {{"lo", lo}, {"hi", hi}, {"vars", vars}, {"maxOrder", int64_t(max_order)}})
+            .member("T"));
 }
 
 } // namespace cora::lean

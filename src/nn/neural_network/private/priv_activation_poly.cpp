@@ -11,12 +11,13 @@
 // CORA: nn/layers/nonlinear/nnLeakyReLULayer.m
 // CORA: nn/layers/nonlinear/nnSShapeLayer.m
 // CORA authors: Tobias Ladner, Niklas Kochdumper, Sebastian Sigl
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "nn/neural_network/private/priv_activation_poly.h"
+#include "nn/neural_network/private/priv_layers.h"
 
 #include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
@@ -276,6 +277,32 @@ double aux_relu_error(Poly &coeffs, double l, double u) {
     return hi - mid;
 }
 
+// The parabola of the ReLU ------------------------------------------------------------------------
+
+/// The least and largest value of q(x) = (a x + b) x + c over [x0, x1] for a > 0: the ends by
+/// Horner and, for the least, the vertex value c - b^2 / (4 a) where the vertex -b / (2 a) lies in
+/// [x0, x1] (closed form: the largest of a convex q on a piece is at an end).
+std::pair<double, double> aux_parabola_range(double a, double b, double c, double x0, double x1) {
+    const double v0 = priv_polyval({a, b, c}, x0), v1 = priv_polyval({a, b, c}, x1);
+    double lo = std::min(v0, v1);
+    const double hi = std::max(v0, v1);
+    const double vertex = -b / (a * 2.0);
+    if (x0 <= vertex && vertex <= x1) lo = std::min(lo, c - b * b / a * 0.25);
+    return {lo, hi};
+}
+
+/// The ReLU's error of Singh's parabola a x^2 + b x + c (CORALean's reluSinghQuadRelaxation, bit
+/// for bit at nearest): the closed-form ranges of p on [l, 0] and of p - x on [0, u], the
+/// polynomial moved by their middle, the radius the larger distance of the middle to the ends.
+double aux_relu_quad_error(Poly &coeffs, double l, double u) {
+    const double a = coeffs[0], b = coeffs[1], c = coeffs[2];
+    const auto [lo1, hi1] = aux_parabola_range(a, b, c, l, 0.0);
+    const auto [lo2, hi2] = aux_parabola_range(a, b - 1.0, c, 0.0, u);
+    const double lo = std::min(lo1, lo2), hi = std::max(hi1, hi2), mid = (hi + lo) / 2;
+    coeffs.back() = c - mid;
+    return std::max(hi - mid, mid - lo);
+}
+
 /// The error of a sigmoid or tanh (CORA's minMaxDiffOrder): the grid maximum of a - p widened by
 /// the Lipschitz bound of the grid; the polynomial moves by the middle. The derivative of a - p
 /// is bounded by a' - p' (CORA's expression adds p' where this subtracts it).
@@ -401,6 +428,13 @@ double priv_polyval(const std::vector<double> &p, double x) {
     return v;
 }
 
+CORA_FROM_NUMBERS PrivApprox priv_line_fit(Activation a, double l, double u,
+                                           const NnOptions &options) {
+    // one neuron's range as tensors of one entry on the current backend
+    const PrivLine line = priv_line(a, Tensor({l}), Tensor({u}), options);
+    return {{line.slope.item(), line.offset.item()}, line.radius.item()};
+}
+
 PrivApprox priv_approx_error(Activation a, std::vector<double> coeffs, double l, double u) {
     const double radius =
         a == Activation::relu ? aux_relu_error(coeffs, l, u) : aux_sampled_error(a, coeffs, l, u);
@@ -442,6 +476,10 @@ PrivApprox priv_approx_poly(Activation a, double l, double u, int order, PolyMet
         } else if (order == 2 && relu) {
             const double ca = u / ((u - l) * (u - l));
             coeffs = {ca, -2 * ca * l, ca * l * l};
+            // (u - l)^2 beyond the float range: the line of order 1 (CORALean's case 3)
+            if (!(ca > 0.0) || !std::isfinite(coeffs[1]) || !std::isfinite(coeffs[2]))
+                return priv_line_fit(a, l, u, NnOptions{});
+            d = aux_relu_quad_error(coeffs, l, u);
         }
         break;
     // the series and the interpolations

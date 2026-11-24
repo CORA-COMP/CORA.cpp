@@ -3,14 +3,15 @@
 // See also: lean/request.h
 //
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
 
 #include "cora/global/error.h"
+#include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -45,6 +46,14 @@ Json aux_layer(const NnLayer &layer, std::string &dtype) {
         j.set("kind", layer.kind).set("kernel", K.to_json()).set("b", b.to_json());
     } else if (layer.kind != "relu" && layer.kind != "sign" && layer.kind != "square") {
         CORA_FAIL(Error::wrong_value, "lean: the layer kind '" + layer.kind + "' is unknown");
+    }
+    // the order of evaluate_taylm: one number for all neurons, else one per neuron
+    if (layer.order.size() == 1) {
+        j.set("order", int64_t(layer.order[0]));
+    } else if (!layer.order.empty()) {
+        Json orders = Json::array();
+        for (const int k : layer.order) orders.push(int64_t(k));
+        j.set("order", std::move(orders));
     }
     return j;
 }
@@ -224,6 +233,24 @@ NnPolyResult evaluate_network_poly(const std::vector<NnLayer> &layers, const cor
     const Reply out = r.member("P");
     return {out.get<Tensor>("c").gather(), out.get<Tensor>("G").gather(),
             out.get<Tensor>("GI").gather()};
+}
+
+// the layers on the Taylor models, the regression error only when one is asked for
+std::vector<Taylm> nn_evaluate_taylm(const std::vector<NnLayer> &layers,
+                                     const std::vector<Taylm> &x, const std::string &poly_method,
+                                     const std::string &regression_error) {
+    std::string dtype;
+    const Json list = layers_json(layers, dtype);
+    Json models = Json::array();
+    for (const Taylm &t : x) models.push(t.to_json());
+    std::vector<Operand> args{{"layers", Wire(list, dtype)},
+                              {"x", Wire(models, lean::dtype())},
+                              {"poly_method", poly_method}};
+    if (!regression_error.empty()) args.push_back({"regression_error", regression_error});
+    std::vector<Taylm> out;
+    for (const Reply &T : ask("neuralNetwork.evaluateTaylm", args).list("Y"))
+        out.push_back(Taylm::from_model(T));
+    return out;
 }
 
 } // namespace cora::lean

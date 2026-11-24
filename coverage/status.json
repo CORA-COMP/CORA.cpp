@@ -1162,7 +1162,7 @@
   "nn/layers/evaluateConZonotope": "property",
   "nn/layers/evaluatePolyZonotope": "oracle",
   "nn/layers/evaluatePolyZonotopeNeuron": "oracle",
-  "nn/layers/evaluateTaylm": "property",
+  "nn/layers/evaluateTaylm": "oracle",
   "nn/layers/evaluateZonotopeBatch": "oracle",
   "nn/layers/findRegionPolys": "ported",
   "nn/layers/getMergeBuckets": "ported",

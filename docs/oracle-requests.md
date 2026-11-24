@@ -630,15 +630,22 @@ f(x) - m x at the ends and at f'(x) = m (softplus: log(m / (1 - m)); root: 1 / (
 
 ## NN on Taylor models and constrained zonotopes (PR "nn/port-rest-4", batch 4)
 
-`NeuralNetwork::evaluate_taylm` and `evaluate(ConZonotope)` have no op in the oracle (newest tag
-oracle-20261123-feef03ae2); the Taylor model's arithmetic (`taylm.plus`, `times`, `power`) is served, so
-`evaluate_taylm` is the composition of those with the polynomials of `nnLayer.relaxation`'s regression
-and Singh lines at order 1 only (CORA's `computeApproxPoly` of higher order has none). They are tested
-by properties: the sampled outputs lie in the result, exact cases by hand.
+`NeuralNetwork::evaluate_taylm` is served since oracle-20261124-3013bdbc0 (CORALean !976:
+`neuralNetwork.evaluateTaylm`, `taylm.constant`, `taylm.fromRange`; `Layer.affineTaylm`,
+`Layer.activationTaylmFit`, `reluSinghQuadRelaxation`): `test_lean_nn_evaluate_taylm` compares ReLU
+networks at orders 1 and 2 (singh) and per neuron, and sigmoid and tanh at order 1 (singh, regression)
+bit for bit. At order 1 a neuron takes the line of `evaluate` (`priv_line`) as it is; the ReLU's parabola
+of order 2 has the error of the closed-form ranges of p and p - x on the two pieces (the vertex value c -
+b^2 / (4 a), not p at a rounded root) and the radius `max(hi - mid, mid - lo)`. Not served: sigmoid, tanh
+and the others at orders 2 and more (the least-squares fit and the sampled error have no CORALean
+definition), ReLU at 3 and more (the extrema of a cubic are not closed form), and the poly methods other
+than singh and regression.
+`evaluate(ConZonotope)` has no op in the oracle, so it is tested by properties: the sampled outputs lie in
+the result, exact cases by hand.
 
 | op (proposed) | request fields | reply |
 |---|---|---|
-| `neuralNetwork.evaluateTaylm` | `layers`, `x` (one model per input), `polyMethod`, `orders` | one model per output |
+| `neuralNetwork.evaluateTaylm` at order >= 2 of sigmoid, tanh, ..., ReLU at order >= 3, the other poly methods | as served, `order`, `poly_method` | one model per output |
 | `neuralNetwork.evaluateConZonotope` | `layers` (identity, ReLU), `c`, `G`, `A`, `b`, `boundApprox` | `c`, `G`, `A`, `b` of the output set |
 
 ## Explanation of a classification (PR "nn/port-explain", batch 5)
