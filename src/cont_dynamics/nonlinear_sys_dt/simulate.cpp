@@ -64,7 +64,7 @@ DiscreteTrajectory NonlinearSysDT::simulate(const DiscreteSimulationProblem &pro
     const auto input_at = [&](int k) -> std::optional<Tensor> {
         if (m == 0) return std::nullopt;
         if (problem.input_signal) return (*problem.input_signal)[std::size_t(k)];
-        if (problem.input) return *problem.input;
+        if (problem.input) return problem.input;
         return x0.zeros_like({m});
     };
     DiscreteTrajectory T;

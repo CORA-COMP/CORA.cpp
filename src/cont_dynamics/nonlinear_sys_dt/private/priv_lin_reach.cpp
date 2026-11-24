@@ -132,7 +132,7 @@ DiscreteStep priv_lin_reach(const NonlinearSysDT &sys, const Zonotope &R,
     const NonlinearSys &f = sys.state_equation();
     const int64_t n = sys.dim(), m = sys.input_dim();
     // the linearization point: the center of the states and of the inputs
-    const Tensor p_x = R.center();
+    const Tensor &p_x = R.center();
     const std::optional<Zonotope> Uset = priv_input_set(sys, p_x, U);
     const Tensor p_u = Uset ? Uset->center() : p_x.zeros_like({0});
     const std::optional<Tensor> u_point = m > 0 ? std::optional<Tensor>(p_u) : std::nullopt;

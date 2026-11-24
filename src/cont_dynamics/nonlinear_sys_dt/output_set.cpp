@@ -36,7 +36,7 @@ DiscreteStep NonlinearSysDT::output_set(const Zonotope &R, const std::optional<Z
     const NonlinearSys &g = output_;
     const int64_t n = dim(), m = input_dim(), r = output_dim();
     // the expansion point, and g and its Jacobians there
-    const Tensor p_x = R.center();
+    const Tensor &p_x = R.center();
     const std::optional<Zonotope> Uset = priv_input_set(*this, p_x, U);
     const Tensor p_u = Uset ? Uset->center() : p_x.zeros_like({0});
     const std::optional<Tensor> u_point = m > 0 ? std::optional<Tensor>(p_u) : std::nullopt;
