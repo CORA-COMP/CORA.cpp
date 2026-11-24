@@ -29,9 +29,7 @@
 \addlegendimage{fill=CORAcolorReachSet!50!CORAcolorReachSet2}
 \addlegendentry{property tests}
 \addlegendimage{fill=CORAcolorReachSet2}
-\addlegendentry{other tests}
-\addlegendimage{fill=black!15}
-\addlegendentry{untested}
+\addlegendentry{ported}
 \addlegendimage{fill=white}
 \addlegendentry{not ported}
 \begin{scope}\clip([yshift=-2.5pt]axis cs:0,1) [rounded corners=1.25pt] -- ([yshift=-2.5pt]axis cs:25,1) -- ([yshift=2.5pt]axis cs:25,1) [sharp corners] -- ([yshift=2.5pt]axis cs:0,1) -- cycle;

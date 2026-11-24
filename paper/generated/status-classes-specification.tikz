@@ -29,9 +29,7 @@
 \addlegendimage{fill=CORAcolorReachSet!50!CORAcolorReachSet2}
 \addlegendentry{property tests}
 \addlegendimage{fill=CORAcolorReachSet2}
-\addlegendentry{other tests}
-\addlegendimage{fill=black!15}
-\addlegendentry{untested}
+\addlegendentry{ported}
 \addlegendimage{fill=white}
 \addlegendentry{not ported}
 \begin{scope}\clip([yshift=-2.5pt]axis cs:0,1) [rounded corners=1.25pt] -- ([yshift=-2.5pt]axis cs:5,1) -- ([yshift=2.5pt]axis cs:5,1) [sharp corners] -- ([yshift=2.5pt]axis cs:0,1) -- cycle;
@@ -120,7 +118,7 @@
 \draw[black, line width=0.2pt] ([yshift=-2.5pt]axis cs:0,16) [rounded corners=1.25pt] -- ([yshift=-2.5pt]axis cs:19,16) -- ([yshift=2.5pt]axis cs:19,16) [sharp corners] -- ([yshift=2.5pt]axis cs:0,16) -- cycle;
 \node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:19,16) {0\%};
 \begin{scope}\clip([yshift=-2.5pt]axis cs:0,17) [rounded corners=1.25pt] -- ([yshift=-2.5pt]axis cs:27,17) -- ([yshift=2.5pt]axis cs:27,17) [sharp corners] -- ([yshift=2.5pt]axis cs:0,17) -- cycle;
-\fill[black!15] ([yshift=-2.5pt]axis cs:0,17) rectangle ([yshift=2.5pt]axis cs:11,17);
+\fill[CORAcolorReachSet2] ([yshift=-2.5pt]axis cs:0,17) rectangle ([yshift=2.5pt]axis cs:11,17);
 \fill[white] ([yshift=-2.5pt]axis cs:11,17) rectangle ([yshift=2.5pt]axis cs:27,17);
 \end{scope}
 \draw[black, line width=0.2pt] ([yshift=-2.5pt]axis cs:0,17) [rounded corners=1.25pt] -- ([yshift=-2.5pt]axis cs:27,17) -- ([yshift=2.5pt]axis cs:27,17) [sharp corners] -- ([yshift=2.5pt]axis cs:0,17) -- cycle;
