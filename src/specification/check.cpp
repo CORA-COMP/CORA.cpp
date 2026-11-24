@@ -72,6 +72,8 @@ bool Specification::check_in(const ContSet &R, const std::optional<TimeSpan> &ti
         CORA_FAIL(Error::special_error, "check: a timed specification requires a time interval");
     if (time_ && !aux_overlap(*time_, *time, tol)) return true; // not active here
     if (type_ == SpecType::custom) return custom_(R);
+    if (type_ == SpecType::logic)
+        CORA_FAIL(Error::not_supported, "check: a logic specification is checked on traces");
     // the set classes decide, through the unchecked forms of the registry
     const ContSet &S = set_->get();
     const BinaryOp op =
@@ -99,8 +101,8 @@ bool Specification::check(const ContSet &R, const TimeSpan &time) const {
 
 bool Specification::check_points(const Tensor &points, const std::vector<double> &times) const {
     detail::Entry entry;
-    CORA_CHECK(type_ != SpecType::custom, Error::not_supported, [] {
-        return std::string("check_points: a custom specification has no points form");
+    CORA_CHECK(type_ != SpecType::custom && type_ != SpecType::logic, Error::not_supported, [] {
+        return std::string("check_points: only a set specification has a points form");
     });
     CORA_CHECK(points.ndim() == 2, Error::wrong_value,
                [] { return std::string("check_points: give the points as (N, n), one per row"); });

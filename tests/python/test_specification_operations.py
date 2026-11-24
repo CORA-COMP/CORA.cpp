@@ -16,6 +16,7 @@ Reviewed:      ---
 # CORA: specification/@specification/ne.m
 # CORA: specification/@specification/inverse.m
 # CORA: specification/@specification/robustness.m
+# CORA: specification/@specification/splitLogic.m
 
 import math
 import unittest
@@ -97,6 +98,20 @@ class Robustness(unittest.TestCase):
         spec = cora.Specification.safe_set(box(0, 1, 0, 1)).with_time(1.0, 2.0)
         P = np.array([[0.5, 0.5], [2.0, 0.5], [5.0, 5.0]])
         self.assertAlmostEqual(cora.Specification.robustness([spec], P, [0.0, 1.5, 3.0]), -1.0)
+
+
+class Logic(unittest.TestCase):
+    def test_split_logic_separates_the_formulas(self):
+        # a logic specification holds a formula; the list splits by type
+        x = cora.StlExpr.variables("x", 2)
+        phi = (x[0] < 5.0).finally_(cora.StlInterval(0, 2))
+        logic = cora.Specification.logic(phi)
+        safe = cora.Specification.safe_set(box(0, 1, 0, 1))
+        self.assertEqual(logic.type, "logic")
+        self.assertTrue(logic.formula == phi)
+        non_logic, only_logic = cora.Specification.split_logic([safe, logic, safe])
+        self.assertEqual(len(non_logic), 2)
+        self.assertEqual(len(only_logic), 1)
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #

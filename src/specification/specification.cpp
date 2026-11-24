@@ -66,6 +66,7 @@ Specification Specification::with_locations(std::vector<int64_t> locations) cons
     return out;
 }
 
+// custom predicates and logic formulas have no set
 Specification Specification::custom(std::function<bool(const ContSet &)> holds) {
     detail::Entry entry;
     CORA_CHECK(static_cast<bool>(holds), Error::wrong_input_in_constructor,
@@ -73,10 +74,24 @@ Specification Specification::custom(std::function<bool(const ContSet &)> holds) 
     return {SpecType::custom, std::nullopt, std::move(holds)};
 }
 
+Specification Specification::logic(const Stl &formula) {
+    detail::Entry entry;
+    // the formula is all it holds
+    return {SpecType::logic, formula};
+}
+
+const Stl &Specification::formula() const {
+    detail::Entry entry;
+    CORA_CHECK(formula_.has_value(), Error::wrong_value,
+               [] { return std::string("formula: only a logic specification has a formula"); });
+    return *formula_;
+}
+
+// the set of a set specification
 const Set &Specification::set() const {
     detail::Entry entry;
     CORA_CHECK(set_.has_value(), Error::wrong_value,
-               [] { return std::string("set: a custom specification has no set"); });
+               [] { return std::string("set: a custom or logic specification has no set"); });
     return *set_;
 }
 

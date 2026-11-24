@@ -48,7 +48,8 @@ void aux_append(std::vector<SpecRow> &rows, const Tensor &A, const Tensor &b, do
 
 std::vector<SpecRow> priv_spec_rows(const Specification &spec) {
     // a refusal is a failure here, not a check: verify has checked the rest of its input
-    if (spec.type() == SpecType::custom || spec.type() == SpecType::invariant)
+    if (spec.type() == SpecType::custom || spec.type() == SpecType::logic ||
+        spec.type() == SpecType::invariant)
         CORA_FAIL(Error::not_supported,
                   "verify: decides safe and unsafe sets, not custom specifications or invariants");
     const Set &S = spec.set();

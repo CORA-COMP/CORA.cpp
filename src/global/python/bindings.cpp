@@ -6437,18 +6437,27 @@ void bind_specification(py::module_ &m) {
             .def_property_readonly(
                 "type",
                 [](const Specification &spec) {
+                    // the name of the type as CORA spells it, in snake case
                     switch (spec.type()) {
                     case SpecType::custom:
                         return "custom";
                     case SpecType::invariant:
                         return "invariant";
+                    case SpecType::logic:
+                        return "logic";
                     case SpecType::safe_set:
                         return "safe_set";
                     default:
                         return "unsafe_set";
                     }
                 },
-                "'safe_set', 'unsafe_set', 'invariant' or 'custom'")
+                "'safe_set', 'unsafe_set', 'invariant', 'custom' or 'logic'")
+            // the logic specification and its formula
+            .def_static("logic", &Specification::logic, py::arg("formula"),
+                        "A temporal logic specification: traces must satisfy the formula")
+            .def_property_readonly("formula", &Specification::formula,
+                                   py::return_value_policy::copy,
+                                   "The formula of a logic specification")
             .def_static(
                 "invariant",
                 [](const py::object &S) { return Specification::invariant(set_of(S)); },
@@ -6525,6 +6534,8 @@ void bind_specification(py::module_ &m) {
     // the operations on lists of specifications
     specification.def_static("add", &add, py::arg("specs1"), py::arg("specs2"),
                              "The specifications of both lists in one list");
+    specification.def_static("split_logic", &split_logic, py::arg("specs"),
+                             "The specifications that are no logic, and those that are");
     specification.def_static("is_empty", &is_empty, py::arg("specs"),
                              "Whether the list holds no specification");
     specification.def_static(

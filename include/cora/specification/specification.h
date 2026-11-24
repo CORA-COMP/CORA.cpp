@@ -4,14 +4,14 @@
 // them (!S.is_intersecting(R)); an invariant must intersect them. S is a set of any class,
 // typically a Polytope {x | A x <= b}; the check asks the set's own operations (cora::contains and
 // cora::is_intersecting), so a pair of classes without one is Error::noops. A custom specification
-// is a predicate on the set. It may be active in a time window and in some locations (0-based); a
-// list of specifications (a std::vector) holds when each one does. A batch of sets is not
-// supported.
+// is a predicate on the set; a logic one holds a formula of signal temporal logic (Stl). It may be
+// active in a time window and in some locations (0-based); a list of specifications (a std::vector)
+// holds when each one does. A batch of sets is not supported.
 //
 // Syntax:     Specification spec = Specification::safe_set(Polytope(A, b));   spec.check(R);
 // Operations: check (check.cpp); safe_set, unsafe_set, invariant, custom, with_time,
 //             with_locations (specification.cpp); add, is_empty, project, isequal, inverse,
-//             robustness
+//             robustness, split_logic
 // See also:   cora/cont_set/registry.h, cora/cont_set/polytope/polytope.h
 //
 // CORA: specification/@specification/specification.m
@@ -26,6 +26,7 @@
 #include "cora/cont_dynamics/cont_dynamics.h"
 #include "cora/cont_set/cont_set.h"
 #include "cora/cont_set/set.h"
+#include "cora/specification/stl.h"
 
 #include <functional>
 #include <optional>
@@ -35,7 +36,7 @@
 
 namespace cora {
 
-enum class SpecType { safe_set, unsafe_set, invariant, custom };
+enum class SpecType { safe_set, unsafe_set, invariant, custom, logic };
 
 /// The closed time interval [t0, t1] in which a specification is active.
 using TimeSpan = std::pair<double, double>;
@@ -56,8 +57,15 @@ class Specification {
     /// returns true. It has no set.
     static Specification custom(std::function<bool(const ContSet &)> holds);
 
+    /// A temporal logic formula that the traces must satisfy (CORA's specification(eq, 'logic')).
+    /// It has no set and no check on sets; the formula's own operations decide it.
+    static Specification logic(const Stl &formula);
+
     // Queries -------------------------------------------------------------------------------------
     SpecType type() const { return type_; }
+
+    /// The formula of a logic specification; Error::wrong_value for another type.
+    const Stl &formula() const;
 
     /// The same specification, active in [t0, t1] (CORA's specification(S, type, time)).
     Specification with_time(double t0, double t1) const;
@@ -116,6 +124,7 @@ class Specification {
     Specification(SpecType type, std::optional<Set> set,
                   std::function<bool(const ContSet &)> custom = nullptr)
         : type_(type), set_(std::move(set)), custom_(std::move(custom)) {}
+    Specification(SpecType type, Stl formula) : type_(type), formula_(std::move(formula)) {}
 
     /// check(R) on a set over `time` (none: untimed), as the contSet branch of CORA's check.
     bool check_in(const ContSet &R, const std::optional<TimeSpan> &time, double tol) const;
@@ -125,6 +134,7 @@ class Specification {
     std::optional<TimeSpan> time_;
     std::vector<int64_t> locations_;
     std::function<bool(const ContSet &)> custom_;
+    std::optional<Stl> formula_;
 };
 
 // Lists of specifications -------------------------------------------------------------------------
@@ -139,6 +149,11 @@ bool is_empty(const std::vector<Specification> &specs);
 /// Whether both lists hold the same specifications in any order (CORA's isequal).
 bool isequal(const std::vector<Specification> &specs1, const std::vector<Specification> &specs2,
              Tol tol = std::nullopt);
+
+/// The specifications of a list apart: those that are no temporal logic, and those that are (CORA's
+/// splitLogic), each in the order of the list.
+std::pair<std::vector<Specification>, std::vector<Specification>>
+split_logic(const std::vector<Specification> &specs);
 
 /// The specifications with the sets projected onto `dims` (CORA's project).
 std::vector<Specification> project(const std::vector<Specification> &specs,
