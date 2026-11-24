@@ -160,6 +160,19 @@ std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Inte
                                              const std::optional<Interval> &IHu,
                                              const Linearized &lin);
 
+/// The same from the expansion point (x_star, u_star) alone.
+std::optional<Interval> priv_third_order_box(const NonlinearSys &sys, const Interval &IHx,
+                                             const std::optional<Interval> &IHu,
+                                             const Tensor &x_star, const Tensor &u_star);
+
+/// The entries of a column (n, 1) as n tensors of shape (1, 1).
+std::vector<Tensor> priv_column_entries(const Tensor &column);
+
+/// tensorOrder 2: 1/2 dz' max|H_i| dz per component (r rows), over the nonzero entries of the
+/// Hessians H (row-major (i, j, k)) and the largest |z - z*| per coordinate dz, as a column (r, 1).
+Tensor priv_second_order_remainder(const std::vector<std::optional<Range>> &H,
+                                   const std::vector<Tensor> &dz, int64_t r);
+
 /// The box joined with the origin, which is the linearization point in coordinates relative to it:
 /// the region of a Lagrange remainder must contain the point it expands at (CORALean's repair).
 Interval priv_with_origin(const Interval &I);

@@ -30,6 +30,7 @@
 #include "cora/cont_dynamics/neur_net_contr_sys/neur_net_contr_sys.h"
 #include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
+#include "cora/cont_dynamics/nonlinear_sys_dt/nonlinear_sys_dt.h"
 #include "cora/cont_set/level_set/level_set.h"
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/taylm/taylm.h"
@@ -47,6 +48,7 @@
 #include "cora/specification/specification.h"
 
 #include <limits>
+#include <map>
 
 
 using namespace cora;
@@ -4398,6 +4400,130 @@ void bind_nonlinear_sys(py::module_ &m) {
             "simulate_random(initial_set=X0, t_final=T, time_step=dt, points=N, rng=rng)");
 }
 
+/// The discrete-time nonlinear systems x(k+1) = f(x, u), y = g(x, u).
+void bind_nonlinear_sys_dt(py::module_ &m) {
+    py::class_<DiscreteStep>(m, "DiscreteStep", "One step of NonlinearSysDT post or output_set.")
+        .def_readonly("set", &DiscreteStep::set, "The set after the step")
+        .def_readonly("error", &DiscreteStep::error, "The linearization error that was added");
+    py::class_<ReachSetDT>(m, "ReachSetDT", "The reachable sets of a discrete-time system.")
+        .def_readonly("time_step", &ReachSetDT::time_step, "the sampling time")
+        .def_readonly("states", &ReachSetDT::states, "states[k] at k*time_step")
+        .def_readonly("outputs", &ReachSetDT::outputs, "outputs[k] at k*time_step")
+        .def_readonly("error_states", &ReachSetDT::error_states,
+                      "the error of each step (CORA's L_x)")
+        .def_readonly("error_outputs", &ReachSetDT::error_outputs,
+                      "the error of each output set (CORA's L_y)");
+    py::class_<NonlinearSysDT>(m, "NonlinearSysDT",
+                               "The discrete-time nonlinear system x(k+1) = f(x(k), u(k)).")
+        .def(py::init([](const py::function &f, int64_t dim, double time_step, int64_t inputs,
+                         const std::optional<py::function> &g, int64_t outputs) {
+                 // f (and g) run once, here, on symbolic states and inputs
+                 const auto rows = [](const py::function &fn) {
+                     return [fn](const std::vector<Expr> &x, const std::vector<Expr> &u) {
+                         return (u.empty() ? fn(x) : fn(x, u)).cast<std::vector<Expr>>();
+                     };
+                 };
+                 if (!g) return NonlinearSysDT(rows(f), dim, inputs, time_step);
+                 return NonlinearSysDT(rows(f), dim, inputs, time_step, rows(*g), outputs);
+             }),
+             py::arg("f"), py::arg("dim"), py::arg("time_step"), py::arg("inputs") = 0,
+             py::arg("g") = py::none(), py::arg("outputs") = 0,
+             "f(x) (f(x, u) with inputs > 0) returns the dim components of the step map; g the "
+             "output equation of `outputs` components (default y = x)")
+        .def_property_readonly("dim", &NonlinearSysDT::dim, "The number of states n")
+        .def_property_readonly("input_dim", &NonlinearSysDT::input_dim, "The number of inputs m")
+        .def_property_readonly("output_dim", &NonlinearSysDT::output_dim, "The number of outputs")
+        .def_property_readonly("time_step", &NonlinearSysDT::time_step, "The sampling time")
+        .def(
+            "next_state",
+            [](const NonlinearSysDT &sys, const py::object &x, const py::object &u) {
+                // f at the rows of x, with the input
+                return values(sys.next_state(
+                    point_of(x, "x"),
+                    u.is_none() ? std::nullopt : std::optional<Tensor>(point_of(u, "u"))));
+            },
+            py::arg("x"), py::arg("u") = py::none(), "f at the rows x (N, n) and the input u")
+        .def(
+            "output",
+            [](const NonlinearSysDT &sys, const py::object &x, const py::object &u) {
+                return values(sys.output(point_of(x, "x"),
+                                         u.is_none() ? std::nullopt
+                                                     : std::optional<Tensor>(point_of(u, "u"))));
+                // g is read the same way
+            },
+            py::arg("x"), py::arg("u") = py::none(), "g at the rows x (N, n) and the input u")
+        .def(
+            "post",
+            [](const NonlinearSysDT &sys, const Zonotope &R, const std::optional<Zonotope> &U,
+               const py::kwargs &kwargs) {
+                py::dict options;
+                for (const auto &item : kwargs) options[item.first] = item.second;
+                return sys.post(
+                    R, U,
+                    std::get<alg::DiscreteLinearization>(
+                        step_algorithm<alg::DiscreteReach>("linearization", options, "post")));
+                // the output set takes the same options
+            },
+            py::arg("R"), py::arg("U") = py::none(),
+            "The step from R with the input set U (options as keywords)")
+        .def(
+            "output_set",
+            [](const NonlinearSysDT &sys, const Zonotope &R, const std::optional<Zonotope> &U,
+               const py::kwargs &kwargs) {
+                // the options are the keywords
+                py::dict options;
+                for (const auto &item : kwargs) options[item.first] = item.second;
+                return sys.output_set(
+                    R, U,
+                    std::get<alg::DiscreteLinearization>(step_algorithm<alg::DiscreteReach>(
+                        "linearization", options, "output_set")));
+            },
+            py::arg("R"), py::arg("U") = py::none(),
+            "The set of the outputs over R and U (options as keywords)")
+        .def(
+            "reach",
+            [](const py::object &self, const py::args &args, const py::kwargs &kwargs) {
+                // the problem and the options are read from the keywords
+                const NonlinearSysDT &sys = py::cast<const NonlinearSysDT &>(self);
+                return run_with_kwargs<ReachProblem, alg::DiscreteReach>(
+                    self, "reach", args, kwargs, {},
+                    [&](const ReachProblem &p, const alg::DiscreteReach &a) {
+                        return py::cast(sys.reach(p, std::get<alg::DiscreteLinearization>(a)));
+                    });
+            },
+            "reach(initial_set=X0, input_set=U, t_final=T, zonotope_order=50, tensor_order=2, "
+            "error_order=1, tensor_order_output=2, compute_output_set=True): the sets at the "
+            "multiples of the sampling time")
+        // the trajectories, with the input as an array or a list of arrays
+        .def(
+            "simulate",
+            [](const NonlinearSysDT &sys, const py::object &initial_state, double t_final,
+               const py::object &input, const py::object &input_signal,
+               bool with_output) -> std::map<std::string, py::object> {
+                DiscreteSimulationProblem p{.initial_state =
+                                                point_of(initial_state, "initial_state"),
+                                            .t_final = t_final,
+                                            .with_output = with_output};
+                if (!input.is_none()) p.input = point_of(input, "input");
+                if (!input_signal.is_none()) {
+                    // one input (N, m) or (m) per step
+                    std::vector<Tensor> signal;
+                    for (const py::handle &u : input_signal)
+                        signal.push_back(point_of(u, "input_signal"));
+                    p.input_signal = std::move(signal);
+                }
+                const DiscreteTrajectory T = sys.simulate(p);
+                std::map<std::string, py::object> out;
+                out["x"] = stack_time(T.x);
+                if (with_output) out["y"] = stack_time(T.y);
+                return out;
+            },
+            py::arg("initial_state"), py::arg("t_final"), py::arg("input") = py::none(),
+            py::arg("input_signal") = py::none(), py::arg("with_output") = false,
+            "simulate(initial_state (N, n), t_final, input=u or (N, m), input_signal=[u_0, ...], "
+            "with_output=False): {'x': states (steps + 1, N, n), time first, 'y': the outputs}");
+}
+
 /// The differential-algebraic systems: f(x, y, u) and g(x, y, u) as symbolic expressions.
 void bind_nonlin_das_sys(py::module_ &m) {
     py::class_<DaeReachSet>(m, "DaeReachSet",
@@ -6611,6 +6737,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_problems(m);
     bind_linear_sys(m);
     bind_nonlinear_sys(m);
+    bind_nonlinear_sys_dt(m);
     bind_level_set(m);
     bind_taylm(m);
     bind_nonlin_das_sys(m);

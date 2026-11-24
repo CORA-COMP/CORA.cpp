@@ -665,6 +665,43 @@ struct HybridStandard {
     }
 };
 
+// Reachability of sampled nonlinear systems -------------------------------------------------------
+
+/// CORA's alg "lin" for the discrete-time nonlinear system x(k+1) = f(x(k), u(k)): each step
+/// linearizes at the center of the set and bounds the linearization error by the Lagrange
+/// remainder of tensor_order; the step is the system's sampling time.
+struct DiscreteLinearization {
+    int zonotope_order = 50;        ///< the sets are reduced to zonotope_order * n generators
+    int tensor_order = 2;           ///< the order of the remainder of the dynamics: 2 or 3
+    int error_order = 1;            ///< the order the set is reduced to before the Hessian maps it
+    int tensor_order_output = 2;    ///< the order of the remainder of the output equation: 2 or 3
+    bool compute_output_set = true; ///< whether the output sets are computed (else the states)
+
+    static constexpr const char *name = "linearization";
+    static constexpr auto fields() {
+        return std::make_tuple(
+            field("zonotope_order", &DiscreteLinearization::zonotope_order),
+            field("tensor_order", &DiscreteLinearization::tensor_order),
+            field("error_order", &DiscreteLinearization::error_order),
+            field("tensor_order_output", &DiscreteLinearization::tensor_order_output),
+            field("compute_output_set", &DiscreteLinearization::compute_output_set));
+    }
+    void validate() const {
+        detail::Validation entry;
+        // the orders of the sets, then the two tensor orders
+        validate_order(zonotope_order, 1, "zonotope_order", "DiscreteLinearization");
+        validate_order(error_order, 1, "error_order", "DiscreteLinearization");
+        CORA_CHECK(tensor_order == 2 || tensor_order == 3, Error::wrong_value, [&] {
+            return "DiscreteLinearization: tensor_order must be 2 or 3, got " +
+                   std::to_string(tensor_order);
+        });
+        CORA_CHECK(tensor_order_output == 2 || tensor_order_output == 3, Error::wrong_value, [&] {
+            return "DiscreteLinearization: tensor_order_output must be 2 or 3, got " +
+                   std::to_string(tensor_order_output);
+        });
+    }
+};
+
 /// The algorithms of each system and operation; the first is the default of Python.
 using LinearReach = std::variant<Standard, WrappingFree, FromStart, Decomposition>;
 using LinearVerify = std::variant<ReachAvoidSupportFunction, ReachAvoidZonotope, ReachAvoidKrylov>;
@@ -673,6 +710,7 @@ using NonlinearReach = std::variant<Linearization, LinearizationAdaptive>;
 using PolyNonlinearReach = std::variant<Polynomialization, Linearization>;
 using LinParamReach = std::variant<LinParamStandard>;
 using NonlinearSimulate = std::variant<RungeKutta4>;
+using DiscreteReach = std::variant<DiscreteLinearization>;
 using DaeReach = std::variant<DaeLinearization>;
 using HybridReach = std::variant<HybridStandard>;
 
