@@ -6380,10 +6380,19 @@ void bind_stl(py::module_ &m) {
         .def("get_clauses", &Stl::get_clauses, py::arg("type") = "cnf",
              "The conjuncts or disjuncts")
         // the trace checks: x is (m, n), one state per row, t the m times
-        .def("model_check_trace", &Stl::model_check_trace, py::arg("x"), py::arg("t"),
-             "Whether the uniformly sampled trace satisfies the formula")
-        .def("robustness", &Stl::robustness, py::arg("x"), py::arg("t"),
-             "The robustness of the trace: positive if it satisfies the formula")
+        .def(
+            "model_check_trace",
+            [](const Stl &phi, const py::object &x, const std::vector<double> &t) {
+                return phi.model_check_trace(matrix_of(x, "the states"), t);
+            },
+            py::arg("x"), py::arg("t"), "Whether the uniformly sampled trace satisfies the formula")
+        .def(
+            "robustness",
+            [](const Stl &phi, const py::object &x, const std::vector<double> &t) {
+                return phi.robustness(matrix_of(x, "the states"), t);
+            },
+            py::arg("x"), py::arg("t"),
+            "The robustness of the trace: positive if it satisfies the formula")
         // the predicates and the Python operators
         .def("is_predicate", &Stl::is_predicate, "Whether it is a conjunction of comparisons")
         .def("is_linear_predicate", &Stl::is_linear_predicate,
