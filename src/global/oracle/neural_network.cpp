@@ -138,7 +138,7 @@ Json aux_graph_layer(const NnGraphLayer &layer, std::string &dtype) {
 
 // ===========================================  MAIN  =========================================== //
 
-// The layers ---------------------------------------------------------------------------------
+// The layers --------------------------------------------------------------------------------------
 
 NnLayer NnLayer::linear(const cora::Tensor &W, const cora::Tensor &b) {
     NnLayer layer;
@@ -308,7 +308,7 @@ std::pair<Tensor, Tensor> softmax_sum_bounds(const cora::Tensor &W, const cora::
     return {r.get<Tensor>("inf"), r.get<Tensor>("sup")};
 }
 
-// CROWN's backward bound -------------------------------------------------------------------------
+// CROWN's backward bound --------------------------------------------------------------------------
 
 CrownLayer CrownLayer::linear(const cora::Tensor &W, const cora::Tensor &b) {
     CrownLayer layer;
@@ -356,7 +356,7 @@ Tensor backward_bound(const std::vector<CrownLayer> &layers, const cora::Tensor 
     return reply.get<Tensor>("lower");
 }
 
-// The evaluations ----------------------------------------------------------------------------
+// The evaluations ---------------------------------------------------------------------------------
 
 Json layers_json(const std::vector<NnLayer> &layers, std::string &dtype) {
     Json list = Json::array();
@@ -432,6 +432,8 @@ std::vector<Taylm> nn_evaluate_taylm(const std::vector<NnLayer> &layers,
         out.push_back(Taylm::from_model(T));
     return out;
 }
+
+// The graph networks ------------------------------------------------------------------------------
 
 // the graph network on the zonotope, the last output with its error box
 Zonotope evaluate_graph(const std::vector<NnGraphLayer> &layers, const Zonotope &Z) {

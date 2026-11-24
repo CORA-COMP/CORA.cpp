@@ -79,10 +79,9 @@ struct NnLine {
     Tensor slope, offset, error;
 };
 
-/// nnLayer.relaxation: the line of `kind` ("sign", "square", "relu", "sin", "cos", a kind of
-/// NnLayer::line) over each box [l_i, u_i] (columns (n, 1)); relu: alpha (n, 1) the crossing
-/// neurons' slopes; softplus, root, invSqrt: method "regression" (empty: the oracle's default) or
-/// "singh".
+/// nnLayer.relaxation: the line of `kind` ("sign", "square", "relu", "sin", "cos", an NnLayer::line
+/// kind) over each box [l_i, u_i] (columns); relu: alpha the crossing neurons' slopes; softplus,
+/// root, invSqrt: method "regression" or "singh" (empty: the oracle's default).
 NnLine relaxation(const std::string &kind, const cora::Tensor &l, const cora::Tensor &u,
                   const cora::Tensor &alpha = cora::Tensor(), const std::string &method = "");
 
