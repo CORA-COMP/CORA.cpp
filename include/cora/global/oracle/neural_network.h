@@ -12,7 +12,8 @@
 //             a graph network (sources, residuals) in the order of CORA.cpp's ZonoNet::forward,
 //             the radii of the interval center as the error box; the forms (merge buckets, group
 //             sort, generator reduction, normal form) and the passes of a ReLU chain (propagate
-//             bounds, the gradients at a box and at a point, the sensitivity)
+//             bounds, the gradients at a box and at a point, the sensitivity); a zonotope batch's
+//             gradients with the lines held, FGSM, the input order and the structure's counts
 // See also:   lean/request.h, cora/nn/neural_network/neural_network.h
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
@@ -214,6 +215,60 @@ Interval backprop(const NeuralNetwork &nn, const cora::Tensor &x, const cora::Te
 
 /// neuralNetwork.sensitivity: the box of the Jacobian (out, in) at the point x (in).
 Interval sensitivity(const NeuralNetwork &nn, const cora::Tensor &x);
+
+// The zonotope batch's gradients and the structure ------------------------------------------------
+
+/// The gradients at an input zonotope's center (n) and generators (n, h), and the slopes of each
+/// layer's ReLU lines (undefined for an identity layer).
+struct NnZonoGrad {
+    Interval g_c, g_gen;
+    std::vector<cora::Tensor> slopes;
+};
+
+/// neuralNetwork.backpropZonotopeBatch of a ReLU chain with the lines held: the zonotope (c (n),
+/// G (n, h)) forward, every error a generator, then grad_c (k) and grad_gen (k, q) backward.
+NnZonoGrad backprop_zonotope_batch(const NeuralNetwork &nn, const cora::Tensor &c,
+                                   const cora::Tensor &G, const cora::Tensor &grad_c,
+                                   const cora::Tensor &grad_gen);
+
+/// nnLayer.backpropZonotopeBatch: a linear layer's W' grad_c and W' grad_gen (c, G unused), or a
+/// ReLU's slopes at the bounds of its input set (c, G) times grad_c and G's columns of grad_gen.
+NnZonoGrad backprop_zonotope_batch_layer(const NnLayer &layer, const cora::Tensor &c,
+                                         const cora::Tensor &G, const cora::Tensor &grad_c,
+                                         const cora::Tensor &grad_gen);
+
+/// neuralNetwork.computeFGSMAttack of a ReLU chain: x (n) moved by epsilon along the sign of the
+/// gradient of the loss whose derivative at the output is softmax(y) - t.
+Interval compute_fgsm_attack(const NeuralNetwork &nn, const cora::Tensor &x, const cora::Tensor &t,
+                             double epsilon);
+
+/// neuralNetwork.getInputNeuronOrder (0-based): "in-order", "snake" or "sensitivity" at x; the
+/// input size is (C, H, W) or empty.
+std::vector<int64_t> input_neuron_order(const NeuralNetwork &nn, const std::string &method,
+                                        const cora::Tensor &x,
+                                        const std::vector<int64_t> &input_size = {});
+
+/// neuralNetwork.getNumNeurons, getNumParams and getRefinableLayers of a dense chain.
+std::vector<int64_t> num_neurons(const NeuralNetwork &nn);
+int64_t num_params(const NeuralNetwork &nn);
+std::vector<int64_t> refinable_layers(const NeuralNetwork &nn);
+
+/// neuralNetwork.getOrderPattern: the orders of the refinable layers' neurons from those given per
+/// layer (none: all 1).
+std::vector<std::vector<int64_t>> order_pattern(const NeuralNetwork &nn,
+                                                const std::vector<std::vector<int64_t>> &orders);
+
+/// The generator count of a zonotope batch, and per layer the first error generator and the count
+/// of them (both 0 for a layer without an activation).
+struct ZonoBatchCount {
+    int64_t num_gen = 0;
+    std::vector<std::pair<int64_t, int64_t>> errors;
+};
+
+/// neuralNetwork.prepareForZonoBatchEval: the generators of the input (inf: its width) and of each
+/// activation layer's errors (at most num_approx_err; inf: all).
+ZonoBatchCount prepare_zono_batch_eval(const NeuralNetwork &nn, double num_init_gens,
+                                       double num_approx_err);
 
 } // namespace cora::lean
 

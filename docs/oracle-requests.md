@@ -535,8 +535,9 @@ A residual Add is `zonotope.exactPlus` at the earlier branch's generators. `soft
 The convolution is checked against its definition and its matrix (`test_neural_network_conv`); a
 gather (a permutation, a pad, a nearest upsample) is exact.
 
-The ReLU rows and the iterated refinement are not formalized. The coverage rows `verify`,
-`computePGDAttack` and `computeFGSMAttack` are oracle debt until then.
+The ReLU rows and the iterated refinement are not formalized. The coverage rows `verify` and
+`computePGDAttack` are oracle debt until then; `computeFGSMAttack` is served since
+oracle-20261124-80eebf13a (batch 9).
 
 ## NN linear layers (PR "nn/port-rest", batch 1)
 
@@ -611,7 +612,8 @@ one, met with its stored bounds), `neuralNetwork.backpropIntervalBatch` and `neu
 W_k from the output back, as CORA's `calcSensitivity`) and `neuralNetwork.normalForm`
 (`WeightNetwork.normalForm`, W_k W and W_k b + b_k). A zero of a sum of zero products may differ in its
 sign; the test compares x + 0. Not served: sigmoid and tanh in the passes (the enclosure's two ends are
-two formulas), `computeFGSMAttack` (the softmax loss derivative in CORA.cpp's order).
+two formulas). `computeFGSMAttack` (the softmax loss derivative in CORA.cpp's order) is served since
+oracle-20261124-80eebf13a (batch 9).
 
 | op | request fields | reply |
 |---|---|---|
@@ -667,15 +669,15 @@ the result, exact cases by hand.
 
 ## Explanation of a classification (PR "nn/port-explain", batch 5)
 
-`NeuralNetwork::explain` and `compute_fgsm_attack` have no op in the oracle (newest tag
-oracle-20261123-feef03ae2). `explain` is a loop over `neuralNetwork.evaluate` on zonotopes (served) and
+`NeuralNetwork::explain` has no op in the oracle (newest tag oracle-20261123-feef03ae2);
+`compute_fgsm_attack` is served since oracle-20261124-80eebf13a (batch 9, `test_lean_nn_fgsm`). `explain` is a loop over `neuralNetwork.evaluate` on zonotopes (served) and
 `computeReducedNetwork` (requested above), so it is tested by properties: a hand-computed linear case,
 the standard method equal to the abstract one at the rate 1, and sampled soundness of the freed set.
 
 | op (proposed) | request fields | reply |
 |---|---|---|
 | `neuralNetwork.explain` | `layers`, `x`, `label`, `epsilon`, `method`, `featOrder`, `refineSteps`, `outputThreshold` | the freed features, the order tried |
-| `neuralNetwork.fgsmAttack` | `layers`, `x`, `t`, `epsilon`, `mask` | the moved points `x - alpha sign(grad)` |
+| `neuralNetwork.fgsmAttack` (served as `neuralNetwork.computeFGSMAttack` without `mask`, batch 9) | `layers`, `x`, `t`, `epsilon`, `mask` | the moved points `x - alpha sign(grad)` |
 
 ## Zonotope batch gradients (PR "nn/port-rest-6", batch 6)
 
@@ -685,9 +687,34 @@ properties (the chain rule where all neurons are stable, central differences of 
 held slopes by hand). The ConvTranspose layer is tested against the oracle's `conv` kind at stride 1
 (a convolution with the flipped kernel and the pads `k - 1 - p`).
 
-| op (proposed) | request fields | reply |
+Served since oracle-20261124-80eebf13a (batch 9 below) with the lines held (`exact` false).
+
+| op (served, batch 9) | request fields | reply |
 |---|---|---|
-| `neuralNetwork.backpropZonotopeBatch` | `layers`, `c`, `G`, `gc`, `gG`, `exact` | the gradients at the input's `c` and `G` |
+| `neuralNetwork.backpropZonotopeBatch` | `layers`, `Z` ({c, G}), `gc`, `gG`, `exact` (false) | `gc`, `gG` boxes, `slopes` per layer |
+
+## NN zonotope batch gradients, FGSM, input order and structure (PR "oracle/nn-batch9", batch 9)
+
+Served since oracle-20261124-80eebf13a (CORALean `NnZonoBackpropOps`, `NnBoundsOps`, `NnInfoOps`) on
+chains of dense ReLU and identity layers, bit for bit at nearest: `neuralNetwork.backpropZonotopeBatch`
+and `nnLayer.backpropZonotopeBatch` (`HeldChain.backprop` of the slopes of `evaluateGraph`'s forward pass,
+every error a generator; `test_lean_nn_backprop_zonotope`: the input's center and generator gradients
+and every ReLU layer's slopes), `neuralNetwork.computeFGSMAttack` (`IntervalChain.fgsmAttack` with
+`softmax(y) - t`; `test_lean_nn_fgsm`), `neuralNetwork.getInputNeuronOrder` (in-order, the snake of
+`[C, H, W]`, and the sensitivity: CORA and CORA.cpp rank by the mean of |J|, the oracle by its sum, the
+same order without near-ties), `getNumNeurons`, `getNumParams`, `getRefinableLayers`, `getOrderPattern`
+and `prepareForZonoBatchEval` (`test_lean_nn_info`). Not served: `exact_backprop`, the interval center
+(`grad_dr`), sigmoid and tanh in these ops, the FGSM `mask` and custom loss derivatives, and generator
+reduction layers in `prepareForZonoBatchEval`.
+
+| op | request fields | reply |
+|---|---|---|
+| `nnLayer.backpropZonotopeBatch` | `layer` (linear {W, b} or relu), `Z` (relu), `gc`, `gG` | `gc`, `gG`, `slopes` (relu) |
+| `neuralNetwork.computeFGSMAttack` | `layers`, `x`, `t`, `epsilon` | `z`, a box |
+| `neuralNetwork.getInputNeuronOrder` | `layers`, `method`, `x`, `inputSize` | `order` (0-based) |
+| `neuralNetwork.getNumNeurons`, `getNumParams`, `getRefinableLayers` | `layers` | the counts, the layers |
+| `neuralNetwork.getOrderPattern` | `layers`, `orders` | `pattern` |
+| `neuralNetwork.prepareForZonoBatchEval` | `layers`, `numInitGens`, `numApproxErr` | `numGen`, `approxErrGens` |
 
 ### Discrete-time nonlinear systems (port batch nlsdt)
 
