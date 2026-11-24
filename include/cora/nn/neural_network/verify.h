@@ -135,14 +135,15 @@ struct NnVerifyOptions {
     double relu_bab_init_gens = std::numeric_limits<double>::infinity(); ///< the root's at most
     std::string relu_bab_order = "output"; ///< the splits: "output" (|w| at the slot), "error"
     int64_t relu_bab_faces = 64; ///< the next unsplit neurons' triangle faces as rows of a node
-    int64_t relu_bab_root_steps = 100; ///< dual steps of the root's faces
-    int64_t relu_bab_farkas_steps = 0; ///< dual steps of Farkas' certificate per node (0: none)
-    int64_t relu_bab_alpha_iterations = 50; ///< the root's slope steps (no patience)
+    int64_t relu_bab_root_steps = 100;     ///< dual steps of the root's faces
+    int64_t relu_bab_farkas_steps = 0;     ///< dual steps of Farkas' certificate per node (0: none)
+    int64_t relu_bab_alpha_iterations = 0; ///< the root's slope steps (no patience)
     /// Rounds of CROWN's bounds of the root's layer inputs, intersected with the zonotope's before
     /// its lines (0: the zonotope's bounds alone).
     int64_t relu_bab_crown_rounds = 1;
-    int64_t relu_bab_crown_iterations = 0; ///< alpha-CROWN steps on their ReLU lower slopes per row
-    double relu_bab_crown_step = 0.25;     ///< Adam's step on those slopes in [0, 1]
+    int64_t relu_bab_crown_iterations =
+        20;                            ///< alpha-CROWN steps on their ReLU lower slopes per row
+    double relu_bab_crown_step = 0.25; ///< Adam's step on those slopes in [0, 1]
     /// The check's rounds of CROWN's bounds of the layer inputs (0: none), as relu-bab's root.
     int64_t check_crown_rounds = 0;
     int64_t check_crown_iterations = 0; ///< their alpha-CROWN steps per row

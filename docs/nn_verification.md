@@ -334,7 +334,8 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
   `G_in - G_out`, `G_out - sigma G_in`), a node's multipliers and offsets on its own blocks' rows.
 - **relu-bab (`refinement_method`):** a ReLU-split branch and bound on the frozen root zonotope.
   - **Root:** one propagation per input box, its slopes optimized (`zonotope-alpha`,
-    `relu_bab_alpha_iterations` steps without patience), with a generator for each input dimension
+    `relu_bab_alpha_iterations` steps without patience, default 0: on cifar100 CROWN's bounds
+    below proved as many without the 20 s of steps), with a generator for each input dimension
     (at most `relu_bab_init_gens`) and a slot for every crossing neuron's error, as
     `relu_bab_memory_budget` (0: 3/4 of the batch budget; the nodes' chunks take a quarter)
     allows: fewer slots first, then fewer generators. Two passes count the crossing neurons per layer (the second, of the tighter net,
@@ -370,11 +371,12 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     error that is not a factor in `dr` (never dropped) and one `beta` for `G_in` and `G_out` (one
     column order, later columns zero, as `priv_split_table` pads them). The frozen lines and clamps
     of later layers are not re-derived. unsat only when every open polytope's frontier is empty.
-  - **CROWN's bounds at the root (`relu_bab_crown_rounds`, default 1):** before the slopes, the
-    input `z_k` of every activation layer after the first is bounded by a backward pass
-    (`priv_crown_bounds`): rows `e_i` and `-e_i` of the crossing neurons of a ReLU layer (every
+  - **CROWN's bounds at the root (`relu_bab_crown_rounds`, default 1, 20
+    `relu_bab_crown_iterations`):** before the slopes, the input `z_k` of every activation layer
+    after the first is bounded by `priv_backward_lower` started at layer k (`priv_crown_bounds`,
+    `ZonoBackward`): rows `e_i` and `-e_i` of the crossing neurons of a ReLU layer (every
     neuron of another activation but a product, whose line is its input set's) go back through the
-    earlier layers, each by a relaxation at its bounds so far (a ReLU: the chord `u (z - l) / (u - l)` above, a slope in `[0, 1]` below, CROWN's
+    earlier layers, each by a relaxation at its bounds so far (a ReLU: the chord above with `priv_relu_chord_offset`, a slope in `[0, 1]` below, CROWN's
     `1` where `u > -l` else `0`, or `relu_bab_crown_iterations` projected Adam steps of size
     `relu_bab_crown_step` per row, each row's best bound over the steps; another activation: the
     parallels of the zonotope's line at those bounds, a product's on the recorded input set), down to
