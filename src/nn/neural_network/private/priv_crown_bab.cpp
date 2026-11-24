@@ -43,6 +43,8 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+// The crossing neurons ----------------------------------------------------------------------------
+
 /// The root's crossing ReLU neurons: per layer their positions and each neuron's index among the
 /// U of them (U for the others: a zero column), their bounds (U).
 struct CrossingSpace {
@@ -56,12 +58,14 @@ CrossingSpace aux_space(const ZonoPropagation &out, const ZonoNet &net, const Zo
     s.pos.resize(net.W.size());
     s.idx.resize(net.W.size());
     std::vector<Tensor> ls, us;
+    // per ReLU layer the neurons crossing 0 at its bounds, numbered in order
     for (const ZonoLayerRecord &rec : out.layers) {
         const auto k = std::size_t(rec.index);
         if (net.activations[k] != Activation::relu) continue;
         const bool given = k < bounds.l.size() && bounds.l[k].defined();
         const Tensor l = given ? bounds.l[k] : rec.l, u = given ? bounds.u[k] : rec.u;
         const std::vector<double> lv = l.data(), uv = u.data();
+        // their positions, and each neuron's number (-1: not crossing)
         s.idx[k].assign(lv.size(), -1);
         for (std::size_t i = 0; i < lv.size(); ++i)
             if (lv[i] < 0 && uv[i] > 0) s.pos[k].push_back(int64_t(i));
@@ -73,6 +77,7 @@ CrossingSpace aux_space(const ZonoPropagation &out, const ZonoNet &net, const Zo
             us.push_back(u.squeeze(0).take(s.pos[k], 0));
         }
     }
+    // the others read the zero column U
     for (std::vector<int64_t> &v : s.idx)
         for (int64_t &i : v)
             if (i < 0) i = s.U;
@@ -120,6 +125,8 @@ Tensor aux_onehot(const Tensor &idx, int64_t n) {
     return idx.expand_dims(-1).equal(idx.arange_like(n).expand_dims(0)) + 0.0;
 }
 
+// The nodes ---------------------------------------------------------------------------------------
+
 /// A batch of nodes: signs (N, U), slopes and multipliers (N, K, U), the neuron each branches on
 /// next (N; -1: none left) and its rows' bounds (N, K).
 struct Nodes {
@@ -145,6 +152,8 @@ struct Pass {
     const ZonoBounds *bounds = nullptr;
     Tensor x, rad, rows, offsets;
 };
+
+// The search --------------------------------------------------------------------------------------
 
 /// The branch and bound of one polytope.
 class CrownBab {
@@ -203,12 +212,16 @@ class CrownBab {
     int64_t K_ = 0;
 };
 
+// The node bound ----------------------------------------------------------------------------------
+
 Tensor CrownBab::evaluate(const Pass &p, const std::vector<Tensor> &signs, const Tensor &alpha,
                           const Tensor &beta, std::vector<Tensor> *ga, std::vector<Tensor> *gb,
                           std::vector<Tensor> *ic, Tensor *corner) const {
+    // the nodes' boxes, their slopes and multipliers per layer
     const int64_t N = alpha.shape()[0], n0 = p.x.shape()[1];
     const Tensor xs = p.x.broadcast_to({N, n0}) + 0.0, rs = p.rad.broadcast_to({N, n0}) + 0.0;
     const std::vector<Tensor> a_l = aux_expand(space_, alpha), b_l = aux_expand(space_, beta);
+    // one pass with the nodes' splits (the gradients, scores and corners where asked)
     ZonoBackward opt;
     opt.bounds = p.bounds;
     opt.row_alpha = &a_l;
@@ -234,12 +247,14 @@ Bounded CrownBab::bound(const Tensor &S, const Tensor &alpha, const Tensor &beta
     std::vector<Tensor> a1{alpha.to(dt)}, a_m1(1), a_m2(1), b1{beta.to(dt)}, b_m1(1), b_m2(1);
     Bounded r;
     for (int64_t t = 0;; ++t) {
+        // one pass: its bound, and its gradients if another step follows
         const bool more = t < steps && !late();
         std::vector<Tensor> ga, gb, ic;
         Tensor corner;
         const Tensor value =
             evaluate(p, signs, a1[0], b1[0], more ? &ga : nullptr, more ? &gb : nullptr,
                      searching_ ? nullptr : &ic, searching_ ? nullptr : &corner);
+        // every step's bound holds: per row the best, with its slopes and multipliers
         if (!r.best.defined()) {
             r.best = value;
             r.alpha = a1[0];
@@ -250,6 +265,7 @@ Bounded CrownBab::bound(const Tensor &S, const Tensor &alpha, const Tensor &beta
             r.alpha = Tensor::where(up, a1[0], r.alpha);
             r.beta = Tensor::where(up, b1[0], r.beta);
         }
+        // in the record's dtype: the last pass's scores and corners
         if (!searching_) {
             r.score = aux_gather(space_, ic, a1[0]);
             r.corner = corner;
@@ -276,6 +292,8 @@ Bounded CrownBab::bound(const Tensor &S, const Tensor &alpha, const Tensor &beta
     stats_["crown_bab_bound_seconds"] += now_seconds() - started;
     return r;
 }
+
+// The branching -----------------------------------------------------------------------------------
 
 Tensor CrownBab::choose(const Tensor &S, const Bounded &b) const {
     // the best row's chord losses on the unsplit neurons; none above 0: the widest unsplit one
@@ -339,6 +357,8 @@ int64_t CrownBab::per_node_bytes() const {
     for (const NeuralNetwork::Layer &layer : net_.maps) width += layer.work();
     return 8 * K_ * (16 * width + 12 * space_.U);
 }
+
+// The branch and bound ----------------------------------------------------------------------------
 
 int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
     const int64_t U = space_.U;
@@ -432,6 +452,8 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
 
 // ===========================================  MAIN  =========================================== //
 
+// The entries -------------------------------------------------------------------------------------
+
 int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
                    const Tensor &x, const Tensor &rad, const Tensor &rows, const Tensor &offsets,
                    const CrownBabOptions &o, const std::function<bool(const Tensor &)> &check,
@@ -449,6 +471,8 @@ Tensor priv_crown_bab_roots(const ZonoPropagation &out, const ZonoNet &net,
     const CrownBab bab(out, net, bounds, x, rad, rows, offsets, o, stats, search);
     return bab.roots();
 }
+
+// The search dtype --------------------------------------------------------------------------------
 
 ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype) {
     ZonoNet copy = net;
@@ -473,6 +497,7 @@ ZonoPropagation priv_record_to(const ZonoPropagation &out, DType dtype) {
     ZonoPropagation copy;
     const auto to = [&](const Tensor &t) { return t.defined() ? t.to(dtype) : t; };
     for (const ZonoLayerRecord &rec : out.layers) {
+        // the layer, its input set and its bounds
         ZonoLayerRecord r;
         r.index = rec.index;
         r.first_id = rec.first_id;

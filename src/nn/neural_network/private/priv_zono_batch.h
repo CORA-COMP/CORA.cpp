@@ -188,10 +188,9 @@ struct ZonoBackward {
     /// A softmax's reciprocal (ZonoNet::softmax) above by the log-sum-exp bound of its exps'
     /// inputs (docs/nn_verification.md, "The softmax's upper line"), not the two layers' lines.
     bool softmax_lse = false;
-    /// A node of ReLU splits (beta-CROWN): per ReLU layer the signs (B, n) of its split neurons
-    /// (-1: the input at least 0, +1: at most 0, 0: unsplit) clamp the layer's bounds, and with
-    /// beta (B, R, n) each row adds max(beta, 0) sigma z to its Lagrangian (z: the layer's input),
-    /// so the bound holds over the box's inputs on the splits' sides (docs/nn_verification.md).
+    /// A node of ReLU splits (beta-CROWN, nn_verification.md): per ReLU layer its signs (B, n)
+    /// (-1: z >= 0, +1: z <= 0, 0: unsplit) clamp the bounds, and each row adds max(beta, 0)
+    /// sigma z (beta (B, R, n)) to its Lagrangian: the bound holds on the splits' sides.
     const std::vector<Tensor> *split_sign = nullptr;
     const std::vector<Tensor> *beta = nullptr;
     std::vector<Tensor> *g_beta = nullptr; ///< out: the bound's gradient in beta (B, R, n)
@@ -219,12 +218,13 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
 
 /// CROWN's bounds of the activation layers' inputs over the boxes (x, rad) of a record without
 /// splits, intersected with its bounds (priv_zono_bounds.cpp): `iterations` alpha-CROWN steps of
-/// size `step` per row, the rows in chunks of about max_bytes, the record's after the deadline;
-/// softmax_lse: ZonoBackward's.
+/// `step` per row, rows in chunks of about max_bytes, the record's after the deadline.
 ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
                              const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
                              double deadline = std::numeric_limits<double>::infinity(),
                              bool softmax_lse = false);
+
+// The branch and bound with the CROWN node bound --------------------------------------------------
 
 /// The options of priv_crown_bab (NnVerifyOptions' crown_bab_*).
 struct CrownBabOptions {
@@ -238,22 +238,16 @@ struct CrownBabOptions {
     double deadline = std::numeric_limits<double>::infinity();
 };
 
-/// The ReLU-split branch and bound whose node bound is CROWN's backward pass with the splits'
-/// Lagrange multipliers (beta-CROWN, priv_crown_bab.cpp) for the rows (K, m) minus offsets (K) of
-/// one polytope over the box (x, rad) (B = 1) of a record without splits, the lines at `bounds`
-/// (the record's where undefined): it splits the crossing ReLU neurons, each node's bound by
-/// projected Adam steps on its lower slopes and multipliers from its parent's. A node is verified
-/// when some row's bound exceeds the margin. check(points (M, n0)) confirms a counterexample.
-/// 1: verified, 2: check confirmed one, 0: open (the deadline, the frontier's bytes, or a node
-/// with every crossing neuron split still open).
-/// With `search`, the steps run on a copy in another dtype (priv_crown_bab_search) and each
-/// batch's best slopes and multipliers are evaluated once more in the record's dtype: only those
-/// bounds decide.
+/// The copy of priv_crown_bab's search in another dtype (priv_zono_net_to, priv_record_to,
+/// priv_bounds_to): the steps run on it, the record's dtype decides.
 struct CrownBabSearch {
     const ZonoPropagation *out = nullptr;
     const ZonoNet *net = nullptr;
     const ZonoBounds *bounds = nullptr;
 };
+/// beta-CROWN's branch and bound (priv_crown_bab.cpp) of the rows (K, m) minus offsets (K) of
+/// one polytope over the box (x, rad) (B = 1); check(points) confirms a counterexample. 1:
+/// verified, 2: confirmed, 0: open (the deadline, the frontier's bytes, a node fully split).
 int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
                    const Tensor &x, const Tensor &rad, const Tensor &rows, const Tensor &offsets,
                    const CrownBabOptions &o, const std::function<bool(const Tensor &)> &check,

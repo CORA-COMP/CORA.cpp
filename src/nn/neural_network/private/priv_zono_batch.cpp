@@ -324,11 +324,9 @@ std::pair<Tensor, Tensor> aux_box_image(const ZonoNet &net, std::size_t k, const
     return {c - w, c + w};
 }
 
-/// A softmax's upper line (ZonoNet::softmax layer k, docs/nn_verification.md): p_i <= a_i - g_i
-/// sum_t A_it e0_t d_t on the exps' inputs d in [ld, ud], where layer k's sums s in [lc, uc]
-/// (lc > 0) and g = c / S0: the chord a' + c y of exp over y = -log s in [-log uc, -log lc], at
-/// the log-sum-exp's tangent at d0 = (ld + ud) / 2, S0 = A e0 + b, e0 = exp(d0). ok: where it
-/// holds (else the layers' lines).
+/// A softmax's upper line (ZonoNet::softmax layer k, nn_verification.md): p_i <= a_i - g_i
+/// sum_t A_it e0_t d_t on the exps' inputs d in [ld, ud], the chord of exp over -log s at the
+/// log-sum-exp's tangent at d0 = (ld + ud) / 2, e0 = exp(d0); ok: where it holds.
 struct SoftmaxLine {
     Tensor ok, a, g, e0;
 };
@@ -1197,6 +1195,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     Tensor d_in; // the input of an exp layer that a softmax's upper line reads
     for (std::size_t k = 0; k < top; ++k) {
         check_deadline(net.deadline);
+        // layer k's input at the corner, through its linear part
         const Tensor g = net.linear(k, gs) + net.b[k];
         const Lines &L = kept[k];
         if (k + 1 < top && kept[k + 1].soft.ok.defined()) d_in = g;
@@ -1210,6 +1209,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
         // the slopes' gradient: the row's input times its positive Lambda where they are free
         if (g_alpha && L.cross.defined())
             (*g_alpha)[k] = Tensor::where(L.cross, g.multiply(L.lam.maximum(0.0)), g.zeros_like());
+        // the next layer's input at the corner: a softmax's, a product's or the lines'
         if (L.soft.ok.defined()) {
             // a softmax's rows below 0 on its upper line of the exps' inputs where it holds
             const Tensor up =
@@ -1222,6 +1222,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
             gs.push_back(pos.multiply(g.multiply(L.sl) + L.bl) +
                          neg.multiply(g.multiply(L.su) + L.bu));
         } else {
+            // a product's one slope, then the offset of the side
             const Tensor gm = priv_slope_times(Activation::product, L.su, g);
             gs.push_back(pos.multiply(gm + L.bl) + neg.multiply(gm + L.bu));
         }

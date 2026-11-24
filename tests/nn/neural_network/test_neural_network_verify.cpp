@@ -519,6 +519,7 @@ void crown_split_nodes(const std::string &b) {
     const std::vector<double> g1 = gb[1].data(), m1 = beta[1].data();
     for (std::size_t i = 0; i < g1.size() && compared < 12; ++i) {
         if (g1[i] == 0 || m1[i] <= 0.01) continue;
+        // the bound at beta +- h in one entry
         const double h = 1e-6;
         std::vector<double> up = m1, down = m1;
         up[i] += h;
@@ -526,6 +527,7 @@ void crown_split_nodes(const std::string &b) {
         std::vector<Tensor> bu = beta, bd = beta;
         bu[1] = Tensor::from_data(up, beta[1].shape());
         bd[1] = Tensor::from_data(down, beta[1].shape());
+        // the two passes' bounds of the entry's row
         ZonoBackward pu, pd;
         pu.row_alpha = pd.row_alpha = &alpha;
         pu.split_sign = pd.split_sign = &sign;
@@ -566,6 +568,7 @@ void crown_bab_other_layers(const std::string &b) {
     double nodes = 0;
     for (const NeuralNetwork &nn : nets) {
         for (const bool lse : {false, true}) {
+            // the root's record and the least sampled output
             const ZonoNet net(nn, 3, 2, "bounds", "length");
             const Tensor x = Tensor({{0.1, -0.2, 0.3}}), r = Tensor({{0.5, 0.4, 0.5}});
             const ZonoInput in = net.input_zonotope(x, r);
@@ -579,6 +582,7 @@ void crown_bab_other_layers(const std::string &b) {
             for (std::size_t i = 0; i < 4000; ++i) least = std::min(least, y[i * 2]);
             for (const double gap : {0.4, 0.05}) {
                 CrownBabOptions o;
+                // a few steps, small batches and the look-ahead
                 o.steps = 5;
                 o.root_steps = 10;
                 o.batch = 4;
@@ -795,10 +799,9 @@ void dual_unscaled_rows(const std::string &b) {
     check(violations == 0, b + ": the dual certificate is at most the optimum on unequal rows");
 }
 
-/// A softmax's upper line by the log-sum-exp (ZonoBackward::softmax_lse): ZonoNet finds the
-/// softmax, the bounds hold the sampled outputs (of the softmax itself, above, and of a layer
-/// after it), alone and in CROWN's layer bounds with and without slope steps, which lie inside
-/// the zonotope's; the line is tighter than the exp and reciprocal lines on some row.
+/// A softmax's log-sum-exp line (ZonoBackward::softmax_lse): ZonoNet finds the softmax, its bounds
+/// hold the sampled outputs, alone and in CROWN's layer bounds (inside the zonotope's), and it is
+/// tighter than the exp and reciprocal lines on some row.
 void softmax_lse(const std::string &b) {
     Rng rng(43);
     const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
@@ -841,6 +844,7 @@ void softmax_lse(const std::string &b) {
                 const Tensor ys = Tensor::concat({y, y.negative()}, 1);
                 for (const Tensor *bound : {&lse, &at})
                     holds = holds && ys.greater_equal(bound->slice(0, i, i + 1)).min().item() > 0;
+                // every activation layer's sampled inputs inside its bounds
                 std::size_t next = 0;
                 std::vector<Tensor> outs{h};
                 for (std::size_t k = 0; k < net.W.size(); ++k) {
@@ -848,6 +852,7 @@ void softmax_lse(const std::string &b) {
                     outs.push_back(priv_apply(net.activations[k], z));
                     if (net.activations[k] == Activation::identity) continue;
                     const ZonoLayerRecord &rec = out.layers[next++];
+                    // inside CROWN's bounds, which lie inside the zonotope's
                     for (const ZonoBounds *bd : {&crown, &steps}) {
                         const Tensor l = bd->l[k].slice(0, i, i + 1),
                                      u = bd->u[k].slice(0, i, i + 1);

@@ -37,9 +37,8 @@ namespace {
 // The optimized slopes ----------------------------------------------------------------------------
 
 /// The best lower bounds (B, R) of the rows (R, n) times layer top's input over `iterations`
-/// projected Adam steps of size `step` on the ReLU layers' lower slopes per row, from CROWN's
-/// (start: per layer, (B, n)), the lines at `bounds`; none after the deadline; softmax_lse:
-/// ZonoBackward's.
+/// projected Adam steps of size `step` on the ReLU layers' lower slopes per row from CROWN's
+/// (start: per layer, (B, n)), the lines at `bounds`; none after the deadline.
 Tensor aux_optimized(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
                      const std::vector<Tensor> &start, std::size_t top, const Tensor &x,
                      const Tensor &rad, const Tensor &rows, int64_t iterations, double step,

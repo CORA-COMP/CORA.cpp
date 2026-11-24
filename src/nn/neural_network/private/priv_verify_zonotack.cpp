@@ -34,6 +34,7 @@
 #include <cmath>
 #include <exception>
 #include <limits>
+#include <tuple>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -420,6 +421,18 @@ class ConZonotopeBounding : public Bounding {
     std::string aux_relu_bab(NnProblem &problem, std::map<std::string, double> &stats);
     // the ReLU-split branch and bound with CROWN's node bound (refinement_method "crown-bab")
     std::string aux_crown_bab(NnProblem &problem, std::map<std::string, double> &stats);
+    // their parts: box i's center, radius and case; the options; the open polytopes; the roots
+    std::tuple<Tensor, Tensor, Tensor> aux_box(const NnProblem &problem, int64_t i) const;
+    CrownBabOptions aux_crown_bab_options(const NnProblem &problem) const;
+    std::vector<int64_t> aux_open_polytopes(const ZonoPropagation &out,
+                                            const Tensor &excluded) const;
+    std::vector<int64_t> aux_crown_bab_roots(const ZonoPropagation &out, const ZonoBounds &bounds,
+                                             const Tensor &xi, const Tensor &ri,
+                                             const std::vector<int64_t> &open,
+                                             const CrownBabOptions &co,
+                                             const CrownBabSearch *search,
+                                             std::map<std::string, double> &stats) const;
+    // relu-bab's root slots, its CROWN bounds and its nodes
     void aux_relu_bab_slots(NnProblem &problem, const Tensor &xi, const Tensor &ri,
                             std::map<std::string, double> &stats);
     void aux_relu_bab_crown(const Tensor &xi, const Tensor &ri, const Tensor &si,
@@ -857,10 +870,8 @@ std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
     const int64_t boxes = problem.outer_lo.shape()[0];
     std::string status = "unsat";
     for (int64_t i = 0; i < boxes; ++i) {
-        const Tensor lo = problem.outer_lo.slice(0, i, i + 1),
-                     hi = problem.outer_hi.slice(0, i, i + 1);
-        const Tensor xi = (lo + hi) * 0.5, ri = (hi - lo) * 0.5;
-        const Tensor ci = problem.box_case.slice(0, i, i + 1), si = xi.zeros_like({1, 0});
+        const auto [xi, ri, ci] = aux_box(problem, i);
+        const Tensor si = xi.zeros_like({1, 0});
         // 0. a slot for every crossing neuron's error, as the root's budget allows (a new net_)
         if (i == 0) aux_relu_bab_slots(problem, xi, ri, stats);
         const ZonoNet &net = *net_;
@@ -889,7 +900,6 @@ std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
                 excluded = excluded.maximum(aux_excluded(out, ci));
             }
         }
-        const std::vector<double> ex = excluded.data();
         // 2. the crossing neurons, split in the order of their lines' errors (largest first)
         const PrivSplitTable table = priv_split_table(out, net);
         const std::vector<double> er = table.er.data();
@@ -902,13 +912,7 @@ std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
         stats["relu_bab_slotless"] = std::max(stats["relu_bab_slotless"], double(table.slotless));
         stats["relu_bab_dual_steps"] = double(o_.relu_bab_dual_steps);
         // 3. every open polytope on its own frontier, the weakest first (one open: unknown)
-        const std::vector<double> root = aux_margins(out).max(2).squeeze(0).data();
-        std::vector<int64_t> open;
-        for (int64_t p = 0; p < P_; ++p)
-            if (ex[std::size_t(p)] == 0) open.push_back(p);
-        std::stable_sort(open.begin(), open.end(), [&](int64_t a, int64_t b) {
-            return root[std::size_t(a)] < root[std::size_t(b)];
-        });
+        const std::vector<int64_t> open = aux_open_polytopes(out, excluded);
         stats["relu_bab_open_polytopes"] += double(open.size());
         for (const int64_t p : open) {
             const int res = aux_relu_bab_polytope(problem, p, out, in, table, order, ci, stats);
@@ -919,7 +923,7 @@ std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
     return status;
 }
 
-// The branch and bound of ReLU splits with CROWN's node bound -------------------------------------
+// The branch and bound of ReLU splits with the CROWN node bound -----------------------------------
 
 // sound: each node's bound is weak duality over its inputs (nn_verification.md, crown-bab)
 
@@ -927,10 +931,8 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
                                                std::map<std::string, double> &stats) {
     const int64_t boxes = problem.outer_lo.shape()[0];
     for (int64_t i = 0; i < boxes; ++i) {
-        const Tensor lo = problem.outer_lo.slice(0, i, i + 1),
-                     hi = problem.outer_hi.slice(0, i, i + 1);
-        const Tensor xi = (lo + hi) * 0.5, ri = (hi - lo) * 0.5;
-        const Tensor ci = problem.box_case.slice(0, i, i + 1), si = xi.zeros_like({1, 0});
+        const auto [xi, ri, ci] = aux_box(problem, i);
+        const Tensor si = xi.zeros_like({1, 0});
         // the root as relu-bab's: the zonotope of its slots, CROWN's bounds of the layers' inputs
         if (i == 0) aux_relu_bab_slots(problem, xi, ri, stats);
         const ZonoNet &net = *net_;
@@ -945,30 +947,9 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
             excluded = aux_excluded(out, ci);
         }
         // every open polytope on its own, the weakest first (one left open: unknown)
-        const std::vector<double> ex = excluded.data();
-        const std::vector<double> root = aux_margins(out).max(2).squeeze(0).data();
-        std::vector<int64_t> open;
-        for (int64_t p = 0; p < P_; ++p)
-            if (ex[std::size_t(p)] == 0) open.push_back(p);
-        std::stable_sort(open.begin(), open.end(), [&](int64_t a, int64_t b) {
-            return root[std::size_t(a)] < root[std::size_t(b)];
-        });
+        std::vector<int64_t> open = aux_open_polytopes(out, excluded);
         stats["crown_bab_open_polytopes"] += double(open.size());
-        CrownBabOptions co;
-        co.steps = o_.crown_bab_steps;
-        co.root_steps = o_.crown_bab_root_steps;
-        co.batch = o_.crown_bab_batch;
-        co.witnesses = o_.crown_bab_witnesses;
-        co.fsb = o_.crown_bab_fsb;
-        co.alpha_step = o_.crown_bab_alpha_step;
-        co.beta_step = o_.crown_bab_beta_step;
-        co.margin = o_.verified_margin;
-        co.max_bytes = o_.crown_bab_memory_budget > 0 ? o_.crown_bab_memory_budget
-                                                      : problem.batch_memory_budget / 2;
-        co.frontier_bytes = o_.relu_bab_frontier_bytes > 0 ? o_.relu_bab_frontier_bytes
-                                                           : problem.batch_memory_budget / 4;
-        co.softmax_lse = o_.crown_softmax_lse;
-        co.deadline = deadline_;
+        const CrownBabOptions co = aux_crown_bab_options(problem);
         const auto check = [&](const Tensor &points) {
             const StepTimer timer(&stats, "crown_bab_witness_seconds");
             return priv_check_points(problem, points, ci.broadcast_to({points.shape()[0]}),
@@ -981,62 +962,115 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         const ZonoPropagation out_s = searching ? priv_record_to(out, sdt) : ZonoPropagation();
         const ZonoBounds bounds_s = searching ? priv_bounds_to(bounds, sdt) : ZonoBounds();
         net_s.deadline = net.deadline;
-        const CrownBabSearch search{&out_s, &net_s, &bounds_s};
-        // the roots of all open polytopes' rows at once, in chunks: a polytope one of whose rows
-        // is verified needs no search
-        if (open.size() > 1) {
-            const StepTimer timer(&stats, "crown_bab_roots_seconds");
-            std::vector<int64_t> rows, owner;
-            const std::vector<double> real = real_row_.data();
-            for (const int64_t p : open)
-                for (int64_t k = 0; k < K_; ++k)
-                    if (real[std::size_t(p * K_ + k)] > 0) {
-                        rows.push_back(p * K_ + k);
-                        owner.push_back(p);
-                    }
-            int64_t width = net.n0;
-            for (const int64_t w : net.widths) width += w;
-            for (const NeuralNetwork::Layer &layer : net.maps) width += layer.work();
-            const int64_t chunk =
-                std::max<int64_t>(1, co.max_bytes / std::max<int64_t>(1, 8 * 32 * width));
-            const Tensor Aall = A_.reshape({P_ * K_, A_.shape()[2]});
-            const Tensor ball = b_.reshape({P_ * K_});
-            std::vector<double> root_low;
-            for (std::size_t at = 0; at < rows.size(); at += std::size_t(chunk)) {
-                const std::size_t to = std::min(rows.size(), at + std::size_t(chunk));
-                const std::vector<int64_t> part(rows.begin() + std::ptrdiff_t(at),
-                                                rows.begin() + std::ptrdiff_t(to));
-                const std::vector<double> v =
-                    priv_crown_bab_roots(out, net, bounds, xi, ri, Aall.take(part, 0),
-                                         ball.take(part, 0), co, stats,
-                                         searching ? &search : nullptr)
-                        .data();
-                root_low.insert(root_low.end(), v.begin(), v.end());
-            }
-            std::vector<int64_t> still;
-            for (const int64_t p : open) {
-                bool done = false;
-                for (std::size_t j = 0; j < owner.size(); ++j)
-                    done = done || (owner[j] == p && root_low[j] > o_.verified_margin);
-                if (!done) still.push_back(p);
-            }
-            stats["crown_bab_roots_verified"] += double(open.size() - still.size());
-            stats["crown_bab_polytopes_verified"] += double(open.size() - still.size());
-            open = still;
-        }
+        const CrownBabSearch store{&out_s, &net_s, &bounds_s};
+        const CrownBabSearch *search = searching ? &store : nullptr;
+        // the roots of all open polytopes' rows at once: one verified row excludes its polytope
+        if (open.size() > 1)
+            open = aux_crown_bab_roots(out, bounds, xi, ri, open, co, search, stats);
         for (const int64_t p : open) {
             // the polytope's real rows a_k y - b_k
             const std::vector<int64_t> real = real_row_.slice(0, p, p + 1).squeeze(0).nonzero();
             const Tensor A = A_.slice(0, p, p + 1).squeeze(0).take(real, 0);
             const Tensor b = b_.slice(0, p, p + 1).squeeze(0).take(real, 0);
-            const int res = priv_crown_bab(out, net, bounds, xi, ri, A, b, co, check, stats,
-                                           searching ? &search : nullptr);
+            const int res =
+                priv_crown_bab(out, net, bounds, xi, ri, A, b, co, check, stats, search);
             if (res == 2) return "sat";
             if (res == 0 || aux_late()) return "unknown";
             stats["crown_bab_polytopes_verified"] += 1;
         }
     }
     return "unsat";
+}
+
+// The options of the CROWN search -----------------------------------------------------------------
+
+CrownBabOptions ConZonotopeBounding::aux_crown_bab_options(const NnProblem &problem) const {
+    CrownBabOptions co;
+    co.steps = o_.crown_bab_steps;
+    co.root_steps = o_.crown_bab_root_steps;
+    co.batch = o_.crown_bab_batch;
+    co.witnesses = o_.crown_bab_witnesses;
+    co.fsb = o_.crown_bab_fsb;
+    co.alpha_step = o_.crown_bab_alpha_step;
+    co.beta_step = o_.crown_bab_beta_step;
+    co.margin = o_.verified_margin;
+    // the budgets: half the batch's for the passes, a quarter for the open nodes
+    co.max_bytes = o_.crown_bab_memory_budget > 0 ? o_.crown_bab_memory_budget
+                                                  : problem.batch_memory_budget / 2;
+    co.frontier_bytes = o_.relu_bab_frontier_bytes > 0 ? o_.relu_bab_frontier_bytes
+                                                       : problem.batch_memory_budget / 4;
+    co.softmax_lse = o_.crown_softmax_lse;
+    co.deadline = deadline_;
+    return co;
+}
+
+// The boxes and the open polytopes ----------------------------------------------------------------
+
+std::tuple<Tensor, Tensor, Tensor> ConZonotopeBounding::aux_box(const NnProblem &problem,
+                                                                int64_t i) const {
+    // the box's center and radius, its case
+    const Tensor lo = problem.outer_lo.slice(0, i, i + 1), hi = problem.outer_hi.slice(0, i, i + 1);
+    return {(lo + hi) * 0.5, (hi - lo) * 0.5, problem.box_case.slice(0, i, i + 1)};
+}
+
+std::vector<int64_t> ConZonotopeBounding::aux_open_polytopes(const ZonoPropagation &out,
+                                                             const Tensor &excluded) const {
+    // the polytopes the root leaves open, the weakest by the zonotope's margin first
+    const std::vector<double> ex = excluded.data();
+    const std::vector<double> root = aux_margins(out).max(2).squeeze(0).data();
+    std::vector<int64_t> open;
+    for (int64_t p = 0; p < P_; ++p)
+        if (ex[std::size_t(p)] == 0) open.push_back(p);
+    std::stable_sort(open.begin(), open.end(), [&](int64_t a, int64_t b) {
+        return root[std::size_t(a)] < root[std::size_t(b)];
+    });
+    return open;
+}
+
+// The roots of the CROWN search -------------------------------------------------------------------
+
+std::vector<int64_t> ConZonotopeBounding::aux_crown_bab_roots(
+    const ZonoPropagation &out, const ZonoBounds &bounds, const Tensor &xi, const Tensor &ri,
+    const std::vector<int64_t> &open, const CrownBabOptions &co, const CrownBabSearch *search,
+    std::map<std::string, double> &stats) const {
+    const StepTimer timer(&stats, "crown_bab_roots_seconds");
+    // the open polytopes' real rows and their polytopes
+    std::vector<int64_t> rows, owner;
+    const std::vector<double> real = real_row_.data();
+    for (const int64_t p : open)
+        for (int64_t k = 0; k < K_; ++k)
+            if (real[std::size_t(p * K_ + k)] > 0) {
+                rows.push_back(p * K_ + k);
+                owner.push_back(p);
+            }
+    // in chunks of the passes' budget: per row Lambda and its lines on every layer
+    int64_t width = net_->n0;
+    for (const int64_t w : net_->widths) width += w;
+    for (const NeuralNetwork::Layer &layer : net_->maps) width += layer.work();
+    const int64_t chunk = std::max<int64_t>(1, co.max_bytes / std::max<int64_t>(1, 8 * 32 * width));
+    const Tensor Aall = A_.reshape({P_ * K_, A_.shape()[2]}), ball = b_.reshape({P_ * K_});
+    std::vector<double> low;
+    for (std::size_t at = 0; at < rows.size(); at += std::size_t(chunk)) {
+        const std::size_t to = std::min(rows.size(), at + std::size_t(chunk));
+        const std::vector<int64_t> part(rows.begin() + std::ptrdiff_t(at),
+                                        rows.begin() + std::ptrdiff_t(to));
+        const std::vector<double> v =
+            priv_crown_bab_roots(out, *net_, bounds, xi, ri, Aall.take(part, 0), ball.take(part, 0),
+                                 co, stats, search)
+                .data();
+        low.insert(low.end(), v.begin(), v.end());
+    }
+    // the polytopes none of whose rows is verified stay open
+    std::vector<int64_t> still;
+    for (const int64_t p : open) {
+        bool done = false;
+        for (std::size_t j = 0; j < owner.size(); ++j)
+            done = done || (owner[j] == p && low[j] > o_.verified_margin);
+        if (!done) still.push_back(p);
+    }
+    stats["crown_bab_roots_verified"] += double(open.size() - still.size());
+    stats["crown_bab_polytopes_verified"] += double(open.size() - still.size());
+    return still;
 }
 
 // The root of the ReLU splits ---------------------------------------------------------------------

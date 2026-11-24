@@ -174,8 +174,7 @@ struct NnVerifyOptions {
     int64_t relu_bab_crown_iterations =
         20;                            ///< alpha-CROWN steps on their ReLU lower slopes per row
     double relu_bab_crown_step = 0.25; ///< Adam's step on those slopes in [0, 1]
-    // refinement_method "crown-bab": ReLU splits, CROWN's node bound with the splits' multipliers
-    // (beta-CROWN, nn_verification.md); the root as relu-bab's
+    // refinement_method "crown-bab": beta-CROWN's ReLU splits (nn_verification.md)
     int64_t crown_bab_steps = 20;       ///< projected Adam steps on a node's slopes and multipliers
     int64_t crown_bab_root_steps = 100; ///< the root's steps
     double crown_bab_alpha_step = 0.1;  ///< Adam's step on the lower slopes in [0, 1]

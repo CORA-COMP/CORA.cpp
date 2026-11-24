@@ -472,6 +472,14 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     own search over its real rows. The crossing ReLU neurons of the root's bounds (U of them) are
     the only ones a node splits; the bounds of every layer stay the root's, a split neuron's
     clamped to its side.
+  - **Roots at once:** with several open polytopes, every real row of them is first bounded as
+    the search's root (`priv_crown_bab_roots`: no split, `crown_bab_root_steps` slope steps, rows
+    in chunks of the memory budget); a polytope with a row above `verified_margin` needs no search
+    (tinyimagenet_2024: 185 of 199 polytopes in 0.2 s, each before had its own root).
+  - **Measured settings:** vit_2023 with `relu_bab_crown_iterations` 0 (alpha-CROWN's layer
+    bounds took the whole 100 s on its attention; CROWN's take 4 s); tinyimagenet_2024 with
+    `relu_bab_init_gens` 256 (the root's slot net with every input a generator ran out of GPU
+    memory, in relu-bab too).
   - **Node bound:** `priv_backward_lower` with `ZonoBackward::split_sign` (per ReLU layer, -1: the
     input `z >= 0`, active; +1: `z <= 0`, inactive) and `beta`. A split neuron's bounds are clamped
     to `[max(l, 0), u]` or `[l, min(u, 0)]`, so its line is the identity or zero; each row adds
