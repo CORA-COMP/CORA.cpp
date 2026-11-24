@@ -333,7 +333,7 @@ def render(rows, readme):
             if row["category"] != category:
                 continue
             label = row["label"] + (rf"\textsuperscript{{{','.join(letter)}}}" if letter else "")
-            speedup = "--" if row["speedup"] is None else fmt_speedup(row["speedup"])
+            speedup = "--" if row["speedup"] is None else r"$\times$" + fmt_speedup(row["speedup"])
             if row["indicative"] and row["speedup"] is not None:
                 speedup = f"({speedup})"
             out.append(" & ".join([label, *row["tools"], row["cpp"], speedup]) + r" \\")
