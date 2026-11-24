@@ -18,6 +18,10 @@ per (benchmark, instance, tool). Adding a tool means adding its rows; the column
 | `preset` | the options of the run |
 | `source` | the run's result file: ours relative to `/workspace/vnncomp/runs`, alpha-beta-CROWN's relative to `~` on the development machine |
 
+`input_dims.csv` holds each benchmark's input dimension (the n of the paper): the fewest and most inputs
+`X_i` that a property of version 1.0 declares. `python3 scripts/paper/vnn_table.py --input-dims DIR` writes
+it from a checkout of the benchmarks.
+
 ## The instances
 
 - Dev sets v1 (`MANIFEST.json` sha256 `3501a505…6ae0`), seed set 1001, version 1.0 of every

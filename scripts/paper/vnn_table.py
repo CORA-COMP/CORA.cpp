@@ -3,14 +3,16 @@
 The appendix table has one row per benchmark and, per tool, the verified, falsified and unknown
 instances (unsat, sat, the rest: unknown, timeout, error); the main-body table has a selection of
 the benchmarks and the solved (verified + falsified) of the instances, the most solved of a row bold.
-An incorrect result (one that another tool contradicts) is never solved; it is marked. Tools without
-rows show `--`: today only CORA++ and alpha-beta-CROWN have results on the dev sets.
+An incorrect result (one that another tool contradicts) is never solved; it is marked. Tools
+without rows show `--`.
 
 Syntax:   python scripts/paper/vnn_table.py [--check]
-Reads:    examples/vnncomp/results/dev_results.csv (one row per benchmark, instance and tool)
+Reads:    examples/vnncomp/results/dev_results.csv (one row per benchmark, instance and tool) and
+          examples/vnncomp/results/input_dims.csv (each benchmark's input dimensions, the n of the paper)
 Writes:   paper/generated/vnn-comp-table.tex and paper/generated/vnn-comp-summary.tex (copied into
           the paper repository as they are)
 Checks:   --check renders both tables and compares them with the committed files, writes nothing
+Updates:  --input-dims DIR writes input_dims.csv from the vnnlib files of DIR/<benchmark>/1.0/
 Exit code: 0 if the files are written or up to date, else 1 with what is wrong.
 
 Authors:       Claude Opus 5.5
@@ -21,6 +23,7 @@ Reviewed:      ---
 import argparse
 import collections
 import csv
+import gzip
 import re
 import sys
 from pathlib import Path
@@ -31,13 +34,19 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--check", action="store_true", help="compare with the committed files, write nothing")
+    parser.add_argument("--input-dims", metavar="DIR", help="write input_dims.csv from the benchmarks in DIR")
     args = parser.parse_args()
+    if args.input_dims:
+        return write_input_dims(Path(args.input_dims))
     rows, problems = load(REPO / RESULTS)
+    dims = load_dims(REPO / DIMS)
+    problems += [f"vnn_table: {DIMS} has no row of {b}"
+                 for b in sorted({r["benchmark"] for r in rows}) if b not in dims]
     if problems:
         print("\n".join(problems))
         return 1
     table = tally(rows)
-    texts = {OUTPUT: render(table), SUMMARY: render_summary(table)}
+    texts = {OUTPUT: render(table, dims), SUMMARY: render_summary(table)}
     # the totals in the log, so that a reader sees the state without the PDF
     for tool, _ in TOOLS:
         ran = [b for b in table if table[b][tool]["run"]]
@@ -61,6 +70,7 @@ def main():
 REPO = Path(__file__).resolve().parents[2]
 # the input and the two outputs
 RESULTS = "examples/vnncomp/results/dev_results.csv"
+DIMS = "examples/vnncomp/results/input_dims.csv"
 OUTPUT = "paper/generated/vnn-comp-table.tex"
 SUMMARY = "paper/generated/vnn-comp-summary.tex"
 # the columns: the top tools of VNN-COMP, then CORA++ (the CSV's name, the header)
@@ -87,6 +97,57 @@ def load(path):
     missing = [b for b in MAIN if b not in {r["benchmark"] for r in rows}]
     problems += [f"vnn_table: the main-body benchmark {b} has no rows" for b in missing]
     return rows, problems
+
+
+def load_dims(path):
+    """`{benchmark: (fewest, most)}` input dimensions of the committed CSV; empty if it is absent."""
+    if not path.exists():
+        return {}
+    with path.open(newline="", encoding="utf-8") as f:
+        return {r["benchmark"]: (int(r["min"]), int(r["max"])) for r in csv.DictReader(f)}
+
+
+def write_input_dims(root):
+    """Writes input_dims.csv: per benchmark the fewest and most inputs of a property of version 1.0."""
+    out = []
+    for inst in sorted(root.glob("*/1.0/instances.csv")):
+        with inst.open(newline="", encoding="utf-8") as f:
+            names = {row[1].strip() for row in csv.reader(f) if len(row) > 1}
+        found = [n for n in (count_inputs(inst.parent / name) for name in sorted(names)) if n]
+        if found:
+            out.append((inst.parent.parent.name, min(found), max(found)))
+    # one row per benchmark, sorted, so that a rerun on the same benchmarks changes nothing
+    with (REPO / DIMS).open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f, lineterminator="\n")
+        writer.writerow(["benchmark", "min", "max"])
+        writer.writerows(out)
+    print(f"vnn_table: wrote {DIMS} ({len(out)} benchmarks)")
+    return 0
+
+
+def count_inputs(path):
+    """The inputs X_i that a vnnlib property declares (plain or gzipped), or None without the file."""
+    for p in (path, path.with_name(path.name + ".gz")):
+        if p.exists():
+            opener = gzip.open if p.suffix == ".gz" else open
+            seen = set()
+            with opener(p, "rt", encoding="utf-8") as f:
+                for line in f:
+                    m = re.match(r"\s*\(declare-const X_(\d+)", line)
+                    if m:
+                        seen.add(int(m.group(1)))
+                    elif seen and line.lstrip().startswith("(assert"):
+                        break
+            return len(seen)
+    return None
+
+
+def fmt_dims(span):
+    """The input dimension, or the range of a benchmark whose networks differ; thin spaces in thousands."""
+    def num(n):
+        return f"{n:,}".replace(",", r"\,")
+    lo, hi = span
+    return num(lo) if lo == hi else f"{num(lo)}--{num(hi)}"
 
 
 def tally(rows):
@@ -117,10 +178,10 @@ def header(first):
     return rf"\textbf{{{first}}} & " + " & ".join(rf"\textbf{{{h}}}" for _, h in TOOLS) + r" \\"
 
 
-def render(table):
+def render(table, dims):
     """The appendix table: a longtable in booktabs style, verified/falsified/unknown per tool."""
     ncols = len(TOOLS) + 2
-    # the header has the instances after the benchmark; the caption is the legend
+    # the header has the input dimension after the benchmark; the caption is the legend
     head = header("Benchmark").replace(r"\textbf{Benchmark} & ", r"\textbf{Benchmark} & \textbf{$n$} & ")
     out = [
         f"% Generated by {Path(__file__).relative_to(REPO).as_posix()} from {RESULTS}; do not edit.",
@@ -131,8 +192,9 @@ def render(table):
         r"\setlength{\LTcapwidth}{\linewidth}",
         r"\begin{longtable}{@{}lr" + "c" * len(TOOLS) + "@{}}",
         # the caption with the legend and the setup of the runs
-        r"\caption{Preliminary VNN-COMP results on the development instances: per benchmark the sampled "
-        r"instances~$n$ and, per tool, the verified/falsified/unknown instances (unknown includes timeouts and "
+        r"\caption{Preliminary VNN-COMP results on the development instances: per benchmark the input "
+        r"dimension~$n$ (a range where its networks differ) and, per tool, the verified/falsified/unknown "
+        r"of the sampled instances (unknown includes timeouts and "
         r"errors); `--' where a tool has no run yet. The most solved (verified + falsified) of a row are bold. "
         r"$\alpha,\!\beta$-CROWN 0.8.0 with its VNN-COMP'26 configurations and CORA++ ran on the same machine "
         r"(an A100 and one CPU thread per instance), one instance at a time, with the benchmarks' timeouts. "
@@ -152,7 +214,8 @@ def render(table):
     # one row per benchmark; a benchmark that no tool has run says so across the tools
     for b, entry in table.items():
         if not any(entry[t]["run"] for t, _ in TOOLS):
-            out.append(rf"{label(b)} & -- & \multicolumn{{{len(TOOLS)}}}{{c@{{}}}}{{\textit{{not run yet}}}} \\")
+            across = rf"\multicolumn{{{len(TOOLS)}}}{{c@{{}}}}{{\textit{{not run yet}}}}"
+            out.append(rf"{label(b)} & {fmt_dims(dims[b])} & {across} \\")
             continue
         best = max(entry[t]["solved"] for t, _ in TOOLS)
         cells = []
@@ -166,7 +229,7 @@ def render(table):
             marks = [m for m, on in ((PARTIAL, e["not run"]), (WRONG, e["incorrect"])) if on]
             used.update(marks)
             cells.append(text + (rf"\textsuperscript{{{','.join(marks)}}}" if marks else ""))
-        out.append(" & ".join([label(b), str(entry["instances"]), *cells]) + r" \\")
+        out.append(" & ".join([label(b), fmt_dims(dims[b]), *cells]) + r" \\")
     out.append(r"\end{longtable}")
     # the marks that occur, below the table
     notes = {PARTIAL: rf"\textsuperscript{{{PARTIAL}}}~{partial_note(table)}",
