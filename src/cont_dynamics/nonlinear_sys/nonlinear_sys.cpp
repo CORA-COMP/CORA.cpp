@@ -18,6 +18,7 @@
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "global/format.h"
 
+#include <algorithm>
 #include <array>
 #include <mutex>
 
@@ -60,25 +61,28 @@ NonlinearSys::NonlinearSys(const Dynamics &f, int64_t n)
                    0) {}
 
 NonlinearSys::NonlinearSys(const InputDynamics &f, int64_t n, int64_t m)
-    : n_(n), m_(m), third_(std::make_shared<ThirdOrder>()) {
+    : NonlinearSys(f, n, m, n) {}
+
+NonlinearSys::NonlinearSys(const InputDynamics &f, int64_t n, int64_t m, int64_t r)
+    : n_(n), m_(m), r_(r), third_(std::make_shared<ThirdOrder>()) {
     detail::Entry entry;
-    CORA_CHECK(n >= 1 && m >= 0, Error::wrong_input_in_constructor, [&] {
-        return "NonlinearSys: needs at least one state and m >= 0 inputs, got n = " +
-               std::to_string(n) + ", m = " + std::to_string(m);
+    CORA_CHECK(n >= 1 && m >= 0 && r >= 1, Error::wrong_input_in_constructor, [&] {
+        return "NonlinearSys: needs at least one state, m >= 0 inputs and one component, got n = " +
+               std::to_string(n) + ", m = " + std::to_string(m) + ", r = " + std::to_string(r);
     });
     // the symbolic states and inputs, and f on them
     std::vector<Expr> x, u;
     for (int64_t i = 0; i < n; ++i) x.push_back(Expr::var(int(i)));
     for (int64_t i = 0; i < m; ++i) u.push_back(Expr::var(int(n + i)));
     f_ = f(x, u);
-    CORA_CHECK(static_cast<int64_t>(f_.size()) == n, Error::wrong_input_in_constructor, [&] {
+    CORA_CHECK(static_cast<int64_t>(f_.size()) == r, Error::wrong_input_in_constructor, [&] {
         return "NonlinearSys: the dynamics returned " + std::to_string(f_.size()) +
-               " components for a system of dimension " + std::to_string(n);
+               " components, expected " + std::to_string(r);
     });
     // Row-major over z = (x, u): the Jacobian (i, j) and its symmetric Hessian (i, j, k).
     const int64_t d = n + m;
-    hessian_.assign(std::size_t(n * d * d), Expr(0.0));
-    for (int64_t i = 0; i < n; ++i)
+    hessian_.assign(std::size_t(r * d * d), Expr(0.0));
+    for (int64_t i = 0; i < r; ++i)
         for (int64_t j = 0; j < d; ++j) {
             jacobian_.push_back(f_[std::size_t(i)].diff(int(j)));
             for (int64_t k = j; k < d; ++k) {
@@ -87,6 +91,10 @@ NonlinearSys::NonlinearSys(const InputDynamics &f, int64_t n, int64_t m)
                 hessian_[std::size_t((i * d + k) * d + j)] = h;
             }
         }
+}
+
+bool NonlinearSys::is_affine() const {
+    return std::all_of(hessian_.begin(), hessian_.end(), [](const Expr &h) { return h.is_zero(); });
 }
 
 // The variables -----------------------------------------------------------------------------------
@@ -183,8 +191,8 @@ Tensor NonlinearSys::dynamics(const Tensor &x, const std::optional<Tensor> &u) c
 
 // A and B are the first n and the last m columns of the Jacobian over z.
 Jacobians NonlinearSys::jacobian_columns(const Tensor &x, const std::optional<Tensor> &u) const {
-    const Tensor J = Expr::eval_matrix(jacobian_, 0, n_, n_ + m_, variables(x, u), x);
-    return {J.slice(-1, 0, n_), m_ == 0 ? x.zeros_like({n_, 0}) : J.slice(-1, n_, n_ + m_)};
+    const Tensor J = Expr::eval_matrix(jacobian_, 0, r_, n_ + m_, variables(x, u), x);
+    return {J.slice(-1, 0, n_), m_ == 0 ? x.zeros_like({r_, 0}) : J.slice(-1, n_, n_ + m_)};
 }
 
 // The point and the input are vectors; the Jacobians of the columns are those of the point.
@@ -220,8 +228,8 @@ std::vector<Tensor> NonlinearSys::hessian(const Tensor &x, const std::optional<T
     const std::optional<Tensor> uc = u ? std::optional<Tensor>(u->expand_dims(-1)) : std::nullopt;
     const std::vector<Tensor> z = variables(xc, uc);
     std::vector<Tensor> out;
-    out.reserve(std::size_t(n_));
-    for (int64_t i = 0; i < n_; ++i)
+    out.reserve(std::size_t(r_));
+    for (int64_t i = 0; i < r_; ++i)
         out.push_back(Expr::eval_matrix(hessian_, std::size_t(i * d * d), d, d, z, xc));
     return out;
 }
@@ -245,11 +253,11 @@ NonlinearSys::third_order_enclosure(const Range &x, const std::optional<Range> &
     const int64_t d = n_ + m_;
     std::call_once(third_->once, [&] {
         std::vector<Expr> &T = third_->T;
-        T.assign(std::size_t(n_ * d * d * d), Expr(0.0));
+        T.assign(std::size_t(r_ * d * d * d), Expr(0.0));
         auto at = [d](int64_t i, const std::array<int64_t, 3> &p) {
             return std::size_t(((i * d + p[0]) * d + p[1]) * d + p[2]);
         };
-        for (int64_t i = 0; i < n_; ++i)
+        for (int64_t i = 0; i < r_; ++i)
             for (int64_t j = 0; j < d; ++j)
                 for (int64_t k = j; k < d; ++k)
                     for (int64_t l = k; l < d; ++l) {

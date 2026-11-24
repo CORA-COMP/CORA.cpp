@@ -103,7 +103,15 @@ class NonlinearSys {
     /// The system x' = f(x, u) with n states and m inputs; f is called once, here.
     NonlinearSys(const InputDynamics &f, int64_t n, int64_t m);
 
+    /// The system x' = f(x, u) read through r components, as the output equation y = g(x, u) of a
+    /// discrete-time system: the derivatives have r rows; f is called once, here.
+    NonlinearSys(const InputDynamics &f, int64_t n, int64_t m, int64_t r);
+
     int64_t dim() const { return n_; }
+    /// The number of components of f (n, but the r of the output equation of a NonlinearSysDT).
+    int64_t output_dim() const { return r_; }
+    /// Whether all second derivatives of f vanish identically (CORA's out_isLinear).
+    bool is_affine() const;
     /// The components of f, as written on the symbolic states and inputs.
     const std::vector<Expr> &expressions() const { return f_; }
     int64_t input_dim() const { return m_; }
@@ -223,7 +231,7 @@ class NonlinearSys {
 
     struct ThirdOrder; // the third-order tensor, derived once on first use (nonlinear_sys.cpp)
 
-    int64_t n_, m_;
+    int64_t n_, m_, r_;
     std::vector<Expr> f_, jacobian_, hessian_; ///< row-major over (i, j) and (i, j, k)
     std::shared_ptr<ThirdOrder> third_;
 };

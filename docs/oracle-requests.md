@@ -664,3 +664,39 @@ held slopes by hand). The ConvTranspose layer is tested against the oracle's `co
 | op (proposed) | request fields | reply |
 |---|---|---|
 | `neuralNetwork.backpropZonotopeBatch` | `layers`, `c`, `G`, `gc`, `gG`, `exact` | the gradients at the input's `c` and `G` |
+
+### Discrete-time nonlinear systems (port batch nlsdt)
+
+CORALean has `NonlinearSysDT.reach`, `simulate` and `linearize` (generic over the scalar and the set
+representation, with a `LinStep` certificate whose constant box encloses `f(x*, u*) - A x*`), but the
+pinned oracle serves no `nonlinearSysDT` operation, so CORA.cpp tests `reach`, `post`, `outputSet`
+and `simulate` as properties (sampled trajectories lie in the sets) and by hand cases. `f` and the
+output equation are symbolic expressions; the oracle needs the same expression language as
+`nonlinearSys` (`docs/oracle-requests.md`, nonlinear section). CORA.cpp's recipe for one step of
+`nonlinearSysDT.reach`, which a CORALean batch can instantiate its `LinStep` with:
+
+| op (proposed) | request fields | reply and order |
+|---|---|---|
+| `nonlinearSysDT.simulate` | `f`, `x0`, `u` (a constant or one per step), `steps` | the states `f(x, u)` applied `steps` times, each by nearest evaluation of the expression tree in its written order |
+| `nonlinearSysDT.post` | `f`, `dt`, `R` (c, G), `U` (c, G), `zonotopeOrder`, `tensorOrder` (2 or 3), `errorOrder` | the zonotope after one step and the added error, as the recipe below |
+
+Recipe of `post` (CORA's `linReach`, `priv_linearize`, `priv_linError_mixed_noInt`, `priv_linError_thirdOrder`):
+
+1. Linearization point: `p_x` the center of `R`, `p_u` the center of `U` (the input 0 without a set). No half step of the flow
+   (unlike `nonlinearSys`): `f0 = f(p_x, p_u)`, `A`, `B` the Jacobians there.
+2. Affine part: `Rdelta = R - p_x`; `Udelta = B (U - p_u)`; `Rtp = A Rdelta + (Udelta + f0)`, generators in the order
+   `[A G_R, B G_U]`, center `f0`.
+3. Error set, from the boxes `IHx = interval(Rdelta)`, `IHu = interval(U - p_u)` and `Z = cartProd(reduce(Rdelta, errorOrder), U - p_u)`:
+   - Tensor order 2: the Hessian of each component as an interval matrix over `IHx + p_x` and `IHu + p_u` (a second derivative that
+     vanishes identically is the exact 0). `H_mid` the `0.5 (inf + sup)`, `H_rad` the `0.5 (sup - inf)` of each entry;
+     `error = 0.5 quadMap(Z, H_mid) + zonotope([-e, e])` with `e_i = 0.5 (dz' H_rad_i) dz`, `dz = max(|inf|, |sup|)` of `[IHx; IHu]`
+     (the row `dz' H_rad` first, then times `dz`).
+   - Tensor order 3: `error = 0.5 quadMap(Z, H(p_x, p_u))` plus the box `1/6 sum_j dz_j (dz' T_ij dz)` over the `j` with a nonzero
+     third derivative `T_ij` evaluated over the boxes (the quadratic form `(dz' T_ij) dz` first, times `dz_j`), `dz = [IHx; IHu]`
+     (not absolute values).
+   - Both: reduced to `zonotopeOrder` n generators (Girard).
+4. Result: `reduce(Rtp + error, zonotopeOrder)`; the first set of `reach` (the initial set) is not reduced.
+
+The output set follows `outputSet.m` the same way: `y0 = g(p_x, p_u)`, `J (R - p_x) + D (U - p_u) + y0`, plus the error of the
+tensor order of the output equation (order 2: the box `0.5 dz' max|H_i| dz` over `R` and `U` themselves; order 3: the Hessian at the
+point maps `Z - p` and the third derivatives over the boxes give the box).
