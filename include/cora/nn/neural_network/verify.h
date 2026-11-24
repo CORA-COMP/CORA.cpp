@@ -74,7 +74,11 @@ struct NnVerifyOptions {
     double pgd_step_size = 0.25; ///< times the box radius
     double pgd_decay = 0.5;
     std::vector<double> pgd_decay_at = {0.5, 0.75}; ///< fractions of the steps
-    int64_t max_candidates = 8;                     ///< confirm checks per attack step
+    /// The half-widths of the sign activation's straight-through gradient (1 on |z| <= w), one per
+    /// round of restarts in turn (alpha-beta-CROWN's tight 0.1 and loose 5 SignMerge on
+    /// traffic_signs); the candidates are always checked on the true network.
+    std::vector<double> pgd_sign_windows = {1.0};
+    int64_t max_candidates = 8; ///< confirm checks per attack step
     /// PGD's restarts shrink until this many steps fit in the attack's time (a slow, wide network).
     int64_t pgd_min_steps = 10;
     uint64_t seed = 0;
@@ -206,10 +210,10 @@ class NnProblem {
     Tensor loss(const Tensor &y, const Tensor &cases) const;
 
     /// The gradient at x (S, n) of the attack's objective: per polytope the violated rows' excess
-    /// plus a tenth of the worst row, the best polytope of the case or the sample's target
-    /// (targets: (S, 1) polytope indices); loss gets loss() at x.
+    /// plus a tenth of the worst row, of the case's best polytope or the sample's target (S, 1);
+    /// loss gets loss() at x; a sign's gradient is 1 on |z| <= sign_window.
     Tensor objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss = nullptr,
-                              const Tensor *targets = nullptr) const;
+                              const Tensor *targets = nullptr, double sign_window = 1.0) const;
 
     /// The confirm check of one point; the output if it is a counterexample.
     std::optional<std::vector<double>> confirm(const Tensor &x);

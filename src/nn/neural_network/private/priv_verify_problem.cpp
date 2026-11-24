@@ -27,6 +27,7 @@
 // Reviewed:      ---
 
 #include "cora/global/error.h"
+#include "cora/global/tensor/tolerance.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "nn/neural_network/private/priv_layers.h"
 #include "nn/neural_network/private/priv_verify.h"
@@ -267,7 +268,7 @@ Tensor NnProblem::loss(const Tensor &y, const Tensor &cases) const {
 }
 
 Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tensor *loss,
-                                     const Tensor *targets) const {
+                                     const Tensor *targets, double sign_window) const {
     const NeuralNetwork &net = *net32_;
     // the forward pass, keeping the inputs of the activations and the outputs (outs[k + 1])
     const std::vector<NeuralNetwork::Layer> &layers = net.layers();
@@ -350,8 +351,16 @@ Tensor NnProblem::objective_gradient(const Tensor &x, const Tensor &cases, Tenso
         if (a == Activation::sigmoid) g = g.multiply(z.sigmoid().multiply(1.0 - z.sigmoid()));
         if (a == Activation::tanh) g = g.multiply(1.0 - z.tanh().square());
         if (a == Activation::square) g = g.multiply(z + z);
-        // sign: the straight-through estimator (1 on [-1, 1]), so that the attack moves
-        if (a == Activation::sign) g = g.multiply(z.abs().less_equal(z.ones_like()));
+        // sign: straight-through on [-w, w]; a merged sign(sign(x) + 0.1) passes all
+        if (a == Activation::sign) {
+            const int64_t src = net.source(k);
+            const Tensor &in = outs[std::size_t(src + 1)];
+            const bool merged =
+                src >= 0 && net.activations()[std::size_t(src)] == Activation::sign &&
+                in.shape() == z.shape() &&
+                (z - in - layers[k].b).abs().max().data()[0] <= default_tol(z.dtype());
+            if (!merged) g = g.multiply(z.abs().less_equal(z.ones_like() * sign_window));
+        }
         // floor: the straight-through estimator (1), as x - frac(x)
         if (a == Activation::floor) g = g.multiply(z.ones_like());
         if (a == Activation::exp) g = g.multiply(z.exp());
