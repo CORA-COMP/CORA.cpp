@@ -184,6 +184,9 @@ struct NnVerifyOptions {
     /// Look-ahead branching: the children of a node's best crown_bab_fsb neurons by BaBSR's score
     /// are bounded by one pass each, the neuron of the best worse child taken (<= 1: BaBSR's).
     int64_t crown_bab_fsb = 0;
+    /// The steps in the search dtype (dtype), each batch's best slopes and multipliers evaluated
+    /// once more in float64 (only those bounds decide); false: every step in float64.
+    bool crown_bab_search = false;
     int64_t crown_bab_memory_budget = 0; ///< the bytes of one batch's passes; 0: half the batch's
     int64_t crown_bab_witnesses =
         16; ///< the weakest open nodes per batch whose corners are checked

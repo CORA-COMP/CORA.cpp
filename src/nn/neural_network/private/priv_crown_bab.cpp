@@ -136,62 +136,94 @@ struct Bounded {
     Tensor best, alpha, beta, score, corner;
 };
 
+/// What one backward pass reads: the record, its net and bounds, the box and the rows, in one
+/// dtype.
+struct Pass {
+    const ZonoPropagation *out = nullptr;
+    const ZonoNet *net = nullptr;
+    const ZonoBounds *bounds = nullptr;
+    Tensor x, rad, rows, offsets;
+};
+
 /// The branch and bound of one polytope.
 class CrownBab {
   public:
     CrownBab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
              const Tensor &x, const Tensor &rad, const Tensor &rows, const Tensor &offsets,
-             const CrownBabOptions &o, std::map<std::string, double> &stats)
-        : out_(out), net_(net), bounds_(bounds), x_(x), rad_(rad), rows_(rows), offsets_(offsets),
-          o_(o), stats_(stats), space_(aux_space(out, net, bounds)), K_(rows.shape()[0]) {}
+             const CrownBabOptions &o, std::map<std::string, double> &stats,
+             const CrownBabSearch *search)
+        : net_(net), x_(x), o_(o), stats_(stats), space_(aux_space(out, net, bounds)),
+          K_(rows.shape()[0]) {
+        exact_ = {&out, &net, &bounds, x, rad, rows, offsets};
+        if (search && search->out && search->net && search->bounds) {
+            // the search's copy in its dtype (its weights')
+            const DType dt = search->net->b.back().dtype();
+            search_ = {search->out, search->net, search->bounds, x.to(dt),
+                       rad.to(dt),  rows.to(dt), offsets.to(dt)};
+            searching_ = true;
+        }
+    }
 
     int run(const std::function<bool(const Tensor &)> &check);
 
   private:
     bool late() const { return now_seconds() >= std::min(o_.deadline, net_.deadline); }
-    Bounded bound(const Tensor &S, Tensor alpha, Tensor beta, int64_t steps) const;
+    Tensor evaluate(const Pass &p, const std::vector<Tensor> &signs, const Tensor &alpha,
+                    const Tensor &beta, std::vector<Tensor> *ga, std::vector<Tensor> *gb,
+                    std::vector<Tensor> *ic, Tensor *corner) const;
+    Bounded bound(const Tensor &S, const Tensor &alpha, const Tensor &beta, int64_t steps) const;
     Tensor choose(const Tensor &S, const Bounded &b) const;
     Tensor look_ahead(const Tensor &S, const Tensor &alpha, const Tensor &beta, const Bounded &b,
                       int64_t batch) const;
     int64_t per_node_bytes() const;
 
-    const ZonoPropagation &out_;
     const ZonoNet &net_;
-    const ZonoBounds &bounds_;
-    Tensor x_, rad_, rows_, offsets_;
+    Tensor x_;
+    Pass exact_, search_;
+    bool searching_ = false;
     CrownBabOptions o_;
     std::map<std::string, double> &stats_;
     CrossingSpace space_;
     int64_t K_ = 0;
 };
 
-Bounded CrownBab::bound(const Tensor &S, Tensor alpha, Tensor beta, int64_t steps) const {
+Tensor CrownBab::evaluate(const Pass &p, const std::vector<Tensor> &signs, const Tensor &alpha,
+                          const Tensor &beta, std::vector<Tensor> *ga, std::vector<Tensor> *gb,
+                          std::vector<Tensor> *ic, Tensor *corner) const {
+    const int64_t N = alpha.shape()[0], n0 = p.x.shape()[1];
+    const Tensor xs = p.x.broadcast_to({N, n0}) + 0.0, rs = p.rad.broadcast_to({N, n0}) + 0.0;
+    const std::vector<Tensor> a_l = aux_expand(space_, alpha), b_l = aux_expand(space_, beta);
+    ZonoBackward opt;
+    opt.bounds = p.bounds;
+    opt.row_alpha = &a_l;
+    opt.g_alpha = ga;
+    opt.split_sign = &signs;
+    opt.beta = &b_l;
+    opt.g_beta = gb;
+    opt.intercepts = ic;
+    opt.corner = corner;
+    opt.softmax_lse = o_.softmax_lse;
+    return priv_backward_lower(*p.out, *p.net, p.x.zeros_like({N, 0}), xs, rs, p.rows, nullptr,
+                               &opt) -
+           p.offsets;
+}
+
+Bounded CrownBab::bound(const Tensor &S, const Tensor &alpha, const Tensor &beta,
+                        int64_t steps) const {
     const double started = now_seconds();
-    const int64_t N = S.shape()[0], n0 = x_.shape()[1];
-    const Tensor xs = x_.broadcast_to({N, n0}) + 0.0, rs = rad_.broadcast_to({N, n0}) + 0.0;
-    const Tensor none = x_.zeros_like({N, 0});
-    const std::vector<Tensor> signs = aux_expand(space_, S);
-    std::vector<Tensor> a1{std::move(alpha)}, a_m1(1), a_m2(1), b1{std::move(beta)}, b_m1(1),
-        b_m2(1);
+    // the steps in the search's dtype (or the record's), every step's bound per row the best
+    const Pass &p = searching_ ? search_ : exact_;
+    const DType dt = p.x.dtype();
+    const std::vector<Tensor> signs = aux_expand(space_, S.to(dt));
+    std::vector<Tensor> a1{alpha.to(dt)}, a_m1(1), a_m2(1), b1{beta.to(dt)}, b_m1(1), b_m2(1);
     Bounded r;
     for (int64_t t = 0;; ++t) {
         const bool more = t < steps && !late();
-        const std::vector<Tensor> a_l = aux_expand(space_, a1[0]), b_l = aux_expand(space_, b1[0]);
         std::vector<Tensor> ga, gb, ic;
         Tensor corner;
-        ZonoBackward opt;
-        opt.bounds = &bounds_;
-        opt.row_alpha = &a_l;
-        opt.g_alpha = more ? &ga : nullptr;
-        opt.split_sign = &signs;
-        opt.beta = &b_l;
-        opt.g_beta = more ? &gb : nullptr;
-        opt.intercepts = &ic;
-        opt.corner = &corner;
-        opt.softmax_lse = o_.softmax_lse;
         const Tensor value =
-            priv_backward_lower(out_, net_, none, xs, rs, rows_, nullptr, &opt) - offsets_;
-        // every step's bound holds: per row the best, with its slopes and multipliers
+            evaluate(p, signs, a1[0], b1[0], more ? &ga : nullptr, more ? &gb : nullptr,
+                     searching_ ? nullptr : &ic, searching_ ? nullptr : &corner);
         if (!r.best.defined()) {
             r.best = value;
             r.alpha = a1[0];
@@ -202,8 +234,10 @@ Bounded CrownBab::bound(const Tensor &S, Tensor alpha, Tensor beta, int64_t step
             r.alpha = Tensor::where(up, a1[0], r.alpha);
             r.beta = Tensor::where(up, b1[0], r.beta);
         }
-        r.score = aux_gather(space_, ic, a1[0]);
-        r.corner = corner;
+        if (!searching_) {
+            r.score = aux_gather(space_, ic, a1[0]);
+            r.corner = corner;
+        }
         if (!more) break;
         // all decided: no more steps
         if (r.best.max(1).min().item() > o_.margin) break;
@@ -212,6 +246,16 @@ Bounded CrownBab::bound(const Tensor &S, Tensor alpha, Tensor beta, int64_t step
             g_b{aux_gather(space_, gb, b1[0])};
         priv_adam_slopes(a1, a_m1, a_m2, g_a, t + 1, o_.alpha_step);
         priv_adam_slopes(b1, b_m1, b_m2, g_b, t + 1, o_.beta_step, kInf);
+    }
+    if (searching_) {
+        // the best slopes and multipliers once more in the record's dtype: only this bound decides
+        const DType de = exact_.x.dtype();
+        r.alpha = r.alpha.to(de).maximum(0.0).minimum(1.0);
+        r.beta = r.beta.to(de).maximum(0.0);
+        std::vector<Tensor> ic;
+        r.best = evaluate(exact_, aux_expand(space_, S), r.alpha, r.beta, nullptr, nullptr, &ic,
+                          &r.corner);
+        r.score = aux_gather(space_, ic, r.alpha);
     }
     stats_["crown_bab_bound_seconds"] += now_seconds() - started;
     return r;
@@ -378,10 +422,51 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
 int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
                    const Tensor &x, const Tensor &rad, const Tensor &rows, const Tensor &offsets,
                    const CrownBabOptions &o, const std::function<bool(const Tensor &)> &check,
-                   std::map<std::string, double> &stats) {
+                   std::map<std::string, double> &stats, const CrownBabSearch *search) {
     if (x.shape()[0] != 1) CORA_FAIL(Error::wrong_value, "verify: crown-bab bounds one box");
-    CrownBab bab(out, net, bounds, x, rad, rows, offsets, o, stats);
+    CrownBab bab(out, net, bounds, x, rad, rows, offsets, o, stats, search);
     return bab.run(check);
+}
+
+ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype) {
+    ZonoNet copy = net;
+    const auto to = [&](std::vector<Tensor> &ts) {
+        for (Tensor &t : ts)
+            if (t.defined()) t = t.to(dtype);
+    };
+    to(copy.W);
+    to(copy.b);
+    to(copy.abs_w);
+    to(copy.WT);
+    to(copy.abs_wT);
+    for (NeuralNetwork::Layer &layer : copy.maps) layer = layer.to(dtype);
+    return copy;
+}
+
+ZonoPropagation priv_record_to(const ZonoPropagation &out, DType dtype) {
+    // what priv_backward_lower reads: each activation layer's input set and bounds
+    ZonoPropagation copy;
+    const auto to = [&](const Tensor &t) { return t.defined() ? t.to(dtype) : t; };
+    for (const ZonoLayerRecord &rec : out.layers) {
+        ZonoLayerRecord r;
+        r.index = rec.index;
+        r.first_id = rec.first_id;
+        r.c_in = to(rec.c_in);
+        r.dr_in = to(rec.dr_in);
+        r.G_in = to(rec.G_in);
+        r.l = to(rec.l);
+        r.u = to(rec.u);
+        copy.layers.push_back(std::move(r));
+    }
+    return copy;
+}
+
+ZonoBounds priv_bounds_to(const ZonoBounds &bounds, DType dtype) {
+    ZonoBounds copy = bounds;
+    for (std::vector<Tensor> *ts : {&copy.l, &copy.u})
+        for (Tensor &t : *ts)
+            if (t.defined()) t = t.to(dtype);
+    return copy;
 }
 
 } // namespace cora

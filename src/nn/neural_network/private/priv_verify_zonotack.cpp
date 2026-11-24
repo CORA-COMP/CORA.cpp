@@ -974,12 +974,21 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
             return priv_check_points(problem, points, ci.broadcast_to({points.shape()[0]}),
                                      *found_);
         };
+        // the steps' copy in the search dtype (the bounds that decide stay float64)
+        const DType sdt = problem.options().dtype;
+        const bool searching = o_.crown_bab_search && sdt != xi.dtype();
+        ZonoNet net_s = searching ? priv_zono_net_to(net, sdt) : ZonoNet(net);
+        const ZonoPropagation out_s = searching ? priv_record_to(out, sdt) : ZonoPropagation();
+        const ZonoBounds bounds_s = searching ? priv_bounds_to(bounds, sdt) : ZonoBounds();
+        net_s.deadline = net.deadline;
+        const CrownBabSearch search{&out_s, &net_s, &bounds_s};
         for (const int64_t p : open) {
             // the polytope's real rows a_k y - b_k
             const std::vector<int64_t> real = real_row_.slice(0, p, p + 1).squeeze(0).nonzero();
             const Tensor A = A_.slice(0, p, p + 1).squeeze(0).take(real, 0);
             const Tensor b = b_.slice(0, p, p + 1).squeeze(0).take(real, 0);
-            const int res = priv_crown_bab(out, net, bounds, xi, ri, A, b, co, check, stats);
+            const int res = priv_crown_bab(out, net, bounds, xi, ri, A, b, co, check, stats,
+                                           searching ? &search : nullptr);
             if (res == 2) return "sat";
             if (res == 0 || aux_late()) return "unknown";
             stats["crown_bab_polytopes_verified"] += 1;

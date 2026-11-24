@@ -246,10 +246,24 @@ struct CrownBabOptions {
 /// when some row's bound exceeds the margin. check(points (M, n0)) confirms a counterexample.
 /// 1: verified, 2: check confirmed one, 0: open (the deadline, the frontier's bytes, or a node
 /// with every crossing neuron split still open).
+/// With `search`, the steps run on a copy in another dtype (priv_crown_bab_search) and each
+/// batch's best slopes and multipliers are evaluated once more in the record's dtype: only those
+/// bounds decide.
+struct CrownBabSearch {
+    const ZonoPropagation *out = nullptr;
+    const ZonoNet *net = nullptr;
+    const ZonoBounds *bounds = nullptr;
+};
 int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
                    const Tensor &x, const Tensor &rad, const Tensor &rows, const Tensor &offsets,
                    const CrownBabOptions &o, const std::function<bool(const Tensor &)> &check,
-                   std::map<std::string, double> &stats);
+                   std::map<std::string, double> &stats, const CrownBabSearch *search = nullptr);
+
+/// The net's weights, the record's layer inputs and bounds (what priv_backward_lower reads), and
+/// the bounds in another dtype, for priv_crown_bab's search.
+ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype);
+ZonoPropagation priv_record_to(const ZonoPropagation &out, DType dtype);
+ZonoBounds priv_bounds_to(const ZonoBounds &bounds, DType dtype);
 
 /// One projected Adam step t >= 1 of size `step` on the slopes alpha in [0, upper] (undefined ones
 /// and those without a gradient g are held), the moments m1, m2 updated.

@@ -614,6 +614,7 @@ void crown_bab_verdicts(const std::string &b) {
         o.falsification_order = "bound-first";
         o.crown_bab_batch = 8; // a few nodes at once: the stack and the batches' slicing
         o.crown_bab_fsb = net_i % 2 == 0 ? 0 : 3; // BaBSR's score, or the look-ahead
+        o.crown_bab_search = net_i % 3 == 0;      // the steps in the search dtype, float64 decides
         for (const double t : {least - 0.3, least - 0.02, least + 0.05}) {
             const NnVerifyResult r = nn.verify(aux_below(2, 2, -1.0, 1.0, t), 30, o);
             if (r.status == "unsat")

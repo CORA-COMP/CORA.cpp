@@ -5733,6 +5733,8 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(crown_bab_beta_step, "crown-bab: Adam's step on the multipliers");
     CORA_VERIFY_FIELD(crown_bab_batch, "crown-bab: nodes bounded at once at most");
     CORA_VERIFY_FIELD(crown_bab_fsb, "crown-bab: look-ahead candidates per node; <= 1: BaBSR");
+    CORA_VERIFY_FIELD(crown_bab_search,
+                      "crown-bab: the steps in the search dtype, float64 decides");
     CORA_VERIFY_FIELD(crown_bab_memory_budget,
                       "crown-bab: bytes of one batch's passes; 0: half the batch budget");
     CORA_VERIFY_FIELD(crown_bab_witnesses,
