@@ -45,6 +45,12 @@ Reviewed:      ---
 # CORA: contSet/@polyZonotope/subs.m
 # CORA: contSet/@polyZonotope/restructure.m
 # CORA: contSet/@polyZonotope/representsa_.m
+# CORA: contSet/@polyZonotope/matMap.m
+# CORA: contSet/@polyZonotope/polyMap.m
+# CORA: contSet/@polyZonotope/cubMap.m
+# CORA: contSet/@polyZonotope/linComb.m
+# CORA: contSet/@polyZonotope/lift_.m
+# CORA: contSet/@polyZonotope/partZonotope.m
 
 import unittest
 
@@ -220,6 +226,29 @@ class Substitution(unittest.TestCase):
         self.assertEqual(P.restructure().dim, 2)
         self.assertTrue(P.representsa("polyZonotope"))
         self.assertFalse(P.representsa("emptySet"))
+
+
+class Maps(unittest.TestCase):
+    # the maps and combinations: dimensions and identifiers, the points are checked in C++
+    def test_linear_combination_and_lift(self):
+        P = known()
+        S = P.linear_combination(P)
+        self.assertEqual(S.dim, 2)
+        self.assertEqual(list(S.id), [1, 2, 3, 4, 5])
+        self.assertEqual(P.lift(2, [1, 0]).dim, 2)
+        with self.assertRaises(cora.errors.WrongValue):
+            P.lift(1, [1, 0])
+
+    def test_matrix_polynomial_and_cubic_maps(self):
+        P = cora.PolyZonotope(np.array([1.0, 2.0, 3.0, 4.0]), np.eye(4)[:2], None, None, [1, 2])
+        self.assertEqual(P.matrix_map(P, 2, 2, 2).dim, 4)
+        coeff, E = np.array([[1.0, 2.0]]), np.array([[1, 0], [1, 1], [0, 0], [0, 0]])
+        self.assertEqual(P.polynomial_map(coeff, E).dim, 1)
+        Q = known()
+        self.assertEqual(Q.cubic_map([[np.eye(2), np.eye(2)]]).dim, 1)
+        self.assertEqual(Q.part_zonotope([1]).dim, 2)
+        with self.assertRaises(cora.errors.WrongValue):
+            Q.part_zonotope([9])
 
 
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #

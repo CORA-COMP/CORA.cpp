@@ -28,6 +28,12 @@
 // CORA: contSet/@polyZonotope/isFullDim.m
 // CORA: contSet/@polyZonotope/isequal.m
 // CORA: contSet/@polyZonotope/empty.m
+// CORA: contSet/@polyZonotope/matMap.m
+// CORA: contSet/@polyZonotope/polyMap.m
+// CORA: contSet/@polyZonotope/cubMap.m
+// CORA: contSet/@polyZonotope/linComb.m
+// CORA: contSet/@polyZonotope/lift_.m
+// CORA: contSet/@polyZonotope/partZonotope.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
@@ -267,6 +273,39 @@ class PolyZonotope : public ContSet {
     /// "zonoBundle" for a set that is no zonotope is Error::not_supported.
     bool representsa(const std::string &type, Tol tol = std::nullopt) const;
 
+    // The maps ------------------------------------------------------------------------------------
+
+    /// The product of two matrix-valued sets, this one n x k and S k x m, each stored column by
+    /// column (CORA's matMap): exact over the shared factors, the products of independent factors
+    /// are new independent generators.
+    PolyZonotope matrix_map(const PolyZonotope &S, int64_t n, int64_t k, int64_t m) const;
+
+    /// The image of the polynomial z_i = sum_t coeff(i, t) prod_j x_j^E[t][j] (CORA's polyMap):
+    /// coeff (m, T), one exponent vector per term. The independent part becomes dependent
+    /// (docs/cora-differences.md).
+    PolyZonotope polynomial_map(const Tensor &coeff, const Exponents &E) const;
+
+    /// The image of z_i = sum_k x_k (x' T[i][k] x) (CORA's cubMap), exact over the factors: one
+    /// generator per ordered triple of generators. ind[i] lists the k that enter output i (default:
+    /// all).
+    PolyZonotope cubic_map(const std::vector<std::vector<Tensor>> &T,
+                           const std::vector<std::vector<int64_t>> &ind = {}) const;
+
+    /// The set of the points (1 - t)/2 x + (1 + t)/2 y, t in [-1, 1], x in this set, y in S (CORA's
+    /// linComb): the factors of the two sets side by side, one new factor t. A zonotope or a box is
+    /// taken as a polynomial zonotope.
+    PolyZonotope linear_combination(const PolyZonotope &S) const;
+    PolyZonotope linear_combination(const Zonotope &Z) const;
+    PolyZonotope linear_combination(const Interval &I) const;
+
+    /// The set in a space of dimension N with state i at position dims[i] (CORA's lift_, whose
+    /// projection is the inverse permutation): a permutation of the coordinates.
+    PolyZonotope lift(int64_t N, const std::vector<int64_t> &dims) const;
+
+    /// A polynomial zonotope that contains the set, whose dependent generators are grouped by the
+    /// exponents of the factors ids, each group (except the constant one) on a new factor (CORA's
+    /// partZonotope). The chosen factors stay with zero exponents.
+    PolyZonotope part_zonotope(const std::vector<int64_t> &ids) const;
 
   protected:
     // The ContSet interface, as CORA's methods of the same names
@@ -284,6 +323,7 @@ class PolyZonotope : public ContSet {
     std::string display_impl() const override;
     bool is_bounded_impl() const override;
     bool is_full_dim_impl(Tol tol) const override;
+    Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;
 
   private:
     Tensor c_, G_, GI_;

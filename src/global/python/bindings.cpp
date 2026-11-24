@@ -3182,6 +3182,37 @@ void bind_poly_zonotope(py::module_ &m) {
                 return P.quad_map(matrices);
             },
             py::arg("Q"), "The image under z_i = x' Q[i] x")
+        // the matrix product and the polynomial
+        .def("matrix_map", &PolyZonotope::matrix_map, py::arg("S"), py::arg("n"), py::arg("k"),
+             py::arg("m"), "The product of two sets that hold n x k and k x m matrices by column")
+        .def(
+            "polynomial_map",
+            [](const PolyZonotope &P, const py::object &coeff, const py::object &E) {
+                const Tensor C = tensor_of(coeff, "coeff");
+                return P.polynomial_map(C, exponents_from_python(E, std::size_t(C.shape()[1])));
+            },
+            py::arg("coeff"), py::arg("E"),
+            "The image under z_i = sum_t coeff[i, t] prod_j x_j^E[j, t]")
+        // cubic map
+        .def(
+            "cubic_map",
+            [](const PolyZonotope &P, const py::list &T, const std::optional<Indices> &ind) {
+                return P.cubic_map(matrices_of(T), ind.value_or(Indices{}));
+            },
+            py::arg("T"), py::arg("ind") = py::none(),
+            "The image under z_i = sum_k x_k (x' T[i][k] x); ind[i] lists the k of output i")
+        .def("linear_combination",
+             py::overload_cast<const PolyZonotope &>(&PolyZonotope::linear_combination, py::const_),
+             py::arg("S"), "The points (1 - t)/2 x + (1 + t)/2 y of this set and S")
+        .def("linear_combination",
+             py::overload_cast<const Zonotope &>(&PolyZonotope::linear_combination, py::const_),
+             py::arg("Z"), "The same for a zonotope")
+        .def("linear_combination",
+             py::overload_cast<const Interval &>(&PolyZonotope::linear_combination, py::const_),
+             py::arg("I"), "The same for a box")
+        // the grouping by exponents
+        .def("part_zonotope", &PolyZonotope::part_zonotope, py::arg("id"),
+             "A set that holds the set, its generators grouped by the exponents of the factors id")
         // the canonical form
         .def(
             "compact",
