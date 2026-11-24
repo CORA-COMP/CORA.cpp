@@ -294,6 +294,7 @@ PolyZonotope priv_merged_set(const Tensor &c, const Tensor &G, const Tensor &GI,
 }
 
 std::vector<int64_t> priv_append_fresh_ids(const std::vector<int64_t> &ids, int64_t count) {
+    // the new identifiers count on from the largest one
     std::vector<int64_t> out = ids;
     const int64_t top = ids.empty() ? int64_t(0) : *std::max_element(ids.begin(), ids.end());
     for (int64_t j = 1; j <= count; ++j) out.push_back(top + j);
@@ -301,6 +302,7 @@ std::vector<int64_t> priv_append_fresh_ids(const std::vector<int64_t> &ids, int6
 }
 
 Exponents priv_extended_exponents(const Exponents &E, std::size_t rows) {
+    // the zero column of the center first
     Exponents out;
     out.reserve(E.size() + 1);
     out.emplace_back(rows, 0);
@@ -318,6 +320,7 @@ PolyZonotope priv_absorb_rounding(const PolyZonotope &set) {
         e.resize(p + std::size_t(k), 0);
         E.push_back(std::move(e));
     }
+    // the unit columns of the new factors
     for (int64_t j = 0; j < k; ++j) {
         std::vector<int> e(p + std::size_t(k), 0);
         e[p + std::size_t(j)] = 1;
@@ -334,6 +337,18 @@ PolyZonotope priv_absorb_rounding(const PolyZonotope &set) {
             detail::Verbatim{}};
 }
 
+
+Tensor priv_pair_independent(const Tensor &A, const Tensor &B) {
+    // the paired rows, then the surplus of the longer block
+    const int64_t qa = A.shape()[0], qb = B.shape()[0], common = std::min(qa, qb);
+    std::vector<Tensor> sums{(A.slice(-2, 0, common) + B.slice(-2, 0, common)) * 0.5};
+    std::vector<Tensor> diffs{(A.slice(-2, 0, common) - B.slice(-2, 0, common)) * 0.5};
+    if (qa > common) sums.push_back(A.slice(-2, common, qa));
+    if (qb > common) diffs.push_back(B.slice(-2, common, qb));
+    sums.insert(sums.end(), diffs.begin(), diffs.end());
+    return Tensor::concat(sums, -2);
+}
+
 PolyZonotope priv_multiply(const PolyZonotope &a, const PolyZonotope &b) {
     const Tensor ga = Tensor::concat({a.center().expand_dims(0), a.generators()}, -2);
     const Tensor gb = Tensor::concat({b.center().expand_dims(0), b.generators()}, -2);
@@ -345,6 +360,7 @@ PolyZonotope priv_multiply(const PolyZonotope &a, const PolyZonotope &b) {
     const Exponents Eb = priv_extended_exponents(b.exponents(), b.ids().size());
     Exponents E;
     E.reserve(Ea.size() * Eb.size());
+    // the sums of the exponent columns
     for (const std::vector<int> &x : Ea)
         for (const std::vector<int> &y : Eb) {
             std::vector<int> e = x;

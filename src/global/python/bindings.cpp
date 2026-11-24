@@ -3210,6 +3210,22 @@ void bind_poly_zonotope(py::module_ &m) {
         .def("linear_combination",
              py::overload_cast<const Interval &>(&PolyZonotope::linear_combination, py::const_),
              py::arg("I"), "The same for a box")
+        // the hull and the derivatives
+        .def("convex_hull", py::overload_cast<>(&PolyZonotope::convex_hull, py::const_),
+             "The segments between two points of the set (CORA's convHull_ with one argument)")
+        .def("convex_hull",
+             py::overload_cast<const PolyZonotope &>(&PolyZonotope::convex_hull, py::const_),
+             py::arg("S"), "A set that contains this set and S")
+        .def("convex_hull",
+             py::overload_cast<const Zonotope &>(&PolyZonotope::convex_hull, py::const_),
+             py::arg("Z"), "The same for a zonotope")
+        .def("convex_hull",
+             py::overload_cast<const Interval &>(&PolyZonotope::convex_hull, py::const_),
+             py::arg("I"), "The same for a box")
+        .def("jacobian", &PolyZonotope::jacobian, py::arg("id") = py::none(),
+             "The derivative of the dependent part along each factor id")
+        .def("outer_approx", &PolyZonotope::outer_approx, py::arg("tol"), py::arg("id"),
+             "The set with the dependent generators below tol boxed")
         // the grouping by exponents
         .def("part_zonotope", &PolyZonotope::part_zonotope, py::arg("id"),
              "A set that holds the set, its generators grouped by the exponents of the factors id")
