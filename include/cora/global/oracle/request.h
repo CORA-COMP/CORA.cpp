@@ -14,7 +14,7 @@
 //
 // Authors:       Tobias Ladner, Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       02-November-2026
-// Last update:   11-November-2026
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -72,6 +72,7 @@ struct Wire {
     Wire(const std::vector<std::vector<Tensor>> &Tss);
     Wire(const std::vector<Zonotope> &Zs);
     Wire(const std::vector<Polytope> &Ps);
+    Wire(const std::vector<PolyZonotope> &Ps);
 };
 
 /// A plain JSON number, as the oracle reads its `tol` (the other scalars are exact texts).

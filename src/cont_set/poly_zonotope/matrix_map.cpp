@@ -3,11 +3,12 @@
 // Both sets hold a matrix in their coordinates, column by column (n x k and k x m). With
 // [c, G] the center and dependent generators, the product has one generator per pair of them (the
 // first set's the slower index), the matrix product of the two, with the sum of the exponents:
-// exact over the shared factors. The center is 0 (the pair of the centers is a constant
-// generator). The independent generators of the result are the pairs GI1 x [c2, G2], GI1 x GI2 and
-// [c1, G1] x GI2, in that order, as CORALean's matMap; products of two independent factors are
-// new independent factors, so the result encloses. CORA orders the blocks differently and moves
-// the constant to the center (docs/cora-differences.md).
+// exact over the shared factors, the sum over k nested to the right as CORALean's matMulDown. The
+// center is 0 (the pair of the centers is a constant generator). The independent generators of the
+// result are the pairs GI1 x [c2, G2], GI1 x GI2 and [c1, G1] x GI2, in that order, as CORALean's
+// matMap; products of two independent factors are new independent factors, so the result encloses.
+// CORA orders the blocks differently and moves the constant to the center
+// (docs/cora-differences.md).
 //
 // Syntax:   S = pZ1.matrix_map(pZ2, n, k, m);
 // Inputs:   pZ2 - polynomial zonotope of the dimension k * m
@@ -19,7 +20,7 @@
 // CORA authors: Tobias Ladner
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -40,7 +41,7 @@ Tensor aux_products(const Tensor &A, const Tensor &B, int64_t n, int64_t k, int6
     const int64_t a = A.shape()[0], b = B.shape()[0];
     // a matrix column by column is its transpose row by row: C' = B' A'
     const Tensor At = A.reshape({a, 1, k, n}), Bt = B.reshape({1, b, m, k});
-    return Bt.matmul(At).reshape({a * b, n * m});
+    return priv_matmul_nested(Bt, At).reshape({a * b, n * m});
 }
 
 } // namespace

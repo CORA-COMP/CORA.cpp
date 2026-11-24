@@ -2,7 +2,8 @@
 //
 // State i goes to position dims[i], as the zonotope's lift (CORA's lift_ projects onto dims, the
 // inverse permutation); the factors and exponents stay. A lift to new dimensions is refused, as
-// they would be unbounded. Lean-ORACLE debt: the request is in docs/oracle-requests.md.
+// they would be unbounded.
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_ids.cpp.
 //
 // CORA: contSet/@polyZonotope/lift_.m
 // PROPERTY: contSet/@polyZonotope/lift_.m

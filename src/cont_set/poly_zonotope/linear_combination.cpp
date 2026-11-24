@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -44,7 +44,8 @@ PolyZonotope PolyZonotope::linear_combination(const PolyZonotope &S) const {
     // half of every generator, the second set's negated in the block that carries t
     const Tensor A = G_ * 0.5, B = S.G_ * 0.5;
     const Tensor halved = (c_ - S.c_) * 0.5;
-    const Tensor G = Tensor::concat({A, B, A, -B, halved.expand_dims(-2)}, -2);
+    // the negation as 0 - b: a zero generator stays +0, as the oracle's reply (it has no -0)
+    const Tensor G = Tensor::concat({A, B, A, B.zeros_like() - B, halved.expand_dims(-2)}, -2);
     // the factors of the sets side by side, t last: t is 0 in the first block, 1 in the second
     Exponents E;
     const auto column = [&](const std::vector<int> &e1, const std::vector<int> &e2, int t) {

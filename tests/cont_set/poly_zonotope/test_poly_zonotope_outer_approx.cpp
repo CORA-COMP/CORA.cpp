@@ -2,7 +2,8 @@
 //
 // The dependent generators below the threshold (sorted by size, the even ones halved for the
 // sort) leave the set and their magnitudes are added to a diagonal box in the independent block;
-// the result contains the set. Lean-ORACLE debt: the request is in docs/oracle-requests.md.
+// the result contains the set.
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/outerApprox.m
 // PROPERTY: contSet/@polyZonotope/outerApprox.m

@@ -4,7 +4,8 @@
 // occurrence; each group but the zero pattern gets a new factor standing for the monomial: its
 // value (an odd pattern), or 2 m - 1 for an all-even pattern, whose generators are halved with a
 // copy of the halves. At those values the point of the result is the point of the set.
-// Lean-ORACLE debt: the request is in docs/oracle-requests.md.
+//
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/partZonotope.m
 // PROPERTY: contSet/@polyZonotope/partZonotope.m

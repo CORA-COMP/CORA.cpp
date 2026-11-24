@@ -2,8 +2,8 @@
 //
 // The point of the derivative along the factor k at the factors alpha is the central difference
 // of the dependent part along k; the center is 0, the independent part is gone, the exponent of k
-// is lowered by one (a constant stays a zero column). Lean-ORACLE debt: the request is in
-// docs/oracle-requests.md.
+// is lowered by one (a constant stays a zero column).
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/jacobian.m
 // PROPERTY: contSet/@polyZonotope/jacobian.m

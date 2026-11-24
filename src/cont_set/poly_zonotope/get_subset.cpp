@@ -17,7 +17,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   23-November-2026
 // Reviewed:      ---
 
 #include "cont_set/poly_zonotope/private/priv.h"
@@ -50,18 +50,20 @@ std::size_t aux_position(const std::vector<int64_t> &ids, int64_t id) {
 
 // The point ---------------------------------------------------------------------------------------
 
-/// The factor at `at` set to the value v (1 entry): every generator that uses it is scaled by v^e.
+/// The factor at `at` set to the value v (1 entry): every generator that uses it is scaled by v^e,
+/// the power multiplied up one factor at a time from 1 as CORALean's powDown (not by pow).
 void aux_point(State &s, std::size_t at, const Tensor &v) {
-    std::vector<double> exponent;
-    bool any = false;
+    int e_max = 0;
+    for (const std::vector<int> &col : s.E) e_max = std::max(e_max, col[at]);
+    if (e_max == 0) return;
+    std::vector<Tensor> powers = {v.ones_like()};
+    for (int e = 1; e <= e_max; ++e) powers.push_back(powers.back().multiply(v));
+    std::vector<Tensor> scale;
     for (std::vector<int> &col : s.E) {
-        exponent.push_back(col[at]);
-        any = any || col[at] != 0;
+        scale.push_back(powers[std::size_t(col[at])]);
         col[at] = 0;
     }
-    if (!any) return;
-    const Tensor scale = v.pow(Tensor::like(s.G, exponent, {int64_t(exponent.size())}));
-    s.G = s.G.multiply(scale.expand_dims(-1));
+    s.G = s.G.multiply(Tensor::concat(scale, 0).expand_dims(-1));
 }
 
 // The box -----------------------------------------------------------------------------------------

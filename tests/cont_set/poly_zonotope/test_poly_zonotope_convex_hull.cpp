@@ -2,7 +2,8 @@
 //
 // With one set the result is its linear combination with itself; with two it contains both
 // (their samples lie in its zonotope enclosure) and has the independent block of the pairing with
-// the zero column. Lean-ORACLE debt: the request is in docs/oracle-requests.md.
+// the zero column.
+// Bit for bit against CORALean: tests/global/oracle/test_lean_poly_zonotope_maps.cpp.
 //
 // CORA: contSet/@polyZonotope/convHull_.m
 // PROPERTY: contSet/@polyZonotope/convHull_.m
