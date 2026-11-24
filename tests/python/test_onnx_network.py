@@ -8,12 +8,10 @@ folded into the convolutions) and max pools to pairs of b + relu(a - b), equal t
 padded max pool and a quotient that broadcasts its dividend do not lower and say why; a batch norm
 of features and a slice of the input concatenated with a branch lower; a product of two values is a
 product layer, and a ReduceSum, a difference of branches and scalings lower; a Gemm or a MatMul
-of a row and a constant matrix takes the weights themselves, far below the identity's memory; the
-verifier's backend is torch for a convolution, eigen for a dense network; a binarized network
-lowers to sign layers, its output Softmax dropped for a property that only compares outputs;
-vit_2023's, nn4sys' and ml4acopf's shapes (quotients, sin, cos) lower and equal the graph;
-ReluSplitter's pairs relu(t), relu(-t) merge into the next layer (the base network's weights), a
-layer with an unpaired neuron stays.
+of a row and a constant matrix takes the weights themselves; the backend is torch for a
+convolution, eigen else; a binarized network lowers to sign layers, its output Softmax dropped
+for a property that only compares outputs; vit_2023's, nn4sys' and ml4acopf's shapes lower and
+equal the graph; ReluSplitter's pairs relu(t), relu(-t) merge into the next layer.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
@@ -251,8 +249,7 @@ class Lowering(unittest.TestCase):
                                    net(x).numpy(), rtol=1e-12, atol=1e-12)
 
     def test_relu_pairs_merge(self):
-        # ReluSplitter's split layer (relu(t), relu(-t) read as c and -c): merged into the next
-        # layer, the base network's weights bit for bit, equal to the graph and onnxruntime
+        # ReluSplitter's split layer merged: the base network's weights, equal to the graph
         m, base = split_net()
         net = OnnxNetwork(m, dtype=torch.float64)
         (layers, acts), why = net.layers()
@@ -502,10 +499,9 @@ def dense_rows(layers, x):
 
 
 def split_net(broken=""):
-    """ReluSplitter's split of the first layer of relu(W0 x + b0) -> W3 (x of 4, 3 neurons): a
-    layer of the pairs relu(s W0_i x + c_i), relu(-s W0_i x - c_i) in shuffled order, read as s and
-    -s by neuron i with the bias b0_i - s c_i; and the base network. broken: a column of the second
-    neuron not opposite ("column"), or one row unlike its partner ("row")."""
+    """ReluSplitter's split of relu(W0 x + b0) -> W3, and the base network; broken: a column not
+    opposite ("column"), or a row unlike its partner ("row")."""
+    # pairs relu(s W0_i x + c_i), relu(-s W0_i x - c_i), shuffled, read as s and -s (bias b0 - s c)
     W0, b0, W3, b3 = weight(3, 4), weight(3), weight(2, 3), weight(2)
     s = np.array([1, -1, 1], np.float32)
     c = np.array([5.0, -2.5, 0.75], np.float32)
@@ -518,6 +514,7 @@ def split_net(broken=""):
         W2[1, order.index(4)] *= 0.5
     if broken == "row":
         W1[order.index(5), 0] += 1.0
+    # the split graph, and the base graph from its second ReLU on
     nodes = [
         helper.make_node("Gemm", ["x", "W1", "b1"], ["g1"], transB=1),
         helper.make_node("Relu", ["g1"], ["r1"]),

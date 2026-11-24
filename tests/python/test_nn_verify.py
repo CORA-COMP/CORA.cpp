@@ -144,8 +144,7 @@ class Verdicts(unittest.TestCase):
 
 
     def test_fixed_inputs_fold_in_groups(self):
-        # mscn's cases fix the masks to other values: one folded network per mask, each equal to
-        # the graph on its cases' boxes; unsat only if every group is, sat from any
+        # mscn's masks fixed to other values in other cases: one folded network per mask
         path = os.path.join(self.dir.name, "mask.onnx")
         masked_mean_network(path)
         masks = [(1.0, 1.0, 0.0), (1.0, 0.0, 1.0), (1.0, 1.0, 0.0)]

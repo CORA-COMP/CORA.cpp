@@ -19,9 +19,8 @@ Last update:   24-November-2026
 Reviewed:      ---
 """
 
-from dataclasses import dataclass, field
-
 import time
+from dataclasses import dataclass, field
 
 import numpy as np
 import torch
@@ -199,7 +198,8 @@ def _verify_parts(instance, timeout, options):
 def _joined(key, before, value):
     """A statistic of the parts so far and of one more: the least margin, the largest peak or
     budget or batch, else the sum of counts and seconds."""
-    if before is None or not isinstance(value, (int, float)) or not isinstance(before, (int, float)):
+    numbers = isinstance(value, (int, float)) and isinstance(before, (int, float))
+    if before is None or not numbers:
         return value
     if "margin" in key:
         return min(before, value)
