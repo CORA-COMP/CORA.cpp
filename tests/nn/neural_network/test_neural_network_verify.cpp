@@ -295,6 +295,106 @@ void alpha_gradients(const std::string &b) {
     }
 }
 
+/// priv_backward_lower as it was before ZonoBackward (CORALean's CrownNet.backwardBound_le):
+/// the default call must stay bit-identical to it.
+Tensor aux_reference_backward(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
+                              const Tensor &x, const Tensor &rad, const Tensor &rows,
+                              const std::vector<Tensor> *alpha) {
+    const int64_t B = x.shape()[0], R = rows.shape()[0];
+    std::vector<Tensor> lams(net.W.size() + 1);
+    lams.back() = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
+    Tensor constant = x.zeros_like({B, R});
+    const bool split = splits.defined() && splits.shape()[1] > 0;
+    std::size_t next = out.layers.size();
+    // from the output back: the activation's lines at the clamped bounds, then the linear layer
+    for (std::size_t k = net.W.size(); k-- > 0;) {
+        Tensor lam = std::move(lams[k + 1]);
+        if (net.activations[k] != Activation::identity) {
+            const ZonoLayerRecord &rec = out.layers[--next];
+            const auto [lc, uc] =
+                split ? net.clamp(rec.first_id, rec.l, rec.u, splits) : std::pair{rec.l, rec.u};
+            Tensor sl, su, bl, bu;
+            if (net.activations[k] == Activation::relu) {
+                // the chord above, CROWN's or the given slope below
+                const Tensor zero = lc.zeros_like();
+                const Tensor cross = uc.greater(zero).multiply(lc.less(zero));
+                const Tensor on = lc.greater_equal(zero);
+                const Tensor chord = uc.divide((uc - lc).maximum(numerics::kTiny));
+                su = Tensor::where(cross, chord, on);
+                bu = Tensor::where(cross, priv_relu_chord_offset(lc, uc, chord), zero);
+                const bool given = alpha && k < alpha->size() && (*alpha)[k].defined();
+                sl = Tensor::where(cross, given ? (*alpha)[k] : uc.greater(lc.negative()), on);
+                bl = zero;
+            } else {
+                // the zonotope line's parallels (a product's on its set)
+                const PrivLine line =
+                    net.activations[k] == Activation::product
+                        ? priv_product_line(rec.c_in, rec.G_in, rec.dr_in)
+                        : priv_verify_line(net.activations[k], lc, uc, net.poly_method);
+                sl = su = line.slope;
+                bl = line.offset - line.radius;
+                bu = line.offset + line.radius;
+            }
+            // Lambda's signs pick the line, the offsets into the constant
+            const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
+            constant = constant + pos.matmul(bl.expand_dims(-1)).squeeze(-1) +
+                       neg.matmul(bu.expand_dims(-1)).squeeze(-1);
+            lam = net.activations[k] != Activation::product
+                      ? pos.multiply(sl.expand_dims(1)) + neg.multiply(su.expand_dims(1))
+                      : priv_slope_times_t(Activation::product, sl.expand_dims(1), lam);
+        }
+        constant = constant + lam.multiply(net.b[k]).sum(-1);
+        net.linear_t(k, lam, lams);
+    }
+    const Tensor &lam = lams[0];
+    return lam.matmul(x.expand_dims(-1)).squeeze(-1) -
+           lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
+}
+
+/// The default priv_backward_lower is bit-identical to the reference on ReLU, sigmoid, tanh and
+/// product nets, with splits and given slopes.
+void backward_bit_identical(const std::string &b) {
+    Rng rng(41);
+    const Tensor x = Tensor({{0.1, -0.2, 0.3}, {0.0, 0.5, -0.1}}),
+                 r = Tensor({{0.4, 0.3, 0.5}, {0.25, 0.4, 0.3}});
+    const Tensor splits = Tensor({{-3.0, 5.0}, {0.0, 0.0}}),
+                 rows = Tensor({{1.0, -0.7}, {-0.3, 1.0}, {0.2, 0.9}});
+    // a net of each activation
+    std::vector<NeuralNetwork> nets;
+    for (const Activation a : {Activation::relu, Activation::sigmoid, Activation::tanh})
+        nets.push_back(aux_network(rng, {3, 6, 5, 2}, a));
+    {
+        // a product layer between two ReLU layers
+        NeuralNetwork base = aux_network(rng, {3, 6, 4, 2}, Activation::relu);
+        std::vector<Activation> acts = base.activations();
+        acts[1] = Activation::product;
+        nets.emplace_back(base.layers(), acts);
+    }
+    // with and without splits and given slopes: the same bits
+    bool same = true;
+    for (const NeuralNetwork &nn : nets) {
+        const ZonoNet net(nn, 3, 2, "bounds", "length");
+        const ZonoInput in = net.input_zonotope(x, r);
+        for (const bool split : {false, true}) {
+            const Tensor si = split ? splits : x.zeros_like({2, 0});
+            const ZonoPropagation out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
+            // the slopes 0.375 where given, CROWN's otherwise
+            std::vector<Tensor> half = priv_alpha_start(out, net, si);
+            for (Tensor &t : half)
+                if (t.defined()) t = t.full_like(t.shape(), 0.375);
+            for (const std::vector<Tensor> *alpha :
+                 {(const std::vector<Tensor> *)nullptr, (const std::vector<Tensor> *)&half}) {
+                const std::vector<double> got =
+                    priv_backward_lower(out, net, si, x, r, rows, alpha).data();
+                const std::vector<double> want =
+                    aux_reference_backward(out, net, si, x, r, rows, alpha).data();
+                same = same && got == want;
+            }
+        }
+    }
+    check(same, b + ": priv_backward_lower's default call is bit-identical to the reference");
+}
+
 /// CROWN's backward bound holds the sampled outputs of the boxes, with splits, for every
 /// activation and with given ReLU slopes; on a box around a point it is close to the output.
 void backward_bounds(const std::string &b) {
@@ -1060,6 +1160,7 @@ int main() {
         frad_gradients(b);
         alpha_gradients(b);
         backward_bounds(b);
+        backward_bit_identical(b);
         crown_bounds(b);
         // the dual certificates, on rows of very different norms too
         dual_bounds(b);

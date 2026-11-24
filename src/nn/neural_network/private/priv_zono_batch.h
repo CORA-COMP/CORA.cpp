@@ -174,12 +174,21 @@ std::vector<Tensor> priv_alpha_gradients(const ZonoPropagation &out, const ZonoN
 std::vector<Tensor> priv_alpha_start(const ZonoPropagation &out, const ZonoNet &net,
                                      const Tensor &splits);
 
+/// The options of priv_backward_lower's pass beyond the default (CROWN on the output).
+struct ZonoBackward {
+    int64_t top = -1; ///< the rows (R, n_top) bound layer top's input (-1: the output)
+    const ZonoBounds *bounds = nullptr; ///< the bounds of the layers' lines (else the record's)
+    const std::vector<Tensor> *row_alpha = nullptr; ///< a ReLU's lower slopes per row (B, R, n)
+    std::vector<Tensor> *g_alpha = nullptr;         ///< out: the bound's gradient in row_alpha
+};
+
 /// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
 /// with each activation's linear bounds at the record's clamped bounds: a ReLU's slope alpha (else
-/// CROWN's 0 or 1), a sigmoid or tanh between the zonotope line's two parallels.
+/// CROWN's 0 or 1), a sigmoid or tanh between the zonotope line's two parallels; opt: ZonoBackward.
 Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
-                           const std::vector<Tensor> *alpha = nullptr);
+                           const std::vector<Tensor> *alpha = nullptr,
+                           const ZonoBackward *opt = nullptr);
 
 /// CROWN's lower bounds as priv_backward_lower with a ReLU's lower slope per row optimized
 /// (alpha-CROWN): `iterations` projected Adam steps of size `step` on the slopes in [0, 1], the

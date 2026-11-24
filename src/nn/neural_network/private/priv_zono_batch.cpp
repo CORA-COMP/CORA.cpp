@@ -1006,26 +1006,51 @@ std::vector<Tensor> priv_alpha_start(const ZonoPropagation &out, const ZonoNet &
 
 Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
-                           const std::vector<Tensor> *alpha) {
+                           const std::vector<Tensor> *alpha, const ZonoBackward *opt) {
     const int64_t B = x.shape()[0], R = rows.shape()[0];
+    // the pass from the output, or from the input of layer opt->top (its linear part only)
+    const bool inner = opt && opt->top >= 0;
+    const std::size_t top = inner ? std::size_t(opt->top) : net.W.size();
+    const std::vector<Tensor> *row_alpha = opt ? opt->row_alpha : nullptr;
+    std::vector<Tensor> *g_alpha = opt ? opt->g_alpha : nullptr;
     // Lambda (B, R, n): each output's coefficients of the rows (summed over readers), the constant
-    std::vector<Tensor> lams(net.W.size() + 1);
-    lams.back() = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
+    std::vector<Tensor> lams(top + 1);
     Tensor constant = x.zeros_like({B, R});
-    const bool split = splits.defined() && splits.shape()[1] > 0;
     std::size_t next = out.layers.size();
-    for (std::size_t k = net.W.size(); k-- > 0;) {
+    if (inner) {
+        const Tensor lam = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
+        constant = constant + lam.multiply(net.b[top]).sum(-1);
+        net.linear_t(top, lam, lams);
+        next = 0;
+        for (std::size_t k = 0; k < top; ++k) next += net.activations[k] != Activation::identity;
+    } else {
+        lams.back() = rows.expand_dims(0).broadcast_to({B, R, rows.shape()[1]});
+    }
+    // with g_alpha, each activation layer's lines and Lambda for the reverse below
+    struct Lines {
+        Tensor sl, su, bl, bu, cross, lam;
+    };
+    std::vector<Lines> kept(g_alpha ? top : 0);
+    const bool split = splits.defined() && splits.shape()[1] > 0;
+    for (std::size_t k = top; k-- > 0;) {
         check_deadline(net.deadline);
+        const bool active = net.activations[k] != Activation::identity;
+        const ZonoLayerRecord *rec = active ? &out.layers[--next] : nullptr;
         Tensor lam = std::move(lams[k + 1]);
-        if (net.activations[k] != Activation::identity) {
-            const ZonoLayerRecord &rec = out.layers[--next];
-            const auto [lc, uc] =
-                split ? net.clamp(rec.first_id, rec.l, rec.u, splits) : std::pair{rec.l, rec.u};
-            Tensor sl, su, bl, bu;
+        if (!lam.defined()) continue; // an output that no layer of the pass reads
+        if (active) {
+            // the bounds: given ones (opt->bounds), else the record's clamped
+            const bool given =
+                opt && opt->bounds && k < opt->bounds->l.size() && opt->bounds->l[k].defined();
+            const auto [lc, uc] = given   ? std::pair{opt->bounds->l[k], opt->bounds->u[k]}
+                                  : split ? net.clamp(rec->first_id, rec->l, rec->u, splits)
+                                          : std::pair{rec->l, rec->u};
+            Tensor sl, su, bl, bu, cross;
             if (net.activations[k] == Activation::relu) {
                 // the chord above, a slope in [0, 1] below (alpha, else CROWN's 0 or 1)
                 const Tensor zero = lc.zeros_like(), one = lc.ones_like();
-                const Tensor cross = aux_crossing(lc, uc), on = lc.greater_equal(zero);
+                cross = aux_crossing(lc, uc);
+                const Tensor on = lc.greater_equal(zero);
                 const Tensor chord = uc.divide((uc - lc).maximum(numerics::kTiny));
                 su = Tensor::where(cross, chord, on);
                 bu = Tensor::where(cross, priv_relu_chord_offset(lc, uc, chord), zero);
@@ -1035,7 +1060,8 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                 bl = zero;
             } else {
                 // the parallel lines of the zonotope's line
-                const PrivLine line = aux_layer_line(net, k, rec.c_in, rec.G_in, rec.dr_in, lc, uc);
+                const PrivLine line =
+                    aux_layer_line(net, k, rec->c_in, rec->G_in, rec->dr_in, lc, uc);
                 sl = su = line.slope;
                 bl = line.offset - line.radius;
                 bu = line.offset + line.radius;
@@ -1043,9 +1069,23 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
             const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
             constant = constant + pos.matmul(bl.expand_dims(-1)).squeeze(-1) +
                        neg.matmul(bu.expand_dims(-1)).squeeze(-1);
+            // a ReLU's lower slopes per row (opt->row_alpha) where it crosses
+            const Tensor *ra = row_alpha && k < row_alpha->size() && (*row_alpha)[k].defined() &&
+                                       net.activations[k] == Activation::relu
+                                   ? &(*row_alpha)[k]
+                                   : nullptr;
+            const Tensor slr = ra ? Tensor::where(cross.expand_dims(1), *ra, sl.expand_dims(1))
+                                  : sl.expand_dims(1);
+            if (g_alpha)
+                kept[k] = {slr,
+                           su.expand_dims(1),
+                           bl.expand_dims(1),
+                           bu.expand_dims(1),
+                           ra ? cross.expand_dims(1) : Tensor(),
+                           lam};
             // a product's one slope: Lambda through the line's transpose
             lam = net.activations[k] != Activation::product
-                      ? pos.multiply(sl.expand_dims(1)) + neg.multiply(su.expand_dims(1))
+                      ? pos.multiply(slr) + neg.multiply(su.expand_dims(1))
                       : priv_slope_times_t(Activation::product, sl.expand_dims(1), lam);
         }
         // the linear layer
@@ -1054,8 +1094,33 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     }
     // the input box
     const Tensor &lam = lams[0];
-    return lam.matmul(x.expand_dims(-1)).squeeze(-1) -
-           lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
+    const Tensor value = lam.matmul(x.expand_dims(-1)).squeeze(-1) -
+                         lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
+    if (!g_alpha) return value;
+    // the reverse: each layer's input at the box's minimizing corner through the linear bounds
+    g_alpha->assign(top, Tensor());
+    std::vector<Tensor> gs{x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1))};
+    for (std::size_t k = 0; k < top; ++k) {
+        check_deadline(net.deadline);
+        const Tensor g = net.linear(k, gs) + net.b[k];
+        const Lines &L = kept[k];
+        if (!L.lam.defined()) {
+            gs.push_back(g); // no activation, or an output off the pass (never read on it)
+            continue;
+        }
+        const Tensor pos = L.lam.greater(L.lam.zeros_like()), neg = L.lam.less(L.lam.zeros_like());
+        // the slopes' gradient: the row's input times its positive Lambda where they are free
+        if (L.cross.defined())
+            (*g_alpha)[k] = Tensor::where(L.cross, g.multiply(L.lam.maximum(0.0)), g.zeros_like());
+        if (net.activations[k] != Activation::product) {
+            gs.push_back(pos.multiply(g.multiply(L.sl) + L.bl) +
+                         neg.multiply(g.multiply(L.su) + L.bu));
+        } else {
+            const Tensor gm = priv_slope_times(Activation::product, L.su, g);
+            gs.push_back(pos.multiply(gm + L.bl) + neg.multiply(gm + L.bu));
+        }
+    }
+    return value;
 }
 
 Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,

@@ -1,11 +1,11 @@
 // priv_zono_bounds - CROWN's bounds of the inputs of the activation layers, for the zonotope
 //
 // See priv_zono_batch.h. Layer by layer from the input, the input z_k of activation layer k is
-// bounded by a backward pass (CROWN) through the earlier layers' relaxations at their bounds so
-// far: a ReLU's chord above and a lower slope in [0, 1] below (CROWN's 0 or 1, or alpha-CROWN's
-// optimized per row), another activation between the parallels of the zonotope's line. Each
-// bound is intersected with the zonotope's; ZonoNet::forward then builds its lines at the
-// intersection. Every bound holds for the true inputs of the boxes, so any line valid on it is.
+// bounded by priv_backward_lower from layer k (CROWN) through the earlier layers' relaxations at
+// their bounds so far: a ReLU's chord above and a lower slope in [0, 1] below (CROWN's 0 or 1, or
+// alpha-CROWN's optimized per row), another activation between the parallels of the zonotope's
+// line. Each bound is intersected with the zonotope's; ZonoNet::forward then builds its lines at
+// the intersection. Every bound holds for the true inputs of the boxes, so any line valid on it is.
 // The optimized slopes keep each row's best bound over all steps (each step's bound holds).
 // References:
 //    [1] H. Zhang, T.-W. Weng, P.-Y. Chen, C.-J. Hsieh, L. Daniel. "Efficient neural network
@@ -34,126 +34,33 @@ namespace cora {
 
 namespace {
 
-// The relaxations ---------------------------------------------------------------------------------
+// The optimized slopes ----------------------------------------------------------------------------
 
-/// A layer's relaxation sl z + bl <= f(z) <= su z + bu (B, n) (a product: its one line su, bl,
-/// bu), cross: a ReLU's crossing neurons (its lower slope free in [0, 1]).
-struct Relax {
-    Tensor sl, su, bl, bu, cross;
-};
-
-/// The relaxation of layer k over [l, u]: a ReLU's chord and CROWN's lower slope, else the
-/// parallels of the zonotope's line (a product's on the record's input set).
-Relax aux_relax(const ZonoNet &net, std::size_t k, const ZonoLayerRecord &rec, const Tensor &l,
-                const Tensor &u) {
-    Relax r;
-    const Activation act = net.activations[k];
-    if (act == Activation::relu) {
-        const Tensor zero = l.zeros_like(), on = l.greater_equal(zero);
-        r.cross = u.greater(zero).multiply(l.less(zero));
-        const Tensor chord = u.divide((u - l).maximum(numerics::kTiny));
-        r.su = Tensor::where(r.cross, chord, on);
-        r.bu = Tensor::where(r.cross, chord.multiply(l).negative(), zero);
-        r.sl = Tensor::where(r.cross, u.greater(l.negative()), on);
-        r.bl = zero;
-        return r;
-    }
-    // another activation: its zonotope line's lower and upper parallels
-    const PrivLine line = act == Activation::product
-                              ? priv_product_line(rec.c_in, rec.G_in, rec.dr_in)
-                              : priv_verify_line(act, l, u, net.poly_method);
-    r.sl = r.su = line.slope;
-    r.bl = line.offset - line.radius;
-    r.bu = line.offset + line.radius;
-    return r;
-}
-
-/// The lower slope of a relaxation per row (B, R, n): alpha where the ReLU crosses, else sl.
-Tensor aux_lower_slope(const Relax &r, const Tensor &alpha) {
-    const Tensor sl = r.sl.expand_dims(1);
-    return alpha.defined() ? Tensor::where(r.cross.expand_dims(1), alpha, sl) : sl;
-}
-
-// The backward pass -------------------------------------------------------------------------------
-
-/// CROWN's lower bounds (B, R) of lam_top (B, R, n) times the input of layer top over the boxes
-/// (x, rad), through the relaxations rx of the earlier layers (alpha: a ReLU's lower slopes per
-/// row). With g_alpha, the bound's gradient in each alpha (0 off the crossing).
-Tensor aux_backward(const ZonoNet &net, const std::vector<Relax> &rx, std::size_t top,
-                    const Tensor &x, const Tensor &rad, const Tensor &lam_top,
-                    const std::vector<Tensor> &alpha, std::vector<Tensor> *g_alpha) {
-    const int64_t B = x.shape()[0], R = lam_top.shape()[1];
-    // Lambda of each output (acc[j + 1]; 0: the input), summed over the layers that read it
-    std::vector<Tensor> acc(top + 1), lams(top);
-    Tensor constant = lam_top.multiply(net.b[top]).sum(-1) + x.zeros_like({B, R});
-    net.linear_t(top, lam_top, acc);
-    for (std::size_t k = top; k-- > 0;) {
-        check_deadline(net.deadline);
-        Tensor lam = std::move(acc[k + 1]);
-        if (!lam.defined()) continue; // an output that no layer up to top reads
-        const Activation act = net.activations[k];
-        if (act != Activation::identity) {
-            const Relax &r = rx[k];
-            lams[k] = lam;
-            const Tensor pos = lam.maximum(0.0), neg = lam.minimum(0.0);
-            constant = constant + pos.multiply(r.bl.expand_dims(1)).sum(-1) +
-                       neg.multiply(r.bu.expand_dims(1)).sum(-1);
-            lam = act != Activation::product ? pos.multiply(aux_lower_slope(r, alpha[k])) +
-                                                   neg.multiply(r.su.expand_dims(1))
-                                             : priv_slope_times_t(act, r.su.expand_dims(1), lam);
-        }
-        constant = constant + lam.multiply(net.b[k]).sum(-1);
-        net.linear_t(k, lam, acc);
-    }
-    const Tensor &lam0 = acc[0];
-    const Tensor value = lam0.matmul(x.expand_dims(-1)).squeeze(-1) -
-                         lam0.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
-    if (!g_alpha) return value;
-    // the reverse: each layer's input at the box's minimizing corner through the linear bounds
-    std::vector<Tensor> gs{x.expand_dims(1) - lam0.sign().multiply(rad.expand_dims(1))};
-    for (std::size_t k = 0; k < top; ++k) {
-        check_deadline(net.deadline);
-        const Tensor g = net.linear(k, gs) + net.b[k];
-        const Activation act = net.activations[k];
-        if (act == Activation::identity || !lams[k].defined()) {
-            gs.push_back(g); // an output off the pass: never read by a layer on it
-            continue;
-        }
-        const Relax &r = rx[k];
-        const Tensor &lk = lams[k];
-        const Tensor pos = lk.greater(lk.zeros_like()), neg = lk.less(lk.zeros_like());
-        if (alpha[k].defined())
-            (*g_alpha)[k] =
-                Tensor::where(r.cross.expand_dims(1), g.multiply(lk.maximum(0.0)), g.zeros_like());
-        const Tensor bl = r.bl.expand_dims(1), su = r.su.expand_dims(1), bu = r.bu.expand_dims(1);
-        if (act != Activation::product) {
-            gs.push_back(pos.multiply(g.multiply(aux_lower_slope(r, alpha[k])) + bl) +
-                         neg.multiply(g.multiply(su) + bu));
-        } else {
-            const Tensor gm = priv_slope_times(act, su, g);
-            gs.push_back(pos.multiply(gm + bl) + neg.multiply(gm + bu));
-        }
-    }
-    return value;
-}
-
-/// The best lower bounds (B, R) of lam_top over `iterations` projected Adam steps of size `step`
-/// on the ReLU layers' lower slopes per row (from CROWN's), none after the deadline.
-Tensor aux_optimized(const ZonoNet &net, const std::vector<Relax> &rx, std::size_t top,
-                     const Tensor &x, const Tensor &rad, const Tensor &lam_top, int64_t iterations,
-                     double step, double deadline) {
-    const int64_t B = x.shape()[0], R = lam_top.shape()[1];
+/// The best lower bounds (B, R) of the rows (R, n) times layer top's input over `iterations`
+/// projected Adam steps of size `step` on the ReLU layers' lower slopes per row, from CROWN's
+/// (start: per layer, (B, n)), the lines at `bounds`; none after the deadline.
+Tensor aux_optimized(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
+                     const std::vector<Tensor> &start, std::size_t top, const Tensor &x,
+                     const Tensor &rad, const Tensor &rows, int64_t iterations, double step,
+                     double deadline) {
+    const int64_t B = x.shape()[0], R = rows.shape()[0];
     std::vector<Tensor> alpha(top), m1(top), m2(top);
     if (iterations > 0)
         for (std::size_t k = 0; k < top; ++k)
-            if (rx[k].cross.defined())
-                alpha[k] = rx[k].sl.expand_dims(1).broadcast_to({B, R, rx[k].sl.shape()[1]}) + 0.0;
+            if (start[k].defined())
+                alpha[k] = start[k].expand_dims(1).broadcast_to({B, R, start[k].shape()[1]}) + 0.0;
+    const Tensor none = x.zeros_like({B, 0});
     Tensor best;
     for (int64_t t = 0;; ++t) {
-        std::vector<Tensor> g(top);
+        // one backward pass (priv_backward_lower from layer top), its slopes' gradient if more
+        std::vector<Tensor> g;
         const bool more = t < iterations && now_seconds() < std::min(deadline, net.deadline);
-        const Tensor value =
-            aux_backward(net, rx, top, x, rad, lam_top, alpha, more ? &g : nullptr);
+        ZonoBackward opt;
+        opt.top = int64_t(top);
+        opt.bounds = &bounds;
+        opt.row_alpha = iterations > 0 ? &alpha : nullptr;
+        opt.g_alpha = more ? &g : nullptr;
+        const Tensor value = priv_backward_lower(out, net, none, x, rad, rows, nullptr, &opt);
         // every step's bound holds: the best per row
         best = best.defined() ? best.maximum(value) : value;
         if (!more) return best;
@@ -193,7 +100,7 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
     ZonoBounds bounds;
     bounds.l.resize(L);
     bounds.u.resize(L);
-    std::vector<Relax> rx(L);
+    std::vector<Tensor> start(L); // a ReLU's CROWN lower slope at its bounds: 1 where u > -l
     int64_t widest = net.n0;
     for (const int64_t w : net.widths) widest = std::max(widest, w);
     bool earlier = false; // an activation before: the first one's input is exact on the box
@@ -225,9 +132,9 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
             // the rows e_i and -e_i: the lower bound of -z_i is minus its upper bound
             const Tensor ids = Tensor::like(l, std::vector<double>(part.begin(), part.end()), {c});
             const Tensor E = ids.expand_dims(-1).equal(l.arange_like(n).expand_dims(0)) + 0.0;
-            const Tensor lam =
-                Tensor::concat({E, E.negative()}, 0).expand_dims(0).broadcast_to({B, 2 * c, n});
-            const Tensor v = aux_optimized(net, rx, k, x, rad, lam, iterations, step, deadline);
+            const Tensor rows = Tensor::concat({E, E.negative()}, 0);
+            const Tensor v =
+                aux_optimized(out, net, bounds, start, k, x, rad, rows, iterations, step, deadline);
             // back to the layer's neurons (B, n): the rows' bounds where bounded, else the record's
             const Tensor hit = E.sum(0).greater(l.zeros_like({n}));
             const Tensor lo = v.slice(1, 0, c).matmul(E), hi = v.slice(1, c, 2 * c).matmul(E);
@@ -240,7 +147,7 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
         u = Tensor::where(ok, u, rec.u);
         bounds.l[k] = l;
         bounds.u[k] = u;
-        rx[k] = aux_relax(net, k, rec, l, u);
+        if (net.activations[k] == Activation::relu) start[k] = u.greater(l.negative());
         earlier = true;
     }
     return bounds;
