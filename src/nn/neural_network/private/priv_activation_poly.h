@@ -17,9 +17,9 @@
 // CORA: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/nnActivationLayer.m
 // CORA authors: Tobias Ladner, Niklas Kochdumper, Sebastian Sigl
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -41,6 +41,10 @@ struct PrivApprox {
 /// The polynomial of the method and order over [l, u] for the activation, and its error radius.
 PrivApprox priv_approx_poly(Activation activation, double l, double u, int order,
                             PolyMethod method);
+
+/// The line of evaluate (priv_line at the options' method) over [l, u] as a fit of order 1: the
+/// coefficients {slope, offset} and the radius, as they are.
+PrivApprox priv_line_fit(Activation activation, double l, double u, const NnOptions &options);
 
 /// CORA's computeApproxError of a given polynomial: p moved by the middle of its difference to
 /// the activation over [l, u], and the radius of what is left.

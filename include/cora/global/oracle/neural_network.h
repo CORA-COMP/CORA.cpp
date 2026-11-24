@@ -6,17 +6,19 @@
 //             on the zonotope, each activation by its relaxation at poly_method "singh" (CORA's
 //             line) or "curvature" (CORALean's tighter sigmoid and tanh); the layer "poly" (the
 //             fit of order k given) on a polynomial zonotope by nnLayer.evaluatePolyZonotope;
-//             nnLayer.relaxation, the line of an activation over boxes
+//             nnLayer.relaxation, the line of an activation over boxes; nn_evaluate_taylm the
+//             layers on Taylor models (neuralNetwork.evaluateTaylm)
 // See also:   lean/request.h, cora/nn/neural_network/neural_network.h
 //
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #pragma once
 
 #include "cora/global/oracle/poly_zonotope.h"
+#include "cora/global/oracle/taylm.h"
 #include "cora/global/oracle/zonotope.h"
 #include "cora/nn/neural_network/neural_network.h"
 
@@ -31,9 +33,10 @@ namespace cora::lean {
 struct NnLayer {
     std::string kind;  // "linear", "relu", "leakyRelu", "sigmoid", "tanh", "sign", "square", "poly"
     cora::Tensor W, b; // linear; poly: W the coefficients (n, k + 1, lowest first), b the errors
-    double alpha = 0.01; // leakyRelu
-    int k = 3;           // sigmoid, tanh: the depth of the exponential's reduction
-    Json geometry;       // conv: the geometry (kshape, input, stride, dilation, pads, groups)
+    double alpha = 0.01;    // leakyRelu
+    int k = 3;              // sigmoid, tanh: the depth of the exponential's reduction
+    Json geometry;          // conv: the geometry (kshape, input, stride, dilation, pads, groups)
+    std::vector<int> order; // evaluate_taylm's activations: none, one, or one per neuron
 
     static NnLayer linear(const cora::Tensor &W, const cora::Tensor &b);
     static NnLayer relu();
@@ -99,6 +102,14 @@ NnPolyResult evaluate_network_poly(const std::vector<NnLayer> &layers, const cor
                                    const cora::Tensor &G, const cora::Tensor &GI,
                                    const std::string &poly_method, const std::string &error_form,
                                    const std::string &regression_error = "");
+
+/// neuralNetwork.evaluateTaylm: the layers in order on one Taylor model per input (all over the
+/// same variables), each activation per neuron by its fit of the layer's order; one model per
+/// output. Order 1 of every activation at singh or regression, order 2 of relu at singh.
+std::vector<Taylm> nn_evaluate_taylm(const std::vector<NnLayer> &layers,
+                                     const std::vector<Taylm> &x,
+                                     const std::string &poly_method = "singh",
+                                     const std::string &regression_error = "");
 
 } // namespace cora::lean
 

@@ -2,10 +2,11 @@
 //
 // A layer maps the models x_j of its input by W x + b; an activation is applied neuron by neuron:
 // over the bounds [l, u] of the neuron's model the polynomial p of poly_method and the order of the
-// neuron (options.orders) with the error radius d (priv_approx_poly), and the output is
-// p(x) + [-d, d], the powers of the model by Taylm::power and the error added to its remainder. An
-// identity layer leaves the models. Only a chain of layers is evaluated; an activation without a
-// polynomial (floor, product, group sort, cube, inverse) is Error::not_supported.
+// neuron (options.orders) with the error radius d, and the output is p(x) + [-d, d], the powers of
+// the model by Taylm::power and the error added to its remainder. At order 1 of singh and
+// regression p is the line of evaluate (priv_line, sound, CORALean's), else priv_approx_poly's.
+// An identity layer leaves the models. Only a chain of layers is evaluated; an activation without
+// a line or polynomial (product, group sort; floor and the like above order 1) is not supported.
 //
 // Syntax:   std::vector<Taylm> y = nn.evaluate_taylm(x);   nn.evaluate_taylm(x, options);
 // Inputs:   x - one model per input of the network, all over the same variables
@@ -18,9 +19,9 @@
 //
 // CORA: nn/layers/nonlinear/@nnActivationLayer/evaluateTaylm.m
 // CORA authors: Niklas Kochdumper, Tobias Ladner
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -37,6 +38,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// The layers --------------------------------------------------------------------------------------
 
 /// The order of each neuron of layer k (CORA's layer.order): none is 1, one value is every
 /// neuron's, a list of the layer's size is one per neuron, any other count takes the largest.
@@ -62,11 +65,21 @@ std::vector<Taylm> aux_affine(const NeuralNetwork::Layer &L, const std::vector<T
     return y;
 }
 
+// The neurons -------------------------------------------------------------------------------------
+
+/// The fit of a neuron over [l, u]: at order 1 of singh or regression the zonotope path's line
+/// as it is (slope, offset, radius; CORALean's Relaxation.toPoly), else CORA's polynomial.
+PrivApprox aux_fit(Activation activation, double l, double u, int order, const NnOptions &options) {
+    const bool lines =
+        options.poly_method == PolyMethod::singh || options.poly_method == PolyMethod::regression;
+    if (!lines || order > 1) return priv_approx_poly(activation, l, u, order, options.poly_method);
+    return priv_line_fit(activation, l, u, options);
+}
+
 /// One neuron: the polynomial of its bounds with the error as a remainder, p(x) + [-d, d].
 Taylm aux_neuron(Activation activation, const Taylm &x, int order, const NnOptions &options) {
     const std::array<double, 2> bounds = x.bounds();
-    const PrivApprox a =
-        priv_approx_poly(activation, bounds[0], bounds[1], order, options.poly_method);
+    const PrivApprox a = aux_fit(activation, bounds[0], bounds[1], order, options);
     // the constant term and the error, then the powers of the model from the lowest
     const int64_t vars = x.num_vars();
     Taylm r = Taylm::constant(a.coeffs.back(), vars, x.max_order())
