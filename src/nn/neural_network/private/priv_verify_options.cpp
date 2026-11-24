@@ -294,6 +294,7 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
     if (name == "vit") {
         o.memory_budget = int64_t(32) << 30;
         o.alpha_iterations = 0;
+        o.crown_softmax_lse = true;
     }
     return o;
 }

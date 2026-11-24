@@ -120,6 +120,28 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   (CROWN) and pgd's some roots verified at once. The ReLU-slope steps (`alpha_iterations`) left the
   root bound unchanged (the softmax and the products are the loose part), so the preset turns them
   off. The preset only changes the budgets, not an enclosure.
+- **The softmax's upper line (`crown_softmax_lse`, CORA.cpp only; the vit preset).** CROWN's
+  passes (`priv_backward_lower`: the check's backward bound, CROWN's layer bounds, relu-bab's
+  root) bound a softmax's `p_i = 1 / s_i`, `s_i = sum_t A_it exp(d_t) + b_i`, from above by the
+  log-sum-exp bound of Wei et al. (AISTATS 2023) on the exps' inputs `d` instead of the
+  reciprocal's chord over the exps' tangents (on random 17-term softmaxes half the gap). The layer
+  (`ZonoNet::softmax`) is a reciprocal whose sums read only the exp layer before it, with
+  nonnegative weights `A` and bias `b` and no residual (`Layer::nonnegative`). A row below 0 at
+  neuron `i` takes `p_i <= a'_i + c_i y_i - c_i sum_t w_it (d_t - d0_t)` with `y_i = -log s_i(d0)`,
+  where its sums' bounds `[l, u]` (`l > 0`) give `y = -log s in [-log u, -log l]`, `c_i >= 0` the
+  chord's slope of `exp` there and `a'_i` the larger of `1 / u - c y_lo`, `1 / l - c y_hi`, and
+  `d0 = (l_d + u_d) / 2` is the middle of the exps' input bounds, `w_it = A_it exp(d0_t) / s_i(d0)`.
+  The rows above 0 keep the reciprocal's tangent below and the exps' chords (the same family as Wei
+  et al.'s lower bound). **Soundness:** `p = 1 / max(s, 1) <= 1 / s = exp(y)` for `s > 0`; `exp`
+  is convex, so a line at or above it at both ends of `[y_lo, y_hi]` is above it between them;
+  `log s(d)` is convex in `d` (a log-sum-exp of `d_t + log A_it` and `log b_i`, `A, b >= 0`), so
+  `y <= y(d0) - grad log s(d0) (d - d0)` for every `d`, and `c >= 0` keeps the direction. Both hold
+  for the true `d` and `s` since `[l_d, u_d]` and `[l, u]` do. Rounding: the offset is widened by
+  16 ulps of `1 / l + c (|y_lo| + |y_hi|)` and by `4 (n + 4)` ulps (n the sums' inputs) of
+  `c (|log s0| + |w d0| + sum_t w_t (u_d - l_d) / 2 + 1)`, which covers the sums, the log and the
+  computed weights' error times `|d - d0|`; a neuron whose bounds or values are not finite, or
+  `l <= 0`, keeps the two layers' lines. The slope steps' reverse pass evaluates the same line at
+  the exps' inputs, so their gradient stays the bound's.
 - **nn4sys (Phase 4).** A Gather's negative index counts from the end (pensieve's last entry of a
   row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
   output to 6e-7. pensieve_parallel's input `[12, 8]` has no batch axis: only a Reshape to a batch

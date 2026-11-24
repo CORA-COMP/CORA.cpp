@@ -339,6 +339,8 @@ class NeuralNetwork {
         Layer to(DType dtype, const std::string &device = "") const;
         /// The matrix W (out, in), built from the unit vectors for a convolution or a gather.
         Tensor dense() const;
+        /// Whether every entry of W is at least 0 (a convolution's kernel, a gather's factors).
+        bool nonnegative() const;
 
       private:
         Tensor aux_product(const Tensor &x, bool absolute, bool transposed) const;

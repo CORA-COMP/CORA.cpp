@@ -96,6 +96,9 @@ class ZonoNet {
     std::vector<int64_t> sources;
     std::vector<std::vector<NeuralNetwork::Residual>> residuals;
     std::vector<bool> kept;
+    /// softmax[k]: layer k is a reciprocal of nonnegative sums (no residual) of the exps of layer
+    /// k - 1 alone (a softmax's 1 / sum_t exp(x_t - x_q)), for priv_backward_lower's softmax_lse.
+    std::vector<bool> softmax;
     bool chain = true;
     std::string poly_method, approx_error_order;
     int64_t n0 = 0, q0 = 0, q = 0, num_outputs = 0, num_neurons = 0;
@@ -180,6 +183,9 @@ struct ZonoBackward {
     const ZonoBounds *bounds = nullptr; ///< the bounds of the layers' lines (else the record's)
     const std::vector<Tensor> *row_alpha = nullptr; ///< a ReLU's lower slopes per row (B, R, n)
     std::vector<Tensor> *g_alpha = nullptr;         ///< out: the bound's gradient in row_alpha
+    /// A softmax's reciprocal (ZonoNet::softmax) above by the log-sum-exp bound of its exps'
+    /// inputs (docs/nn_verification.md, "The softmax's upper line"), not the two layers' lines.
+    bool softmax_lse = false;
 };
 
 /// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
@@ -200,10 +206,12 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
 
 /// CROWN's bounds of the activation layers' inputs over the boxes (x, rad) of a record without
 /// splits, intersected with its bounds (priv_zono_bounds.cpp): `iterations` alpha-CROWN steps of
-/// size `step` per row, the rows in chunks of about max_bytes, the record's after the deadline.
+/// size `step` per row, the rows in chunks of about max_bytes, the record's after the deadline;
+/// softmax_lse: ZonoBackward's.
 ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
                              const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
-                             double deadline = std::numeric_limits<double>::infinity());
+                             double deadline = std::numeric_limits<double>::infinity(),
+                             bool softmax_lse = false);
 
 /// One projected Adam step t >= 1 of size `step` on the slopes alpha in [0, 1] (undefined ones and
 /// those without a gradient g are held), the moments m1, m2 updated.

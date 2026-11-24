@@ -5729,6 +5729,7 @@ void bind_verify(py::module_ &m) {
     // CROWN's bounds of the layer inputs in the check
     CORA_VERIFY_FIELD(check_crown_rounds, "the check's rounds of CROWN's bounds of the layers");
     CORA_VERIFY_FIELD(check_crown_iterations, "the check's alpha-CROWN steps of those bounds");
+    CORA_VERIFY_FIELD(crown_softmax_lse, "CROWN bounds a softmax above by its log-sum-exp");
     CORA_VERIFY_FIELD(look_ahead_candidates, "The candidates of the look-ahead heuristic fsb");
     CORA_VERIFY_FIELD(alpha_iterations, "zonotope-alpha: Adam steps on the ReLU slopes");
     CORA_VERIFY_FIELD(alpha_patience, "zonotope-alpha: steps without progress before it stops");

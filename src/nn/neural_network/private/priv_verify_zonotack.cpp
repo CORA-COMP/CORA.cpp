@@ -597,9 +597,11 @@ Tensor ConZonotopeBounding::aux_crown_lower(const ZonoPropagation &out, const Te
     if (rows.empty()) return lower;
     const int64_t B = xi.shape()[0];
     const Tensor R = AT_.matrix_transpose().take(rows, 0);
+    ZonoBackward soft; // the default pass, a softmax above by its log-sum-exp if asked
+    soft.softmax_lse = o_.crown_softmax_lse;
     const Tensor bound = alpha ? priv_backward_alpha(out, *net_, si, xi, ri, R, o_.alpha_iterations,
                                                      o_.alpha_step_size, deadline_)
-                               : priv_backward_lower(out, *net_, si, xi, ri, R);
+                               : priv_backward_lower(out, *net_, si, xi, ri, R, nullptr, &soft);
     const Tensor crown = bound - b_.reshape({P_ * K_}).take(rows, 0);
     // the better of the two on those rows, the others as they are
     const Tensor flat = lower.reshape({B, P_ * K_}).matrix_transpose();
@@ -1007,7 +1009,7 @@ void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri,
     const int64_t chunk = problem_->batch_memory_budget / 8;
     for (int64_t r = 0; r < o_.relu_bab_crown_rounds && now_seconds() < deadline_; ++r) {
         bounds = priv_crown_bounds(out, net, xi, ri, o_.relu_bab_crown_iterations,
-                                   o_.relu_bab_crown_step, chunk, deadline_);
+                                   o_.relu_bab_crown_step, chunk, deadline_, o_.crown_softmax_lse);
         out = net.forward(in.c, in.dr, in.G, si, nullptr, true, nullptr, &bounds);
     }
     tally(out, "after");
@@ -1234,7 +1236,7 @@ ConZonotopeBounding::Step ConZonotopeBounding::aux_iteration(const Tensor &xi_, 
             const StepTimer crown_timer(stats_, "check_crown_seconds");
             const ZonoBounds bounds = priv_crown_bounds(
                 out, net, xi_, ri_, o_.check_crown_iterations, o_.relu_bab_crown_step,
-                problem_->batch_memory_budget / 8, deadline_);
+                problem_->batch_memory_budget / 8, deadline_, o_.crown_softmax_lse);
             out = net.forward(in.c, in.dr, in.G, si_, nullptr, true, nullptr, &bounds);
         }
         Tensor lower = aux_margins(out);

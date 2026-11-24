@@ -177,6 +177,9 @@ struct NnVerifyOptions {
     /// The check's rounds of CROWN's bounds of the layer inputs (0: none), as relu-bab's root.
     int64_t check_crown_rounds = 0;
     int64_t check_crown_iterations = 0; ///< their alpha-CROWN steps per row
+    /// CROWN's passes take a softmax's upper bound by its exps' log-sum-exp (nn_verification.md),
+    /// not by its exp and reciprocal lines (the check, CROWN's layer bounds, relu-bab's root).
+    bool crown_softmax_lse = false;
     /// The candidates of a look-ahead neuron split heuristic ("fsb") per set.
     int64_t look_ahead_candidates = 8;
     // the bounding "zonotope-alpha": CORA's verify whose check optimizes the ReLU slopes

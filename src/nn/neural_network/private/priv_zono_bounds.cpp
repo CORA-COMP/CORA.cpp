@@ -38,11 +38,12 @@ namespace {
 
 /// The best lower bounds (B, R) of the rows (R, n) times layer top's input over `iterations`
 /// projected Adam steps of size `step` on the ReLU layers' lower slopes per row, from CROWN's
-/// (start: per layer, (B, n)), the lines at `bounds`; none after the deadline.
+/// (start: per layer, (B, n)), the lines at `bounds`; none after the deadline; softmax_lse:
+/// ZonoBackward's.
 Tensor aux_optimized(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
                      const std::vector<Tensor> &start, std::size_t top, const Tensor &x,
                      const Tensor &rad, const Tensor &rows, int64_t iterations, double step,
-                     double deadline) {
+                     double deadline, bool softmax_lse) {
     const int64_t B = x.shape()[0], R = rows.shape()[0];
     std::vector<Tensor> alpha(top), m1(top), m2(top);
     if (iterations > 0)
@@ -60,6 +61,7 @@ Tensor aux_optimized(const ZonoPropagation &out, const ZonoNet &net, const ZonoB
         opt.bounds = &bounds;
         opt.row_alpha = iterations > 0 ? &alpha : nullptr;
         opt.g_alpha = more ? &g : nullptr;
+        opt.softmax_lse = softmax_lse;
         const Tensor value = priv_backward_lower(out, net, none, x, rad, rows, nullptr, &opt);
         // every step's bound holds: the best per row
         best = best.defined() ? best.maximum(value) : value;
@@ -94,7 +96,7 @@ void priv_adam_slopes(std::vector<Tensor> &alpha, std::vector<Tensor> &m1, std::
 
 ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
                              const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
-                             double deadline) {
+                             double deadline, bool softmax_lse) {
     const std::size_t L = net.W.size();
     const int64_t B = x.shape()[0];
     ZonoBounds bounds;
@@ -136,8 +138,8 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
             const Tensor ids = Tensor::like(l, part_d, {c});
             const Tensor E = ids.expand_dims(-1).equal(l.arange_like(n).expand_dims(0)) + 0.0;
             const Tensor rows = Tensor::concat({E, E.negative()}, 0);
-            const Tensor v =
-                aux_optimized(out, net, bounds, start, k, x, rad, rows, iterations, step, deadline);
+            const Tensor v = aux_optimized(out, net, bounds, start, k, x, rad, rows, iterations,
+                                           step, deadline, softmax_lse);
             // back to the layer's neurons (B, n): the rows' bounds where bounded, else the record's
             const Tensor hit = E.sum(0).greater(l.zeros_like({n}));
             const Tensor lo = v.slice(1, 0, c).matmul(E), hi = v.slice(1, c, 2 * c).matmul(E);
