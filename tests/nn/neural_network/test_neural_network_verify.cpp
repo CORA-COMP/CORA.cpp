@@ -60,7 +60,8 @@ NeuralNetwork aux_network(Rng &rng, const std::vector<int64_t> &sizes, Activatio
     return {layers, acts};
 }
 
-/// A random net 3 -> ReLU 5 -> 4 logits -> softmax -> 2 (softmax_out: ends at the softmax).
+/// A random net 3 -> ReLU 5 -> 4 logits -> softmax -> ReLU 4 -> 2 (softmax_out: ends at the
+/// softmax).
 NeuralNetwork aux_softmax_network(Rng &rng, double scale, bool softmax_out) {
     const NeuralNetwork front = aux_network(rng, {3, 5, 4}, Activation::relu);
     std::vector<NeuralNetwork::Layer> layers = front.layers();
@@ -70,10 +71,13 @@ NeuralNetwork aux_softmax_network(Rng &rng, double scale, bool softmax_out) {
     layers.insert(layers.end(), soft.layers.begin(), soft.layers.end());
     acts.insert(acts.end(), soft.activations.begin(), soft.activations.end());
     if (!softmax_out) {
-        const NeuralNetwork back = aux_network(rng, {4, 2}, Activation::identity);
-        layers.push_back(back.layers()[0]);
-        layers.back().source = NeuralNetwork::kPrevious;
-        acts.push_back(Activation::identity);
+        // a ReLU after the softmax: its bounds' slope steps go back through the softmax
+        const NeuralNetwork back = aux_network(rng, {4, 4, 2}, Activation::relu);
+        for (std::size_t k = 0; k < 2; ++k) {
+            layers.push_back(back.layers()[k]);
+            layers.back().source = NeuralNetwork::kPrevious;
+            acts.push_back(back.activations()[k]);
+        }
     }
     return {layers, acts};
 }
@@ -627,7 +631,8 @@ void softmax_lse(const std::string &b) {
             }
         }
     }
-    check(found, b + ": ZonoNet finds the softmax's reciprocal of the exps' sums");
+    check(found && vnncomp_options("vit").crown_softmax_lse,
+          b + ": ZonoNet finds the softmax's reciprocal of the exps' sums (on for vit)");
     check(holds, b + ": the softmax's log-sum-exp line holds the sampled outputs and layer inputs");
     check(inside, b + ": CROWN's bounds with the softmax's line lie inside the zonotope's");
     check(tighter, b + ": the softmax's line is tighter than the exp and reciprocal lines");
@@ -639,6 +644,7 @@ void softmax_lse(const std::string &b) {
         o.falsification_order = "bound-first";
         o.refinement_method = refinement;
         o.crown_softmax_lse = true;
+        o.backward_bound = true;
         const NnVerifyResult safe = nn.verify(aux_below(3, 2, -0.2, 0.2, least - 1.0), 20, o);
         const NnVerifyResult unsafe = nn.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
         check(safe.status == "unsat" && unsafe.status != "unsat",
