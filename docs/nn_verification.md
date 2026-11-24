@@ -153,11 +153,11 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   network: verify runs the groups one after the other, fewest cases first, each an equal share of
   the time left (what an easy group leaves goes to the larger ones), sat as soon as one is (the
   counterexample is a point of the original input, checked on the original graph), unsat only if
-  every group is. Each case leaves one to three of the 308 inputs free, so verify gives input
-  generators to at most as many inputs as a case leaves free (`num_init_gens`; a fixed input's
-  generator is zero, and the heuristic ranks it last), and a property folded in groups takes 10
-  error slots per layer and batches of up to 4096 boxes (`FOLDED_PARTS`): each box is cheap, and
-  there are many. mscn's outputs come within 4e-5 of the property's bounds (cardinality_0_3800:
+  every group is. Each case leaves one to three of the 308 inputs free, so a property folded in
+  groups gives input generators to at most as many inputs as a case leaves free (`num_init_gens`;
+  a fixed input's generator is zero, and the heuristic ranks it last), 10 error slots per layer
+  and batches of up to 4096 boxes (`FOLDED_PARTS`): each box is cheap, and there are many.
+  pensieve_big, not folded, goes unknown at 59 s with either the cap or the 10 slots. mscn's outputs come within 4e-5 of the property's bounds (cardinality_0_3800:
   0.67690 against 0.67695 at a corner of a case's box), below the default `verified_margin` of
   1e-4, so no box there could ever verify. A folded property takes `verified_margin` 1e-5, and
   with it the search in float64 (`dtype`), so nothing of its verdict rests on float32: the
