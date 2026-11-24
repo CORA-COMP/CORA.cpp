@@ -1,0 +1,216 @@
+category,instance,tool,time,note,source
+AFF,HEAT01,CORA,0.13,,AFF report Tab. 1
+AFF,HEAT01,JuliaReach,0.04,,AFF report Tab. 1
+AFF,HEAT01,JuliaReach discrete-time,0.01,other-problem,AFF report Tab. 1 (discrete-time tools)
+AFF,HEAT02,CORA,3.04,,AFF report Tab. 1
+AFF,HEAT02,JuliaReach,2.60,,AFF report Tab. 1
+AFF,HEAT02,JuliaReach discrete-time,0.66,other-problem,AFF report Tab. 1 (discrete-time tools)
+AFF,HEAT03,CORA,21.8,,AFF report Tab. 1
+AFF,HEAT03,JuliaReach discrete-time,95.6,other-problem,AFF report Tab. 1 (discrete-time tools)
+AFF,HEAT04,CORA,1193,,AFF report Tab. 1
+AFF,HEAT04,JuliaReach discrete-time,3180,other-problem,AFF report Tab. 1 (discrete-time tools)
+AFF,CBC01,CORA,0.28,,AFF report Tab. 2
+AFF,CBC01,JuliaReach,0.05,,AFF report Tab. 2
+AFF,CBC01,JuliaReach discrete-time,0.07,other-problem,AFF report Tab. 2 (discrete-time tools)
+AFF,CBC02,CORA,3.68,,AFF report Tab. 2
+AFF,CBC02,JuliaReach,0.80,,AFF report Tab. 2
+AFF,CBC02,JuliaReach discrete-time,0.64,other-problem,AFF report Tab. 2 (discrete-time tools)
+AFF,CBC03,CORA,37.27,,AFF report Tab. 2
+AFF,CBC03,JuliaReach,3.74,,AFF report Tab. 2
+AFF,CBC03,JuliaReach discrete-time,2.20,other-problem,AFF report Tab. 2 (discrete-time tools)
+AFF,CBF01,CORA,0.40,,AFF report Tab. 2
+AFF,CBF01,JuliaReach,1.99,,AFF report Tab. 2
+AFF,CBF01,JuliaReach discrete-time,0.08,other-problem,AFF report Tab. 2 (discrete-time tools)
+AFF,CBF02,CORA,5.38,,AFF report Tab. 2
+AFF,CBF02,JuliaReach,70.0,,AFF report Tab. 2
+AFF,CBF02,JuliaReach discrete-time,1.94,other-problem,AFF report Tab. 2 (discrete-time tools)
+AFF,CBF03,CORA,67.79,,AFF report Tab. 2
+AFF,CBF03,JuliaReach,869,,AFF report Tab. 2
+AFF,CBF03,JuliaReach discrete-time,6.53,other-problem,AFF report Tab. 2 (discrete-time tools)
+AFF,RND01,CORA,5.72,,AFF report Tab. 3
+AFF,RND01,JuliaReach,0.18,,AFF report Tab. 3
+AFF,RND02,CORA,0.42,,AFF report Tab. 3
+AFF,RND02,JuliaReach,14.65,,AFF report Tab. 3
+AFF,RND03,CORA,37.34,,AFF report Tab. 3
+AFF,RND03,JuliaReach,779,,AFF report Tab. 3
+AFF,RND04,CORA,7.77,,AFF report Tab. 3
+AFF,RND05,CORA,45.86,,AFF report Tab. 3
+AFF,RND06,CORA,26.70,,AFF report Tab. 3
+AFF,SRNA01,CORA,51.87,,AFF report Tab. 4
+AFF,SRNA01,JuliaReach,1.09,,AFF report Tab. 4
+AFF,SRNA01,JuliaReach discrete-time,0.41,other-problem,AFF report Tab. 4 (discrete-time tools)
+AFF,SRA01,CORA,10.94,,AFF report Tab. 4
+AFF,SRA01,JuliaReach,1.17,,AFF report Tab. 4
+AFF,SRA01,JuliaReach discrete-time,0.47,other-problem,AFF report Tab. 4 (discrete-time tools)
+AFF,SRA02,CORA,17.49,,AFF report Tab. 4
+AFF,SRA02,JuliaReach,1.24,,AFF report Tab. 4
+AFF,SRA02,JuliaReach discrete-time,0.50,other-problem,AFF report Tab. 4 (discrete-time tools)
+AFF,SRA03,CORA,27.40,,AFF report Tab. 4
+AFF,SRA03,JuliaReach,1.79,,AFF report Tab. 4
+AFF,SRA03,JuliaReach discrete-time,0.73,other-problem,AFF report Tab. 4 (discrete-time tools)
+AFF,SRA04,CORA,39.05,,AFF report Tab. 4
+AFF,SRA04,JuliaReach,108,,AFF report Tab. 4
+AFF,SRA05,CORA,67.33,,AFF report Tab. 4
+AFF,SRA06,CORA,71.46,,AFF report Tab. 4
+AFF,SRA07,CORA,120,,AFF report Tab. 4
+AFF,SRA08,CORA,239,,AFF report Tab. 4
+AFF,SRU01,CORA,25.86,,AFF report Tab. 4
+AFF,SRU01,JuliaReach,11.79,,AFF report Tab. 4
+AFF,SRU02,CORA,244,,AFF report Tab. 4
+AFF,SRU02,JuliaReach,20.00,,AFF report Tab. 4
+AFF,SRU02,JuliaReach discrete-time,10.27,other-problem,AFF report Tab. 4 (discrete-time tools)
+AFF,DTN01,CORA,9.69,,AFF report Tab. 5
+AFF,DTN01,JuliaReach,0.005,code-differs,AFF report Tab. 5; README AFF footnote [a]
+AFF,DTN02,CORA,10.43,,AFF report Tab. 5
+AFF,DTN02,JuliaReach,0.005,code-differs,AFF report Tab. 5; README AFF footnote [a]
+AFF,DTN03,CORA,10.27,,AFF report Tab. 5
+AFF,DTN03,JuliaReach,0.006,code-differs,AFF report Tab. 5; README AFF footnote [a]
+AFF,DTN04,CORA,48.29,,AFF report Tab. 5
+AFF,DTN04,JuliaReach,0.127,code-differs,AFF report Tab. 5; README AFF footnote [a]
+AFF,DTN05,CORA,90.76,,AFF report Tab. 5
+AFF,DTN05,JuliaReach,0.007,code-differs,AFF report Tab. 5; README AFF footnote [a]
+AFF,DTN06,CORA,227,,AFF report Tab. 5
+AFF,DTN06,JuliaReach,0.009,code-differs,AFF report Tab. 5; README AFF footnote [a]
+AFF,PLAA01-BND42,CORA,25.02,,AFF report Tab. 6
+AFF,PLAA01-BND42,JuliaReach,180,,AFF report Tab. 6
+AFF,PLAA01-BND50,CORA,7.77,,AFF report Tab. 6
+AFF,PLAA01-BND50,JuliaReach,22.01,,AFF report Tab. 6
+AFF,PLAD01-BND30,CORA,4.03,,AFF report Tab. 6
+AFF,PLAD01-BND30,JuliaReach,62.82,,AFF report Tab. 6
+AFF,PLAD01-BND30,JuliaReach discrete-time,1.17,other-problem,AFF report Tab. 6 (discrete-time tools)
+AFF,PLAD01-BND42,CORA,3.07,,AFF report Tab. 6
+AFF,PLAD01-BND42,JuliaReach,0.05,,AFF report Tab. 6
+AFF,PLAD01-BND42,JuliaReach discrete-time,0.89,other-problem,AFF report Tab. 6 (discrete-time tools)
+AFF,PLAN01,CORA,162,,AFF report Tab. 6
+AFF,GRBX01,CORA,2.28,,AFF report Tab. 7
+AFF,GRBX01,JuliaReach,2.89,,AFF report Tab. 7
+AFF,GRBX01,JuliaReach discrete-time,16.61,other-problem,AFF report Tab. 7 (discrete-time tools)
+AFF,GRBX02,CORA,2.44,,AFF report Tab. 7
+AFF,GRBX02,JuliaReach,3.15,,AFF report Tab. 7
+AFF,GRBX02,JuliaReach discrete-time,17.29,other-problem,AFF report Tab. 7 (discrete-time tools)
+AFF,BRKDC01,CORA,22.66,,AFF report Tab. 8
+AFF,BRKDC01,JuliaReach,0.10,,AFF report Tab. 8
+AFF,BRKDC01,JuliaReach discrete-time,2.68,other-problem,AFF report Tab. 8 (discrete-time tools)
+AFF,BRKNC01,CORA,32.07,,AFF report Tab. 8
+AFF,BRKNC01,JuliaReach,0.17,,AFF report Tab. 8
+AFF,BRKNC01,JuliaReach discrete-time,2.61,other-problem,AFF report Tab. 8 (discrete-time tools)
+AFF,BRKNP01,CORA,52.20,,AFF report Tab. 8 (column BRKP01)
+AFF,BRKNP01,JuliaReach,16.99,,AFF report Tab. 8 (column BRKP01)
+AFF,BRKNP01,JuliaReach discrete-time,16.41,other-problem,AFF report Tab. 8 (column BRKP01; discrete-time tools)
+NLN,TRAF22,CORA,152,,NLN report Tab. 1
+NLN,TRAF22,DynIbex,573,,NLN report Tab. 1
+NLN,TRAF22,JuliaReach,32,code-differs,NLN report Tab. 1; README NLN footnote [a]
+NLN,SPRE22,CORA,37,,NLN report Tab. 6
+NLN,SPRE22,DynIbex,141,,NLN report Tab. 6
+NLN,SPRE22,JuliaReach,61,,NLN report Tab. 6
+NLN,ROBE25 (1),Ariadne,111,,NLN report Tab. 2
+NLN,ROBE25 (1),CORA,151,,NLN report Tab. 2
+NLN,ROBE25 (1),DynIbex,831,,NLN report Tab. 2
+NLN,ROBE25 (1),JuliaReach,25,,NLN report Tab. 2
+NLN,ROBE25 (1),KeYmaera X,0.2,other-problem,NLN report Tab. 2 (footnote 1: one symbolic proof); README NLN footnote [b]
+NLN,ROBE25 (2),Ariadne,450,,NLN report Tab. 2
+NLN,ROBE25 (2),CORA,239,,NLN report Tab. 2
+NLN,ROBE25 (2),DynIbex,5589,,NLN report Tab. 2
+NLN,ROBE25 (2),JuliaReach,92,,NLN report Tab. 2
+NLN,ROBE25 (2),KeYmaera X,0.2,other-problem,NLN report Tab. 2 (footnote 1: one symbolic proof); README NLN footnote [b]
+NLN,ROBE25 (3),Ariadne,594,,NLN report Tab. 2
+NLN,ROBE25 (3),CORA,310,,NLN report Tab. 2
+NLN,ROBE25 (3),DynIbex,6432,,NLN report Tab. 2
+NLN,ROBE25 (3),JuliaReach,217,,NLN report Tab. 2
+NLN,ROBE25 (3),KeYmaera X,0.2,other-problem,NLN report Tab. 2 (footnote 1: one symbolic proof); README NLN footnote [b]
+NLN,CVDP23,CORA,571,,NLN report Tab. 3
+NLN,CVDP23,DynIbex,1028,,NLN report Tab. 3
+NLN,CVDP23,JuliaReach,0.4,,NLN report Tab. 3
+NLN,CVDP23,KeYmaera X,6,other-problem,NLN report Tab. 3 (footnote 1: simplified m = 1; b = 1; t in [0; 0.1])
+NLN,CVDP23,PRoTECT,338,,NLN report Tab. 3 (a barrier certificate valid within the tolerance 1e-7; Sec. 3.3)
+NLN,LALO20 W001,Ariadne,24,,NLN report Tab. 4
+NLN,LALO20 W001,CORA,9.3,,NLN report Tab. 4
+NLN,LALO20 W001,DynIbex,12,,NLN report Tab. 4
+NLN,LALO20 W001,JuliaReach,1.1,code-differs,NLN report Tab. 4; README NLN footnote [c]
+NLN,LALO20 W001,KeYmaera X,12.81,other-problem,NLN report Tab. 4 (footnote 1: t in [0; 0.1]); README NLN footnote [c]
+NLN,LALO20 W001,PRoTECT,4.4,other-problem,NLN report Tab. 4 (footnote 2: t in [0; inf)); README NLN footnote [c]
+NLN,LALO20 W005,Ariadne,99,,NLN report Tab. 4
+NLN,LALO20 W005,CORA,17,,NLN report Tab. 4
+NLN,LALO20 W005,DynIbex,29,,NLN report Tab. 4
+NLN,LALO20 W005,JuliaReach,0.7,code-differs,NLN report Tab. 4; README NLN footnote [c]
+NLN,LALO20 W005,KeYmaera X,12.81,other-problem,NLN report Tab. 4 (footnote 1: t in [0; 0.1]); README NLN footnote [c]
+NLN,LALO20 W005,PRoTECT,4.4,other-problem,NLN report Tab. 4 (footnote 2: t in [0; inf)); README NLN footnote [c]
+NLN,LALO20 W01,Ariadne,299,,NLN report Tab. 4
+NLN,LALO20 W01,CORA,248,,NLN report Tab. 4
+NLN,LALO20 W01,DynIbex,1820,,NLN report Tab. 4
+NLN,LALO20 W01,JuliaReach,0.9,code-differs,NLN report Tab. 4; README NLN footnote [c]
+NLN,LALO20 W01,KeYmaera X,12.71,other-problem,NLN report Tab. 4 (footnote 1: t in [0; 0.1]); README NLN footnote [c]
+NLN,LALO20 W01,PRoTECT,4.4,other-problem,NLN report Tab. 4 (footnote 2: t in [0; inf)); README NLN footnote [c]
+NLN,TSPS25,CORA,299,,NLN report Tab. 7
+NLN,LOVO25,Ariadne,81,,NLN report Tab. 5
+NLN,LOVO25,CORA,9.6,,NLN report Tab. 5
+NLN,LOVO25,DynIbex,21,,NLN report Tab. 5
+NLN,LOVO25,JuliaReach,1.6,code-differs,NLN report Tab. 5; README NLN footnote [d]
+NLN,LOVO25,KeYmaera X,1.7,other-problem,NLN report Tab. 5 (printed (1.7); footnote 1: invariance only); README NLN footnote [d]
+AINNCS,Unicycle,CORA,8.015,,AINNCS report Tab. 1
+AINNCS,Unicycle,CROWN-Reach,10.528,,AINNCS report Tab. 2
+AINNCS,Unicycle,JuliaReach,7.093,,AINNCS report Tab. 4
+AINNCS,ACC,CORA,3.176,,AINNCS report Tab. 1
+AINNCS,ACC,CROWN-Reach,2.920,,AINNCS report Tab. 2
+AINNCS,ACC,immrax,0.120,other-problem,AINNCS report Tab. 3 (continuous feedback; p. 114); README AINNCS footnote [a]
+AINNCS,ACC,JuliaReach,0.492,,AINNCS report Tab. 4
+AINNCS,TORA remain,CORA,8.998,,AINNCS report Tab. 1
+AINNCS,TORA remain,CROWN-Reach,2.852,,AINNCS report Tab. 2
+AINNCS,TORA remain,JuliaReach,65.557,,AINNCS report Tab. 4
+AINNCS,TORA reach-tanh,CORA,2.356,,AINNCS report Tab. 1
+AINNCS,TORA reach-tanh,CROWN-Reach,5.851,,AINNCS report Tab. 2
+AINNCS,TORA reach-tanh,immrax,0.040,other-problem,AINNCS report Tab. 3 (continuous feedback); README AINNCS footnote [a]
+AINNCS,TORA reach-tanh,JuliaReach,0.115,,AINNCS report Tab. 4
+AINNCS,TORA reach-sigmoid,CORA,4.730,,AINNCS report Tab. 1
+AINNCS,TORA reach-sigmoid,CROWN-Reach,7.053,,AINNCS report Tab. 2
+AINNCS,TORA reach-sigmoid,immrax,0.043,other-problem,AINNCS report Tab. 3 (continuous feedback); README AINNCS footnote [a]
+AINNCS,TORA reach-sigmoid,JuliaReach,0.146,,AINNCS report Tab. 4
+AINNCS,Single Pendulum,CORA,4.083,,AINNCS report Tab. 1
+AINNCS,Single Pendulum,CROWN-Reach,0.647,code-differs,AINNCS report Tab. 2; README AINNCS footnote [b]
+AINNCS,Single Pendulum,immrax,0.028,other-problem,AINNCS report Tab. 3 (continuous feedback; falsified)
+AINNCS,Single Pendulum,JuliaReach,4.137,,AINNCS report Tab. 4
+AINNCS,DP less-robust,CORA,5.604,verdict,AINNCS report Tab. 1 (unknown)
+AINNCS,DP less-robust,CROWN-Reach,67.334,,AINNCS report Tab. 2
+AINNCS,DP less-robust,JuliaReach,824.729,,AINNCS report Tab. 4
+AINNCS,DP more-robust,CORA,5.589,,AINNCS report Tab. 1
+AINNCS,DP more-robust,CROWN-Reach,1.177,,AINNCS report Tab. 2
+AINNCS,DP more-robust,JuliaReach,0.394,,AINNCS report Tab. 4
+AINNCS,Airplane,CORA,6.809,,AINNCS report Tab. 1
+AINNCS,Airplane,CROWN-Reach,6.105,,AINNCS report Tab. 2
+AINNCS,Airplane,JuliaReach,1.923,,AINNCS report Tab. 4
+AINNCS,VCAS middle-19.5,CORA,0.215,,AINNCS report Tab. 1
+AINNCS,VCAS middle-19.5,CROWN-Reach,0.281,,AINNCS report Tab. 2
+AINNCS,VCAS middle-19.5,JuliaReach,0.022,other-problem,AINNCS report Tab. 4 (time points only); README AINNCS footnote [e]
+AINNCS,VCAS middle-22.5,CORA,0.129,,AINNCS report Tab. 1
+AINNCS,VCAS middle-22.5,CROWN-Reach,0.386,,AINNCS report Tab. 2
+AINNCS,VCAS middle-22.5,JuliaReach,0.001,other-problem,AINNCS report Tab. 4 (time points only); README AINNCS footnote [e]
+AINNCS,VCAS middle-25.5,CORA,0.065,,AINNCS report Tab. 1
+AINNCS,VCAS middle-25.5,CROWN-Reach,0.030,,AINNCS report Tab. 2
+AINNCS,VCAS middle-25.5,JuliaReach,0.000,other-problem,AINNCS report Tab. 4 (time points only); README AINNCS footnote [e]
+AINNCS,VCAS middle-28.5,CORA,0.064,,AINNCS report Tab. 1
+AINNCS,VCAS middle-28.5,CROWN-Reach,0.034,,AINNCS report Tab. 2
+AINNCS,VCAS middle-28.5,JuliaReach,0.000,other-problem,AINNCS report Tab. 4 (time points only); README AINNCS footnote [e]
+AINNCS,VCAS worst-19.5,CORA,0.118,,AINNCS report Tab. 1
+AINNCS,VCAS worst-19.5,CROWN-Reach,0.269,,AINNCS report Tab. 2
+AINNCS,VCAS worst-22.5,CORA,0.061,,AINNCS report Tab. 1
+AINNCS,VCAS worst-22.5,CROWN-Reach,0.204,,AINNCS report Tab. 2
+AINNCS,VCAS worst-25.5,CORA,0.042,,AINNCS report Tab. 1
+AINNCS,VCAS worst-25.5,CROWN-Reach,0.030,,AINNCS report Tab. 2
+AINNCS,VCAS worst-28.5,CORA,0.032,,AINNCS report Tab. 1
+AINNCS,VCAS worst-28.5,CROWN-Reach,0.040,,AINNCS report Tab. 2
+AINNCS,Attitude Control,CORA,5.226,,AINNCS report Tab. 1
+AINNCS,Attitude Control,CROWN-Reach,3.237,code-differs,AINNCS report Tab. 2; README AINNCS footnote [c]
+AINNCS,Attitude Control,immrax,0.921,other-problem,AINNCS report Tab. 3 (continuous feedback; falsified)
+AINNCS,Attitude Control,JuliaReach,7.176,,AINNCS report Tab. 4
+AINNCS,QUAD,CORA,33.415,,AINNCS report Tab. 1
+AINNCS,QUAD,CROWN-Reach,3465.760,,AINNCS report Tab. 2
+AINNCS,QUAD,JuliaReach,9.517,verdict,AINNCS report Tab. 4 (unknown)
+AINNCS,Docking,CORA,95.038,verdict,AINNCS report Tab. 1 (unknown)
+AINNCS,Docking,JuliaReach,7.489,verdict,AINNCS report Tab. 4 (unknown)
+AINNCS,NAV standard,CORA,411.641,,AINNCS report Tab. 1
+AINNCS,NAV standard,CROWN-Reach,134.850,,AINNCS report Tab. 2
+AINNCS,NAV robust,CORA,2.271,,AINNCS report Tab. 1
+AINNCS,NAV robust,CROWN-Reach,22.461,,AINNCS report Tab. 2
+AINNCS,NAV robust,immrax,32.636,other-problem,AINNCS report Tab. 3 (continuous feedback)
+AINNCS,NAV robust,JuliaReach,7.576,,AINNCS report Tab. 4
+AINNCS,CartPole*,CORA,227.216,,AINNCS report Tab. 1
