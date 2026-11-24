@@ -181,6 +181,10 @@ struct NnVerifyOptions {
     double crown_bab_alpha_step = 0.1;  ///< Adam's step on the lower slopes in [0, 1]
     double crown_bab_beta_step = 0.05;  ///< Adam's step on the multipliers >= 0
     int64_t crown_bab_batch = 1024;     ///< nodes bounded at once at most (fewer if memory asks)
+    /// Look-ahead branching: the children of a node's best crown_bab_fsb neurons by BaBSR's score
+    /// are bounded by one pass each, the neuron of the best worse child taken (<= 1: BaBSR's).
+    int64_t crown_bab_fsb = 0;
+    int64_t crown_bab_memory_budget = 0; ///< the bytes of one batch's passes; 0: half the batch's
     int64_t crown_bab_witnesses =
         16; ///< the weakest open nodes per batch whose corners are checked
     /// The check's rounds of CROWN's bounds of the layer inputs (0: none), as relu-bab's root.

@@ -543,6 +543,58 @@ void crown_split_nodes(const std::string &b) {
           b + ": the gradient in beta is the difference quotient");
 }
 
+/// priv_crown_bab on nets of other activations (a product, a softmax's exp and reciprocal): its
+/// nodes batch the lines of the root's record, a verified polytope holds every sample.
+void crown_bab_other_layers(const std::string &b) {
+    Rng rng(59);
+    std::vector<NeuralNetwork> nets;
+    {
+        NeuralNetwork base = aux_network(rng, {3, 6, 4, 6, 2}, Activation::relu);
+        std::vector<Activation> acts = base.activations();
+        acts[1] = Activation::product;
+        nets.emplace_back(base.layers(), acts);
+    }
+    nets.push_back(aux_softmax_network(rng, 1.0, false));
+    int wrong = 0, decided = 0;
+    double nodes = 0;
+    for (const NeuralNetwork &nn : nets) {
+        for (const bool lse : {false, true}) {
+            const ZonoNet net(nn, 3, 2, "bounds", "length");
+            const Tensor x = Tensor({{0.1, -0.2, 0.3}}), r = Tensor({{0.5, 0.4, 0.5}});
+            const ZonoInput in = net.input_zonotope(x, r);
+            const ZonoPropagation out =
+                net.forward(in.c, in.dr, in.G, x.zeros_like({1, 0}), nullptr, true);
+            std::vector<double> pts(std::size_t(4000 * 3));
+            rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+            const Tensor xs = Tensor::from_data(pts, {4000, 3}).multiply(r) + x;
+            const std::vector<double> y = nn.evaluate(xs).data();
+            double least = kInfinity;
+            for (std::size_t i = 0; i < 4000; ++i) least = std::min(least, y[i * 2]);
+            for (const double gap : {0.4, 0.05}) {
+                CrownBabOptions o;
+                o.steps = 5;
+                o.root_steps = 10;
+                o.batch = 4;
+                o.fsb = 2;
+                o.softmax_lse = lse;
+                o.deadline = now_seconds() + 5;
+                std::map<std::string, double> stats;
+                const Tensor rows = Tensor({{1.0, 0.0}});
+                const Tensor offsets = Tensor::from_data(std::vector<double>{least - gap}, {1});
+                const int res = priv_crown_bab(
+                    out, net, ZonoBounds{}, x, r, rows, offsets, o,
+                    [](const Tensor &) { return false; }, stats);
+                decided += res == 1 ? 1 : 0;
+                if (res == 1)
+                    for (std::size_t i = 0; i < 4000; ++i) wrong += y[i * 2] <= least - gap;
+                if (stats.count("crown_bab_nodes")) nodes += stats.at("crown_bab_nodes");
+            }
+        }
+    }
+    check(wrong == 0, b + ": crown-bab on other activations holds every sample it verifies");
+    check(decided > 0 && nodes > 0, b + ": crown-bab splits and verifies on other activations");
+}
+
 /// crown-bab is never unsat where a sample violates the property, proves most properties of a
 /// wide margin, and finds a checked counterexample of a violated one.
 void crown_bab_verdicts(const std::string &b) {
@@ -561,6 +613,7 @@ void crown_bab_verdicts(const std::string &b) {
         o.refinement_method = "crown-bab";
         o.falsification_order = "bound-first";
         o.crown_bab_batch = 8; // a few nodes at once: the stack and the batches' slicing
+        o.crown_bab_fsb = net_i % 2 == 0 ? 0 : 3; // BaBSR's score, or the look-ahead
         for (const double t : {least - 0.3, least - 0.02, least + 0.05}) {
             const NnVerifyResult r = nn.verify(aux_below(2, 2, -1.0, 1.0, t), 30, o);
             if (r.status == "unsat")
@@ -1610,6 +1663,7 @@ int main() {
         backward_bounds(b);
         backward_bit_identical(b);
         crown_split_nodes(b);
+        crown_bab_other_layers(b);
         crown_bounds(b);
         softmax_lse(b);
         // the dual certificates, on rows of very different norms too

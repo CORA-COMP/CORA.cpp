@@ -485,10 +485,13 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     verified when some row's bound exceeds `verified_margin`.
   - **Branching:** each open node splits the unsplit neuron of the largest chord loss
     `-min(Lambda, 0) b_u` (`ZonoBackward::intercepts`, BaBSR's intercept score) in its best row; none
-    above 0: the widest one (`min(-l, u)`). Children: the inactive and the active side.
+    above 0: the widest one (`min(-l, u)`). Children: the inactive and the active side. With
+    `crown_bab_fsb` > 1 (filtered smart branching), the node's `crown_bab_fsb` best neurons by that
+    score each get their two children bounded by one pass at the node's slopes and multipliers,
+    and the neuron whose worse child is best is split (a choice only: no bound is taken from it).
   - **Search:** a stack of batches, the last batch's children first; at most `crown_bab_batch`
-    children per pass (fewer when the passes' estimated bytes exceed half the batch budget, halved
-    on out of memory). The open nodes' bytes are at most `relu_bab_frontier_bytes` (0: a quarter of
+    children per pass (fewer when the passes' estimated bytes exceed `crown_bab_memory_budget`, 0:
+    half the batch budget; halved on out of memory). The open nodes' bytes are at most `relu_bab_frontier_bytes` (0: a quarter of
     the batch budget), else unknown; a node with every crossing neuron split still open: unknown.
   - **Counterexamples:** each row's minimizing corner of the input box (`ZonoBackward::corner`) at
     the root and at the `crown_bab_witnesses` weakest open nodes of each batch goes to the

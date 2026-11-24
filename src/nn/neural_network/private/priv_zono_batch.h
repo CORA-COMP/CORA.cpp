@@ -229,6 +229,7 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
 /// The options of priv_crown_bab (NnVerifyOptions' crown_bab_*).
 struct CrownBabOptions {
     int64_t steps = 20, root_steps = 100, batch = 1024, witnesses = 16;
+    int64_t fsb = 0; ///< candidates of the look-ahead branching (<= 1: BaBSR's score alone)
     double alpha_step = 0.1, beta_step = 0.05;
     double margin = 0;                    ///< a node is verified when some row's bound exceeds it
     int64_t max_bytes = int64_t(1) << 30; ///< the bytes of one batch's passes, about

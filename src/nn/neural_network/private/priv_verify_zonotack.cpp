@@ -959,10 +959,12 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         co.root_steps = o_.crown_bab_root_steps;
         co.batch = o_.crown_bab_batch;
         co.witnesses = o_.crown_bab_witnesses;
+        co.fsb = o_.crown_bab_fsb;
         co.alpha_step = o_.crown_bab_alpha_step;
         co.beta_step = o_.crown_bab_beta_step;
         co.margin = o_.verified_margin;
-        co.max_bytes = problem.batch_memory_budget / 2;
+        co.max_bytes = o_.crown_bab_memory_budget > 0 ? o_.crown_bab_memory_budget
+                                                      : problem.batch_memory_budget / 2;
         co.frontier_bytes = o_.relu_bab_frontier_bytes > 0 ? o_.relu_bab_frontier_bytes
                                                            : problem.batch_memory_budget / 4;
         co.softmax_lse = o_.crown_softmax_lse;

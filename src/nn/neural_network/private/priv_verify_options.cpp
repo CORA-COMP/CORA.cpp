@@ -126,6 +126,8 @@ void NnVerifyOptions::validate() const {
     aux_at_least("crown_bab_beta_step", crown_bab_beta_step, 0);
     aux_at_least("crown_bab_batch", double(crown_bab_batch), 1);
     aux_at_least("crown_bab_witnesses", double(crown_bab_witnesses), 0);
+    aux_at_least("crown_bab_fsb", double(crown_bab_fsb), 0);
+    aux_at_least("crown_bab_memory_budget", double(crown_bab_memory_budget), 0);
     // CROWN's bounds of the layer inputs: relu-bab's root and the check
     aux_at_least("relu_bab_crown_rounds", double(relu_bab_crown_rounds), 0);
     aux_at_least("relu_bab_crown_iterations", double(relu_bab_crown_iterations), 0);

@@ -150,6 +150,8 @@ class CrownBab {
     bool late() const { return now_seconds() >= std::min(o_.deadline, net_.deadline); }
     Bounded bound(const Tensor &S, Tensor alpha, Tensor beta, int64_t steps) const;
     Tensor choose(const Tensor &S, const Bounded &b) const;
+    Tensor look_ahead(const Tensor &S, const Tensor &alpha, const Tensor &beta, const Bounded &b,
+                      int64_t batch) const;
     int64_t per_node_bytes() const;
 
     const ZonoPropagation &out_;
@@ -228,6 +230,46 @@ Tensor CrownBab::choose(const Tensor &S, const Bounded &b) const {
     return Tensor::where(free.any(1), pick, pick.full_like({1}, -1.0));
 }
 
+Tensor CrownBab::look_ahead(const Tensor &S, const Tensor &alpha, const Tensor &beta,
+                            const Bounded &b, int64_t batch) const {
+    // BaBSR's pick, and its best `fsb` candidates (filtered smart branching)
+    const Tensor pick = choose(S, b);
+    const int64_t N = S.shape()[0], U = space_.U;
+    const int64_t k = std::min<int64_t>(o_.fsb, U);
+    if (k <= 1 || N == 0) return pick;
+    const Tensor hot = aux_onehot(b.best.argmax(1), K_).expand_dims(-1);
+    const Tensor score = b.score.multiply(hot).sum(1);
+    const Tensor free = S.equal(S.zeros_like());
+    const Tensor masked = Tensor::where(free, score, score.full_like({1}, -1.0));
+    const auto [vals, cand] = masked.topk(k, 1); // (N, k)
+    // each candidate's two children, by one pass at the parent's slopes and multipliers
+    std::vector<Tensor> parts;
+    for (int64_t c = 0; c < k; ++c) {
+        const Tensor h = aux_onehot(cand.slice(1, c, c + 1).squeeze(1), U);
+        parts.push_back(S + h);
+        parts.push_back(S - h);
+    }
+    const Tensor Sc = Tensor::concat(parts, 0);
+    std::vector<Tensor> as(std::size_t(2 * k), alpha), bs(std::size_t(2 * k), beta);
+    const Tensor Ac = Tensor::concat(as, 0), Bc = Tensor::concat(bs, 0);
+    std::vector<Tensor> lows;
+    const int64_t total = 2 * k * N;
+    for (int64_t at = 0; at < total; at += batch) {
+        const int64_t to = std::min(total, at + batch);
+        lows.push_back(
+            bound(Sc.slice(0, at, to), Ac.slice(0, at, to), Bc.slice(0, at, to), 0).best.max(1));
+    }
+    // per candidate its worse child (k, N); the best candidate among those of a positive score
+    const Tensor low = Tensor::concat(lows, 0).reshape({k, 2, N});
+    const Tensor worse = low.min(1);
+    const Tensor real = vals.matrix_transpose().greater(vals.zeros_like({1}));
+    const Tensor ranked = Tensor::where(real, worse, worse.full_like({1}, -kInf));
+    const Tensor best_c = ranked.argmax(0);                                           // (N)
+    const Tensor chosen = cand.take_along_axis(best_c.expand_dims(-1), 1).squeeze(1); // (N)
+    const Tensor any = real.any(0);
+    return Tensor::where(any.multiply(pick.greater_equal(pick.zeros_like())), chosen, pick);
+}
+
 int64_t CrownBab::per_node_bytes() const {
     // per row and neuron of every layer: Lambda, the lines, the reverse and the slopes' steps
     int64_t width = net_.n0;
@@ -253,12 +295,13 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
     if (check(root.corner.reshape({K_, x_.shape()[1]}))) return 2;
     if (U == 0) return 0; // no neuron to split: the lines are exact up to the slopes
     // the open nodes as a stack of batches, the last batch's children first
-    std::vector<Nodes> stack{{S0, root.alpha, root.beta, choose(S0, root), root.best}};
     const int64_t node_bytes = 8 * (U + 2 * K_ * U + 2);
     const int64_t per = per_node_bytes();
     int64_t batch =
         std::max<int64_t>(1, std::min(o_.batch, o_.max_bytes / std::max<int64_t>(1, per)));
     stats_["crown_bab_batch"] = double(batch);
+    std::vector<Nodes> stack{
+        {S0, root.alpha, root.beta, look_ahead(S0, root.alpha, root.beta, root, batch), root.best}};
     int64_t held = 1;
     while (!stack.empty()) {
         if (late()) return 0;
@@ -303,7 +346,7 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
         Nodes next{S2.take(open, 0), b.alpha.take(open, 0), b.beta.take(open, 0), Tensor(),
                    b.best.take(open, 0)};
         const Bounded kept{next.best, Tensor(), Tensor(), b.score.take(open, 0), Tensor()};
-        next.next = choose(next.S, kept);
+        next.next = look_ahead(next.S, next.alpha, next.beta, kept, batch);
         const Tensor next_low = next.best.max(1);
         stats_["crown_bab_open_margin"] = next_low.min().item();
         // the corners of the weakest open nodes: every row's minimizer, checked on the network
