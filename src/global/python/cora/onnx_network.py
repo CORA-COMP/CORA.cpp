@@ -19,7 +19,7 @@ See also: cora.vnnlib, cora.nn_verify, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   23-November-2026
+Last update:   24-November-2026
 Reviewed:      ---
 """
 
@@ -571,6 +571,7 @@ class OnnxNetwork:
             raise _NotAChain("the output does not depend on the input")
         layers.append((lin.reshape(tag_size[tag], -1).T.contiguous(), zero.reshape(-1).clone()))
         activations.append("identity")
+        layers, activations, self.merged_relu_pairs = _merge_relu_pairs(layers, activations)
         return layers, activations
 
     def _lower_affine(self, op, args, attrs):
@@ -1254,6 +1255,52 @@ def _scale(expr, single, then, factor, shape, out_shape):
         n = factor.numel()
         return then(_gather(list(range(n)), n, zero, factor.to(torch.float64)))
     return then((torch.diag(factor).contiguous(), zero))
+
+
+def _merge_relu_pairs(layers, activations):
+    """The dense chain with each ReLU layer whose neurons pair up as t and -t, read by the next
+    layer through opposite columns c and -c, folded into the next layer, and the number of pairs:
+    c relu(t) - c relu(-t) = c t, so the two layers are the affine map W2[:, P] (W1[P] x + b1[P]) +
+    b2 of one neuron P of each pair (ReluSplitter's split layers; docs/nn_verification.md). A layer
+    with a neuron outside a pair stays."""
+    layers, activations, merged, k = list(layers), list(activations), 0, 0
+    while k + 1 < len(layers):
+        (W1, b1), (W2, b2) = layers[k], layers[k + 1]
+        keep = _relu_pairs(W1, b1, W2) if activations[k] == "relu" else None
+        if keep is None:
+            k += 1
+            continue
+        C = W2[:, keep]
+        layers[k:k + 2] = [((C @ W1[keep]).contiguous(), C @ b1[keep] + b2)]
+        activations[k:k + 2] = [activations[k + 1]]
+        merged += len(keep)
+        k = max(k - 1, 0)  # the layer before may pair with the merged one now
+    return layers, activations, merged
+
+
+def _relu_pairs(W1, b1, W2):
+    """One neuron of each pair (r, s) of the ReLU layer (W1, b1) that the next layer W2 reads with
+    W1[s] = -W1[r], b1[s] = -b1[r] and W2[:, s] = -W2[:, r], exactly; None unless every neuron is
+    in a pair."""
+    rows = torch.cat([W1, b1.reshape(-1, 1)], 1)
+    if rows.shape[0] % 2 or not bool(torch.isfinite(rows).all() and torch.isfinite(W2).all()):
+        return None
+    plain = (rows + 0.0).numpy()  # -0.0 as 0.0: the bytes of equal rows are equal
+    negated = (-rows + 0.0).numpy()
+    unpaired = {}
+    for r in range(plain.shape[0]):
+        unpaired.setdefault(plain[r].tobytes(), []).append(r)
+    keep, used = [], set()
+    for r in range(plain.shape[0]):
+        if r in used:
+            continue
+        partners = [s for s in unpaired.get(negated[r].tobytes(), ())
+                    if s not in used and s != r and torch.equal(W2[:, s], -W2[:, r])]
+        if not partners:
+            return None
+        used.update((r, partners[0]))
+        keep.append(r)
+    return keep
 
 
 def _split_as_slices(op, ins, outs, attrs, constants):

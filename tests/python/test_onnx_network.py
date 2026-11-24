@@ -11,11 +11,13 @@ product layer, and a ReduceSum, a difference of branches and scalings lower; a G
 of a row and a constant matrix takes the weights themselves, far below the identity's memory; the
 verifier's backend is torch for a convolution, eigen for a dense network; a binarized network
 lowers to sign layers, its output Softmax dropped for a property that only compares outputs;
-vit_2023's, nn4sys' and ml4acopf's shapes (quotients, sin, cos) lower and equal the graph.
+vit_2023's, nn4sys' and ml4acopf's shapes (quotients, sin, cos) lower and equal the graph;
+ReluSplitter's pairs relu(t), relu(-t) merge into the next layer (the base network's weights), a
+layer with an unpaired neuron stays.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   23-November-2026
+Last update:   24-November-2026
 Reviewed:      ---
 """
 
@@ -248,6 +250,33 @@ class Lowering(unittest.TestCase):
         np.testing.assert_allclose(np.asarray(cora.NeuralNetwork(layers, acts).evaluate(x)),
                                    net(x).numpy(), rtol=1e-12, atol=1e-12)
 
+    def test_relu_pairs_merge(self):
+        # ReluSplitter's split layer (relu(t), relu(-t) read as c and -c): merged into the next
+        # layer, the base network's weights bit for bit, equal to the graph and onnxruntime
+        m, base = split_net()
+        net = OnnxNetwork(m, dtype=torch.float64)
+        (layers, acts), why = net.layers()
+        self.assertIsNone(why)
+        self.assertEqual(net.merged_relu_pairs, 3)
+        self.assertEqual(acts, ["relu", "identity"])
+        (base_layers, _), _ = OnnxNetwork(base, dtype=torch.float64).layers()
+        self.assertTrue(torch.equal(layers[0][0], base_layers[0][0]))
+        np.testing.assert_allclose(layers[0][1].numpy(), base_layers[0][1].numpy(), atol=1e-6)
+        x = RNG.uniform(-3, 3, (200, 4))
+        np.testing.assert_allclose(dense_rows((layers, acts), x),
+                                   net(torch.as_tensor(x)).numpy(), rtol=1e-12, atol=1e-12)
+        np.testing.assert_allclose(dense_rows((layers, acts), x),
+                                   onnxruntime_rows(m, x.astype(np.float32)), rtol=1e-5, atol=1e-5)
+        # a pair read through columns that are not opposite, or a neuron without a partner: kept
+        for broken in ("column", "row"):
+            m, _ = split_net(broken)
+            net = OnnxNetwork(m, dtype=torch.float64)
+            (layers, acts), _ = net.layers()
+            self.assertEqual(net.merged_relu_pairs, 0, broken)
+            self.assertEqual(len(layers), 3, broken)
+            np.testing.assert_allclose(dense_rows((layers, acts), x),
+                                       net(torch.as_tensor(x)).numpy(), rtol=1e-12, atol=1e-12)
+
     def test_floor_and_pow(self):
         # ml4acopf's x - 2 pi floor(x / (2 pi)) and Pow(x, 2): floor and square layers
         tau = np.float32(2 * np.pi)
@@ -470,6 +499,38 @@ def dense_rows(layers, x):
     for (W, b), a in zip(*layers, strict=True):
         h = act[a](h @ W.T + b)
     return h.numpy()
+
+
+def split_net(broken=""):
+    """ReluSplitter's split of the first layer of relu(W0 x + b0) -> W3 (x of 4, 3 neurons): a
+    layer of the pairs relu(s W0_i x + c_i), relu(-s W0_i x - c_i) in shuffled order, read as s and
+    -s by neuron i with the bias b0_i - s c_i; and the base network. broken: a column of the second
+    neuron not opposite ("column"), or one row unlike its partner ("row")."""
+    W0, b0, W3, b3 = weight(3, 4), weight(3), weight(2, 3), weight(2)
+    s = np.array([1, -1, 1], np.float32)
+    c = np.array([5.0, -2.5, 0.75], np.float32)
+    order = [3, 0, 5, 1, 4, 2]  # pair i is (i, i + 3) before the shuffle
+    W1 = np.concatenate([s[:, None] * W0, -s[:, None] * W0])[order]
+    b1 = np.concatenate([c, -c])[order]
+    W2 = np.concatenate([np.diag(s), -np.diag(s)], 1)[:, order]
+    b2 = (b0 - s * c).astype(np.float32)
+    if broken == "column":
+        W2[1, order.index(4)] *= 0.5
+    if broken == "row":
+        W1[order.index(5), 0] += 1.0
+    nodes = [
+        helper.make_node("Gemm", ["x", "W1", "b1"], ["g1"], transB=1),
+        helper.make_node("Relu", ["g1"], ["r1"]),
+        helper.make_node("Gemm", ["r1", "W2", "b2"], ["g2"], transB=1),
+        helper.make_node("Relu", ["g2"], ["r2"]),
+        helper.make_node("Gemm", ["r2", "W3", "b3"], ["y"], transB=1),
+    ]
+    init = {"W1": W1.astype(np.float32), "b1": b1, "W2": W2.astype(np.float32), "b2": b2,
+            "W3": W3, "b3": b3}
+    split = model(nodes, [("x", [1, 4])], [("y", [1, 2])], init)
+    base = model([helper.make_node("Gemm", ["x", "W0", "b0"], ["g2"], transB=1)] + nodes[3:],
+                 [("x", [1, 4])], [("y", [1, 2])], {"W0": W0, "b0": b0, "W3": W3, "b3": b3})
+    return split, base
 
 
 def mlp():

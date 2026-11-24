@@ -139,6 +139,18 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   by chunk of cases of at most 256 rows (`NnProblem::subproblem`; unsat when every chunk is).
   lindex_60000 took 44 GiB and ran past its deadline; now 1.2 GiB within it, and lindex_10000 is
   unsat in 17 s with `conzonotope` bounding.
+- **ReLU pairs (relusplitter).** ReluSplitter inserts before the first ReLU layer a layer of
+  pairs `h_r = relu(t)`, `h_s = relu(-t)` with `t = W1[r] x + b1[r]` and `W1[s] = -W1[r]`,
+  `b1[s] = -b1[r]`, which the next layer reads through the columns `c = W2[:, r]` and
+  `W2[:, s] = -c`. Then `c h_r + W2[:, s] h_s = c (relu(t) - relu(-t)) = c t` for every real `t`
+  (`relu(t) - relu(-t) = t`: one of the two is 0, the other `|t|` with the sign of `t`), so the
+  two layers are the one affine map `W2[:, P] (W1[P] x + b1[P]) + b2`, `P` one neuron of each pair,
+  with the next layer's activation. `_merge_relu_pairs` folds a dense ReLU layer whose neurons all
+  pair up so, exactly (the bits of the rows and columns compared, -0 as 0), and only those; the
+  product is float64's (exact for ReluSplitter: each row of `W2[:, P]` has one entry, 1 or -1).
+  The pairs are what made the split networks hard: each pair is two unstable neurons whose
+  relaxations add up to twice the error of the one linear map. After the merge the split
+  networks are their base networks with float64 sums of the biases.
 - **ml4acopf (Phase 4).** Its `linear-nonresidual` networks replace sin, cos and the sigmoid by
   sums of ReLUs over thresholds: `x - t_k` broadcasts a value against a constant to more entries,
   which lowers as a gather that repeats the value first. They also compute `C h^T` with the batch
