@@ -179,7 +179,9 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   product is float64's (exact for ReluSplitter: each row of `W2[:, P]` has one entry, 1 or -1).
   The pairs are what made the split networks hard: each pair is two unstable neurons whose
   relaxations add up to twice the error of the one linear map. After the merge the split
-  networks are their base networks with float64 sums of the biases.
+  networks are their base networks with float64 sums of the biases. Four of seed 213's split
+  instances stay hard on the base networks (alpha,beta-CROWN: 20 to 33 s); relu-bab proves two of
+  them (4.7 and 55 s of 180, zonotack: unknown), so the relusplitter preset takes relu-bab.
 - **ml4acopf (Phase 4).** Its `linear-nonresidual` networks replace sin, cos and the sigmoid by
   sums of ReLUs over thresholds: `x - t_k` broadcasts a value against a constant to more entries,
   which lowers as a gather that repeats the value first. They also compute `C h^T` with the batch

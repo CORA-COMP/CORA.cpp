@@ -17,7 +17,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -244,6 +244,8 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.attack_first_rounds = 1000000; // the share, not three rounds
         o.pgd_sign_windows = {0.1, 5.0};
     }
+    // relusplitter: the ReLU-split branch and bound (seed 213: 7 unsat of 12 against 5)
+    if (name == "relusplitter") o.refinement_method = "relu-bab";
     // nn4sys: CORA's bounding of lindex' many small cases, the attack only briefly (dev seed 1001)
     if (name == "nn4sys") {
         o.bounding_method = "conzonotope";
