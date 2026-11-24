@@ -874,6 +874,10 @@ std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
             if (o_.relu_bab_crown_rounds > 0) aux_relu_bab_crown(xi, ri, si, out, bounds, stats);
             const ZonoBounds *given = o_.relu_bab_crown_rounds > 0 ? &bounds : nullptr;
             excluded = aux_excluded(out, ci);
+            // CROWN's backward bound of the rows the zonotope left open, as the check's
+            if (o_.backward_bound && excluded.min().item() == 0)
+                excluded = aux_excluded_lower(
+                    aux_crown_lower(out, xi, ri, si, aux_margins(out), excluded, false), ci);
             if (alpha_ && o_.relu_bab_alpha_iterations > 0 && excluded.min().item() == 0) {
                 std::vector<Tensor> alpha;
                 excluded = aux_alpha_excluded(xi, ri, ci, si, excluded, &alpha,
@@ -923,7 +927,11 @@ void ConZonotopeBounding::aux_relu_bab_slots(NnProblem &problem, const Tensor &x
             net.forward(in.c, in.dr, in.G, xi.zeros_like({1, 0}), nullptr, true);
         std::vector<int64_t> per(net.slots.size(), 0);
         for (const ZonoLayerRecord &rec : out.layers) {
-            if (net.activations[std::size_t(rec.index)] != Activation::relu) continue;
+            // another activation keeps the batch's slots (a softmax's bounds stay finite)
+            if (net.activations[std::size_t(rec.index)] != Activation::relu) {
+                per[std::size_t(rec.index)] = net_->slots[std::size_t(rec.index)];
+                continue;
+            }
             const Tensor cross =
                 rec.l.less(rec.l.zeros_like()).multiply(rec.u.greater(rec.u.zeros_like()));
             per[std::size_t(rec.index)] = int64_t(cross.max(0).sum().item());

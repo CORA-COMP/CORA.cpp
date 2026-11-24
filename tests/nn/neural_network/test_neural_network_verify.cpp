@@ -631,10 +631,10 @@ void softmax_lse(const std::string &b) {
     check(holds, b + ": the softmax's log-sum-exp line holds the sampled outputs and layer inputs");
     check(inside, b + ": CROWN's bounds with the softmax's line lie inside the zonotope's");
     check(tighter, b + ": the softmax's line is tighter than the exp and reciprocal lines");
-    // verify with the line: the check's
+    // verify with the line: the check's and relu-bab's (the softmax keeps its slots)
     const NeuralNetwork nn = aux_softmax_network(rng, 1.0, false);
     const double least = aux_least_output(nn, rng, 3, -0.2, 0.2);
-    for (const std::string refinement : {"naive"}) {
+    for (const std::string refinement : {"naive", "relu-bab"}) {
         NnVerifyOptions o = aux_options("zonotope-alpha", b);
         o.falsification_order = "bound-first";
         o.refinement_method = refinement;

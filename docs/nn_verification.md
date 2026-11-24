@@ -405,8 +405,12 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     `relu_bab_memory_budget` (0: 3/4 of the batch budget; the nodes' chunks take a quarter)
     allows: fewer slots first, then fewer generators. Two passes count the crossing neurons per layer (the second, of the tighter net,
     fewer), so no slot is spent on a stable neuron. `relu_bab_slotless` counts the crossing neurons
-    whose error stays in `dr` (slack in each row). The open polytopes go weakest first; one left
-    open ends the search (unknown).
+    whose error stays in `dr` (slack in each row). Another activation layer (exp, reciprocal,
+    product: vit_2023's attention) keeps the batch net's slots, so its errors stay factors and its
+    bounds finite (without them every exp's error went to `dr` and the exps' bounds overflowed).
+    With `backward_bound` the root also takes CROWN's backward bound of the rows the zonotope left
+    open, as the check does (it holds over the box, so a polytope it excludes needs no node). The
+    open polytopes go weakest first; one left open ends the search (unknown).
   - **Nodes:** the crossing neurons split in the order `relu_bab_order`: `output`, the largest
     `|w_k|` at the neuron's slot factor first (its error's slack in the polytope's row), or `error`,
     the largest line error first. The open nodes are parts of at most 1/16 of
