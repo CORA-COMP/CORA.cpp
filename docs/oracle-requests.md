@@ -598,7 +598,7 @@ over the window's pairs), `evaluate_zonotope_batch`, `backprop`, `backprop_inter
 and the Jacobian of `sensitivity`. `evaluate_zonotope_batch` of dense, conv, relu, sign and square layers
 is bit-identical to the oracle's `neuralNetwork.evaluate` (`test_lean_nn_batch`, pin f5ff0c401); max
 pool has no layer kind there. `NeuralNetwork::evaluate` of exp and softmax layers is bit-identical to it
-since @TAG@ (`test_lean_nn_evaluate`). CORALean has float models of the activations and of
+since oracle-20261124-406069a06 (`test_lean_nn_evaluate`). CORALean has float models of the activations and of
 `neuralNetwork.backwardBound`, but no op for the gradient passes or the forms, so their rows are
 oracle debt.
 
@@ -612,7 +612,7 @@ oracle debt.
 ## NN softplus, root, inverse square root, group sort and the reduction (PR "nn/port-rest-3", batch 3)
 
 The lines of `Activation::softplus`, `root` and `inv_sqrt_root` (`activation_lines.cpp`) are served since
-@TAG@ (CORALean !975: `nnLayer.relaxation` kinds `softplus`, `root`, `invSqrt` with
+oracle-20261124-406069a06 (CORALean !975: `nnLayer.relaxation` kinds `softplus`, `root`, `invSqrt` with
 `method`, `softplusLineRelaxation`, `rootLineRelaxation`, `invSqrtRootLineRelaxation`), and so are the layer
 kinds `exp`, `reciprocal`, `cube`, `inverse`, `softplus`, `root` and `invSqrt` of `nnLayer.evaluateZonotope`
 and `neuralNetwork.evaluate` (a softmax as `evaluate` lowers it: linear, exp, linear, reciprocal):
