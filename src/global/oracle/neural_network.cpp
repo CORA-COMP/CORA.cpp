@@ -14,6 +14,8 @@
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"
 
+#include <cmath>
+#include <optional>
 #include <utility>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -160,6 +162,25 @@ Json aux_chain(const NeuralNetwork &nn, std::string &dtype) {
         list.push(std::move(j));
     }
     return list;
+}
+
+// A zonotope of center c and generators G (columns) on the wire, without an error box.
+Json aux_zonotope(const cora::Tensor &c, const cora::Tensor &G) {
+    return Json::object().set("c", aux_column(c).to_json()).set("G", Tensor(G).to_json());
+}
+
+// The gradients of the reply and the slopes of its layers (undefined for none).
+NnZonoGrad aux_zono_grad(const Reply &r) {
+    NnZonoGrad out{r.get<Interval>("gc"), r.get<Interval>("gG"), {}};
+    for (const std::optional<Tensor> &m : r.get<std::vector<std::optional<Tensor>>>("slopes"))
+        out.slopes.push_back(m ? m->gather() : cora::Tensor());
+    return out;
+}
+
+// A count of the wire: the integer, or "inf".
+Wire aux_count(double n) {
+    if (std::isinf(n)) return Wire(std::string("inf"));
+    return Wire(static_cast<int64_t>(n));
 }
 
 } // namespace
@@ -573,6 +594,108 @@ Interval sensitivity(const NeuralNetwork &nn, const cora::Tensor &x) {
     const Json chain = aux_chain(nn, dtype);
     return ask("neuralNetwork.sensitivity", {{"layers", Wire(chain, dtype)}, {"x", aux_column(x)}})
         .get<Interval>("J");
+}
+
+// The zonotope batch's gradients ------------------------------------------------------------------
+
+
+NnZonoGrad backprop_zonotope_batch(const NeuralNetwork &nn, const cora::Tensor &c,
+                                   const cora::Tensor &G, const cora::Tensor &grad_c,
+                                   const cora::Tensor &grad_gen) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    return aux_zono_grad(
+        ask("neuralNetwork.backpropZonotopeBatch", {{"layers", Wire(chain, dtype)},
+                                                    {"Z", Wire(aux_zonotope(c, G), dtype)},
+                                                    {"gc", aux_column(grad_c)},
+                                                    {"gG", Tensor(grad_gen)}}));
+}
+
+// a linear layer reads no set, a ReLU its input set's bounds
+NnZonoGrad backprop_zonotope_batch_layer(const NnLayer &layer, const cora::Tensor &c,
+                                         const cora::Tensor &G, const cora::Tensor &grad_c,
+                                         const cora::Tensor &grad_gen) {
+    std::string dtype = lean::dtype();
+    const Json j = aux_layer(layer, dtype);
+    std::vector<Operand> args{
+        {"layer", Wire(j, dtype)}, {"gc", aux_column(grad_c)}, {"gG", Tensor(grad_gen)}};
+    if (layer.kind != "linear") args.push_back({"Z", Wire(aux_zonotope(c, G), dtype)});
+    const Reply r = ask("nnLayer.backpropZonotopeBatch", args);
+    if (layer.kind == "linear") return {r.get<Interval>("gc"), r.get<Interval>("gG"), {}};
+    return aux_zono_grad(r);
+}
+
+// The attack and the structure --------------------------------------------------------------------
+
+Interval compute_fgsm_attack(const NeuralNetwork &nn, const cora::Tensor &x, const cora::Tensor &t,
+                             double epsilon) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    return ask("neuralNetwork.computeFGSMAttack", {{"layers", Wire(chain, dtype)},
+                                                   {"x", aux_column(x)},
+                                                   {"t", aux_column(t)},
+                                                   {"epsilon", epsilon}})
+        .get<Interval>("z");
+}
+
+// the order of the method, the point only for the sensitivity
+std::vector<int64_t> input_neuron_order(const NeuralNetwork &nn, const std::string &method,
+                                        const cora::Tensor &x,
+                                        const std::vector<int64_t> &input_size) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    std::vector<Operand> args{{"layers", Wire(chain, dtype)}, {"method", method}};
+    if (method == "sensitivity") args.push_back({"x", aux_column(x)});
+    if (!input_size.empty()) args.push_back({"inputSize", input_size});
+    return ask("neuralNetwork.getInputNeuronOrder", args).get<std::vector<int64_t>>("order");
+}
+
+// the counts of the structure, plain integers
+std::vector<int64_t> num_neurons(const NeuralNetwork &nn) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    return ask("neuralNetwork.getNumNeurons", {{"layers", Wire(chain, dtype)}})
+        .get<std::vector<int64_t>>("numNeurons");
+}
+
+int64_t num_params(const NeuralNetwork &nn) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    return ask("neuralNetwork.getNumParams", {{"layers", Wire(chain, dtype)}})
+        .get<int64_t>("numParams");
+}
+
+std::vector<int64_t> refinable_layers(const NeuralNetwork &nn) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    return ask("neuralNetwork.getRefinableLayers", {{"layers", Wire(chain, dtype)}})
+        .get<std::vector<int64_t>>("layers");
+}
+
+// the orders given per layer, none when empty
+std::vector<std::vector<int64_t>> order_pattern(const NeuralNetwork &nn,
+                                                const std::vector<std::vector<int64_t>> &orders) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    std::vector<Operand> args{{"layers", Wire(chain, dtype)}};
+    if (!orders.empty()) args.push_back({"orders", orders});
+    return ask("neuralNetwork.getOrderPattern", args)
+        .get<std::vector<std::vector<int64_t>>>("pattern");
+}
+
+// a layer without an activation is null on the wire, (0, 0) here
+ZonoBatchCount prepare_zono_batch_eval(const NeuralNetwork &nn, double num_init_gens,
+                                       double num_approx_err) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    const Reply r =
+        ask("neuralNetwork.prepareForZonoBatchEval", {{"layers", Wire(chain, dtype)},
+                                                      {"numInitGens", aux_count(num_init_gens)},
+                                                      {"numApproxErr", aux_count(num_approx_err)}});
+    ZonoBatchCount out{r.get<int64_t>("numGen"), {}};
+    for (const std::vector<int64_t> &e : r.get<std::vector<std::vector<int64_t>>>("approxErrGens"))
+        out.errors.emplace_back(e.empty() ? 0 : e[0], e.empty() ? 0 : e[1]);
+    return out;
 }
 
 } // namespace cora::lean

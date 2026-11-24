@@ -189,6 +189,19 @@ struct Decode<std::vector<Tensor>> {
         return matrices;
     }
 };
+// A list of matrices with nulls (a layer without one).
+template <>
+struct Decode<std::vector<std::optional<Tensor>>> {
+    static std::vector<std::optional<Tensor>> of(const std::string &dt, const Json &j) {
+        std::vector<std::optional<Tensor>> matrices;
+        matrices.reserve(j.items.size());
+        for (const Json &m : j.items)
+            matrices.push_back(m.kind == Json::Kind::null
+                                   ? std::nullopt
+                                   : std::optional<Tensor>(Tensor::from_json(dt, m)));
+        return matrices;
+    }
+};
 // The zonotopes of a list.
 template <>
 struct Decode<std::vector<Zonotope>> {
@@ -316,6 +329,8 @@ Reply::get<std::vector<std::optional<int64_t>>>(const char *) const;
 template std::vector<std::vector<int64_t>>
 Reply::get<std::vector<std::vector<int64_t>>>(const char *) const;
 template std::vector<Tensor> Reply::get<std::vector<Tensor>>(const char *) const;
+template std::vector<std::optional<Tensor>>
+Reply::get<std::vector<std::optional<Tensor>>>(const char *) const;
 template std::vector<Zonotope> Reply::get<std::vector<Zonotope>>(const char *) const;
 template std::optional<double> Reply::get<std::optional<double>>(const char *) const;
 template std::optional<int64_t> Reply::get<std::optional<int64_t>>(const char *) const;
