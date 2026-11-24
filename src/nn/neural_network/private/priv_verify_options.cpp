@@ -146,6 +146,16 @@ void NnVerifyOptions::validate() const {
         CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_step_decay must be in (0, 1]");
     if (!(pgd_momentum >= 0 && pgd_momentum < 1))
         CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_momentum must be in [0, 1)");
+    aux_at_least("pgd_hops", double(pgd_hops), 0);
+    aux_at_least("pgd_hop_steps", double(pgd_hop_steps), 1);
+    aux_at_least("pgd_hop_keep", double(pgd_hop_keep), 1);
+    for (const double j : pgd_hop_jumps)
+        if (!(j > 0))
+            CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_hop_jumps must be positive");
+    aux_at_least("pgd_polish_steps", double(pgd_polish_steps), 0);
+    aux_at_least("pgd_polish_keep", double(pgd_polish_keep), 1);
+    if (!(pgd_polish_step > 0))
+        CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_polish_step must be positive");
     for (const double w : pgd_sign_windows)
         if (!(w > 0))
             CORA_FAIL(Error::wrong_field_value,
@@ -256,8 +266,10 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
     if (name == "relusplitter") o.refinement_method = "relu-bab";
     // soundnessbench: planted thin basins, alpha-beta-CROWN's small momentum steps
     if (name == "soundnessbench") {
-        o.attack_time_share = 0.6;
+        o.attack_time_share = 0.8;
         o.attack_first_rounds = 1000000; // the share, not three rounds
+        o.pgd_hops = 16;
+        o.pgd_polish_steps = 600;
         o.pgd_steps = 1000;
         o.pgd_restarts = 512;
         o.pgd_step_sizes = {0.0035, 0.005, 0.0075, 0.01, 0.015, 0.025};

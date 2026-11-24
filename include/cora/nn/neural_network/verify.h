@@ -83,6 +83,19 @@ struct NnVerifyOptions {
     /// The sign step takes the sign of the running mean of the gradients with this momentum (the
     /// sign of Adam's step, alpha-beta-CROWN's attack): 0 is the sign of the gradient itself.
     double pgd_momentum = 0.0;
+    /// Hops after each round (alpha-beta-CROWN's iterated local search): the pgd_hop_keep best
+    /// points jump by a random share of the radius (pgd_hop_jumps, in turn) and descend again for
+    /// pgd_hop_steps steps, a decoy basin's way out; 0: none.
+    int64_t pgd_hops = 0;
+    int64_t pgd_hop_steps = 800;
+    int64_t pgd_hop_keep = 128;
+    std::vector<double> pgd_hop_jumps = {0.1, 0.2, 0.4, 0.6};
+    /// The polish after each round and hop that comes within 1e-4 of the unsafe set: Adam's steps
+    /// of pgd_polish_step times the radius (decaying 0.999 a step) from the pgd_polish_keep best
+    /// points, which settle a point into the basin that the sign steps oscillate around; 0: none.
+    int64_t pgd_polish_steps = 0;
+    double pgd_polish_step = 0.0006;
+    int64_t pgd_polish_keep = 8;
     /// The half-widths of the sign activation's straight-through gradient (1 on |z| <= w), one per
     /// round of restarts in turn (alpha-beta-CROWN's tight 0.1 and loose 5 SignMerge on
     /// traffic_signs); the candidates are always checked on the true network.

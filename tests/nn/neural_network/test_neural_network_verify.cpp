@@ -1134,6 +1134,37 @@ void pgd_momentum_steps(const std::string &b) {
     NnProblem all(nn, aux_below(3, 2, -0.2, 0.2, 1000.0), o, ConfirmFn{});
     check(!make_attack("pgd", o)->run(all, now_seconds() + 10.0, 1).x.empty(),
           b + ": PGD with momentum finds a counterexample");
+    // hops: the best points jump and descend again, each hop its steps, in a round
+    NnVerifyOptions hop = o;
+    hop.pgd_hops = 3;
+    hop.pgd_hop_steps = 5;
+    hop.pgd_hop_keep = 4;
+    hop.pgd_hop_jumps = {0.3, 0.6};
+    const AttackResult h = make_attack("pgd", hop)->run(none, now_seconds() + 10.0, 1);
+    check(h.x.empty() && h.iterations == hop.pgd_steps + 3 * hop.pgd_hop_steps,
+          b + ": PGD hops after its round");
+    NnProblem hall(nn, aux_below(3, 2, -0.2, 0.2, 1000.0), hop, ConfirmFn{});
+    check(!make_attack("pgd", hop)->run(hall, now_seconds() + 10.0, 1).x.empty(),
+          b + ": PGD with hops finds a counterexample");
+    hop.pgd_hop_jumps = {};
+    check(make_attack("pgd", hop)->run(none, now_seconds() + 10.0, 1).iterations ==
+              hop.pgd_steps + 3 * hop.pgd_hop_steps,
+          b + ": PGD hops with the default jump");
+    // the polish: Adam's steps from the best points once one is near the unsafe set (every point
+    // is, below +1000, but the check rejects them all), never far from it
+    NnVerifyOptions pol = o;
+    pol.pgd_polish_steps = 6;
+    pol.pgd_polish_keep = 3;
+    const ConfirmFn reject = [](const std::vector<double> &) -> std::optional<std::vector<double>> {
+        return std::nullopt;
+    };
+    NnProblem within(nn, aux_below(3, 2, -0.2, 0.2, 1000.0), pol, reject);
+    check(make_attack("pgd", pol)->run(within, now_seconds() + 10.0, 1).iterations ==
+              pol.pgd_steps + pol.pgd_polish_steps,
+          b + ": PGD polishes the best points near the unsafe set");
+    NnProblem beyond(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), pol, ConfirmFn{});
+    check(make_attack("pgd", pol)->run(beyond, now_seconds() + 10.0, 1).iterations == pol.pgd_steps,
+          b + ": no polish far from the unsafe set");
     // too slow for the steps: fewer restarts, the momentum with them
     o.pgd_min_steps = int64_t{1} << 40;
     NnProblem slow(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), o, ConfirmFn{});
@@ -1156,7 +1187,16 @@ void pgd_momentum_steps(const std::string &b) {
     const bool decay = invalid(bad);
     bad = o;
     bad.pgd_momentum = 1.0;
-    check(sizes && decay && invalid(bad) && !invalid(o),
+    const bool momentum = invalid(bad);
+    bad = o;
+    bad.pgd_hop_jumps = {0.0};
+    const bool jumps = invalid(bad);
+    bad = o;
+    bad.pgd_polish_step = 0.0;
+    const bool polish = invalid(bad);
+    bad = o;
+    bad.pgd_hop_keep = 0;
+    check(sizes && decay && momentum && jumps && polish && invalid(bad) && !invalid(o),
           b + ": the PGD step options must be in range");
 }
 
