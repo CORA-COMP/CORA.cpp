@@ -7,25 +7,28 @@
 // ORACLE: nn/layers/nonlinear/nnSigmoidLayer.m
 // ORACLE: nn/layers/nonlinear/nnTanhLayer.m
 // ORACLE: nn/layers/nonlinear/nnSShapeLayer.m
+// ORACLE: nn/layers/nonlinear/nnExpLayer.m
+// ORACLE: nn/layers/nonlinear/nnSoftmaxLayer.m
+// ORACLE: nn/layers/nonlinear/nnSoftPlusLayer.m
+// ORACLE: nn/layers/nonlinear/nnRootLayer.m
+// ORACLE: nn/layers/nonlinear/nnInvSqrtRootLayer.m
 // ORACLE: nn/layers/nonlinear/@nnActivationLayer/evaluatePolyZonotope.m
 // ORACLE: nn/layers/nonlinear/@nnActivationLayer/computeApproxPoly.m
 //
 // The oracle's nnLayer.evaluateZonotope and neuralNetwork.evaluate at poly_method "singh" (order
 // 1): a layer is the exact map by the slope and the box of the offset and the error added as a
-// zonotope. Hand-made networks of every activation kind, then the networks of the AINNCS
-// instances ACC, TORA (relu, tanh, sigmoid) and Docking on the instances' initial sets, the wide
-// ones (TORA relu 100, Docking 256) by their first layers: the oracle takes minutes for all.
-// The same at poly_method "regression" with CORALean's errors, "bracket" (the derivative bracket)
-// and "extremum" (the ends and the stationary points): hand-made layers on narrow, wide and
-// one-point ranges, and the networks of QUAD, NAV, CartPole and Docking (first layers) on their
-// initial sets. The polynomial zonotope in the GI form (add_approx_error_to_GI, a generator per
-// neuron also of radius 0) is checked on the same hand-made and instance networks. The extremum
-// is also checked on narrow boxes around 0 (the slope is about 1/4) and on boxes whose end lies
-// at the stationary point, a few ulps inside and outside.
+// zonotope. Hand-made networks of every activation kind (CORA.cpp's lines of exp, 1 / max(x, 1),
+// x^3, 1 / x, softplus, root and inv_sqrt_root in their domains, a softmax as evaluate lowers it),
+// then the AINNCS networks ACC, TORA and Docking on their initial sets, the wide ones by their
+// first layers. The same at poly_method "regression" with CORALean's errors, "bracket" and
+// "extremum": hand-made layers on narrow, wide and one-point ranges, and the networks of QUAD,
+// NAV, CartPole and Docking. The polynomial zonotope in the GI form (add_approx_error_to_GI) is
+// checked on the same networks. The extremum is also checked on narrow boxes around 0 and on
+// boxes whose end lies at the stationary point, a few ulps inside and outside.
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -79,22 +82,38 @@ std::vector<lean::NnLayer> aux_lean_layers(const NeuralNetwork &nn) {
             break;
         case Activation::identity:
             break;
+        // CORA.cpp's activations with a line of their own: one kind each
+        case Activation::exp:
+            layers.push_back(lean::NnLayer::line("exp"));
+            break;
+        case Activation::reciprocal:
+            layers.push_back(lean::NnLayer::line("reciprocal"));
+            break;
+        // x^3 and 1 / x
+        case Activation::cube:
+            layers.push_back(lean::NnLayer::line("cube"));
+            break;
+        case Activation::inverse:
+            layers.push_back(lean::NnLayer::line("inverse"));
+            break;
+        // the monotone lines
+        case Activation::softplus:
+            layers.push_back(lean::NnLayer::line("softplus"));
+            break;
+        case Activation::root:
+            layers.push_back(lean::NnLayer::line("root"));
+            break;
+        case Activation::inv_sqrt_root:
+            layers.push_back(lean::NnLayer::line("invSqrt"));
+            break;
         // the activations CORALean has no layer of
         case Activation::floor:
-        case Activation::cube:
-        case Activation::inverse:
         case Activation::sin:
         case Activation::cos:
-        case Activation::exp:
-        case Activation::reciprocal:
         case Activation::product:
-        case Activation::softplus:
-        case Activation::root:
-        case Activation::inv_sqrt_root:
         case Activation::group_sort:
-            throw std::invalid_argument("aux_lean_layers: the oracle has no exp, reciprocal, "
-                                        "product, floor, cube, inverse, sin, cos, softplus, root, "
-                                        "inv_sqrt_root or group_sort layer");
+            throw std::invalid_argument("aux_lean_layers: the oracle has no product, floor, sin, "
+                                        "cos or group_sort layer");
         }
     }
     return layers;
@@ -106,6 +125,31 @@ NeuralNetwork aux_random_network(oracle::Random &rnd, const std::vector<int64_t>
     std::vector<NeuralNetwork::Layer> layers;
     for (std::size_t k = 0; k + 1 < sizes.size(); ++k)
         layers.push_back({rnd.matrix(sizes[k + 1], sizes[k]), rnd.point(sizes[k + 1])});
+    return {layers, activations};
+}
+
+/// A random network as aux_random_network whose first layer's bias puts every neuron's input at
+/// 0.5 or above on Z (the domain of root, inverse and inv_sqrt_root).
+NeuralNetwork aux_positive_network(oracle::Random &rnd, const std::vector<int64_t> &sizes,
+                                   const std::vector<Activation> &activations, const Zonotope &Z) {
+    const NeuralNetwork nn = aux_random_network(rnd, sizes, activations);
+    std::vector<NeuralNetwork::Layer> layers = nn.layers();
+    // the box of Z, then the lowest input of each neuron of the first layer
+    const std::vector<double> c = Z.center().data(), G = Z.generators().data(),
+                              W = layers[0].W.data();
+    const auto n = std::size_t(sizes[0]), h = G.size() / n;
+    std::vector<double> b(static_cast<std::size_t>(sizes[1]));
+    for (std::size_t i = 0; i < b.size(); ++i) {
+        double low = 0.0;
+        for (std::size_t j = 0; j < n; ++j) {
+            double radius = 0.0;
+            for (std::size_t k = 0; k < h; ++k) radius += std::abs(G[k * n + j]);
+            low += W[i * n + j] * c[j] - std::abs(W[i * n + j]) * radius;
+        }
+        // a multiple of 1/64, so that the bias is exact
+        b[i] = std::ceil((0.75 - low) * 64.0) / 64.0;
+    }
+    layers[0].b = Tensor::from_data(b, {sizes[1]});
     return {layers, activations};
 }
 
@@ -318,6 +362,51 @@ int main() {
                           box_zonotope({9.5, -4.5, 2.1, 1.5}, {9.55, -4.45, 2.11, 1.51}));
     });
     const std::vector<std::string> errors{"bracket", "extremum"};
+
+    // the activations with a line of their own in networks, inputs in the domain, at both methods
+    oracle::run("neuralNetwork.evaluate", [&](oracle::Random &rnd) {
+        // 1 / x waits for the lower end 2 sqrt(-m) of oracle/nn-layers-4 (CORALean's inverse)
+        for (const Activation a :
+             {Activation::exp, Activation::reciprocal, Activation::cube, Activation::softplus,
+              Activation::root, Activation::inv_sqrt_root}) {
+            const Zonotope Z(rnd.point(3), rnd.matrix(3, 4).matrix_transpose() * 0.3);
+            const NeuralNetwork nn =
+                aux_positive_network(rnd, {3, 6, 2}, {a, Activation::identity}, Z);
+            aux_check_network(nn, Z);
+            aux_check_network(nn, Z, "bracket");
+        }
+        // two activation layers of the lines after one another
+        const Zonotope Z(rnd.point(3), rnd.matrix(3, 5).matrix_transpose() * 0.2);
+        for (const auto &[first, second] : std::vector<std::pair<Activation, Activation>>{
+                 {Activation::softplus, Activation::cube},
+                 {Activation::root, Activation::softplus},
+                 {Activation::inv_sqrt_root, Activation::exp},
+                 {Activation::exp, Activation::reciprocal}}) {
+            const NeuralNetwork nn =
+                aux_positive_network(rnd, {3, 5, 4, 2}, {first, second, Activation::identity}, Z);
+            aux_check_network(nn, Z);
+            aux_check_network(nn, Z, "bracket");
+        }
+    });
+
+    // a softmax as evaluate lowers it (x_t - x_q, exp, the sums, 1 / max(s, 1)) as dense layers
+    oracle::run("neuralNetwork.evaluate", [&](oracle::Random &rnd) {
+        for (const int64_t n : {2, 4}) {
+            std::vector<double> D(std::size_t(n * n * n), 0.0), S(std::size_t(n * n * n), 0.0);
+            for (int64_t t = 0; t < n; ++t)
+                for (int64_t q = 0; q < n; ++q) {
+                    const int64_t row = t * n + q;
+                    D[std::size_t(row * n + t)] += 1.0;
+                    D[std::size_t(row * n + q)] -= 1.0;
+                    S[std::size_t(q * n * n + row)] = 1.0;
+                }
+            const NeuralNetwork dense({{Tensor::from_data(D, {n * n, n}), Tensor::zeros({n * n})},
+                                       {Tensor::from_data(S, {n, n * n}), Tensor::zeros({n})}},
+                                      {Activation::exp, Activation::reciprocal});
+            const Zonotope Z(rnd.point(n), rnd.matrix(n, 3).matrix_transpose() * 0.4);
+            aux_check_network(dense, Z);
+        }
+    });
 
     // regression with CORALean's errors: one layer on ranges from a point to 60 wide
     oracle::run("nnLayer.evaluateZonotope", [&](oracle::Random &rnd) {

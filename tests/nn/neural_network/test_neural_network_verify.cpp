@@ -18,7 +18,7 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -470,6 +470,31 @@ void relu_chord_both_ends(const std::string &b) {
     // Only an extended long double sees the 1.9e-19 shortfall (MSVC's long double is double).
     if (sizeof(long double) > sizeof(double))
         check(s * uv + old < (long double)uv, b + ": -chord l alone is short at the witness");
+}
+
+/// The dual rows' chord face y <= s x + o holds at both ends at the stored slope in long double at
+/// relu_chord_both_ends' witness: one neuron's record with zero centers and output generators, so
+/// the face's offset is priv_relu_chord_offset itself (-s l alone is 1.9e-19 short).
+void dual_chord_face(const std::string &b) {
+    const double lv = -0.006077605996286801, uv = 0.008781622029526388;
+    const NeuralNetwork nn({{Tensor({{1.0}}), Tensor::zeros({1})}}, {Activation::relu});
+    const ZonoNet net(nn, 1, 1, "bounds", "length");
+    ZonoPropagation out;
+    ZonoLayerRecord rec;
+    rec.l = Tensor({{lv}});
+    rec.u = Tensor({{uv}});
+    rec.er = Tensor({{1.0}});
+    rec.c_in = rec.c_out = Tensor({{0.0}});
+    rec.G_in = Tensor::ones({1, 1, 1});
+    rec.G_out = Tensor::zeros({1, net.q, 1});
+    out.layers.push_back(rec);
+    const auto [C, d] = priv_dual_rows(out, net, Tensor(), 1);
+    check(d.defined() && d.shape()[1] == 3, b + ": the three faces of the crossing neuron");
+    if (!d.defined() || d.shape()[1] != 3) return;
+    // the third face y - s x <= o at (u, u) and (l, 0); its row G_out - s G_in is -s exactly
+    const long double o = d.slice(1, 2, 3).item(), s = -C.slice(1, 2, 3).slice(2, 0, 1).item();
+    check(s * uv + o >= (long double)uv && s * lv + o >= 0.0L,
+          b + ": the chord face of the dual rows holds at both ends at the witness");
 }
 
 /// The certificate on rows of very different norms is at most the program's optimum: min w beta
@@ -1167,6 +1192,7 @@ int main() {
         dual_unscaled_rows(b);
         relu_chord_both_ends(b);
         dual_bounds_unscaled(b);
+        dual_chord_face(b);
         fourier_motzkin(b);
         switches(b);
         deadlines(b);

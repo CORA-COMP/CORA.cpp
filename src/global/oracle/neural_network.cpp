@@ -22,6 +22,20 @@ namespace cora::lean {
 
 namespace {
 
+// Whether the kind is one of CORA.cpp's activations with a line of its own (nnLayer.relaxation's).
+bool aux_is_line(const std::string &kind) {
+    for (const char *line : {"exp", "reciprocal", "cube", "inverse", "softplus", "root", "invSqrt"})
+        if (kind == line) return true;
+    return false;
+}
+
+// The depths of the line of `kind` (nnLayer.relaxation's k and p, unused at nearest).
+void aux_depths(const std::string &kind, std::vector<Operand> &args) {
+    if (kind == "exp" || kind == "softplus" || kind == "invSqrt")
+        args.push_back({"k", int64_t(30)});
+    if (aux_is_line(kind)) args.push_back({"p", int64_t(60)});
+}
+
 // A layer in wire form, and the dtype of its weights ("" for a layer without).
 Json aux_layer(const NnLayer &layer, std::string &dtype) {
     Json j = Json::object();
@@ -38,6 +52,11 @@ Json aux_layer(const NnLayer &layer, std::string &dtype) {
         j.set("coeffs", C.to_json()).set("d", d.to_json());
     } else if (layer.kind == "sigmoid" || layer.kind == "tanh") {
         j.set("k", int64_t(layer.k));
+    } else if (aux_is_line(layer.kind)) {
+        // the depths of exp's reduction and of the log and root iterations (unused at nearest)
+        if (layer.kind == "exp" || layer.kind == "softplus" || layer.kind == "invSqrt")
+            j.set("k", int64_t(30));
+        j.set("p", int64_t(60));
     } else if (layer.kind == "conv") {
         // the geometry, then the kernel and the bias
         const Tensor K(layer.W), b(layer.b);
@@ -137,6 +156,15 @@ NnLayer NnLayer::conv(const cora::Tensor &kernel, const cora::Tensor &bias,
     return layer;
 }
 
+// an activation with a line of its own: no weights, the line's depths on the wire
+NnLayer NnLayer::line(const std::string &kind) {
+    if (!aux_is_line(kind))
+        CORA_FAIL(Error::wrong_value, "lean: '" + kind + "' is not an activation with a line");
+    NnLayer layer;
+    layer.kind = kind;
+    return layer;
+}
+
 // the fit of order k given: its coefficients and its errors
 NnLayer NnLayer::poly(const cora::Tensor &coeffs, const cora::Tensor &d) {
     NnLayer layer;
@@ -148,17 +176,18 @@ NnLayer NnLayer::poly(const cora::Tensor &coeffs, const cora::Tensor &d) {
 
 // The lines ---------------------------------------------------------------------------------------
 
+// one line per box, with the method and the depths its kind takes
 NnLine relaxation(const std::string &kind, const cora::Tensor &l, const cora::Tensor &u,
-                  const cora::Tensor &alpha) {
+                  const cora::Tensor &alpha, const std::string &method) {
     std::vector<Operand> args{{"kind", kind}, {"l", Tensor(l)}, {"u", Tensor(u)}};
     if (alpha.defined()) args.push_back({"alpha", Tensor(alpha)});
-    // the depths of exp's reduction and of the log and root iterations (unused at nearest)
-    if (kind == "exp") args.push_back({"k", int64_t(30)});
-    if (kind == "exp" || kind == "reciprocal") args.push_back({"p", int64_t(60)});
+    if (!method.empty()) args.push_back({"method", method});
+    aux_depths(kind, args);
     const Reply r = ask("nnLayer.relaxation", args);
     return {r.get<Tensor>("slope"), r.get<Tensor>("offset"), r.get<Tensor>("error")};
 }
 
+// the product line of the pairs (a_i, b_i), and the box of a softmax's sums
 NnLine product_line(const cora::Tensor &c, const cora::Tensor &G, const cora::Tensor &dr) {
     std::vector<Operand> args{{"Z", Zonotope(c, G)}, {"p", int64_t(60)}};
     if (dr.defined()) args.push_back({"dr", Tensor(dr)});

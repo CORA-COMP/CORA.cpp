@@ -1,13 +1,15 @@
 // activation_lines - the lines of softplus, root and inverse square root over a neuron's range
 //
 // The three functions are monotone with a monotone derivative, so a line y in slope x + offset
-// +- radius needs no search: f(x) - slope x is monotone (Singh's parallelogram: the slope is the
-// smaller derivative at an end) or convex or concave (the regression slope: its extremes are at
-// the ends and at the one point where f' = slope, in closed form). softplus log(1 + e^x) is
-// convex and rising (f' = sigmoid), root sqrt(x) concave and rising on x >= 0, inv_sqrt_root
-// x^(-1/2) convex and falling on x > 0. CORA's default (regression) takes the same slope and a
-// sampled error for softplus, the same closed form for root and inv_sqrt_root; its Singh line of
-// root has a wrong derivative (nnRootLayer.getDf: 1/2 f(x), not 1 / (2 f(x))), here the right one.
+// +- radius needs no search: f(x) - slope x is convex (softplus, inv_sqrt_root) or concave (root)
+// at every slope, its extremes are at the ends and at the one point where f' = slope. That inner
+// extremum is taken in closed form, not as f at a rounded stationary point: -(m log m) - t log t
+// (t = 1 - m) for softplus, 1 / (4 m) for root, (3/2) c with c = (-2 m)^(1/3) for inv_sqrt_root.
+// The slope is Singh's (the smaller derivative at an end) or the regression slope; both take the
+// same band. softplus log(1 + e^x) is convex and rising (f' = sigmoid), root sqrt(x) concave and
+// rising on x >= 0, inv_sqrt_root sqrt(1 / x) convex and falling on x > 0. CORA's default
+// (regression) takes the same slope and a sampled error for softplus; its Singh line of root has
+// a wrong derivative (nnRootLayer.getDf: 1/2 f(x), not 1 / (2 f(x))), here the right one.
 //
 // Syntax:   activation_lines() - the lines, e.g.
 //           PrivLine line = priv_monotone_line(Activation::root, l, u, regression);
@@ -24,13 +26,12 @@
 // CORA: nn/layers/nonlinear/nnRootLayer.m
 // CORA: nn/layers/nonlinear/nnInvSqrtRootLayer.m
 // CORA authors: Tobias Ladner, Lukas Koller
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
-#include "cora/global/tensor/tolerance.h"
 #include "nn/neural_network/private/priv_layers.h"
 
 #include <functional>
@@ -45,52 +46,67 @@ namespace {
 
 // The functions -----------------------------------------------------------------------------------
 
-/// The function and the stationary point of f(x) - m x, at the slope m (clamped into the range).
+/// The function and its derivative.
 struct Monotone {
     std::function<Tensor(const Tensor &)> f, derivative;
-    std::function<Tensor(const Tensor &)> stationary;
-    bool convex;
 };
 
-/// softplus log(1 + e^x): f' = sigmoid, f'(x) = m at log(m / (1 - m)).
+/// softplus log(1 + e^x): f' = 1 / (e^(-x) + 1).
 Monotone aux_softplus() {
     return {[](const Tensor &x) { return (x.ones_like() + x.exp()).log(); },
-            [](const Tensor &x) { return x.sigmoid(); },
-            [](const Tensor &m) {
-                const Tensor c = m.maximum(numerics::kTiny).minimum(1.0 - 0x1p-53);
-                return c.divide(1.0 - c).log();
-            },
-            true};
+            [](const Tensor &x) { return x.ones_like().divide(x.negative().exp() + 1.0); }};
 }
 
-/// sqrt x: f' = 1 / (2 sqrt x), f'(x) = m at 1 / (4 m^2) (infinite at m = 0: clamped to u).
+/// sqrt x: f' = 1 / (2 sqrt x).
 Monotone aux_root() {
     return {[](const Tensor &x) { return x.sqrt(); },
             [](const Tensor &x) {
                 // a point range at 0 has no tangent: the slope 0
                 const Tensor zero = x.zeros_like();
                 return Tensor::where(x.greater(zero), x.ones_like().divide(x.sqrt()) * 0.5, zero);
-            },
-            [](const Tensor &m) { return m.ones_like().divide(m.square() * 4.0); }, false};
+            }};
 }
 
-/// x^(-1/2): f' = -1 / (2 x^(3/2)), f'(x) = m at (-1 / (2 m))^(2/3).
+/// sqrt(1 / x): f' = -1 / (2 x^(3/2)).
 Monotone aux_inv_sqrt() {
-    return {[](const Tensor &x) { return x.pow(-0.5); },
+    return {[](const Tensor &x) { return x.ones_like().divide(x).sqrt(); },
             [](const Tensor &x) {
                 return x.ones_like().divide(x.square().multiply(x).sqrt()).negative() * 0.5;
-            },
-            [](const Tensor &m) {
-                const Tensor c = m.minimum(-numerics::kTiny);
-                return c.ones_like().divide(c * -2.0).pow(2.0 / 3.0);
-            },
-            true};
+            }};
 }
 
 Monotone aux_function(Activation a) {
     if (a == Activation::softplus) return aux_softplus();
     if (a == Activation::root) return aux_root();
     return aux_inv_sqrt();
+}
+
+// The inner extremum ------------------------------------------------------------------------------
+
+/// The band [lo, hi] of f(x) - m x from the ends' band: the closed-form minimum (convex) or maximum
+/// (concave) at f'(x) = m folded in where that point exists; elsewhere a harmless slope stands in
+/// for m, so that no NaN is computed (CORALean's softplus/root/invSqrtRootLineRelaxation).
+std::pair<Tensor, Tensor> aux_band(Activation a, const Tensor &m, const Tensor &lo,
+                                   const Tensor &hi) {
+    const Tensor zero = m.zeros_like(), one = m.ones_like();
+    if (a == Activation::softplus) {
+        // 0 < m < 1: at x = log(m / (1 - m)) the minimum -(m log m) - t log t, t = 1 - m
+        const Tensor exists = m.greater(zero).multiply(m.less(one));
+        const Tensor s = Tensor::where(exists, m, one * 0.5), t = one - s;
+        const Tensor inner = s.multiply(s.log()).negative() - t.multiply(t.log());
+        return {Tensor::where(exists, lo.minimum(inner), lo), hi};
+    }
+    if (a == Activation::root) {
+        // m > 0: at x = 1 / (4 m^2) the maximum 1 / (4 m)
+        const Tensor exists = m.greater(zero);
+        const Tensor inner = one.divide(Tensor::where(exists, m, one)) * 0.5 * 0.5;
+        return {lo, Tensor::where(exists, hi.maximum(inner), hi)};
+    }
+    // m < 0: at x = (-2 m)^(-2/3) the minimum c + c / 2, c = (-2 m)^(1/3) = exp(log(-m - m) / 3)
+    const Tensor exists = m.less(zero);
+    const Tensor s = Tensor::where(exists, m, one.negative()).negative();
+    const Tensor c = ((s + s).log() / 3.0).exp();
+    return {Tensor::where(exists, lo.minimum(c + c * 0.5), lo), hi};
 }
 
 } // namespace
@@ -140,23 +156,14 @@ PrivLine priv_monotone_line(Activation activation, const Tensor &l, const Tensor
     const Monotone fn = aux_function(activation);
     const Tensor fl = fn.f(l), fu = fn.f(u);
     priv_check_finite(fl, fu);
-    if (!regression) {
-        // Singh: the smaller derivative at an end; f(x) - slope x is monotone over [l, u]
-        const Tensor slope =
-            activation == Activation::softplus ? fn.derivative(l) : fn.derivative(u);
-        const Tensor offset = (fu + fl - slope.multiply(u + l)) * 0.5;
-        // the half range of the monotone f(x) - slope x: the end values in the order of f
-        const Tensor rise = (fu - fl - slope.multiply(u - l)) * 0.5;
-        return {slope, offset, activation == Activation::inv_sqrt_root ? rise.negative() : rise};
-    }
-    // the regression slope; f(x) - m x is convex or concave: ends at one side, f' = m at the other
-    const Tensor m = priv_regression_slope(l, u, fn.f);
-    const auto g = [&](const Tensor &x) { return fn.f(x) - m.multiply(x); };
-    const Tensor ends_lo = g(l).minimum(g(u)), ends_hi = g(l).maximum(g(u));
-    const Tensor inner = g(fn.stationary(m).maximum(l).minimum(u));
-    const Tensor lo = fn.convex ? ends_lo.minimum(inner) : ends_lo;
-    const Tensor hi = fn.convex ? ends_hi : ends_hi.maximum(inner);
-    return {m, (lo + hi) * 0.5, (hi - lo) * 0.5};
+    // the slope: Singh's (the smaller derivative at an end) or the least-squares fit's
+    const Tensor m =
+        !regression ? (activation == Activation::softplus ? fn.derivative(l) : fn.derivative(u))
+                    : priv_regression_slope(l, u, fn.f);
+    // f(x) - m x at the ends, then the inner extremum where f' = m inside the line
+    const Tensor gl = fl - m.multiply(l), gu = fu - m.multiply(u);
+    const auto [lo, hi] = aux_band(activation, m, gl.minimum(gu), gl.maximum(gu));
+    return {m, (hi + lo) * 0.5, (hi - lo) * 0.5};
 }
 
 } // namespace cora

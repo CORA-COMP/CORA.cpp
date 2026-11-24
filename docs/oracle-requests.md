@@ -596,8 +596,9 @@ keep the original proposals; read `id` as `ids` and `pZ` as `P`.
 over the window's pairs), `evaluate_zonotope_batch`, `backprop`, `backprop_interval_batch`,
 `propagate_bounds`, `input_neuron_order` and `normal_form` are tested by hand-computed cases, samples
 and the Jacobian of `sensitivity`. `evaluate_zonotope_batch` of dense, conv, relu, sign and square layers
-is bit-identical to the oracle's `neuralNetwork.evaluate` (`test_lean_nn_batch`, pin f5ff0c401); exp,
-softmax and max pool have no layer kind there. CORALean has float models of the activations and of
+is bit-identical to the oracle's `neuralNetwork.evaluate` (`test_lean_nn_batch`, pin f5ff0c401); max
+pool has no layer kind there. `NeuralNetwork::evaluate` of exp and softmax layers is bit-identical to it
+since oracle-20261124-406069a06 (`test_lean_nn_evaluate`). CORALean has float models of the activations and of
 `neuralNetwork.backwardBound`, but no op for the gradient passes or the forms, so their rows are
 oracle debt.
 
@@ -610,20 +611,23 @@ oracle debt.
 
 ## NN softplus, root, inverse square root, group sort and the reduction (PR "nn/port-rest-3", batch 3)
 
-`Activation::softplus`, `root`, `inv_sqrt_root` (lines in `activation_lines.cpp`), `group_sort`
-(points and backprop only, as CORA), `composite_layer`, `reduce_generators`, `merge_buckets`,
-`find_region_polys` and `compute_reduced_network` have no op in the oracle (newest tag
-oracle-20261123-feef03ae2), so they are tested by properties: the line encloses the function and its
-radius is half the range of f(x) - m x, sampled (closed-form extrema, no search); a sort is a
-permutation whose gradient matches finite differences; the reduced network's output set contains the
-original outputs. The lines read: Singh's slope f'(l) (softplus) or f'(u) (root, inv_sqrt_root) with the
-offset and radius of the monotone f(x) - m x, or the 20-point regression slope m with the extremes of
-f(x) - m x at the ends and at f'(x) = m (softplus: log(m / (1 - m)); root: 1 / (4 m^2); inv_sqrt_root:
-(-1 / (2 m))^(2/3)). CORALean's `NN/Relaxations` have no softplus, root or inverse square root.
+The lines of `Activation::softplus`, `root` and `inv_sqrt_root` (`activation_lines.cpp`) are served since
+oracle-20261124-406069a06 (CORALean !975: `nnLayer.relaxation` kinds `softplus`, `root`, `invSqrt` with
+`method`, `softplusLineRelaxation`, `rootLineRelaxation`, `invSqrtRootLineRelaxation`), and so are the layer
+kinds `exp`, `reciprocal`, `cube`, `inverse`, `softplus`, `root` and `invSqrt` of `nnLayer.evaluateZonotope`
+and `neuralNetwork.evaluate` (a softmax as `evaluate` lowers it: linear, exp, linear, reciprocal):
+`test_lean_nn_relaxation` and `test_lean_nn_evaluate` compare them bit for bit. The lines read: Singh's slope
+f'(l) (softplus) or f'(u) (root, inv_sqrt_root), or the 20-point regression slope m; then the band of
+f(x) - m x over the ends and its closed-form inner extremum at f'(x) = m (softplus: -(m log m) - t log t,
+t = 1 - m; root: 1 / (4 m); inv_sqrt_root: (3/2) c, c = (-2 m)^(1/3)), not f at a rounded stationary point.
+
+`group_sort` (points and backprop only, as CORA), `composite_layer`, `reduce_generators`, `merge_buckets`,
+`find_region_polys` and `compute_reduced_network` have no op in the oracle, so they are tested by properties:
+a sort is a permutation whose gradient matches finite differences; the reduced network's output set contains
+the original outputs.
 
 | op (proposed) | request fields | reply |
 |---|---|---|
-| `nnLayer.relaxation`, kinds `softplus`, `root`, `invSqrt` | `l`, `u`, `method` (`singh` or `regression`) | slope, offset, radius, as above |
 | `nnLayer.evaluate`, kind `groupSort` | `groupSize`, `x` | the sorted points (stable, padded with inf) |
 | `nnLayer.evaluateZonotopeBatch`, kind `generatorReduction` | `maxGens`, `c`, `G` | `c`, `G` (CORA keeps the shortest generators) |
 | `neuralNetwork.computeReducedNetwork` | `layers`, `Z`, `bucketType`, `bucketTol`, `reductionRate` | reduced layers, error intervals, output set |
