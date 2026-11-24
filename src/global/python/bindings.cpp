@@ -46,6 +46,8 @@
 #include "cora/hybrid_dynamics/hybrid_automaton/hybrid_automaton.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "cora/specification/specification.h"
+#include "cora/specification/stl.h"
+#include "cora/specification/stl_interval.h"
 
 #include <limits>
 #include <map>
@@ -6201,55 +6203,337 @@ void bind_hybrid(py::module_ &m) {
             "(Specification, [locations]) pairs");
 }
 
+/// The time intervals of signal temporal logic.
+void bind_stl_interval(py::module_ &m) {
+    py::class_<StlInterval>(m, "StlInterval",
+                            "A time interval [lb, ub] with open or closed ends, or the empty one")
+        .def(py::init<>())
+        .def(py::init<double>(), py::arg("x"))
+        .def(py::init<double, double, bool>(), py::arg("lb"), py::arg("ub"),
+             py::arg("closed") = true)
+        .def(py::init<double, double, bool, bool>(), py::arg("lb"), py::arg("ub"), py::arg("lc"),
+             py::arg("rc"))
+        .def_static("empty", &StlInterval::empty, py::arg("n") = 1, "The empty interval")
+        // the bounds and the ends
+        .def_property_readonly("lower", &StlInterval::lower, "The lower bound")
+        .def_property_readonly("upper", &StlInterval::upper, "The upper bound (may be inf)")
+        .def_property_readonly("left_closed", &StlInterval::left_closed,
+                               "Whether the lower bound is in the interval")
+        .def_property_readonly("right_closed", &StlInterval::right_closed,
+                               "Whether the upper bound is in the interval")
+        .def_property_readonly("is_empty_object", &StlInterval::is_empty_object,
+                               "Whether it is the empty interval")
+        // the bounds as numbers
+        .def("dim", &StlInterval::dim, "Always 1")
+        .def(
+            "infimum",
+            [](const StlInterval &I) {
+                const StlEndpoint e = I.infimum();
+                return py::make_tuple(e.value, e.closed);
+            },
+            "The lower bound and whether it belongs to the interval")
+        .def(
+            "supremum",
+            [](const StlInterval &I) {
+                const StlEndpoint e = I.supremum();
+                return py::make_tuple(e.value, e.closed);
+            },
+            "The upper bound and whether it belongs to the interval")
+        .def(
+            "interval", [](const StlInterval &I) { return py::cast(I.interval()); },
+            "The closed Interval of the bounds")
+        // the operations
+        .def("and_", &StlInterval::and_, py::arg("other"), "The intersection")
+        .def("plus", py::overload_cast<const StlInterval &>(&StlInterval::plus, py::const_),
+             py::arg("other"), "The sum of the times")
+        .def("plus", py::overload_cast<double>(&StlInterval::plus, py::const_), py::arg("c"),
+             "The times moved by c")
+        .def("plus", py::overload_cast<const Interval &>(&StlInterval::plus, py::const_),
+             py::arg("J"), "The bounds moved by an Interval")
+        .def("minus", py::overload_cast<const StlInterval &>(&StlInterval::minus, py::const_),
+             py::arg("other"), "The differences of the times, clamped at 0")
+        .def("minus", py::overload_cast<double>(&StlInterval::minus, py::const_), py::arg("c"),
+             "The times moved down by c, clamped at 0")
+        .def("minus", py::overload_cast<const Interval &>(&StlInterval::minus, py::const_),
+             py::arg("J"), "The times moved down by an Interval, clamped at 0")
+        // the Minkowski difference, closures and the halves of the time axis
+        .def("minkowski_difference", &StlInterval::minkowski_difference, py::arg("sub"),
+             py::arg("type") = "exact", "The Minkowski difference; type 'exact' or 'inner'")
+        .def("left_closure", &StlInterval::left_closure, "Its lower end closed")
+        .def("right_closure", &StlInterval::right_closure, "Its upper end closed")
+        .def("to_left", &StlInterval::to_left, "The times from 0 up to its start")
+        .def("to_right", &StlInterval::to_right, "The times after its end")
+        // the comparisons
+        .def("contains", py::overload_cast<double, Tol>(&StlInterval::contains, py::const_),
+             py::arg("t"), py::arg("tol") = py::none(), "Whether the time t lies in it")
+        .def("contains",
+             py::overload_cast<const StlInterval &, Tol>(&StlInterval::contains, py::const_),
+             py::arg("S"), py::arg("tol") = py::none(), "Whether the interval S lies in it")
+        .def("isequal", &StlInterval::isequal, py::arg("other"), py::arg("tol") = py::none(),
+             "Whether the intervals are equal up to tol")
+        .def("representsa", &StlInterval::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether it is a set of the type 'emptySet', 'stlInterval', 'point' or 'origin'")
+        .def("__eq__", [](const StlInterval &a, const StlInterval &b) { return a.isequal(b); })
+        .def("__ne__", [](const StlInterval &a, const StlInterval &b) { return !a.isequal(b); })
+        .def("__repr__", [](const StlInterval &I) { return "StlInterval" + I.to_string(); });
+}
+
+/// An STL expression from a Python operand: an StlExpr, or a number as a constant.
+StlExpr stl_expr(const py::object &o) {
+    if (py::isinstance<StlExpr>(o)) return o.cast<StlExpr>();
+    return StlExpr(o.cast<double>());
+}
+
+/// The expressions and formulas of signal temporal logic.
+void bind_stl(py::module_ &m) {
+    py::class_<StlExpr>(
+        m, "StlExpr",
+        "An arithmetic expression over the state: variables, numbers, +, -, *, integer powers")
+        .def(py::init<double>(), py::arg("c"), "The number c")
+        .def_static("variable", &StlExpr::variable, py::arg("name"), py::arg("index"),
+                    "The variable of that name and 0-based index")
+        .def_static("variables", &StlExpr::variables, py::arg("name"), py::arg("n"),
+                    "The variables name1, ..., namen (CORA's stl(name, n))")
+        .def_property_readonly("name", &StlExpr::name, "The name of a variable")
+        .def_property_readonly("index", &StlExpr::index, "The 0-based index of a variable")
+        .def_property_readonly("value", &StlExpr::value, "The value of a number")
+        // the queries, the arithmetic operators and the comparisons
+        .def("variable_names", &StlExpr::variable_names, "The names of the variables in it")
+        .def("is_linear", &StlExpr::is_linear, "Whether it is linear in the variables")
+        .def("power", &StlExpr::power, py::arg("k"), "The power with the integer exponent k")
+        .def("isequal", &StlExpr::isequal, py::arg("other"),
+             "Same structure up to commuting + and *")
+        .def("__add__", [](const StlExpr &a, const py::object &b) { return a.plus(stl_expr(b)); })
+        .def("__radd__", [](const StlExpr &a, const py::object &c) { return stl_expr(c).plus(a); })
+        .def("__sub__", [](const StlExpr &a, const py::object &b) { return a.minus(stl_expr(b)); })
+        .def("__rsub__", [](const StlExpr &a, const py::object &c) { return stl_expr(c).minus(a); })
+        .def("__mul__", [](const StlExpr &a, const py::object &b) { return a.times(stl_expr(b)); })
+        .def("__rmul__", [](const StlExpr &a, const py::object &c) { return stl_expr(c).times(a); })
+        .def("__pow__", [](const StlExpr &a, double k) { return a.power(k); })
+        // a comparison of expressions is a formula
+        .def("__lt__", [](const StlExpr &a, const py::object &b) { return a.lt(stl_expr(b)); })
+        .def("__le__", [](const StlExpr &a, const py::object &b) { return a.le(stl_expr(b)); })
+        .def("__gt__", [](const StlExpr &a, const py::object &b) { return a.gt(stl_expr(b)); })
+        .def("__ge__", [](const StlExpr &a, const py::object &b) { return a.ge(stl_expr(b)); })
+        .def("__str__", &StlExpr::to_string)
+        .def("__repr__", [](const StlExpr &e) { return "StlExpr(" + e.to_string() + ")"; });
+    // the formulas: construction, the logic, the temporal operators and the rewriting
+    py::class_<Stl>(m, "Stl", "A formula of signal temporal logic")
+        .def(py::init<bool>(), py::arg("value"), "The formula true or false")
+        // the properties of a node
+        .def_property_readonly("temporal", &Stl::temporal, "Whether a temporal operator occurs")
+        .def_property_readonly("id", &Stl::id, "The identifier of an atomic part (0: none)")
+        .def_property_readonly("lower", &Stl::from,
+                               "The start of the window of a temporal operator")
+        .def_property_readonly("upper", &Stl::to, "The end of the window of a temporal operator")
+        // the logic and the temporal operators
+        .def("not_", &Stl::not_, "The negation")
+        .def("and_", &Stl::and_, py::arg("other"), "The conjunction")
+        .def("or_", &Stl::or_, py::arg("other"), "The disjunction")
+        .def("implies", &Stl::implies, py::arg("other"), "The implication ~self | other")
+        .def("next", &Stl::next, py::arg("a"), "The formula holds a time units later")
+        .def("finally_", &Stl::finally, py::arg("time"),
+             "The formula holds at some time of the window")
+        .def("globally", &Stl::globally, py::arg("time"),
+             "The formula holds at every time of the window")
+        .def("until", &Stl::until, py::arg("other"), py::arg("time"),
+             "self until other within the window")
+        .def("release", &Stl::release, py::arg("other"), py::arg("time"),
+             "self releases other within the window")
+        .def("isequal", &Stl::isequal, py::arg("other"), "Same structure up to commuting & and |")
+        // the queries on a formula
+        .def("get_variables", &Stl::get_variables, "The names of the variables occurring")
+        .def(
+            "get_times",
+            [](const Stl &phi) {
+                const StlTimes t = phi.get_times();
+                return py::make_tuple(t.time_int, t.time_point);
+            },
+            "The windows and the points at which the identified parts are evaluated")
+        .def("maximum_time", &Stl::maximum_time, "The latest time the formula looks at")
+        .def("minimum_time", &Stl::minimum_time, "The earliest time the formula looks at")
+        // the normal forms
+        .def("desugar", &Stl::desugar, "Only until and the logic")
+        .def("negation_normal_form", &Stl::negation_normal_form,
+             "Negations at the comparisons only")
+        // the normal forms of the logic
+        .def("eliminate_true_false", &Stl::eliminate_true_false,
+             "Without true and false below operators")
+        .def(
+            "conjunctive_normal_form",
+            [](const Stl &phi, bool nnf) {
+                return phi.conjunctive_normal_form(nnf ? StlNnf::given : StlNnf::compute);
+            },
+            py::arg("nnf") = false,
+            "The conjunctive normal form; nnf: the formula is in negation normal form")
+        // the disjunctive form takes the same flag
+        .def(
+            "disjunctive_normal_form",
+            [](const Stl &phi, bool nnf) {
+                return phi.disjunctive_normal_form(nnf ? StlNnf::given : StlNnf::compute);
+            },
+            py::arg("nnf") = false,
+            "The disjunctive normal form; nnf: the formula is in negation normal form")
+        .def("assign_identifiers", &Stl::assign_identifiers,
+             "The formula with its non-temporal parts numbered, and those parts")
+        .def("combine_next", &Stl::combine_next, "Nested next operators merged")
+        .def("get_clauses", &Stl::get_clauses, py::arg("type") = "cnf",
+             "The conjuncts or disjuncts")
+        // the predicates and the Python operators
+        .def("is_predicate", &Stl::is_predicate, "Whether it is a conjunction of comparisons")
+        .def("is_linear_predicate", &Stl::is_linear_predicate,
+             "Whether it is a conjunction of linear comparisons")
+        .def("__and__", [](const Stl &a, const Stl &b) { return a.and_(b); })
+        .def("__or__", [](const Stl &a, const Stl &b) { return a.or_(b); })
+        .def("__invert__", [](const Stl &a) { return a.not_(); })
+        .def("__eq__", &Stl::isequal)
+        .def("__ne__", [](const Stl &a, const Stl &b) { return !a.isequal(b); })
+        .def("__str__", &Stl::to_string)
+        .def("__repr__", [](const Stl &phi) { return "Stl(" + phi.to_string() + ")"; });
+}
+
 void bind_specification(py::module_ &m) {
-    py::class_<Specification>(m, "Specification",
-                              "A set the reachable sets must lie in (safe_set) or must not touch "
-                              "(unsafe_set), typically a Polytope.")
-        // the set is of any class; the set classes decide
-        .def_static(
-            "safe_set", [](const py::object &S) { return Specification::safe_set(set_of(S)); },
-            py::arg("S"), "A safe set: the reachable sets must lie in the set S")
-        .def_static(
-            "unsafe_set", [](const py::object &S) { return Specification::unsafe_set(set_of(S)); },
-            py::arg("S"), "An unsafe set: the reachable sets must not touch the set S")
-        .def_static(
-            "custom",
-            [](const py::function &holds) {
-                // the predicate gets the set as its Python class, under the GIL
-                return Specification::custom([holds](const ContSet &S) {
-                    py::gil_scoped_acquire gil;
-                    return py::cast<bool>(holds(py::cast(&S, py::return_value_policy::reference)));
-                });
-            },
-            py::arg("holds"),
-            // the predicate is the whole specification
-            "A predicate on the set: holds(S) is True where the specification holds")
-        .def_property_readonly(
-            "type",
-            [](const Specification &spec) {
-                if (spec.type() == SpecType::custom) return "custom";
-                return spec.type() == SpecType::safe_set ? "safe_set" : "unsafe_set";
-            },
-            "'safe_set', 'unsafe_set' or 'custom'")
-        .def_property_readonly(
-            "set", [](const Specification &spec) { return object_of(spec.set()); },
-            "The set of a safe or unsafe specification")
-        .def(
-            "check", [](const Specification &spec, const ContSet &S) { return spec.check(S); },
-            py::arg("S"), "Whether the set satisfies the specification")
-        .def(
-            "check",
-            [](const Specification &spec, const std::vector<Zonotope> &sets) {
-                // whether every set of a list satisfies the specification
-                return spec.check(sets);
-            },
-            py::arg("sets"), "Whether every set of a list (such as R.time_interval) does")
-        .def(
-            "first_violation",
-            [](const Specification &spec, const std::vector<Zonotope> &sets) {
-                return spec.first_violation(sets);
-            },
-            py::arg("sets"), "The index of the first violating set, or -1");
+    auto specification =
+        py::class_<Specification>(
+            m, "Specification",
+            "A set the reachable sets must lie in (safe_set) or must not touch "
+            "(unsafe_set), typically a Polytope.")
+            // the set is of any class; the set classes decide
+            .def_static(
+                "safe_set", [](const py::object &S) { return Specification::safe_set(set_of(S)); },
+                py::arg("S"), "A safe set: the reachable sets must lie in the set S")
+            .def_static(
+                "unsafe_set",
+                [](const py::object &S) { return Specification::unsafe_set(set_of(S)); },
+                py::arg("S"), "An unsafe set: the reachable sets must not touch the set S")
+            .def_static(
+                "custom",
+                [](const py::function &holds) {
+                    // the predicate gets the set as its Python class, under the GIL
+                    return Specification::custom([holds](const ContSet &S) {
+                        py::gil_scoped_acquire gil;
+                        return py::cast<bool>(
+                            holds(py::cast(&S, py::return_value_policy::reference)));
+                    });
+                },
+                py::arg("holds"),
+                // the predicate is the whole specification
+                "A predicate on the set: holds(S) is True where the specification holds")
+            // the type, the window and the locations
+            .def_property_readonly(
+                "type",
+                [](const Specification &spec) {
+                    switch (spec.type()) {
+                    case SpecType::custom:
+                        return "custom";
+                    case SpecType::invariant:
+                        return "invariant";
+                    case SpecType::safe_set:
+                        return "safe_set";
+                    default:
+                        return "unsafe_set";
+                    }
+                },
+                "'safe_set', 'unsafe_set', 'invariant' or 'custom'")
+            .def_static(
+                "invariant",
+                [](const py::object &S) { return Specification::invariant(set_of(S)); },
+                py::arg("S"), "An invariant: the reachable sets must intersect the set S")
+            // the window and the locations
+            .def("with_time", &Specification::with_time, py::arg("t0"), py::arg("t1"),
+                 "The same specification, active in the time window [t0, t1]")
+            .def("with_locations", &Specification::with_locations, py::arg("locations"),
+                 "The same specification, active in these locations (0-based)")
+            .def_property_readonly(
+                "time",
+                [](const Specification &spec) -> py::object {
+                    if (!spec.time()) return py::none();
+                    return py::make_tuple(spec.time()->first, spec.time()->second);
+                },
+                "The window (t0, t1) in which it is active, or None")
+            .def_property_readonly("locations", &Specification::locations,
+                                   "The locations in which it is active (empty: everywhere)")
+            // checks against a time, a reach set and points
+            .def(
+                "check",
+                [](const Specification &spec, const ContSet &S,
+                   const std::pair<double, double> &time) { return spec.check(S, time); },
+                py::arg("S"), py::arg("time"),
+                "Whether the set S over the time (t0, t1) satisfies it")
+            .def(
+                "check",
+                [](const Specification &spec, const ReachSet &R, Tol tol) {
+                    return spec.check(R, tol);
+                },
+                py::arg("reach_set"), py::arg("tol") = py::none(),
+                "Whether the reachable sets satisfy it, steps and time points against its time "
+                "window")
+            // points, with the times of a timed specification
+            .def(
+                "check_points",
+                [](const Specification &spec, const py::object &points,
+                   const std::vector<double> &times) {
+                    return spec.check_points(matrix_of(points, "the points"), times);
+                },
+                py::arg("points"), py::arg("times") = std::vector<double>(),
+                "Whether the points (N, n) satisfy it; times: none, one or one per point")
+            // projection and equality
+            .def("project", &Specification::project, py::arg("dims"),
+                 "The specification with the set projected onto dims (0-based)")
+            .def("isequal", &Specification::isequal, py::arg("other"), py::arg("tol") = py::none(),
+                 "Whether the specifications are equal up to tol")
+            // == and != compare up to the default tolerance
+            .def("__eq__",
+                 [](const Specification &a, const Specification &b) { return a.isequal(b); })
+            .def("__ne__",
+                 [](const Specification &a, const Specification &b) { return !a.isequal(b); })
+            .def_property_readonly(
+                "set", [](const Specification &spec) { return object_of(spec.set()); },
+                "The set of a safe or unsafe specification")
+            .def(
+                "check", [](const Specification &spec, const ContSet &S) { return spec.check(S); },
+                py::arg("S"), "Whether the set satisfies the specification")
+            .def(
+                "check",
+                [](const Specification &spec, const std::vector<Zonotope> &sets) {
+                    // whether every set of a list satisfies the specification
+                    return spec.check(sets);
+                },
+                py::arg("sets"), "Whether every set of a list (such as R.time_interval) does")
+            // the first set that violates it
+            .def(
+                "first_violation",
+                [](const Specification &spec, const std::vector<Zonotope> &sets) {
+                    return spec.first_violation(sets);
+                },
+                py::arg("sets"), "The index of the first violating set, or -1");
+
+    // the operations on lists of specifications
+    specification.def_static("add", &add, py::arg("specs1"), py::arg("specs2"),
+                             "The specifications of both lists in one list");
+    specification.def_static("is_empty", &is_empty, py::arg("specs"),
+                             "Whether the list holds no specification");
+    specification.def_static(
+        "isequal_lists",
+        [](const std::vector<Specification> &a, const std::vector<Specification> &b, Tol tol) {
+            return isequal(a, b, tol);
+        },
+        py::arg("specs1"), py::arg("specs2"), py::arg("tol") = py::none(),
+        "Whether two lists hold the same specifications in any order");
+    // the inverse and the robustness
+    specification.def_static("inverse", &inverse, py::arg("specs"),
+                             "The inverse of untimed safe sets, or of untimed unsafe sets");
+    specification.def_static(
+        "robustness",
+        [](const std::vector<Specification> &specs, const py::object &points,
+           const std::optional<std::vector<double>> &times) -> py::object {
+            const Tensor P = matrix_of(points, "the points");
+            if (times) return py::float_(robustness(specs, P, *times));
+            return values(robustness(specs, P));
+        },
+        py::arg("specs"), py::arg("points"), py::arg("times") = py::none(),
+        "The signed distance of the points (N, n) to the specifications (the least over a list): "
+        "one value per point, or with times the least over the points in the windows");
 }
 
 /// The oracle of CORALean as `cora.lean`: the same names as cora::lean; vectors are 1-D arrays.
@@ -6790,6 +7074,8 @@ PYBIND11_MODULE(_cora, m) {
     bind_verify(m);
     bind_plot(m);
     bind_specification(m);
+    bind_stl_interval(m);
+    bind_stl(m);
     bind_hybrid(m);
     // the oracle and the other modules
     bind_lean(m);

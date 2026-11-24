@@ -93,9 +93,11 @@ VerifyResult LinearSys::verify(const ReachProblem &problem, const std::vector<Sp
     CORA_CHECK(!specs.empty(), Error::wrong_value,
                [] { return std::string("verify: give at least one specification"); });
     for (const Specification &spec : specs)
-        CORA_CHECK(spec.type() != SpecType::custom, Error::not_supported, [] {
-            return std::string("verify: decides safe and unsafe sets, not custom specifications");
-        });
+        CORA_CHECK(spec.type() != SpecType::custom && spec.type() != SpecType::invariant,
+                   Error::not_supported, [] {
+                       return std::string("verify: decides safe and unsafe sets, not custom "
+                                          "specifications or invariants");
+                   });
     const int64_t p = C_ ? C_->shape()[0] : n;
     for (const Specification &spec : specs)
         for (const SpecRow &h : priv_spec_rows(spec))

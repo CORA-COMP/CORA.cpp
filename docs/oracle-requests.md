@@ -711,3 +711,50 @@ Recipe of `post` (CORA's `linReach`, `priv_linearize`, `priv_linError_mixed_noIn
 The output set follows `outputSet.m` the same way: `y0 = g(p_x, p_u)`, `J (R - p_x) + D (U - p_u) + y0`, plus the error of the
 tensor order of the output equation (order 2: the box `0.5 dz' max|H_i| dz` over `R` and `U` themselves; order 3: the Hessian at the
 point maps `Z - p` and the third derivatives over the boxes give the box).
+
+
+## Specifications (PR "port/spec")
+
+CORALean has `Specification` and `Specification.check` only (route b, no scalar of its own); the
+operations below have no Lean definition yet, so their CORA.cpp tests are property tests. A request
+would need the definition first; the oracle then serves them over a polytope `{"A","b"}`.
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `specification.robustness` | none (`Specification.distancePolyPointCora` models `aux_distancePolyPoint` only) | `kind`, `A`, `b`, `Ae`, `be`, `p` | the signed distance; the three branches (one hyperplane, the vertex of `n` rows, the 1-norm program) and the equalities as two rows each |
+| `specification.inverse` | none | `kind`, the polytopes | the unsafe polytopes covering the complement of the intersection, in CORA's order (`safeSet2unsafeSet`) |
+| `specification.project` | none (`polytope.project` is served) | `kind`, `A`, `b`, `dims` | the projected polytope |
+
+## STL time intervals (PR "port/spec2")
+
+CORALean has float definitions of `STLInterval` (`Specification/STLInterval/Operations/*.lean`, generic over the scalar, rounding outward with `addUp`/`subDown`, which is plain arithmetic at `nearest`), but the oracle serves none of them. CORA.cpp follows those definitions; its tests are hand-computed cases and property tests on a grid of times. An interval travels as `{"lb","ub","lc","rc"}` (`ub` null for `inf`) or `{"empty":true}`; every op returns an interval, a bool or an endpoint `{"value","closed"}`.
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `stlInterval.stlInterval` | `STLInterval.stlIntervalBounds` | `lb`, `ub`, `lc`, `rc` | the normalized interval (infinite end open, empty by order) |
+| `stlInterval.and_` | `STLInterval.and_` | `I`, `S` | the intersection |
+| `stlInterval.plus` | `STLInterval.plus`, `plusNum`, `plusInterval` | `I`, `S` or number `c` or interval `J` | the sum; lower bound `max(0, lb1 + lb2)` for two intervals |
+| `stlInterval.minus` | `STLInterval.minus`, `minusNum`, `minusInterval` | as `plus` | the difference, lower bound clamped to 0 (closed there) |
+| `stlInterval.minkDiff` | `STLInterval.minkDiff` | `I`, `sub`, `type` | the Minkowski difference; unbounded minus unbounded is unbounded |
+| `stlInterval.leftClosure`, `rightClosure` | `STLInterval.leftClosure`, `rightClosure` | `I` | the interval with that end closed |
+| `stlInterval.toLeft`, `toRight` | `STLInterval.toLeft`, `toRight` | `I` | `[0, lb]` / `[ub, inf)` with the end flipped; empty input: error |
+| `stlInterval.infimum`, `supremum` | `STLInterval.infimum`, `supremum` | `I` | the bound and whether it is closed |
+| `stlInterval.interval` | `STLInterval.interval` | `I` | the closed interval of the bounds |
+| `stlInterval.contains_` | `STLInterval.containsFloat` | `I`, `S` (interval), `tol` | the bool |
+| `stlInterval.isequal` | `STLInterval.isequalFloat` | `I`, `J`, `tol` | the bool |
+| `stlInterval.representsa_` | `STLInterval.representsaFloat` | `I`, `type`, `tol` | the bool |
+
+## STL formulas (PR "port/spec3")
+
+CORALean has float definitions of the syntax and the rewriting of CORA's `stl` class (`STL.Expr`, `STL.Tree`, `Specification/STL/Operations/*.lean`), generic over the scalar and independent of any rounding except `maximumTimeFloat`, `minimumTimeFloat` and `combineNextFloat`, but the oracle serves none of them. CORA.cpp follows those definitions; its tests are hand-computed cases and property tests (the meaning of random non-temporal formulas on a grid of states). A formula travels as a tree `{"op": "and" | "or" | "not" | "until" | "release" | "finally" | "globally" | "next" | "true" | "false" | "cmp", ...}` with the window as `{"lb","ub"}`, a comparison as `{"cmp": "<" | "<=" | ">" | ">=", "lhs": expr, "rhs": expr}` and an expression as `{"var": i}`, `{"num": c}`, `{"op": "+" | "-" | "*" | "^", ...}`; every op returns a tree, a list of trees, a bool or a number.
+
+| op (proposed) | CORALean definition | request fields | reply |
+|---|---|---|---|
+| `stl.lt`, `le`, `gt`, `ge` | `STL.Tree.compare` (`lt`, `le`, `gt`, `ge`) | `e1`, `e2` | the comparison node, the sides arranged as CORA does |
+| `stl.plus`, `minus`, `times`, `power` | `STL.Expr.plus`, `minus`, `times`, `power` | `e1`, `e2` or `e`, `k` | the expression, a numeric operand moved as CORA's operators do |
+| `stl.desugar`, `negationNormalForm`, `eliminateTrueFalse` | `STL.Tree.desugar`, `negationNormalForm`, `eliminateTrueFalse` | `phi` | the rewritten formula |
+| `stl.conjunctiveNormalForm`, `disjunctiveNormalForm` | `STL.Tree.conjunctiveNormalForm`, `disjunctiveNormalForm` | `phi`, `nnf` | the normal form |
+| `stl.combineNext` | `STL.Tree.combineNextFloat` | `phi` | the formula with nested `next` merged where the sum is exact |
+| `stl.assignIdentifiers`, `getClauses` | `STL.Tree.assignIdentifiers`, `getClauses` | `phi`, `type` | the numbered parts, the clauses |
+| `stl.getVariables`, `isPredicate`, `isLinearPredicate` | `STL.Tree.getVariables`, `isPredicate`, `isLinearPredicate` | `phi` | the variable indices, the bool |
+| `stl.maximumTime`, `minimumTime` | `STL.Tree.maximumTimeFloat`, `minimumTimeFloat` | `phi` | the time |
