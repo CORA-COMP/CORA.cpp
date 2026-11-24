@@ -2,19 +2,23 @@
 //
 // ORACLE: nn/@neuralNetwork/evaluateZonotopeBatch_.m
 // ORACLE: nn/layers/nonlinear/@nnActivationLayer/evaluateZonotopeBatch.m
+// ORACLE: nn/layers/nonlinear/nnMaxPool2DLayer.m
+// ORACLE: nn/layers/other/nnCompositeLayer.m
 //
 // ZonoNet::forward of verify on graph networks is, bit for bit, the oracle's
 // neuralNetwork.evaluateGraph: a residual block (a ReLU layer that adds the input), MaxPool as
 // b + relu(a - b) (relu of the differences, then the second entries as a residual of an earlier
 // output), the two in a row, a dot product (a product layer, then the sum) and square and sign
-// layers. Each with every error in a slot, every error in the interval center (dr, the oracle's
+// layers; the port's max_pool2d_layer (its convolutions and gathers as matrices) after a ReLU
+// layer, and composite_layer of a ReLU and an identity branch, added and concatenated. Each with
+// every error in a slot, every error in the interval center (dr, the oracle's
 // error box) and the first layer's alone in it; with the record and without (a layer's error
 // generators then wait for the next map). Not served: splits, alpha slopes, the slots chosen by
 // length, the ranges of sources (reciprocal, 1 / x, x^3), sigmoid and tanh.
 //
 // Authors:       Claude Opus 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -63,10 +67,10 @@ std::vector<lean::NnGraphLayer> aux_graph(const NeuralNetwork &nn, const std::ve
     std::vector<lean::NnGraphLayer> graph;
     for (std::size_t k = 0; k < nn.layers().size(); ++k) {
         const Layer &layer = nn.layers()[k];
-        lean::NnGraphLayer g{layer.W, layer.b, nn.source(k)};
-        // each residual through its map's weights, the identity without one
+        lean::NnGraphLayer g{layer.dense(), layer.b, nn.source(k)};
+        // each residual through its map's matrix, the identity without one
         for (const NeuralNetwork::Residual &r : layer.residuals)
-            g.residuals.push_back({r.source, r.map ? r.map->W : Tensor()});
+            g.residuals.push_back({r.source, r.map ? r.map->dense() : Tensor()});
         g.activation = aux_activation(nn.activations()[k]);
         g.slots = none[k] ? "none" : "all";
         graph.push_back(g);
@@ -178,6 +182,32 @@ NeuralNetwork aux_square_sign(oracle::Random &rnd, double scale) {
             {Activation::square, Activation::sign, Activation::identity}};
 }
 
+/// relu(W x + b) (8 values, one channel of 2 x 4), then the port's MaxPool of 2 x 2 windows.
+NeuralNetwork aux_port_max_pool(oracle::Random &rnd, double scale) {
+    const NeuralNetwork::Block pool = NeuralNetwork::max_pool2d_layer({2, 2}, {1, 2, 4}, {0, 0}, 0);
+    std::vector<Layer> layers{aux_layer(rnd.matrix(8, 3) * scale, rnd.point(8) * 0.25)};
+    std::vector<Activation> activations{Activation::relu};
+    layers.insert(layers.end(), pool.layers.begin(), pool.layers.end());
+    activations.insert(activations.end(), pool.activations.begin(), pool.activations.end());
+    return {layers, activations};
+}
+
+/// The port's composite of a ReLU branch and an identity branch on the input, added or
+/// concatenated, then a dense layer.
+NeuralNetwork aux_composite(oracle::Random &rnd, Aggregation aggregation, double scale) {
+    const NeuralNetwork::Block relu{{Layer::linear(rnd.matrix(3, 2) * scale, rnd.point(3) * 0.25)},
+                                    {Activation::relu}};
+    const NeuralNetwork::Block line{{Layer::linear(rnd.matrix(3, 2) * scale, rnd.point(3) * 0.25)},
+                                    {Activation::identity}};
+    const NeuralNetwork::Block both = NeuralNetwork::composite_layer({relu, line}, aggregation, 2);
+    std::vector<Layer> layers = both.layers;
+    std::vector<Activation> activations = both.activations;
+    const int64_t m = layers.back().outputs();
+    layers.push_back(aux_layer(rnd.matrix(2, m), rnd.point(2)));
+    activations.push_back(Activation::identity);
+    return {layers, activations};
+}
+
 /// A zonotope of n dimensions and m generators of radius about `scale`.
 Zonotope aux_input(oracle::Random &rnd, int64_t n, int64_t m, double scale) {
     return {rnd.point(n) * 0.5, rnd.matrix(m, n) * scale};
@@ -205,6 +235,13 @@ int main() {
                           aux_input(rnd, 2, 3, scale));
             aux_check_all("square, sign" + at, aux_square_sign(rnd, 1.0),
                           aux_input(rnd, 2, 2, scale));
+            // the port's MaxPool and composite layers
+            aux_check_all("port max pool" + at, aux_port_max_pool(rnd, 1.0),
+                          aux_input(rnd, 3, 3, scale));
+            aux_check_all("composite add" + at, aux_composite(rnd, Aggregation::add, 1.0),
+                          aux_input(rnd, 2, 3, scale));
+            aux_check_all("composite concat" + at, aux_composite(rnd, Aggregation::concat, 1.0),
+                          aux_input(rnd, 2, 3, scale));
         }
     });
     return test::finish("graph networks against the oracle");

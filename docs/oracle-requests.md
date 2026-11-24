@@ -342,9 +342,8 @@ oracle debt until then; their tests are `property` (the sets hold every simulate
 |---|---|---|
 | `sigmoidPolyRelaxation`, `tanhPolyRelaxation` (`Operations/SigmoidPolyRelaxation.lean`, `Operations/TanhPolyRelaxation.lean`; `Theorems/*PolyRelaxationEncloses.lean`), `leakyReluRelaxation` (ReLU) | `poly_method` "regression" of order 1 in `NeuralNetwork::evaluate`: the line `m x + t` of the 20-point least squares (CORA's `leastSquarePolyFunc`) and its exact error radius; CORALean takes the fit as data and certifies the error | `activation`, `l`, `u`, `coeffs` (`[m, t]`, the fit as CORA.cpp computes it); reply `error`, a certified bound: the test is containment (CORA.cpp's exact radius at most the oracle's), as the fit is not CORALean's |
 
-`NeuralNetwork::sensitivity` (CORA's `calcSensitivity`; CORALean has `Chain.sensitivity`,
-`Chain.sensitivity_eq_fderiv` and the interval `IntervalChain.sensitivity`; proposed op
-`neuralNetwork.sensitivity`: `layers`, `x` (a point), reply `J`, the Jacobian), the splitting of `NeurNetContrSys::verify`
+`NeuralNetwork::sensitivity` (CORA's `calcSensitivity`) is served since oracle-20261124-0322eafde
+(`neuralNetwork.sensitivity`, `IntervalChain.sensitivity`; `test_lean_nn_forms`). The splitting of `NeurNetContrSys::verify`
 (CORA's `splitR0`) and the VCAS loop of the benchmark program (the discrete plant step, the
 advisory and the acceleration rule, composed of `NeuralNetwork::evaluate` and `PolyZonotope`
 affine maps) have no CORALean counterpart beyond `NeurNetContrSysDT` (whose `reach` is the
@@ -603,16 +602,24 @@ over the window's pairs), `evaluate_zonotope_batch`, `backprop`, `backprop_inter
 and the Jacobian of `sensitivity`. `evaluate_zonotope_batch` of dense, conv, relu, sign and square layers
 is bit-identical to the oracle's `neuralNetwork.evaluate` (`test_lean_nn_batch`, pin f5ff0c401); max
 pool has no layer kind there. `NeuralNetwork::evaluate` of exp and softmax layers is bit-identical to it
-since oracle-20261124-406069a06 (`test_lean_nn_evaluate`). CORALean has float models of the activations and of
-`neuralNetwork.backwardBound`, but no op for the gradient passes or the forms, so their rows are
-oracle debt.
+since oracle-20261124-406069a06 (`test_lean_nn_evaluate`). The gradient passes and the forms are served
+since oracle-20261124-0322eafde (CORALean !978, `test_lean_nn_forms` bit for bit) on chains of dense ReLU
+and identity layers: `neuralNetwork.propagateBounds` (`IntervalChain.fwd` from layer i's ReLU to the next
+one, met with its stored bounds), `neuralNetwork.backpropIntervalBatch` and `neuralNetwork.backprop`
+(`IntervalChain.backprop`, over a box and at a point), `neuralNetwork.sensitivity`
+(`IntervalChain.sensitivity`: `NeuralNetwork::sensitivity` now runs in reverse, J = I then J diag(a_k'(z_k))
+W_k from the output back, as CORA's `calcSensitivity`) and `neuralNetwork.normalForm`
+(`WeightNetwork.normalForm`, W_k W and W_k b + b_k). A zero of a sum of zero products may differ in its
+sign; the test compares x + 0. Not served: sigmoid and tanh in the passes (the enclosure's two ends are
+two formulas), `computeFGSMAttack` (the softmax loss derivative in CORA.cpp's order).
 
-| op (proposed) | request fields | reply |
+| op | request fields | reply |
 |---|---|---|
-| `neuralNetwork.backprop` | `layers`, `x`, `gradOut` | the input gradient |
-| `neuralNetwork.backpropIntervalBatch` | `layers`, `l`, `u`, `gl`, `gu` | `gl`, `gu` (Gowal et al. 2019) |
-| `neuralNetwork.propagateBounds` | `layers`, per-layer `l`, `u`, `i` | the bounds per layer |
-| `neuralNetwork.normalForm` | `layers` | the merged layers |
+| `neuralNetwork.backprop` | `layers` ({W, b, activation}), `x`, `g` | `g`, a box |
+| `neuralNetwork.backpropIntervalBatch` | `layers`, `l`, `u`, `gl`, `gu` | `gl`, `gu`, boxes (Gowal et al. 2019) |
+| `neuralNetwork.propagateBounds` | `layers`, `bounds` ({l, u} or null per layer), `i` | `bounds` |
+| `neuralNetwork.sensitivity` | `layers`, `x` | `J`, a box |
+| `neuralNetwork.normalForm` | `layers` ({kind: linear, W, b} or an activation's name), `n` | the fused `layers` |
 
 ## NN softplus, root, inverse square root, group sort and the reduction (PR "nn/port-rest-3", batch 3)
 
@@ -626,15 +633,16 @@ f'(l) (softplus) or f'(u) (root, inv_sqrt_root), or the 20-point regression slop
 f(x) - m x over the ends and its closed-form inner extremum at f'(x) = m (softplus: -(m log m) - t log t,
 t = 1 - m; root: 1 / (4 m); inv_sqrt_root: (3/2) c, c = (-2 m)^(1/3)), not f at a rounded stationary point.
 
-`group_sort` (points and backprop only, as CORA), `composite_layer`, `reduce_generators`, `merge_buckets`,
-`find_region_polys` and `compute_reduced_network` have no op in the oracle, so they are tested by properties:
-a sort is a permutation whose gradient matches finite differences; the reduced network's output set contains
-the original outputs.
+`group_sort` (points and backprop only, as CORA), `reduce_generators` and `merge_buckets` are served since
+oracle-20261124-0322eafde (`nnLayer.groupSort`, `groupSortFloat`; `nnLayer.generatorReduction`,
+`Zonotope.reduceShortest`: the max_gens - n shortest generators by |g|_1 in CORA.cpp's order, ties by index,
+the rest a box; `nnLayer.mergeBuckets`, `ActivationKind.mergeValues`; `test_lean_nn_forms` bit for bit).
+`composite_layer` and the port's `max_pool2d_layer` run through `neuralNetwork.evaluateGraph`
+(`test_lean_nn_graph` bit for bit). `find_region_polys` and `compute_reduced_network` have no op in the
+oracle, so they are tested by properties: the reduced network's output set contains the original outputs.
 
 | op (proposed) | request fields | reply |
 |---|---|---|
-| `nnLayer.evaluate`, kind `groupSort` | `groupSize`, `x` | the sorted points (stable, padded with inf) |
-| `nnLayer.evaluateZonotopeBatch`, kind `generatorReduction` | `maxGens`, `c`, `G` | `c`, `G` (CORA keeps the shortest generators) |
 | `neuralNetwork.computeReducedNetwork` | `layers`, `Z`, `bucketType`, `bucketTol`, `reductionRate` | reduced layers, error intervals, output set |
 
 ## NN on Taylor models and constrained zonotopes (PR "nn/port-rest-4", batch 4)

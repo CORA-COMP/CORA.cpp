@@ -1,14 +1,15 @@
 // test_neural_network_sensitivity - the Jacobian of a network at a point
 //
-// The sensitivity of a network is the Jacobian that central differences give, and a ReLU network
-// has the slopes of its active pieces.
+// The sensitivity of a network is the Jacobian that central differences give, a ReLU network
+// has the slopes of its active pieces, and the rows are backprop's gradients of the unit outputs
+// (the reverse pass of both).
 //
 // CORA: nn/@neuralNetwork/calcSensitivity.m
 // PROPERTY: nn/@neuralNetwork/calcSensitivity.m
 // CORA authors: Tobias Ladner, Lukas Koller
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       11-November-2026
-// Last update:   ---
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/rng.h"
@@ -63,6 +64,27 @@ void the_sensitivity_is_the_jacobian(const std::string &b) {
           b + ": the ReLU has derivative 1 where active, 0 elsewhere");
 }
 
+/// Row o of the Jacobian is the input gradient that backprop gives for the unit gradient e_o.
+void the_rows_are_the_gradients(const std::string &b) {
+    cora::Rng rng(5);
+    const auto random = [&](int64_t rows, int64_t cols) {
+        std::vector<double> data(std::size_t(rows * cols));
+        rng.normal(data.data(), data.size(), 1.0);
+        return Tensor::from_data(data, {rows, cols});
+    };
+    const NeuralNetwork nn({{random(6, 4), random(6, 1).squeeze(-1)},
+                            {random(5, 6), random(5, 1).squeeze(-1)},
+                            {random(3, 5), random(3, 1).squeeze(-1)}},
+                           {Activation::relu, Activation::sigmoid, Activation::identity});
+    const Tensor x = random(1, 4);
+    // the unit gradients as the rows of a batch of three copies of x
+    const Tensor rows = nn.backprop(Tensor::concat({x, x, x}, 0), Tensor::eye(3));
+    check(test::close(nn.sensitivity(x.squeeze(0)), rows, 1e-12),
+          b + ": the rows of the Jacobian are backprop's gradients of the unit outputs");
+}
+
+// The checks --------------------------------------------------------------------------------------
+
 /// A point of another dimension is refused, and the Jacobian is the same with the checks off.
 void checks_and_their_switch() {
     const NeuralNetwork net({{Tensor({{1.0, -1.0}, {0.5, 2.0}}), Tensor({0.0, 1.0})}},
@@ -114,6 +136,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         the_sensitivity_is_the_jacobian(b);
         the_derivatives_match_differences(b);
+        the_rows_are_the_gradients(b);
     });
     checks_and_their_switch();
     return test::finish("neuralNetwork sensitivity");

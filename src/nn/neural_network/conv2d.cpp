@@ -31,7 +31,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       22-November-2026
-// Last update:   23-November-2026
+// Last update:   24-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -323,11 +323,11 @@ NeuralNetwork::Layer NeuralNetwork::Layer::to(DType dtype, const std::string &de
     return layer;
 }
 
-Tensor NeuralNetwork::Layer::dense() const {
+CORA_FROM_NUMBERS Tensor NeuralNetwork::Layer::dense() const {
     detail::Entry entry;
     if (!plan) return W;
-    // the image of the unit vectors, column by column
-    const Tensor eye = b.eye_like(inputs());
+    // the image of the unit vectors, column by column (a residual's map has no bias)
+    const Tensor eye = b.defined() ? b.eye_like(inputs()) : Tensor::eye(inputs());
     return rows(eye).matrix_transpose();
 }
 

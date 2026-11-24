@@ -128,6 +128,40 @@ Json aux_graph_layer(const NnGraphLayer &layer, std::string &dtype) {
     return j;
 }
 
+// The name of an activation on the wire of the forms and passes.
+std::string aux_activation_name(Activation a) {
+    switch (a) {
+    case Activation::identity:
+        return "identity";
+    case Activation::relu:
+        return "relu";
+    case Activation::sigmoid:
+        return "sigmoid";
+    case Activation::tanh:
+        return "tanh";
+    default:
+        CORA_FAIL(Error::not_supported, "lean: the forms and passes take identity, relu, sigmoid "
+                                        "and tanh activations");
+    }
+}
+
+// A chain of dense layers as the wire's list {W, b, activation}, and the dtype of its weights.
+Json aux_chain(const NeuralNetwork &nn, std::string &dtype) {
+    if (!nn.is_dense() || !nn.is_chain())
+        CORA_FAIL(Error::not_supported, "lean: the forms and passes take a chain of dense layers");
+    Json list = Json::array();
+    for (std::size_t k = 0; k < nn.layers().size(); ++k) {
+        const Tensor W(nn.layers()[k].W);
+        dtype = W.dtype();
+        Json j = Json::object();
+        j.set("W", W.to_json())
+            .set("b", aux_column(nn.layers()[k].b).to_json())
+            .set("activation", aux_activation_name(nn.activations()[k]));
+        list.push(std::move(j));
+    }
+    return list;
+}
+
 } // namespace
 
 
@@ -437,6 +471,108 @@ Zonotope evaluate_graph(const std::vector<NnGraphLayer> &layers, const Zonotope 
     for (const NnGraphLayer &layer : layers) list.push(aux_graph_layer(layer, dtype));
     return ask("neuralNetwork.evaluateGraph", {{"layers", Wire(list, dtype)}, {"Z", Z}})
         .get<Zonotope>("Z");
+}
+
+// The forms ---------------------------------------------------------------------------------------
+
+Tensor merge_buckets(const std::string &kind) {
+    return ask("nnLayer.mergeBuckets", {{"kind", kind}}).get<Tensor>("buckets");
+}
+
+Tensor group_sort(const cora::Tensor &x, int64_t group) {
+    return ask("nnLayer.groupSort", {{"groupSize", group}, {"x", aux_column(x)}}).get<Tensor>("y");
+}
+
+Zonotope generator_reduction(const Zonotope &Z, int64_t max_gens) {
+    return ask("nnLayer.generatorReduction", {{"maxGens", max_gens}, {"Z", Z}}).get<Zonotope>("Z");
+}
+
+// the layers as linear layers, each followed by its activation unless the identity
+std::vector<NnDense> normal_form(const NeuralNetwork &nn) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    Json list = Json::array();
+    for (const Json &layer : chain.items) {
+        Json j = Json::object();
+        j.set("kind", "linear").set("W", layer.at("W")).set("b", layer.at("b"));
+        list.push(std::move(j));
+        if (layer.at("activation").text != "identity")
+            list.push(Json::object().set("kind", layer.at("activation")));
+    }
+    const Reply r =
+        ask("neuralNetwork.normalForm", {{"layers", Wire(list, dtype)}, {"n", nn.input_dim()}});
+    // an activation names the layer before it
+    std::vector<NnDense> out;
+    for (const Reply &layer : r.list("layers")) {
+        const std::string kind = layer.get<std::string>("kind");
+        if (kind == "linear")
+            out.push_back({layer.get<Interval>("W"), layer.get<Interval>("b"), "identity"});
+        else if (!out.empty())
+            out.back().activation = kind;
+    }
+    return out;
+}
+
+// The passes of a ReLU chain ----------------------------------------------------------------------
+
+// the bounds as the wire's {l, u} columns or null, and back as vectors
+std::vector<NnBounds> propagate_bounds(const NeuralNetwork &nn, const std::vector<NnBounds> &bounds,
+                                       int64_t i) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    // a layer without bounds is null on the wire
+    Json list = Json::array();
+    for (const NnBounds &b : bounds) {
+        if (!b.l.defined()) {
+            list.push(Json());
+            continue;
+        }
+        list.push(
+            Json::object().set("l", aux_column(b.l).to_json()).set("u", aux_column(b.u).to_json()));
+    }
+    const Reply r = ask("neuralNetwork.propagateBounds",
+                        {{"layers", Wire(chain, dtype)}, {"bounds", Wire(list, dtype)}, {"i", i}});
+    // a null reply is a layer without bounds (undefined tensors)
+    std::vector<NnBounds> out;
+    for (const Reply &b : r.list("bounds")) {
+        if (b.is_null()) {
+            out.push_back({});
+            continue;
+        }
+        const cora::Tensor l = b.get<Tensor>("l").gather(), u = b.get<Tensor>("u").gather();
+        out.push_back({l.reshape({l.numel()}), u.reshape({u.numel()})});
+    }
+    return out;
+}
+
+// the gradient's bounds over a box, each a box of the oracle
+std::pair<Interval, Interval> backprop_interval(const NeuralNetwork &nn, const cora::Tensor &l,
+                                                const cora::Tensor &u, const cora::Tensor &gl,
+                                                const cora::Tensor &gu) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    const Reply r = ask("neuralNetwork.backpropIntervalBatch", {{"layers", Wire(chain, dtype)},
+                                                                {"l", aux_column(l)},
+                                                                {"u", aux_column(u)},
+                                                                {"gl", aux_column(gl)},
+                                                                {"gu", aux_column(gu)}});
+    return {r.get<Interval>("gl"), r.get<Interval>("gu")};
+}
+
+// the gradient and the Jacobian at a point
+Interval backprop(const NeuralNetwork &nn, const cora::Tensor &x, const cora::Tensor &g) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    return ask("neuralNetwork.backprop",
+               {{"layers", Wire(chain, dtype)}, {"x", aux_column(x)}, {"g", aux_column(g)}})
+        .get<Interval>("g");
+}
+
+Interval sensitivity(const NeuralNetwork &nn, const cora::Tensor &x) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    return ask("neuralNetwork.sensitivity", {{"layers", Wire(chain, dtype)}, {"x", aux_column(x)}})
+        .get<Interval>("J");
 }
 
 } // namespace cora::lean

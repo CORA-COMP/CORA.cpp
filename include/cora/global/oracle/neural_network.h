@@ -10,7 +10,9 @@
 //             nnLayer.relaxation, the line of an activation over boxes; nn_evaluate_taylm the
 //             layers on Taylor models (neuralNetwork.evaluateTaylm); neuralNetwork.evaluateGraph:
 //             a graph network (sources, residuals) in the order of CORA.cpp's ZonoNet::forward,
-//             the radii of the interval center as the error box
+//             the radii of the interval center as the error box; the forms (merge buckets, group
+//             sort, generator reduction, normal form) and the passes of a ReLU chain (propagate
+//             bounds, the gradients at a box and at a point, the sensitivity)
 // See also:   lean/request.h, cora/nn/neural_network/neural_network.h
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
@@ -20,6 +22,7 @@
 
 #pragma once
 
+#include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/poly_zonotope.h"
 #include "cora/global/oracle/taylm.h"
 #include "cora/global/oracle/zonotope.h"
@@ -27,6 +30,7 @@
 
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -171,6 +175,45 @@ struct NnGraphLayer {
 /// The graph network on the zonotope (neuralNetwork.evaluateGraph): the last layer's output, the
 /// radii of its interval center in the error box.
 Zonotope evaluate_graph(const std::vector<NnGraphLayer> &layers, const Zonotope &Z);
+
+// The forms and passes ----------------------------------------------------------------------------
+
+/// nnLayer.mergeBuckets: the finite limits of the activation "relu", "sigmoid" or "tanh".
+Tensor merge_buckets(const std::string &kind);
+
+/// nnLayer.groupSort: the point x (n) with each group of `group` consecutive entries ascending.
+Tensor group_sort(const cora::Tensor &x, int64_t group);
+
+/// nnLayer.generatorReduction: the max_gens - n shortest generators by |g|_1 kept (ties by index),
+/// the others summed into a box.
+Zonotope generator_reduction(const Zonotope &Z, int64_t max_gens);
+
+/// A layer of the oracle's normal form: W and b as boxes, and the name of its activation.
+struct NnDense {
+    Interval W, b;
+    std::string activation;
+};
+
+/// neuralNetwork.normalForm of a chain of dense layers: the linear layers up to each activation
+/// fused, W_k W and W_k b + b_k (activations "relu", "sigmoid", "tanh", "identity" at the end).
+std::vector<NnDense> normal_form(const NeuralNetwork &nn);
+
+/// The passes below take a chain of dense layers with ReLU or identity activations. The bounds of
+/// propagateBounds are those of each layer's outputs ((n), undefined: none), as NeuralNetwork's.
+std::vector<NnBounds> propagate_bounds(const NeuralNetwork &nn, const std::vector<NnBounds> &bounds,
+                                       int64_t i);
+
+/// neuralNetwork.backpropIntervalBatch: the boxes of the input gradient's lower and upper bound
+/// over the box [l, u] (in) from the bounds [gl, gu] (out) at the output.
+std::pair<Interval, Interval> backprop_interval(const NeuralNetwork &nn, const cora::Tensor &l,
+                                                const cora::Tensor &u, const cora::Tensor &gl,
+                                                const cora::Tensor &gu);
+
+/// neuralNetwork.backprop: the input gradient at the point x (in) of the output gradient g (out).
+Interval backprop(const NeuralNetwork &nn, const cora::Tensor &x, const cora::Tensor &g);
+
+/// neuralNetwork.sensitivity: the box of the Jacobian (out, in) at the point x (in).
+Interval sensitivity(const NeuralNetwork &nn, const cora::Tensor &x);
 
 } // namespace cora::lean
 
