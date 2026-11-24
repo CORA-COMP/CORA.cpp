@@ -163,45 +163,8 @@ Range aux_tan(const Range &a) {
 
 /// The range of an elementary function over the range a, as the box operation of CORA's interval
 /// (so the domain checks, the monotone branches and the oracle-checked rounding are its).
-Range aux_interval_function(Op op, const Range &a) {
-    const Interval I(a.lo, a.hi);
-    Interval R = I;
-    switch (op) {
-    case Op::log:
-        R = I.log();
-        break;
-    // the inverse trigonometric functions
-    case Op::asin:
-        R = I.asin();
-        break;
-    case Op::acos:
-        R = I.acos();
-        break;
-    case Op::atan:
-        R = I.atan();
-        break;
-    // the hyperbolic functions and their inverses
-    case Op::sinh:
-        R = I.sinh();
-        break;
-    // cosh falls to 1 where the range holds 0; the interval operation knows
-    case Op::cosh:
-        R = I.cosh();
-        break;
-    case Op::tanh:
-        R = I.tanh();
-        break;
-    case Op::asinh:
-        R = I.asinh();
-        break;
-    case Op::acosh:
-        R = I.acosh();
-        break;
-    // atanh, the last of the functions
-    default:
-        R = I.atanh();
-        break;
-    }
+Range aux_interval_function(Interval (Interval::*function)() const, const Range &a) {
+    const Interval R = (Interval(a.lo, a.hi).*function)();
     return {R.inf(), R.sup()};
 }
 
@@ -288,18 +251,27 @@ Range aux_apply(const Expr::Node &n, const Range &a, const Range &b) {
     case Op::exp:
         return {a.lo.exp(), a.hi.exp()};
     case Op::log:
+        return aux_interval_function(&Interval::log, a);
     // the inverse trigonometric functions
     case Op::asin:
+        return aux_interval_function(&Interval::asin, a);
     case Op::acos:
+        return aux_interval_function(&Interval::acos, a);
     case Op::atan:
+        return aux_interval_function(&Interval::atan, a);
     // the hyperbolic functions and their inverses
     case Op::sinh:
+        return aux_interval_function(&Interval::sinh, a);
     case Op::cosh:
+        return aux_interval_function(&Interval::cosh, a);
     case Op::tanh:
+        return aux_interval_function(&Interval::tanh, a);
     case Op::asinh:
+        return aux_interval_function(&Interval::asinh, a);
     case Op::acosh:
+        return aux_interval_function(&Interval::acosh, a);
     case Op::atanh:
-        return aux_interval_function(n.op, a);
+        return aux_interval_function(&Interval::atanh, a);
     default:
         break;
     }
