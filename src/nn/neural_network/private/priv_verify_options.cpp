@@ -138,6 +138,10 @@ void NnVerifyOptions::validate() const {
     aux_at_least("optimize_gap", optimize_gap, 0);
     aux_at_least("dual_iterations", double(dual_iterations), 0);
     aux_at_least("dual_relu_rows", double(dual_relu_rows), 0);
+    for (const double w : pgd_sign_windows)
+        if (!(w > 0))
+            CORA_FAIL(Error::wrong_field_value,
+                      "NnVerifyOptions: pgd_sign_windows must be positive");
     if (!(dual_step_size > 0))
         CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: dual_step_size must be positive");
     if (!(alpha_step_size > 0))
@@ -234,8 +238,12 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.alpha_iterations = 0;
         o.refinement_min_move = 0.03;
     }
-    // traffic_signs' binarized networks: the bounds rarely decide, the attack finds more
-    if (name == "traffic_signs_recognition") o.attack_time_share = 0.9;
+    // traffic_signs' binarized nets: more attack, alpha-beta-CROWN's sign windows
+    if (name == "traffic_signs_recognition") {
+        o.attack_time_share = 0.9;
+        o.attack_first_rounds = 1000000; // the share, not three rounds
+        o.pgd_sign_windows = {0.1, 5.0};
+    }
     // nn4sys: CORA's bounding of lindex' many small cases, the attack only briefly (dev seed 1001)
     if (name == "nn4sys") {
         o.bounding_method = "conzonotope";

@@ -1050,6 +1050,68 @@ void targeted_attacks(const std::string &b) {
           b + ": targeted PGD runs its restarts per polytope");
 }
 
+/// A sign network's straight-through gradient lives on |z| <= pgd_sign_windows' window: none where
+/// no pre-activation is that close to 0, all of them in a wide one; the rounds take the windows in
+/// turn.
+void sign_windows(const std::string &b) {
+    Rng rng(8);
+    const NeuralNetwork nn = aux_network(rng, {3, 8, 2}, Activation::sign);
+    NnVerifyOptions o = aux_options("conzonotope", b);
+    o.pgd_sign_windows = {1e-9, 1e9};
+    NnProblem p(nn, aux_below(3, 2, -3.0, 3.0, -1000.0), o, ConfirmFn{});
+    const Tensor x = (p.lo + p.hi) * 0.5 + 0.7;
+    const double narrow =
+        p.objective_gradient(x, p.search_case, nullptr, nullptr, 1e-9).abs().sum().data()[0];
+    const double wide =
+        p.objective_gradient(x, p.search_case, nullptr, nullptr, 1e9).abs().sum().data()[0];
+    check(narrow == 0.0 && wide > 0.0, b + ": the sign's gradient window");
+    // sign(sign(x) + 0.1) is merged (a factor 2 is no merge: its outer inputs lie beyond window 1)
+    Rng other(9);
+    std::vector<double> w1(24), eye(64, 0.0), twice(64, 0.0);
+    other.normal(w1.data(), w1.size(), 1.0);
+    for (std::size_t i = 0; i < 8; ++i) {
+        eye[i * 9] = 1.0;
+        twice[i * 9] = 2.0;
+    }
+    // the three layers, the middle one the identity or twice it, with the bias 0.1
+    std::vector<double> w3(16);
+    other.normal(w3.data(), w3.size(), 1.0);
+    const auto chain = [&](const std::vector<double> &mid) {
+        return NeuralNetwork(
+            {{Tensor::from_data(w1, {8, 3}), Tensor::from_data(std::vector<double>(8, 0.3), {8})},
+             {Tensor::from_data(mid, {8, 8}), Tensor::from_data(std::vector<double>(8, 0.1), {8})},
+             {Tensor::from_data(w3, {2, 8}), Tensor::from_data({0.0, 0.0}, {2})}},
+            {Activation::sign, Activation::sign, Activation::identity});
+    };
+    const NeuralNetwork merged = chain(eye), plain = chain(twice);
+    NnProblem pm(merged, aux_below(3, 2, -3.0, 3.0, -1000.0), o, ConfirmFn{});
+    NnProblem pp(plain, aux_below(3, 2, -3.0, 3.0, -1000.0), o, ConfirmFn{});
+    // the gradient's mass at the window 1
+    const auto mass = [&](const NnProblem &prob) {
+        return prob.objective_gradient(x, prob.search_case, nullptr, nullptr, 1.0)
+            .abs()
+            .sum()
+            .data()[0];
+    };
+    check(mass(pm) > 0.0 && mass(pp) == 0.0, b + ": a merged sign passes its outer gradient");
+    // two rounds, the windows in turn: the attack runs on both and finds nothing in an empty set
+    const AttackResult r = make_attack("pgd", o)->run(p, now_seconds() + 10.0, 2);
+    check(r.x.empty() && r.iterations == 2 * o.pgd_steps, b + ": PGD takes a window per round");
+    // an empty list is the default window; a window must be positive
+    o.pgd_sign_windows = {};
+    NnProblem q(nn, aux_below(3, 2, -3.0, 3.0, -1000.0), o, ConfirmFn{});
+    check(make_attack("pgd", o)->run(q, now_seconds() + 10.0, 1).iterations == o.pgd_steps,
+          b + ": no windows: the default one");
+    o.pgd_sign_windows = {0.0};
+    bool failed = false;
+    try {
+        o.validate();
+    } catch (const Error &) {
+        failed = true;
+    }
+    check(failed, b + ": a window must be positive");
+}
+
 /// relu-bab on random ReLU networks over a box: never unsat where a sampled point violates the
 /// property or zonotack confirms a counterexample; unsat where the margin is wide; nodes pruned as
 /// infeasible (Farkas) on some networks.
@@ -1198,6 +1260,7 @@ int main() {
         deadlines(b);
         many_cases(b);
         targeted_attacks(b);
+        sign_windows(b);
         relu_bab_verdicts(b);
     });
     checks_and_their_switch();

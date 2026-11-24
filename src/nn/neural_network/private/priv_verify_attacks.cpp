@@ -70,7 +70,8 @@ class PgdAttack : public Attack {
         : steps_(fgsm ? 1 : o.pgd_steps), restarts_(fgsm ? 1 : o.pgd_restarts),
           rounds_(fgsm ? 1 : -1), min_steps_(fgsm ? 1 : o.pgd_min_steps),
           step_size_(fgsm ? 1.0 : o.pgd_step_size), decay_(o.pgd_decay), seed_(o.seed),
-          targeted_(!fgsm && o.pgd_targeted) {
+          targeted_(!fgsm && o.pgd_targeted),
+          windows_(o.pgd_sign_windows.empty() ? std::vector<double>{1.0} : o.pgd_sign_windows) {
         if (!fgsm)
             for (const double f : o.pgd_decay_at) decay_steps_.insert(int64_t(f * double(steps_)));
     }
@@ -104,13 +105,14 @@ class PgdAttack : public Attack {
             Tensor x = r.lo + Tensor::like(r.lo, u, r.lo.shape()).multiply(r.hi - r.lo);
             if (round == 0) x = Tensor::where(r.is_first, r.center, x);
             Tensor alpha = r.radius * step_size_;
+            const double window = windows_[std::size_t(round) % windows_.size()];
             for (int64_t step = 0; step < steps_; ++step) {
                 if (decay_steps_.count(step)) alpha = alpha * decay_;
                 // one sign step on the objective, projected back into the box
                 const double started = now_seconds();
                 Tensor loss;
-                const Tensor g =
-                    problem.objective_gradient(x, r.cases, &loss, targeted_ ? &r.targets : nullptr);
+                const Tensor g = problem.objective_gradient(
+                    x, r.cases, &loss, targeted_ ? &r.targets : nullptr, window);
                 const Tensor before = x;
                 x = priv_sign_step(x, g, alpha).maximum(r.lo).minimum(r.hi);
                 ++result.iterations;
@@ -189,6 +191,7 @@ class PgdAttack : public Attack {
     double step_size_, decay_;
     uint64_t seed_;
     bool targeted_ = false;
+    std::vector<double> windows_;
     std::set<int64_t> decay_steps_;
 };
 

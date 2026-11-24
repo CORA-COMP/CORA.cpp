@@ -117,6 +117,9 @@ void options_and_strategies() {
     check(vnncomp_options("traffic_signs_recognition_2023").attack_time_share == 0.9 &&
               ours.attack_time_share == cora.attack_time_share,
           "traffic_signs' preset: nine tenths of the time for the attack");
+    check(vnncomp_options("traffic_signs_recognition_2023").pgd_sign_windows.size() == 2 &&
+              ours.pgd_sign_windows == std::vector<double>{1.0},
+          "traffic_signs' preset: the tight and the loose sign window");
     // nn4sys: lindex's many cases
     const NnVerifyOptions sys = vnncomp_options("nn4sys");
     check(sys.bounding_method == "conzonotope" && !sys.backward_bound &&
