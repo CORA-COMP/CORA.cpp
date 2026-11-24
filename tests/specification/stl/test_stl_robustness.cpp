@@ -70,7 +70,7 @@ double aux_distance_reference(const std::vector<std::vector<double>> &A,
 /// The robustness of formulas on traces, by the values of CORA.
 void run(const std::string &b) {
     const auto v = StlExpr::variables("x", 2);
-    const StlExpr x1 = v[0], x2 = v[1];
+    const StlExpr &x1 = v[0], &x2 = v[1];
     Tensor x;
     std::vector<double> t;
     aux_trace(x, t);

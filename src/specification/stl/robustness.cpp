@@ -256,8 +256,10 @@ StlTrace aux_resample(const StlTrace &tr) {
     // the samples in increasing time, the first of equal times
     std::vector<std::size_t> order(m);
     for (std::size_t i = 0; i < m; ++i) order[i] = i;
-    std::stable_sort(order.begin(), order.end(),
-                     [&](std::size_t a, std::size_t b) { return tr.t[a] < tr.t[b]; });
+    // equal times keep their order by the index as a second key
+    std::sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) {
+        return tr.t[a] != tr.t[b] ? tr.t[a] < tr.t[b] : a < b;
+    });
     std::vector<std::size_t> uniq;
     for (const std::size_t i : order)
         if (uniq.empty() || tr.t[i] != tr.t[uniq.back()]) uniq.push_back(i);
