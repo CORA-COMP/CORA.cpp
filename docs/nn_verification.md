@@ -139,6 +139,31 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   by chunk of cases of at most 256 rows (`NnProblem::subproblem`; unsat when every chunk is).
   lindex_60000 took 44 GiB and ran past its deadline; now 1.2 GiB within it, and lindex_10000 is
   unsat in 17 s with `conzonotope` bounding.
+- **Fixed inputs (nn4sys' mscn).** mscn multiplies each set's features by a mask of the input and
+  divides their sum by the mask's sum: a product of two values. A property that fixes the masks
+  (`lo = hi`) makes both linear: `fold_fixed_inputs` makes every value that reads only fixed inputs
+  a constant (computed at the box's center in float64), and the folded graph equals the network on
+  every point of the box. When all cases fix an input to one value, one network takes them all.
+  mscn's cases fix the masks to other values in other cases, so the loader groups the cases by
+  their values of the inputs that the products need fixed (`product_inputs`: a Div's divisor, the
+  factor of a Mul or MatMul that reads fewer inputs; mscn's 11 or 22 mask entries) and folds each
+  group apart, at most 32 groups (`MAX_FOLD_GROUPS`; mscn has 10 to 12). Each folded network
+  equals the network on the boxes of its group's cases (each input it takes as a constant has that
+  value in every case of the group), so the property holds iff it holds for each group on its
+  network: verify runs the groups one after the other, fewest cases first, each an equal share of
+  the time left (what an easy group leaves goes to the larger ones), sat as soon as one is (the
+  counterexample is a point of the original input, checked on the original graph), unsat only if
+  every group is. Each case leaves one to three of the 308 inputs free, so verify gives input
+  generators to at most as many inputs as a case leaves free (`num_init_gens`; a fixed input's
+  generator is zero, and the heuristic ranks it last), and a property folded in groups takes 10
+  error slots per layer and batches of up to 4096 boxes (`FOLDED_PARTS`): each box is cheap, and
+  there are many. mscn's outputs come within 4e-5 of the property's bounds (cardinality_0_3800:
+  0.67690 against 0.67695 at a corner of a case's box), below the default `verified_margin` of
+  1e-4, so no box there could ever verify; onnxruntime's float32 output is within 2.4e-7 of the
+  float64 graph on 3000 sampled points, and the nn4sys preset takes `verified_margin` 1e-5. Then
+  three of the four mscn instances of seed 213 are unsat (27, 50 and 117 s of 50, 100 and 160);
+  cardinality_1_240 needs about 19 s of verification for its 10 groups (about 1 s each to start)
+  and has 14 s of its 20.
 - **ReLU pairs (relusplitter).** ReluSplitter inserts before the first ReLU layer a layer of
   pairs `h_r = relu(t)`, `h_s = relu(-t)` with `t = W1[r] x + b1[r]` and `W1[s] = -W1[r]`,
   `b1[s] = -b1[r]`, which the next layer reads through the columns `c = W2[:, r]` and

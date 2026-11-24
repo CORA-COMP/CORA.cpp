@@ -15,18 +15,20 @@ See also: cora.onnx_network, cora.vnnlib, cora.counterexample, docs/nn_verificat
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   23-November-2026
+Last update:   24-November-2026
 Reviewed:      ---
 """
 
 from dataclasses import dataclass, field
+
+import time
 
 import numpy as np
 import torch
 
 from . import counterexample
 from .onnx_network import OnnxNetwork
-from .vnnlib import parse_vnnlib, read_text
+from .vnnlib import Property, parse_vnnlib, read_text
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -54,6 +56,8 @@ class Instance:
     prop: object
     vnnlib_text: str
     backend: str = "eigen"
+    parts: list = None  # [(network, case indices)] of a property folded in groups of cases
+    merged_relu_pairs: int = 0  # the ReLU pairs folded into linear maps (OnnxNetwork.layers)
 
 
 def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
@@ -65,14 +69,15 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     # the network first: one the C++ verifier cannot take is unknown without reading the property
     net = OnnxNetwork.load(onnx_path)
     lowered, why = net.layers(drop_output_softmax=True)
+    groups = [(None, net, lowered)]
     if not lowered and any(r in why for r in FOLDABLE):
-        # unless the property fixes inputs whose values make the graph lower (nn4sys' masks)
-        net, lowered = _folded(net, vnnlib_path)
-    if not lowered:
+        # unless the property fixes inputs whose values make the graph lower (nn4sys' masks), in
+        # all its cases at once or in groups of cases
+        groups = _folded(net, vnnlib_path) or groups
+    if not groups[0][2]:
         return Instance(str(onnx_path), None, why, None, "")
-    layers, activations = lowered
     if backend == "auto":
-        backend = choose_backend(layers, device, activations)
+        backend = choose_backend(groups[0][2][0], device, groups[0][2][1])
     convert = (lambda t: t.to(device)) if backend == "torch" else (lambda t: t.numpy())
 
     def one(layer):
@@ -93,18 +98,21 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
         except (ValueError, TypeError, RuntimeError, NotImplementedError) as error:
             return None, f"the C++ network refuses a layer: {error}"
 
-    network, why = build(layers, activations)
-    if network is None:
-        return Instance(str(onnx_path), None, why, None, "")
-    text = read_text(vnnlib_path)
-    prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
-    if net.dropped_softmax and not _compares_outputs(prop):
-        # the probabilities themselves: the output Softmax as exp and 1 / sum
-        lowered, why = net.layers()
-        network, why = build(*lowered) if lowered else (None, why)
+    text, prop, parts = "", None, []
+    for cases, part, lowered in groups:
+        network, why = build(*lowered)
+        if network is not None and prop is None:
+            text = read_text(vnnlib_path)
+            prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
+        if network is not None and part.dropped_softmax and not _compares_outputs(prop):
+            # the probabilities themselves: the output Softmax as exp and 1 / sum
+            lowered, why = part.layers()
+            network, why = build(*lowered) if lowered else (None, why)
         if network is None:
             return Instance(str(onnx_path), None, why, None, "")
-    return Instance(str(onnx_path), network, "", prop, text, backend)
+        parts.append((network, cases))
+    return Instance(str(onnx_path), parts[0][0], "", prop, text, backend,
+                    parts if len(parts) > 1 else None, getattr(net, "merged_relu_pairs", 0))
 
 
 def choose_backend(layers, device="cpu", activations=()):
@@ -130,17 +138,27 @@ def verify(instance, timeout, options=None):
     if instance.network is None:
         return VerifyResult("unknown", stats={"bounding": f"none ({instance.why})"})
     options = options or cora.NnVerifyOptions()
-    case, A, b = instance.prop.stacked()
-    lo = np.stack([c.lo for c in instance.prop.cases])
-    hi = np.stack([c.hi for c in instance.prop.cases])
-    confirm = _Confirm(instance)
-    out = instance.network.verify(lo, hi, [int(k) for k in case], A, b, timeout, options, confirm)
-    stats = dict(out["stats"], bounding=options.bounding_method)
-    if out["note"]:
-        stats["bounding"] = f"none ({out['note']})"
-    if out["status"] != "sat":
-        return VerifyResult(out["status"], stats=stats)
-    x, y = np.asarray(out["x"], dtype=np.float32), np.asarray(out["y"], dtype=np.float32)
+    # an input generator only for as many inputs as a case leaves free (nn4sys' mscn fixes all
+    # but one to three of 308): the generator of a fixed input is zero
+    free = max(int(np.count_nonzero(c.hi > c.lo)) for c in instance.prop.cases)
+    changes = {"num_init_gens": min(options.num_init_gens, float(max(free, 1)))}
+    if instance.parts:
+        # a property folded in groups (mscn): many small boxes, each cheap (FOLDED_PARTS)
+        changes["num_approx_err"] = min(options.num_approx_err, FOLDED_PARTS["num_approx_err"])
+        changes["mini_batch_size"] = max(options.mini_batch_size, FOLDED_PARTS["mini_batch_size"])
+    before = {name: getattr(options, name) for name in changes}
+    for name, value in changes.items():
+        setattr(options, name, value)
+    try:
+        status, stats, x, y = _verify_parts(instance, timeout, options)
+    finally:
+        for name, value in before.items():
+            setattr(options, name, value)
+    if instance.merged_relu_pairs:
+        stats["merged_relu_pairs"] = instance.merged_relu_pairs
+    if status != "sat":
+        return VerifyResult(status, stats=stats)
+    x, y = np.asarray(x, dtype=np.float32), np.asarray(y, dtype=np.float32)
     text = counterexample.write_counterexample(x, y, instance.prop)
     return VerifyResult("sat", x, y, text, stats)
 
@@ -148,27 +166,110 @@ def verify(instance, timeout, options=None):
 # -----------------------------------------  AUXILIARY  ------------------------------------------ #
 
 
+def _verify_parts(instance, timeout, options):
+    """(status, stats, x, y) of C++'s verify on each part of the instance: the parts of fewer
+    cases first, each an equal share of the time left (the time an easy part leaves goes to the
+    later, larger ones); sat as soon as one part is, unsat only if every part is."""
+    confirm = _Confirm(instance)
+    parts = sorted(instance.parts or [(instance.network, None)],
+                   key=lambda p: 0 if p[1] is None else len(p[1]))
+    deadline = time.monotonic() + timeout
+    status, stats, note, x, y = "unsat", {}, "", None, None
+    for k, (network, cases) in enumerate(parts):
+        share = max(0.0, deadline - time.monotonic()) / (len(parts) - k)
+        out = _verify_cases(instance.prop, network, cases, share, options, confirm)
+        for key, value in out["stats"].items():
+            stats[key] = _joined(key, stats.get(key), value)
+        note = out["note"] or note
+        stats["parts_unsat"] = stats.get("parts_unsat", 0) + (out["status"] == "unsat")
+        if out["status"] == "sat":
+            status, x, y = "sat", out["x"], out["y"]
+            break
+        if out["status"] != "unsat":
+            status = out["status"]
+    stats["bounding"] = f"none ({note})" if note else options.bounding_method
+    if len(parts) > 1:
+        stats["parts"] = len(parts)
+    else:
+        stats.pop("parts_unsat")
+    return status, stats, x, y
+
+
+def _joined(key, before, value):
+    """A statistic of the parts so far and of one more: the least margin, the largest peak or
+    budget or batch, else the sum of counts and seconds."""
+    if before is None or not isinstance(value, (int, float)) or not isinstance(before, (int, float)):
+        return value
+    if "margin" in key:
+        return min(before, value)
+    if any(word in key for word in ("peak", "budget", "batch")):
+        return max(before, value)
+    return before + value
+
+
+def _verify_cases(prop, network, cases, timeout, options, confirm):
+    """C++'s verify of the network on the property's cases (all of them for None)."""
+    if cases is not None:
+        prop = Property(prop.version, prop.num_inputs, prop.num_outputs,
+                        [prop.cases[k] for k in cases], prop.query)
+    case, A, b = prop.stacked()
+    lo = np.stack([c.lo for c in prop.cases])
+    hi = np.stack([c.hi for c in prop.cases])
+    return network.verify(lo, hi, [int(k) for k in case], A, b, timeout, options, confirm)
+
+
 FOLDABLE = ("of two values", "Div by a value")  # refusals that fixed inputs may lift
+# a property folded in groups: 10 error slots per layer (of up to 768 neurons) and batches of up
+# to 4096 boxes; mscn_128d's 3800 cases unsat in 27 s against unknown at 50 s with all slots and
+# 1024 (each box 1 to 3 free inputs); pensieve_big (one group) needs its slots: unknown at 59 s
+FOLDED_PARTS = {"num_approx_err": 10, "mini_batch_size": 4096}
+MAX_FOLD_GROUPS = 32  # groups of cases folded apart at most (mscn: 10 to 12 masks, 0.7 s each)
 
 
 def _folded(net, vnnlib_path):
-    """(the network with the inputs the property fixes as constants, its lowering), when every case
-    fixes them to the same values and that lowers; else (net, None). The two agree on every box of
-    the property."""
+    """The groups [(case indices or None for all, the network with the inputs that the group's
+    cases fix to the same values as constants, its lowering)] when each lowers; else None. Each
+    network agrees with net on every box of its cases. All cases form one group when that lowers;
+    else the cases go in groups by their values of the inputs that make the products linear
+    (OnnxNetwork.product_inputs: nn4sys' mscn masks), at most MAX_FOLD_GROUPS."""
     try:
         prop = parse_vnnlib(read_text(vnnlib_path), net.num_inputs, net.num_outputs)
     except (ValueError, NotImplementedError):
-        return net, None
+        return None
     lo = np.stack([c.lo for c in prop.cases])
     hi = np.stack([c.hi for c in prop.cases])
-    fixed = (lo == hi).all(0) & (lo == lo[0]).all(0)
-    if not fixed.any():
-        return net, None
-    # the box of all cases, the fixed inputs at their values
-    low, high = np.where(fixed, lo[0], lo.min(0)), np.where(fixed, hi[0], hi.max(0))
-    folded = net.fold_fixed_inputs(low, high)
-    lowered, _ = folded.layers(drop_output_softmax=True)
-    return (folded, lowered) if lowered else (net, None)
+
+    def fold(cases):
+        # the inputs fixed to one value in all the cases as constants, on the box of the cases
+        lo_k, hi_k = lo[cases], hi[cases]
+        fixed = (lo_k == hi_k).all(0) & (lo_k == lo_k[0]).all(0)
+        if not fixed.any():
+            return None, None
+        low = np.where(fixed, lo_k[0], lo_k.min(0))
+        high = np.where(fixed, hi_k[0], hi_k.max(0))
+        folded = net.fold_fixed_inputs(low, high)
+        lowered, _ = folded.layers(drop_output_softmax=True)
+        return folded, lowered
+
+    every = np.arange(len(prop.cases))
+    folded, lowered = fold(every)
+    if lowered:
+        return [(None, folded, lowered)]
+    key = [i for i in net.product_inputs() if (lo[:, i] == hi[:, i]).all()]
+    if not key:
+        return None
+    groups = {}
+    for k, values in enumerate(lo[:, key]):
+        groups.setdefault(values.tobytes(), []).append(k)
+    if not 1 < len(groups) <= MAX_FOLD_GROUPS:
+        return None
+    out = []
+    for cases in groups.values():
+        folded, lowered = fold(np.array(cases))
+        if not lowered:
+            return None
+        out.append((cases, folded, lowered))
+    return out
 
 
 def _compares_outputs(prop):

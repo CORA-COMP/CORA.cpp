@@ -141,6 +141,57 @@ class OnnxNetwork:
         other.nodes, other.constants = nodes, constants
         return other
 
+    def product_inputs(self):
+        """The flat input entries whose values make each product of two values that depend on
+        the input linear once they are fixed (fold_fixed_inputs): the divisor of a Div, the factor
+        of a Mul or MatMul that reads fewer inputs (nn4sys' mscn: the masks). A value moved from the
+        input by data moves alone reads the entries it moves; any other value the union of its
+        arguments'."""
+        net = self.cast(torch.float64, "cpu")
+        n = self.num_inputs
+        # the values at the input 0 (the shapes and constants that the moves take)
+        values = dict(net.constants)
+        values[self.input_name] = torch.zeros(self.input_shape, dtype=torch.float64)
+        # where each entry of a moved value comes from (input index + 1), and what each value reads
+        origin = {self.input_name: torch.arange(1, n + 1, dtype=torch.float64).reshape(
+            self.input_shape)}
+        reads = {self.input_name: np.ones(n, dtype=bool)}
+        needed = np.zeros(n, dtype=bool)
+        for op, ins, outs, attrs in net.nodes:
+            out = net._run(op, [values.get(name) if name else None for name in ins], attrs)
+            for name, v in zip(outs, out if isinstance(out, tuple) else (out,), strict=False):
+                values[name] = v
+            # a shape reads no entry
+            linked = [name for name in ins if name in reads] if op != "Shape" else []
+            if not linked:
+                continue
+            if op in ("Mul", "Div", "MatMul") and len(ins) == 2 and len(set(linked)) == 2:
+                a, b = (reads[name] for name in ins)
+                needed |= b if op == "Div" or b.sum() <= a.sum() else a
+            union = np.logical_or.reduce([reads[name] for name in linked])
+            moved = None
+            data = ins if op == "Concat" else ins[:1]
+            if op in MASK_MOVES and all(name in origin and name in data for name in linked):
+                args = [origin[name] if name in origin else values.get(name) if name else None
+                        for name in ins]
+                if op == "Concat":
+                    args = [a if name in origin else torch.zeros_like(a)
+                            for a, name in zip(args, ins, strict=True)]
+                moved = net._run(op, args, attrs)
+                moved = moved if isinstance(moved, tuple) else (moved,)
+            for k, name in enumerate(outs):
+                if not name:
+                    continue
+                if moved is None:
+                    reads[name] = union
+                    continue
+                origin[name] = moved[k]
+                read = np.zeros(n, dtype=bool)
+                index = moved[k].reshape(-1).round().long()
+                read[(index[index > 0] - 1).numpy()] = True
+                reads[name] = read
+        return np.flatnonzero(needed)
+
     def __call__(self, x):
         """The outputs (B, m) of the rows x (B, n), in the network's dtype."""
         x = x.to(self.device, self.dtype)
