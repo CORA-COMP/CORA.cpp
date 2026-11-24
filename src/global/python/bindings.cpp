@@ -5646,8 +5646,23 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(pgd_step_size, "PGD: the step as a share of the box radius");
     CORA_VERIFY_FIELD(pgd_decay, "PGD: the factor of the step at each decay point");
     CORA_VERIFY_FIELD(pgd_decay_at, "PGD: the decay points as shares of the steps");
+    // the PGD steps, hops and polish
+    CORA_VERIFY_FIELD(pgd_step_sizes,
+                      "PGD: the steps of the restarts as shares of the radius, cycled");
+    CORA_VERIFY_FIELD(pgd_step_decay, "PGD: the factor of the step at every step");
+    CORA_VERIFY_FIELD(pgd_momentum, "PGD: the momentum of the gradient whose sign is the step");
+    CORA_VERIFY_FIELD(pgd_hops, "PGD: the hops of the best points after each round");
+    CORA_VERIFY_FIELD(pgd_hop_steps, "PGD: the steps of a hop");
+    CORA_VERIFY_FIELD(pgd_hop_keep, "PGD: the best points that hop");
+    CORA_VERIFY_FIELD(pgd_hop_jumps, "PGD: the jumps of the hops as shares of the radius, in turn");
+    CORA_VERIFY_FIELD(pgd_polish_steps,
+                      "PGD: the Adam steps polishing the best points near a basin");
+    CORA_VERIFY_FIELD(pgd_polish_step, "PGD: the polish's step as a share of the radius");
+    CORA_VERIFY_FIELD(pgd_polish_every, "PGD: the hops between polishes");
+    CORA_VERIFY_FIELD(pgd_polish_keep, "PGD: the best points that are polished");
     CORA_VERIFY_FIELD(pgd_sign_windows,
                       "PGD: the half-width of the sign's straight-through gradient, per round");
+    CORA_VERIFY_FIELD(root_check_first, "The bounding's first batch before the first attack");
     CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
     CORA_VERIFY_FIELD(pgd_min_steps, "The PGD steps that the shrunk restarts fit in the time");
     CORA_VERIFY_FIELD(seed, "The seed of the restarts");

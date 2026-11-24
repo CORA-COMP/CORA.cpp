@@ -119,6 +119,31 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
         result.stats["attack_iterations"] += double(found.iterations);
         return found;
     };
+    // a long attack first: the bounding's first batch over the root boxes may decide it already
+    if (o.root_check_first && o.falsification_order == "attack-first" && can_bound &&
+        chunks.empty()) {
+        NnVerifyOptions root = o;
+        root.max_verif_iter = 1;
+        const std::unique_ptr<Bounding> first = priv_make_bounding(root.bounding_method, root);
+        AttackResult found;
+        problem.deadline = deadline;
+        std::string status = "unknown";
+        try {
+            if (first->prepare(problem)) {
+                status = first->branch_and_bound(problem, deadline, result.stats, found);
+            }
+        } catch (const Error &error) {
+            // the deadline, or a bound beyond the float range: the attack goes on
+            if (!is_deadline(error) && !priv_is_out_of_range(error))
+                std::rethrow_exception(std::current_exception());
+        }
+        if (status == "sat") return sat(found);
+        if (status == "unsat") {
+            result.status = "unsat";
+            result.stats["checks"] = double(problem.checks);
+            return result;
+        }
+    }
     // the attack first, within its share of the time
     if (o.falsification_order == "attack-first") {
         const AttackResult found =

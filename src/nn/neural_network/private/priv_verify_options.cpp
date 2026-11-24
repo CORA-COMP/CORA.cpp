@@ -138,6 +138,27 @@ void NnVerifyOptions::validate() const {
     aux_at_least("optimize_gap", optimize_gap, 0);
     aux_at_least("dual_iterations", double(dual_iterations), 0);
     aux_at_least("dual_relu_rows", double(dual_relu_rows), 0);
+    // PGD's step sizes, decay and momentum
+    for (const double f : pgd_step_sizes)
+        if (!(f > 0))
+            CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_step_sizes must be positive");
+    if (!(pgd_step_decay > 0 && pgd_step_decay <= 1))
+        CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_step_decay must be in (0, 1]");
+    if (!(pgd_momentum >= 0 && pgd_momentum < 1))
+        CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_momentum must be in [0, 1)");
+    // PGD's hops and polish
+    aux_at_least("pgd_hops", double(pgd_hops), 0);
+    aux_at_least("pgd_hop_steps", double(pgd_hop_steps), 1);
+    aux_at_least("pgd_hop_keep", double(pgd_hop_keep), 1);
+    // each jump positive
+    for (const double j : pgd_hop_jumps)
+        if (!(j > 0))
+            CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_hop_jumps must be positive");
+    aux_at_least("pgd_polish_steps", double(pgd_polish_steps), 0);
+    aux_at_least("pgd_polish_keep", double(pgd_polish_keep), 1);
+    aux_at_least("pgd_polish_every", double(pgd_polish_every), 1);
+    if (!(pgd_polish_step > 0))
+        CORA_FAIL(Error::wrong_field_value, "NnVerifyOptions: pgd_polish_step must be positive");
     for (const double w : pgd_sign_windows)
         if (!(w > 0))
             CORA_FAIL(Error::wrong_field_value,
@@ -216,6 +237,8 @@ NnVerifyOptions cora_vnncomp_options(const std::string &category) {
 
 // The competition preset --------------------------------------------------------------------------
 
+// The soundness attack ----------------------------------------------------------------------------
+
 NnVerifyOptions vnncomp_options(const std::string &category) {
     detail::Entry entry;
     const std::string name = std::regex_replace(category, std::regex("[_-](20[0-9][0-9])$"), "");
@@ -246,6 +269,21 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
     }
     // relusplitter: the ReLU-split branch and bound (seed 213: 7 unsat of 12 against 5)
     if (name == "relusplitter") o.refinement_method = "relu-bab";
+    // soundnessbench: planted thin basins, alpha-beta-CROWN's small momentum steps
+    if (name == "soundnessbench") {
+        o.attack_time_share = 0.85;
+        o.attack_first_rounds = 1000000; // the share, not three rounds
+        o.pgd_hops = 16;
+        o.pgd_polish_every = 4;
+        o.root_check_first = true;
+        o.pgd_polish_steps = 600;
+        o.pgd_steps = 1000;
+        o.pgd_restarts = 512;
+        o.pgd_step_sizes = {0.0035, 0.005, 0.0075, 0.01, 0.015, 0.025};
+        o.pgd_step_decay = 0.997;
+        o.pgd_decay_at = {};
+        o.pgd_momentum = 0.9;
+    }
     // nn4sys: CORA's bounding of lindex' many small cases, the attack only briefly (dev seed 1001)
     if (name == "nn4sys") {
         o.bounding_method = "conzonotope";

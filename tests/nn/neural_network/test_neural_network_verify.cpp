@@ -109,6 +109,15 @@ void verdicts(const std::string &b) {
                 nn.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
             check(unsafe.status == "sat" && unsafe.y.size() == 2 && unsafe.y[0] <= least + 0.01,
                   b + " " + bounding + ": around the least output is sat, with its output");
+            // the root check first: far below, the bounds decide before any attack; near, sat still
+            o.falsification_order = "attack-first";
+            o.root_check_first = true;
+            const NnVerifyResult early = nn.verify(aux_below(3, 2, -0.2, 0.2, least - 1.0), 20, o);
+            check(early.status == "unsat" && early.stats.count("attack_seconds") == 0,
+                  b + " " + bounding + ": the root check decides unsat before the attack");
+            const NnVerifyResult near_sat =
+                nn.verify(aux_below(3, 2, -0.2, 0.2, least + 0.01), 20, o);
+            check(near_sat.status == "sat", b + " " + bounding + ": sat after the root check");
         }
     }
     // the look-ahead neuron splits (fsb), the backward bound and the chord rows, on a ReLU network
@@ -1112,6 +1121,94 @@ void sign_windows(const std::string &b) {
     check(failed, b + ": a window must be positive");
 }
 
+/// PGD with a momentum, a step per restart and a step decay (alpha-beta-CROWN's attack): it runs
+/// its steps, finds a counterexample where every point is one (confirmed on the network), nothing
+/// where none is, and rejects wrong options.
+void pgd_momentum_steps(const std::string &b) {
+    Rng rng(12);
+    const NeuralNetwork nn = aux_network(rng, {3, 8, 2}, Activation::relu);
+    NnVerifyOptions o = aux_options("conzonotope", b);
+    o.pgd_momentum = 0.9;
+    o.pgd_step_sizes = {0.01, 0.1, 0.5};
+    o.pgd_step_decay = 0.99;
+    o.pgd_decay_at = {};
+    o.pgd_restarts = 7;
+    // no counterexample: all the steps of every restart, and the restarts' sizes cycle (7 over 3)
+    NnProblem none(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), o, ConfirmFn{});
+    const AttackResult r = make_attack("pgd", o)->run(none, now_seconds() + 10.0, 1);
+    check(r.x.empty() && r.iterations == o.pgd_steps &&
+              r.evaluations == o.pgd_restarts * o.pgd_steps,
+          b + ": PGD with momentum and a step per restart runs its steps");
+    // every point is a counterexample below +1000
+    NnProblem all(nn, aux_below(3, 2, -0.2, 0.2, 1000.0), o, ConfirmFn{});
+    check(!make_attack("pgd", o)->run(all, now_seconds() + 10.0, 1).x.empty(),
+          b + ": PGD with momentum finds a counterexample");
+    // hops: the best points jump and descend again, each hop its steps, in a round
+    NnVerifyOptions hop = o;
+    hop.pgd_hops = 3;
+    hop.pgd_hop_steps = 5;
+    hop.pgd_hop_keep = 4;
+    hop.pgd_hop_jumps = {0.3, 0.6};
+    const AttackResult h = make_attack("pgd", hop)->run(none, now_seconds() + 10.0, 1);
+    check(h.x.empty() && h.iterations == hop.pgd_steps + 3 * hop.pgd_hop_steps,
+          b + ": PGD hops after its round");
+    NnProblem hall(nn, aux_below(3, 2, -0.2, 0.2, 1000.0), hop, ConfirmFn{});
+    check(!make_attack("pgd", hop)->run(hall, now_seconds() + 10.0, 1).x.empty(),
+          b + ": PGD with hops finds a counterexample");
+    hop.pgd_hop_jumps = {};
+    check(make_attack("pgd", hop)->run(none, now_seconds() + 10.0, 1).iterations ==
+              hop.pgd_steps + 3 * hop.pgd_hop_steps,
+          b + ": PGD hops with the default jump");
+    // the polish near the unsafe set (the check rejects every point below +1000), not far from it
+    NnVerifyOptions pol = o;
+    pol.pgd_polish_steps = 6;
+    pol.pgd_polish_keep = 3;
+    const ConfirmFn reject = [](const std::vector<double> &) -> std::optional<std::vector<double>> {
+        return std::nullopt;
+    };
+    NnProblem within(nn, aux_below(3, 2, -0.2, 0.2, 1000.0), pol, reject);
+    check(make_attack("pgd", pol)->run(within, now_seconds() + 10.0, 1).iterations ==
+              pol.pgd_steps + pol.pgd_polish_steps,
+          b + ": PGD polishes the best points near the unsafe set");
+    NnProblem beyond(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), pol, ConfirmFn{});
+    check(make_attack("pgd", pol)->run(beyond, now_seconds() + 10.0, 1).iterations == pol.pgd_steps,
+          b + ": no polish far from the unsafe set");
+    // too slow for the steps: fewer restarts, the momentum with them
+    o.pgd_min_steps = int64_t{1} << 40;
+    NnProblem slow(nn, aux_below(3, 2, -0.2, 0.2, -1000.0), o, ConfirmFn{});
+    check(make_attack("pgd", o)->run(slow, now_seconds() + 10.0, 1).iterations == o.pgd_steps,
+          b + ": PGD with momentum shrinks its restarts");
+    // the options must be in range, each tried by itself
+    const auto invalid = [&](const NnVerifyOptions &q) {
+        try {
+            q.validate();
+        } catch (const Error &) {
+            return true;
+        }
+        return false;
+    };
+    NnVerifyOptions bad = o;
+    bad.pgd_step_sizes = {0.1, 0.0};
+    // each option out of range alone
+    const bool sizes = invalid(bad);
+    bad = o;
+    bad.pgd_step_decay = 1.5;
+    const bool decay = invalid(bad);
+    bad = o;
+    bad.pgd_momentum = 1.0;
+    const bool momentum = invalid(bad);
+    bad = o;
+    bad.pgd_hop_jumps = {0.0};
+    const bool jumps = invalid(bad);
+    bad = o;
+    bad.pgd_polish_step = 0.0;
+    const bool polish = invalid(bad);
+    bad = o;
+    bad.pgd_hop_keep = 0;
+    check(sizes && decay && momentum && jumps && polish && invalid(bad) && !invalid(o),
+          b + ": the PGD step options must be in range");
+}
+
 /// relu-bab on random ReLU networks over a box: never unsat where a sampled point violates the
 /// property or zonotack confirms a counterexample; unsat where the margin is wide; nodes pruned as
 /// infeasible (Farkas) on some networks.
@@ -1261,6 +1358,7 @@ int main() {
         many_cases(b);
         targeted_attacks(b);
         sign_windows(b);
+        pgd_momentum_steps(b);
         relu_bab_verdicts(b);
     });
     checks_and_their_switch();
