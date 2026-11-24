@@ -1129,8 +1129,8 @@ int ConZonotopeBounding::aux_relu_bab_polytope(NnProblem &problem, int64_t p,
         }
         // the children as parts of at most part_cap bytes, all the parts at most cap
         const Part all{S, Lk, d + 1};
-        const int64_t n = S.shape()[0], b = bytes(all);
-        const int64_t pieces = std::max<int64_t>(1, (b + part_cap - 1) / part_cap);
+        const int64_t n = S.shape()[0], part_bytes = bytes(all);
+        const int64_t pieces = std::max<int64_t>(1, (part_bytes + part_cap - 1) / part_cap);
         const int64_t size = (n + pieces - 1) / pieces;
         for (int64_t at = 0; at < n; at += size) {
             const int64_t to = std::min(n, at + size);
