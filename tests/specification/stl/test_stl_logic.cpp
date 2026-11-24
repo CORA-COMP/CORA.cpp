@@ -74,7 +74,8 @@ void run(const std::string &b) {
     check(p.until(q, StlInterval(0, 1)).isequal(p.until(q, StlInterval(0, 1))) &&
               !p.until(q, StlInterval(0, 1)).isequal(q.until(p, StlInterval(0, 1))),
           b + ": until");
-    check(p == p && p != q, b + ": operators");
+    const Stl p2 = x[0] < 0.0;
+    check(p == p2 && p != q, b + ": operators");
     // the sampled semantics of a random non-temporal formula is that of its parts
     Rng rng(4);
     for (int k = 0; k < 20; ++k) {

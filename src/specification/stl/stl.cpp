@@ -121,6 +121,7 @@ std::vector<StlExpr> StlExpr::variables(const std::string &name, int64_t n) {
     CORA_CHECK(!name.empty() && n >= 1, Error::wrong_input_in_constructor,
                [] { return std::string("stl: the name must be non-empty and n at least 1"); });
     std::vector<StlExpr> out;
+    out.reserve(static_cast<std::size_t>(n));
     for (int64_t i = 0; i < n; ++i) out.push_back(variable(name + std::to_string(i + 1), i));
     return out;
 }
