@@ -90,6 +90,8 @@ jobs:
         run: python3 scripts/paper/arch_table.py --check
       - name: paper figures
         run: python3 scripts/paper/status_figure.py --check
+      - name: paper VNN-COMP tables
+        run: python3 scripts/paper/vnn_table.py --check
       - name: select the affected tests
         id: select
         env:

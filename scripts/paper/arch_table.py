@@ -382,6 +382,9 @@ def render_summary(rows):
         speedup = rf"$\times${fmt_speedup(median)} [{fmt_speedup(q1)}, {fmt_speedup(q3)}]"
         # the tool with the most fastest instances in bold, as the fastest time in the long table
         counts = [rf"\textbf{{{w}/{len(mine)}}}" if w == max(wins) else f"{w}/{len(mine)}" for w in wins]
+        # a tool without a time in the category did not take part in it (CROWN-Reach in AFF, NLN): `--'
+        took_part = [any(r["tools"][i] != "--" for r in mine) for i in range(len(tools))] + [True]
+        counts = [c if part else "--" for c, part in zip(counts, took_part, strict=True)]
         out.append(" & ".join([category, *counts, speedup]) + r" \\")
     out += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(out) + "\n"

@@ -128,6 +128,9 @@ it, and `ctest` (`coverage`, the first test) fails when it is stale.
   times: CORA.cpp's verdicts and times from the tables of `examples/benchmarks/README.md`, the other tools' times
   from `examples/benchmarks/data/arch26_tool_times.csv` (with the report table of each). Run it after a change of
   either; `--check` (in `checks` of ci.yml) fails on a stale file. The paper repository copies the file as it is.
+- `scripts/paper/vnn_table.py` writes `paper/generated/vnn-comp-table.tex` and `vnn-comp-summary.tex`, the paper's
+  preliminary VNN-COMP tables, from `examples/vnncomp/results/dev_results.csv` (one row per benchmark, instance and
+  tool; a new tool adds rows). Run it after a change of the CSV; `--check` (in `checks` of ci.yml) fails on a stale file.
 
 ## Examples
 
@@ -255,7 +258,7 @@ scripts/with_env.sh python scripts/ci/check_quality.py tidy          # clang-tid
 
 Two tiers (`.github/workflows/`); the one check to require in the ruleset is `ci-gate`.
 - **Every push to a pull request, and the merge queue** (`ci.yml`, under 10 minutes): `checks` (whitespace, clang-format,
-  ruff, conventions, coverage when `scripts/coverage/coverage.py` exists, `benchmarks.py --files`: no file listed in `coverage/benchmarks.json` is gone, else measure the named instances again with `--only`; `arch_table.py --check` and `status_figure.py --check`: the paper's table and figures in `paper/generated/` are current), `tidy` (clang-tidy on the changed sources), then `linux-core`
+  ruff, conventions, coverage when `scripts/coverage/coverage.py` exists, `benchmarks.py --files`: no file listed in `coverage/benchmarks.json` is gone, else measure the named instances again with `--only`; `arch_table.py --check`, `status_figure.py --check` and `vnn_table.py --check`: the paper's table and figures in `paper/generated/` are current), `tidy` (clang-tidy on the changed sources), then `linux-core`
   (labels `unit`, `oracle`, `backend-eigen`, `example`) and `linux-python` (`python`), one step per label on one build,
   with the CORALean oracle: on a pull request only the tests the change can affect, in the merge queue every test of
   the group on the `main` it lands on. `instructions` (pull requests only) fails when a micro-benchmark of
