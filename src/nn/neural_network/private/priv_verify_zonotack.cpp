@@ -9,9 +9,9 @@
 // factor constraints, bounded by Fourier-Motzkin, the hull over the polytopes, the input rescaled
 // to that box and propagated again (refinement_max_iter - 1 times). An empty child is verified.
 // The three repairs of CORA's unsound steps are options (on): project_stale_factors,
-// drop_dummy_duplicates, remember_point_splits_only (docs/nn_verification.md). Running out of
-// memory takes fewer ReLU rows, then half the batch (CORA's catch). Phase 2 adds to the check
-// zonotope-alpha's slopes, CROWN's bound and the dual certificate (priv_verify_dual.cpp).
+// drop_dummy_duplicates, remember_point_splits_only (docs/nn_verification.md). Out of memory:
+// fewer ReLU rows, then half the batch (CORA's catch); the ReLU splits' root net, a smaller one.
+// Phase 2 adds to the check zonotope-alpha's slopes, CROWN's bound and the dual certificate.
 //
 // See also: priv_zono_batch.h, priv_verify.h, docs/nn_verification.md
 // References:
@@ -22,11 +22,12 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   24-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
 #include "cora/global/error.h"
+#include "global/tensor/device_memory.h"
 #include "nn/neural_network/private/priv_verify.h"
 #include "nn/neural_network/private/priv_zono_batch.h"
 
@@ -46,6 +47,9 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+constexpr double kMiB = 1048576.0;
+/// The share of a device's free memory that a budget may take (the rest: the allocator's slack).
+constexpr double kFreeShare = 0.9;
 /// The interval gradient's smallest input of 1 / x (a heuristic: 1 / x^2 stays finite in float32).
 constexpr double kInversePositive = numerics::kInverseFloor;
 
@@ -359,8 +363,17 @@ class StepTimer {
   public:
     StepTimer(std::map<std::string, double> *stats, const char *name)
         : stats_(stats), name_(name), started_(now_seconds()) {}
+    /// Also the device's peak so far at the step's end, as name's "_seconds" with "_peak_mib".
+    StepTimer(std::map<std::string, double> *stats, const char *name, Device device)
+        : stats_(stats), name_(name), started_(now_seconds()), device_(device), peak_(true) {}
     ~StepTimer() {
-        if (stats_) (*stats_)[name_] += now_seconds() - started_;
+        if (!stats_) return;
+        (*stats_)[name_] += now_seconds() - started_;
+        const int64_t peak = peak_ ? device_memory(device_).peak : -1;
+        if (peak < 0) return;
+        std::string key = name_;
+        key = key.substr(0, key.rfind("_seconds")) + "_peak_mib";
+        (*stats_)[key] = std::max((*stats_)[key], double(peak) / kMiB);
     }
     StepTimer(const StepTimer &) = delete;
     StepTimer &operator=(const StepTimer &) = delete;
@@ -369,6 +382,8 @@ class StepTimer {
     std::map<std::string, double> *stats_;
     const char *name_;
     double started_;
+    Device device_;
+    bool peak_ = false;
 };
 
 // The bounding ------------------------------------------------------------------------------------
@@ -435,6 +450,8 @@ class ConZonotopeBounding : public Bounding {
     // relu-bab's root slots, its CROWN bounds and its nodes
     void aux_relu_bab_slots(NnProblem &problem, const Tensor &xi, const Tensor &ri,
                             std::map<std::string, double> &stats);
+    std::unique_ptr<ZonoNet> aux_root_net(double gens, const std::vector<int64_t> &per) const;
+    bool aux_shrink_root();
     void aux_relu_bab_crown(const Tensor &xi, const Tensor &ri, const Tensor &si,
                             ZonoPropagation &out, ZonoBounds &bounds,
                             std::map<std::string, double> &stats) const;
@@ -467,6 +484,11 @@ class ConZonotopeBounding : public Bounding {
                                 const Tensor &si, const Artifacts &art) const;
     std::vector<int64_t> aux_pop(int64_t size) const;
     bool aux_back_off();
+    /// A budget at most kFreeShare of what the device has free now (on the CPU: the budget).
+    int64_t aux_free_share(int64_t budget) const {
+        const int64_t free = device_memory(A_.device_id()).free;
+        return free < 0 ? budget : std::min(budget, int64_t(double(free) * kFreeShare));
+    }
     /// Whether the deadline passed; it stays passed (the batch then stays open).
     bool aux_late() {
         timed_out_ = timed_out_ || now_seconds() >= deadline_;
@@ -485,6 +507,9 @@ class ConZonotopeBounding : public Bounding {
     int64_t P_ = 0, K_ = 0, n_relu_ = 0, batch_ = 1;
     double slot_budget_ = -1;     ///< the error slots per layer the memory budget left (-1: all)
     double init_gen_budget_ = -1; ///< the input generators it left (-1: as the options say)
+    // the ReLU splits' root net: its input generators (-1: none), their least, its slots
+    double root_gens_ = -1, root_floor_ = -1;
+    std::vector<int64_t> root_per_;
     double deadline_ = kInf;
     bool timed_out_ = false;
     AttackResult *found_ = nullptr;
@@ -673,9 +698,9 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
     double best_score = -kInf;
     const auto consider = [&]() {
         if (!slopes || out.c.shape()[0] != 1) return;
-        const Tensor rows = aux_margins(out).max(2);
-        const Tensor masked =
-            Tensor::where(open0.greater(open0.zeros_like()), rows, rows.full_like({1}, kInf));
+        const Tensor best_rows = aux_margins(out).max(2);
+        const Tensor masked = Tensor::where(open0.greater(open0.zeros_like()), best_rows,
+                                            best_rows.full_like({1}, kInf));
         const double score = masked.min().item();
         if (score > best_score) {
             best_score = score;
@@ -813,6 +838,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
             }
             if (!is_deadline(error) && (!priv_is_oom(error) || !aux_back_off()))
                 std::rethrow_exception(std::current_exception());
+            if (priv_is_oom(error)) free_device_cache(xi.device_id());
             xs = Tensor::concat({xi, xs}, 0);
             rs = Tensor::concat({ri, rs}, 0);
             cases = Tensor::concat({ci, cases}, 0);
@@ -881,7 +907,7 @@ std::string ConZonotopeBounding::aux_relu_bab(NnProblem &problem,
         ZonoPropagation out;
         ZonoBounds bounds;
         {
-            const StepTimer timer(&stats, "relu_bab_root_seconds");
+            const StepTimer timer(&stats, "relu_bab_root_seconds", xi.device_id());
             in = net.input_zonotope(xi, ri);
             out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
             // CROWN's bounds of the layers' inputs at the zonotope's (nn_verification.md, relu-bab)
@@ -935,17 +961,33 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         const Tensor si = xi.zeros_like({1, 0});
         // the root as relu-bab's: the zonotope of its slots, CROWN's bounds of the layers' inputs
         if (i == 0) aux_relu_bab_slots(problem, xi, ri, stats);
-        const ZonoNet &net = *net_;
         Tensor excluded;
         ZonoPropagation out;
         ZonoBounds bounds;
-        {
-            const StepTimer timer(&stats, "crown_bab_root_seconds");
-            const ZonoInput in = net.input_zonotope(xi, ri);
-            out = net.forward(in.c, in.dr, in.G, si, nullptr, true);
-            if (o_.relu_bab_crown_rounds > 0) aux_relu_bab_crown(xi, ri, si, out, bounds, stats);
-            excluded = aux_excluded(out, ci);
+        // out of memory: a smaller root net, then no CROWN bounds, then open (unknown)
+        bool crown = o_.relu_bab_crown_rounds > 0;
+        for (;;) {
+            try {
+                const StepTimer timer(&stats, "crown_bab_root_seconds", xi.device_id());
+                priv_oom_site("crown_bab_root");
+                const ZonoInput in = net_->input_zonotope(xi, ri);
+                out = net_->forward(in.c, in.dr, in.G, si, nullptr, true);
+                if (crown) aux_relu_bab_crown(xi, ri, si, out, bounds, stats);
+                excluded = aux_excluded(out, ci);
+                break;
+            } catch (const std::exception &error) {
+                // what the failed pass held freed, then the next smaller try
+                if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+                out = ZonoPropagation();
+                bounds = ZonoBounds();
+                free_device_cache(xi.device_id());
+                stats["crown_bab_root_oom"] += 1;
+                if (aux_shrink_root()) continue;
+                if (!crown) return "unknown";
+                crown = false;
+            }
         }
+        const ZonoNet &net = *net_;
         // every open polytope on its own, the weakest first (one left open: unknown)
         std::vector<int64_t> open = aux_open_polytopes(out, excluded);
         stats["crown_bab_open_polytopes"] += double(open.size());
@@ -972,8 +1014,11 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
             const std::vector<int64_t> real = real_row_.slice(0, p, p + 1).squeeze(0).nonzero();
             const Tensor A = A_.slice(0, p, p + 1).squeeze(0).take(real, 0);
             const Tensor b = b_.slice(0, p, p + 1).squeeze(0).take(real, 0);
-            const int res =
-                priv_crown_bab(out, net, bounds, xi, ri, A, b, co, check, stats, search);
+            int res = 0;
+            {
+                const StepTimer timer(&stats, "crown_bab_search_seconds", xi.device_id());
+                res = priv_crown_bab(out, net, bounds, xi, ri, A, b, co, check, stats, search);
+            }
             if (res == 2) return "sat";
             if (res == 0 || aux_late()) return "unknown";
             stats["crown_bab_polytopes_verified"] += 1;
@@ -1033,7 +1078,7 @@ std::vector<int64_t> ConZonotopeBounding::aux_crown_bab_roots(
     const ZonoPropagation &out, const ZonoBounds &bounds, const Tensor &xi, const Tensor &ri,
     const std::vector<int64_t> &open, const CrownBabOptions &co, const CrownBabSearch *search,
     std::map<std::string, double> &stats) const {
-    const StepTimer timer(&stats, "crown_bab_roots_seconds");
+    const StepTimer timer(&stats, "crown_bab_roots_seconds", xi.device_id());
     // the open polytopes' real rows and their polytopes
     std::vector<int64_t> rows, owner;
     const std::vector<double> real = real_row_.data();
@@ -1047,18 +1092,32 @@ std::vector<int64_t> ConZonotopeBounding::aux_crown_bab_roots(
     int64_t width = net_->n0;
     for (const int64_t w : net_->widths) width += w;
     for (const NeuralNetwork::Layer &layer : net_->maps) width += layer.work();
-    const int64_t chunk = std::max<int64_t>(1, co.max_bytes / std::max<int64_t>(1, 8 * 32 * width));
+    int64_t chunk = std::max<int64_t>(1, co.max_bytes / std::max<int64_t>(1, 8 * 32 * width));
     const Tensor Aall = A_.reshape({P_ * K_, A_.shape()[2]}), ball = b_.reshape({P_ * K_});
     std::vector<double> low;
-    for (std::size_t at = 0; at < rows.size(); at += std::size_t(chunk)) {
+    for (std::size_t at = 0; at < rows.size();) {
         const std::size_t to = std::min(rows.size(), at + std::size_t(chunk));
         const std::vector<int64_t> part(rows.begin() + std::ptrdiff_t(at),
                                         rows.begin() + std::ptrdiff_t(to));
-        const std::vector<double> v =
-            priv_crown_bab_roots(out, *net_, bounds, xi, ri, Aall.take(part, 0), ball.take(part, 0),
-                                 co, stats, search)
-                .data();
+        std::vector<double> v;
+        try {
+            priv_oom_site("crown_bab_roots");
+            v = priv_crown_bab_roots(out, *net_, bounds, xi, ri, Aall.take(part, 0),
+                                     ball.take(part, 0), co, stats, search)
+                    .data();
+        } catch (const std::exception &error) {
+            // out of memory: half the rows; one row: no bound (its polytope stays open)
+            if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+            free_device_cache(xi.device_id());
+            stats["crown_bab_oom"] += 1;
+            if (chunk > 1) {
+                chunk /= 2;
+                continue;
+            }
+            v.assign(part.size(), -kInf);
+        }
         low.insert(low.end(), v.begin(), v.end());
+        at = to;
     }
     // the polytopes none of whose rows is verified stay open
     std::vector<int64_t> still;
@@ -1077,8 +1136,10 @@ std::vector<int64_t> ConZonotopeBounding::aux_crown_bab_roots(
 
 void ConZonotopeBounding::aux_relu_bab_slots(NnProblem &problem, const Tensor &xi, const Tensor &ri,
                                              std::map<std::string, double> &stats) {
+    const StepTimer timer(&stats, "relu_bab_slots_seconds", xi.device_id());
     // the crossing neurons per layer of the first box's zonotope by a net
     const auto crossing = [&](const ZonoNet &net) {
+        priv_oom_site("relu_bab_crossing");
         const ZonoInput in = net.input_zonotope(xi, ri);
         const ZonoPropagation out =
             net.forward(in.c, in.dr, in.G, xi.zeros_like({1, 0}), nullptr, true);
@@ -1097,30 +1158,52 @@ void ConZonotopeBounding::aux_relu_bab_slots(NnProblem &problem, const Tensor &x
     };
     // a net of gens input generators and per[k] slots in layer k (the largest errors: the crossing)
     const auto make = [&](double gens, const std::vector<int64_t> &per) {
-        auto net = std::make_unique<ZonoNet>(problem.net(), gens, kInf, o_.poly_method, "length");
-        net->q = net->q0;
-        for (std::size_t k = 0; k < per.size(); ++k) {
-            net->slots[k] = std::min(net->slots[k], per[k]);
-            net->q += net->slots[k];
-        }
-        return net;
+        return aux_root_net(gens, per);
     };
     int64_t elements = net_->n0, work = 0;
     for (const int64_t w : net_->widths) elements += w;
     for (const NeuralNetwork::Layer &layer : net_->maps) work = std::max(work, layer.work());
     elements += work;
-    const int64_t budget = o_.relu_bab_memory_budget > 0 ? o_.relu_bab_memory_budget
-                                                         : problem.batch_memory_budget / 4 * 3;
+    // the budgets of the root set and of one pass, each at most what the device has free now
+    const int64_t budget =
+        aux_free_share(o_.relu_bab_memory_budget > 0 ? o_.relu_bab_memory_budget
+                                                     : problem.batch_memory_budget / 4 * 3);
+    const int64_t pass = aux_free_share(problem.batch_memory_budget);
     const auto fits = [&](const ZonoNet &net) { return 8 * 4 * net.q * elements <= budget; };
-    // the crossing neurons of the batch's net, then fewer of a net with a slot for each of them
+    // a pass: twice its record and patches, 8 bytes per generator and element (measured 1 to 1.7)
+    const auto passes = [&](const ZonoNet &net) { return 8 * 2 * net.q * elements <= pass; };
+    stats["relu_bab_root_elements"] = double(elements);
+    // the batch net's crossing neurons, then fewer slots for them, then fewer input generators
     std::vector<int64_t> per = crossing(*net_);
     double gens = std::max(o_.relu_bab_init_gens, double(net_->q0));
     auto net = make(gens, per);
-    while (16 * net->q * elements > problem.batch_memory_budget && net->q > net->q0) {
+    while (!passes(*net) && net->q > net->q0) {
         for (int64_t &v : per) v /= 2;
         net = make(gens, per);
     }
-    per = crossing(*net);
+    while (!passes(*net) && net->q0 > net_->q0) {
+        gens = std::max(double(net_->q0), std::floor(double(net->q0) / 2));
+        net = make(gens, per);
+    }
+    // the crossing neurons of that net; out of memory: half its input generators, then its slots
+    for (;;) {
+        try {
+            per = crossing(*net);
+            break;
+        } catch (const std::exception &error) {
+            if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+            free_device_cache(A_.device_id());
+            stats["relu_bab_root_oom"] += 1;
+            if (net->q0 > net_->q0) {
+                gens = std::max(double(net_->q0), std::floor(double(net->q0) / 2));
+            } else if (net->q > net->q0) {
+                for (int64_t &v : per) v /= 2;
+            } else {
+                break; // the batch's net: its crossing neurons as counted
+            }
+            net = make(gens, per);
+        }
+    }
     net = make(gens, per);
     // fewer slots first (halved per layer), then fewer input generators, down to the batch's net
     while (!fits(*net) && net->q > net->q0) {
@@ -1135,8 +1218,53 @@ void ConZonotopeBounding::aux_relu_bab_slots(NnProblem &problem, const Tensor &x
     for (const int64_t v : per) slots += double(v);
     stats["relu_bab_slots"] = slots;
     stats["relu_bab_init_gens"] = double(net->q0);
-    if (fits(*net) || net->q > net_->q) net_ = std::move(net);
+    stats["relu_bab_root_budget_mib"] = double(budget) / kMiB;
+    if (fits(*net) || net->q > net_->q) {
+        // the root's net, and what aux_shrink_root halves
+        root_floor_ = 1; // out of memory any fewer (the rest of the box in the interval center)
+        root_gens_ = double(net->q0);
+        root_per_ = per;
+        net_ = std::move(net);
+    }
     net_->deadline = std::min(deadline_, problem.deadline);
+}
+
+std::unique_ptr<ZonoNet> ConZonotopeBounding::aux_root_net(double gens,
+                                                           const std::vector<int64_t> &per) const {
+    // gens input generators and per[k] slots in layer k (the largest errors: the crossing)
+    auto net = std::make_unique<ZonoNet>(problem_->net(), gens, kInf, o_.poly_method, "length");
+    net->q = net->q0;
+    for (std::size_t k = 0; k < per.size(); ++k) {
+        net->slots[k] = std::min(net->slots[k], per[k]);
+        net->q += net->slots[k];
+    }
+    return net;
+}
+
+bool ConZonotopeBounding::aux_shrink_root() {
+    // half the input generators (down to one), then half the slots; none left: false
+    if (root_gens_ < 0) return false;
+    if (root_gens_ > root_floor_) {
+        root_gens_ = std::max(root_floor_, std::floor(root_gens_ / 2));
+    } else {
+        bool any = false;
+        for (int64_t &v : root_per_) {
+            any = any || v > 0;
+            v /= 2;
+        }
+        if (!any) return false;
+    }
+    // the smaller net, its deadline and its counts
+    const double deadline = net_->deadline;
+    net_ = aux_root_net(root_gens_, root_per_);
+    net_->deadline = deadline;
+    if (stats_) {
+        (*stats_)["relu_bab_init_gens"] = double(net_->q0);
+        double slots = 0;
+        for (const int64_t v : root_per_) slots += double(v);
+        (*stats_)["relu_bab_slots"] = slots;
+    }
+    return true;
 }
 
 // CROWN bounds at the root ------------------------------------------------------------------------
@@ -1144,7 +1272,7 @@ void ConZonotopeBounding::aux_relu_bab_slots(NnProblem &problem, const Tensor &x
 void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri, const Tensor &si,
                                              ZonoPropagation &out, ZonoBounds &bounds,
                                              std::map<std::string, double> &stats) const {
-    const StepTimer timer(&stats, "relu_bab_crown_seconds");
+    const StepTimer timer(&stats, "relu_bab_crown_seconds", xi.device_id());
     const ZonoNet &net = *net_;
     // per ReLU layer: its crossing neurons and their widths, before and after (the same neurons)
     std::vector<Tensor> masks;
@@ -1172,11 +1300,15 @@ void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri,
     // rounds: CROWN over the bounds so far, then the zonotope with its lines at the intersection
     const ZonoInput in = net.input_zonotope(xi, ri);
     const int64_t chunk = problem_->batch_memory_budget / 8;
+    int64_t backoffs = 0;
     for (int64_t r = 0; r < o_.relu_bab_crown_rounds && now_seconds() < deadline_; ++r) {
         bounds = priv_crown_bounds(out, net, xi, ri, o_.relu_bab_crown_iterations,
-                                   o_.relu_bab_crown_step, chunk, deadline_, o_.crown_softmax_lse);
+                                   o_.relu_bab_crown_step, chunk, deadline_, o_.crown_softmax_lse,
+                                   &backoffs);
+        out = ZonoPropagation(); // the old record freed before the new one (one at a time)
         out = net.forward(in.c, in.dr, in.G, si, nullptr, true, nullptr, &bounds);
     }
+    if (backoffs > 0) stats["relu_bab_crown_oom"] += double(backoffs);
     tally(out, "after");
 }
 
@@ -1204,8 +1336,8 @@ int ConZonotopeBounding::aux_relu_bab_polytope(NnProblem &problem, int64_t p,
         std::vector<double> score(col.size(), -1); // no slot: after all, as the error orders
         for (std::size_t j = 0; j < col.size(); ++j)
             if (col[j] >= 0) score[j] = wa[std::size_t(col[j])];
-        std::stable_sort(order.begin(), order.end(), [&](int64_t a, int64_t b) {
-            return score[std::size_t(a)] > score[std::size_t(b)];
+        std::stable_sort(order.begin(), order.end(), [&](int64_t lhs, int64_t rhs) {
+            return score[std::size_t(lhs)] > score[std::size_t(rhs)];
         });
     }
     // the root's bound: the best row's, the weakest open polytope's (below 0: open)

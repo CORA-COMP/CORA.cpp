@@ -20,15 +20,17 @@
 // CORA.cpp only: CORA's verify splits on the zonotope
 // Authors:       Claude Opus 5.5
 // Written:       24-November-2026
-// Last update:   ---
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
+#include "global/tensor/device_memory.h"
 #include "nn/neural_network/private/priv_verify.h"
 #include "nn/neural_network/private/priv_zono_batch.h"
 
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -120,6 +122,12 @@ Tensor aux_gather(const CrossingSpace &s, const std::vector<Tensor> &layers, con
     return Tensor::concat(parts, -1);
 }
 
+/// Out of memory: the device's cache freed for a smaller retry, the count in the stats.
+void aux_out_of_memory(const Tensor &like, std::map<std::string, double> &stats) {
+    free_device_cache(like.device_id());
+    stats["crown_bab_oom"] += 1;
+}
+
 /// One-hot rows (N, n) of the indices idx (N).
 Tensor aux_onehot(const Tensor &idx, int64_t n) {
     return idx.expand_dims(-1).equal(idx.arange_like(n).expand_dims(0)) + 0.0;
@@ -190,6 +198,9 @@ class CrownBab {
     Tensor choose(const Tensor &S, const Bounded &b) const;
     Tensor look_ahead(const Tensor &S, const Tensor &alpha, const Tensor &beta, const Bounded &b,
                       int64_t batch) const;
+    /// look_ahead's pick, BaBSR's (choose) where it runs out of memory.
+    Tensor branch(const Tensor &S, const Tensor &alpha, const Tensor &beta, const Bounded &b,
+                  int64_t batch) const;
     int64_t per_node_bytes() const;
     Tensor root_nodes() const { return x_.zeros_like({1, space_.U}); }
     Tensor root_slopes() const {
@@ -239,6 +250,7 @@ Tensor CrownBab::evaluate(const Pass &p, const std::vector<Tensor> &signs, const
 
 Bounded CrownBab::bound(const Tensor &S, const Tensor &alpha, const Tensor &beta,
                         int64_t steps) const {
+    priv_oom_site("crown_bab_bound");
     const double started = now_seconds();
     // the steps in the search's dtype (or the record's), every step's bound per row the best
     const Pass &p = searching_ ? search_ : exact_;
@@ -350,6 +362,20 @@ Tensor CrownBab::look_ahead(const Tensor &S, const Tensor &alpha, const Tensor &
     return Tensor::where(any.multiply(pick.greater_equal(pick.zeros_like())), chosen, pick);
 }
 
+Tensor CrownBab::branch(const Tensor &S, const Tensor &alpha, const Tensor &beta, const Bounded &b,
+                        int64_t batch) const {
+    if (std::min<int64_t>(o_.fsb, space_.U) <= 1) return choose(S, b);
+    try {
+        priv_oom_site("crown_bab_look_ahead");
+        return look_ahead(S, alpha, beta, b, batch);
+    } catch (const std::exception &error) {
+        // out of memory in the children's passes: the score's pick (any neuron splits soundly)
+        if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+        aux_out_of_memory(x_, stats_);
+        return choose(S, b);
+    }
+}
+
 int64_t CrownBab::per_node_bytes() const {
     // per row and neuron of every layer: Lambda, the lines, the reverse and the slopes' steps
     int64_t width = net_.n0;
@@ -366,7 +392,15 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
     // the root: no split, CROWN's lower slopes (1 where u > -l) and no multiplier
     const Tensor S0 = root_nodes();
     const Tensor a0 = root_slopes();
-    const Bounded root = bound(S0, a0, a0.zeros_like(), o_.root_steps);
+    Bounded root;
+    try {
+        root = bound(S0, a0, a0.zeros_like(), o_.root_steps);
+    } catch (const std::exception &error) {
+        // out of memory at the root: no bound, the polytope stays open
+        if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+        aux_out_of_memory(x_, stats_);
+        return 0;
+    }
     const double margin = root.best.max(1).item();
     stats_["crown_bab_root_margin"] = std::min(
         stats_.count("crown_bab_root_margin") ? stats_["crown_bab_root_margin"] : kInf, margin);
@@ -380,7 +414,7 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
         std::max<int64_t>(1, std::min(o_.batch, o_.max_bytes / std::max<int64_t>(1, per)));
     stats_["crown_bab_batch"] = double(batch);
     std::vector<Nodes> stack{
-        {S0, root.alpha, root.beta, look_ahead(S0, root.alpha, root.beta, root, batch), root.best}};
+        {S0, root.alpha, root.beta, branch(S0, root.alpha, root.beta, root, batch), root.best}};
     int64_t held = 1;
     while (!stack.empty()) {
         if (late()) return 0;
@@ -405,8 +439,10 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
         try {
             b = bound(S2, A2, B2, o_.steps);
         } catch (const std::exception &error) {
-            // out of memory: the parents back on the stack, half the batch
-            if (!priv_is_oom(error) || batch == 1) std::rethrow_exception(std::current_exception());
+            // out of memory: the parents back on the stack, half the batch (one node: open)
+            if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+            aux_out_of_memory(x_, stats_);
+            if (batch == 1) return 0;
             batch = (batch + 1) / 2;
             stats_["crown_bab_batch"] = double(batch);
             held += M;
@@ -425,7 +461,7 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
         Nodes next{S2.take(open, 0), b.alpha.take(open, 0), b.beta.take(open, 0), Tensor(),
                    b.best.take(open, 0)};
         const Bounded kept{next.best, Tensor(), Tensor(), b.score.take(open, 0), Tensor()};
-        next.next = look_ahead(next.S, next.alpha, next.beta, kept, batch);
+        next.next = branch(next.S, next.alpha, next.beta, kept, batch);
         const Tensor next_low = next.best.max(1);
         stats_["crown_bab_open_margin"] = next_low.min().item();
         // the corners of the weakest open nodes: every row's minimizer, checked on the network

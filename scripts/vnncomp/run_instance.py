@@ -15,7 +15,7 @@ See also: scripts/vnncomp/run_instance.sh, scripts/vnncomp/run_dev_set.py, cora.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   23-November-2026
+Last update:   25-November-2026
 Reviewed:      ---
 """
 
@@ -104,9 +104,16 @@ def options_for(category, device):
 
 def batch_budget(device):
     """The bytes of one batch of sets on a CUDA device: a share of its free memory, after the
-    network's load. One set's own budget (memory_budget, its cuts) stays the CPU default."""
-    free, _ = torch.cuda.mem_get_info(torch.device(device))
-    return int(BATCH_SHARE * free)
+    network's load and within the process's memory fraction. One set's own budget (memory_budget,
+    its cuts) stays the CPU default."""
+    dev = torch.device(device)
+    if dev.index is None:
+        dev = torch.device(dev.type, torch.cuda.current_device())
+    free, total = torch.cuda.mem_get_info(dev)
+    # a per-process cap (torch.cuda.set_per_process_memory_fraction, a smaller GPU's emulation)
+    fraction = torch.cuda.get_per_process_memory_fraction(dev)
+    free = min(free, int(fraction * total) - torch.cuda.memory_reserved(dev))
+    return int(BATCH_SHARE * max(0, free))
 
 
 def write_result(path, result):
