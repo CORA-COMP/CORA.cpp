@@ -7,6 +7,7 @@
 // between the outer two (its ends, the regression polynomial and its radius) is compared, and a
 // domain the halving cannot close fails on both sides (CORA's notConverged). The fit takes only
 // arithmetic and sqrt (the Vandermonde powers are repeated products), so no libm is compared.
+// The test fails unless at least 4 of the 5 fixed and 30 of the 40 random cases are compared.
 //
 // Authors:       Claude Opus 5.5
 // Written:       25-November-2026
@@ -19,6 +20,7 @@
 
 #include <cmath>
 #include <exception>
+#include <iostream>
 #include <limits>
 #include <string>
 #include <vector>
@@ -40,8 +42,8 @@ struct Case {
     double l_max, u_max;
 };
 
-/// CORA.cpp's regions of the case against the oracle's, or both failing.
-void aux_check(const Case &c) {
+/// CORA.cpp's regions of the case against the oracle's, or both failing; whether it compared.
+bool aux_check(const Case &c) {
     const std::string what = "findRegionPolys tol " + std::to_string(c.tol) + " order " +
                              std::to_string(c.order) + " [" + std::to_string(c.l_max) + ", " +
                              std::to_string(c.u_max) + "]";
@@ -62,7 +64,7 @@ void aux_check(const Case &c) {
         refused = true;
     }
     test::check(failed == refused, what + ": both converge or neither");
-    if (failed || refused) return;
+    if (failed || refused) return false;
     // every region between the outer two, in order
     test::check(mine.size() == theirs.size() + 2 && mine.front().l == -inf && mine.back().u == inf,
                 what + ": the regions and the outer two");
@@ -76,6 +78,7 @@ void aux_check(const Case &c) {
         for (std::size_t j = 0; j < a.p.size() && j < b.p.size(); ++j)
             oracle::check(r + " p" + std::to_string(j), a.p[j], b.p[j]);
     }
+    return true;
 }
 
 } // namespace
@@ -87,17 +90,24 @@ int main() {
     if (!oracle::available()) return 0;
     oracle::run("nnLayer.findRegionPolys", [&](oracle::Random &rnd) {
         // a cubic next to the zero piece, a constant, a line, exact pieces and no convergence
+        int fixed = 0, random = 0;
         for (const Case &c :
              {Case{0.125, 3, -3.0, 2.5}, Case{0.25, 4, -0.125, 0.375}, Case{0.5, 2, -1.0, 2.0},
               Case{0.125, 1, -3.0, 1.0}, Case{0.0625, 2, -1.0, 2.0}})
-            aux_check(c);
+            fixed += aux_check(c) ? 1 : 0;
         // random tolerances, orders and domains around 0
         for (int t = 0; t < 40; ++t) {
             const double tol = rnd.uniform(0.05, 1.0);
             const int order = 1 + int(std::floor(rnd.uniform(0.0, 4.0)));
             const double l = -rnd.uniform(0.1, 4.0), u = rnd.uniform(0.1, 4.0);
-            aux_check({tol, order, l, u});
+            random += aux_check({tol, order, l, u}) ? 1 : 0;
         }
+        // the cases compared, not only failed on both sides
+        std::cout << "findRegionPolys: " << fixed << " of 5 fixed and " << random
+                  << " of 40 random cases compared\n";
+        test::check(fixed >= 4, "findRegionPolys: at least 4 fixed cases compared");
+        // 37 of 40 converge at seed 7; 30 leaves room and still fails a test that compares little
+        test::check(random >= 30, "findRegionPolys: at least 30 random cases compared");
     });
     return test::finish("lean nn regions");
 }
