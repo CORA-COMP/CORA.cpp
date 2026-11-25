@@ -10,7 +10,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   21-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -70,6 +70,20 @@ class Ellipsoid {
     Ellipsoid linear_map(const Tensor &M) const;
     /// CORA's M E, Q = M Q M' symmetrized in CORA's order (`ellipsoid.mtimesCora`).
     Ellipsoid linear_map_cora(const Tensor &M) const;
+
+    /// The dimension (`ellipsoid.dim`) and whether an entry is NaN (`ellipsoid.isnan`).
+    int64_t dim() const;
+    bool isnan() const;
+
+    /// E - p for a point p (`ellipsoid.minkDiff`), and the upper support value along dir,
+    /// d'q + sqrt(d'(Q d)) rounded up (`ellipsoid.supportFunc`, k Newton steps).
+    Ellipsoid mink_diff(const Tensor &p) const;
+    double support_function(const Tensor &dir, int k = 100) const;
+
+    /// The ellipsoid of the points (n, p), one per column, of CORA's method "cov" at the
+    /// rotations T and U (`ellipsoid.enclosePoints`, k Newton steps).
+    static Ellipsoid enclose_points(const Tensor &points, const Tensor &T, const Tensor &U,
+                                    int k = 100);
 
     /// Whether the ellipsoids are equal (`ellipsoid.isequal`).
     bool isequal(const Ellipsoid &E2, double tol = 0) const;

@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   21-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/ellipsoid.h"
@@ -111,6 +111,29 @@ Interval Ellipsoid::interval(int k) const {
 Zonotope Ellipsoid::zonotope() const {
     return ask("ellipsoid.zonotope", {{"E", *this}}).get<Zonotope>("Z");
 }
+
+// the support value and the cloud's ellipsoid, at CORA.cpp's own rotations
+double Ellipsoid::support_function(const Tensor &dir, int k) const {
+    return ask("ellipsoid.supportFunc", {{"E", *this}, {"dir", dir}, {"k", k}, {"type", "upper"}})
+        .get<double>("value");
+}
+
+Ellipsoid Ellipsoid::enclose_points(const Tensor &points, const Tensor &T, const Tensor &U, int k) {
+    return ask("ellipsoid.enclosePoints",
+               {{"points", points}, {"T", T}, {"U", U}, {"k", k}, {"method", "cov"}})
+        .get<Ellipsoid>("E");
+}
+
+Ellipsoid Ellipsoid::mink_diff(const Tensor &p) const {
+    return ask("ellipsoid.minkDiff", {{"E", *this}, {"point", p}}).get<Ellipsoid>("E");
+}
+
+// the dimension and the NaN test read the set only
+int64_t Ellipsoid::dim() const {
+    return ask("ellipsoid.dim", {{"E", *this}}).get<int64_t>("value");
+}
+
+bool Ellipsoid::isnan() const { return ask("ellipsoid.isnan", {{"E", *this}}).get<bool>("value"); }
 
 Json Ellipsoid::to_json() const { return json_; }
 

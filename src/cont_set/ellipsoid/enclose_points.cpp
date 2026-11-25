@@ -19,11 +19,13 @@
 // CORA authors: Niklas Kochdumper, Victor Gassmann
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/ellipsoid/private/priv.h"
 #include "global/format.h"
+
+#include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -32,6 +34,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// Degenerate clouds -------------------------------------------------------------------------------
 
 /// The shape matrix and center of the ellipsoid of the centered points (k, p), k >= 1 of them
 /// spanning R^k, in the same coordinates; method "cov" only.
@@ -57,6 +61,27 @@ std::pair<Tensor, Tensor> aux_reduced(const Tensor &points, const std::string &m
     const Tensor scaled = oriented.square().divide(radius.square()).sum(0, true);
     const Tensor B = radius.square().diag() * scaled.max().item();
     return {priv_congruence(U, B), origin};
+}
+
+// Spanning clouds ---------------------------------------------------------------------------------
+
+/// The ellipsoid of a cloud (n, p) around its mean c that spans R^n, n >= 2, method "cov", in
+/// CORALean's order (Ellipsoid.enclosePointsCov at the rotations T and U): the generators
+/// G = T U diag(nt sqrt(maxDist)) and the shape G G', bit for bit on lean.
+Ellipsoid aux_full_rank(const Tensor &c, const Tensor &centered, const Tensor &T) {
+    const int64_t count = centered.shape()[1];
+    const Tensor rotated = T.matrix_transpose().matmul(centered);
+    // the sample covariance in the rotated coordinates, normalized by p - 1
+    const Tensor deviations = rotated - rotated.mean(1, true);
+    const Tensor covariance = deviations.matmul(deviations.matrix_transpose()) / double(count - 1);
+    const Tensor U = covariance.svd()[0];
+    const Tensor oriented = U.matrix_transpose().matmul(rotated);
+    // the radius of each axis is its largest coordinate, as CORA takes it
+    const Tensor radius = oriented.max(1, true).maximum(oriented.min(1, true));
+    const Tensor ratio = oriented.divide(radius);
+    const double max_dist = ratio.multiply(ratio).sum(0, true).max().item();
+    const Tensor G = T.matmul(U).multiply((radius * std::sqrt(max_dist)).matrix_transpose());
+    return {c.squeeze(-1), G.matmul(G.matrix_transpose())};
 }
 
 } // namespace
@@ -85,6 +110,8 @@ Ellipsoid Ellipsoid::enclose_points(const Tensor &points_rows, const std::string
     const int64_t rank = padded.matrix_rank();
     // a cloud of one point is that point
     if (rank == 0) return {c.squeeze(-1), points.zeros_like({n, n})};
+    // a cloud that spans the space: CORALean's order
+    if (rank == n && n >= 2 && method == "cov") return aux_full_rank(c, centered, T);
     const auto [Q_reduced, q_reduced] =
         aux_reduced(T.matrix_transpose().matmul(centered).slice(0, 0, rank), method);
     const int64_t missing = n - rank;

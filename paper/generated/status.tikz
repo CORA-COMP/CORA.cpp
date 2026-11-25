@@ -29,13 +29,13 @@
     major x grid style={draw=black!15, line width=0.4pt}]
 \addplot[draw=none, forget plot] coordinates {(0,0) (0,5)};
 \begin{scope}\clip([yshift=-5.5pt]axis cs:0,0) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:894,0) -- ([yshift=5.5pt]axis cs:894,0) [sharp corners] -- ([yshift=5.5pt]axis cs:0,0) -- cycle;
-\fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,0) rectangle ([yshift=5.5pt]axis cs:339,0);
-\fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:339,0) rectangle ([yshift=5.5pt]axis cs:434,0);
-\fill[CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:434,0) rectangle ([yshift=5.5pt]axis cs:529,0);
+\fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,0) rectangle ([yshift=5.5pt]axis cs:349,0);
+\fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:349,0) rectangle ([yshift=5.5pt]axis cs:438,0);
+\fill[CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:438,0) rectangle ([yshift=5.5pt]axis cs:529,0);
 \fill[white] ([yshift=-5.5pt]axis cs:529,0) rectangle ([yshift=5.5pt]axis cs:894,0);
 \end{scope}
 \draw[black, line width=0.2pt] ([yshift=-5.5pt]axis cs:0,0) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:894,0) -- ([yshift=5.5pt]axis cs:894,0) [sharp corners] -- ([yshift=5.5pt]axis cs:0,0) -- cycle;
-\node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:894,0) {38\%\hspace{0.8em}\textcolor{black!40}{+14}};
+\node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:894,0) {39\%\hspace{0.8em}\textcolor{black!40}{+14}};
 \begin{scope}\clip([yshift=-5.5pt]axis cs:0,1) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:160.775,1) -- ([yshift=5.5pt]axis cs:160.775,1) [sharp corners] -- ([yshift=5.5pt]axis cs:0,1) -- cycle;
 \fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,1) rectangle ([yshift=5.5pt]axis cs:16,1);
 \fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:16,1) rectangle ([yshift=5.5pt]axis cs:31.7746,1);
@@ -77,7 +77,7 @@
 \end{axis}
 \begin{axis}[at={(groups.south west)}, anchor=south west, height=3.0cm, width=0.50\linewidth-2.55cm, xmax=1400, hide axis, clip=false]
 \addplot[draw=none] coordinates {(0,0) (0,5)};
-\node[font=\ttfamily\scriptsize, text=white, inner sep=0pt] at (axis cs:169.5,0) {339};
+\node[font=\ttfamily\scriptsize, text=white, inner sep=0pt] at (axis cs:174.5,0) {349};
 \node[font=\ttfamily\scriptsize, text=black, inner sep=0pt] at (axis cs:711.5,0) {365};
 \end{axis}
 
@@ -111,12 +111,12 @@
 \addlegendimage{fill=white}
 \addlegendentry{not ported}
 \begin{scope}\clip[rounded corners=1.5pt] ([yshift=-5.5pt]axis cs:0,0) rectangle ([yshift=5.5pt]axis cs:101.159,0);
-\fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,0) rectangle ([yshift=5.5pt]axis cs:97.4382,0);
-\fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:97.4382,0) rectangle ([yshift=5.5pt]axis cs:99.5425,0);
+\fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,0) rectangle ([yshift=5.5pt]axis cs:97.6212,0);
+\fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:97.6212,0) rectangle ([yshift=5.5pt]axis cs:99.5425,0);
 \fill[CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:99.5425,0) rectangle ([yshift=5.5pt]axis cs:101.159,0);
 \end{scope}
 \draw[black, line width=0.2pt] [rounded corners=1.5pt] ([yshift=-5.5pt]axis cs:0,0) rectangle ([yshift=5.5pt]axis cs:101.159,0);
-\node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:101.159,0) {1065/1093};
+\node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:101.159,0) {1067/1093};
 \begin{scope}\clip[rounded corners=1.5pt] ([yshift=-5.5pt]axis cs:0,1) rectangle ([yshift=5.5pt]axis cs:100,1);
 \fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,1) rectangle ([yshift=5.5pt]axis cs:90.625,1);
 \fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:90.625,1) rectangle ([yshift=5.5pt]axis cs:92.6339,1);
@@ -133,7 +133,7 @@
 \end{axis}
 \begin{axis}[at={(arch.south west)}, anchor=south west, height=1.6cm, width=2.47cm, xmax=100, hide axis, clip=false]
 \addplot[draw=none] coordinates {(0,0) (0,2)};
-\node[font=\ttfamily\scriptsize, text=white, inner sep=0pt] at (axis cs:48.7191,0) {97.4\%};
+\node[font=\ttfamily\scriptsize, text=white, inner sep=0pt] at (axis cs:48.8106,0) {97.6\%};
 \node[font=\ttfamily\scriptsize, text=white, inner sep=0pt] at (axis cs:45.3125,1) {90.6\%};
 \node[font=\ttfamily\scriptsize, text=white, inner sep=0pt] at (axis cs:49.0417,2) {98.1\%};
 \end{axis}

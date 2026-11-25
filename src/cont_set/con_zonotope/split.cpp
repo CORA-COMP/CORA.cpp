@@ -1,8 +1,9 @@
 // split - a constrained zonotope cut into two that cover it, as CORA's conZonotope.split
 //
-// The pieces are the intersections of the set with the two halves of its box cut at the center of
-// coordinate N; without N one pair per coordinate. They cover the set and are exact up to the
-// linear programs of the box. An empty set is Error::empty_set. Not a batch.
+// The pieces are the intersections of the set with the two halves of its box cut at the middle
+// (inf + sup) / 2 of coordinate N, as CORALean's ConZonotope.splitWith; without N one pair per
+// coordinate. They cover the set and are exact up to the linear programs of the box. An empty set
+// is Error::empty_set. Not a batch.
 //
 // Syntax:   [cZ1, cZ2] = cz.split(N);   pieces = cz.split();
 // Inputs:   N - a coordinate (0-based) of the box around the set
@@ -13,7 +14,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -37,18 +38,12 @@ detail::Refusal aux_refusal(const ConZonotope &cz) {
     return std::nullopt;
 }
 
-/// The two pieces of the box I cut at the center of coordinate d (CORA's aux_splitOneDim): the
-/// center and radius are moved by half the radius, in the order CORA computes them.
+/// The set intersected with the two halves of the box I at the middle of coordinate d
+/// (Interval::split, CORALean's Interval.splitAt).
 std::pair<ConZonotope, ConZonotope> aux_split_dim(const ConZonotope &cz, const Interval &I,
                                                   int64_t d) {
-    const Tensor c = I.center(), r = I.half_width();
-    std::vector<double> unit(std::size_t(cz.dim()), 0.0);
-    unit[d] = 1.0;
-    const Tensor shift = Tensor::like(c, unit, {cz.dim()}).multiply(r * 0.5);
-    const Tensor radius = r - shift;
-    const Tensor lower = c - shift, upper = c + shift;
-    return {cz.intersect(Interval(lower - radius, lower + radius)),
-            cz.intersect(Interval(upper - radius, upper + radius))};
+    const auto [lower, upper] = I.split(d);
+    return {cz.intersect(lower), cz.intersect(upper)};
 }
 
 } // namespace

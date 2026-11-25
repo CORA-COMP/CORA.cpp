@@ -3,11 +3,12 @@
 // in another form, inside its interval hull
 //
 // convHull as a hull with inequality rows on the multipliers, enclose with inequality rows,
-// intersectStrip with the gain's product rounded in another order, interval as a bound from a
-// program, reduce and quadMap with CORALean's layout of the new factors, split with bounds from a
-// program: the center c matches bit for bit where kept and CORA.cpp's box lies inside the
+// interval as a bound from a program, quadMap with CORALean's layout of the new factors, and
+// intersectStrip, reduce and split as enclosures of the oracle's own construction (its split cuts
+// its own box): the center c matches bit for bit where kept and CORA.cpp's box lies inside the
 // oracle's. cubMap sums all N^3 terms in closed form: its hull lies inside the oracle's up to a
-// relative 1e-10. None is bit-exact, so there is no ORACLE tag.
+// relative 1e-10. None of these is bit-exact, so there is no ORACLE tag; intersectStrip at a given
+// gain, reduce and split at CORA.cpp's box are, in test_lean_con_zonotope_rescale_split.
 //
 // CORA: contSet/@conZonotope/convHull_.m
 // CORA: contSet/@conZonotope/enclose.m
@@ -20,7 +21,7 @@
 // CORA authors: Dmitry Grebenyuk, Matthias Althoff, Mark Wetzlinger, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"

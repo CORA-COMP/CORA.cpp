@@ -8,7 +8,7 @@
 // CORA.cpp only: MATLAB writes blkdiag and horizontal concatenation inline
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -101,8 +101,9 @@ ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const
     const int64_t n = cz1.dim(), m2 = cz2.nr_generators();
     // the factors of both sets, the first set's generators carry the result
     const Tensor G = Tensor::concat({cz1.generators(), zeros_block(cz1.generators(), m2, n)}, -2);
-    // each set keeps its constraints; one row per dimension makes the images agree
-    const Tensor agree = Tensor::concat({MG, -cz2.generators()}, -2).matrix_transpose();
+    // a row per dimension makes the images agree; 0 - G keeps zeros +0, as the oracle reads them
+    const Tensor negated = cz2.generators().zeros_like() - cz2.generators();
+    const Tensor agree = Tensor::concat({MG, negated}, -2).matrix_transpose();
     const Tensor rows = Tensor::concat({Tensor::block_diag({cz1.A(), cz2.A()}), agree}, -2);
     const Tensor b = Tensor::concat({cz1.b(), cz2.b(), cz2.c() - Mc}, -1);
     return {cz1.c(), G, rows, b};

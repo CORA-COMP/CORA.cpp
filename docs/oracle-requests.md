@@ -863,3 +863,26 @@ CORALean has float definitions of the backward steps of CORA's `syntaxTree` (`Sy
 |---|---|---|---|
 | `levelSet.tightenDomain` (sin, cos, tan) | `SyntaxTree.backpropagationFloat`, `funHanSinFloat`, `funHanCosFloat`, `funHanTanFloat` | `eq` (expression tree), `I` (box) | the contracted box, or none |
 | `specification.splitLogic` | none | the list of specifications | the two lists |
+
+## Ellipsoids and constrained zonotopes (PR "oracle/sets-ellipsoid-conzono", part of #213)
+
+Served in CORALean (tag `oracle-20261125-3b7a35c83`) and now `oracle`, bit for bit on the lean backend
+(`test_lean_ellipsoid_support`, `test_lean_con_zonotope_rescale_split`):
+
+| row | op | CORA.cpp's side |
+|---|---|---|
+| `ellipsoid/supportFunc_` | `ellipsoid.supportFunc` (`Ellipsoid.supportFuncUp`) | `d'(Q d)` in that order, then `d'q + sqrt(.)` |
+| `ellipsoid/minkDiff` | `ellipsoid.minkDiff` with a point (`Ellipsoid.minkDiffPoint`) | `q - p`; the difference of two ellipsoids has no op |
+| `ellipsoid/enclosePoints` | `ellipsoid.enclosePoints` (`Ellipsoid.enclosePointsCov` at CORA.cpp's rotations `T`, `U`) | a cloud that spans the space: `G = T U diag(nt sqrt(maxDist))`, `Q = G G'` |
+| `ellipsoid/dim`, `ellipsoid/isnan`, `conZonotope/dim` | `ellipsoid.dim`, `ellipsoid.isnan`, `conZonotope.dim` | unchanged |
+| `conZonotope/rescale` | `conZonotope.rescale` at the factor ranges of the linear programs | the radius `max(hi - m, m - lo)` |
+| `conZonotope/split` | `conZonotope.split` with the box `I` (`ConZonotope.splitWith`) | CORA.cpp's box cut by `Interval::split` |
+| `conZonotope/intersectStrip` | `conZonotope.intersectStrip` at a given gain | `G - L (C G)` for a given gain; the gains of the methods have no op |
+| `conZonotope/reduce` | `conZonotope.reduce` | unchanged (already in CORALean's layout) |
+
+Negated zero entries of the agreement and strip rows are built as `+0` (`0 - G`, `diag(-phi)`), as the
+oracle reads them. The other rows of both classes stay `property` or `ported`: an LP, SDP or Eigen
+factorization (contains, ellipsoidNorm, norm, radius, volume, generators, zonotope, interval, center,
+isFullDim, supportFunc_ of a constrained zonotope), a certificate that is sufficient only, another set
+in CORALean (vertices, zonoBundle, plus of ellipsoids), or a layout whose CORA-order float definition
+CORALean lacks (convHull, enclose, quadMap, cubMap of constrained zonotopes).

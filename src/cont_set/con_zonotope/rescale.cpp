@@ -21,7 +21,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -135,14 +135,6 @@ bool aux_iterate(const std::vector<double> &M, int64_t p, int64_t m, std::vector
     return true;
 }
 
-// Scaling -----------------------------------------------------------------------------------------
-
-/// A row (1, m) or column (m, 1) of host values like `like`.
-Tensor aux_vector(const Tensor &like, const std::vector<double> &v, bool column) {
-    const int64_t m = int64_t(v.size());
-    return Tensor::like(like, v, column ? Shape{m, 1} : Shape{1, m});
-}
-
 } // namespace
 
 
@@ -183,15 +175,12 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
         if (!aux_iterate(e.M, p, m, lo, hi))
             CORA_FAIL(Error::empty_set, "rescale: the set is empty");
     }
-    std::vector<double> middle(lo.size()), radius(lo.size());
-    for (std::size_t j = 0; j < lo.size(); ++j) {
-        // middle and radius of the ranges
-        middle[j] = (hi[j] + lo[j]) / 2;
-        radius[j] = (hi[j] - lo[j]) / 2;
-    }
-    // the new factors are (x - middle) / radius: shift the center and offset, scale the columns
-    const Tensor m_col = aux_vector(c_.expand_dims(-1), middle, true),
-                 r_row = aux_vector(c_.expand_dims(-1), radius, false);
+    // the ranges as a box; its radius reaches both ends, as in Interval::zonotope and CORALean
+    const int64_t factors = static_cast<int64_t>(lo.size());
+    const Interval ranges(Tensor::like(c_, lo, {factors}), Tensor::like(c_, hi, {factors}));
+    const Tensor middle = ranges.center();
+    const Tensor radius = (ranges.sup() - middle).maximum(middle - ranges.inf());
+    const Tensor m_col = middle.expand_dims(-1), r_row = radius.expand_dims(0);
     return {(c_.expand_dims(-1) + G.matmul(m_col)).squeeze(-1),
             G.multiply(r_row).matrix_transpose(), A.multiply(r_row),
             (b - A.matmul(m_col)).squeeze(-1)};
