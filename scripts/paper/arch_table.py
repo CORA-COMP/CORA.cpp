@@ -87,7 +87,8 @@ ALL_TOOLS = (("CORA", "CORA"), ("JuliaReach", "JR"), ("JuliaReach discrete-time"
          ("CROWN-Reach", "CR"), ("immrax", "imx"))
 
 # the tool columns of the table (the user's choice, 2026-11-24): the bold time and the speedup count these only
-TOOLS = (("CORA", "CORA"), ("JuliaReach", "JuliaReach"), ("CROWN-Reach", "CROWN-Reach"))
+TOOLS = tuple(sorted((("CORA", "CORA"), ("CROWN-Reach", "CROWN-Reach"), ("JuliaReach", "JuliaReach")),
+                     key=lambda tool: tool[0].lower()))  # by name; CORA++ is always last
 
 # why a time does not count, as the CSV's `note` says it, and its mark in the table
 MARKS = {"other-problem": r"\dag", "code-differs": r"\S", "verdict": r"\ddag"}
@@ -308,10 +309,10 @@ def render(rows, readme):
         r"\setlength{\LTcapwidth}{\linewidth}",
         r"\begin{longtable}{@{}l" + "r" * (ncols - 1) + "@{}}",
         # the caption with the legend, then the header of the first and of every other page and the feet
-        r"\caption{ARCH-COMP26 results: the computation times in seconds of CORA, JuliaReach and CROWN-Reach in "
+        r"\caption{ARCH-COMP26 results: the computation times in seconds of CORA, CROWN-Reach and JuliaReach in "
         r"the category reports~\cite{althoff2026arch,geretti2026arch,sasaki2026arch} and of CORA++, one row per "
         r"instance; `--' where a tool has no time. The fastest counted time of these four is bold. Speedup: the "
-        r"fastest counted time of CORA, JuliaReach and CROWN-Reach divided by CORA++'s. DP~Double Pendulum. "
+        r"fastest counted time of CORA, CROWN-Reach and JuliaReach divided by CORA++'s. DP~Double Pendulum. "
         r"CORA++: single runs, "
         r"16 CPUs of a shared machine, the same machine as the reports' CORA and JuliaReach times of AFF and NLN. "
         r"Notes and marks below the table.}",
