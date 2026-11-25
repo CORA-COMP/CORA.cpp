@@ -1164,7 +1164,7 @@
   "nn/layers/evaluatePolyZonotopeNeuron": "oracle",
   "nn/layers/evaluateTaylm": "oracle",
   "nn/layers/evaluateZonotopeBatch": "oracle",
-  "nn/layers/findRegionPolys": "property",
+  "nn/layers/findRegionPolys": "oracle",
   "nn/layers/getMergeBuckets": "oracle",
   "nn/layers/instantiateFromString": "out-of-scope",
   "nn/layers/nnActLayerFromHandle": "out-of-scope",

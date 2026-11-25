@@ -723,17 +723,15 @@ Served since oracle-20261124-a121ddabc (CORALean `NnWeightOps`, `NnSystemOps`, `
 `NnConZonoOps`) on dense ReLU and identity chains, bit for bit at nearest:
 `neuralNetwork.castWeights` (`to(float32)` against the rounding to nearest in `ieee:binary32`),
 `generateRandom` and `initWeights` (glorot; the test draws CORA.cpp's `Rng` units again from the
-seed and sends them; shi's Box-Muller takes libm's log, cos and sin, which differ by an ulp
-between platforms, so it is tested by properties), `resetApproxOrder` and `refine` (`test_lean_nn_weights`);
+seed and sends them; shi since batch 11 below), `resetApproxOrder` and `refine` (`test_lean_nn_weights`);
 `nonlinearSysDT` (the output with the offsets, `C` and every block of `D`) and `explain` (method
 standard on the order given; `test_lean_nn_system`); `computeReducedNetwork` (static buckets) and
 `evaluateConZonotope` (a zonotope without constraints at the box bounds; `test_lean_nn_reduce`).
 Zeros are compared as x + 0 where an identity map or a sum of zero products may flip their sign.
 Not served: explain's `abstract+refine` (the FGSM `mask`, the random rates) and its timeout,
 dynamic buckets and input compression, constraints and linear-program bounds of
-`evaluateConZonotope`, sigmoid and tanh in `nonlinearSysDT`. `find_region_polys` has no op (the
-regression fits of orders 0 and 2 have no CORALean definition); it now lowers the order down to a
-constant, as CORA (property test).
+`evaluateConZonotope`, sigmoid and tanh in `nonlinearSysDT`. `find_region_polys` lowers the
+order down to a constant, as CORA (served in batch 11 below).
 
 | op | request fields | reply |
 |---|---|---|
@@ -745,6 +743,25 @@ constant, as CORA (property test).
 | `neuralNetwork.explain` | `layers` (kinds), `x`, `label`, `epsilon`, `featOrder`, `inputSize`, `outputThreshold` | `freed` |
 | `neuralNetwork.computeReducedNetwork` | `layers`, `Z`, `bucketTol`, `reductionRate`, `minSearches` | `layers`, `d`, `merged`, `reductionRate`, `Z` |
 | `neuralNetwork.evaluateConZonotope` | `layers`, `c`, `G` | `empty`, or `c`, `G`, `A`, `b` |
+
+## NN shi weights and region polynomials (PR "oracle/nn-batch11", batch 11)
+
+Served since oracle-20261125-c8e492f21 (CORALean `NnWeightOps`, `NnRegionOps`), bit for bit at
+nearest. `initWeights` shi: CORA.cpp now draws standard normals and multiplies them by
+`sqrt(2 pi) / n` afterwards, CORA's `normrnd` order (`randn .* sigma`); the test draws the normals
+again from the seed and sends them as `normals`, so the oracle only scales them and Box-Muller's
+log, cos and sin stay on one platform (`test_lean_nn_weights`). `findRegionPolys` of a ReLU: every
+region between the outer two, its ends, regression polynomial and radius, on random tolerances,
+orders and domains, and CORA's notConverged on both sides (`test_lean_nn_regions`). The regression
+fit's Vandermonde matrix takes repeated products instead of `std::pow` (libm's pow is not correctly
+rounded: about 0.09% of squares and a quarter of cubes differ from the products), so its order 0
+and 1 rows are unchanged. Not served: sigmoid and tanh in `findRegionPolys` (their error samples
+`exp` and `tanh` at up to 2e7 points).
+
+| op | request fields | reply |
+|---|---|---|
+| `neuralNetwork.initWeights` | `layers`, `method` `shi`, `which`, `normals` (per layer the `m n` standard normals) | `layers` |
+| `nnLayer.findRegionPolys` | `activation` (`relu`), `tol`, `order`, `lMax`, `uMax` | `regions` (`l`, `u`, `p`, `d`) |
 
 ### Discrete-time nonlinear systems (port batch nlsdt)
 

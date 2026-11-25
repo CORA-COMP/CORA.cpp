@@ -14,7 +14,7 @@
 //             sort, generator reduction, normal form) and the passes of a ReLU chain (propagate
 //             bounds, the gradients at a box and at a point, the sensitivity); batch gradients,
 //             FGSM, the input order, the structure, the weights, the orders, the system, explain,
-//             the reduced network and the constrained zonotope
+//             the reduced network, the constrained zonotope and a ReLU's region polynomials
 // See also:   lean/request.h, cora/nn/neural_network/neural_network.h
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
@@ -302,12 +302,12 @@ struct NnRandom {
 NnRandom generate_random(const std::array<int64_t, 4> &sizes, const std::vector<double> &size_draws,
                          const std::vector<std::pair<cora::Tensor, cora::Tensor>> &draws);
 
-/// neuralNetwork.initWeights on CORA.cpp's units: the new W (a box) of every layer in which (all
-/// if empty), none for a layer kept; the units per layer drawn again (glorot m n, shi m n even).
-std::vector<std::optional<Interval>> init_weights(const NeuralNetwork &nn,
-                                                  const std::string &method,
-                                                  const std::vector<int64_t> &which,
-                                                  const std::vector<cora::Tensor> &draws);
+/// neuralNetwork.initWeights on CORA.cpp's draws: the new W (a box) of every layer in which (all
+/// if empty), none for a layer kept; per layer drawn again the units (glorot m n) or, with
+/// normals, shi's m n standard normals, which the oracle only scales.
+std::vector<std::optional<Interval>>
+init_weights(const NeuralNetwork &nn, const std::string &method, const std::vector<int64_t> &which,
+             const std::vector<cora::Tensor> &draws, bool normals = false);
 
 // The system, the explanation and the reduction ---------------------------------------------------
 
@@ -349,6 +349,10 @@ struct NnConZono {
 /// neuralNetwork.evaluateConZonotope of a ReLU chain on the zonotope c + G x (no constraints).
 NnConZono evaluate_con_zonotope(const NeuralNetwork &nn, const cora::Tensor &c,
                                 const cora::Tensor &G);
+
+/// nnLayer.findRegionPolys of a ReLU (nearest only): the regions between the two outer ones, each
+/// with its polynomial (highest power first) and radius, sorted by l.
+std::vector<RegionPoly> find_region_polys(double tol, int64_t order, double l_max, double u_max);
 
 } // namespace cora::lean
 

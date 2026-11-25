@@ -781,16 +781,16 @@ NnRandom generate_random(const std::array<int64_t, 4> &sizes, const std::vector<
 }
 
 // a layer drawn again has a box of weights, a layer kept its own matrix
-std::vector<std::optional<Interval>> init_weights(const NeuralNetwork &nn,
-                                                  const std::string &method,
-                                                  const std::vector<int64_t> &which,
-                                                  const std::vector<cora::Tensor> &draws) {
+std::vector<std::optional<Interval>>
+init_weights(const NeuralNetwork &nn, const std::string &method, const std::vector<int64_t> &which,
+             const std::vector<cora::Tensor> &draws, bool normals) {
     std::string dtype;
     const Json chain = aux_chain(nn, dtype);
     Json units = Json::array();
     for (const cora::Tensor &u : draws) units.push(aux_column(u).to_json());
-    std::vector<Operand> args{
-        {"layers", Wire(chain, dtype)}, {"method", method}, {"draws", Wire(units, dtype)}};
+    std::vector<Operand> args{{"layers", Wire(chain, dtype)},
+                              {"method", method},
+                              {normals ? "normals" : "draws", Wire(units, dtype)}};
     if (!which.empty()) args.push_back({"which", which});
     // the layers drawn again by `which`, in the order of the reply
     std::vector<std::optional<Interval>> out;
@@ -886,6 +886,20 @@ NnConZono evaluate_con_zonotope(const NeuralNetwork &nn, const cora::Tensor &c,
     if (r.get<bool>("empty")) return {true, {}, {}, {}, {}};
     return {false, r.get<Tensor>("c").gather(), r.get<Tensor>("G").gather(),
             r.get<Tensor>("A").gather(), r.get<Tensor>("b").gather()};
+}
+
+// The regions of a ReLU polynomial ----------------------------------------------------------------
+
+// the regions between the outer two, each polynomial a column of the reply
+std::vector<RegionPoly> find_region_polys(double tol, int64_t order, double l_max, double u_max) {
+    const Reply r = ask(
+        "nnLayer.findRegionPolys",
+        {{"activation", "relu"}, {"tol", tol}, {"order", order}, {"lMax", l_max}, {"uMax", u_max}});
+    std::vector<RegionPoly> out;
+    for (const Reply &g : r.list("regions"))
+        out.push_back({g.get<double>("l"), g.get<double>("u"), g.get<Tensor>("p").gather().data(),
+                       g.get<double>("d")});
+    return out;
 }
 
 } // namespace cora::lean

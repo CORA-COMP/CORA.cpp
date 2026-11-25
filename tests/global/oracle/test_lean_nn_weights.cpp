@@ -9,14 +9,14 @@
 // CORA.cpp against the oracle, bit for bit: the network in single precision (to(float32)) as the
 // oracle's rounding to nearest in ieee:binary32; random and re-initialized (glorot) networks on
 // the units of CORA.cpp's Rng, which the test draws again from the same seed in the same order (a
-// uniform at [0, 1) is the unit itself); order_pattern without orders as resetApproxOrder; and one
-// step of refine of every type and heuristic kind on random heuristics. Not compared: shi, whose
-// Box-Muller normals take libm's log, cos and sin (not correctly rounded, so CORA.cpp's and the
-// oracle's libm differ by an ulp between platforms); test_neural_network_random_network has it.
+// uniform at [0, 1) is the unit itself), shi on the standard normals of the same stream, which
+// the oracle only scales (Box-Muller's log, cos and sin stay on the platform's libm, on both
+// sides); order_pattern without orders as resetApproxOrder; and one step of refine of every type
+// and heuristic kind on random heuristics.
 //
 // Authors:       Claude Opus 5.5
 // Written:       25-November-2026
-// Last update:   ---
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -57,6 +57,13 @@ Tensor aux_units(Rng &rng, int64_t n) {
     std::vector<double> u(static_cast<std::size_t>(n));
     rng.uniform(u.data(), u.size(), 0.0, 1.0);
     return Tensor::from_data(u, {n});
+}
+
+/// The next n standard normals of the stream, one draw of the Rng (Rng::normal at scale 1).
+Tensor aux_normals(Rng &rng, int64_t n) {
+    std::vector<double> z(static_cast<std::size_t>(n));
+    rng.normal(z.data(), z.size(), 1.0);
+    return Tensor::from_data(z, {n});
 }
 
 /// The orders as the oracle's integers.
@@ -116,17 +123,18 @@ void aux_check_random(const RandomOptions &o) {
 void aux_check_init(const NeuralNetwork &nn, const std::string &method, uint64_t seed,
                     const std::vector<int64_t> &which) {
     const NeuralNetwork fresh = nn.init_weights(method, seed, which);
-    // one draw per layer drawn again: m n units
+    // one draw per layer drawn again: m n units (glorot) or m n standard normals (shi)
+    const bool shi = method == "shi";
     Rng rng(seed);
     std::vector<Tensor> draws;
     for (std::size_t k = 0; k < nn.layers().size(); ++k) {
         if (!which.empty() && std::find(which.begin(), which.end(), int64_t(k)) == which.end())
             continue;
         const int64_t q = nn.layers()[k].W.numel();
-        draws.push_back(aux_units(rng, q));
+        draws.push_back(shi ? aux_normals(rng, q) : aux_units(rng, q));
     }
     const std::vector<std::optional<lean::Interval>> theirs =
-        lean::init_weights(nn, method, which, draws);
+        lean::init_weights(nn, method, which, draws, shi);
     for (std::size_t k = 0; k < nn.layers().size(); ++k) {
         if (!theirs[k]) continue;
         aux_check_point("initWeights " + method + " W" + std::to_string(k), fresh.layers()[k].W,
@@ -169,12 +177,14 @@ int main() {
         for (const uint64_t seed : {1u, 2u, 5u, 11u}) aux_check_random({.seed = seed});
         aux_check_random({.inputs = 2, .outputs = 0, .layers = 3, .hidden = 0, .seed = 17});
     });
-    // the weights drawn again (glorot: sqrt and arithmetic only), all layers and the last
+    // the weights drawn again (sqrt and arithmetic only on the draws), all layers and the last
     oracle::run("neuralNetwork.initWeights", [&](oracle::Random &rnd) {
         for (std::size_t t = 0; t < chains.size(); ++t) {
             const NeuralNetwork nn = aux_chain(rnd, chains[t].first, chains[t].second);
-            aux_check_init(nn, "glorot", 1 + t, {});
-            aux_check_init(nn, "glorot", 7 + t, {int64_t(nn.layers().size()) - 1});
+            for (const char *method : {"glorot", "shi"}) {
+                aux_check_init(nn, method, 1 + t, {});
+                aux_check_init(nn, method, 7 + t, {int64_t(nn.layers().size()) - 1});
+            }
         }
     });
     // the orders: every one 1, then one step of refine

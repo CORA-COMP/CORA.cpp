@@ -28,7 +28,7 @@
 // CORA authors: Tobias Ladner, Lukas Koller
 // Authors:       Claude Sonnet 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -56,15 +56,17 @@ int64_t aux_randi(Rng &rng, int64_t lo, int64_t hi) {
     return std::min(hi, lo + int64_t(std::floor(u * double(hi - lo + 1))));
 }
 
-/// A tensor of the shape with entries uniform in [lo, hi), or normal with the scale.
+/// A tensor of the shape with entries uniform in [lo, hi), or normal with the scale hi.
 CORA_FROM_NUMBERS Tensor aux_draw(Rng &rng, const std::vector<int64_t> &shape, bool normal,
                                   double lo, double hi) {
     int64_t n = 1;
     for (const int64_t s : shape) n *= s;
     std::vector<double> v(static_cast<std::size_t>(n));
-    if (normal)
-        rng.normal(v.data(), v.size(), hi);
-    else
+    if (normal) {
+        // standard normals times the scale afterwards, as CORA's normrnd (randn .* sigma)
+        rng.normal(v.data(), v.size(), 1.0);
+        for (double &x : v) x *= hi;
+    } else
         rng.uniform(v.data(), v.size(), lo, hi);
     return Tensor::from_data(v, shape);
 }
