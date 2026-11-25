@@ -110,10 +110,8 @@ them in its job summary.
 
 ## Connection to CORALean
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/coralean-dark.svg">
-  <img alt="CORA.cpp and CORALean" src="docs/coralean.svg">
-</picture>
+![CORA.cpp and CORALean](docs/coralean.svg#gh-light-mode-only)
+![CORA.cpp and CORALean](docs/coralean-dark.svg#gh-dark-mode-only)
 
 With the oracle set up (`CORACPP_ORACLE`, see [CONTRIBUTING.md](CONTRIBUTING.md)), the `lean` backend
 of CORA.cpp is compared bit for bit with CORALean's `nearest` oracle, which rounds to nearest and is
