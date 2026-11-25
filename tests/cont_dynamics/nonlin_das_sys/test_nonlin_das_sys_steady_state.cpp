@@ -39,9 +39,9 @@ void the_steady_state_has_f_and_g_zero(const std::string &b) {
           b + ": the steady state is (1, 1)");
     // x' = y - 1, 0 = y - x^2 has the steady state (1, 1) and (-1, 1)
     const NonlinDASys square(
-        [](const Vars &, const Vars &y, const Vars &) { return Vars{y[0] - 1}; },
-        [](const Vars &x, const Vars &y, const Vars &) { return Vars{y[0] - x[0] * x[0]}; }, 1, 0,
-        1);
+        [](const Vars &, const Vars &yv, const Vars &) { return Vars{yv[0] - 1}; },
+        [](const Vars &xv, const Vars &yv, const Vars &) { return Vars{yv[0] - xv[0] * xv[0]}; }, 1,
+        0, 1);
     const auto [xs, ys] = square.steady_state(col(2.0), col(2.0), Tensor::zeros({0}));
     check(test::close(xs, col(1.0), 1e-9) && test::close(ys, col(1.0), 1e-9),
           b + ": a nonlinear steady state");

@@ -123,7 +123,9 @@ void a_weak_nonlinearity_and_a_linear_system(const std::string &b) {
     check(outside == 0, b + ": " + std::to_string(outside) + " end points outside");
     // a linear system has no error to tune to: as CORALean's, the loop runs out of fuel
     const NonlinearSys linear(
-        [](const std::vector<Expr> &x) { return std::vector<Expr>{-x[0] + x[1], -x[0] - x[1]}; },
+        [](const std::vector<Expr> &xe) {
+            return std::vector<Expr>{-xe[0] + xe[1], -xe[0] - xe[1]};
+        },
         2);
     check(test::raises(
               [&] {

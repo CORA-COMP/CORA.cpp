@@ -247,7 +247,8 @@ scripts/with_env.sh python scripts/ci/check_quality.py tidy          # clang-tid
 ```
 
 - **Warnings are errors.** The presets set `CORACPP_WERROR=ON` (`-Werror`, MSVC `/W4 /WX`); fix the warning, or opt out
-  of a local build with `-DCORACPP_WERROR=OFF`.
+  of a local build with `-DCORACPP_WERROR=OFF`. GCC builds also use `-Wshadow=local`, which finds a local that hides
+  another one (MSVC's C4456, an error under `/WX`): rename the inner variable.
 - **clang-format** checks the layout of every C++ file; `format --fix` rewrites it. Never format by hand.
 - **clang-tidy** checks bugprone-*, performance-* and a few modernize-*/readability-* (`.clang-tidy` says what is left out
   and why). A header is checked through one source that includes it. `tidy --fix` applies the repairs it has; a

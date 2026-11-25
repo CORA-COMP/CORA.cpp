@@ -356,10 +356,11 @@ std::map<std::string, Case> aux_cases() {
             return V{Tc, TG};
         }};
     c["zonotope_linear_combination"] = {1, [](O &o) {
-                                            const auto [c, G] = Tensor::zonotope_linear_combination(
-                                                o.batch(2, 4, 1).squeeze(-1), o.batch(2, 5, 4),
-                                                o.batch(2, 4, 1).squeeze(-1), o.batch(2, 5, 4));
-                                            return V{c, G};
+                                            const auto [Zc, ZG] =
+                                                Tensor::zonotope_linear_combination(
+                                                    o.batch(2, 4, 1).squeeze(-1), o.batch(2, 5, 4),
+                                                    o.batch(2, 4, 1).squeeze(-1), o.batch(2, 5, 4));
+                                            return V{Zc, ZG};
                                         }};
     c["interval_matmul"] = {6, [](O &o) {
                                 const Tensor lo = o.batch(2, 4, 6), w = o.batch(2, 4, 6).abs();
