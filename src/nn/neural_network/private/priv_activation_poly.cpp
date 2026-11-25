@@ -13,7 +13,7 @@
 // CORA authors: Tobias Ladner, Niklas Kochdumper, Sebastian Sigl
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       13-November-2026
-// Last update:   24-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "nn/neural_network/private/priv_activation_poly.h"
@@ -133,8 +133,14 @@ Poly aux_least_squares(const std::vector<double> &x, const std::vector<double> &
     const std::size_t m = x.size(), k = std::size_t(n) + 1;
     std::vector<std::vector<double>> A(m, std::vector<double>(k, 0.0));
     std::vector<double> b = y;
-    for (std::size_t i = 0; i < m; ++i)
-        for (std::size_t j = 0; j < k; ++j) A[i][j] = std::pow(x[i], double(n) - double(j));
+    for (std::size_t i = 0; i < m; ++i) {
+        // the powers x^0 .. x^n by repeated products (no libm pow, so platforms agree)
+        double power = 1.0;
+        for (std::size_t j = k; j-- > 0;) {
+            A[i][j] = power;
+            power *= x[i];
+        }
+    }
     for (std::size_t j = 0; ridge > 0 && j < k; ++j) {
         A.emplace_back(k, 0.0);
         A.back()[j] = std::sqrt(ridge);
