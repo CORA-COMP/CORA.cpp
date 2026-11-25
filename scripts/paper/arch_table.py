@@ -122,7 +122,7 @@ ROWS = ([("AFF", name.replace("_", "-"), name, note) for name, note in (
             "worst-19.5", "worst-22.5", "worst-25.5", "worst-28.5")],
         ("Attitude Control", "Attitude Control avoid", ""),
         ("QUAD", "QUAD reach", "i"),
-        ("Docking", "Docking constraint", "g"),
+        ("Docking", "Docking constraint, polytope and splitting", "g"),
         ("NAV standard", "NAV standard", "i"),
         ("NAV robust", "NAV robust", ""),
         ("CartPole*", "CartPole reach, the report's set", "hi"))])
@@ -134,7 +134,7 @@ EXCLUDED = {
     # variants that are not the problem of the specification (the user, 2026-11-24: only the specification's)
     "Unicycle reach": "the script without the specification's disturbance",
     "Double Pendulum less-robust, the script (no splitting)": "the same problem; the row splits",
-    "Docking constraint, polytope and splitting": "another constraint set than the specification's",
+    "Docking constraint": "the script's check, which ends UNKNOWN on the specification's set",
     "CartPole* reach": "the script's smaller initial set, not the specification's",
 }
 
@@ -154,7 +154,8 @@ NOTES = {
     # the rows where the specification's problem needs a word
     "e": "Unicycle: with the disturbance $w$ of the specification.",
     "f": "DP less-robust: CORA++ splits the initial set (depth 14).",
-    "g": "Docking: UNKNOWN for CORA, JuliaReach and CORA++.",
+    "g": "Docking: CORA and JuliaReach end UNKNOWN (\\ddag); CORA++ verifies the specification's initial set by "
+         "a polytope inside the constraint and 507 pieces of the initial set.",
     "h": "CartPole*: the initial set of the specification; CORA's time is for 0.4 times its radius (\\dag).",
     "i": "CORA++ runs the 13 boxes of the initial set of CVDP23 and the pieces of a split initial set (DP "
          "less-robust, QUAD, NAV standard, CartPole*) on 8 threads.",
@@ -249,8 +250,9 @@ def table_row(category, label, readme_row, entries):
     cpp_time = number(readme_row["CORA.cpp [s]"])
     expected = first_token(readme_row["expected (ARCH26)"])
     verdict = first_token(readme_row["CORA.cpp"])
-    # a verdict counts if it is the expected one, or a verified one where no tool has a verdict
-    cpp_counts = verdict not in ("U", "-") and (verdict == expected or (expected == "-" and verdict in ("V", "1")))
+    # a verdict counts if expected, or if verified where the expected one is unknown or missing (Docking)
+    cpp_counts = verdict not in ("U", "-") and (verdict == expected
+                                                or (expected in ("-", "U") and verdict in ("V", "1")))
     # only the shown tools take part in the bold time and the speedup
     entries = {tool: entries[tool] for tool, _ in TOOLS if tool in entries}
     counted = [float(t) for t, note in entries.values() if not note]
