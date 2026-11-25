@@ -370,11 +370,11 @@ def render_summary(rows):
         r"\setlength{\tabcolsep}{4pt}",
         r"\begin{tabular}{@{}l" + "c" * (len(tools) + 2) + "@{}}",
         r"\toprule",
-        # the tool names on top (CORA++ spanning its two columns), what each column counts below
-        r"\textbf{Category} & " + " & ".join(rf"\textbf{{{h}}}" for _, h in TOOLS)
+        # the tool names on top (CORA++ spanning its two columns); the row label and the counts below
+        " & " + " & ".join(rf"\textbf{{{h}}}" for _, h in TOOLS)
         + r" & \multicolumn{2}{c@{}}{\textbf{CORA++}} \\",
         "".join(rf"\cmidrule(l){{{k}-{k}}}" for k in range(2, ncols - 1)) + rf"\cmidrule(l){{{ncols - 1}-{ncols}}}",
-        " & " + " & ".join([r"\#Fastest"] * len(tools)) + r" & \#Fastest & Speedup \\",
+        r"\textbf{Category} & " + " & ".join([r"\#Fastest"] * len(tools)) + r" & \#Fastest & Speedup \\",
         r"\midrule",
     ]
     # one row per category: the counts, then the median speedup and its quartiles
