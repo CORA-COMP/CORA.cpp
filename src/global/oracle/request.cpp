@@ -56,6 +56,11 @@ template <>
 struct Decode<bool> {
     static bool of(const std::string &, const Json &j) { return j.boolean; }
 };
+// A structure the caller reads itself (an STL formula, say): the JSON as it came.
+template <>
+struct Decode<Json> {
+    static Json of(const std::string &, const Json &j) { return j; }
+};
 template <>
 struct Decode<Tensor> {
     static Tensor of(const std::string &dt, const Json &j) { return Tensor::from_json(dt, j); }
@@ -319,6 +324,7 @@ template Ellipsoid Reply::get<Ellipsoid>(const char *) const;
 template Capsule Reply::get<Capsule>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;
 template std::string Reply::get<std::string>(const char *) const;
+template Json Reply::get<Json>(const char *) const;
 // the lists
 template std::vector<int64_t> Reply::get<std::vector<int64_t>>(const char *) const;
 template std::vector<double> Reply::get<std::vector<double>>(const char *) const;
