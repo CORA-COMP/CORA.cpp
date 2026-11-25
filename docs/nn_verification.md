@@ -491,6 +491,11 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     slopes and multipliers (0 for its new split, whose gradient was 0). Each row keeps its best
     bound over the steps and its parent's (the parent's inputs contain the child's). A node is
     verified when some row's bound exceeds `verified_margin`.
+  - **Kept lines (`ZonoLineCache`):** the lines of the layers that are not ReLUs (a product's
+    from its recorded input set, a softmax's upper line, exp, reciprocal) depend on neither the
+    rows nor a node's split signs, which clamp ReLU bounds only; the search's passes compute them
+    once per record and dtype and reuse the same tensors (bit-identical bounds; vit_2023's
+    products read every generator of the root's set in each pass before).
   - **Branching:** each open node splits the unsplit neuron of the largest chord loss
     `-min(Lambda, 0) b_u` (`ZonoBackward::intercepts`, BaBSR's intercept score) in its best row; none
     above 0: the widest one (`min(-l, u)`). Children: the inactive and the active side. With
@@ -553,11 +558,21 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     (`z_j >= l_j` inactive, `z_j <= u_j` active) get multipliers `p_j, q_j >= 0`. The bound is the
     Lagrangian's minimum over the box of the factors: its constant minus the 1-norm of its
     coefficients, two products with the shared `(D, n)` rows per batch of nodes.
-    `affine_bab_steps` ascent steps (default 1) from the parent's multipliers: the supergradient
-    is the constraints at the minimizing corner, projected at 0, and the step is a line search on
-    the concave piecewise linear value (bisections between its first and last breakpoint, the
-    lower end taken, so the value does not decrease). A side that no factor of the box reaches
-    (`sigma_j c_j > |A_j|_1 + 1e-6`) is empty. Not a number counts as open.
+    The multipliers start at the parent's (0 for the new split) and take `affine_bab_polyak`
+    supergradient steps of Polyak's size toward the margin, `eta = (margin + 1e-4 - value) /
+    |g|^2` (the supergradient `g` is the constraints at the minimizing corner, projected at 0; the
+    multipliers of the best value are kept), then `affine_bab_steps` steps by a line search on the
+    concave piecewise linear value (`affine_bab_bisections` bisections between its first and last
+    breakpoint, the lower end taken, so the value does not decrease). A Polyak step costs two
+    products with the shared rows, a line search about thirty passes over the `(N, n)`
+    coefficients: on tinyimagenet two Polyak steps bound 390 000 nodes per second (A100), one
+    line-search step 180 000, with the same number of nodes. A side that no factor of the box
+    reaches (`sigma_j c_j > |A_j|_1 + 1e-6`) is empty. Not a number counts as open.
+  - **Search dtype (`affine_bab_search`, default on):** the steps run on a copy of the rows in
+    the search `dtype` (float32); only the nodes whose bound there exceeds the margin are
+    evaluated again in float64 at the multipliers the steps ended at (clamped to `>= 0`), and
+    only that float64 bound verifies a node. The others stay open. The steps only choose
+    multipliers, which any values `>= 0` make sound.
   - **Order:** per neuron, the root with it alone split, each side's multiplier by the line
     search; the neuron whose worse side has the best bound first (a choice only).
   - **Search:** parts of one depth each, the last part's children first, at most

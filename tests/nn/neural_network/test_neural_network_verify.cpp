@@ -446,6 +446,13 @@ void backward_bit_identical(const std::string &b) {
                     priv_backward_lower(out, net, si, x, r, rows, alpha, &node).data();
                 same = same && got_node == want && corner.shape()[1] == 3 &&
                        affine.input.shape()[2] == 3;
+                // the other layers' lines kept from the first pass: the second's bits the same
+                ZonoLineCache kept;
+                node.lines = &kept;
+                for (int pass = 0; pass < 2; ++pass)
+                    same =
+                        same &&
+                        priv_backward_lower(out, net, si, x, r, rows, alpha, &node).data() == want;
             }
         }
     }
@@ -625,14 +632,17 @@ void affine_forms(const std::string &b) {
             const std::vector<double> none =
                 priv_affine_node_bounds(t, out, net, ZonoBounds{}, row, offset, sides, 0, &order)
                     .data();
-            for (const int64_t steps : {0, 1, 4}) {
+            for (const int64_t steps : {0, 1, 4, -3}) {
                 const std::vector<double> low_n =
-                    priv_affine_node_bounds(t, out, net, ZonoBounds{}, row, offset, sides, steps)
+                    priv_affine_node_bounds(t, out, net, ZonoBounds{}, row, offset, sides,
+                                            std::max<int64_t>(steps, 0), nullptr,
+                                            steps < 0 ? -steps : 0) // Polyak's steps
                         .data();
                 // no step lowers a bound, and no sample on a node's sides lies below it
                 for (int64_t node = 0; node < N; ++node) {
                     moved += low_n[std::size_t(node)] > none[std::size_t(node)] + 1e-9 ? 1 : 0;
-                    nodes_hold = nodes_hold && low_n[std::size_t(node)] >= none[std::size_t(node)];
+                    nodes_hold =
+                        nodes_hold && low_n[std::size_t(node)] >= none[std::size_t(node)] - 1e-9;
                     for (int64_t p = 0; p < P; ++p) {
                         // on the node's sides: sigma z <= 0 for every split
                         bool inside = true;
@@ -693,6 +703,9 @@ void affine_bab_verdicts(const std::string &b) {
             AffineBabOptions o;
             o.batch = net_i % 2 == 0 ? 6 : 4096; // a few nodes at once: the parts' slicing
             o.steps = net_i % 3;
+            o.polyak = net_i % 2 == 0 ? 2 : 0;        // Polyak's steps, the line search, or none
+            o.search = b != "lean" && net_i % 2 == 1; // the steps in float32 where there is
+            o.search_dtype = DType::float32;
             o.deadline = now_seconds() + 5;
             const int res = priv_affine_bab(t, out, net, ZonoBounds{}, row, offset, o, stats);
             decided += res;

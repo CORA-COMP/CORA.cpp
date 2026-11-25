@@ -94,32 +94,35 @@ struct Step {
     Tensor unbounded; ///< (N): 1 where the value still grows at the last breakpoint, no limit
 };
 
-/// The derivative (N) in eta of c eta - |r + eta d|_1 (r, d (N, n), c (N)) at eta (N).
-Tensor aux_slope(const Tensor &r, const Tensor &d, const Tensor &c, const Tensor &eta) {
-    return c - (r + d.multiply(eta.expand_dims(-1))).sign().multiply(d).sum(-1);
-}
-
 /// A step eta in [0, upper] (N; infinite: no limit) that does not decrease the concave piecewise
-/// linear c eta - |r + eta d|_1: `bisections` geometric bisections of its derivative's sign
-/// between the first and the last breakpoint, the lower end taken.
+/// linear c eta - |r + eta d|_1 (r, d (N, n), c (N)): `bisections` geometric bisections of its
+/// derivative's sign between the first and the last breakpoint, the lower end taken.
 Step aux_line_search(const Tensor &r, const Tensor &d, const Tensor &c, const Tensor &upper,
                      int64_t bisections) {
     const Tensor zero = r.zeros_like({1});
-    // the breakpoints -r / d > 0: where a coefficient changes its sign
-    const Tensor cross = r.multiply(d).less(zero);
-    const Tensor at = r.negative().divide(Tensor::where(cross, d, d.ones_like()));
-    const Tensor first = Tensor::where(cross, at, r.full_like({1}, kInf)).min(-1);
-    const Tensor last = Tensor::where(cross, at, zero).max(-1);
+    // r + eta d = d (eta - t), t = -r / d: the derivative is c - sum_j |d_j| sign(eta - t_j)
+    const Tensor w = d.abs();
+    const Tensor moving = w.greater(zero);
+    const Tensor t =
+        Tensor::where(moving, r.negative().divide(Tensor::where(moving, d, d.ones_like())), zero);
+    const Tensor top = c + w.sum(-1);
+    const auto rises = [&](const Tensor &eta) {
+        return (top - w.multiply(t.less(eta.expand_dims(-1))).sum(-1) * 2.0).greater(zero);
+    };
+    // the breakpoints t > 0: where a coefficient changes its sign
+    const Tensor cross = t.greater(zero);
+    const Tensor first = Tensor::where(cross, t, r.full_like({1}, kInf)).min(-1);
+    const Tensor last = Tensor::where(cross, t, zero).max(-1);
     const Tensor limited = upper.isfinite();
     const Tensor any = first.isfinite();
     const Tensor end = Tensor::where(any, last, Tensor::where(limited, upper, zero)).minimum(upper);
     Tensor lo = first.minimum(end), hi = end;
-    // the derivative right of 0 (linear up to the first breakpoint) and at the end
-    const Tensor grows = aux_slope(r, d, c, lo * 0.5).greater(zero);
-    const Tensor open = aux_slope(r, d, c, end).greater(zero);
+    // the derivative right of 0 (linear up to the first breakpoint) and past the end
+    const Tensor grows = rises(lo * 0.5);
+    const Tensor open = rises(end * 2.0 + numerics::kTiny);
     for (int64_t i = 0; i < bisections; ++i) {
         const Tensor mid = lo.multiply(hi).sqrt();
-        const Tensor up = aux_slope(r, d, c, mid).greater(zero);
+        const Tensor up = rises(mid);
         lo = Tensor::where(up, mid, lo);
         hi = Tensor::where(up, hi, mid);
     }
@@ -233,11 +236,18 @@ Problem aux_problem(const AffineTable &t, const Tensor &d, double c0, int64_t ch
 
 // The node bound ----------------------------------------------------------------------------------
 
+/// The steps on a node's multipliers: `polyak` supergradient steps of Polyak's size toward the
+/// margin (the best of them kept), then `steps` steps by the line search.
+struct Ascent {
+    int64_t steps = 1, bisections = 8, polyak = 0;
+    double margin = 0;
+};
+
 /// The lower bounds (N) of the row on the nodes of sides sg (N, D) (+1: inactive, -1: active) at
-/// the multipliers p (the side) and q (the root's bound) >= 0 (N, D), both moved by `steps`
-/// ascent steps: every value is the Lagrangian's minimum at multipliers >= 0, the best is kept.
-Tensor aux_bound(const Problem &P, const Tensor &sg, Tensor &p, Tensor &q, int64_t steps,
-                 int64_t bisections) {
+/// the multipliers p (the side), q (the root's bound) >= 0 (N, D), both moved by `steps` ascent
+/// steps: every value is the Lagrangian's minimum at multipliers >= 0, the best is kept.
+Tensor aux_ascent(const Problem &P, const Tensor &sg, Tensor &p, Tensor &q, const Ascent &a) {
+    const int64_t steps = a.steps, bisections = a.bisections;
     const int64_t D = sg.shape()[1];
     const Tensor zero = sg.zeros_like({1}), inf = sg.full_like({1}, kInf);
     const Tensor A = P.A.slice(0, 0, D), AT = A.matrix_transpose();
@@ -257,16 +267,46 @@ Tensor aux_bound(const Problem &P, const Tensor &sg, Tensor &p, Tensor &q, int64
     const auto value = [&](const Tensor &r) {
         return c0 + (p.multiply(b0) + q.multiply(b1)).sum(-1) - r.abs().sum(-1);
     };
-    Tensor r = base + sg.multiply(p - q).matmul(A);
-    Tensor best = (c0 - base.abs().sum(-1)).maximum(value(r));
-    for (int64_t i = 0; i < steps; ++i) {
-        // the multipliers' supergradient: the constraints at the Lagrangian's minimizer
-        const Tensor xm = Tensor::where(r.less(zero), r.ones_like(), r.full_like({1}, -1.0));
+    // the supergradient: the constraints at the minimizer, a multiplier at 0 not below it
+    const auto ascent = [&](const Tensor &at) {
+        const Tensor xm = Tensor::where(at.less(zero), at.ones_like(), at.full_like({1}, -1.0));
         const Tensor z = sg.multiply(xm.matmul(AT));
         const Tensor s0 = b0 + z, s1 = b1 - z;
-        // projected: a multiplier at 0 does not go below
-        const Tensor g0 = Tensor::where(p.less_equal(zero).multiply(s0.less(zero)), zero, s0);
-        const Tensor g1 = Tensor::where(q.less_equal(zero).multiply(s1.less(zero)), zero, s1);
+        return std::pair{Tensor::where(p.less_equal(zero).multiply(s0.less(zero)), zero, s0),
+                         Tensor::where(q.less_equal(zero).multiply(s1.less(zero)), zero, s1)};
+    };
+    Tensor r = base + sg.multiply(p - q).matmul(A);
+    // Polyak's steps toward a value above the margin: the multipliers of the best value kept
+    if (a.polyak > 0) {
+        Tensor top, bp = p, bq = q;
+        for (int64_t i = 0; i <= a.polyak; ++i) {
+            const Tensor now = value(r);
+            const Tensor up = top.defined() ? now.greater(top) : now.equal(now);
+            top = top.defined() ? top.maximum(now) : now;
+            bp = Tensor::where(up.expand_dims(-1), p, bp);
+            bq = Tensor::where(up.expand_dims(-1), q, bq);
+            if (i == a.polyak) break;
+            // the step (target - value) / |g|^2 along the supergradient
+            const auto [g0, g1] = ascent(r);
+            const Tensor norm = (g0.square() + g1.square()).sum(-1);
+            const Tensor gap = (a.margin + numerics::kVerifiedMargin - now).maximum(0.0);
+            const Tensor eta =
+                Tensor::where(norm.greater(zero), gap.divide(norm.maximum(numerics::kTiny)), zero)
+                    .expand_dims(-1);
+            p = (p + g0.multiply(eta)).maximum(0.0);
+            q = (q + g1.multiply(eta)).maximum(0.0);
+            r = base + sg.multiply(p - q).matmul(A);
+        }
+        p = bp;
+        q = bq;
+        if (steps > 0) r = base + sg.multiply(p - q).matmul(A);
+        if (steps <= 0) return Tensor::where(empty, inf, top);
+    }
+    // without steps: these multipliers' value, and the one at 0; a step's value is no lower
+    Tensor best = steps > 0 ? Tensor() : (c0 - base.abs().sum(-1)).maximum(value(r));
+    for (int64_t i = 0; i < steps; ++i) {
+        // along the supergradient, the step by the line search
+        const auto [g0, g1] = ascent(r);
         const Tensor dir = sg.multiply(g0 - g1).matmul(A);
         const Tensor dc = (g0.multiply(b0) + g1.multiply(b1)).sum(-1);
         // the step that keeps every multiplier >= 0, at most
@@ -279,9 +319,41 @@ Tensor aux_bound(const Problem &P, const Tensor &sg, Tensor &p, Tensor &q, int64
         p = (p + g0.multiply(eta)).maximum(0.0);
         q = (q + g1.multiply(eta)).maximum(0.0);
         r = base + sg.multiply(p - q).matmul(A);
-        best = best.maximum(value(r));
+        best = best.defined() ? best.maximum(value(r)) : value(r);
     }
     return Tensor::where(empty, inf, best);
+}
+
+/// The problem's tensors in another dtype, for the steps of aux_bound.
+Problem aux_problem_to(const Problem &P, DType dtype) {
+    Problem S = P;
+    for (Tensor *t :
+         {&S.A, &S.a1, &S.c, &S.l, &S.u, &S.r_off, &S.r_on, &S.s_off, &S.s_on, &S.d, &S.hot})
+        *t = t->to(dtype);
+    return S;
+}
+
+/// aux_ascent, its steps on the copy `search` of P in another dtype (if given): the nodes whose
+/// bound there exceeds the margin are evaluated on P itself at the multipliers the steps ended
+/// at, >= 0, and only that bound is returned; the others' is -inf (open).
+Tensor aux_bound(const Problem &P, const Problem *search, const Tensor &sg, Tensor &p, Tensor &q,
+                 const Ascent &a) {
+    if (!search || a.steps + a.polyak <= 0) return aux_ascent(P, sg, p, q, a);
+    const DType dt = search->A.dtype(), exact = P.A.dtype();
+    Tensor ps = p.to(dt), qs = q.to(dt);
+    const Tensor rough = aux_ascent(*search, sg.to(dt), ps, qs, a);
+    p = ps.to(exact).maximum(0.0);
+    q = qs.to(exact).maximum(0.0);
+    // the candidates: above the margin in the search dtype (not a number: none)
+    const std::vector<int64_t> above = rough.greater(rough.full_like({1}, a.margin)).nonzero();
+    std::vector<double> low(std::size_t(sg.shape()[0]), -kInf);
+    if (!above.empty()) {
+        Tensor pa = p.take(above, 0), qa = q.take(above, 0);
+        const std::vector<double> sure =
+            aux_ascent(P, sg.take(above, 0), pa, qa, Ascent{0, 0, 0, a.margin}).data();
+        for (std::size_t i = 0; i < above.size(); ++i) low[std::size_t(above[i])] = sure[i];
+    }
+    return Tensor::like(sg, low, {sg.shape()[0]});
 }
 
 } // namespace
@@ -353,6 +425,7 @@ AffineTable priv_affine_table(const ZonoPropagation &out, const ZonoNet &net,
     // the chords' slopes and half offsets: any output row's pass reads every layer
     ZonoAffineRows lines;
     aux_forms(t, out, net, bounds, x.ones_like({1, net.num_outputs}), -1, &lines);
+    // per crossing neuron, layer by layer as the rows
     std::vector<Tensor> as, hs;
     for (std::size_t k = 0; k < t.pos.size(); ++k) {
         if (t.pos[k].empty()) continue;
@@ -372,14 +445,15 @@ std::pair<Tensor, Tensor> priv_affine_rows(const AffineTable &t, const ZonoPropa
 
 Tensor priv_affine_node_bounds(const AffineTable &t, const ZonoPropagation &out, const ZonoNet &net,
                                const ZonoBounds &bounds, const Tensor &row, const Tensor &offset,
-                               const Tensor &sides, int64_t steps, std::vector<int64_t> *order) {
+                               const Tensor &sides, int64_t steps, std::vector<int64_t> *order,
+                               int64_t polyak) {
     // the row's problem, then the nodes' bounds from multipliers 0
     const auto [d, center] = priv_affine_rows(t, out, net, bounds, row);
     const Problem P =
         aux_problem(t, d.squeeze(0), (center - offset).item(), std::max<int64_t>(1, t.U));
     if (order) *order = P.order;
     Tensor p = sides.zeros_like(), q = sides.zeros_like();
-    return aux_bound(P, sides, p, q, steps, 8);
+    return aux_bound(P, nullptr, sides, p, q, Ascent{steps, 8, polyak, 0.0});
 }
 
 // The branch and bound ----------------------------------------------------------------------------
@@ -407,6 +481,10 @@ int priv_affine_bab(const AffineTable &t, const ZonoPropagation &out, const Zono
         std::max<int64_t>(2, std::min(o.batch, o.max_bytes / std::max<int64_t>(1, 8 * 12 * n)));
     // the row's problem in the order of its splits
     const Problem P = aux_problem(t, d, c0, batch);
+    // the steps' copy in the search dtype
+    const bool searching = o.search && o.search_dtype != d.dtype();
+    const Problem Ps = searching ? aux_problem_to(P, o.search_dtype) : Problem();
+    const Problem *search = searching ? &Ps : nullptr;
     stats["affine_bab_batch"] = double(batch);
     stats["affine_bab_factors"] = double(n);
     // the open nodes: parts of one depth each, the last part's children first
@@ -437,7 +515,8 @@ int priv_affine_bab(const AffineTable &t, const ZonoPropagation &out, const Zono
         // the batch's bounds, its multipliers moved
         const int64_t N = part.sg.shape()[0];
         held -= N;
-        const Tensor low = aux_bound(P, part.sg, part.p, part.q, o.steps, o.bisections);
+        const Tensor low = aux_bound(P, search, part.sg, part.p, part.q,
+                                     Ascent{o.steps, o.bisections, o.polyak, o.margin});
         // open unless its bound is above the margin (not a number: open)
         const std::vector<int64_t> open =
             (1.0 - low.greater(low.full_like({1}, o.margin))).nonzero();

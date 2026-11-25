@@ -196,8 +196,11 @@ struct NnVerifyOptions {
     /// where its Lambda is not below 0 (the form's root bound is CROWN's), or "chord".
     std::string affine_bab_slopes = "crown";
     double affine_bab_time_share = 0.5; ///< of the time left, at most, per polytope
-    int64_t affine_bab_steps = 1;       ///< ascent steps on a node's multipliers
-    int64_t affine_bab_batch = 16384;   ///< nodes bounded at once at most (fewer if memory asks)
+    int64_t affine_bab_steps = 0;       ///< then steps by a line search on a node's multipliers
+    bool affine_bab_search = true;      ///< the steps in the search dtype, float64 decides
+    int64_t affine_bab_bisections = 8;  ///< of a step's line search
+    int64_t affine_bab_polyak = 2; ///< steps of Polyak's size toward the margin, from the parent's
+    int64_t affine_bab_batch = 16384; ///< nodes bounded at once at most (fewer if memory asks)
     /// The check's rounds of CROWN's bounds of the layer inputs (0: none), as relu-bab's root.
     int64_t check_crown_rounds = 0;
     int64_t check_crown_iterations = 0; ///< their alpha-CROWN steps per row

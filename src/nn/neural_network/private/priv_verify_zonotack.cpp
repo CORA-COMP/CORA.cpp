@@ -1039,7 +1039,11 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
                     AffineBabOptions ao;
                     ao.batch = o_.affine_bab_batch;
                     ao.steps = o_.affine_bab_steps;
+                    ao.bisections = o_.affine_bab_bisections;
+                    ao.polyak = o_.affine_bab_polyak;
                     ao.margin = co.margin;
+                    ao.search = o_.affine_bab_search && sdt != xi.dtype();
+                    ao.search_dtype = sdt;
                     ao.max_bytes = co.max_bytes;
                     ao.frontier_bytes = co.frontier_bytes;
                     const double now = now_seconds();

@@ -132,6 +132,8 @@ void NnVerifyOptions::validate() const {
     aux_at_least("affine_bab_time_share", affine_bab_time_share, 0);
     aux_at_least("affine_bab_steps", double(affine_bab_steps), 0);
     aux_at_least("affine_bab_batch", double(affine_bab_batch), 1);
+    aux_at_least("affine_bab_bisections", double(affine_bab_bisections), 0);
+    aux_at_least("affine_bab_polyak", double(affine_bab_polyak), 0);
     // CROWN's bounds of the layer inputs: relu-bab's root and the check
     aux_at_least("relu_bab_crown_rounds", double(relu_bab_crown_rounds), 0);
     aux_at_least("relu_bab_crown_iterations", double(relu_bab_crown_iterations), 0);

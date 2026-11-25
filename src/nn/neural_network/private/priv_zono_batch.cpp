@@ -1151,9 +1151,14 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                     opt->affine->offset[k] = bu.take(at, -1);
                 }
             } else {
-                // the parallel lines of the zonotope's line
+                // the parallel lines of the zonotope's line (an earlier pass's, if kept)
+                ZonoLineCache *kept_lines = opt ? opt->lines : nullptr;
+                if (kept_lines && kept_lines->line.size() < top) kept_lines->line.resize(top);
+                const bool known = kept_lines && kept_lines->line[k].slope.defined();
                 const PrivLine line =
-                    aux_layer_line(net, k, rec->c_in, rec->G_in, rec->dr_in, lc, uc);
+                    known ? kept_lines->line[k]
+                          : aux_layer_line(net, k, rec->c_in, rec->G_in, rec->dr_in, lc, uc);
+                if (kept_lines && !known) kept_lines->line[k] = line;
                 sl = su = line.slope;
                 bl = line.offset - line.radius;
                 bu = line.offset + line.radius;
@@ -1164,7 +1169,15 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
             if (opt && opt->softmax_lse && net.softmax[k]) {
                 // a softmax's rows below 0 by its upper line on the exps' inputs, where it holds
                 const auto [ld, ud] = bounds_of(k - 1, out.layers[next - 1]);
-                soft = aux_softmax_line(net, k, lc, uc, ld, ud);
+                ZonoLineCache *kept_lines = opt->lines;
+                if (kept_lines && kept_lines->soft.size() < top) kept_lines->soft.resize(top);
+                if (kept_lines && !kept_lines->soft[k].empty()) {
+                    const std::vector<Tensor> &v = kept_lines->soft[k];
+                    soft = {v[0], v[1], v[2], v[3]};
+                } else {
+                    soft = aux_softmax_line(net, k, lc, uc, ld, ud);
+                    if (kept_lines) kept_lines->soft[k] = {soft.ok, soft.a, soft.g, soft.e0};
+                }
                 const Tensor taken = neg.multiply(soft.ok.expand_dims(1));
                 neg = neg - taken;
                 constant = constant + taken.matmul(soft.a.expand_dims(-1)).squeeze(-1);

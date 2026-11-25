@@ -181,6 +181,13 @@ std::vector<Tensor> priv_alpha_start(const ZonoPropagation &out, const ZonoNet &
 
 // The backward pass -------------------------------------------------------------------------------
 
+/// The lines of the layers that are not ReLUs, kept between priv_backward_lower's passes on one
+/// record, bounds and splits (they depend on neither the rows nor a node's ReLU split signs).
+struct ZonoLineCache {
+    std::vector<PrivLine> line;            ///< per layer (undefined: not yet)
+    std::vector<std::vector<Tensor>> soft; ///< per layer a softmax's upper line (empty: not yet)
+};
+
 /// What priv_backward_lower's pass gives of its rows at chosen ReLU neurons (affine_at): per
 /// layer each row's Lambda at the neurons' outputs (B, R, |at|), the chords' slopes and offsets
 /// b_u there (B, |at|), and the rows' Lambda at the input (B, R, n0).
@@ -214,6 +221,7 @@ struct ZonoBackward {
     /// The neurons of each ReLU layer whose Lambda `affine` gets (empty: none of the layer).
     const std::vector<std::vector<int64_t>> *affine_at = nullptr;
     ZonoAffineRows *affine = nullptr; ///< out: the rows' coefficients at affine_at's neurons
+    ZonoLineCache *lines = nullptr;   ///< in and out: the other layers' lines of earlier passes
 };
 
 /// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
@@ -309,9 +317,12 @@ struct AffineTable {
 /// The options of priv_affine_bab (NnVerifyOptions' affine_bab_*).
 struct AffineBabOptions {
     int64_t batch = 16384;  ///< nodes bounded at once at most (fewer if max_bytes asks)
-    int64_t steps = 1;      ///< ascent steps on a node's multipliers, from its parent's
+    int64_t steps = 0;      ///< line-search steps on a node's multipliers, after Polyak's
     int64_t bisections = 8; ///< of a step's line search
+    int64_t polyak = 2;     ///< steps of Polyak's size toward the margin, from the parent's
     double margin = 0;      ///< a node is verified when its bound exceeds it
+    bool search = false;    ///< the steps in search_dtype, the bound in the table's dtype
+    DType search_dtype{};   ///< the steps' dtype with `search`
     int64_t max_bytes = int64_t(1) << 30;      ///< the bytes of one batch's bound, about
     int64_t frontier_bytes = int64_t(1) << 30; ///< the open nodes' bytes at most (else open)
     double deadline = std::numeric_limits<double>::infinity();
@@ -330,12 +341,12 @@ std::pair<Tensor, Tensor> priv_affine_rows(const AffineTable &t, const ZonoPropa
                                            const Tensor &rows);
 
 /// The bounds (N) of priv_affine_bab's nodes of sides (N, D) (+1: inactive, -1: active) on the
-/// first D neurons of the row's order (`*order`: the table's neuron of each split), `steps`
-/// ascent steps from multipliers 0.
+/// first D neurons of the row's order (`*order`: the table's neuron of each split), `polyak`
+/// then `steps` ascent steps from multipliers 0.
 Tensor priv_affine_node_bounds(const AffineTable &t, const ZonoPropagation &out, const ZonoNet &net,
                                const ZonoBounds &bounds, const Tensor &row, const Tensor &offset,
                                const Tensor &sides, int64_t steps,
-                               std::vector<int64_t> *order = nullptr);
+                               std::vector<int64_t> *order = nullptr, int64_t polyak = 0);
 
 /// The ReLU-split branch and bound of row (1, m) times the output minus offset (1) on the
 /// table's affine forms. 1: above o.margin on the whole box, 0: open (the deadline, the

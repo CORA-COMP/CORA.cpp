@@ -159,6 +159,7 @@ struct Pass {
     const ZonoNet *net = nullptr;
     const ZonoBounds *bounds = nullptr;
     Tensor x, rad, rows, offsets;
+    std::shared_ptr<ZonoLineCache> lines = std::make_shared<ZonoLineCache>(); ///< of its passes
 };
 
 // The search --------------------------------------------------------------------------------------
@@ -258,6 +259,7 @@ Tensor CrownBab::evaluate(const Pass &p, const std::vector<Tensor> &signs, const
     opt.intercepts = ic;
     opt.corner = corner;
     opt.softmax_lse = o_.softmax_lse;
+    opt.lines = p.lines.get();
     return priv_backward_lower(*p.out, *p.net, p.x.zeros_like({N, 0}), xs, rs, p.rows, nullptr,
                                &opt) -
            p.offsets;
