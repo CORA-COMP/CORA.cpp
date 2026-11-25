@@ -38,6 +38,7 @@ def write_tool(directory, run_body):
 
 class RunDevSetResultFile(unittest.TestCase):
     def setUp(self):
+        # a fresh copy of the script, and a dev-set directory, a tool and a results directory
         self.script = load_script()
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = os.path.join(self.tmp.name, "bench")
@@ -51,6 +52,7 @@ class RunDevSetResultFile(unittest.TestCase):
         self.tmp.cleanup()
 
     def run_row(self):
+        # one instance of the dev set through the tool, as run_dev_set's pool runs it
         args = argparse.Namespace(dir=self.dir, version="1.0", max_timeout=0.0, results=self.results,
                                   threads=1, tool=self.tool)
         return self.script.run_one(args, 0, ("net.onnx", "prop.vnnlib", "5"))
@@ -67,3 +69,5 @@ class RunDevSetResultFile(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# ----------------------------------------  END OF CODE  ----------------------------------------- #
