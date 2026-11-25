@@ -70,10 +70,8 @@
 \draw[lean, <->] (lean) -- (ccode);
 
 % rounding modes
-\node[neutral, minimum width=34mm] (nearest) at (4.3,-4.9) {Nearest};
-\node[note, below=1mm of nearest] {hardware};
+\node[neutral, minimum width=34mm] (nearest) at (4.3,-4.9) {Round to nearest};
 \node[neutral, minimum width=34mm] (directed) at (8,-4.9) {Directed rounding};
-\node[note, below=1mm of directed] {sound};
 \draw[cpp] (leanb.south |- nearest.north) -- (leanb.south);
 \draw[lean] (5.6,-4.45) -- (5.6,-3.2);
 \draw[link] (directed.north) -- (directed.north |- ccode.south);
