@@ -80,6 +80,8 @@ else()
   endif()
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(cora_flags INTERFACE -Wno-maybe-uninitialized -Wno-array-bounds)
+    # A local that hides another local is MSVC's C4456 (an error under /WX); GCC finds it with =local.
+    target_compile_options(cora_flags INTERFACE -Wshadow=local)
     # GCC 12-13 report libstdc++'s own copies (a std::vector<std::array<...>>, a std::string) as a
     # stringop overflow or a restrict violation (GCC bugs 107138, 105329); there they stay warnings.
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)

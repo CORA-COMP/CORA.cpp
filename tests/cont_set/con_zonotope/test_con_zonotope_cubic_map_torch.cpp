@@ -24,8 +24,8 @@ int main() {
     for (int i = 0; i < 4; ++i) x.push_back(torch::randn({2, 2}, torch::kDouble));
     test::gradcheck(
         "cubic_map",
-        [](const Inputs &x) {
-            return test::parts(test::set(x, 0).cubic_map({{x[4], x[5]}, {x[6], x[7]}}));
+        [](const Inputs &xs) {
+            return test::parts(test::set(xs, 0).cubic_map({{xs[4], xs[5]}, {xs[6], xs[7]}}));
         },
         x);
     return test::finish("con zonotope cubic_map (torch)");

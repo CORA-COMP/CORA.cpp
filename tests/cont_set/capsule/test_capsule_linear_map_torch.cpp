@@ -24,7 +24,7 @@ int main() {
     x.push_back(torch::randn({2, 3}, torch::kDouble));
     test::gradcheck(
         "linear_map",
-        [](const Inputs &x) { return test::parts(test::capsule(x).linear_map(x[3])); }, x);
+        [](const Inputs &xs) { return test::parts(test::capsule(xs).linear_map(xs[3])); }, x);
     return test::finish("capsule linear_map (torch)");
 }
 

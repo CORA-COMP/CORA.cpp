@@ -26,7 +26,7 @@ int main() {
     x.push_back(torch::randn({2, 2}, torch::kDouble));
     test::gradcheck(
         "quad_map",
-        [](const Inputs &x) { return test::parts(test::set(x, 0).quad_map({x[4], x[5]})); }, x);
+        [](const Inputs &xs) { return test::parts(test::set(xs, 0).quad_map({xs[4], xs[5]})); }, x);
     return test::finish("con zonotope quad_map (torch)");
 }
 

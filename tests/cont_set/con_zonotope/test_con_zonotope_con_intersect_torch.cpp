@@ -27,8 +27,8 @@ int main() {
     x.push_back(torch::randn({2, 3}, torch::kDouble));
     test::gradcheck(
         "con_intersect",
-        [](const Inputs &x) {
-            return test::parts(test::set(x, 0).con_intersect(test::set(x, 4), x[8]));
+        [](const Inputs &xs) {
+            return test::parts(test::set(xs, 0).con_intersect(test::set(xs, 4), xs[8]));
         },
         x);
     return test::finish("con zonotope con_intersect (torch)");

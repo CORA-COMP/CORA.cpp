@@ -25,8 +25,8 @@ int main() {
     x.push_back(torch::randn({2, 2}, torch::kDouble));
     x.push_back(torch::randn({2}, torch::kDouble));
     test::gradcheck(
-        "enclose", [](const Inputs &x) { return test::parts(test::set(x, 0).enclose(x[4], x[5])); },
-        x);
+        "enclose",
+        [](const Inputs &xs) { return test::parts(test::set(xs, 0).enclose(xs[4], xs[5])); }, x);
     return test::finish("con zonotope enclose (torch)");
 }
 

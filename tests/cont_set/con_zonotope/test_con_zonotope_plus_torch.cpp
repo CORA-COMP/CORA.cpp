@@ -25,8 +25,8 @@ int main() {
     std::vector<torch::Tensor> x = A;
     x.insert(x.end(), B.begin(), B.end());
     test::gradcheck(
-        "plus", [](const Inputs &x) { return test::parts(test::set(x, 0).plus(test::set(x, 4))); },
-        x);
+        "plus",
+        [](const Inputs &xs) { return test::parts(test::set(xs, 0).plus(test::set(xs, 4))); }, x);
     return test::finish("con zonotope plus (torch)");
 }
 

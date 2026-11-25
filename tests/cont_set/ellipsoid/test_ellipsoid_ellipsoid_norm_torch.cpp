@@ -25,7 +25,7 @@ int main() {
     x.push_back(torch::rand({3}, torch::kDouble) + 0.5);
     test::gradcheck(
         "ellipsoid_norm",
-        [](const Inputs &x) { return Inputs{test::ellipsoid_of(x).ellipsoid_norm(x[2])}; }, x);
+        [](const Inputs &xs) { return Inputs{test::ellipsoid_of(xs).ellipsoid_norm(xs[2])}; }, x);
     return test::finish("ellipsoid ellipsoid_norm (torch)");
 }
 

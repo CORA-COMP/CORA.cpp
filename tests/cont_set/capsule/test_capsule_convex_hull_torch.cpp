@@ -25,8 +25,8 @@ int main() {
     x.insert(x.end(), y.begin(), y.end());
     test::gradcheck(
         "convex_hull",
-        [](const Inputs &x) {
-            return test::parts(test::capsule(x, 0).convex_hull(test::capsule(x, 3)));
+        [](const Inputs &xs) {
+            return test::parts(test::capsule(xs, 0).convex_hull(test::capsule(xs, 3)));
         },
         x);
     return test::finish("capsule convex_hull (torch)");

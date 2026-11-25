@@ -25,8 +25,8 @@ int main() {
     x.insert(x.end(), B.begin(), B.end());
     test::gradcheck(
         "intersect",
-        [](const Inputs &x) {
-            return test::parts(test::halfspaces(x, 0).intersect(test::halfspaces(x, 2)));
+        [](const Inputs &xs) {
+            return test::parts(test::halfspaces(xs, 0).intersect(test::halfspaces(xs, 2)));
         },
         x);
     return test::finish("polytope intersect (torch)");

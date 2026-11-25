@@ -26,7 +26,8 @@ int main() {
     x.insert(x.end(), B.begin(), B.end());
     test::gradcheck(
         "cart_prod",
-        [](const Inputs &x) { return test::parts(test::set(x, 0).cart_prod(test::set(x, 4))); }, x);
+        [](const Inputs &xs) { return test::parts(test::set(xs, 0).cart_prod(test::set(xs, 4))); },
+        x);
     return test::finish("con zonotope cart_prod (torch)");
 }
 
