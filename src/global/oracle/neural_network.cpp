@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   24-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/neural_network.h"
@@ -14,6 +14,7 @@
 #include "cora/global/oracle/oracle.h"
 #include "cora/global/oracle/request.h"
 
+#include <algorithm>
 #include <cmath>
 #include <optional>
 #include <utility>
@@ -696,6 +697,195 @@ ZonoBatchCount prepare_zono_batch_eval(const NeuralNetwork &nn, double num_init_
     for (const std::vector<int64_t> &e : r.get<std::vector<std::vector<int64_t>>>("approxErrGens"))
         out.errors.emplace_back(e.empty() ? 0 : e[0], e.empty() ? 0 : e[1]);
     return out;
+}
+
+// The weights and the orders ----------------------------------------------------------------------
+
+// the chain read at the current dtype, sent at the cast's: the reply's entries are of that dtype
+std::vector<std::pair<cora::Tensor, cora::Tensor>> cast_weights(const NeuralNetwork &nn,
+                                                                const std::string &dtype) {
+    std::string chain_dtype;
+    const Json chain = aux_chain(nn, chain_dtype);
+    // one (W, b) per layer of the reply
+    std::vector<std::pair<cora::Tensor, cora::Tensor>> out;
+    for (const Reply &layer :
+         ask("neuralNetwork.castWeights", {{"layers", Wire(chain, dtype)}}).list("layers"))
+        out.emplace_back(layer.get<Tensor>("W").gather(), layer.get<Tensor>("b").gather());
+    return out;
+}
+
+// the pattern of the refinable layers, every order 1
+std::vector<std::vector<int64_t>> reset_approx_order(const NeuralNetwork &nn) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    return ask("neuralNetwork.resetApproxOrder", {{"layers", Wire(chain, dtype)}})
+        .get<std::vector<std::vector<int64_t>>>("pattern");
+}
+
+// the heuristic per layer as lists of exact scalars, null for a layer without
+std::vector<std::vector<int64_t>> refine(const NeuralNetwork &nn,
+                                         const std::vector<std::vector<int64_t>> &orders,
+                                         const std::vector<std::vector<double>> &heuristic,
+                                         const std::string &type, const std::string &kind,
+                                         int64_t max_order, double gamma) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    Json heu = Json::array();
+    for (const std::vector<double> &h : heuristic) {
+        if (h.empty()) {
+            heu.push(Json());
+            continue;
+        }
+        Json values = Json::array();
+        for (const double v : h) values.push(Tensor::encode(v));
+        heu.push(std::move(values));
+    }
+    // the options, the orders only if given
+    std::vector<Operand> args{
+        {"layers", Wire(chain, dtype)}, {"heuristic", Wire(heu, dtype)}, {"type", type},
+        {"heuristicKind", kind},        {"maxOrder", max_order},         {"gamma", gamma}};
+    if (!orders.empty()) args.push_back({"orders", orders});
+    return ask("neuralNetwork.refine", args).get<std::vector<std::vector<int64_t>>>("orders");
+}
+
+// The weights on given units ----------------------------------------------------------------------
+
+// the sizes given, then the units of the sizes drawn and of every layer
+NnRandom generate_random(const std::array<int64_t, 4> &sizes, const std::vector<double> &size_draws,
+                         const std::vector<std::pair<cora::Tensor, cora::Tensor>> &draws) {
+    Json layers = Json::array();
+    for (const auto &[W, b] : draws)
+        layers.push(Json::object().set("W", Tensor(W).to_json()).set("b", aux_column(b).to_json()));
+    const std::string dtype = lean::dtype();
+    std::vector<Operand> args{{"inputs", sizes[0]},
+                              {"outputs", sizes[1]},
+                              {"layers", sizes[2]},
+                              {"hidden", sizes[3]},
+                              {"draws", Wire(layers, dtype)}};
+    if (!size_draws.empty()) {
+        // the units of the sizes as a column of exact scalars
+        Json data = Json::array();
+        for (const double u : size_draws) data.push(Tensor::encode(u));
+        Json column = Json::object();
+        column.set("rows", int64_t(size_draws.size())).set("cols", int64_t(1)).set("data", data);
+        args.push_back({"sizeDraws", Wire(column, dtype)});
+    }
+    // the sizes of the reply, then each layer's boxes
+    const Reply r = ask("neuralNetwork.generateRandom", args);
+    NnRandom out;
+    out.sizes = {r.get<int64_t>("inputs"), r.get<int64_t>("outputs"), r.get<int64_t>("layers"),
+                 r.get<int64_t>("hidden")};
+    for (const Reply &layer : r.list("network"))
+        out.layers.emplace_back(layer.get<Interval>("W"), layer.get<Interval>("b"));
+    return out;
+}
+
+// a layer drawn again has a box of weights, a layer kept its own matrix
+std::vector<std::optional<Interval>> init_weights(const NeuralNetwork &nn,
+                                                  const std::string &method,
+                                                  const std::vector<int64_t> &which,
+                                                  const std::vector<cora::Tensor> &draws) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    Json units = Json::array();
+    for (const cora::Tensor &u : draws) units.push(aux_column(u).to_json());
+    std::vector<Operand> args{
+        {"layers", Wire(chain, dtype)}, {"method", method}, {"draws", Wire(units, dtype)}};
+    if (!which.empty()) args.push_back({"which", which});
+    // the layers drawn again by `which`, in the order of the reply
+    std::vector<std::optional<Interval>> out;
+    const std::vector<Reply> replies = ask("neuralNetwork.initWeights", args).list("layers");
+    for (std::size_t k = 0; k < replies.size(); ++k) {
+        const bool drawn =
+            which.empty() || std::find(which.begin(), which.end(), int64_t(k)) != which.end();
+        out.push_back(drawn ? std::optional<Interval>(replies[k].get<Interval>("W"))
+                            : std::nullopt);
+    }
+    return out;
+}
+
+// The system, the explanation and the reduction ---------------------------------------------------
+
+// the output, C, and one block of D per layer
+NnSystem nonlinear_sys_dt(const NeuralNetwork &nn, const cora::Tensor &x, const cora::Tensor &u) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    const Reply r =
+        ask("neuralNetwork.nonlinearSysDT",
+            {{"layers", Wire(chain, dtype)}, {"x", aux_column(x)}, {"u", aux_column(u)}});
+    NnSystem out{r.get<Interval>("y"), r.get<Interval>("C"), {}};
+    for (const Reply &block : r.list("D"))
+        out.D.emplace_back(block.get<Tensor>("inf"), block.get<Tensor>("sup"));
+    return out;
+}
+
+// the network in the kinds of evaluate: each dense layer, then its activation
+std::vector<int64_t> explain(const NeuralNetwork &nn, const cora::Tensor &x, int64_t label,
+                             double epsilon, const std::vector<int64_t> &feat_order,
+                             const std::vector<int64_t> &input_size, double output_threshold) {
+    std::vector<NnLayer> layers;
+    for (std::size_t k = 0; k < nn.layers().size(); ++k) {
+        layers.push_back(NnLayer::linear(nn.layers()[k].W, nn.layers()[k].b));
+        const Activation a = nn.activations()[k];
+        if (a == Activation::relu) layers.push_back(NnLayer::relu());
+        if (a == Activation::sigmoid) layers.push_back(NnLayer::sigmoid());
+        if (a == Activation::tanh) layers.push_back(NnLayer::tanh());
+    }
+    // the point, the label, the radius and the order; the image size only if given
+    std::string dtype;
+    const Json list = layers_json(layers, dtype);
+    std::vector<Operand> args{{"layers", Wire(list, dtype)},
+                              {"x", aux_column(x)},
+                              {"label", label},
+                              {"epsilon", epsilon},
+                              {"featOrder", feat_order},
+                              {"outputThreshold", output_threshold}};
+    if (!input_size.empty()) args.push_back({"inputSize", input_size});
+    return ask("neuralNetwork.explain", args).get<std::vector<int64_t>>("freed");
+}
+
+// the reduced layers, their intervals, the merged neurons, the rates and the set
+NnReduced compute_reduced_network(const NeuralNetwork &nn, const cora::Zonotope &Z,
+                                  const std::vector<double> &bucket_tol,
+                                  const std::vector<double> &rate, int64_t min_searches) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    const auto values = [](const std::vector<double> &v) {
+        Json a = Json::array();
+        for (const double x : v) a.push(Tensor::encode(x));
+        return a;
+    };
+    std::vector<Operand> args{
+        {"layers", Wire(chain, dtype)}, {"Z", Zonotope(Z)}, {"minSearches", min_searches}};
+    if (!bucket_tol.empty()) args.push_back({"bucketTol", Wire(values(bucket_tol), dtype)});
+    if (!rate.empty()) args.push_back({"reductionRate", Wire(values(rate), dtype)});
+    // the merged neurons, the rates and the set, then the layers and their intervals
+    const Reply r = ask("neuralNetwork.computeReducedNetwork", args);
+    NnReduced out{{},
+                  {},
+                  r.get<std::vector<std::vector<int64_t>>>("merged"),
+                  r.get<Tensor>("reductionRate").gather(),
+                  r.get<Zonotope>("Z")};
+    for (const Reply &layer : r.list("layers"))
+        out.layers.emplace_back(layer.get<Tensor>("W").gather(), layer.get<Tensor>("b").gather());
+    for (const Reply &d : r.list("d"))
+        out.d.push_back(d.is_null()
+                            ? std::nullopt
+                            : std::optional<std::pair<cora::Tensor, cora::Tensor>>(
+                                  {d.get<Tensor>("c").gather(), d.get<Tensor>("r").gather()}));
+    return out;
+}
+
+// the generators as columns (n, m), the constraints A (p, m) and b (p)
+NnConZono evaluate_con_zonotope(const NeuralNetwork &nn, const cora::Tensor &c,
+                                const cora::Tensor &G) {
+    std::string dtype;
+    const Json chain = aux_chain(nn, dtype);
+    const Reply r = ask("neuralNetwork.evaluateConZonotope",
+                        {{"layers", Wire(chain, dtype)}, {"c", aux_column(c)}, {"G", Tensor(G)}});
+    if (r.get<bool>("empty")) return {true, {}, {}, {}, {}};
+    return {false, r.get<Tensor>("c").gather(), r.get<Tensor>("G").gather(),
+            r.get<Tensor>("A").gather(), r.get<Tensor>("b").gather()};
 }
 
 } // namespace cora::lean

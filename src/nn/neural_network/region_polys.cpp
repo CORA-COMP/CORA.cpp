@@ -5,8 +5,9 @@
 // lies near one. findRegionPolys divides [-inf, inf] into regions, each with a polynomial of the
 // regression fit whose error radius is below a tolerance: it walks from l_max up to u_max by
 // halving the region's upper end until the order-k fit is accurate enough (trying lower orders on
-// the region found), then from u_max down by halving the lower end, and closes the two outer
-// regions with the given polynomials. No progress is printed (CORA prints percentages).
+// the region found, down to a constant), then from u_max down by halving the lower end, and
+// closes the two outer regions with the given polynomials. No progress is printed (CORA prints
+// percentages).
 //
 // Syntax:   region_polys() - the buckets and regions, e.g.
 //           buckets = NeuralNetwork::merge_buckets(Activation::sigmoid);
@@ -25,9 +26,9 @@
 // CORA: nn/layers/nonlinear/nnReLULayer.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/findRegionPolys.m
 // CORA authors: Tobias Ladner, Lukas Koller
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -106,8 +107,8 @@ NeuralNetwork::find_region_polys(Activation activation, double tol, int order, d
             p = fit.coeffs;
             d = fit.d;
         }
-        // a lower order on the region, while it stays within tol
-        for (int o = order - 1; o >= 1; --o) {
+        // a lower order on the region, down to a constant, while it stays within tol (CORA's)
+        for (int o = order - 1; o >= 0; --o) {
             const PrivApprox lower = aux_fit(activation, l, u_i, o);
             if (lower.d >= tol) break;
             p = lower.coeffs;

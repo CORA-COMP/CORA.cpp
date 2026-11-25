@@ -640,8 +640,9 @@ oracle-20261124-0322eafde (`nnLayer.groupSort`, `groupSortFloat`; `nnLayer.gener
 `Zonotope.reduceShortest`: the max_gens - n shortest generators by |g|_1 in CORA.cpp's order, ties by index,
 the rest a box; `nnLayer.mergeBuckets`, `ActivationKind.mergeValues`; `test_lean_nn_forms` bit for bit).
 `composite_layer` and the port's `max_pool2d_layer` run through `neuralNetwork.evaluateGraph`
-(`test_lean_nn_graph` bit for bit). `find_region_polys` and `compute_reduced_network` have no op in the
-oracle, so they are tested by properties: the reduced network's output set contains the original outputs.
+(`test_lean_nn_graph` bit for bit). `compute_reduced_network` is served since batch 10 (below), with
+static buckets; `find_region_polys` has no op in the oracle, so it is tested by properties, as the
+reduced network with dynamic buckets is: its output set contains the original outputs.
 
 | op (proposed) | request fields | reply |
 |---|---|---|
@@ -715,6 +716,34 @@ reduction layers in `prepareForZonoBatchEval`.
 | `neuralNetwork.getNumNeurons`, `getNumParams`, `getRefinableLayers` | `layers` | the counts, the layers |
 | `neuralNetwork.getOrderPattern` | `layers`, `orders` | `pattern` |
 | `neuralNetwork.prepareForZonoBatchEval` | `layers`, `numInitGens`, `numApproxErr` | `numGen`, `approxErrGens` |
+
+## NN weights, orders, system, explanation and reduction (PR "oracle/nn-batch10", batch 10)
+
+Served since oracle-20261124-a121ddabc (CORALean `NnWeightOps`, `NnSystemOps`, `NnReduceOps`,
+`NnConZonoOps`) on dense ReLU and identity chains, bit for bit at nearest:
+`neuralNetwork.castWeights` (`to(float32)` against the rounding to nearest in `ieee:binary32`),
+`generateRandom` and `initWeights` (glorot and shi; the test draws CORA.cpp's `Rng` units again
+from the seed and sends them), `resetApproxOrder` and `refine` (`test_lean_nn_weights`);
+`nonlinearSysDT` (the output with the offsets, `C` and every block of `D`) and `explain` (method
+standard on the order given; `test_lean_nn_system`); `computeReducedNetwork` (static buckets) and
+`evaluateConZonotope` (a zonotope without constraints at the box bounds; `test_lean_nn_reduce`).
+Zeros are compared as x + 0 where an identity map or a sum of zero products may flip their sign.
+Not served: explain's `abstract+refine` (the FGSM `mask`, the random rates) and its timeout,
+dynamic buckets and input compression, constraints and linear-program bounds of
+`evaluateConZonotope`, sigmoid and tanh in `nonlinearSysDT`. `find_region_polys` has no op (the
+regression fits of orders 0 and 2 have no CORALean definition); it now lowers the order down to a
+constant, as CORA (property test).
+
+| op | request fields | reply |
+|---|---|---|
+| `neuralNetwork.castWeights` | `layers` (dtype of the cast) | `layers` |
+| `neuralNetwork.resetApproxOrder`, `refine` | `layers`; `orders`, `heuristic`, `type`, `heuristicKind`, `maxOrder`, `gamma` | `pattern`; `orders` |
+| `neuralNetwork.generateRandom` | `inputs`, `outputs`, `layers`, `hidden`, `sizeDraws`, `draws` | the sizes, `network` |
+| `neuralNetwork.initWeights` | `layers`, `method`, `which`, `draws` | `layers` |
+| `neuralNetwork.nonlinearSysDT` | `layers`, `x`, `u` | `y`, `C`, `D` (one block per layer) |
+| `neuralNetwork.explain` | `layers` (kinds), `x`, `label`, `epsilon`, `featOrder`, `inputSize`, `outputThreshold` | `freed` |
+| `neuralNetwork.computeReducedNetwork` | `layers`, `Z`, `bucketTol`, `reductionRate`, `minSearches` | `layers`, `d`, `merged`, `reductionRate`, `Z` |
+| `neuralNetwork.evaluateConZonotope` | `layers`, `c`, `G` | `empty`, or `c`, `G`, `A`, `b` |
 
 ### Discrete-time nonlinear systems (port batch nlsdt)
 

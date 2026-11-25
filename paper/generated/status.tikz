@@ -51,13 +51,13 @@
 \end{scope}
 \draw[black, line width=0.2pt] ([yshift=-5.5pt]axis cs:0,2) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:105.549,2) -- ([yshift=5.5pt]axis cs:105.549,2) [sharp corners] -- ([yshift=5.5pt]axis cs:0,2) -- cycle;
 \node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:105.549,2) {11\%};
-\begin{scope}\clip([yshift=-5.5pt]axis cs:0,3) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:83.5493,3) -- ([yshift=5.5pt]axis cs:83.5493,3) [sharp corners] -- ([yshift=5.5pt]axis cs:0,3) -- cycle;
-\fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,3) rectangle ([yshift=5.5pt]axis cs:52,3);
-\fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:52,3) rectangle ([yshift=5.5pt]axis cs:67.7746,3);
-\fill[CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:67.7746,3) rectangle ([yshift=5.5pt]axis cs:83.5493,3);
+\begin{scope}\clip([yshift=-5.5pt]axis cs:0,3) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:92.5493,3) -- ([yshift=5.5pt]axis cs:92.5493,3) [sharp corners] -- ([yshift=5.5pt]axis cs:0,3) -- cycle;
+\fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,3) rectangle ([yshift=5.5pt]axis cs:61,3);
+\fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:61,3) rectangle ([yshift=5.5pt]axis cs:76.7746,3);
+\fill[CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:76.7746,3) rectangle ([yshift=5.5pt]axis cs:92.5493,3);
 \end{scope}
-\draw[black, line width=0.2pt] ([yshift=-5.5pt]axis cs:0,3) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:83.5493,3) -- ([yshift=5.5pt]axis cs:83.5493,3) [sharp corners] -- ([yshift=5.5pt]axis cs:0,3) -- cycle;
-\node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:83.5493,3) {80\%\hspace{0.8em}\textcolor{black!40}{+39}};
+\draw[black, line width=0.2pt] ([yshift=-5.5pt]axis cs:0,3) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:92.5493,3) -- ([yshift=5.5pt]axis cs:92.5493,3) [sharp corners] -- ([yshift=5.5pt]axis cs:0,3) -- cycle;
+\node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:92.5493,3) {94\%\hspace{0.8em}\textcolor{black!40}{+39}};
 \begin{scope}\clip([yshift=-5.5pt]axis cs:0,4) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:246.549,4) -- ([yshift=5.5pt]axis cs:246.549,4) [sharp corners] -- ([yshift=5.5pt]axis cs:0,4) -- cycle;
 \fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,4) rectangle ([yshift=5.5pt]axis cs:15.7746,4);
 \fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:15.7746,4) rectangle ([yshift=5.5pt]axis cs:31.5493,4);

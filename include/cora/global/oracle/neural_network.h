@@ -12,13 +12,14 @@
 //             a graph network (sources, residuals) in the order of CORA.cpp's ZonoNet::forward,
 //             the radii of the interval center as the error box; the forms (merge buckets, group
 //             sort, generator reduction, normal form) and the passes of a ReLU chain (propagate
-//             bounds, the gradients at a box and at a point, the sensitivity); a zonotope batch's
-//             gradients with the lines held, FGSM, the input order and the structure's counts
+//             bounds, the gradients at a box and at a point, the sensitivity); batch gradients,
+//             FGSM, the input order, the structure, the weights, the orders, the system, explain,
+//             the reduced network and the constrained zonotope
 // See also:   lean/request.h, cora/nn/neural_network/neural_network.h
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       12-November-2026
-// Last update:   24-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -30,6 +31,7 @@
 #include "cora/nn/neural_network/neural_network.h"
 
 #include <array>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -269,6 +271,84 @@ struct ZonoBatchCount {
 /// activation layer's errors (at most num_approx_err; inf: all).
 ZonoBatchCount prepare_zono_batch_eval(const NeuralNetwork &nn, double num_init_gens,
                                        double num_approx_err);
+
+// The weights and the orders ----------------------------------------------------------------------
+
+/// neuralNetwork.castWeights: every W and b of the dense chain rounded to nearest in the dtype
+/// (e.g. "ieee:binary32", CORA's single), one (W, b) per layer.
+std::vector<std::pair<cora::Tensor, cora::Tensor>> cast_weights(const NeuralNetwork &nn,
+                                                                const std::string &dtype);
+
+/// neuralNetwork.resetApproxOrder: the order 1 of every neuron of the refinable layers.
+std::vector<std::vector<int64_t>> reset_approx_order(const NeuralNetwork &nn);
+
+/// neuralNetwork.refine: the orders of every layer after one step, from the orders given per
+/// layer and the heuristic per layer (empty: none); type "all", "layer" or "neuron", kind
+/// "approx_error", "layer_bias" or "all".
+std::vector<std::vector<int64_t>> refine(const NeuralNetwork &nn,
+                                         const std::vector<std::vector<int64_t>> &orders,
+                                         const std::vector<std::vector<double>> &heuristic,
+                                         const std::string &type, const std::string &kind,
+                                         int64_t max_order, double gamma);
+
+/// The sizes (inputs, outputs, layers, hidden) and the weights (boxes) of generateRandom.
+struct NnRandom {
+    std::array<int64_t, 4> sizes{};
+    std::vector<std::pair<Interval, Interval>> layers;
+};
+
+/// neuralNetwork.generateRandom on CORA.cpp's units: the sizes given (0: drawn from size_draws in
+/// that order) and per layer the units of W (m, n) and b (m).
+NnRandom generate_random(const std::array<int64_t, 4> &sizes, const std::vector<double> &size_draws,
+                         const std::vector<std::pair<cora::Tensor, cora::Tensor>> &draws);
+
+/// neuralNetwork.initWeights on CORA.cpp's units: the new W (a box) of every layer in which (all
+/// if empty), none for a layer kept; the units per layer drawn again (glorot m n, shi m n even).
+std::vector<std::optional<Interval>> init_weights(const NeuralNetwork &nn,
+                                                  const std::string &method,
+                                                  const std::vector<int64_t> &which,
+                                                  const std::vector<cora::Tensor> &draws);
+
+// The system, the explanation and the reduction ---------------------------------------------------
+
+/// neuralNetwork.nonlinearSysDT at x and u: the output, C = dy / dx and the blocks dy / du_k.
+struct NnSystem {
+    Interval y, C;
+    std::vector<Interval> D;
+};
+NnSystem nonlinear_sys_dt(const NeuralNetwork &nn, const cora::Tensor &x, const cora::Tensor &u);
+
+/// neuralNetwork.explain, CORA's method standard: the features (0-based) freed in the order.
+std::vector<int64_t> explain(const NeuralNetwork &nn, const cora::Tensor &x, int64_t label,
+                             double epsilon, const std::vector<int64_t> &feat_order,
+                             const std::vector<int64_t> &input_size = {},
+                             double output_threshold = 0.0);
+
+/// The reduced network of computeReducedNetwork: layers, error intervals (center, radius; none
+/// for a layer without), merged neurons (none for the last), rates, the output set.
+struct NnReduced {
+    std::vector<std::pair<cora::Tensor, cora::Tensor>> layers;
+    std::vector<std::optional<std::pair<cora::Tensor, cora::Tensor>>> d;
+    std::vector<std::vector<int64_t>> merged;
+    cora::Tensor rate;
+    Zonotope Z;
+};
+
+/// neuralNetwork.computeReducedNetwork with static buckets on a ReLU chain: the set Z, the
+/// tolerances and the rates (one value or one per layer; empty: the defaults, no rate).
+NnReduced compute_reduced_network(const NeuralNetwork &nn, const cora::Zonotope &Z,
+                                  const std::vector<double> &bucket_tol,
+                                  const std::vector<double> &rate, int64_t min_searches = 10);
+
+/// The constrained zonotope of evaluateConZonotope (empty: the empty set).
+struct NnConZono {
+    bool empty = false;
+    cora::Tensor c, G, A, b;
+};
+
+/// neuralNetwork.evaluateConZonotope of a ReLU chain on the zonotope c + G x (no constraints).
+NnConZono evaluate_con_zonotope(const NeuralNetwork &nn, const cora::Tensor &c,
+                                const cora::Tensor &G);
 
 } // namespace cora::lean
 
