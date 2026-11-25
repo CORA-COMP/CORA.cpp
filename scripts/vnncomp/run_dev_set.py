@@ -14,7 +14,7 @@ See also: scripts/vnncomp/score.py, scripts/vnncomp/make_dev_set.py
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   23-November-2026
+Last update:   25-November-2026
 Reviewed:      ---
 """
 
@@ -130,8 +130,11 @@ def run_one(args, k, row):
     elif code != 0:
         result = f"error_exit_code_{code}"
     else:
-        with open(result_file) as stream:
-            result = "".join(stream.readline().split()) or "no_result_in_file"
+        try:  # a tool may delete the file and exit 0 without writing it (alpha-beta-CROWN's script)
+            with open(result_file) as stream:
+                result = "".join(stream.readline().split()) or "no_result_in_file"
+        except FileNotFoundError:
+            result = "no_result_in_file"
     # the scoring's six columns, then the run's own statistics
     stats = {}
     if os.path.exists(result_file + ".stats.json"):
