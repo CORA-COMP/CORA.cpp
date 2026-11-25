@@ -173,7 +173,9 @@ def _draw_polygons(ax, layer, style):
     import numpy as np
     from matplotlib.patches import PathPatch
     from matplotlib.path import Path
-    paths = [Path(polygon, closed=len(polygon) >= 3) for polygon in layer["polygons"]]
+    # a closed Path takes its last vertex as the closing code, so the first vertex is repeated there
+    polygons = [np.asarray(p, dtype=float) for p in layer["polygons"]]
+    paths = [Path(np.vstack([p, p[:1]]), closed=True) if len(p) >= 3 else Path(p) for p in polygons]
     face = layer["face"]
     patch = PathPatch(
         Path.make_compound_path(*paths) if paths else Path(np.empty((0, 2))),

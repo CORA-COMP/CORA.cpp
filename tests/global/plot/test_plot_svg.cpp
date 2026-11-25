@@ -294,12 +294,27 @@ void colors_are_cora_colors() {
     check(test::throws([] { cora_color("CORA:reachSet", 2, 3); }), "the index must not exceed");
 }
 
+// LaTeX labels show with sub- and superscripts and no LaTeX syntax; the legend has a frame.
+void labels_and_legend_render_in_the_svg(const std::string &b) {
+    Figure fig;
+    plot(fig, Interval(test::vec({1, 2}), test::vec({3, 4})), {0, 1},
+         {.label = "$\\mathcal{I}_1$"});
+    fig.xlabel = "$x_{(1)}$";
+    const std::string svg = fig.svg();
+    check(!has(svg, "$") && !has(svg, "mathcal") && !has(svg, "{"), b + ": no LaTeX syntax left");
+    check(has(svg,
+              "<tspan baseline-shift=\"sub\" font-size=\"70%\" font-style=\"normal\">(1)</tspan>"),
+          b + ": the subscript of x_{(1)}");
+    check(has(svg, "rx=\"3\" fill=\"#ffffff\""), b + ": the legend has a frame");
+}
+
 } // namespace
 
 
 // ===========================================  MAIN  =========================================== //
 
 int main() {
+    // every case on each backend, then the colors, which need none
     test::for_each_backend([](const std::string &b) {
         sets_take_the_colors_of_cora_in_turn(b);
         a_set_is_filled_unless_told_otherwise(b);
@@ -314,6 +329,7 @@ int main() {
         a_wrapper_takes_the_layers_out(b);
         plot_rejects_bad_dimensions(b);
         save_writes_the_file(b);
+        labels_and_legend_render_in_the_svg(b);
     });
     an_unknown_color_scheme_is_described();
     colors_are_cora_colors();
