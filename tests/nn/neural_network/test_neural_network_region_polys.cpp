@@ -2,17 +2,21 @@
 //
 // The buckets are the finite limits of the activation; the regions of find_region_polys follow
 // each other from -inf to inf, each with an error below the tolerance, and their polynomials
-// enclose the activation within their error.
+// enclose the activation within their error. Property: on random tolerances and domains (fixed
+// seed), every region is within the tolerance and encloses the activation, and a region whose
+// constant fit is within the tolerance takes the constant (CORA lowers the order down to 0).
 //
 // CORA: nn/layers/nonlinear/@nnActivationLayer/getMergeBuckets.m
 // CORA: nn/layers/nonlinear/nnReLULayer.m
 // CORA: nn/layers/nonlinear/@nnActivationLayer/findRegionPolys.m
+// PROPERTY: nn/layers/nonlinear/@nnActivationLayer/findRegionPolys.m
 // CORA authors: Tobias Ladner, Lukas Koller
-// Authors:       Claude Sonnet 5.5
+// Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   25-November-2026
 // Reviewed:      ---
 
+#include "cora/global/rng.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "nn/neural_network/private/priv_activation_poly.h"
 #include "testing.h"
@@ -91,6 +95,35 @@ void regions(const std::string &b) {
     }
 }
 
+/// Random tolerances and domains of the sigmoid and tanh: within tol, enclosing, constants where
+/// a constant suffices (the saturated tails at a loose tolerance).
+void property(const std::string &b) {
+    Rng rng(11);
+    bool within = true, encloses = true, constant = false;
+    for (int rep = 0; rep < 6; ++rep) {
+        const Activation a = rep % 2 == 0 ? Activation::sigmoid : Activation::tanh;
+        double tol = 0.0, e = 0.0;
+        rng.uniform(&tol, 1, 0.01, 0.08);
+        rng.uniform(&e, 1, 3.0, 8.0);
+        const double lo_lim = a == Activation::tanh ? -1.0 : 0.0;
+        const std::vector<RegionPoly> R =
+            NeuralNetwork::find_region_polys(a, tol, 2, -e, e, {lo_lim}, 0.0, {1.0}, 0.0);
+        for (const RegionPoly &r : R) {
+            // the outer regions are the polynomials given
+            if (!std::isfinite(r.l) || !std::isfinite(r.u)) continue;
+            within = within && r.d <= tol;
+            constant = constant || r.p.size() == 1;
+            for (int j = 0; j <= 50; ++j) {
+                const double x = r.l + (r.u - r.l) * double(j) / 50.0;
+                const double f = a == Activation::tanh ? std::tanh(x) : 1.0 / (1.0 + std::exp(-x));
+                encloses = encloses && std::abs(f - priv_polyval(r.p, x)) <= r.d + 1e-12;
+            }
+        }
+    }
+    check(within && encloses, b + ": random tolerances, every region within tol and enclosing");
+    check(constant, b + ": a saturated region takes the constant fit");
+}
+
 } // namespace
 
 
@@ -100,6 +133,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         buckets(b);
         regions(b);
+        property(b);
     });
     return test::finish("neuralNetwork region polys");
 }
