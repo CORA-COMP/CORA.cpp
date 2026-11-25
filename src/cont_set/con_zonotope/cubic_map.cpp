@@ -18,7 +18,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -32,15 +32,6 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
-
-/// The constraint matrix A (..., p, m) of a set in the factors of the result: column j of A goes
-/// to the column positions[j] of the (..., p, total) matrix, the others are zero.
-Tensor aux_scatter(const Tensor &A, const std::vector<int64_t> &positions, int64_t total) {
-    const int64_t m = A.shape().back();
-    std::vector<double> selection(std::size_t(m * total), 0.0);
-    for (int64_t j = 0; j < m; ++j) selection[j * total + positions[j]] = 1.0;
-    return A.matmul(Tensor::like(A, selection, {m, total}));
-}
 
 /// The columns of the generators of a product of the sets of the sizes m[0], m[1], m[2] that
 /// hold the linear monomial of factor j of set s: the monomials are ordered by the third set's
@@ -66,12 +57,8 @@ ConZonotope ConZonotope::cubic_map(const std::vector<std::vector<Tensor>> &T,
     const std::string problem = priv_cubic_map_problem(T, ind, dim());
     CORA_CHECK(problem.empty(), Error::wrong_value, [&] { return "cubic_map: " + problem; });
     const Zonotope Z = Zonotope(c_, G_).cubic_map(T, ind);
-    const int64_t m = G_.size(-2), total = Z.nr_generators();
-    // the monomials of the factors alone are the first generators
-    std::vector<int64_t> linear;
-    linear.reserve(static_cast<std::size_t>(m));
-    for (int64_t j = 0; j < m; ++j) linear.push_back(j);
-    return {Z.center(), Z.generators(), aux_scatter(A(), linear, total), b()};
+    // the monomials of the factors alone are the first generators, the others are free
+    return {Z.center(), Z.generators(), F_.pad_left(Z.nr_generators() - G_.size(-2))};
 }
 
 ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz3,
@@ -91,13 +78,11 @@ ConZonotope ConZonotope::cubic_map(const ConZonotope &cz2, const ConZonotope &cz
     const std::array<const ConZonotope *, 3> sets{this, &cz2, &cz3};
     // the factors of the three sets are stacked
     const std::array<int64_t, 3> sizes{G_.size(-2), cz2.nr_generators(), cz3.nr_generators()};
-    // the rows of each set, on its own factors
-    std::vector<Tensor> A, b;
-    for (int s = 0; s < 3; ++s) {
-        A.push_back(aux_scatter(sets[s]->A(), aux_linear_positions(sizes, s), total));
-        b.push_back(sets[s]->b());
-    }
-    return {Z.center(), Z.generators(), Tensor::concat(A, -2), Tensor::concat(b, -1)};
+    // the rows of each set, on its own factors (lifted to the columns of its linear monomials)
+    Polytope F = sets[0]->factor_polytope().lift(total, aux_linear_positions(sizes, 0));
+    for (int s = 1; s < 3; ++s)
+        F = F.stack_rows(sets[s]->factor_polytope().lift(total, aux_linear_positions(sizes, s)));
+    return {Z.center(), Z.generators(), F};
 }
 
 } // namespace cora

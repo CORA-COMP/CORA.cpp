@@ -12,7 +12,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -65,7 +65,7 @@ ConZonotope aux_product(const ConZonotope &cz1, const ConZonotope &cz2) {
             (Tensor::block_diag(
                  {cz1.generators().matrix_transpose(), cz2.generators().matrix_transpose()}))
                 .matrix_transpose(),
-            Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -1)};
+            priv_factor_product(cz1, cz2)};
 }
 
 } // namespace

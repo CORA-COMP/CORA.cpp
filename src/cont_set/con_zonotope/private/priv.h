@@ -9,7 +9,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   21-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -78,6 +78,10 @@ ConZonotope priv_compact(const ConZonotope &cz);
 /// center and the generators, the constraints unchanged; t may be empty (no shift).
 ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
                               const std::optional<Tensor> &t);
+
+/// The factor polytopes of two sets side by side, the factors of cz1 first (CORALean's
+/// (P1.padLeft h2).stackRows (padRight h1 P2)): the constraints on the block diagonal.
+Polytope priv_factor_product(const ConZonotope &cz1, const ConZonotope &cz2);
 
 /// The Minkowski sum of two constrained zonotopes: centers add, generators join, constraints on
 /// the block diagonal.

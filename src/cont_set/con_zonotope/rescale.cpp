@@ -157,7 +157,8 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
 
     // Rescaling -----------------------------------------------------------------------------------
     // the ranges of the factors, of a set whose generators and constraints may be permuted
-    Tensor G = G_.matrix_transpose(), A = this->A(), b = priv_b_column(*this);
+    Tensor G = G_.matrix_transpose();
+    Polytope F = F_;
     std::vector<double> lo, hi;
     if (method == "exact") {
         std::tie(lo, hi) = priv_factor_ranges(H);
@@ -170,8 +171,8 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
             rhs[i] = e.M[i * w + m];
         }
         G = G_.matrix_transpose().take(e.order, -1);
-        A = Tensor::like(this->A(), a, {p, m});
-        b = Tensor::like(this->b(), rhs, {p, 1}); // CORA's column
+        // the eliminated rows on the permuted factors
+        F = Polytope::equalities(Tensor::like(A(), a, {p, m}), Tensor::like(b(), rhs, {p}));
         if (!aux_iterate(e.M, p, m, lo, hi))
             CORA_FAIL(Error::empty_set, "rescale: the set is empty");
     }
@@ -181,9 +182,9 @@ ConZonotope ConZonotope::rescale(const std::string &method) const {
     const Tensor middle = ranges.center();
     const Tensor radius = (ranges.sup() - middle).maximum(middle - ranges.inf());
     const Tensor m_col = middle.expand_dims(-1), r_row = radius.expand_dims(0);
+    // the factors x = middle + diag(radius) y in the generators and in the rows
     return {(c_.expand_dims(-1) + G.matmul(m_col)).squeeze(-1),
-            G.multiply(r_row).matrix_transpose(), A.multiply(r_row),
-            (b - A.matmul(m_col)).squeeze(-1)};
+            G.multiply(r_row).matrix_transpose(), F.rescale_cols(middle, radius)};
 }
 
 } // namespace cora

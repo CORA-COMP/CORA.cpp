@@ -22,7 +22,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -91,8 +91,8 @@ ConZonotope aux_inner_vinod(const ConZonotope &cz, const Zonotope &S) {
         if (v > 1.0) return ConZonotope::empty(n);
     const Tensor D = (support.ones_like() - support).reshape({1, N});
     return {cz.c() - S.center(),
-            (cz.generators().matrix_transpose().multiply(D)).matrix_transpose(), cz.A().multiply(D),
-            cz.b()};
+            (cz.generators().matrix_transpose().multiply(D)).matrix_transpose(),
+            cz.factor_polytope().scale_cols(D.reshape({N}))};
 }
 
 // The dispatch ------------------------------------------------------------------------------------

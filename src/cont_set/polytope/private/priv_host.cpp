@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/polytope/private/priv.h"
@@ -211,6 +211,19 @@ Tensor priv_place(const Tensor &M, int64_t N, const std::vector<int64_t> &dims, 
     // the zero line that the other positions take
     const Tensor zero = axis == -1 ? zeros_block(M, rows, 1) : zeros_block(M, 1, cols);
     return Tensor::concat({M, zero}, axis).take(source, axis);
+}
+
+// Hull weights ------------------------------------------------------------------------------------
+
+Polytope::Constraints priv_half_scaled(const Polytope::Constraints &C, int64_t k, bool left) {
+    // the rows [M, 0_k, -o/2] or [0_k, M, o/2]
+    const auto rows = [k, left](const Tensor &M, const Tensor &o) {
+        const Tensor zeros = zeros_block(M, M.shape()[M.ndim() - 2], k);
+        const Tensor weight = o.expand_dims(-1) * (left ? -0.5 : 0.5);
+        return left ? Tensor::concat({M, zeros, weight}, -1)
+                    : Tensor::concat({zeros, M, weight}, -1);
+    };
+    return {rows(C.A, C.b), C.b * 0.5, rows(C.Ae, C.be), C.be * 0.5};
 }
 
 // A box -------------------------------------------------------------------------------------------

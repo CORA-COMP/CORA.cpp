@@ -11,7 +11,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -189,6 +189,10 @@ Rows priv_polytope_vertices(const Polytope &P);
 /// The matrix M with its columns (axis -1) or rows (axis -2) moved to the positions dims of N and
 /// zeros elsewhere (a copy, no arithmetic).
 Tensor priv_place(const Tensor &M, int64_t N, const std::vector<int64_t> &dims, int axis);
+
+/// The rows of C at a convex-hull weight w: [A, 0_k, -b/2] <= b/2 (left, the set first) or
+/// [0_k, A, b/2] <= b/2 (right), the equalities likewise (half_scaled_left, half_scaled_right).
+Polytope::Constraints priv_half_scaled(const Polytope::Constraints &C, int64_t k, bool left);
 
 /// The polytope of a box (n) (CORA's interval/polytope.m for the interval's rows).
 Polytope priv_polytope_of_interval(const Interval &I);

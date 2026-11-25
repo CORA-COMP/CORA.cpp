@@ -198,6 +198,17 @@ stays `property`.
 op; `test_lean_polytope_constraints` compares the halfspace form only, which is what the benchmarks
 build.
 
+## The rows of a factor polytope (PR "sets/conzono-on-polytope")
+
+CORA.cpp's `ConZonotope` holds its constraints as a `Polytope` of the factors and builds it with
+CORALean's `HPolytope` operations (`src/CORALean/ContSet/HPolytope/Float/Operations/`): `padLeft`,
+`padRight`, `stackRows`, `selectCols`, `restrict` (`select_rows`), `rescaleCols` (with its scaling
+step `scale_cols`), `halfScaledLeft` and `halfScaledRight`. The oracle serves none of them alone.
+All but `rescaleCols` move or copy entries (zeros, halves of offsets), so a property test says as
+much as a bit-exact one; the bits of `rescaleCols` are those of `conZonotope.rescale`, which
+`test_lean_con_zonotope_rescale_split` compares. These are no CORA methods and have no coverage
+rows; a `polytope.rescaleCols` op (`P`, `mid`, `rad` -> `P`) would make the last one direct.
+
 ## Polynomial zonotopes and alg "poly" (PR "nln-poly")
 
 The pinned oracle (`oracle-20261112-e3fba3c5b`) serves no polynomial zonotope operation and no

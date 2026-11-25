@@ -19,7 +19,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper, Viktor Kotsev, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -66,12 +66,11 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
     const int64_t n = cz.dim();
     ConZonotope out = cz;
     if (H.Ae.shape()[0] > 0) {
-        // Ae (c + G x) = be for the factors x
-        const Tensor A =
-            Tensor::concat({cz.A(), H.Ae.matmul(cz.generators().matrix_transpose())}, -2);
-        const Tensor b = Tensor::concat(
-            {priv_b_column(cz), H.be.expand_dims(-1) - H.Ae.matmul(cz.c().expand_dims(-1))}, -2);
-        out = ConZonotope(cz.c(), cz.generators(), A, b.squeeze(-1));
+        // Ae (c + G x) = be for the factors x, below the rows of the set
+        const Polytope rows = Polytope::equalities(
+            H.Ae.matmul(cz.generators().matrix_transpose()),
+            (H.be.expand_dims(-1) - H.Ae.matmul(cz.c().expand_dims(-1))).squeeze(-1));
+        out = ConZonotope(cz.c(), cz.generators(), cz.factor_polytope().stack_rows(rows));
     }
     // a constrained hyperplane takes the bounds from the set so far, else from the set after Ae
     const HostConZonotope base = priv_host_con_zonotope(out);
@@ -86,20 +85,16 @@ ConZonotope aux_intersection(const ConZonotope &cz, const Polytope &P) {
         if (hyperplane && range->second <= ub + numerics::kGuardContains) continue; // it holds
         // a'(c + G x) + s (lb - ub) / 2 = (ub + lb) / 2 with the new factor s in [-1, 1]
         const Tensor a_row = Tensor::like(out.c().expand_dims(-1), a, {1, n});
-        const int64_t p = out.A().shape()[0];
         const Tensor slack = out.c().expand_dims(-1).full_like({1, 1}, 0.5 * (lb - ub));
-        const Tensor A = Tensor::concat(
-            {Tensor::concat({out.A(), zeros_block(out.c().expand_dims(-1), p, 1)}, -1),
-             Tensor::concat({a_row.matmul(out.generators().matrix_transpose()), slack}, -1)},
-            -2);
-        const Tensor b = Tensor::concat(
-            {priv_b_column(out), out.c().expand_dims(-1).full_like({1, 1}, 0.5 * (ub + lb)) -
-                                     a_row.matmul(out.c().expand_dims(-1))},
-            -2);
-        // the new factor s scales no generator
+        const Polytope row = Polytope::equalities(
+            Tensor::concat({a_row.matmul(out.generators().matrix_transpose()), slack}, -1),
+            (out.c().expand_dims(-1).full_like({1, 1}, 0.5 * (ub + lb)) -
+             a_row.matmul(out.c().expand_dims(-1)))
+                .squeeze(-1));
+        // the new factor s scales no generator and is free in the rows of the set
         const Tensor G =
             Tensor::concat({out.generators(), zeros_block(out.generators(), 1, n)}, -2);
-        out = ConZonotope(out.c(), G, A, b.squeeze(-1));
+        out = ConZonotope(out.c(), G, out.factor_polytope().pad_left(1).stack_rows(row));
     }
     return out;
 }

@@ -15,7 +15,7 @@
 // CORA authors: Niklas Kochdumper, Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -46,8 +46,6 @@ ConZonotope aux_raghuraman(const ConZonotope &cz1, const ConZonotope &cz2) {
     const auto [c1, G1] = aux_columns(cz1);
     const auto [c2, G2] = aux_columns(cz2);
     const int64_t n = cz1.dim(), m1 = cz1.nr_generators(), m2 = cz2.nr_generators();
-    const int64_t p1 = cz1.A().shape()[cz1.A().ndim() - 2],
-                  p2 = cz2.A().shape()[cz2.A().ndim() - 2];
     const int64_t s = 2 * (m1 + m2);
     const Tensor c = (c1 + c2) * 0.5;
     const Tensor G = Tensor::concat({G1, G2, (c1 - c2) * 0.5, zeros_block(G1, n, s)}, -1);
@@ -58,16 +56,13 @@ ConZonotope aux_raghuraman(const ConZonotope &cz1, const ConZonotope &cz2) {
         {zeros_block(G1, 2 * m1, m2), identity_block(G1, m2), -identity_block(G1, m2)}, -2);
     const Tensor A30 =
         Tensor::concat({full_block(G1, 2 * m1, 1, -0.5), full_block(G1, 2 * m2, 1, 0.5)}, -2);
-    const Tensor row1 = Tensor::concat(
-        {cz1.A(), zeros_block(G1, p1, m2), priv_b_column(cz1) * -0.5, zeros_block(G1, p1, s)}, -1);
-    const Tensor row2 = Tensor::concat(
-        {zeros_block(G1, p2, m1), cz2.A(), priv_b_column(cz2) * 0.5, zeros_block(G1, p2, s)}, -1);
-    const Tensor row3 = Tensor::concat({A31, A32, A30, identity_block(G1, s)}, -1);
-    return {
-        c.squeeze(-1), G.matrix_transpose(), Tensor::concat({row1, row2, row3}, -2),
-        Tensor::concat(
-            {priv_b_column(cz1) * 0.5, priv_b_column(cz2) * 0.5, full_block(G1, s, 1, -0.5)}, -2)
-            .squeeze(-1)};
+    const Polytope weights =
+        Polytope::equalities(Tensor::concat({A31, A32, A30, identity_block(G1, s)}, -1),
+                             full_block(G1, s, 1, -0.5).squeeze(-1));
+    // the rows of each set at the weight, free in the slack factors
+    const Polytope F1 = cz1.factor_polytope().half_scaled_left(m2).pad_left(s);
+    const Polytope F2 = cz2.factor_polytope().half_scaled_right(m1).pad_left(s);
+    return {c.squeeze(-1), G.matrix_transpose(), F1.stack_rows(F2).stack_rows(weights)};
 }
 
 /// The hull by Kochdumper: three copies of the weight and the factors of each set.
@@ -75,21 +70,13 @@ ConZonotope aux_kochdumper(const ConZonotope &cz1, const ConZonotope &cz2) {
     const auto [c1, G1] = aux_columns(cz1);
     const auto [c2, G2] = aux_columns(cz2);
     const int64_t n = cz1.dim(), m1 = cz1.nr_generators(), m2 = cz2.nr_generators();
-    // a set without constraints gets the row 0 = 0
-    const bool none1 = cz1.A().shape()[cz1.A().ndim() - 2] == 0;
-    const bool none2 = cz2.A().shape()[cz2.A().ndim() - 2] == 0;
-    const Tensor A1 = none1 ? zeros_block(G1, 1, m1) : cz1.A(),
-                 b1 = none1 ? zeros_block(G1, 1, 1) : priv_b_column(cz1);
-    const Tensor A2 = none2 ? zeros_block(G1, 1, m2) : cz2.A(),
-                 b2 = none2 ? zeros_block(G1, 1, 1) : priv_b_column(cz2);
-    const int64_t p = A1.shape()[A1.ndim() - 2] + A2.shape()[A2.ndim() - 2];
-    const Tensor G =
-        Tensor::concat({G1, G2, (c1 - c2) * 0.5, zeros_block(G1, n, 3 * (m1 + m2))}, -1);
-    // the constraints of both sets, with the weight in the last column
-    const Tensor row1 =
-        Tensor::concat({Tensor::block_diag({A1, A2}), Tensor::concat({b1 * -0.5, b2 * 0.5}, -2),
-                        zeros_block(G1, p, 3 * (m1 + m2))},
-                       -1);
+    const int64_t w = 3 * (m1 + m2);
+    const Tensor G = Tensor::concat({G1, G2, (c1 - c2) * 0.5, zeros_block(G1, n, w)}, -1);
+    // the rows of both sets, the weight last (CORA's 0 = 0 of a set without rows goes below)
+    const Polytope own = cz1.factor_polytope()
+                             .half_scaled_left(m2)
+                             .stack_rows(cz2.factor_polytope().half_scaled_right(m1))
+                             .pad_left(w);
     // the factors of each set against the weight: -2 I on the slack factors and its own copy
     const Tensor slack1 = Tensor::concat(
         {identity_block(G1, 2 * m1) * -2.0,
@@ -110,13 +97,11 @@ ConZonotope aux_kochdumper(const ConZonotope &cz1, const ConZonotope &cz2) {
          Tensor::concat({identity_block(G1, m2) * 2.0, identity_block(G1, m2) * -2.0}, -2),
          full_block(G1, 2 * m2, 1, -1.0), zeros_block(G1, 2 * m2, 3 * m1), slack2},
         -1);
-    const Tensor A = Tensor::concat({row1, row2, row3}, -2);
-    const Tensor b =
-        Tensor::concat({b1 * 0.5, b2 * 0.5, full_block(G1, 2 * (m1 + m2), 1, 3.0)}, -2);
+    const Polytope F = own.stack_rows(Polytope::equalities(
+        Tensor::concat({row2, row3}, -2), full_block(G1, 2 * (m1 + m2), 1, 3.0).squeeze(-1)));
     // the rows that are zero are dropped
-    const std::vector<int64_t> rows = priv_nonzero_rows(A, b);
-    return {((c1 + c2) * 0.5).squeeze(-1), G.matrix_transpose(), A.take(rows, -2),
-            b.take(rows, -2).squeeze(-1)};
+    return {((c1 + c2) * 0.5).squeeze(-1), G.matrix_transpose(),
+            F.select_rows({}, priv_nonzero_rows(F.Ae(), F.be().expand_dims(-1)))};
 }
 
 // Hull of many sets -------------------------------------------------------------------------------
@@ -125,21 +110,26 @@ ConZonotope aux_kochdumper(const ConZonotope &cz1, const ConZonotope &cz2) {
 ConZonotope aux_many(const std::vector<ConZonotope> &sets) {
     const Tensor &like = sets.front().generators().matrix_transpose();
     const int64_t n = sets.front().dim(), N = int64_t(sets.size());
-    Tensor c = sets.front().c().expand_dims(-1).zeros_like(), A = zeros_block(like, 0, 0),
-           b = zeros_block(like, 0, 1);
+    Tensor c = sets.front().c().expand_dims(-1).zeros_like();
+    Polytope F = Polytope::equalities(zeros_block(like, 0, 0), zeros_block(like, 0, 1).squeeze(-1));
     std::vector<Tensor> Gs;
     Tensor weights = zeros_block(like, 1, 0);
     for (const ConZonotope &S : sets) {
-        const int64_t m = S.nr_generators(), p = S.A().shape()[S.A().ndim() - 2];
+        const int64_t m = S.nr_generators();
         const Tensor o = full_block(like, m, 1, 1.0), I = identity_block(like, m),
                      O = zeros_block(like, m, m);
-        const Tensor O_ = zeros_block(like, p, m);
-        // the rows of the set (if it has constraints), then the two bounds of its factors
+        // the rows of the set (if it has constraints) at its weight, the weight first
+        std::vector<int64_t> weight_first{m};
+        for (int64_t j = 0; j < m; ++j) weight_first.push_back(j);
+        const Polytope own =
+            S.factor_polytope().half_scaled_left(0).select_cols(weight_first).pad_left(3 * m);
+        // then the two bounds of its factors
         const Tensor bounds = Tensor::concat({o, I * -2.0, I * -2.0, O, I * -2.0}, -1);
         const Tensor bounds2 = Tensor::concat({o, I * 2.0, O, I * -2.0, I * -2.0}, -1);
-        const Tensor own = Tensor::concat({priv_b_column(S) * -0.5, S.A(), O_, O_, O_}, -1);
-        A = Tensor::block_diag({A, Tensor::concat({own, bounds, bounds2}, -2)});
-        b = Tensor::concat({b, priv_b_column(S) * 0.5, full_block(like, 2 * m, 1, 3.0)}, -2);
+        const Polytope block = own.stack_rows(Polytope::equalities(
+            Tensor::concat({bounds, bounds2}, -2), full_block(like, 2 * m, 1, 3.0).squeeze(-1)));
+        // on the block diagonal of the rows so far
+        F = F.pad_left(4 * m + 1).stack_rows(block.pad_right(F.dim()));
         weights =
             Tensor::concat({weights, full_block(like, 1, 1, 0.5), zeros_block(like, 1, 4 * m)}, -1);
         Gs.push_back(Tensor::concat({S.c().expand_dims(-1) * 0.5, S.generators().matrix_transpose(),
@@ -147,9 +137,10 @@ ConZonotope aux_many(const std::vector<ConZonotope> &sets) {
                                     -1));
         c = c + S.c().expand_dims(-1) * 0.5;
     }
-    return {c.squeeze(-1), Tensor::concat(Gs, -1).matrix_transpose(),
-            Tensor::concat({A, weights}, -2),
-            Tensor::concat({b, full_block(like, 1, 1, 1.0 - 0.5 * double(N))}, -2).squeeze(-1)};
+    // the weights of all sets add to one
+    const Polytope sum =
+        Polytope::equalities(weights, full_block(like, 1, 1, 1.0 - 0.5 * double(N)).squeeze(-1));
+    return {c.squeeze(-1), Tensor::concat(Gs, -1).matrix_transpose(), F.stack_rows(sum)};
 }
 
 /// Why the hull is refused, if it is: the sets must have one dimension, and the method must be one.

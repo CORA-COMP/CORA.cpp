@@ -15,7 +15,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -53,15 +53,15 @@ QuadRow aux_mixed_row(const Tensor &M) {
                            -1)};
 }
 
-/// The set of the outputs: the centers and rows of generators stacked, the constraints A (p, W).
-ConZonotope aux_outputs(const std::vector<QuadRow> &rows, const Tensor &A, const Tensor &b) {
+/// The set of the outputs: the centers and rows of generators stacked, the factor polytope F.
+ConZonotope aux_outputs(const std::vector<QuadRow> &rows, const Polytope &F) {
     std::vector<Tensor> centers, generators;
     for (const QuadRow &row : rows) {
         centers.push_back(row.first);
         generators.push_back(row.second);
     }
     return {Tensor::concat(centers, -2).squeeze(-1),
-            Tensor::concat(generators, -2).matrix_transpose(), A, b};
+            Tensor::concat(generators, -2).matrix_transpose(), F};
 }
 
 } // namespace
@@ -76,15 +76,13 @@ ConZonotope ConZonotope::quad_map(const std::vector<Tensor> &Q) const {
     const ConZonotope cz = aux_rescaled(*this);
     // M = [c G]' Q [c G] for every output; the squares and mixed terms are its entries
     const Tensor full = aux_full(cz), full_t = full.matrix_transpose();
-    const int64_t N = cz.nr_generators(), p = cz.A().shape()[cz.A().ndim() - 2];
+    const int64_t N = cz.nr_generators();
     std::vector<QuadRow> rows;
     rows.reserve(Q.size());
     for (const Tensor &Qi : Q)
         rows.push_back(priv_quad_map_single_row(full_t.matmul(Qi).matmul(full), N));
     // the constraints sit on the linear block, between the N squares and the N(N-1)/2 products
-    const Tensor A = Tensor::concat(
-        {zeros_block(cz.A(), p, N), cz.A(), zeros_block(cz.A(), p, N * (N - 1) / 2)}, -1);
-    return aux_outputs(rows, A, cz.b());
+    return aux_outputs(rows, cz.factor_polytope().pad_right(N).pad_left(N * (N - 1) / 2));
 }
 
 ConZonotope ConZonotope::quad_map(const ConZonotope &cz2, const std::vector<Tensor> &Q) const {
@@ -97,20 +95,16 @@ ConZonotope ConZonotope::quad_map(const ConZonotope &cz2, const std::vector<Tens
     // M = [c1 G1]' Q [c2 G2] for every output
     const Tensor full = aux_full(first), full2 = aux_full(second), full_t = full.matrix_transpose();
     const int64_t N1 = first.nr_generators(), N2 = second.nr_generators();
-    const int64_t p1 = first.A().shape()[first.A().ndim() - 2];
-    const int64_t p2 = second.A().shape()[second.A().ndim() - 2];
     std::vector<QuadRow> rows;
     rows.reserve(Q.size());
     for (const Tensor &Qi : Q) rows.push_back(aux_mixed_row(full_t.matmul(Qi).matmul(full2)));
     // the constraints of cz2 sit on the first N2 factors and those of cz on the next N1
     const int64_t width = (N1 + 1) * (N2 + 1) - 1;
-    const Tensor A =
-        Tensor::concat({Tensor::concat({second.A(), zeros_block(second.A(), p2, width - N2)}, -1),
-                        Tensor::concat({zeros_block(first.A(), p1, N2), first.A(),
-                                        zeros_block(first.A(), p1, width - N2 - N1)},
-                                       -1)},
-                       -2);
-    return aux_outputs(rows, A, Tensor::concat({second.b(), first.b()}, -1));
+    const Polytope F =
+        second.factor_polytope()
+            .pad_left(width - N2)
+            .stack_rows(first.factor_polytope().pad_right(N2).pad_left(width - N2 - N1));
+    return aux_outputs(rows, F);
 }
 
 } // namespace cora
