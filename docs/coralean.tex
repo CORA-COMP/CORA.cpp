@@ -7,23 +7,34 @@
 \definecolor{CORAcolorRed}{rgb}{0.8500, 0.3250, 0.0980}
 \definecolor{CORAcolorGreen}{rgb}{0.4660, 0.6740, 0.1880}
 
+% light (default) or dark: pdflatex "\def\darkmode{1}\input{coralean.tex}" renders GitHub's dark theme
+\providecommand{\darkmode}{0}
+\if\darkmode1
+  \definecolor{bg}{RGB}{13, 17, 23}
+  \definecolor{fg}{RGB}{230, 237, 243}
+\else
+  \definecolor{bg}{RGB}{255, 255, 255}
+  \definecolor{fg}{RGB}{0, 0, 0}
+\fi
+
 \begin{document}
-\sffamily
+\sffamily\color{fg}
 \begin{tikzpicture}[
+    every node/.style={text=fg},
     >={Stealth[length=2.4mm]},
-    box/.style={draw=#1, fill=#1!20, rounded corners=3pt, thick, align=center,
+    box/.style={draw=#1, fill=#1!20!bg, rounded corners=3pt, thick, align=center,
                 minimum height=9mm, inner sep=4pt},
-    neutral/.style={draw=black!60, fill=black!8, rounded corners=3pt, thick, align=center,
+    neutral/.style={draw=fg!60!bg, fill=fg!8!bg, rounded corners=3pt, thick, align=center,
                     minimum height=9mm, inner sep=4pt},
     big/.style={box=#1, minimum width=64mm, minimum height=20mm, font=\Large\bfseries},
     sub/.style={box=#1, minimum width=24mm, minimum height=10mm},
     subn/.style={neutral, minimum width=24mm, minimum height=10mm},
-    bind/.style={draw=black!30, fill=black!2, rounded corners=3pt, align=center,
-                 minimum height=6mm, minimum width=20mm, inner sep=3pt, text=black!50,
+    bind/.style={draw=fg!30!bg, fill=fg!2!bg, rounded corners=3pt, align=center,
+                 minimum height=6mm, minimum width=20mm, inner sep=3pt, text=fg!50!bg,
                  font=\small},
-    note/.style={font=\footnotesize, text=black!65, align=center, text width=26mm},
-    link/.style={thick, ->, draw=black!60},
-    faint/.style={->, draw=black!30, thick, dashed},
+    note/.style={font=\footnotesize, text=fg!65!bg, align=center, text width=26mm},
+    link/.style={thick, ->, draw=fg!60!bg},
+    faint/.style={->, draw=fg!30!bg, thick, dashed},
     cpp/.style={very thick, ->, draw=CORAcolorGreen},
     lean/.style={very thick, ->, draw=CORAcolorBlue},
     res/.style={font=\Large, text=CORAcolorRed},
@@ -70,7 +81,7 @@
 \node[res, text=CORAcolorBlue] (rlean) at (6,2.0) {$\mathcal{R}_{\mathrm{lean}}$};
 \draw[cpp] (2,1.0) -- (rcpp.south);
 \draw[lean] (6,1.0) -- (rlean.south);
-\draw[-{Implies[length=4mm]}, double distance=2.5pt, draw=CORAcolorRed] (4,1.6) -- (4,0.95);
+\draw[-{Implies[length=4mm]}, double distance=2.5pt, double=bg, draw=CORAcolorRed] (4,1.6) -- (4,0.95);
 \node[res, font=\Large\bfseries] (algo) at (4,0.3) {Alg.};
 \node[res] at (4,-0.3) {$\Leftrightarrow$};
 \end{tikzpicture}
