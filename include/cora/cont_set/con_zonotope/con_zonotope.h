@@ -1,10 +1,10 @@
 // con_zonotope - the class of constrained zonotopes, as CORA's conZonotope
 //
-// Batch first (#163): the center c is (..., n), the generators G (..., m, n), one per row, the
-// constraint matrix A (..., p, m) and its offset b (..., p); p = 0 is a zonotope.
-// Points are (..., n), N points (..., N, n). Immutable: every operation returns a new set.
-// center() is CORA's center (a point inside the set), c() the stored offset. The set is empty if
-// the constraints have no solution in the box; empty(n) is such a set.
+// Batch first (#163): the center c is (..., n), the generators G (..., m, n), one per row, and the
+// factor polytope A x = b (A (..., p, m), b (..., p); CORALean's P), built by the Polytope's row
+// operations (pad_left, stack_rows, ...); p = 0 is a zonotope. Points are (..., n), N points
+// (..., N, n). Immutable. center() is CORA's center (a point inside the set), c() the stored
+// offset; empty if the constraints have no solution in the box.
 //
 // Syntax:     ConZonotope cz(c, G, A, b);   ConZonotope cz(Z);   ConZonotope::empty(n);
 // Operations: constructors (con_zonotope.cpp), empty, center, interval, is_bounded, is_full_dim,
@@ -25,7 +25,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   21-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #pragma once

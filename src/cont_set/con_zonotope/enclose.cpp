@@ -16,7 +16,7 @@
 // CORA authors: Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -71,11 +71,11 @@ detail::Refusal aux_refusal(const ConZonotope &cz, const ConZonotope &cz2) {
 ConZonotope aux_enclosure(const ConZonotope &cz, const ConZonotope &cz2) {
     const Zonotope Z =
         Zonotope(cz.c(), cz.generators()).enclose(Zonotope(cz2.c(), cz2.generators()));
-    const bool second_shorter = cz2.nr_generators() <= cz.nr_generators();
-    const Tensor &A = second_shorter ? cz2.A() : cz.A();
-    const int64_t more = Z.nr_generators() - A.shape().back();
-    const Tensor padded = Tensor::concat({A, zeros_block(A, A.shape()[A.ndim() - 2], more)}, -1);
-    return {Z.center(), Z.generators(), padded, cz.b()};
+    const ConZonotope &shorter = cz2.nr_generators() <= cz.nr_generators() ? cz2 : cz;
+    // CORA keeps the offsets of the first set; the new factors are free
+    const Polytope F = Polytope::equalities(shorter.A(), cz.b())
+                           .pad_left(Z.nr_generators() - shorter.nr_generators());
+    return {Z.center(), Z.generators(), F};
 }
 
 } // namespace

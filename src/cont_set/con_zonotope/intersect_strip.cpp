@@ -52,14 +52,11 @@ ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tens
     Shape widths = CG.shape();
     widths.back() = k;
     const Tensor strips = (-phi).expand_dims(-1).diag().broadcast_to(widths);
-    const Tensor rows = Tensor::concat({CG, strips}, -1);
-    const Tensor A = Tensor::concat(
-        {Tensor::concat({cz.A(), zeros_block(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
-         rows},
-        -2);
-    return {Z.center(), Z.generators(), A,
-            Tensor::concat(
-                {cz.b(), (y.expand_dims(-1) - C.matmul(cz.c().expand_dims(-1))).squeeze(-1)}, -1)};
+    const Polytope rows =
+        Polytope::equalities(Tensor::concat({CG, strips}, -1),
+                             (y.expand_dims(-1) - C.matmul(cz.c().expand_dims(-1))).squeeze(-1));
+    // the rows of cz leave the k new factors free
+    return {Z.center(), Z.generators(), cz.factor_polytope().pad_left(k).stack_rows(rows)};
 }
 
 // Refusals ----------------------------------------------------------------------------------------

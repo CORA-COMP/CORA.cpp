@@ -74,12 +74,9 @@ std::pair<std::vector<int64_t>, std::vector<int64_t>> priv_nonzero_parts(const C
 
 ConZonotope priv_compact(const ConZonotope &cz) {
     const auto [rows, cols] = priv_nonzero_parts(cz);
-    const Tensor A = select_columns(cz.A(), cols);
     // the constraint rows 0 = 0 go, an infeasible zero row 0 = b stays
-    const Tensor kept_A = rows.empty() ? zeros_block(A, 0, A.shape().back()) : A.take(rows, -2);
-    const Tensor kept_b = rows.empty() ? cz.b().slice(-1, 0, 0) : cz.b().take(rows, -1);
     return {cz.c(), (select_columns(cz.generators().matrix_transpose(), cols)).matrix_transpose(),
-            kept_A, kept_b};
+            cz.factor_polytope().select_cols(cols).select_rows({}, rows)};
 }
 
 // Set maps ----------------------------------------------------------------------------------------
@@ -91,9 +88,15 @@ ConZonotope priv_affine_image(const ConZonotope &cz, const Tensor &M,
     return {c, G, cz.factor_polytope()};
 }
 
+Polytope priv_factor_product(const ConZonotope &cz1, const ConZonotope &cz2) {
+    return cz1.factor_polytope()
+        .pad_left(cz2.nr_generators())
+        .stack_rows(cz2.factor_polytope().pad_right(cz1.nr_generators()));
+}
+
 ConZonotope priv_minkowski_sum(const ConZonotope &cz1, const ConZonotope &cz2) {
     return {cz1.c() + cz2.c(), Tensor::concat({cz1.generators(), cz2.generators()}, -2),
-            Tensor::block_diag({cz1.A(), cz2.A()}), Tensor::concat({cz1.b(), cz2.b()}, -1)};
+            priv_factor_product(cz1, cz2)};
 }
 
 ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const Tensor &Mc,
@@ -104,9 +107,8 @@ ConZonotope priv_agreement(const ConZonotope &cz1, const ConZonotope &cz2, const
     // a row per dimension makes the images agree; 0 - G keeps zeros +0, as the oracle reads them
     const Tensor negated = cz2.generators().zeros_like() - cz2.generators();
     const Tensor agree = Tensor::concat({MG, negated}, -2).matrix_transpose();
-    const Tensor rows = Tensor::concat({Tensor::block_diag({cz1.A(), cz2.A()}), agree}, -2);
-    const Tensor b = Tensor::concat({cz1.b(), cz2.b(), cz2.c() - Mc}, -1);
-    return {cz1.c(), G, rows, b};
+    return {cz1.c(), G,
+            priv_factor_product(cz1, cz2).stack_rows(Polytope::equalities(agree, cz2.c() - Mc))};
 }
 
 } // namespace cora

@@ -21,7 +21,7 @@
 // CORA authors: Dmitry Grebenyuk, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5, Tobias Ladner
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -50,8 +50,8 @@ ConZonotope ConZonotope::reduce(int order, const std::string &method) const {
     // the Girard reduction takes one generator per row
     const Tensor reduced =
         priv_girard_generators(lifted.matrix_transpose(), (order - 1) * n).matrix_transpose();
-    return {cz.c(), reduced.slice(-2, 0, n).matrix_transpose(), reduced.slice(-2, n, n + p),
-            cz.b()};
+    return {cz.c(), reduced.slice(-2, 0, n).matrix_transpose(),
+            Polytope::equalities(reduced.slice(-2, n, n + p), cz.b())};
 }
 
 Set ConZonotope::reduce_impl(int order) const { return reduce(order); }

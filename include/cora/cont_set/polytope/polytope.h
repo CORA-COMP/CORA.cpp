@@ -4,15 +4,15 @@
 // user; some operations add the other form (empty has both). A polytope without constraints is
 // R^n. Batch first (#163): A (..., m, n), b (..., m), Ae (..., k, n), be (..., k) and the vertices
 // V (..., p, n), one per row. Points are (..., n); the empty set is flagged in empty_mask() and
-// keeps n. Immutable: every operation returns a new polytope. The operations that
-// solve linear programs or branch on the data run on one polytope, not a batch
-// (Error::not_supported). CORA stores what it has found out (emptiness, boundedness) in the object;
-// here a polytope holds its data and every property is computed when it is asked for.
+// keeps n. Immutable. The operations that solve linear programs or branch on the data run on
+// one polytope, not a batch (Error::not_supported). CORA stores what it has found out (emptiness,
+// boundedness) in the object; here every property is computed when it is asked for.
 //
 // Syntax:     Polytope P(A, b);   Polytope P(A, b, Ae, be);   Polytope P(V);   Polytope P(box);
 // Operations: one file each in src/cont_set/polytope/, named as CORA's (rand_point, project,
 //             vertices and the other ContSet operations as the _impl forms); the constructors
-//             check their input (polytope.cpp). CORA's conPolyZono, polyZonotope, levelSet,
+//             check their input (polytope.cpp); the rows and coordinates as CORALean's HPolytope
+//             (pad_left, stack_rows, ...). CORA's conPolyZono, polyZonotope, levelSet,
 //             spectraShadow and matPolytope wait for their classes.
 // See also:   cora/cont_set/cont_set.h, cora/cont_set/con_zonotope/con_zonotope.h
 //
@@ -23,7 +23,7 @@
 // CORA authors: Viktor Kotsev, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   19-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -248,6 +248,40 @@ class Polytope : public ContSet {
     double hausdorff_distance(const Polytope &P2) const;
     double hausdorff_distance(const Interval &I) const;
     double hausdorff_distance(const Tensor &points) const;
+
+    // Coordinates and rows (CORALean's HPolytope) -------------------------------------------------
+
+    /// The set in n + k coordinates with k new free ones after the old (pad_left, CORALean's
+    /// padLeft: the set on the left) or before them (pad_right, padRight): zero columns in every
+    /// row, the offsets kept. In halfspace form; a vertex form is converted (not a batch).
+    Polytope pad_left(int64_t k) const;
+    Polytope pad_right(int64_t k) const;
+
+    /// The rows of this polytope, then those of P2 (CORALean's stackRows): the intersection with
+    /// every row kept as it is (intersect drops a P2 that is R^n). One dimension and batch shape.
+    Polytope stack_rows(const Polytope &P2) const;
+
+    /// The set in the coordinates cols (CORALean's selectCols): column cols[l] of every row is
+    /// column l, the others go (the section at 0 if cols holds each position once).
+    Polytope select_cols(const std::vector<int64_t> &cols) const;
+
+    /// The inequality rows `rows` and the equality rows `eq_rows`, in that order (CORALean's
+    /// restrict); the empty-set flag stays if every row is kept.
+    Polytope select_rows(const std::vector<int64_t> &rows,
+                         const std::vector<int64_t> &eq_rows) const;
+
+    /// {y | diag(d) y in P} for d (..., n): column j of every row times d_j, the offsets kept.
+    Polytope scale_cols(const Tensor &d) const;
+
+    /// {y | mid + diag(rad) y in P} for mid, rad (..., n) (CORALean's rescaleCols): the rows
+    /// A diag(rad) (scale_cols) and the offsets b - A mid.
+    Polytope rescale_cols(const Tensor &mid, const Tensor &rad) const;
+
+    /// The rows of a hull weight w in [-1, 1] (CORALean's halfScaledLeft, halfScaledRight):
+    /// A x <= b (1 + w) / 2 as [A, 0_k, -b/2] <= b/2 (left) and A y <= b (1 - w) / 2 as
+    /// [0_k, A, b/2] <= b/2 (right); equalities stay equalities (CORALean splits them in two).
+    Polytope half_scaled_left(int64_t k) const;
+    Polytope half_scaled_right(int64_t k) const;
 
     // Queries -------------------------------------------------------------------------------------
 

@@ -22,7 +22,7 @@
 // CORA authors: Dmitry Grebenyuk, Mark Wetzlinger, Tobias Ladner, Niklas Kochdumper
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   20-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -106,7 +106,8 @@ detail::Refusal aux_polytope_refusal(const Tensor &c, const Tensor &G, const Pol
 // the factor polytope {x | A x = b} of checked data: the equalities, no inequality rows
 Polytope ConZonotope::factor_polytope_of(const Tensor &c, const Tensor &G, Tensor A, Tensor b) {
     detail::Entry entry;
-    const detail::Refusal refusal = aux_refusal(c, G, A, b);
+    // the checks of the data, which an operation's own sets skip
+    const detail::Refusal refusal = entry.check() ? aux_refusal(c, G, A, b) : std::nullopt;
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
     return Polytope::equalities(std::move(A), std::move(b));
 }
@@ -119,7 +120,7 @@ ConZonotope::ConZonotope(Tensor c, Tensor G, Tensor A, Tensor b)
 ConZonotope::ConZonotope(Tensor c, Tensor G, Polytope F)
     : ContSet(kClassId), c_(std::move(c)), G_(std::move(G)), F_(std::move(F)) {
     detail::Entry entry;
-    const detail::Refusal refusal = aux_polytope_refusal(c_, G_, F_);
+    const detail::Refusal refusal = entry.check() ? aux_polytope_refusal(c_, G_, F_) : std::nullopt;
     CORA_CHECK(!refusal, refusal->first, [&] { return refusal->second; });
 }
 

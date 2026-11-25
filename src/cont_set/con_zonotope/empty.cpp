@@ -12,7 +12,7 @@
 // CORA authors: Mark Wetzlinger
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   18-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/cont_set/con_zonotope/con_zonotope.h"
@@ -29,7 +29,9 @@ CORA_FROM_NUMBERS ConZonotope ConZonotope::empty(int64_t n) {
     CORA_CHECK(n >= 0, Error::wrong_value, [&] {
         return "empty: the dimension must be nonnegative, got " + std::to_string(n);
     });
-    return {Tensor::zeros({n}), Tensor::zeros({0, n}), Tensor::ones({1, 0}), Tensor::ones({1})};
+    // the factor polytope {x in R^0 | 0 = 1}
+    return {Tensor::zeros({n}), Tensor::zeros({0, n}),
+            Polytope::equalities(Tensor::ones({1, 0}), Tensor::ones({1}))};
 }
 
 } // namespace cora
