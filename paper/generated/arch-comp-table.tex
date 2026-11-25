@@ -103,7 +103,7 @@ VCAS worst-25.5 & 0.042 & 0.030 & -- & \textbf{0.00118} & $\times$25 \\
 VCAS worst-28.5 & 0.032 & 0.040 & -- & \textbf{0.00117} & $\times$27 \\
 Attitude Control & 5.226 & 3.237\textsuperscript{\S} & 7.176 & \textbf{0.436} & $\times$12 \\
 QUAD\textsuperscript{i} & 33.415 & 3465.760 & 9.517\textsuperscript{\ddag} & \textbf{1.98} & $\times$17 \\
-Docking\textsuperscript{g} & 95.038\textsuperscript{\ddag} & -- & 7.489\textsuperscript{\ddag} & 5.16\textsuperscript{\ddag} & -- \\
+Docking\textsuperscript{g} & 95.038\textsuperscript{\ddag} & -- & 7.489\textsuperscript{\ddag} & \textbf{154} & -- \\
 NAV standard\textsuperscript{i} & 411.641 & 134.850 & -- & \textbf{4.62} & $\times$29 \\
 NAV robust & 2.271 & 22.461 & 7.576 & \textbf{0.314} & $\times$7.2 \\
 CartPole*\textsuperscript{h,i} & 227.216\textsuperscript{\dag} & -- & -- & \textbf{32.7} & -- \\
@@ -115,7 +115,7 @@ CartPole*\textsuperscript{h,i} & 227.216\textsuperscript{\dag} & -- & -- & \text
 \textsuperscript{d}~LOVO25: CORA++ gives a sound verdict; CORA's script sets the result to true without a test. \\
 \textsuperscript{e}~Unicycle: with the disturbance $w$ of the specification. \\
 \textsuperscript{f}~DP less-robust: CORA++ splits the initial set (depth 14). \\
-\textsuperscript{g}~Docking: UNKNOWN for CORA, JuliaReach and CORA++. \\
+\textsuperscript{g}~Docking: CORA and JuliaReach end UNKNOWN (\ddag); CORA++ verifies the specification's initial set by a polytope inside the constraint and 507 pieces of the initial set. \\
 \textsuperscript{h}~CartPole*: the initial set of the specification; CORA's time is for 0.4 times its radius (\dag). \\
 \textsuperscript{i}~CORA++ runs the 13 boxes of the initial set of CVDP23 and the pieces of a split initial set (DP less-robust, QUAD, NAV standard, CartPole*) on 8 threads. \\
 \dag~Not counted: the report states another problem (JuliaReach discrete-time: time points only; immrax: continuous feedback instead of sample-and-hold; KeYmaera X and PRoTECT: a simplified or another property). \\
