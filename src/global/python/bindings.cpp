@@ -5830,6 +5830,7 @@ void bind_plot(py::module_ &m) {
                        "The layers that plot puts into one axes, with every choice made.")
         .def(py::init<>())
         .def_readwrite("title", &Figure::title, "The title of the axes")
+        .def_readwrite("legend_on", &Figure::legend_on, "Whether the labelled layers get a legend")
         .def_readwrite("xlabel", &Figure::xlabel, "The label of the x axis")
         .def_readwrite("ylabel", &Figure::ylabel, "The label of the y axis")
         .def_readwrite("zlabel", &Figure::zlabel, "The label of the z axis")

@@ -75,9 +75,10 @@ int main() {
 
     // Visualization ---------------------------------------------------------------------------
 
-    plot(Y, {0, 1}, {.label = "output set"});
-    plot(outputs, {0, 1}, {.label = "sampled outputs"});
+    plot(Y, {.label = "output set"});
+    plot(outputs, {.label = "sampled outputs"});
     figure().title = "neural network verification";
+    figure().legend();
     figure().save("example_neuralNetwork_verify_01.svg");
     std::cout << "figure written to example_neuralNetwork_verify_01.svg\n";
 

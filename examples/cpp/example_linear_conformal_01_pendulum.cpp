@@ -111,20 +111,21 @@ int main() {
 
     use_cora_colors("CORA:contDynamics");
     cora::Rng rng(4);
-    plot(R, {0, 1}, {.label = "reachable set of the linear model"});
+    plot(R, {.label = "reachable set of the linear model"});
     for (std::size_t k = 0; k < R.time_point.size(); ++k) {
         const Interval box = R.time_point[k].interval();
         const Tensor margin = Tensor::from_data({radius, radius}, {2});
-        plot(Interval(box.inf() - margin, box.sup() + margin), {0, 1},
+        plot(Interval(box.inf() - margin, box.sup() + margin),
              {.label = k == 0 ? "enlarged by the conformal radius" : "",
               .color = "CORA:red",
               .filled = false});
     }
-    plot(X0, {0, 1}, {.label = "initial set"});
+    plot(X0, {.label = "initial set"});
     plot(pendulum.simulate_random({.initial_set = X0, .t_final = t_final},
                                   alg::RungeKutta4{.time_step = time_step}, 30, rng),
          {0, 1}, {.label = "pendulum trajectories"});
     figure().title = "conformal prediction";
+    figure().legend();
     figure().save("example_linear_conformal_01_pendulum.svg");
     std::cout << "figure written to example_linear_conformal_01_pendulum.svg\n";
 

@@ -93,7 +93,8 @@ struct Writer {
     std::map<std::string, Color> used; // the cora-macs colors the text names, for \definecolor
     std::string table_prefix;          // external data: the path of the tables without ".dat"
     std::vector<std::pair<std::string, std::string>> *tables;
-    int plots = 0; // the \addplot commands with a table so far
+    int plots = 0;       // the \addplot commands with a table so far
+    bool legend = false; // whether the figure being written shows its legend
 
     // A color as pgfplots reads it: its name in cora-macs, or its RGB value.
     std::string color(const Color &c) {
@@ -209,7 +210,7 @@ void aux_addplot(std::ostringstream &out, Writer &w, const std::string &options,
         std::string text = rows("\\\\\n    ");
         out << "    " << text.substr(0, text.size() - 4) << "  };\n";
     }
-    if (!label.empty()) out << "  \\addlegendentry{" << label << "}\n";
+    if (w.legend && !label.empty()) out << "  \\addlegendentry{" << label << "}\n";
 }
 
 // A polygon layer: its loops (and its segments) as one path, its points as marks.
@@ -262,6 +263,7 @@ void aux_surface_layer(std::ostringstream &out, Writer &w, const Figure &fig,
 
 // All layers of a figure, stacked by zorder.
 void aux_layers(std::ostringstream &out, Writer &w, const Figure &fig, const Axes &a) {
+    w.legend = fig.legend_on;
     std::vector<const Figure::Layer *> stacked;
     for (const Figure::Layer &l : fig.layers()) stacked.push_back(&l);
     std::stable_sort(
@@ -324,7 +326,7 @@ std::string aux_legend_pos(const Figure &fig, const Axes &a) {
         rows += l.label.empty() ? 0 : 1;
         layers.push_back(l.polygons);
     }
-    if (fig.dimension == 3 || rows == 0) return "";
+    if (fig.dimension == 3 || rows == 0 || !fig.legend_on) return "";
     const double h = std::min(0.9, 0.08 * static_cast<double>(rows) + 0.04);
     const int k = legend_corner(unit_boxes(layers, a.lim.x0, a.lim.x1, a.lim.y0, a.lim.y1), 0.3, h);
     static const char *const names[4] = {"", "north west", "south west", "south east"};

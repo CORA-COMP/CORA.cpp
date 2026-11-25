@@ -60,6 +60,12 @@ class Figure {
     /// Whether one unit is as long on both axes.
     bool equal_axes = false;
 
+    /// Whether the labelled layers get a legend: off until legend() is called, as matplotlib's.
+    bool legend_on = false;
+
+    /// Shows the legend of the labelled layers (matplotlib's plt.legend()).
+    void legend(bool on = true) { legend_on = on; }
+
     /// 2, or 3 once a surface is drawn (plot of three dimensions); the two cannot be mixed.
     int dimension = 2;
 

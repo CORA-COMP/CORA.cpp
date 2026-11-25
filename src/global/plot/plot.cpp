@@ -78,7 +78,7 @@ void aux_check_figure(Figure &fig, int dimension) {
 }
 
 // The dimension is in fewest..most; axes are named unless they are; three make a 3-D figure.
-void aux_check_dims(Figure &fig, const std::vector<int64_t> &dims, std::size_t most = 3,
+void aux_check_dims(Figure &fig, const PlotDims &dims, std::size_t most = 3,
                     std::size_t fewest = 1) {
     if (dims.size() < fewest || dims.size() > most)
         CORA_FAIL(Error::wrong_value, "plot: dims must name " + std::to_string(fewest) +
@@ -99,7 +99,7 @@ void aux_time_axes(Figure &fig, int64_t dim) {
 }
 
 // The vertices of S projected onto dims, per batch member: a bar for one dimension, as in CORA.
-std::vector<Polygon> aux_polygons(const ContSet &S, const std::vector<int64_t> &dims) {
+std::vector<Polygon> aux_polygons(const ContSet &S, const PlotDims &dims) {
     if (dims.size() == 2) return S.project(dims)->vertices();
     const Interval box = S.project(dims)->interval();
     const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
@@ -113,7 +113,7 @@ std::vector<Polygon> aux_polygons(const ContSet &S, const std::vector<int64_t> &
 }
 
 // The faces of the polytopes of S projected onto three dimensions, per batch member.
-std::vector<std::vector<Point3>> aux_faces(const ContSet &S, const std::vector<int64_t> &dims) {
+std::vector<std::vector<Point3>> aux_faces(const ContSet &S, const PlotDims &dims) {
     std::vector<std::vector<Point3>> faces;
     for (const std::vector<Point3> &corners : S.project(dims)->vertices_3d())
         for (std::vector<Point3> &face : hull_faces(corners)) faces.push_back(std::move(face));
@@ -121,7 +121,7 @@ std::vector<std::vector<Point3>> aux_faces(const ContSet &S, const std::vector<i
 }
 
 // The values of a point set (N, n) or of x[k] over time, as the plane points of dims.
-std::vector<Point> aux_points(const Tensor &points, const std::vector<int64_t> &dims) {
+std::vector<Point> aux_points(const Tensor &points, const PlotDims &dims) {
     const std::vector<int64_t> shape = points.shape();
     if (shape.size() != 2)
         CORA_FAIL(Error::wrong_value, "plot: points must be a matrix (N, n) without batch "
@@ -148,7 +148,7 @@ struct PlotRow {
 };
 
 // The rows of the polytope A x <= b, Ae x = be (an equality as two rows), on the dimensions dims.
-std::vector<PlotRow> aux_rows(const Polytope &P, const std::vector<int64_t> &dims) {
+std::vector<PlotRow> aux_rows(const Polytope &P, const PlotDims &dims) {
     const Polytope::Constraints C = P.constraints();
     const int64_t n = P.dim();
     if (dims[0] >= n || dims[1] >= n || dims[0] < 0 || dims[1] < 0)
@@ -228,8 +228,7 @@ void use_cora_colors(const std::string &scheme) {
 
 // Sets and Reachable Sets -------------------------------------------------------------------------
 
-void plot(Figure &fig, const ContSet &S, const std::vector<int64_t> &dims,
-          const PlotOptions &options) {
+void plot(Figure &fig, const ContSet &S, const PlotDims &dims, const PlotOptions &options) {
     aux_check_dims(fig, dims);
     const SetColors colors = aux_set_colors(fig, options);
     const std::optional<Color> fill =
@@ -245,8 +244,7 @@ void plot(Figure &fig, const ContSet &S, const std::vector<int64_t> &dims,
         .face_alpha = colors.alpha;
 }
 
-void plot(Figure &fig, const ReachSet &R, const std::vector<int64_t> &dims,
-          const PlotOptions &options) {
+void plot(Figure &fig, const ReachSet &R, const PlotDims &dims, const PlotOptions &options) {
     aux_check_dims(fig, dims, 3, 2);
     const std::vector<Zonotope> &sets = aux_sets(R, options);
     // A reachable set is one region: its fill and its outline have the same color.
@@ -345,14 +343,14 @@ void plot_over_time(Figure &fig, const std::vector<Tensor> &x, int64_t dim, doub
     }
 }
 
-void plot_rand_point(Figure &fig, const ContSet &S, const std::vector<int64_t> &dims, int64_t N,
-                     Rng &rng, const PlotOptions &options) {
+void plot_rand_point(Figure &fig, const ContSet &S, const PlotDims &dims, int64_t N, Rng &rng,
+                     const PlotOptions &options) {
     plot(fig, S.rand_point(N, rng), dims, options);
 }
 
 // Specifications and Data -------------------------------------------------------------------------
 
-void plot(Figure &fig, const Specification &spec, const std::vector<int64_t> &dims,
+void plot(Figure &fig, const Specification &spec, const PlotDims &dims,
           const PlotOptions &options) {
     aux_check_dims(fig, dims, 2, 2);
     // A halfspace is a'x <= b; a safe set forbids a'x > b, an unsafe set forbids a'x <= b.
@@ -383,7 +381,7 @@ void plot(Figure &fig, const Specification &spec, const std::vector<int64_t> &di
     }
 }
 
-void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> &dims,
+void plot(Figure &fig, const std::vector<Tensor> &x, const PlotDims &dims,
           const PlotOptions &options) {
     aux_check_dims(fig, dims);
     if (x.empty()) CORA_FAIL(Error::wrong_value, "plot: no trajectory points given");
@@ -401,8 +399,7 @@ void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> 
     }
 }
 
-void plot(Figure &fig, const Tensor &points, const std::vector<int64_t> &dims,
-          const PlotOptions &options) {
+void plot(Figure &fig, const Tensor &points, const PlotDims &dims, const PlotOptions &options) {
     aux_check_dims(fig, dims);
     if (points.ndim() != 2)
         CORA_FAIL(Error::wrong_value, "plot: points must be a matrix (N, n) without batch "

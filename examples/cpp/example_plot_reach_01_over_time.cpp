@@ -50,15 +50,17 @@ int main() {
     plot(plane,
          Specification::unsafe_set(Polytope(Tensor({{-1.0, 0.0}}), Tensor::from_data({0.5}, {1}))),
          {0, 1}, {.label = "unsafe set"});
-    plot(plane, R, {0, 1}, {.label = "reachable set"});
-    plot(plane, X0, {0, 1}, {.label = "initial set"});
-    plot(plane, x, {0, 1}, {.label = "simulations"});
+    plot(plane, R, {.label = "reachable set"});
+    plot(plane, X0, {.label = "initial set"});
+    plot(plane, x, {.label = "simulations"});
+    plane.legend();
     plane.save("example_plot_reach_01_over_time_plane.svg");
 
     // The first state over time: boxes over the time intervals, and the simulations.
     Figure over_time;
     plot_over_time(over_time, R, 0, {.label = "reachable set"});
     plot_over_time(over_time, x, 0, time_step, {.label = "simulations"});
+    over_time.legend();
     over_time.save("example_plot_reach_01_over_time_x1.svg");
     std::cout << "steps: " << R.time_interval.size() << "\n";
 

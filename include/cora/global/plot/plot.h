@@ -25,6 +25,7 @@
 #include "cora/global/rng.h"
 #include "cora/specification/specification.h"
 
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <vector>
@@ -35,10 +36,37 @@ namespace cora {
 
 // Options -----------------------------------------------------------------------------------------
 
+/// The dimensions to plot (0-based): `{0, 1}`, `{2}`, or a vector. Unlike a plain vector it is not
+/// built from two pointers, so that `{.label = "S", .color = "CORA:red"}` can only mean options.
+class PlotDims {
+  public:
+    PlotDims(std::initializer_list<int64_t> dims) : dims_(dims) {}
+    // NOLINTNEXTLINE(google-explicit-constructor): a vector of dimensions is passed as it is
+    PlotDims(std::vector<int64_t> dims) : dims_(std::move(dims)) {}
+    // NOLINTNEXTLINE(google-explicit-constructor): the plot code reads the dimensions as a vector
+    operator const std::vector<int64_t> &() const { return dims_; }
+    size_t size() const { return dims_.size(); }
+    int64_t operator[](size_t i) const { return dims_[i]; }
+    auto begin() const { return dims_.begin(); }
+    auto end() const { return dims_.end(); }
+
+  private:
+    std::vector<int64_t> dims_;
+};
+
+namespace detail {
+/// The first member of PlotOptions: it takes no value, so braces with numbers (`{0, 1}`) are never
+/// options and the dimensions may be left out (`plot(fig, S, {.label = "S"})`).
+struct OptionsOnlyByName {};
+} // namespace detail
+
 /// What a plot looks like; anything left out takes CORA's default for what is drawn. The names
 /// are those of CORA's plot options (Color, FaceColor, EdgeColor, FaceAlpha, LineWidth, Unify,
 /// Set).
 struct PlotOptions {
+    /// Not an option; it keeps positional braces from being taken as options.
+    detail::OptionsOnlyByName by_name = {};
+
     /// Legend entry; none if empty.
     std::string label = "";
 
@@ -83,11 +111,11 @@ void use_cora_colors(const std::string &scheme);
 
 /// The set S projected onto the dimensions `dims` (0-based), into the figure `fig`: one dimension
 /// is a bar on the x axis, two a polygon, three the faces of a polytope.
-void plot(Figure &fig, const ContSet &S, const std::vector<int64_t> &dims = {0, 1},
+void plot(Figure &fig, const ContSet &S, const PlotDims &dims = {0, 1},
           const PlotOptions &options = {});
 
 /// The time-interval sets of R (two dimensions, one region; three, their faces).
-void plot(Figure &fig, const ReachSet &R, const std::vector<int64_t> &dims = {0, 1},
+void plot(Figure &fig, const ReachSet &R, const PlotDims &dims = {0, 1},
           const PlotOptions &options = {});
 
 /// The dimension `dim` of R over time: each set is a box from its time interval and its range,
@@ -101,51 +129,81 @@ void plot_over_time(Figure &fig, const std::vector<Tensor> &x, int64_t dim, doub
                     const PlotOptions &options = {});
 
 /// N random points of S on the two dimensions `dims`, as dots (CORA's plotRandPoint).
-void plot_rand_point(Figure &fig, const ContSet &S, const std::vector<int64_t> &dims, int64_t N,
-                     Rng &rng, const PlotOptions &options = {});
+void plot_rand_point(Figure &fig, const ContSet &S, const PlotDims &dims, int64_t N, Rng &rng,
+                     const PlotOptions &options = {});
 
 /// The region a specification forbids, shaded up to the limits of the figure: the outside of
 /// each halfspace of a safe set, the halfspace of an unsafe set.
-void plot(Figure &fig, const Specification &spec, const std::vector<int64_t> &dims = {0, 1},
+void plot(Figure &fig, const Specification &spec, const PlotDims &dims = {0, 1},
           const PlotOptions &options = {});
 
 /// Trajectories as `LinearSys::simulate` returns them, x[k] the points (N, n) at time k: a line
 /// per trajectory.
-void plot(Figure &fig, const std::vector<Tensor> &x, const std::vector<int64_t> &dims = {0, 1},
+void plot(Figure &fig, const std::vector<Tensor> &x, const PlotDims &dims = {0, 1},
           const PlotOptions &options = {});
 
 /// Points as rows (N, n), as `rand_point` returns them.
-void plot(Figure &fig, const Tensor &points, const std::vector<int64_t> &dims = {0, 1},
+void plot(Figure &fig, const Tensor &points, const PlotDims &dims = {0, 1},
           const PlotOptions &options = {});
+
+// Without Dimensions ------------------------------------------------------------------------------
+
+// Each plot on the first two dimensions: plot(fig, S, {.label = "S"}), as CORA's plot(S).
+inline void plot(Figure &fig, const ContSet &S, const PlotOptions &options) {
+    plot(fig, S, {0, 1}, options);
+}
+inline void plot(Figure &fig, const ReachSet &R, const PlotOptions &options) {
+    plot(fig, R, {0, 1}, options);
+}
+inline void plot(Figure &fig, const Specification &spec, const PlotOptions &options) {
+    plot(fig, spec, {0, 1}, options);
+}
+inline void plot(Figure &fig, const std::vector<Tensor> &x, const PlotOptions &options) {
+    plot(fig, x, {0, 1}, options);
+}
+inline void plot(Figure &fig, const Tensor &points, const PlotOptions &options) {
+    plot(fig, points, {0, 1}, options);
+}
 
 // The Current Figure ------------------------------------------------------------------------------
 
 // The same into the current figure().
-inline void plot(const ContSet &S, const std::vector<int64_t> &dims = {0, 1},
-                 const PlotOptions &options = {}) {
+inline void plot(const ContSet &S, const PlotDims &dims = {0, 1}, const PlotOptions &options = {}) {
     plot(figure(), S, dims, options);
 }
-inline void plot(const ReachSet &R, const std::vector<int64_t> &dims = {0, 1},
+inline void plot(const ReachSet &R, const PlotDims &dims = {0, 1},
                  const PlotOptions &options = {}) {
     plot(figure(), R, dims, options);
 }
-inline void plot(const Specification &spec, const std::vector<int64_t> &dims = {0, 1},
+inline void plot(const Specification &spec, const PlotDims &dims = {0, 1},
                  const PlotOptions &options = {}) {
     plot(figure(), spec, dims, options);
 }
-inline void plot(const std::vector<Tensor> &x, const std::vector<int64_t> &dims = {0, 1},
+inline void plot(const std::vector<Tensor> &x, const PlotDims &dims = {0, 1},
                  const PlotOptions &options = {}) {
     plot(figure(), x, dims, options);
 }
-inline void plot(const Tensor &points, const std::vector<int64_t> &dims = {0, 1},
+inline void plot(const Tensor &points, const PlotDims &dims = {0, 1},
                  const PlotOptions &options = {}) {
     plot(figure(), points, dims, options);
+}
+// The same without dimensions.
+inline void plot(const ContSet &S, const PlotOptions &options) { plot(figure(), S, options); }
+inline void plot(const ReachSet &R, const PlotOptions &options) { plot(figure(), R, options); }
+inline void plot(const Specification &spec, const PlotOptions &options) {
+    plot(figure(), spec, options);
+}
+inline void plot(const std::vector<Tensor> &x, const PlotOptions &options) {
+    plot(figure(), x, options);
+}
+inline void plot(const Tensor &points, const PlotOptions &options) {
+    plot(figure(), points, options);
 }
 // Over time, and random points, likewise.
 inline void plot_over_time(const ReachSet &R, int64_t dim = 0, const PlotOptions &options = {}) {
     plot_over_time(figure(), R, dim, options);
 }
-inline void plot_rand_point(const ContSet &S, const std::vector<int64_t> &dims, int64_t N, Rng &rng,
+inline void plot_rand_point(const ContSet &S, const PlotDims &dims, int64_t N, Rng &rng,
                             const PlotOptions &options = {}) {
     plot_rand_point(figure(), S, dims, N, rng, options);
 }

@@ -41,8 +41,9 @@ int main() {
 
     // The phase plane in the first cell, the two states over time in the second and third.
     Figure &plane = grid.at(0, 0);
-    plot(plane, R, {0, 1}, {.label = "reachable set"});
-    plot(plane, X0, {0, 1}, {.label = "initial set"});
+    plot(plane, R, {.label = "reachable set"});
+    plot(plane, X0, {.label = "initial set"});
+    plane.legend();
     plane.xlabel = "$x_1$";
     plane.ylabel = "$x_2$";
     plot_over_time(grid.at(0, 1), R, 0);

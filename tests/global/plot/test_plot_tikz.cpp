@@ -55,6 +55,8 @@ Figure every_layer() {
     plot(fig, Tensor({{-1, 0}, {0, 1}, {1, 0}}), {0, 1}, {.label = "points"});
     plot(fig, std::vector<Tensor>{Tensor({{-1, -1}}), Tensor({{1, 0.5}})}, {0, 1},
          {.label = "line"});
+    // the legend is off until legend(), as in matplotlib
+    fig.legend();
     return fig;
 }
 
@@ -179,6 +181,8 @@ void a_three_dimensional_figure() {
          {.label = "cube"});
     fig.azimuth = -60;
     fig.elevation = 20;
+    // the legend is off until legend(), as in matplotlib
+    fig.legend();
     const std::string text = fig.tikz();
     // the 3-D figure
     check(count(text, "\\addplot3") == 6 && count(text, "forget plot") == 5,

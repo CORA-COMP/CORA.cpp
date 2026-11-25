@@ -81,10 +81,11 @@ int main() {
     // Visualization ---------------------------------------------------------------------------
 
     use_cora_colors("CORA:contDynamics");
-    plot(R, {0, 1}, {.label = "reachable set"});
-    plot(R0, {0, 1}, {.label = "initial set"});
-    plot(traj, {0, 1}, {.label = "simulations"});
+    plot(R, {.label = "reachable set"});
+    plot(R0, {.label = "initial set"});
+    plot(traj, {.label = "simulations"});
     figure().title = "van der Pol oscillator";
+    figure().legend();
     figure().save("example_nonlinear_reach_01_vanDerPol.svg");
     std::cout << "figure written to example_nonlinear_reach_01_vanDerPol.svg\n";
 

@@ -97,7 +97,9 @@ void a_set_is_filled_unless_told_otherwise(const std::string &b) {
 void the_dynamics_scheme_draws_initial_sets_and_blue_reach_sets(const std::string &b) {
     use_cora_colors("CORA:contDynamics");
     figure().clear();
-    plot(initial_set(), {0, 1}, {.label = "initial set"});
+    plot(initial_set(), {.label = "initial set"});
+    // the legend is off until legend(), as in matplotlib
+    figure().legend();
     const std::string set = figure().svg();
     check(has(set, "fill=\"#ffffff\"") && has(set, "stroke=\"#000000\""),
           b + ": white with a black outline");
@@ -202,6 +204,8 @@ void a_specification_is_shaded_up_to_the_limits(const std::string &b) {
     plot(initial_set(), {0, 1});
     plot(Specification::unsafe_set(test::halfspace(test::column({1, 0}), 0.5)), {0, 1},
          {.label = "unsafe"});
+    // the legend is off until legend(), as in matplotlib
+    figure().legend();
     const std::string svg = figure().svg();
     check(has(svg, cora_color("CORA:unsafeLight").hex()), b + ": drawn in the unsafe color");
     check(has(svg, "unsafe"), b + ": legend entry");
@@ -221,6 +225,8 @@ void trajectories_and_points(const std::string &b) {
                              alg::Exact{.time_step = 0.1}, 3, rng),
          {0, 1}, {.label = "simulations"});
     plot(initial_set().rand_point(5, rng), {0, 1});
+    // the legend is off until legend(), as in matplotlib
+    figure().legend();
     const std::string svg = figure().svg();
     check(count(svg, "<circle") == 5,
           b + ": only the points are dots, trajectories have no markers");
@@ -249,7 +255,7 @@ void a_wrapper_takes_the_layers_out(const std::string &b) {
 void plot_rejects_bad_dimensions(const std::string &b) {
     figure().clear();
     check(test::throws([] { plot(initial_set(), {0, 1, 2, 3}); }), b + ": four dimensions");
-    check(test::throws([] { plot(initial_set(), {}); }), b + ": no dimension");
+    check(test::throws([] { plot(initial_set(), std::vector<int64_t>{}); }), b + ": no dimension");
     check(test::throws([] { plot(initial_set(), {0, 2}); }), b + ": dimension 2 does not exist");
     check(test::throws([] { plot(Tensor({{1, 2}, {3, 4}}), {0, 5}); }), b + ": points too");
 }
@@ -300,6 +306,9 @@ void labels_and_legend_render_in_the_svg(const std::string &b) {
     plot(fig, Interval(test::vec({1, 2}), test::vec({3, 4})), {0, 1},
          {.label = "$\\mathcal{I}_1$"});
     fig.xlabel = "$x_{(1)}$";
+    check(!has(fig.svg(), "rx=\"3\" fill=\"#ffffff\""), b + ": no legend until legend()");
+    // the legend is off until legend(), as in matplotlib
+    fig.legend();
     const std::string svg = fig.svg();
     check(!has(svg, "$") && !has(svg, "mathcal") && !has(svg, "{"), b + ": no LaTeX syntax left");
     check(has(svg,
