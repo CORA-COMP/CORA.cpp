@@ -76,6 +76,8 @@ class Subplots(unittest.TestCase):
     def test_the_figure_is_svg_in_a_notebook(self):
         fig = cora.subplots(1, 2)
         cora.plot(self.X0, ax=fig[0, 0], label="initial set")
+        # a legend only after ax.legend(), as in matplotlib
+        fig[0, 0].legend()
         svg = fig._repr_svg_()
         self.assertTrue(svg.startswith("<svg"))
         self.assertEqual(svg, fig.svg())
