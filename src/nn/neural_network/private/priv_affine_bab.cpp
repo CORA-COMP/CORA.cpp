@@ -143,6 +143,7 @@ struct Problem {
     Tensor d;             ///< (n): the row's coefficients
     Tensor hot;           ///< (S): each neuron's own factor
     double c0 = 0;        ///< the row's center minus its offset
+    double d1 = 0;        ///< the 1-norm of the row's coefficients
     int64_t S = 0, n = 0; ///< the neurons and the factors
     std::vector<int64_t> order; ///< the table's neuron of each split
 };
@@ -215,6 +216,7 @@ Problem aux_problem(const AffineTable &t, const Tensor &d, double c0, int64_t ch
     p.n = t.n0 + t.U;
     p.d = d;
     p.c0 = c0;
+    p.d1 = d.abs().sum().item();
     // the neurons' rows and constants in that order
     p.order = order;
     p.A = t.A.take(order, 0);
@@ -264,8 +266,15 @@ Tensor aux_ascent(const Problem &P, const Tensor &sg, Tensor &p, Tensor &q, cons
     const Tensor b0 = sg.multiply(cz);
     const Tensor b1 = Tensor::where(off, P.l.slice(0, 0, D) - cz, cz - P.u.slice(0, 0, D));
     const Tensor empty = b0.greater(a1 + kEmptySide).maximum(b1.greater(a1 + kEmptySide)).max(-1);
+    // the rounding of a value's sums and products: 2 (n + D + 16) ulps of the terms' sizes
+    const double ulps = 2.0 * double(P.n + D + 16) * machine_eps(sg.dtype());
+    const Tensor shift = Tensor::where(off, P.s_off.slice(0, 0, D), P.s_on.slice(0, 0, D));
+    const Tensor sizes = (shift.abs() + ratio.abs().multiply(a1)).sum(-1) + (std::abs(P.c0) + P.d1);
+    const auto rounding = [&] {
+        return (sizes + (p.multiply(b0.abs() + a1) + q.multiply(b1.abs() + a1)).sum(-1)) * ulps;
+    };
     const auto value = [&](const Tensor &r) {
-        return c0 + (p.multiply(b0) + q.multiply(b1)).sum(-1) - r.abs().sum(-1);
+        return c0 + (p.multiply(b0) + q.multiply(b1)).sum(-1) - r.abs().sum(-1) - rounding();
     };
     // the supergradient: the constraints at the minimizer, a multiplier at 0 not below it
     const auto ascent = [&](const Tensor &at) {
@@ -303,7 +312,7 @@ Tensor aux_ascent(const Problem &P, const Tensor &sg, Tensor &p, Tensor &q, cons
         if (steps <= 0) return Tensor::where(empty, inf, top);
     }
     // without steps: these multipliers' value, and the one at 0; a step's value is no lower
-    Tensor best = steps > 0 ? Tensor() : (c0 - base.abs().sum(-1)).maximum(value(r));
+    Tensor best = steps > 0 ? Tensor() : (c0 - base.abs().sum(-1) - sizes * ulps).maximum(value(r));
     for (int64_t i = 0; i < steps; ++i) {
         // along the supergradient, the step by the line search
         const auto [g0, g1] = ascent(r);
