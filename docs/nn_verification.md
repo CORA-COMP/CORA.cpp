@@ -523,6 +523,63 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     only when every leaf is verified. Rounding: float64 nearest, as the backward bound. The node bound at beta 0 can be
     below the unsplit one (the identity of an active split is taken over the whole box, where `z`
     can be negative); the multipliers recover it, and the parent's bound is kept.
+- **affine-bab (`affine_bab`, within crown-bab):** on a net whose only activation is the ReLU,
+  each open polytope of one real row is first searched on the root's *affine form*
+  (`priv_affine_bab`), for at most `affine_bab_time_share` of the time left; a row it leaves open
+  goes to crown-bab's search as before.
+  - **Form:** every crossing ReLU gets one slope `a in [0, 1]`, below and above
+    (`ZonoBackward::one_slope`): on `[l, u]`, `relu(z) - a z` lies in `[0, 2h]` with
+    `2h = max(-a l, u - a u)` (`priv_relu_chord_offset` at `a`; convex in `z`, 0 at the kink's
+    side, so its maximum is at an end), i.e. `y = a z + h + h e`, `e in [-1, 1]`. With these lines
+    every layer is affine in the factors `e in [-1, 1]^n`: one per input dimension (`x = x_0 +
+    r e`) and one per crossing neuron (U of the root's bounds, `n = n_0 + U`). The form of a row
+    (a crossing neuron's input `z_j = c_j + A_j e`, an output row `c_0 + d e`) is read from one
+    `priv_backward_lower` pass (`ZonoAffineRows`): the coefficient of an input factor is the row's
+    Lambda at the input times the radius, of a neuron's factor its Lambda at the neuron's output
+    times `h`, and the center is the pass's value plus the coefficients' 1-norm (the pass's value
+    is the form's minimum over the box). No layer's generator matrix is built: tinyimagenet's
+    forward zonotope with every input a generator did not fit the GPU; the U rows of `n`
+    coefficients do (1818 rows of 11226 there).
+  - **Slopes (`affine_bab_slopes`):** `crown` (default): per row, the root's optimized lower slope
+    (`priv_crown_bab_slopes`, `crown_bab_root_steps` steps for all open rows at once) where the
+    row's Lambda is not below 0, the chord where it is; then the form's root bound is CROWN's
+    optimized one (the pass is the same). `chord`: the chord everywhere (the zonotope's line,
+    one table for all rows).
+  - **Nodes:** the crossing neurons are split in one order per row, so the nodes of depth D share
+    the rows `A_1..A_D` and differ in their sides only. On the inactive side (`z_j <= 0`, `y_j =
+    0`) the neuron's factor is `e_j = -1 - (a / h) z_j`, on the active side (`z_j >= 0`, `y_j =
+    z_j`) `e_j = ((1 - a) z_j - h) / h`. The row's own coefficient `d_j e_j` is replaced by that
+    affine form of `z_j(e)`; the side (`sigma_j z_j(e) <= 0`) and the root's bound on that side
+    (`z_j >= l_j` inactive, `z_j <= u_j` active) get multipliers `p_j, q_j >= 0`. The bound is the
+    Lagrangian's minimum over the box of the factors: its constant minus the 1-norm of its
+    coefficients, two products with the shared `(D, n)` rows per batch of nodes.
+    `affine_bab_steps` ascent steps (default 1) from the parent's multipliers: the supergradient
+    is the constraints at the minimizing corner, projected at 0, and the step is a line search on
+    the concave piecewise linear value (bisections between its first and last breakpoint, the
+    lower end taken, so the value does not decrease). A side that no factor of the box reaches
+    (`sigma_j c_j > |A_j|_1 + 1e-6`) is empty. Not a number counts as open.
+  - **Order:** per neuron, the root with it alone split, each side's multiplier by the line
+    search; the neuron whose worse side has the best bound first (a choice only).
+  - **Search:** parts of one depth each, the last part's children first, at most
+    `affine_bab_batch` nodes per bound (fewer if `crown_bab_memory_budget` asks; about twelve
+    `(N, n)` float64 tensors per batch); the open nodes' bytes at most `relu_bab_frontier_bytes`,
+    else the row is left open, as at the deadline or with every neuron split. Out of memory: the
+    row goes to crown-bab's search (`affine_bab_oom`).
+  - **Soundness:** fix an input `x` of the box. The root's bounds hold the true inputs `z_j(x)` of
+    every layer, so with `e_i = (x_i - x_{0,i}) / r_i` and `e_j = (relu(z_j) - a_j z_j - h_j) / h_j`
+    (in `[-1, 1]` by the line above) every layer's output is its line at `e`, hence every
+    neuron's input and every output row equal their forms at this `e*` (induction over the
+    layers; `priv_backward_lower`'s telescoping with one slope per neuron; sampled in
+    `affine_forms`). For a node whose sides `x` is on, each replaced `e*_j` equals its affine
+    form of `z_j(e*)` (the ReLU is exactly 0 or `z` on the side), so the substituted row equals
+    the true row at `e*`; the constraints `sigma_j z_j(e*) <= 0` and `l_j <= z_j(e*) <= u_j` hold.
+    So for any multipliers `>= 0` the true row is at least the Lagrangian at `e*`, at least its
+    minimum over `[-1, 1]^n` (weak duality; a factor that was replaced in the row but still occurs
+    in other rows stays a box variable, which only relaxes). The steps and the order only choose
+    multipliers and neurons. The two children of a node cover its inputs; an empty side has no
+    input; unsat only when every leaf's bound exceeds `verified_margin`. Rounding: float64
+    nearest, as the backward bound; the empty-side test has `1e-6` of slack over the forms'
+    rounding.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
   triangle relaxation.

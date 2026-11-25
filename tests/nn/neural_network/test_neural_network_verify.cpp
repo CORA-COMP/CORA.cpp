@@ -435,9 +435,17 @@ void backward_bit_identical(const std::string &b) {
                 node.beta = &zero_beta;
                 node.intercepts = &ic;
                 node.corner = &corner;
+                // the rows' Lambda at every neuron asked for too
+                std::vector<std::vector<int64_t>> every(net.W.size());
+                for (std::size_t k = 0; k < net.W.size(); ++k)
+                    for (int64_t i = 0; i < net.widths[k]; ++i) every[k].push_back(i);
+                ZonoAffineRows affine;
+                node.affine_at = &every;
+                node.affine = &affine;
                 const std::vector<double> got_node =
                     priv_backward_lower(out, net, si, x, r, rows, alpha, &node).data();
-                same = same && got_node == want && corner.shape()[1] == 3;
+                same = same && got_node == want && corner.shape()[1] == 3 &&
+                       affine.input.shape()[2] == 3;
             }
         }
     }
@@ -545,6 +553,186 @@ void crown_split_nodes(const std::string &b) {
           b + ": the gradient in beta is the difference quotient");
 }
 
+/// The affine forms of priv_affine_table hold every sampled input: with the input's factors and
+/// each crossing neuron's e = (relu(z) - a z - h) / h in [-1, 1], every neuron's input and the
+/// output rows are their forms; and a node's bound holds the samples on its sides.
+void affine_forms(const std::string &b) {
+    Rng rng(61);
+    const int64_t P = 3000;
+    bool in_box = true, forms = true, rows_hold = true, nodes_hold = true, roots = true;
+    int64_t counted = 0, moved = 0;
+    for (int net_i = 0; net_i < 4; ++net_i) {
+        NeuralNetwork nn = aux_network(rng, {3, 8, 8, 2}, Activation::relu);
+        if (net_i % 2 == 1) {
+            // a residual: layer 1 adds layer 0's output
+            std::vector<NeuralNetwork::Layer> layers = nn.layers();
+            layers[1].residuals.push_back({0, nullptr});
+            nn = NeuralNetwork(layers, nn.activations());
+        }
+        const ZonoNet net(nn, 3, 2, "bounds", "length");
+        const Tensor x = Tensor({{0.1, -0.2, 0.3}}), r = Tensor({{0.6, 0.5, 0.7}});
+        const ZonoInput in = net.input_zonotope(x, r);
+        const ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({1, 0}), nullptr, true);
+        // the chords, or random slopes (below 0: the chord; above 1: clamped)
+        std::vector<Tensor> slopes;
+        if (net_i >= 2)
+            for (std::size_t k = 0; k < net.W.size(); ++k) {
+                std::vector<double> a(std::size_t(net.widths[k]));
+                rng.uniform(a.data(), a.size(), -0.3, 1.2);
+                slopes.push_back(Tensor::from_data(a, {1, net.widths[k]}));
+            }
+        const AffineTable t = priv_affine_table(out, net, ZonoBounds{}, x, r, slopes, 1 << 30);
+        if (!t.applicable || t.pos[0].empty() || t.pos[1].empty()) continue;
+        const Tensor rows = Tensor({{1.0, -0.7}, {-0.3, 1.0}});
+        const auto [D, dc] = priv_affine_rows(t, out, net, ZonoBounds{}, rows);
+        // the samples, their layers' inputs and outputs
+        std::vector<double> pts(std::size_t(P * 3));
+        rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+        const Tensor e0 = Tensor::from_data(pts, {P, 3});
+        const Tensor xs = e0.multiply(r) + x;
+        const Tensor h0 = xs.matmul(net.W[0]) + net.b[0];
+        const Tensor y0 = h0.maximum(0.0);
+        const Tensor h1 = y0.matmul(net.W[1]) + net.b[1] + (net_i % 2 == 1 ? y0 : y0 * 0.0);
+        const Tensor y = nn.evaluate(xs).matmul(rows.matrix_transpose());
+        // each crossing neuron's factor from its true input and output
+        const Tensor z = Tensor::concat({h0.take(t.pos[0], 1), h1.take(t.pos[1], 1)}, 1);
+        const Tensor e1 = (z.maximum(0.0) - z.multiply(t.slope) - t.half).divide(t.half);
+        const Tensor e = Tensor::concat({e0, e1}, 1); // (P, n)
+        // in the box, and every form at them the true value
+        in_box = in_box && e1.abs().max().item() <= 1 + 1e-9;
+        forms = forms && (e.matmul(t.A.matrix_transpose()) + t.c - z).abs().max().item() <= 1e-9;
+        rows_hold =
+            rows_hold && (e.matmul(D.matrix_transpose()) + dc - y).abs().max().item() <= 1e-9;
+        // a row's root bound is the pass's
+        ZonoBackward opt;
+        opt.one_slope = &t.slopes;
+        const Tensor low =
+            priv_backward_lower(out, net, x.zeros_like({1, 0}), x, r, rows, nullptr, &opt);
+        roots = roots && (dc - D.abs().sum(-1) - low.squeeze(0)).abs().max().item() <= 1e-9;
+        // nodes of random sides on the first splits of the order: the samples on their sides
+        const Tensor row = rows.slice(0, 0, 1), offset = Tensor::from_data({0.0}, {1});
+        const std::vector<double> zv = z.data(), yv = y.data();
+        for (const int64_t depth :
+             {int64_t(1), std::min<int64_t>(3, t.U), std::min<int64_t>(6, t.U)}) {
+            const int64_t N = 8;
+            std::vector<double> coin(std::size_t(N * depth));
+            rng.uniform(coin.data(), coin.size(), -1.0, 1.0);
+            for (double &c : coin) c = c < 0 ? -1.0 : 1.0;
+            const Tensor sides = Tensor::from_data(coin, {N, depth});
+            // the nodes' bounds at multipliers 0, then after steps
+            std::vector<int64_t> order;
+            const std::vector<double> none =
+                priv_affine_node_bounds(t, out, net, ZonoBounds{}, row, offset, sides, 0, &order)
+                    .data();
+            for (const int64_t steps : {0, 1, 4}) {
+                const std::vector<double> low_n =
+                    priv_affine_node_bounds(t, out, net, ZonoBounds{}, row, offset, sides, steps)
+                        .data();
+                // no step lowers a bound, and no sample on a node's sides lies below it
+                for (int64_t node = 0; node < N; ++node) {
+                    moved += low_n[std::size_t(node)] > none[std::size_t(node)] + 1e-9 ? 1 : 0;
+                    nodes_hold = nodes_hold && low_n[std::size_t(node)] >= none[std::size_t(node)];
+                    for (int64_t p = 0; p < P; ++p) {
+                        // on the node's sides: sigma z <= 0 for every split
+                        bool inside = true;
+                        for (int64_t j = 0; j < depth; ++j)
+                            inside = inside &&
+                                     coin[std::size_t(node * depth + j)] *
+                                             zv[std::size_t(p * t.U + order[std::size_t(j)])] <=
+                                         0;
+                        if (!inside) continue;
+                        // the sample's row is at least the node's bound
+                        ++counted;
+                        nodes_hold =
+                            nodes_hold && low_n[std::size_t(node)] <= yv[std::size_t(p * 2)] + 1e-9;
+                    }
+                }
+            }
+        }
+    }
+    check(in_box, b + ": a crossing neuron's factor of a sampled input lies in [-1, 1]");
+    check(forms, b + ": the crossing neurons' inputs are their affine forms at the factors");
+    check(rows_hold, b + ": the output rows are their affine forms at the factors");
+    check(roots, b + ": an affine form's minimum over the box is the pass's bound");
+    check(nodes_hold && counted > 0, b + ": an affine node's bound holds its sampled inputs");
+    check(moved > 0, b + ": the multipliers' steps raise affine nodes' bounds");
+}
+
+/// priv_affine_bab verifies only what every sample satisfies, splits, and stays open at its
+/// limits (the deadline, the frontier's bytes, another activation, rows beyond the budget).
+void affine_bab_verdicts(const std::string &b) {
+    Rng rng(67);
+    int wrong = 0, decided = 0, open_limits = 0, limits = 0;
+    double nodes = 0;
+    for (int net_i = 0; net_i < 5; ++net_i) {
+        const NeuralNetwork nn = aux_network(rng, {3, 10, 10, 2}, Activation::relu);
+        const ZonoNet net(nn, 3, 2, "bounds", "length");
+        const Tensor x = Tensor({{0.1, -0.2, 0.3}}), r = Tensor({{0.6, 0.5, 0.7}});
+        const ZonoInput in = net.input_zonotope(x, r);
+        const ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({1, 0}), nullptr, true);
+        std::vector<double> pts(std::size_t(4000 * 3));
+        rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+        const std::vector<double> y =
+            nn.evaluate(Tensor::from_data(pts, {4000, 3}).multiply(r) + x).data();
+        double least = kInfinity;
+        for (std::size_t i = 0; i < 4000; ++i) least = std::min(least, y[i * 2]);
+        const Tensor row = Tensor({{1.0, 0.0}});
+        std::map<std::string, double> stats;
+        // the row's slopes at the root (crown-bab's), or the chords
+        CrownBabOptions co;
+        co.root_steps = 10;
+        const std::vector<Tensor> slopes =
+            net_i % 2 == 0 ? priv_crown_bab_slopes(out, net, ZonoBounds{}, x, r, row,
+                                                   Tensor::from_data({least}, {1}), co, stats)
+                           : std::vector<Tensor>{};
+        const AffineTable t = priv_affine_table(out, net, ZonoBounds{}, x, r, slopes, 1 << 30);
+        for (const double gap : {0.5, 0.1, 0.02}) {
+            const Tensor offset = Tensor::from_data(std::vector<double>{least - gap}, {1});
+            AffineBabOptions o;
+            o.batch = net_i % 2 == 0 ? 6 : 4096; // a few nodes at once: the parts' slicing
+            o.steps = net_i % 3;
+            o.deadline = now_seconds() + 5;
+            const int res = priv_affine_bab(t, out, net, ZonoBounds{}, row, offset, o, stats);
+            decided += res;
+            if (res == 1)
+                for (std::size_t i = 0; i < 4000; ++i) wrong += y[i * 2] <= least - gap;
+            // its limits leave the row open: no time, no bytes for the open nodes
+            AffineBabOptions late = o, small = o;
+            late.deadline = now_seconds() - 1;
+            small.frontier_bytes = 1;
+            std::map<std::string, double> s2;
+            const Tensor hard = Tensor::from_data(std::vector<double>{least - 1e-4}, {1});
+            if (priv_affine_bab(t, out, net, ZonoBounds{}, row, hard, o, s2) == 0 ||
+                s2["affine_bab_nodes"] > 0) {
+                ++limits;
+                open_limits +=
+                    priv_affine_bab(t, out, net, ZonoBounds{}, row, hard, late, s2) == 0 &&
+                    priv_affine_bab(t, out, net, ZonoBounds{}, row, hard, small, s2) == 0;
+            }
+        }
+        if (stats.count("affine_bab_nodes")) nodes += stats.at("affine_bab_nodes");
+        // not applicable: rows beyond the budget, a layer that is not a ReLU
+        const AffineTable none = priv_affine_table(out, net, ZonoBounds{}, x, r, {}, 1);
+        std::vector<Activation> acts = nn.activations();
+        acts[0] = Activation::tanh;
+        const NeuralNetwork other(nn.layers(), acts);
+        const ZonoNet net_o(other, 3, 2, "bounds", "length");
+        const ZonoPropagation out_o =
+            net_o.forward(in.c, in.dr, in.G, x.zeros_like({1, 0}), nullptr, true);
+        const AffineTable tanh_t = priv_affine_table(out_o, net_o, ZonoBounds{}, x, r, {}, 1 << 30);
+        AffineBabOptions o;
+        ++limits;
+        open_limits += (t.U == 0 || !none.applicable) && !tanh_t.applicable &&
+                       priv_affine_bab(tanh_t, out_o, net_o, ZonoBounds{}, row,
+                                       Tensor::from_data({least - 1.0}, {1}), o, stats) == 0;
+    }
+    check(wrong == 0, b + ": affine-bab verifies no row that a sample violates");
+    check(decided > 0 && nodes > 0, b + ": affine-bab splits and verifies");
+    check(open_limits == limits, b + ": affine-bab stays open at its limits");
+}
+
 /// priv_crown_bab on nets of other activations (a product, a softmax's exp and reciprocal): its
 /// nodes batch the lines of the root's record, a verified polytope holds every sample.
 void crown_bab_other_layers(const std::string &b) {
@@ -618,7 +806,7 @@ void crown_bab_verdicts(const std::string &b) {
     if (b == "lean") return; // many small verifications: slow on lean
     Rng rng(37);
     int wrong = 0, proved = 0, wide = 0, sat = 0, violated = 0, two_roots = 0;
-    double nodes = 0;
+    double nodes = 0, affine = 0;
     for (int net_i = 0; net_i < 6; ++net_i) {
         const NeuralNetwork nn = aux_network(rng, {2, 10, 10, 2}, Activation::relu);
         std::vector<double> xs(std::size_t(20000 * 2));
@@ -632,11 +820,15 @@ void crown_bab_verdicts(const std::string &b) {
         o.crown_bab_batch = 8; // a few nodes at once: the stack and the batches' slicing
         o.crown_bab_fsb = net_i % 2 == 0 ? 0 : 3; // BaBSR's score, or the look-ahead
         o.crown_bab_search = net_i % 3 == 0;      // the steps in the search dtype, float64 decides
+        o.affine_bab = net_i >= 3;                // first on the root's affine form
+        o.affine_bab_slopes = net_i == 3 ? "chord" : "crown";
+        o.affine_bab_batch = 16;
         for (const double t : {least - 0.3, least - 0.02, least + 0.05}) {
             const NnVerifyResult r = nn.verify(aux_below(2, 2, -1.0, 1.0, t), 30, o);
             if (r.status == "unsat")
                 for (std::size_t i = 0; i < 20000; ++i) wrong += y[i * 2] <= t ? 1 : 0;
             if (r.stats.count("crown_bab_nodes")) nodes += r.stats.at("crown_bab_nodes");
+            if (r.stats.count("affine_bab_verified")) affine += r.stats.at("affine_bab_verified");
             if (t == least + 0.05) {
                 ++violated;
                 sat += r.status == "sat" ? 1 : 0;
@@ -661,6 +853,7 @@ void crown_bab_verdicts(const std::string &b) {
     check(sat == violated, b + ": crown-bab finds the counterexample of a violated property");
     check(nodes > 0, b + ": crown-bab splits nodes");
     check(two_roots > 0, b + ": crown-bab bounds the roots of several polytopes at once");
+    check(affine > 0, b + ": crown-bab's polytopes are verified on their affine forms first");
 }
 
 /// CROWN's backward bound holds the sampled outputs of the boxes, with splits, for every
@@ -1693,6 +1886,8 @@ int main() {
         backward_bounds(b);
         backward_bit_identical(b);
         crown_split_nodes(b);
+        affine_forms(b);
+        affine_bab_verdicts(b);
         crown_bab_other_layers(b);
         crown_bounds(b);
         softmax_lse(b);

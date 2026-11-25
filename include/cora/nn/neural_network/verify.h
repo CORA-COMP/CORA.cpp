@@ -189,6 +189,15 @@ struct NnVerifyOptions {
     int64_t crown_bab_memory_budget = 0; ///< the bytes of one batch's passes; 0: half the batch's
     int64_t crown_bab_witnesses =
         16; ///< the weakest open nodes per batch whose corners are checked
+    /// crown-bab on a ReLU net: first the ReLU-split branch and bound on the root's affine form
+    /// (one slope per crossing ReLU, nn_verification.md, affine-bab) of each open one-row polytope.
+    bool affine_bab = false;
+    /// The form's slope per crossing ReLU: "crown", the row's optimized lower slope at the root
+    /// where its Lambda is not below 0 (the form's root bound is CROWN's), or "chord".
+    std::string affine_bab_slopes = "crown";
+    double affine_bab_time_share = 0.5; ///< of the time left, at most, per polytope
+    int64_t affine_bab_steps = 1;       ///< ascent steps on a node's multipliers
+    int64_t affine_bab_batch = 16384;   ///< nodes bounded at once at most (fewer if memory asks)
     /// The check's rounds of CROWN's bounds of the layer inputs (0: none), as relu-bab's root.
     int64_t check_crown_rounds = 0;
     int64_t check_crown_iterations = 0; ///< their alpha-CROWN steps per row

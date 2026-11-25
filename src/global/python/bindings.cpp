@@ -5739,6 +5739,11 @@ void bind_verify(py::module_ &m) {
                       "crown-bab: bytes of one batch's passes; 0: half the batch budget");
     CORA_VERIFY_FIELD(crown_bab_witnesses,
                       "crown-bab: open nodes per batch whose corners are checked");
+    CORA_VERIFY_FIELD(affine_bab, "crown-bab: first the branch and bound on the affine form");
+    CORA_VERIFY_FIELD(affine_bab_slopes, "affine-bab: the ReLUs' slopes, 'crown' or 'chord'");
+    CORA_VERIFY_FIELD(affine_bab_time_share, "affine-bab: its share of the time left at most");
+    CORA_VERIFY_FIELD(affine_bab_steps, "affine-bab: ascent steps on a node's multipliers");
+    CORA_VERIFY_FIELD(affine_bab_batch, "affine-bab: nodes bounded at once at most");
     // CROWN's bounds of the layer inputs in the check
     CORA_VERIFY_FIELD(check_crown_rounds, "the check's rounds of CROWN's bounds of the layers");
     CORA_VERIFY_FIELD(check_crown_iterations, "the check's alpha-CROWN steps of those bounds");

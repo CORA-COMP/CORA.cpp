@@ -1068,6 +1068,11 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
         return net.activations[k] == Activation::relu ? &(*signs)[k] : nullptr;
     };
     if (opt && opt->intercepts) opt->intercepts->assign(top, Tensor());
+    if (opt && opt->affine) {
+        opt->affine->lambda.assign(top, Tensor());
+        opt->affine->slope.assign(top, Tensor());
+        opt->affine->offset.assign(top, Tensor());
+    }
     // Lambda (B, R, n): each output's coefficients of the rows (summed over readers), the constant
     std::vector<Tensor> lams(top + 1);
     Tensor constant = x.zeros_like({B, R});
@@ -1127,6 +1132,24 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                 const Tensor below = a ? *a : uc.greater(lc.negative());
                 sl = Tensor::where(cross, below, on);
                 bl = zero;
+                if (opt && opt->one_slope) {
+                    // one slope a in [0, 1] below and above, the offset at the larger end
+                    const std::vector<Tensor> &given = *opt->one_slope;
+                    Tensor a = chord;
+                    if (k < given.size() && given[k].defined())
+                        a = Tensor::where(given[k].less(zero), chord,
+                                          given[k].maximum(0.0).minimum(1.0));
+                    sl = su = Tensor::where(cross, a, on);
+                    bu = Tensor::where(cross, priv_relu_chord_offset(lc, uc, a), zero);
+                }
+                // the rows' Lambda, the chord's slope and offset at the asked neurons
+                if (opt && opt->affine && opt->affine_at && k < opt->affine_at->size() &&
+                    !(*opt->affine_at)[k].empty()) {
+                    const std::vector<int64_t> &at = (*opt->affine_at)[k];
+                    opt->affine->lambda[k] = lam.take(at, -1);
+                    opt->affine->slope[k] = su.take(at, -1);
+                    opt->affine->offset[k] = bu.take(at, -1);
+                }
             } else {
                 // the parallel lines of the zonotope's line
                 const PrivLine line =
@@ -1187,6 +1210,7 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                          lam.abs().matmul(rad.expand_dims(-1)).squeeze(-1) + constant;
     if (opt && opt->corner)
         *opt->corner = x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1));
+    if (opt && opt->affine) opt->affine->input = lam;
     if (!reverse) return value;
     // the reverse: each layer's input at the box's minimizing corner through the linear bounds
     if (g_alpha) g_alpha->assign(top, Tensor());

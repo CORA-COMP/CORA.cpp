@@ -439,6 +439,19 @@ class ConZonotopeBounding : public Bounding {
     // their parts: box i's center, radius and case; the options; the open polytopes; the roots
     std::tuple<Tensor, Tensor, Tensor> aux_box(const NnProblem &problem, int64_t i) const;
     CrownBabOptions aux_crown_bab_options(const NnProblem &problem) const;
+    /// affine-bab's one-row polytopes (their place in the slopes' rows), their slopes per ReLU
+    /// layer (rows, n) (empty: the chords') and the table of the last one.
+    struct AffineSlopes {
+        std::map<int64_t, int64_t> index;
+        std::vector<Tensor> slopes;
+        AffineTable table;
+    };
+    /// The slopes of the open one-row polytopes' affine forms; false: no affine form (another
+    /// activation, no such polytope, out of memory).
+    bool aux_affine_slopes(const ZonoPropagation &out, const ZonoBounds &bounds, const Tensor &xi,
+                           const Tensor &ri, const std::vector<int64_t> &open,
+                           const CrownBabOptions &co, const CrownBabSearch *search,
+                           std::map<std::string, double> &stats, AffineSlopes &lines) const;
     std::vector<int64_t> aux_open_polytopes(const ZonoPropagation &out,
                                             const Tensor &excluded) const;
     std::vector<int64_t> aux_crown_bab_roots(const ZonoPropagation &out, const ZonoBounds &bounds,
@@ -1009,13 +1022,51 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         // the roots of all open polytopes' rows at once: one verified row excludes its polytope
         if (open.size() > 1)
             open = aux_crown_bab_roots(out, bounds, xi, ri, open, co, search, stats);
+        // affine-bab: the one-row polytopes' slopes and root bounds at once (ReLU nets)
+        AffineSlopes lines;
+        bool affine = o_.affine_bab && !open.empty();
+        if (affine) affine = aux_affine_slopes(out, bounds, xi, ri, open, co, search, stats, lines);
         for (const int64_t p : open) {
             // the polytope's real rows a_k y - b_k
             const std::vector<int64_t> real = real_row_.slice(0, p, p + 1).squeeze(0).nonzero();
             const Tensor A = A_.slice(0, p, p + 1).squeeze(0).take(real, 0);
             const Tensor b = b_.slice(0, p, p + 1).squeeze(0).take(real, 0);
             int res = 0;
-            {
+            // a one-row polytope of a ReLU net: first on the root's affine form
+            if (affine && lines.index.count(p)) {
+                const StepTimer timer(&stats, "affine_bab_search_seconds", xi.device_id());
+                try {
+                    AffineBabOptions ao;
+                    ao.batch = o_.affine_bab_batch;
+                    ao.steps = o_.affine_bab_steps;
+                    ao.margin = co.margin;
+                    ao.max_bytes = co.max_bytes;
+                    ao.frontier_bytes = co.frontier_bytes;
+                    const double now = now_seconds();
+                    ao.deadline = now + o_.affine_bab_time_share * (co.deadline - now);
+                    // the form at this row's slopes (the chords': one table for all rows)
+                    const int64_t at = lines.index.at(p);
+                    std::vector<Tensor> slopes;
+                    for (const Tensor &t : lines.slopes)
+                        slopes.push_back(t.defined() ? t.slice(0, at, at + 1) : t);
+                    if (!lines.table.x.defined() || !slopes.empty())
+                        lines.table =
+                            priv_affine_table(out, net, bounds, xi, ri, slopes, co.max_bytes);
+                    stats["affine_bab_crossing"] = double(lines.table.U);
+                    affine = lines.table.applicable;
+                    if (affine)
+                        res = priv_affine_bab(lines.table, out, net, bounds, A, b, ao, stats);
+                } catch (const std::exception &error) {
+                    // out of memory: the polytope goes to the search below, no more tables
+                    if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+                    lines.table = AffineTable();
+                    free_device_cache(xi.device_id());
+                    stats["affine_bab_oom"] += 1;
+                    affine = false;
+                }
+                if (res == 1) stats["affine_bab_verified"] += 1;
+            }
+            if (res == 0 && !aux_late()) {
                 const StepTimer timer(&stats, "crown_bab_search_seconds", xi.device_id());
                 res = priv_crown_bab(out, net, bounds, xi, ri, A, b, co, check, stats, search);
             }
@@ -1025,6 +1076,66 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         }
     }
     return "unsat";
+}
+
+// The slopes of the affine forms ------------------------------------------------------------------
+
+bool ConZonotopeBounding::aux_affine_slopes(const ZonoPropagation &out, const ZonoBounds &bounds,
+                                            const Tensor &xi, const Tensor &ri,
+                                            const std::vector<int64_t> &open,
+                                            const CrownBabOptions &co, const CrownBabSearch *search,
+                                            std::map<std::string, double> &stats,
+                                            AffineSlopes &lines) const {
+    const StepTimer timer(&stats, "affine_bab_slopes_seconds", xi.device_id());
+    // ReLU layers only
+    for (const Activation a : net_->activations)
+        if (a != Activation::relu && a != Activation::identity) return false;
+    // the open polytopes of one real row
+    std::vector<int64_t> rows;
+    const std::vector<double> real = real_row_.data();
+    for (const int64_t p : open) {
+        int64_t count = 0, row = 0;
+        for (int64_t k = 0; k < K_; ++k)
+            if (real[std::size_t(p * K_ + k)] > 0) {
+                ++count;
+                row = p * K_ + k;
+            }
+        if (count != 1) continue;
+        lines.index[p] = int64_t(rows.size());
+        rows.push_back(row);
+    }
+    if (rows.empty() || o_.affine_bab_slopes != "crown") return !rows.empty();
+    // the rows' optimized slopes at the root, in chunks of the passes' budget
+    int64_t width = net_->n0;
+    for (const int64_t w : net_->widths) width += w;
+    for (const NeuralNetwork::Layer &layer : net_->maps) width += layer.work();
+    const auto chunk =
+        std::size_t(std::max<int64_t>(1, co.max_bytes / std::max<int64_t>(1, 8 * 32 * width)));
+    const Tensor Aall = A_.reshape({P_ * K_, A_.shape()[2]}), ball = b_.reshape({P_ * K_});
+    std::vector<std::vector<Tensor>> parts(net_->W.size());
+    try {
+        priv_oom_site("affine_bab_slopes");
+        for (std::size_t at = 0; at < rows.size(); at += chunk) {
+            const std::size_t to = std::min(rows.size(), at + chunk);
+            const std::vector<int64_t> part(rows.begin() + std::ptrdiff_t(at),
+                                            rows.begin() + std::ptrdiff_t(to));
+            const std::vector<Tensor> got =
+                priv_crown_bab_slopes(out, *net_, bounds, xi, ri, Aall.take(part, 0),
+                                      ball.take(part, 0), co, stats, search);
+            for (std::size_t k = 0; k < got.size(); ++k)
+                if (got[k].defined()) parts[k].push_back(got[k]);
+        }
+    } catch (const std::exception &error) {
+        // out of memory: no affine forms, the search of every polytope as without them
+        if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+        free_device_cache(xi.device_id());
+        stats["affine_bab_oom"] += 1;
+        return false;
+    }
+    lines.slopes.assign(net_->W.size(), Tensor());
+    for (std::size_t k = 0; k < parts.size(); ++k)
+        if (!parts[k].empty()) lines.slopes[k] = Tensor::concat(parts[k], 0);
+    return true;
 }
 
 // The options of the CROWN search -----------------------------------------------------------------

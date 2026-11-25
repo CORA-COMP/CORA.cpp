@@ -123,6 +123,9 @@ void injected(const std::string &b) {
         {"crown_bab_bound", 0, 1, "crown_bab_oom"},         // a node's bound (the root's first)
         {"crown_bab_bound", 2, 1000, "crown_bab_oom"},      // the batches: half, then open
         {"crown_bab_look_ahead", 0, 1000, "crown_bab_oom"}, // the look-ahead: BaBSR's pick
+        {"affine_bab_slopes", 0, 1000, "affine_bab_oom"},   // the forms' slopes: the search alone
+        {"affine_bab_table", 0, 1000, "affine_bab_oom"},    // the forms' rows: the search alone
+        {"affine_bab", 0, 1000, "affine_bab_oom"},          // the forms' nodes: the search alone
     };
     Rng rng(41);
     int wrong = 0, answered = 0, proved = 0;
@@ -137,9 +140,10 @@ void injected(const std::string &b) {
             least = std::min(least, y[i * 2]);
             most = std::max(most, y[i * 2]);
         }
-        const NnVerifyOptions o = aux_options(b);
+        NnVerifyOptions o = aux_options(b);
         for (std::size_t si = 0; si < sites.size(); ++si) {
             const Site &site = sites[si];
+            o.affine_bab = std::string(site.name).rfind("affine_bab", 0) == 0;
             for (const double t : {least - 0.3, least - 0.02}) {
                 // two polytopes for the roots, one else
                 const bool two = std::string(site.name) == "crown_bab_roots";
