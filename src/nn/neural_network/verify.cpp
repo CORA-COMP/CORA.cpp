@@ -6,6 +6,8 @@
 // bound; bound-first skips that. Either way an open verdict gets the attack again until the
 // deadline. A network the bounding cannot take gets the attack alone. "sat" needs the confirm
 // check of the counterexample (the scoring's, from Python; else the float64 network's output).
+// Out of memory (std's or libtorch's) where the strategies' own back-offs end: the cache freed and
+// that step without a verdict (no proof, no counterexample); the verdict then stays open.
 //
 // Syntax:   NnVerifyResult r = nn.verify(property, timeout);
 //           NnVerifyResult r = nn.verify(property, timeout, vnncomp_options("acasxu"), confirm);
@@ -23,12 +25,13 @@
 // CORA authors: Lukas Koller, Tobias Ladner
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   23-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
 #include "cora/nn/neural_network/neural_network.h"
 #include "global/format.h"
+#include "global/tensor/device_memory.h"
 #include "nn/neural_network/private/priv_layers.h"
 #include "nn/neural_network/private/priv_verify.h"
 
@@ -70,6 +73,17 @@ std::string aux_chunks(NnProblem &problem, const std::vector<std::vector<int64_t
     return "unsat";
 }
 
+// Out of memory -----------------------------------------------------------------------------------
+
+/// Whether error is out of memory: then the device's cache freed and the count of `what` in stats.
+bool aux_out_of_memory(const NnProblem &problem, const std::exception &error,
+                       std::map<std::string, double> &stats, const char *what) {
+    if (!priv_is_oom(error)) return false;
+    free_device_cache(problem.A.device_id());
+    stats[what] += 1;
+    return true;
+}
+
 // The order of the strategies ---------------------------------------------------------------------
 
 /// The verdict of the problem within the deadline, for checked inputs.
@@ -90,9 +104,11 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
             can_bound = bounding->prepare(first);
         }
         if (!can_bound) result.note = bounding->why;
-    } catch (const Error &error) {
-        // a bound beyond the float range (an exp): the attack alone
-        if (!priv_is_out_of_range(error)) std::rethrow_exception(std::current_exception());
+    } catch (const std::exception &error) {
+        // a bound beyond the float range (an exp), or out of memory: the attack alone
+        if (!priv_is_out_of_range(error) && !priv_is_oom(error))
+            std::rethrow_exception(std::current_exception());
+        aux_out_of_memory(problem, error, result.stats, "prepare_oom");
         result.note = error.what();
     }
     // the result of a confirmed counterexample, and an attack with its time
@@ -110,9 +126,13 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
         problem.deadline = until;
         try {
             found = attack->run(problem, until, rounds);
-        } catch (const Error &error) {
-            if (!is_deadline(error)) std::rethrow_exception(std::current_exception());
-            result.stats["attack_cut"] += 1;
+        } catch (const std::exception &error) {
+            // the deadline, or out of memory: no counterexample from this step
+            if (!is_deadline(error) && !priv_is_oom(error))
+                std::rethrow_exception(std::current_exception());
+            if (!aux_out_of_memory(problem, error, result.stats, "attack_oom"))
+                result.stats["attack_cut"] += 1;
+            found = AttackResult();
         }
         // its time and steps
         result.stats["attack_seconds"] += now_seconds() - t;
@@ -132,10 +152,12 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
             if (first->prepare(problem)) {
                 status = first->branch_and_bound(problem, deadline, result.stats, found);
             }
-        } catch (const Error &error) {
-            // the deadline, or a bound beyond the float range: the attack goes on
-            if (!is_deadline(error) && !priv_is_out_of_range(error))
+        } catch (const std::exception &error) {
+            // the deadline, a bound beyond the float range or out of memory: the attack goes on
+            if (!is_deadline(error) && !priv_is_out_of_range(error) && !priv_is_oom(error))
                 std::rethrow_exception(std::current_exception());
+            aux_out_of_memory(problem, error, result.stats, "root_check_oom");
+            status = "unknown";
         }
         if (status == "sat") return sat(found);
         if (status == "unsat") {
@@ -164,11 +186,13 @@ NnVerifyResult aux_verify(NnProblem &problem, double start, double timeout) {
             } else {
                 status = aux_chunks(problem, chunks, deadline, result.stats, found);
             }
-        } catch (const Error &error) {
-            // the deadline, or a bound beyond the float range: the verdict stays open
-            if (!is_deadline(error) && !priv_is_out_of_range(error))
+        } catch (const std::exception &error) {
+            // the deadline, a bound beyond the float range or out of memory: the verdict stays open
+            if (!is_deadline(error) && !priv_is_out_of_range(error) && !priv_is_oom(error))
                 std::rethrow_exception(std::current_exception());
-            result.stats[is_deadline(error) ? "bab_cut" : "bab_out_of_range"] += 1;
+            if (!aux_out_of_memory(problem, error, result.stats, "bab_oom"))
+                result.stats[is_deadline(error) ? "bab_cut" : "bab_out_of_range"] += 1;
+            status = "unknown";
         }
         result.stats["bab_seconds"] = now_seconds() - t;
         if (status == "sat") return sat(found);

@@ -43,6 +43,14 @@ const InputSplitHeuristic &priv_input_split_heuristic(const std::string &name);
 /// Whether the error is an allocation that failed (CORA's catch of out-of-memory errors).
 bool priv_is_oom(const std::exception &error);
 
+/// A point where the verifier may run out of memory: Error::out_of_memory where priv_inject_oom
+/// armed `site`, else nothing (one relaxed load while none is armed).
+void priv_oom_site(const char *site);
+
+/// The tests' out of memory: the calls of priv_oom_site(site) after the next `skip` throw, `count`
+/// of them (0: disarmed).
+void priv_inject_oom(const std::string &site, int64_t skip, int64_t count);
+
 /// The rows of x with loss <= 0, the least first and at most max_candidates, through the confirm
 /// check; the first that passes goes into result (true).
 bool priv_confirm_rows(NnProblem &problem, const Tensor &x, const Tensor &loss,

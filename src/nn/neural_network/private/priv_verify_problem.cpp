@@ -23,7 +23,7 @@
 // CORA authors: Lukas Koller
 // Authors:       Claude Opus 5.5
 // Written:       21-November-2026
-// Last update:   23-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/error.h"
@@ -33,9 +33,14 @@
 #include "nn/neural_network/private/priv_verify.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <limits>
+#include <map>
+#include <mutex>
+#include <new>
 #include <numeric>
+#include <string>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -47,6 +52,23 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 constexpr int64_t kBudget = int64_t{1} << 30; // 1 GiB per batch, unless the options say
+
+// The tests' out of memory ------------------------------------------------------------------------
+
+/// The armed sites (priv_inject_oom): per site the calls to skip and the calls that throw.
+std::map<std::string, std::pair<int64_t, int64_t>> &aux_oom_sites() {
+    static std::map<std::string, std::pair<int64_t, int64_t>> sites;
+    return sites;
+}
+std::mutex &aux_oom_mutex() {
+    static std::mutex mutex;
+    return mutex;
+}
+/// How many sites are armed: priv_oom_site's one load while none is.
+std::atomic<int64_t> &aux_oom_armed() {
+    static std::atomic<int64_t> armed(0);
+    return armed;
+}
 
 // The network and the boxes -----------------------------------------------------------------------
 
@@ -458,13 +480,49 @@ bool priv_check_points(NnProblem &problem, const Tensor &x, const Tensor &cases,
     return false;
 }
 
+// Out of memory -----------------------------------------------------------------------------------
+
 bool priv_is_oom(const std::exception &error) {
-    // std's, torch's and CORA's messages
+    // std's, CORA's and torch's (by its message)
+    const auto *cora_error = dynamic_cast<const Error *>(&error);
+    if (cora_error && cora_error->id() == Error::out_of_memory) return true;
     const std::string what = error.what();
     return dynamic_cast<const std::bad_alloc *>(&error) != nullptr ||
            what.find("out of memory") != std::string::npos ||
            what.find("can't allocate memory") != std::string::npos ||
            what.find("CORA:outOfMemory") != std::string::npos;
+}
+
+// The tests' out of memory ------------------------------------------------------------------------
+
+void priv_oom_site(const char *site) {
+    // nothing armed: one load
+    if (aux_oom_armed().load(std::memory_order_relaxed) == 0) return;
+    const std::lock_guard<std::mutex> lock(aux_oom_mutex());
+    auto it = aux_oom_sites().find(site);
+    if (it == aux_oom_sites().end()) return;
+    // the calls to skip first, then the ones that throw
+    auto &[skip, count] = it->second;
+    if (skip > 0) {
+        --skip;
+        return;
+    }
+    if (--count == 0) {
+        aux_oom_sites().erase(it);
+        aux_oom_armed().fetch_sub(1, std::memory_order_relaxed);
+    }
+    CORA_FAIL(Error::out_of_memory, std::string("out of memory (injected at ") + site + ")");
+}
+
+void priv_inject_oom(const std::string &site, int64_t skip, int64_t count) {
+    // the site's old arming replaced (count 0: only removed)
+    const std::lock_guard<std::mutex> lock(aux_oom_mutex());
+    auto &sites = aux_oom_sites();
+    const bool had = sites.erase(site) > 0;
+    if (had) aux_oom_armed().fetch_sub(1, std::memory_order_relaxed);
+    if (count <= 0) return;
+    sites[site] = {skip, count};
+    aux_oom_armed().fetch_add(1, std::memory_order_relaxed);
 }
 
 std::vector<int64_t> priv_rows_of(const std::vector<int64_t> &flat, int64_t cols) {
