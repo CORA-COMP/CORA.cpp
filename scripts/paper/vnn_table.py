@@ -74,8 +74,9 @@ DIMS = "examples/vnncomp/results/input_dims.csv"
 OUTPUT = "paper/generated/vnn-comp-table.tex"
 SUMMARY = "paper/generated/vnn-comp-summary.tex"
 # the columns: the top tools of VNN-COMP, then CORA++ (the CSV's name, the header)
-TOOLS = (("alpha-beta-CROWN", r"$\alpha,\!\beta$-CROWN"), ("vibecheck", "vibecheck"), ("PyRAT", "PyRAT"),
-         ("CORA", "CORA"), ("CORA++", "CORA++"))
+TOOLS = (*sorted((("alpha-beta-CROWN", r"$\alpha,\!\beta$-CROWN"), ("CORA", "CORA"), ("PyRAT", "PyRAT"),
+                  ("vibecheck", "vibecheck")), key=lambda tool: tool[0].lower()),
+         ("CORA++", "CORA++"))  # the others by name; CORA++ is always last
 # the benchmarks of the main body: small and large networks, verified and falsified
 MAIN = ("acasxu_2023", "tllverifybench_2023", "metaroom_2023", "lsnc_relu", "nn4sys", "soundnessbench_2026",
         "traffic_signs_recognition_2023", "cifar100_2024", "vit_2023")
