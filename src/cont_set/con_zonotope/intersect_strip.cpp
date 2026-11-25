@@ -3,7 +3,8 @@
 // The gain is chosen as in Zonotope::intersect_strip: "alamo-FRad" with one strip, "wang-FRad"
 // with the matrices E, F, A, C of an observer (aux). "bravo" (one strip) returns the zonotope
 // around the first strip without the constraints, as CORA. "svd" and "radius" (an optimizer) are
-// not supported; a given lambda is used as it is.
+// not supported; a given lambda is used as it is, with the generators G - lambda (C G) in
+// CORALean's order (ConZonotope.intersectStrip).
 //
 // Syntax:   cZres = cz.intersect_strip(C, phi, y);
 //           cZres = cz.intersect_strip(C, phi, y, method);
@@ -24,7 +25,7 @@
 // CORA authors: Matthias Althoff
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   20-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cont_set/con_zonotope/private/priv.h"
@@ -50,7 +51,8 @@ ConZonotope aux_with_strips(const ConZonotope &cz, const Zonotope &Z, const Tens
     const Tensor CG = C.matmul(cz.generators().matrix_transpose());
     Shape widths = CG.shape();
     widths.back() = k;
-    const Tensor rows = Tensor::concat({CG, -phi.expand_dims(-1).diag().broadcast_to(widths)}, -1);
+    const Tensor strips = (-phi).expand_dims(-1).diag().broadcast_to(widths);
+    const Tensor rows = Tensor::concat({CG, strips}, -1);
     const Tensor A = Tensor::concat(
         {Tensor::concat({cz.A(), zeros_block(cz.A(), cz.A().shape()[cz.A().ndim() - 2], k)}, -1),
          rows},
@@ -109,7 +111,15 @@ ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, con
     Refusal refusal = priv_strip_refusal(dim(), C, phi, y);
     if (!refusal) refusal = priv_gain_refusal(dim(), C, lambda);
     CORA_CHECK(!refusal, refusal->first, [&] { return "intersect_strip: " + refusal->second; });
-    return aux_with_strips(*this, Zonotope(c_, G_).intersect_strip(C, phi, y, lambda), C, phi, y);
+    // CORALean's order: c + L (y - C c), G - L (C G) and L diag(phi), not (I - L C) G
+    const Zonotope image = Zonotope(c_, G_).linear_map(C);
+    const Tensor shifted =
+        c_.expand_dims(-1) + lambda.matmul(y.expand_dims(-1) - image.center().expand_dims(-1));
+    const Tensor G = G_.matrix_transpose();
+    const Tensor kept = G - lambda.matmul(image.generators().matrix_transpose());
+    const Tensor added = lambda.multiply(phi.expand_dims(-2));
+    const Zonotope Z(shifted.squeeze(-1), Tensor::concat({kept, added}, -1).matrix_transpose());
+    return aux_with_strips(*this, Z, C, phi, y);
 }
 
 ConZonotope ConZonotope::intersect_strip(const Tensor &C, const Tensor &phi, const Tensor &y,

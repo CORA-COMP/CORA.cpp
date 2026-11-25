@@ -11,7 +11,7 @@ column of its own and is left out of the bit-exact numerator and denominator, as
 rows (constructors and accessors, `is_plumbing`; no operation to compare).
 A header counts a row only if the .cpp file that implements it executed a line.
 
-Over the 86 instances, 2341 of 2428 rows (96.4%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2343 of 2428 rows (96.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 
 ## Per instance
 
@@ -19,9 +19,9 @@ Over the 86 instances, 2341 of 2428 rows (96.4%) that they execute and that can 
 |---|---|---|---|---|---|---|---|---|---|---|
 | ACC-safe-distance | 65 | 47 | 2 | 15 | 1 | 0 | 0 | 13 | 10 | 41/42 |
 | Airplane-continuous | 65 | 47 | 2 | 15 | 1 | 0 | 0 | 13 | 10 | 41/42 |
-| Attitude_Control-avoid | 71 | 48 | 2 | 19 | 2 | 0 | 0 | 17 | 11 | 42/43 |
+| Attitude_Control-avoid | 71 | 49 | 2 | 18 | 2 | 0 | 0 | 17 | 11 | 42/43 |
 | BRKDC01 | 22 | 9 | 2 | 10 | 1 | 0 | 0 | 7 | 5 | 9/10 |
-| BRKNC01 | 69 | 44 | 4 | 20 | 1 | 0 | 0 | 12 | 12 | 43/45 |
+| BRKNC01 | 69 | 45 | 4 | 19 | 1 | 0 | 0 | 12 | 12 | 43/45 |
 | BRKNP01 | 54 | 32 | 5 | 16 | 1 | 0 | 0 | 10 | 11 | 30/33 |
 | CBC01 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | CBC02 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
@@ -43,8 +43,8 @@ Over the 86 instances, 2341 of 2428 rows (96.4%) that they execute and that can 
 | Double_Pendulum-less-robust | 63 | 45 | 2 | 15 | 1 | 0 | 0 | 13 | 10 | 39/40 |
 | Double_Pendulum-less-robust-script | 57 | 39 | 2 | 15 | 1 | 0 | 0 | 13 | 10 | 33/34 |
 | Double_Pendulum-more-robust | 65 | 47 | 2 | 15 | 1 | 0 | 0 | 13 | 10 | 41/42 |
-| GRBX01 | 69 | 43 | 5 | 20 | 1 | 0 | 0 | 12 | 12 | 42/45 |
-| GRBX02 | 69 | 43 | 5 | 20 | 1 | 0 | 0 | 12 | 12 | 42/45 |
+| GRBX01 | 69 | 45 | 4 | 19 | 1 | 0 | 0 | 12 | 12 | 43/45 |
+| GRBX02 | 69 | 45 | 4 | 19 | 1 | 0 | 0 | 12 | 12 | 43/45 |
 | HEAT01 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | HEAT02 | 14 | 5 | 1 | 7 | 1 | 0 | 0 | 5 | 6 | 3/3 |
 | HEAT03 | 29 | 17 | 2 | 9 | 1 | 0 | 0 | 6 | 5 | 17/18 |
@@ -56,10 +56,10 @@ Over the 86 instances, 2341 of 2428 rows (96.4%) that they execute and that can 
 | LALO20_W001 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
 | LALO20_W005 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
 | LALO20_W01 | 35 | 24 | 2 | 8 | 1 | 0 | 0 | 7 | 6 | 21/22 |
-| LOVO25 | 108 | 64 | 4 | 28 | 12 | 0 | 0 | 15 | 16 | 60/77 |
-| LOVO25-script | 119 | 73 | 5 | 28 | 13 | 0 | 0 | 16 | 16 | 69/87 |
-| NAV-robust | 68 | 45 | 2 | 19 | 2 | 0 | 0 | 17 | 11 | 39/40 |
-| NAV-standard | 74 | 51 | 2 | 19 | 2 | 0 | 0 | 17 | 11 | 45/46 |
+| LOVO25 | 108 | 65 | 4 | 27 | 12 | 0 | 0 | 15 | 16 | 60/77 |
+| LOVO25-script | 119 | 74 | 5 | 27 | 13 | 0 | 0 | 16 | 16 | 69/87 |
+| NAV-robust | 68 | 46 | 2 | 18 | 2 | 0 | 0 | 17 | 11 | 39/40 |
+| NAV-standard | 74 | 52 | 2 | 18 | 2 | 0 | 0 | 17 | 11 | 45/46 |
 | PLAA01_BND42 | 43 | 27 | 5 | 11 | 0 | 0 | 0 | 8 | 6 | 26/29 |
 | PLAA01_BND50 | 43 | 27 | 5 | 11 | 0 | 0 | 0 | 8 | 6 | 26/29 |
 | PLAD01_BND30 | 30 | 17 | 2 | 10 | 1 | 0 | 0 | 7 | 5 | 17/18 |
@@ -77,18 +77,18 @@ Over the 86 instances, 2341 of 2428 rows (96.4%) that they execute and that can 
 | ROBE25_1 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
 | ROBE25_2 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
 | ROBE25_3 | 31 | 19 | 2 | 10 | 0 | 0 | 0 | 7 | 6 | 18/18 |
-| SPRE22 | 74 | 52 | 2 | 18 | 2 | 0 | 0 | 13 | 12 | 49/49 |
+| SPRE22 | 74 | 53 | 2 | 17 | 2 | 0 | 0 | 13 | 12 | 49/49 |
 | SRA01 | 60 | 41 | 2 | 15 | 2 | 0 | 0 | 10 | 11 | 39/39 |
-| SRA02 | 68 | 46 | 2 | 18 | 2 | 0 | 0 | 12 | 12 | 44/44 |
-| SRA03 | 68 | 46 | 2 | 18 | 2 | 0 | 0 | 12 | 12 | 44/44 |
+| SRA02 | 68 | 47 | 2 | 17 | 2 | 0 | 0 | 12 | 12 | 44/44 |
+| SRA03 | 68 | 47 | 2 | 17 | 2 | 0 | 0 | 12 | 12 | 44/44 |
 | SRA04 | 60 | 41 | 2 | 15 | 2 | 0 | 0 | 10 | 11 | 39/39 |
-| SRA05 | 68 | 46 | 2 | 18 | 2 | 0 | 0 | 12 | 12 | 44/44 |
-| SRA06 | 68 | 46 | 2 | 18 | 2 | 0 | 0 | 12 | 12 | 44/44 |
-| SRA07 | 81 | 55 | 4 | 20 | 2 | 0 | 0 | 13 | 13 | 53/55 |
-| SRA08 | 81 | 55 | 4 | 20 | 2 | 0 | 0 | 13 | 13 | 53/55 |
+| SRA05 | 68 | 47 | 2 | 17 | 2 | 0 | 0 | 12 | 12 | 44/44 |
+| SRA06 | 68 | 47 | 2 | 17 | 2 | 0 | 0 | 12 | 12 | 44/44 |
+| SRA07 | 81 | 56 | 4 | 19 | 2 | 0 | 0 | 13 | 13 | 53/55 |
+| SRA08 | 81 | 56 | 4 | 19 | 2 | 0 | 0 | 13 | 13 | 53/55 |
 | SRNA01 | 52 | 34 | 2 | 14 | 2 | 0 | 0 | 9 | 11 | 32/32 |
 | SRU01 | 60 | 41 | 2 | 15 | 2 | 0 | 0 | 10 | 11 | 39/39 |
-| SRU02 | 81 | 55 | 4 | 20 | 2 | 0 | 0 | 13 | 13 | 53/55 |
+| SRU02 | 81 | 56 | 4 | 19 | 2 | 0 | 0 | 13 | 13 | 53/55 |
 | Single_Pendulum-reach | 65 | 47 | 2 | 15 | 1 | 0 | 0 | 13 | 10 | 41/42 |
 | TORA-reach-sigmoid | 83 | 62 | 2 | 18 | 1 | 0 | 0 | 15 | 11 | 56/57 |
 | TORA-reach-tanh | 65 | 47 | 2 | 15 | 1 | 0 | 0 | 13 | 10 | 41/42 |
@@ -128,7 +128,6 @@ The to-do list for CORALean batches: `CORALean` is what CORALean has for the row
 | `contDynamics/linParamSys/initReach` | property | float | 3 | BRKNP01, PLAA01_BND42, PLAA01_BND50 |
 | `contDynamics/linParamSys/post` | property | float | 3 | BRKNP01, PLAA01_BND42, PLAA01_BND50 |
 | `others/matZonotope/expmOneParam` | property | bound | 3 | BRKNP01, PLAA01_BND42, PLAA01_BND50 |
-| `contSet/conZonotope/rescale` | property | float | 2 | GRBX01, GRBX02 |
 | `contSet/levelSet/Inf` | ported | float | 2 | LOVO25, LOVO25-script |
 | `contSet/levelSet/and_` | property | float | 2 | LOVO25, LOVO25-script |
 | `contSet/levelSet/contains_` | ported | float | 2 | LOVO25, LOVO25-script |
@@ -315,7 +314,7 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 <details><summary>Attitude_Control-avoid: 42/43</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -327,7 +326,7 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 <details><summary>BRKNC01: 43/45</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -451,15 +450,15 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 </details>
 
-<details><summary>GRBX01: 42/45</summary>
+<details><summary>GRBX01: 43/45</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/rescale` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
-<details><summary>GRBX02: 42/45</summary>
+<details><summary>GRBX02: 43/45</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/rescale` (property), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -531,25 +530,25 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 <details><summary>LOVO25: 60/77</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/backpropagation` (untested), `specification/syntaxTree/cos` (untested), `specification/syntaxTree/exp` (untested), `specification/syntaxTree/minus` (untested), `specification/syntaxTree/plus` (untested), `specification/syntaxTree/power` (untested), `specification/syntaxTree/sin` (untested), `specification/syntaxTree/sqrt` (untested), `specification/syntaxTree/syntaxTree` (untested), `specification/syntaxTree/tan` (untested), `specification/syntaxTree/times` (untested)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/backpropagation` (untested), `specification/syntaxTree/cos` (untested), `specification/syntaxTree/exp` (untested), `specification/syntaxTree/minus` (untested), `specification/syntaxTree/plus` (untested), `specification/syntaxTree/power` (untested), `specification/syntaxTree/sin` (untested), `specification/syntaxTree/sqrt` (untested), `specification/syntaxTree/syntaxTree` (untested), `specification/syntaxTree/tan` (untested), `specification/syntaxTree/times` (untested)
 
 </details>
 
 <details><summary>LOVO25-script: 69/87</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/backpropagation` (untested), `specification/syntaxTree/cos` (untested), `specification/syntaxTree/exp` (untested), `specification/syntaxTree/minus` (untested), `specification/syntaxTree/plus` (untested), `specification/syntaxTree/power` (untested), `specification/syntaxTree/sin` (untested), `specification/syntaxTree/sqrt` (untested), `specification/syntaxTree/syntaxTree` (untested), `specification/syntaxTree/tan` (untested), `specification/syntaxTree/times` (untested)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/interval` (property), `contSet/contSet/compact` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/representsa` (ported), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/levelSet/Inf` (ported), `contSet/levelSet/and_` (property), `contSet/levelSet/contains_` (ported), `contSet/levelSet/dim` (ported), `contSet/levelSet/empty` (ported), `contSet/levelSet/isIntersecting_` (ported), `contSet/levelSet/levelSet` (ported), `contSet/levelSet/tightenDomain` (property), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/taylm/dim` (ported), `contSet/taylm/taylm` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/guardIntersect_levelSet` (untested), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported), `specification/syntaxTree/backpropagation` (untested), `specification/syntaxTree/cos` (untested), `specification/syntaxTree/exp` (untested), `specification/syntaxTree/minus` (untested), `specification/syntaxTree/plus` (untested), `specification/syntaxTree/power` (untested), `specification/syntaxTree/sin` (untested), `specification/syntaxTree/sqrt` (untested), `specification/syntaxTree/syntaxTree` (untested), `specification/syntaxTree/tan` (untested), `specification/syntaxTree/times` (untested)
 
 </details>
 
 <details><summary>NAV-robust: 39/40</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
 <details><summary>NAV-standard: 45/46</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contDynamics/contDynamics/simulateRandom` (ported), `contDynamics/neurNetContrSys/neurNetContrSys` (ported), `contDynamics/neurNetContrSys/simulate` (ported), `contDynamics/neurNetContrSys/verify` (ported), `contDynamics/nonlinearSys/simulate` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/randPoint_` (ported), `contSet/zonotope/zonotope` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -651,7 +650,7 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 <details><summary>SPRE22: 49/49</summary>
 
-`contDynamics/contDynamics/derivatives` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/contDynamics/derivatives` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -663,13 +662,13 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 <details><summary>SRA02: 44/44</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
 <details><summary>SRA03: 44/44</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -681,25 +680,25 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 <details><summary>SRA05: 44/44</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
 <details><summary>SRA06: 44/44</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
 <details><summary>SRA07: 53/55</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
 <details><summary>SRA08: 53/55</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 
@@ -717,7 +716,7 @@ A private step (`private/priv_*.m`) is no row of the inventory; its file is tagg
 
 <details><summary>SRU02: 53/55</summary>
 
-`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/dim` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
+`contDynamics/linearSys/linearSys` (ported), `contSet/conZonotope/conZonotope` (ported), `contSet/conZonotope/generators` (ported), `contSet/conZonotope/supportFunc_` (property), `contSet/contSet/contSet` (ported), `contSet/contSet/dim` (ported), `contSet/contSet/project` (ported), `contSet/contSet/reorder` (untested), `contSet/contSet/representsa_emptyObject` (ported), `contSet/interval/interval` (ported), `contSet/polytope/dim` (ported), `contSet/polytope/isemptyobject` (untested), `contSet/zonoBundle/dim` (ported), `contSet/zonoBundle/supportFunc_` (property), `contSet/zonoBundle/zonoBundle` (ported), `contSet/zonotope/dim` (ported), `contSet/zonotope/generators` (ported), `contSet/zonotope/zonotope` (ported), `hybridDynamics/hybridAutomaton/hybridAutomaton` (ported), `hybridDynamics/linearReset/linearReset` (ported), `hybridDynamics/location/location` (ported), `hybridDynamics/transition/transition` (ported), `others/intervalMatrix/interval` (property), `others/matZonotope/matZonotope` (property), `others/matZonotope/numgens` (ported)
 
 </details>
 

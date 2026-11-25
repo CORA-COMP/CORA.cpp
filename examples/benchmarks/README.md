@@ -9,7 +9,7 @@
 | AINNCS | 27 | 23 of 23 in ARCH26 (24 of 25 equal CORA's; the two new rows verify what no tool did) | 21 of 23 | 16.8 / 11.7 | 27 / 22 (23 instances) |
 
 <!-- BEGIN overall -->
-Over the 86 instances, 2341 of 2428 rows (96.4%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
+Over the 86 instances, 2343 of 2428 rows (96.5%) that they execute and that can be bit-exact are bit-exact against CORALean's `nearest` oracle (the rows summed per instance; constructors and accessors are left out, see `coverage/README.md`).
 <!-- END overall -->
 
 The speedups are over the instances where CORA.cpp's verdict is the expected one and the ARCH26 report
@@ -161,8 +161,8 @@ for both steps, 5e-5, 3e-4 and 1e-2, where both verify (closed form 4.3e-6, 9.6e
 | PLAD01_BND30 | 1 | 1 | 0.302 | 17/18 bit-exact, 0 property | - | 4.03 | 4.03 (CORA) | 13.4 |
 | PLAD01_BND42 | 1 | 1 | 0.0695 | 17/18 bit-exact, 0 property | - | 3.07 | 0.05 (JuliaReach) | 0.72 |
 | PLAN01 | 1 (script: 0) | 0 | 49.4 | 34/39 bit-exact, 5 property | 173 | 162 | 162 (CORA) | - |
-| GRBX01 | 1 | 1 | 0.102 [b] | 42/45 bit-exact, 3 property | - | 2.28 | 2.28 (CORA) | 22.3 |
-| GRBX02 | 1 | 1 | 0.123 [b] | 42/45 bit-exact, 3 property | - | 2.44 | 2.44 (CORA) | 19.8 |
+| GRBX01 | 1 | 1 | 0.102 [b] | 43/45 bit-exact, 2 property | - | 2.28 | 2.28 (CORA) | 22.3 |
+| GRBX02 | 1 | 1 | 0.123 [b] | 43/45 bit-exact, 2 property | - | 2.44 | 2.44 (CORA) | 19.8 |
 | BRKDC01 | 1 | 1 | 0.0381 | 9/10 bit-exact, 0 property | - | 22.66 | 0.1 (JuliaReach) | 2.63 |
 | BRKNC01 | 1 | 1 | 2.65 | 43/45 bit-exact, 2 property | - | 32.07 | 0.17 (JuliaReach) | 0.0641 |
 | BRKNP01 | 1 (script: 0) | 0 (reach_set_explosion) | 0.00127 | 30/33 bit-exact, 3 property | 438 | 52.2 | 16.99 (JuliaReach) | - |
@@ -835,8 +835,8 @@ of scope cannot be, and is left out of the denominator (`coverage/benchmarks.md`
 | Double_Pendulum-less-robust | 39/40 | 1 | 23 |
 | Double_Pendulum-less-robust-script | 33/34 | 1 | 23 |
 | Double_Pendulum-more-robust | 41/42 | 1 | 23 |
-| GRBX01 | 42/45 | 3 | 24 |
-| GRBX02 | 42/45 | 3 | 24 |
+| GRBX01 | 43/45 | 2 | 24 |
+| GRBX02 | 43/45 | 2 | 24 |
 | HEAT01 | 3/3 | 0 | 11 |
 | HEAT02 | 3/3 | 0 | 11 |
 | HEAT03 | 17/18 | 1 | 11 |

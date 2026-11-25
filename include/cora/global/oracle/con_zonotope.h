@@ -12,7 +12,7 @@
 //
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   21-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #pragma once
@@ -108,6 +108,12 @@ class ConZonotope {
 
     /// The halves of the set cut at the center of the box in coordinate dim.
     std::pair<ConZonotope, ConZonotope> split(int64_t dim) const;
+    /// The halves cut at the middle (inf + sup) / 2 of coordinate dim of the given box I.
+    std::pair<ConZonotope, ConZonotope> split(int64_t dim, const Interval &I) const;
+    /// The set with factor j scaled from [lo_j, hi_j] to [-1, 1] (`conZonotope.rescale`).
+    ConZonotope rescale(const Tensor &lo, const Tensor &hi) const;
+    /// The dimension (`conZonotope.dim`).
+    int64_t dim() const;
 
     /// Structural equality; a proof of emptiness (a true proves it); whether the sets intersect,
     /// proved only when disjoint (the value false with proved set).

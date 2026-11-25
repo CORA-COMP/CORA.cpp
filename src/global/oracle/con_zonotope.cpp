@@ -5,7 +5,7 @@
 // CORA.cpp only: the client of the CORALean oracle; CORA has no counterpart.
 // Authors:       Claude Sonnet 5.5, Tobias Ladner, Claude Opus 5.5
 // Written:       04-November-2026
-// Last update:   21-November-2026
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/oracle/con_zonotope.h"
@@ -245,6 +245,20 @@ ConZonotope ConZonotope::quad_map(const std::vector<Tensor> &Q) const {
 std::pair<ConZonotope, ConZonotope> ConZonotope::split(int64_t dim) const {
     const Reply reply = ask("conZonotope.split", {{"cZ", *this}, {"dim", dim}});
     return {reply.get<ConZonotope>("cZ1"), reply.get<ConZonotope>("cZ2")};
+}
+
+std::pair<ConZonotope, ConZonotope> ConZonotope::split(int64_t dim, const Interval &I) const {
+    const Reply reply = ask("conZonotope.split", {{"cZ", *this}, {"dim", dim}, {"I", I}});
+    return {reply.get<ConZonotope>("cZ1"), reply.get<ConZonotope>("cZ2")};
+}
+
+// the ranges are columns, one entry per factor
+ConZonotope ConZonotope::rescale(const Tensor &lo, const Tensor &hi) const {
+    return aux_set(ask("conZonotope.rescale", {{"cZ", *this}, {"xiL", lo}, {"xiU", hi}}));
+}
+
+int64_t ConZonotope::dim() const {
+    return ask("conZonotope.dim", {{"cZ", *this}}).get<int64_t>("value");
 }
 
 // the predicates answer with a Boolean `value`; a proof of disjointness reads as Certified
