@@ -110,10 +110,7 @@ them in its job summary.
 
 ## Connection to CORALean
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/coralean-dark.svg">
-  <img alt="CORA.cpp and CORALean" src="docs/coralean.svg">
-</picture>
+![CORA.cpp and CORALean](docs/coralean.svg)
 
 With the oracle set up (`CORACPP_ORACLE`, see [CONTRIBUTING.md](CONTRIBUTING.md)), the `lean` backend
 of CORA.cpp is compared bit for bit with CORALean's `nearest` oracle, which rounds to nearest and is
@@ -121,7 +118,7 @@ deliberately unsound, on the inputs of the tests. That pins CORA.cpp's algorithm
 definitions; it does not make a result sound. The Eigen and torch backends agree with `lean` within
 `tol`. Benchmark verdicts are not proofs: the linear verdict of RAND01 is checked again by the oracle
 at a sound (outward-rounding) dtype; the hybrid and nonlinear families have no such check yet.
-The figure's source is [`docs/coralean.tex`](docs/coralean.tex); `\def\darkmode{1}` renders the dark variant.
+The figure's source is [`docs/coralean.tex`](docs/coralean.tex).
 
 [`scripts/competition/`](scripts/competition/README.md) holds the CORA-COMP entry; see
 [CONTRIBUTING.md](CONTRIBUTING.md) to work on the library.

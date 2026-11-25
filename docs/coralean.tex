@@ -1,7 +1,7 @@
 % CORA.cpp and CORALean: backends, bindings, and the equivalence of their results
 % (boxes as in the CORA++ paper's overview figure: the full color drawn, 20 % of it filled)
 \documentclass[tikz,border=6pt]{standalone}
-\usetikzlibrary{arrows.meta,positioning,calc}
+\usetikzlibrary{arrows.meta,positioning,calc,backgrounds}
 
 \definecolor{CORAcolorBlue}{rgb}{0, 0.4470, 0.7410}
 \definecolor{CORAcolorRed}{rgb}{0.8500, 0.3250, 0.0980}
@@ -20,6 +20,9 @@
 \begin{document}
 \sffamily\color{fg}
 \begin{tikzpicture}[
+    % an opaque card, so that the figure reads the same on light and dark pages (GitHub, GitLab)
+    show background rectangle, inner frame xsep=10pt, inner frame ysep=8pt,
+    background rectangle/.style={fill=bg, draw=fg!12!bg, rounded corners=8pt},
     every node/.style={text=fg},
     >={Stealth[length=2.4mm]},
     box/.style={draw=#1, fill=#1!20!bg, rounded corners=3pt, thick, align=center,
