@@ -21,7 +21,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> EmptySet::vertices_impl() const { return {}; }
+std::vector<Outline> EmptySet::vertices_impl() const { return {}; }
 
 } // namespace cora
 

@@ -50,14 +50,14 @@ void aux_override(const std::optional<std::array<double, 2>> &lim, double &lo, d
 
 // Layers ------------------------------------------------------------------------------------------
 
-Figure::Layer &Figure::add_polygons(std::vector<Polygon> polygons, Color edge,
+Figure::Layer &Figure::add_polygons(std::vector<Outline> polygons, Color edge,
                                     std::optional<Color> face, double line_width,
                                     const std::string &label, bool unify) {
     // A union has no inner edges, and its outline is the outline of the whole.
     if (unify && polygons.size() > 1) {
-        std::vector<Polygon> degenerate; // points and segments have no area to unite
-        std::vector<Polygon> areas;
-        for (Polygon &p : polygons) (p.size() < 3 ? degenerate : areas).push_back(std::move(p));
+        std::vector<Outline> degenerate; // points and segments have no area to unite
+        std::vector<Outline> areas;
+        for (Outline &p : polygons) (p.size() < 3 ? degenerate : areas).push_back(std::move(p));
         polygons = union_polygons(areas);
         polygons.insert(polygons.end(), degenerate.begin(), degenerate.end());
     }
@@ -91,7 +91,7 @@ Figure::Layer &Figure::add_surface(std::vector<std::vector<Point3>> faces, Color
 // A polyline is a layer with one polygon that is not closed.
 Figure::Layer &Figure::add_polyline(std::vector<Point> points, Color color, double line_width,
                                     const std::string &label) {
-    Layer l{Kind::polyline, {Polygon(points.begin(), points.end())}, {}, color, color};
+    Layer l{Kind::polyline, {Outline(points.begin(), points.end())}, {}, color, color};
     l.line_width = line_width;
     l.label = label;
     l.zorder = 4;
@@ -102,7 +102,7 @@ Figure::Layer &Figure::add_polyline(std::vector<Point> points, Color color, doub
 // Points are a layer with one polygon whose vertices are the dots.
 Figure::Layer &Figure::add_points(std::vector<Point> points, Color color, double radius,
                                   const std::string &label) {
-    Layer l{Kind::points, {Polygon(points.begin(), points.end())}, {}, color, color};
+    Layer l{Kind::points, {Outline(points.begin(), points.end())}, {}, color, color};
     l.radius = radius;
     l.label = label;
     l.zorder = 4;
@@ -129,9 +129,9 @@ Color Figure::next_color() { return cora_color("CORA:next", 1, ++colors_given_);
 std::vector<Figure::Layer> Figure::take_layers() { return std::exchange(layers_, {}); }
 
 // The part of the polygon where sign * (a.x - b) >= 0, cut edge by edge.
-Polygon Figure::clip_region(const Polygon &poly, Point a, double b, double sign) {
+Outline Figure::clip_region(const Outline &poly, Point a, double b, double sign) {
     auto value = [&](const Point &p) { return sign * (a[0] * p[0] + a[1] * p[1] - b); };
-    Polygon out;
+    Outline out;
     for (std::size_t i = 0; i < poly.size(); ++i) {
         const Point &p = poly[i], &q = poly[(i + 1) % poly.size()];
         const double vp = value(p), vq = value(q);
@@ -165,7 +165,7 @@ Figure::Limits Figure::limits(double pw, double ph) const {
         l.z1 = std::max(l.z1, z);
     };
     for (const Layer &layer : layers_) {
-        for (const Polygon &poly : layer.polygons)
+        for (const Outline &poly : layer.polygons)
             for (const Point &p : poly) extend(p[0], p[1], 0);
         for (const std::vector<Point3> &face : layer.faces)
             for (const Point3 &p : face) extend(p[0], p[1], p[2]);

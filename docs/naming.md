@@ -157,6 +157,9 @@ changed, and the reasons are listed below.
 | `cartProd(P, S)` | `P.cart_prod(S)` | `P.cart_prod(S)` |
 | `convHull(P, S)`, `enclose(P, P2)` | `P.convex_hull(S)`, `P.enclose(P2)` | `P.convex_hull(S)`, `P.enclose(P2)` |
 | `hausdorffDist(P, S)` | `P.hausdorff_distance(S)` | `P.hausdorff_distance(S)` |
+| `polygon(V)`, `polygon(S)`, `polygon.empty(2)` | `Polygon(V)` (rows, NaN rows between regions), `Polygon({P1, P2})` (convex pieces), `Polygon::from(S)`, `Polygon::empty()` | `cora.Polygon(V)`, `cora.Polygon([P1, P2])`, `cora.Polygon(S)`, `cora.Polygon.empty()` |
+| `splitIntoConvexSets(pgon)`, `triangulation(pgon)`, `volume(pgon)` | `pgon.split_into_convex_sets()`, `pgon.triangulation()`, `pgon.volume()` | the same |
+| `subtract(pgon, S)`, `pgon \ S`, `linComb(pgon, S)` | `pgon.set_difference(S)`, `pgon.linear_combination(S)` | the same |
 | `ellipsoid(Q, q, TOL)`, `ellipsoid.empty(n)` | `Ellipsoid(q, Q, tol)` (the center first), `Ellipsoid(Q)`, `Ellipsoid::empty(n)` | `cora.Ellipsoid(q, Q, tol)`, `cora.Ellipsoid(Q)`, `cora.Ellipsoid.empty(n)` |
 | `radius(E, i)`, `radius(E)` | `E.semi_axes(i)`, `E.ball_radius()` | `E.semi_axes(i)`, `E.ball_radius()` |
 | `E.Q`, `E.q`, `E.TOL`, `generators(E)`, `ellipsoidNorm(E, p)` | `E.Q()`, `E.q()`, `E.tol()`, `E.generators()`, `E.ellipsoid_norm(p)` | `E.Q`, `E.q`, `E.tol`, `E.generators()`, `E.ellipsoid_norm(p)` |

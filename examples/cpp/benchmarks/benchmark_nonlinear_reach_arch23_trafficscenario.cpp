@@ -129,7 +129,7 @@ std::vector<double> aux_values(const std::vector<Expr> &e, const std::vector<dou
 
 /// The occupancy of the set S of the car (x, y, phi): f(p) + A (X - p) + 1/2 quadMap(X - p, Q) +
 /// the cubic remainder, with X the set times the body; its vertices, as the script computes.
-std::vector<Polygon> aux_occupancy(const Body &body, const Zonotope &S, const Zonotope &vehicle) {
+std::vector<Outline> aux_occupancy(const Body &body, const Zonotope &S, const Zonotope &vehicle) {
     const Zonotope X = S.project({3, 4, 1}).as<Zonotope>().reduce(8).cart_prod(vehicle);
     const std::vector<double> p = X.center().data();
     const Zonotope D = X - X.center();

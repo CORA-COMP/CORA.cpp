@@ -99,16 +99,16 @@ void aux_time_axes(Figure &fig, int64_t dim) {
 }
 
 // The vertices of S projected onto dims, per batch member: a bar for one dimension, as in CORA.
-std::vector<Polygon> aux_polygons(const ContSet &S, const PlotDims &dims) {
+std::vector<Outline> aux_polygons(const ContSet &S, const PlotDims &dims) {
     if (dims.size() == 2) return S.project(dims)->vertices();
     const Interval box = S.project(dims)->interval();
     const std::vector<double> lo = box.inf().data(), hi = box.sup().data();
     const std::vector<uint8_t> empty = box.empty_mask().flags(box.batch_shape());
-    std::vector<Polygon> bars;
+    std::vector<Outline> bars;
     bars.reserve(lo.size());
     for (std::size_t b = 0; b < lo.size(); ++b)
         if (!empty[b])
-            bars.push_back(lo[b] == hi[b] ? Polygon{{lo[b], 0}} : Polygon{{lo[b], 0}, {hi[b], 0}});
+            bars.push_back(lo[b] == hi[b] ? Outline{{lo[b], 0}} : Outline{{lo[b], 0}, {hi[b], 0}});
     return bars;
 }
 
@@ -262,14 +262,14 @@ void plot(Figure &fig, const ReachSet &R, const PlotDims &dims, const PlotOption
         return;
     }
     // The polygons of the sets, and of the time points if they are asked for.
-    std::vector<Polygon> polygons, points;
+    std::vector<Outline> polygons, points;
     for (std::size_t k = 0; k < sets.size(); k += static_cast<std::size_t>(options.step)) {
-        const std::vector<Polygon> p = aux_polygons(sets[k], dims);
+        const std::vector<Outline> p = aux_polygons(sets[k], dims);
         polygons.insert(polygons.end(), p.begin(), p.end());
     }
     for (std::size_t k = 0; options.time_points && k < R.time_point.size();
          k += static_cast<std::size_t>(options.step)) {
-        const std::vector<Polygon> p = aux_polygons(R.time_point[k], dims);
+        const std::vector<Outline> p = aux_polygons(R.time_point[k], dims);
         points.insert(points.end(), p.begin(), p.end());
     }
     // The region lies under the sets: zorder 1, and opaque unless face_alpha says otherwise.
@@ -296,7 +296,7 @@ void plot_over_time(Figure &fig, const ReachSet &R, int64_t dim, const PlotOptio
     const Color edge = options.edge_color.value_or(color);
     const bool intervals = options.set == "ti" && !R.time_interval.empty();
     // Over its time interval a set is a box; a time-point set is a vertical line.
-    std::vector<Polygon> shapes;
+    std::vector<Outline> shapes;
     const std::vector<Point> ranges = aux_ranges(sets, dim);
     const std::size_t batch = sets.empty() ? 1 : ranges.size() / sets.size();
     for (std::size_t i = 0; i < ranges.size();
@@ -308,7 +308,7 @@ void plot_over_time(Figure &fig, const ReachSet &R, int64_t dim, const PlotOptio
             if (intervals)
                 shapes.push_back({{t0, lo}, {t1, lo}, {t1, hi}, {t0, hi}});
             else
-                shapes.push_back(lo == hi ? Polygon{{t0, lo}} : Polygon{{t0, lo}, {t0, hi}});
+                shapes.push_back(lo == hi ? Outline{{t0, lo}} : Outline{{t0, lo}, {t0, hi}});
         }
     }
     // Boxes are united into one region, drawn like a reachable set; lines are not filled.

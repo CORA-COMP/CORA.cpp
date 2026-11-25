@@ -876,3 +876,23 @@ factorization (contains, ellipsoidNorm, norm, radius, volume, generators, zonoto
 isFullDim, supportFunc_ of a constrained zonotope), a certificate that is sufficient only, another set
 in CORALean (vertices, zonoBundle, plus of ellipsoids), or a layout whose CORA-order float definition
 CORALean lacks (convHull, enclose, quadMap, cubMap of constrained zonotopes).
+## Polygons (PR "port/polygon")
+
+CORALean's `Polygon` is a list of convex vertex pieces (`SetUnion (VPolytope (Vec 𝕋 2))`). The maps,
+sums, hull, box, support bound and predicates are served (`polygon.*`) and tested bit for bit. The
+rows below have CORALean float definitions that are outer sets, not CORA's polyshape results, so
+CORA.cpp computes them by exact clipping of the convex pieces and checks the defining properties.
+They are listed under "Not comparable with CORALean" in coverage/out-of-scope.md. A bit-exact test
+needs a CORALean float definition of convex clipping (Sutherland-Hodgman with its crossing points).
+
+| op (proposed) | CORALean definition today | request fields | reply |
+|---|---|---|---|
+| `polygon.and` | `Polygon.and`: the box of each pair of pieces' boxes | `pgon`, `pgon2` | `pgon`: every pair of pieces clipped |
+| `polygon.subtract`, `mldivide` | `Polygon.subtract`: pieces cut to boxes | `pgon`, `pgon2` | `pgon`: one part per edge of each subtracted piece |
+| `polygon.volume` | `Polygon.volume`: the area of the box | `pgon` | `value`: the area of the pieces made disjoint |
+| `polygon.triangulation` | `Polygon.triangulation`: every vertex triple of every piece | `pgon` | `pieces`: the fans of the disjoint parts |
+| `polygon.center` | none (`Polygon.regionCenter` is real and noncomputable) | `pgon` | `c`: the centroid |
+
+Not supported yet: holes. CORA reads a region inside another as a hole, while `Polygon(V)` refuses a
+nested region (`Error::not_supported`). CORALean has no boundary form of a polygon either, so a hole
+would be a set of pieces that cover the ring.

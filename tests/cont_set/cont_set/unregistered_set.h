@@ -38,7 +38,7 @@ class UnregisteredSet : public cora::ContSet {
         return cora::Tensor::zeros({1, 2});
     }
     cora::Set project_impl(const std::vector<int64_t> &) const override { return *this; }
-    std::vector<cora::Polygon> vertices_impl() const override { return {{{0.0, 0.0}}}; }
+    std::vector<cora::Outline> vertices_impl() const override { return {{{0.0, 0.0}}}; }
     std::vector<std::vector<cora::Point3>> vertices_3d_impl() const override { return {}; }
     // the text that display and the error messages show for this set
     std::string display_impl() const override { return "UnregisteredSet"; }

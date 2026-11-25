@@ -111,6 +111,20 @@ template <>
 struct Decode<Polytope> {
     static Polytope of(const std::string &dt, const Json &j) { return Polytope::from_json(dt, j); }
 };
+// A polygon is its pieces, and a list of pieces a JSON array of vertex polytopes.
+template <>
+struct Decode<Polygon> {
+    static Polygon of(const std::string &dt, const Json &j) { return Polygon::from_json(dt, j); }
+};
+template <>
+struct Decode<std::vector<Polytope>> {
+    static std::vector<Polytope> of(const std::string &dt, const Json &j) {
+        std::vector<Polytope> out;
+        out.reserve(j.items.size());
+        for (const Json &p : j.items) out.push_back(Polytope::from_json(dt, p));
+        return out;
+    }
+};
 // An ellipsoid is {Q, q} and its error box.
 template <>
 struct Decode<Ellipsoid> {
@@ -261,6 +275,8 @@ Wire::Wire(const ZonoBundle &bundle)
     : json(bundle.to_json()), dtype(bundle.zonotopes().front().center().dtype()) {}
 Wire::Wire(const PolyZonotope &P) : json(P.to_json()), dtype(P.center().dtype()) {}
 Wire::Wire(const Polytope &P) : json(P.to_json()), dtype(P.dtype()) {}
+// a polygon is its pieces
+Wire::Wire(const Polygon &pgon) : json(pgon.to_json()), dtype(pgon.dtype()) {}
 Wire::Wire(const Ellipsoid &E) : json(E.to_json()), dtype(E.dtype()) {}
 Wire::Wire(const Capsule &C) : json(C.to_json()), dtype(C.dtype()) {}
 Wire::Wire(const std::vector<Tensor> &Ts) : Wire(aux_list(Ts)) {}
@@ -320,6 +336,8 @@ template MatZonotope Reply::get<MatZonotope>(const char *) const;
 template ZonoBundle Reply::get<ZonoBundle>(const char *) const;
 template PolyZonotope Reply::get<PolyZonotope>(const char *) const;
 template Polytope Reply::get<Polytope>(const char *) const;
+template Polygon Reply::get<Polygon>(const char *) const;
+template std::vector<Polytope> Reply::get<std::vector<Polytope>>(const char *) const;
 template Ellipsoid Reply::get<Ellipsoid>(const char *) const;
 template Capsule Reply::get<Capsule>(const char *) const;
 template EmptySet Reply::get<EmptySet>(const char *) const;

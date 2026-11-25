@@ -2,7 +2,7 @@
 //
 // Andrew's monotone chain: sorted points, a stack per chain, collinear points dropped.
 //
-// Syntax:   Polygon hull = priv_hull_polygon(V);
+// Syntax:   Outline hull = priv_hull_polygon(V);
 // Inputs:   V - points as columns (2, K), K >= 0
 // Outputs:  hull - the corners counter-clockwise; a point or a segment for a flat set; none for K =
 // 0 See also: priv_vertex_candidates, ConZonotope::vertices
@@ -30,8 +30,8 @@ double aux_cross(const Point &o, const Point &a, const Point &b) {
 }
 
 /// The points left of the chain a, b, ..., kept in order (one pass of the monotone chain).
-Polygon aux_chain(const std::vector<Point> &points) {
-    Polygon chain;
+Outline aux_chain(const std::vector<Point> &points) {
+    Outline chain;
     for (const Point &p : points) {
         while (chain.size() >= 2 && aux_cross(chain[chain.size() - 2], chain.back(), p) <= 0.0)
             chain.pop_back();
@@ -45,7 +45,7 @@ Polygon aux_chain(const std::vector<Point> &points) {
 
 // ===========================================  MAIN  =========================================== //
 
-Polygon priv_hull_polygon(const Tensor &V) {
+Outline priv_hull_polygon(const Tensor &V) {
     const std::vector<double> x = V.data();
     const std::size_t K = x.size() / 2;
     std::vector<Point> points(K);
@@ -54,10 +54,10 @@ Polygon priv_hull_polygon(const Tensor &V) {
     points.erase(std::unique(points.begin(), points.end()), points.end());
     if (points.size() <= 2) return points;
     // the lower chain from the left to the right, the upper chain back
-    Polygon hull = aux_chain(points);
+    Outline hull = aux_chain(points);
     hull.pop_back();
     std::reverse(points.begin(), points.end());
-    Polygon upper = aux_chain(points);
+    Outline upper = aux_chain(points);
     upper.pop_back();
     hull.insert(hull.end(), upper.begin(), upper.end());
     return hull;

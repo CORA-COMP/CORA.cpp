@@ -3,7 +3,7 @@
 // The vertices of the constrained zonotope of the bundle. CORA intersects the polytopes of the
 // members; the set is the same. Not a batch.
 //
-// Syntax:   std::vector<Polygon> V = bundle.vertices();   auto V3 = bundle.vertices_3d();
+// Syntax:   std::vector<Outline> V = bundle.vertices();   auto V3 = bundle.vertices_3d();
 // Inputs:   -
 // Outputs:  V - the vertices of a planar bundle, counter-clockwise
 //           V3 - the vertices of a bundle in space, in no order
@@ -26,7 +26,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> ZonoBundle::vertices_impl() const { return con_zonotope().vertices(); }
+std::vector<Outline> ZonoBundle::vertices_impl() const { return con_zonotope().vertices(); }
 
 std::vector<std::vector<Point3>> ZonoBundle::vertices_3d_impl() const {
     return con_zonotope().vertices_3d();

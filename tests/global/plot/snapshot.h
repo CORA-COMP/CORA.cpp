@@ -40,7 +40,7 @@ inline std::string dump_layers(const cora::Figure &fig) {
         out << kinds[static_cast<int>(l.kind)] << " edge " << l.edge.hex() << " face "
             << l.face.hex() << " filled " << l.filled << " alpha " << l.face_alpha << " width "
             << l.line_width << " zorder " << l.zorder << " label '" << l.label << "'\n";
-        for (const cora::Polygon &p : l.polygons) {
+        for (const cora::Outline &p : l.polygons) {
             out << "  polygon";
             for (const cora::Point &v : p) out << " " << v[0] << " " << v[1];
             out << "\n";

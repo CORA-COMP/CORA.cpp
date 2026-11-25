@@ -56,7 +56,7 @@ void the_volume_is_the_area(const std::string &b) {
     cora::Rng rng(61);
     for (int m = 2; m <= 6; ++m) {
         const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, m);
-        const Polygon p = Z.vertices()[0];
+        const Outline p = Z.vertices()[0];
         double area = 0;
         for (std::size_t i = 0; i < p.size(); ++i) {
             const Point &u = p[i], &v = p[(i + 1) % p.size()];

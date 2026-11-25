@@ -41,7 +41,7 @@ class Figure {
     /// sets 1, their time points 2, sets 3, lines and points 4).
     struct Layer {
         Kind kind;
-        std::vector<Polygon>
+        std::vector<Outline>
             polygons; // Polygons: the polygons; Polyline and Points: one, the points
         std::vector<std::vector<Point3>> faces; // Surface: the faces of a polytope
         Color edge, face;
@@ -80,7 +80,7 @@ class Figure {
 
     /// Polygons: with `face` set they are filled. With `unify` they are replaced by their union
     /// (union_polygons), so that overlaps neither darken nor show inner edges.
-    Layer &add_polygons(std::vector<Polygon> polygons, Color edge, std::optional<Color> face,
+    Layer &add_polygons(std::vector<Outline> polygons, Color edge, std::optional<Color> face,
                         double line_width, const std::string &label, bool unify = true);
 
     /// A line through the points.
@@ -105,7 +105,7 @@ class Figure {
 
     /// The part of the polygon where sign * (a'x - b) >= 0, cut edge by edge: how a region
     /// is limited to the axes.
-    static Polygon clip_region(const Polygon &polygon, Point a, double b, double sign);
+    static Outline clip_region(const Outline &polygon, Point a, double b, double sign);
 
     /// The layers, in the order they were added; take_layers hands them on and empties the figure
     /// of them (its texts and its color counter stay).

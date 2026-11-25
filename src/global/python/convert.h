@@ -31,6 +31,7 @@
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/level_set/level_set.h"
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/polygon/polygon.h"
 #include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/set.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
@@ -222,6 +223,7 @@ inline Set set_of(const py::handle &o) {
     if (py::isinstance<ConZonotope>(o)) return Set(py::cast<ConZonotope>(o));
     if (py::isinstance<ZonoBundle>(o)) return Set(py::cast<ZonoBundle>(o));
     if (py::isinstance<Polytope>(o)) return Set(py::cast<Polytope>(o));
+    if (py::isinstance<Polygon>(o)) return Set(py::cast<Polygon>(o));
     if (py::isinstance<Ellipsoid>(o)) return Set(py::cast<Ellipsoid>(o));
     if (py::isinstance<Capsule>(o)) return Set(py::cast<Capsule>(o));
     if (py::isinstance<PolyZonotope>(o)) return Set(py::cast<PolyZonotope>(o));
@@ -245,7 +247,8 @@ inline Set set_of(const py::handle &o) {
     }
     CORA_FAIL(
         Error::wrong_value,
-        "cora: expected a set (Zonotope, ConZonotope, ZonoBundle, Polytope, Ellipsoid, Capsule, "
+        "cora: expected a set (Zonotope, ConZonotope, ZonoBundle, Polytope, Polygon, Ellipsoid, "
+        "Capsule, "
         "PolyZonotope, LevelSet, "
         "Interval, EmptySet, Fullspace, a ContSet), got " +
             std::string(py::str(py::type::of(o).attr("__name__"))));
@@ -262,6 +265,8 @@ inline py::object object_of(const Set &S) {
         return py::cast(S.as<ZonoBundle>());
     case ClassId::polytope:
         return py::cast(S.as<Polytope>());
+    case ClassId::polygon:
+        return py::cast(S.as<Polygon>());
     case ClassId::ellipsoid:
         return py::cast(S.as<Ellipsoid>());
     case ClassId::capsule:

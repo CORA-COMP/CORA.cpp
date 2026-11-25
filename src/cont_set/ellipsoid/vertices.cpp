@@ -30,16 +30,16 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> Ellipsoid::vertices_impl() const {
+std::vector<Outline> Ellipsoid::vertices_impl() const {
     if (priv_is_empty(*this)) CORA_FAIL(Error::empty_set, "vertices: the ellipsoid is empty");
     // the symmetric root of Q has a positive determinant, so the outline runs counter-clockwise
     const Tensor G = priv_generator_columns(Q_).matmul(Q_.svd()[0].matrix_transpose());
     const std::vector<double> qs = q_.data(), Gs = G.data();
     constexpr int kPoints = 256;
-    std::vector<Polygon> out;
+    std::vector<Outline> out;
     for (std::size_t b = 0; b < qs.size() / 2; ++b) {
         const double *g = &Gs[4 * b];
-        Polygon outline;
+        Outline outline;
         for (int k = 0; k < kPoints; ++k) {
             const double t = 2.0 * std::numbers::pi * k / kPoints, c = std::cos(t), s = std::sin(t);
             outline.push_back(

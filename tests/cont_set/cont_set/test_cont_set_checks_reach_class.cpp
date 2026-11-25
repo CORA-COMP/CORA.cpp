@@ -67,7 +67,7 @@ class ProbeSet : public test::UnregisteredSet {
     }
     Set project_impl(const std::vector<int64_t> &) const override { return other("project"); }
     // the vertices
-    std::vector<Polygon> vertices_impl() const override {
+    std::vector<Outline> vertices_impl() const override {
         aux("vertices");
         return {{{0.0, 0.0}}};
     }

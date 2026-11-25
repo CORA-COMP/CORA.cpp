@@ -217,13 +217,13 @@ class PyContSet : public ContSet {
         py::gil_scoped_acquire gil;
         return set_of(call("_project", dims));
     }
-    std::vector<Polygon> vertices_impl() const override {
+    std::vector<Outline> vertices_impl() const override {
         py::gil_scoped_acquire gil;
-        std::vector<Polygon> out;
+        std::vector<Outline> out;
         for (const py::handle &p : call("_vertices")) {
             const auto a = py::array_t < double,
                        py::array::c_style | py::array::forcecast > ::ensure(p);
-            Polygon polygon;
+            Outline polygon;
             for (py::ssize_t i = 0; i < a.shape(0); ++i)
                 polygon.push_back({a.at(i, 0), a.at(i, 1)});
             out.push_back(polygon);
@@ -272,7 +272,7 @@ class PyContSet : public ContSet {
 };
 
 /// A polygon as an (k, 2) array.
-py::array_t<double> polygon_array(const Polygon &polygon) {
+py::array_t<double> polygon_array(const Outline &polygon) {
     py::array_t<double> out({static_cast<py::ssize_t>(polygon.size()), py::ssize_t(2)});
     auto view = out.mutable_unchecked<2>();
     for (std::size_t i = 0; i < polygon.size(); ++i) {
@@ -466,7 +466,7 @@ void bind_cont_set(py::module_ &m) {
             "vertices",
             [](const ContSet &S) {
                 py::list polygons;
-                for (const Polygon &p : S.vertices()) polygons.append(polygon_array(p));
+                for (const Outline &p : S.vertices()) polygons.append(polygon_array(p));
                 return polygons;
             },
             "The vertices of a two-dimensional set, one (k, 2) array per batch member")
@@ -2670,6 +2670,74 @@ Ellipsoid::StripMeasurement strip_measurement_of(const py::handle &o) {
 /// An ellipsoid from a Python value: the ellipsoid itself.
 Ellipsoid ellipsoid_of(const py::handle &o) { return py::cast<Ellipsoid>(o); }
 
+void bind_polygon(py::module_ &m) {
+    py::class_<Polygon, ContSet>(m, "Polygon", "A region of the plane: the union of convex pieces.")
+        .def(py::init([](const py::object &V) {
+                 // a set by its outline, a list of convex pieces, or a boundary (p, 2)
+                 if (py::isinstance<ContSet>(V)) return Polygon::from(set_of(V));
+                 if (py::isinstance<py::list>(V) || py::isinstance<py::tuple>(V)) {
+                     const py::sequence items = py::reinterpret_borrow<py::sequence>(V);
+                     if (py::len(items) == 0 || py::isinstance<Polytope>(items[0])) {
+                         std::vector<Polytope> pieces;
+                         for (const py::handle &P : items) pieces.push_back(py::cast<Polytope>(P));
+                         return Polygon(pieces);
+                     }
+                 }
+                 return Polygon(matrix_of(V, "the boundary"));
+             }),
+             py::arg("V"),
+             "Polygon(V): the region inside the boundary (p, 2), NaN rows between regions; "
+             "Polygon([P1, P2]): the union of convex polytopes; Polygon(S): a 2-D set")
+        .def_static("empty", &Polygon::empty, py::arg("n") = 2, "The empty polygon (n = 2)")
+        .def_property_readonly(
+            "pieces",
+            [](const Polygon &pgon) {
+                py::list out;
+                // the convex pieces as vertex polytopes
+                for (const Polytope &P : pgon.pieces()) out.append(P);
+                return out;
+            },
+            "The convex pieces, vertex polytopes (k, 2)")
+        .def_property_readonly("num_pieces", &Polygon::num_pieces, "The number of pieces")
+        // the hull, the pieces and the area
+        .def("convex_hull", &Polygon::convex_hull, "The convex hull of the pieces, a polytope")
+        .def("polytope", &Polygon::polytope, "The convex hull of the pieces, a polytope")
+        .def("split_into_convex_sets", &Polygon::split_into_convex_sets,
+             "The convex pieces, a list of polytopes")
+        .def("triangulation", &Polygon::triangulation,
+             "Triangles that cover the polygon without overlap")
+        .def("volume", &Polygon::volume, "The area of the region")
+        .def("is_convex", &Polygon::is_convex, "Whether one piece holds all (sufficient only)")
+        // the predicates
+        .def(
+            "contains",
+            [](const Polygon &pgon, const py::object &p, Tol tol) {
+                return pgon.contains(point_of(p, "the points"), tol);
+            },
+            py::arg("p"), py::arg("tol") = py::none(), "Whether all points (..., 2) lie inside")
+        .def("is_intersecting", &Polygon::is_intersecting, py::arg("S"),
+             py::arg("tol") = py::none(), "Whether the polygons share a point")
+        .def("isequal", &Polygon::isequal, py::arg("S"), py::arg("tol") = py::none(),
+             "Whether the pieces cover each other (sufficient for the same region)")
+        .def("representsa", &Polygon::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the polygon is of the type: 'emptySet' or 'polygon'")
+        // the Boolean operations and sums
+        .def("unite", &Polygon::unite, py::arg("S"), "The union: the pieces of both")
+        .def("intersect", &Polygon::intersect, py::arg("S"), "The intersection, by clipping")
+        .def("set_difference", &Polygon::set_difference, py::arg("S"),
+             "The points of this polygon outside S, by clipping")
+        .def("linear_combination", &Polygon::linear_combination, py::arg("S"),
+             "The convex hulls of every pair of pieces")
+        // the sum with a polygon or a point
+        .def(
+            "plus",
+            [](const Polygon &pgon, const py::object &S) {
+                if (py::isinstance<Polygon>(S)) return pgon.plus(py::cast<Polygon>(S));
+                return pgon.plus(point_of(S, "the point"));
+            },
+            py::arg("S"), "The Minkowski sum with a polygon or a point (2)");
+}
+
 void bind_ellipsoid(py::module_ &m) {
     py::class_<Ellipsoid, ContSet>(m, "Ellipsoid",
                                    "The ellipsoid {x : (x - q)' Q^+ (x - q) <= 1} of the shape "
@@ -3411,6 +3479,24 @@ void bind_operators(py::module_ &m) {
     bind_products<Polytope>(
         P, "Polytope", [](const Polytope &A, const Tensor &M) { return py::cast(M * A); },
         aux_scaled<Polytope>);
+
+    // Polygon: a point shifts it, a polygon adds, a matrix maps it
+    const py::object PG = m.attr("Polygon");
+    PG.attr("__array_ufunc__") = py::none();
+    const auto polygon_sum = [](const Polygon &A, const py::object &o) -> py::object {
+        if (py::isinstance<Polygon>(o)) return py::cast(A.plus(py::cast<Polygon>(o)));
+        if (const auto v = aux_shift_of(o, 2, "the point")) return py::cast(A.plus(*v));
+        return not_implemented();
+    };
+    method(PG, "__add__", polygon_sum);
+    method(PG, "__radd__", polygon_sum);
+    method(PG, "__sub__", [](const Polygon &A, const py::object &o) -> py::object {
+        if (const auto v = aux_shift_of(o, 2, "the point")) return object_of(A.minus(*v));
+        return not_implemented();
+    });
+    bind_products<Polygon>(
+        PG, "Polygon", [](const Polygon &A, const Tensor &M) { return object_of(A.linear_map(M)); },
+        aux_scaled<Polygon>);
 
     // ConZonotope: a point shifts it, a matrix or number maps it
     const auto con_zonotope_sum = [](const ConZonotope &A, const py::object &o) -> py::object {
@@ -5567,7 +5653,7 @@ py::dict layer_dict(const Figure::Layer &l) {
     }
     py::list polygons, faces;
     // the polygons and faces of a layer as arrays
-    for (const Polygon &p : l.polygons) polygons.append(polygon_array(p));
+    for (const Outline &p : l.polygons) polygons.append(polygon_array(p));
     for (const std::vector<Point3> &f : l.faces) faces.append(points3_array(f));
     d["polygons"] = polygons;
     d["faces"] = faces;
@@ -5939,7 +6025,7 @@ void bind_plot(py::module_ &m) {
             "clip_region",
             [](const py::array_t<double, py::array::c_style | py::array::forcecast> &polygon,
                const std::array<double, 2> &a, double b, double sign) {
-                Polygon corners;
+                Outline corners;
                 auto view = polygon.unchecked<2>();
                 for (py::ssize_t i = 0; i < view.shape(0); ++i)
                     corners.push_back({view(i, 0), view(i, 1)});
@@ -7110,6 +7196,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_con_zonotope(m);
     bind_zono_bundle(m);
     bind_polytope(m);
+    bind_polygon(m);
     bind_ellipsoid(m);
     bind_capsule(m);
     bind_poly_zonotope(m);

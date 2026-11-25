@@ -69,5 +69,12 @@ out of the bit-exact numerator and denominator, as it does the rows that CORALea
 |---|---|
 | `contDynamics/nonlinearSys/simulate` | numerical ODE integration (ode45-like) with no set to compare: CORALean has no ODE solver, and marks `contDynamics/contDynamics/simulateRandom` out of scope |
 | `contDynamics/neurNetContrSys/simulate` | numerical ODE integration of the closed loop with no set to compare: CORALean has no ODE solver (only the theorem that a simulation lies in the reachable set), and marks `contDynamics/contDynamics/simulateRandom` out of scope |
+| `contSet/polygon/and_` | CORALean's float `Polygon.and` is the box of each pair of pieces' boxes, an outer set; CORA.cpp clips the convex pieces exactly (Sutherland-Hodgman), checked by its defining properties (docs/oracle-requests.md, "Polygons") |
+| `contSet/polygon/center` | CORALean's centroid `Polygon.regionCenter` is real and noncomputable, without a float definition; CORA.cpp computes the centroid of the disjoint parts |
+| `contSet/polygon/mldivide` | as `subtract`: CORALean's float `Polygon.mldivide` cuts the pieces to boxes; CORA.cpp clips them exactly |
+| `contSet/polygon/subtract` | CORALean's float `Polygon.subtract` cuts the pieces to boxes, an outer set; CORA.cpp subtracts the convex pieces exactly, one part per edge |
+| `contSet/polygon/triangulation` | CORALean's float `Polygon.triangulation` lists every vertex triple of every piece, a cover with overlaps; CORA.cpp returns the fans of the disjoint parts |
+| `contSet/polygon/vertices_` | CORALean's `Polygon.vertices` are the stored vertices of the pieces, CORA.cpp's the counter-clockwise outline of every piece (what plot unites); the stored vertices are compared through `splitIntoConvexSets` |
+| `contSet/polygon/volume_` | CORALean's float `Polygon.volume` is the area of the box, an upper bound; CORA.cpp sums the areas of the pieces made disjoint by clipping |
 | `contSet/contSet/plus` | the abstract class's sum dispatches on the operand classes and constructs nothing of its own: CORALean has the sums of the concrete sets, and no operation of the base class to compare |
 | `nn/neuralNetwork/copyNeuralNetwork` | the copy constructor: a network is a value in CORA.cpp, so a copy computes nothing and there is no operation to compare |

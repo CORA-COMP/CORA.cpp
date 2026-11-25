@@ -133,7 +133,7 @@ struct Frame {
 };
 
 // The path of a polygon in the frame, closed or not.
-std::string aux_path(const Frame &f, const Polygon &p, bool close) {
+std::string aux_path(const Frame &f, const Outline &p, bool close) {
     std::string d;
     for (std::size_t i = 0; i < p.size(); ++i)
         d += (i ? " L" : "M") + aux_num(f.X(p[i][0])) + " " + aux_num(f.Y(p[i][1]));
@@ -156,9 +156,9 @@ void aux_layer(std::ostringstream &out, const Frame &f, const Figure::Layer &l) 
     switch (l.kind) {
     case Figure::Kind::region: {
         const Figure::Limits &lim = f.lim;
-        const Polygon box = {
+        const Outline box = {
             {lim.x0, lim.y0}, {lim.x1, lim.y0}, {lim.x1, lim.y1}, {lim.x0, lim.y1}};
-        const Polygon r = Figure::clip_region(box, l.a, l.b, l.sign);
+        const Outline r = Figure::clip_region(box, l.a, l.b, l.sign);
         if (r.size() >= 3)
             out << "<path d=\"" << aux_path(f, r, true) << "\" fill=\"" << l.face.hex()
                 << "\" stroke=\"" << l.edge.hex() << "\" stroke-width=\"1.2\"/>\n";
@@ -166,9 +166,9 @@ void aux_layer(std::ostringstream &out, const Frame &f, const Figure::Layer &l) 
     }
     case Figure::Kind::polygons: {
         std::string d; // all polygons in one path: its fill is their union
-        for (const Polygon &p : l.polygons)
+        for (const Outline &p : l.polygons)
             if (p.size() >= 2) d += aux_path(f, p, true) + " ";
-        for (const Polygon &p : l.polygons)
+        for (const Outline &p : l.polygons)
             if (p.size() == 1)
                 out << "<circle cx=\"" << aux_num(f.X(p[0][0])) << "\" cy=\""
                     << aux_num(f.Y(p[0][1])) << "\" r=\"1.5\" fill=\"" << l.edge.hex() << "\"/>\n";
@@ -201,7 +201,7 @@ void aux_surfaces(std::ostringstream &out, const Figure &fig, const Frame &f) {
     struct Face {
         double depth;
         const Figure::Layer *layer;
-        Polygon shape;
+        Outline shape;
     };
     // Each face with its mean depth, so that the far ones are drawn first.
     std::vector<Face> faces;
@@ -291,7 +291,7 @@ void aux_legend(std::ostringstream &out, const Figure &fig, const Frame &f) {
     const double margin = 8, w = 8 + 14 + 6 + text + 8,
                  h = 16 * static_cast<double>(rows.size()) + 8;
     // the corner, in the unit square of the axes; the legend keeps a margin to the axes
-    std::vector<std::vector<Polygon>> layers;
+    std::vector<std::vector<Outline>> layers;
     for (const Figure::Layer &l : fig.layers()) layers.push_back(l.polygons);
     const int k = legend_corner(unit_boxes(layers, f.lim.x0, f.lim.x1, f.lim.y0, f.lim.y1),
                                 (w + 2 * margin) / f.pw, (h + 2 * margin) / f.ph);

@@ -24,12 +24,12 @@ namespace {
 /// A point gives one vertex; the outline of a planar capsule is closed and at the radius from the
 /// axis.
 void vertices_property(const std::string &b) {
-    const std::vector<Polygon> point = Capsule(vec({1.0, 2.0})).vertices();
+    const std::vector<Outline> point = Capsule(vec({1.0, 2.0})).vertices();
     check(point.size() == 1 && point[0].size() == 1, b + ": a point");
     Rng rng(73);
     for (int k = 0; k < 3; ++k) {
         const Capsule C = test::random_capsule(rng, 2);
-        const Polygon V = C.vertices()[0];
+        const Outline V = C.vertices()[0];
         check(V.size() == 1001 && V.front() == V.back(),
               b + ": two half circles of 500 and the first vertex");
         bool on = true;

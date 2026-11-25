@@ -247,8 +247,8 @@ void a_wrapper_takes_the_layers_out(const std::string &b) {
     plot(mine, initial_set());
     check(mine.layers()[0].face.hex() == cora_color("CORA:yellow").hex(),
           b + ": the color counter goes on after taking");
-    const Polygon square = {{0, 0}, {2, 0}, {2, 2}, {0, 2}};
-    const Polygon right = Figure::clip_region(square, {1, 0}, 1, 1);
+    const Outline square = {{0, 0}, {2, 0}, {2, 2}, {0, 2}};
+    const Outline right = Figure::clip_region(square, {1, 0}, 1, 1);
     check(right.size() == 4 && right[0][0] >= 1 - 1e-12, b + ": clip_region keeps a halfplane");
 }
 

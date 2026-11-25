@@ -4,7 +4,7 @@
 // counter-clockwise order, space in no order. Unbounded sets have no vertex list
 // (Error::special_error); the empty set none. Not a batch.
 //
-// Syntax:   std::vector<Polygon> V = P.vertices();   auto V = P.vertices_3d();
+// Syntax:   std::vector<Outline> V = P.vertices();   auto V = P.vertices_3d();
 // Inputs:   -
 // Outputs:  V - the corners of the plane figure, or the points of the solid
 // See also: Polytope::constraints, Polytope::is_bounded
@@ -44,7 +44,7 @@ Rows aux_vertices(const Polytope &P) {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> Polytope::vertices_impl() const {
+std::vector<Outline> Polytope::vertices_impl() const {
     Rows points = aux_vertices(*this);
     if (points.empty()) return {};
     // counter-clockwise around the mean
@@ -55,7 +55,7 @@ std::vector<Polygon> Polytope::vertices_impl() const {
         return std::atan2(a[1] - mean[1], a[0] - mean[0]) <
                std::atan2(b[1] - mean[1], b[0] - mean[0]);
     });
-    Polygon polygon;
+    Outline polygon;
     for (const Row &p : points) polygon.push_back({p[0], p[1]});
     return {polygon};
 }

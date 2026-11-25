@@ -24,7 +24,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> Fullspace::vertices_impl() const { return interval_impl().vertices(); }
+std::vector<Outline> Fullspace::vertices_impl() const { return interval_impl().vertices(); }
 
 } // namespace cora
 

@@ -124,7 +124,7 @@ class LevelSet : public detail::DimensionSet {
     Interval interval_impl() const override;
     Tensor rand_point_impl(int64_t N, Rng &rng) const override;
     Set project_impl(const std::vector<int64_t> &dims) const override;
-    std::vector<Polygon> vertices_impl() const override;
+    std::vector<Outline> vertices_impl() const override;
     std::vector<std::vector<Point3>> vertices_3d_impl() const override;
     std::string display_impl() const override;
     Set lift_impl(int64_t N, const std::vector<int64_t> &proj) const override;

@@ -27,6 +27,7 @@
 #include "cora/cont_set/fullspace/fullspace.h"
 #include "cora/cont_set/interval/interval.h"
 #include "cora/cont_set/poly_zonotope/poly_zonotope.h"
+#include "cora/cont_set/polygon/polygon.h"
 #include "cora/cont_set/polytope/polytope.h"
 #include "cora/cont_set/zono_bundle/zono_bundle.h"
 #include "cora/cont_set/zonotope/zonotope.h"
@@ -497,6 +498,16 @@ constexpr Table aux_build() {
         t, [](const Zonotope &Z1, const Zonotope &Z2, Tol tol) { return Z1.isequal(Z2, tol); });
     aux_add_predicate<BinaryOp::isequal, Zonotope, Interval>(
         t, [](const Zonotope &Z, const Interval &I, Tol tol) { return Z.isequal(I, tol); });
+    // Polygons ------------------------------------------------------------------------------------
+    // the polygon pairs: sum, intersection, union and the meeting test
+    aux_add_set<BinaryOp::plus, Polygon, Polygon>(
+        t, [](const Polygon &A, const Polygon &B) { return A.plus(B); });
+    aux_add_set<BinaryOp::intersect, Polygon, Polygon>(
+        t, [](const Polygon &A, const Polygon &B) { return A.intersect(B); });
+    aux_add_set<BinaryOp::unite, Polygon, Polygon>(
+        t, [](const Polygon &A, const Polygon &B) { return A.unite(B); });
+    aux_add_predicate<BinaryOp::is_intersecting, Polygon, Polygon>(
+        t, [](const Polygon &A, const Polygon &B, Tol tol) { return A.is_intersecting(B, tol); });
     return t;
 }
 

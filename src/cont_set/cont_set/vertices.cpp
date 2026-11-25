@@ -25,7 +25,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> ContSet::vertices() const {
+std::vector<Outline> ContSet::vertices() const {
     detail::Entry entry;
     CORA_CHECK(dim() == 2 && !priv_is_matrix_set(*this), Error::not_supported, [&] {
         return "vertices: needs a two-dimensional set of vectors, this one has " +

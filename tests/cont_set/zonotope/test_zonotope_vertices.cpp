@@ -21,7 +21,7 @@ using test::close;
 
 namespace {
 
-double area(const Polygon &p) {
+double area(const Outline &p) {
     double a = 0;
     for (std::size_t i = 0; i < p.size(); ++i) {
         const Point &u = p[i], &v = p[(i + 1) % p.size()];
@@ -34,7 +34,7 @@ double area(const Polygon &p) {
 void vertices_attain_the_support(const std::string &b) {
     cora::Rng rng(8);
     const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
-    const std::vector<Polygon> V = Z.vertices();
+    const std::vector<Outline> V = Z.vertices();
     check(V.size() == 1, b + ": one polygon for one zonotope");
     check(V[0].size() == 8, b + ": two vertices per generator direction");
     check(area(V[0]) > 0, b + ": counter-clockwise");
