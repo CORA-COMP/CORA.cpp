@@ -698,9 +698,9 @@ Tensor ConZonotopeBounding::aux_alpha_excluded(const Tensor &xi_, const Tensor &
     double best_score = -kInf;
     const auto consider = [&]() {
         if (!slopes || out.c.shape()[0] != 1) return;
-        const Tensor rows = aux_margins(out).max(2);
-        const Tensor masked =
-            Tensor::where(open0.greater(open0.zeros_like()), rows, rows.full_like({1}, kInf));
+        const Tensor best_rows = aux_margins(out).max(2);
+        const Tensor masked = Tensor::where(open0.greater(open0.zeros_like()), best_rows,
+                                            best_rows.full_like({1}, kInf));
         const double score = masked.min().item();
         if (score > best_score) {
             best_score = score;
@@ -1336,8 +1336,8 @@ int ConZonotopeBounding::aux_relu_bab_polytope(NnProblem &problem, int64_t p,
         std::vector<double> score(col.size(), -1); // no slot: after all, as the error orders
         for (std::size_t j = 0; j < col.size(); ++j)
             if (col[j] >= 0) score[j] = wa[std::size_t(col[j])];
-        std::stable_sort(order.begin(), order.end(), [&](int64_t a, int64_t b) {
-            return score[std::size_t(a)] > score[std::size_t(b)];
+        std::stable_sort(order.begin(), order.end(), [&](int64_t lhs, int64_t rhs) {
+            return score[std::size_t(lhs)] > score[std::size_t(rhs)];
         });
     }
     // the root's bound: the best row's, the weakest open polytope's (below 0: open)
