@@ -13,12 +13,17 @@
 
 #include "cora/global/error.h"
 #include "cora/global/plot/figure.h"
+#include "cora/global/plot/geometry.h"
 #include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
+#include <map>
+#include <set>
 #include <sstream>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -50,6 +55,56 @@ std::string aux_escape(const std::string &s) {
         else
             out += c;
     }
+    return out;
+}
+
+// One character, {group} or \command of a LaTeX label at i, escaped; Greek letters as Unicode.
+std::string aux_token(const std::string &s, size_t &i) {
+    static const std::map<std::string, std::string> greek = {
+        {"alpha", "α"}, {"beta", "β"},   {"gamma", "γ"}, {"delta", "δ"}, {"epsilon", "ε"},
+        {"theta", "θ"}, {"lambda", "λ"}, {"mu", "μ"},    {"pi", "π"},    {"sigma", "σ"},
+        {"tau", "τ"},   {"phi", "φ"},    {"omega", "ω"}, {"Delta", "Δ"}};
+    if (i >= s.size()) return "";
+    if (s[i] == '{') {
+        std::string group;
+        for (++i; i < s.size() && s[i] != '}';) group += aux_token(s, i);
+        ++i;
+        return group;
+    }
+    if (s[i] == '\\') {
+        size_t j = i + 1;
+        while (j < s.size() && std::isalpha(static_cast<unsigned char>(s[j])) != 0) ++j;
+        const std::string name = s.substr(i + 1, j - i - 1);
+        i = j;
+        // a font command (\mathcal{I}) keeps only its argument; SVG text has no such fonts
+        static const std::set<std::string> fonts = {"mathcal", "mathrm", "mathbf",      "mathit",
+                                                    "mathbb",  "text",   "operatorname"};
+        if (fonts.count(name) != 0) return aux_token(s, i);
+        const auto g = greek.find(name);
+        return g != greek.end() ? g->second : aux_escape(name);
+    }
+    return aux_escape(std::string(1, s[i++]));
+}
+
+// The SVG text of a LaTeX label: $...$ in italics, _ and ^ as sub- and superscript tspans.
+std::string aux_text(const std::string &s) {
+    std::string out;
+    bool math = false;
+    for (size_t i = 0; i < s.size();) {
+        if (s[i] == '$') {
+            math = !math;
+            out += math ? "<tspan font-style=\"italic\">" : "</tspan>";
+            ++i;
+        } else if (math && (s[i] == '_' || s[i] == '^')) {
+            const std::string shift = s[i] == '_' ? "sub" : "super";
+            ++i;
+            out += "<tspan baseline-shift=\"" + shift +
+                   "\" font-size=\"70%\" font-style=\"normal\">" + aux_token(s, i) + "</tspan>";
+        } else {
+            out += aux_token(s, i);
+        }
+    }
+    if (math) out += "</tspan>";
     return out;
 }
 
@@ -202,24 +257,56 @@ void aux_axes(std::ostringstream &out, const Figure &fig, const Frame &f, double
     // The titles of the axes.
     if (x_ticks)
         out << "<text x=\"" << left + pw / 2 << "\" y=\"" << height - 12
-            << "\" text-anchor=\"middle\" font-size=\"14\">" << aux_escape(fig.xlabel)
-            << "</text>\n";
+            << "\" text-anchor=\"middle\" font-size=\"14\">" << aux_text(fig.xlabel) << "</text>\n";
     if (y_ticks)
         out << "<text transform=\"translate(16 " << top + ph / 2 << ") rotate(-90)\" "
-            << "text-anchor=\"middle\" font-size=\"14\">" << aux_escape(fig.ylabel) << "</text>\n";
+            << "text-anchor=\"middle\" font-size=\"14\">" << aux_text(fig.ylabel) << "</text>\n";
 }
 
-// The legend: one row per labelled layer, in the upper right corner.
+// Legend ------------------------------------------------------------------------------------------
+
+// The width of a label's visible text in pixels, roughly: LaTeX commands and braces don't show.
+double aux_text_width(const std::string &s) {
+    double n = 0;
+    for (std::size_t i = 0; i < s.size(); ++i) {
+        if (s[i] == '\\') {
+            while (i + 1 < s.size() && std::isalpha(static_cast<unsigned char>(s[i + 1])) != 0) ++i;
+            continue;
+        }
+        if (s[i] != '$' && s[i] != '{' && s[i] != '}' && s[i] != '_' && s[i] != '^') n += 1;
+    }
+    return 7.5 * n;
+}
+
+// The legend: framed, in the corner of the axes that covers the least of the sets (loc="best").
 void aux_legend(std::ostringstream &out, const Figure &fig, const Frame &f) {
-    double row = f.top + 16;
-    for (const Figure::Layer &l : fig.layers()) {
-        if (l.label.empty()) continue;
-        const Color swatch = l.filled || l.kind == Figure::Kind::region ? l.face : l.edge;
-        out << "<rect x=\"" << f.left + f.pw - 130 << "\" y=\"" << row - 10
-            << "\" width=\"14\" height=\"10\""
-            << " fill=\"" << swatch.hex() << "\" fill-opacity=\"" << (l.filled ? l.face_alpha : 1.0)
-            << "\" stroke=\"" << l.edge.hex() << "\"/>\n<text x=\"" << f.left + f.pw - 110
-            << "\" y=\"" << row - 1 << "\">" << aux_escape(l.label) << "</text>\n";
+    std::vector<const Figure::Layer *> rows;
+    double text = 0;
+    for (const Figure::Layer &l : fig.layers())
+        if (!l.label.empty()) {
+            rows.push_back(&l);
+            text = std::max(text, aux_text_width(l.label));
+        }
+    if (rows.empty()) return;
+    const double margin = 8, w = 8 + 14 + 6 + text + 8,
+                 h = 16 * static_cast<double>(rows.size()) + 8;
+    // the corner, in the unit square of the axes; the legend keeps a margin to the axes
+    std::vector<std::vector<Polygon>> layers;
+    for (const Figure::Layer &l : fig.layers()) layers.push_back(l.polygons);
+    const int k = legend_corner(unit_boxes(layers, f.lim.x0, f.lim.x1, f.lim.y0, f.lim.y1),
+                                (w + 2 * margin) / f.pw, (h + 2 * margin) / f.ph);
+    const double x = k == 1 || k == 2 ? f.left + margin : f.left + f.pw - margin - w;
+    const double y = k <= 1 ? f.top + margin : f.top + f.ph - margin - h;
+    out << "<rect x=\"" << x << "\" y=\"" << y << "\" width=\"" << w << "\" height=\"" << h
+        << "\" rx=\"3\" fill=\"#ffffff\" fill-opacity=\"0.85\" stroke=\"#cccccc\"/>\n";
+    double row = y + 4 + 16;
+    for (const Figure::Layer *l : rows) {
+        const Color swatch = l->filled || l->kind == Figure::Kind::region ? l->face : l->edge;
+        out << "<rect x=\"" << x + 8 << "\" y=\"" << row - 12 << "\" width=\"14\" height=\"10\""
+            << " fill=\"" << swatch.hex() << "\" fill-opacity=\""
+            << (l->filled ? l->face_alpha : 1.0) << "\" stroke=\"" << l->edge.hex()
+            << "\"/>\n<text x=\"" << x + 28 << "\" y=\"" << row - 3 << "\">" << aux_text(l->label)
+            << "</text>\n";
         row += 16;
     }
 }
@@ -240,7 +327,7 @@ void aux_box(std::ostringstream &out, const Figure &fig, const Frame &f, const F
     for (int axis = 0; axis < 3; ++axis)
         out << "<text x=\"" << aux_num(f.X(ends[axis][0])) << "\" y=\""
             << aux_num(f.Y(ends[axis][1]) + 14) << "\" text-anchor=\"middle\" font-size=\"14\">"
-            << aux_escape(names[axis]) << "</text>\n";
+            << aux_text(names[axis]) << "</text>\n";
 }
 
 // The axes of a 3-D figure: box and surfaces scaled to the area, one scale on both plane axes.
@@ -284,7 +371,7 @@ std::string aux_figure(const Figure &fig, double x, double y, double width, doub
     if (fig.dimension != 3) aux_axes(out, fig, f, height, x_ticks, y_ticks);
     if (!fig.title.empty())
         out << "<text x=\"" << left + f.pw / 2 << "\" y=\"22\" text-anchor=\"middle\" "
-            << "font-size=\"15\">" << aux_escape(fig.title) << "</text>\n";
+            << "font-size=\"15\">" << aux_text(fig.title) << "</text>\n";
     aux_legend(out, fig, f);
     out << "</g>\n";
     return out.str();

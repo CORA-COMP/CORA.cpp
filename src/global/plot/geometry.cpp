@@ -16,6 +16,7 @@
 #include "global/vec.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -235,6 +236,44 @@ std::vector<std::vector<Point3>> hull_faces(const std::vector<Point3> &p) {
         faces.push_back(aux_merge(p, tris, group, eps));
     }
     return faces;
+}
+
+// Legend ------------------------------------------------------------------------------------------
+
+std::vector<std::array<double, 4>> unit_boxes(const std::vector<std::vector<Polygon>> &layers,
+                                              double x0, double x1, double y0, double y1) {
+    std::vector<std::array<double, 4>> boxes;
+    for (const std::vector<Polygon> &polygons : layers)
+        for (const Polygon &p : polygons) {
+            if (p.empty()) continue;
+            std::array<double, 4> b = {1e300, -1e300, 1e300, -1e300};
+            for (const Point &q : p) {
+                const double u = (q[0] - x0) / (x1 - x0), v = (q[1] - y0) / (y1 - y0);
+                b = {std::min(b[0], u), std::max(b[1], u), std::min(b[2], v), std::max(b[3], v)};
+            }
+            boxes.push_back(b);
+        }
+    return boxes;
+}
+
+int legend_corner(const std::vector<std::array<double, 4>> &boxes, double w, double h) {
+    const std::array<std::array<double, 2>, 4> corners = {
+        {{1 - w, 1 - h}, {0, 1 - h}, {0, 0}, {1 - w, 0}}};
+    double best = 1e300;
+    int pick = 0;
+    // the area of the boxes under the legend at each corner; the first least one wins
+    for (int k = 0; k < 4; ++k) {
+        const auto &c = corners[static_cast<std::size_t>(k)];
+        double covered = 0;
+        for (const auto &b : boxes)
+            covered += std::max(0.0, std::min(c[0] + w, b[1]) - std::max(c[0], b[0])) *
+                       std::max(0.0, std::min(c[1] + h, b[3]) - std::max(c[1], b[2]));
+        if (covered < best) {
+            best = covered;
+            pick = k;
+        }
+    }
+    return pick;
 }
 
 } // namespace cora

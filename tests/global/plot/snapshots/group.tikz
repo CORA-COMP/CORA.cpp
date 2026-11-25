@@ -15,6 +15,7 @@
   xmin=-0.05, xmax=1.16399,
   ymin=-0.95818, ymax=0.17148,
   axis equal image,
+  legend pos=north west,
 ]
   \addplot[draw=CORAcolorUnsafe, fill=CORAcolorUnsafeLight, area legend] coordinates {
     (1.1,-0.95818) (1.16399,-0.95818) (1.16399,0.17148) (1.1,0.17148)

@@ -61,6 +61,14 @@ class Plot(unittest.TestCase):
         self.assertAlmostEqual(float(second.get_facecolor()[3]), 0.5)
         self.assertEqual(float(first.get_edgecolor()[3]), 1.0)
 
+    def test_a_box_keeps_all_four_corners(self):
+        # a closed matplotlib Path ignores its last vertex, so the first must be repeated there
+        cora.Interval([1, 2], [3, 4]).plot(ax=self.ax)
+        patch = next(p for p in self.ax.patches if isinstance(p, PathPatch))
+        drawn = patch.get_path().to_polygons(closed_only=False)
+        corners = {tuple(v) for polygon in drawn for v in polygon.round(9)}
+        self.assertEqual(corners, {(1, 2), (3, 2), (3, 4), (1, 4)})
+
     def test_corners_are_sharp(self):
         cora.plot(self.X0, ax=self.ax)
         self.assertEqual(paths(self.ax)[0].get_joinstyle(), "miter")

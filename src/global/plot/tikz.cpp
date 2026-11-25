@@ -21,6 +21,7 @@
 #include "global/format.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <map>
@@ -315,6 +316,21 @@ void aux_layers(std::ostringstream &out, Writer &w, const Figure &fig, const Axe
 
 // Axes --------------------------------------------------------------------------------------------
 
+// The legend's corner of a two-dimensional axes (legend_corner, a legend of about 30% width).
+std::string aux_legend_pos(const Figure &fig, const Axes &a) {
+    std::vector<std::vector<Polygon>> layers;
+    std::size_t rows = 0;
+    for (const Figure::Layer &l : fig.layers()) {
+        rows += l.label.empty() ? 0 : 1;
+        layers.push_back(l.polygons);
+    }
+    if (fig.dimension == 3 || rows == 0) return "";
+    const double h = std::min(0.9, 0.08 * static_cast<double>(rows) + 0.04);
+    const int k = legend_corner(unit_boxes(layers, a.lim.x0, a.lim.x1, a.lim.y0, a.lim.y1), 0.3, h);
+    static const char *const names[4] = {"", "north west", "south west", "south east"};
+    return k == 0 ? "" : std::string("legend pos=") + names[k];
+}
+
 // The options of one axes: its texts, its limits, and what a group shares.
 std::string aux_axis_options(const Figure &fig, const Axes &a, bool x_label, bool y_label) {
     std::vector<std::string> o;
@@ -331,6 +347,7 @@ std::string aux_axis_options(const Figure &fig, const Axes &a, bool x_label, boo
     } else if (fig.equal_axes) {
         o.emplace_back("axis equal image");
     }
+    if (const std::string pos = aux_legend_pos(fig, a); !pos.empty()) o.push_back(pos);
     std::string text;
     for (const std::string &s : o) text += "  " + s + ",\n";
     return text;
