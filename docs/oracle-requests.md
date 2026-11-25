@@ -722,8 +722,9 @@ reduction layers in `prepareForZonoBatchEval`.
 Served since oracle-20261124-a121ddabc (CORALean `NnWeightOps`, `NnSystemOps`, `NnReduceOps`,
 `NnConZonoOps`) on dense ReLU and identity chains, bit for bit at nearest:
 `neuralNetwork.castWeights` (`to(float32)` against the rounding to nearest in `ieee:binary32`),
-`generateRandom` and `initWeights` (glorot and shi; the test draws CORA.cpp's `Rng` units again
-from the seed and sends them), `resetApproxOrder` and `refine` (`test_lean_nn_weights`);
+`generateRandom` and `initWeights` (glorot; the test draws CORA.cpp's `Rng` units again from the
+seed and sends them; shi's Box-Muller takes libm's log, cos and sin, which differ by an ulp
+between platforms, so it is tested by properties), `resetApproxOrder` and `refine` (`test_lean_nn_weights`);
 `nonlinearSysDT` (the output with the offsets, `C` and every block of `D`) and `explain` (method
 standard on the order given; `test_lean_nn_system`); `computeReducedNetwork` (static buckets) and
 `evaluateConZonotope` (a zonotope without constraints at the box bounds; `test_lean_nn_reduce`).
