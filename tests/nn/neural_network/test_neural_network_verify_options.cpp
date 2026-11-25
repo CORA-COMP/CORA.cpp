@@ -74,7 +74,7 @@ void options_and_strategies() {
           "neuron splits need the conzonotope bounding");
     // every other switch refuses an unknown value, each field set wrong on its own
     for (const std::string field :
-         {"order", "dequeue", "enqueue", "refinement", "fm", "position"}) {
+         {"order", "dequeue", "enqueue", "refinement", "fm", "position", "affine_slopes"}) {
         NnVerifyOptions w = vnncomp_options("x");
         if (field == "order") w.falsification_order = "x";
         if (field == "dequeue") w.verify_dequeue_type = "x";
@@ -82,11 +82,14 @@ void options_and_strategies() {
         if (field == "refinement") w.refinement_method = "x";
         if (field == "fm") w.fourier_motzkin_order = "x";
         if (field == "position") w.neuron_split_position = "x";
+        if (field == "affine_slopes") w.affine_bab_slopes = "x";
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "an unknown " + field);
     }
     // the counts of Phase 2, PGD's steps, the batch's budget and the refinement's least move
-    for (const std::string field : {"alpha_iterations", "alpha_step_size", "candidates",
-                                    "pgd_min_steps", "batch_memory_budget", "min_move"}) {
+    for (const std::string field :
+         {"alpha_iterations", "alpha_step_size", "candidates", "pgd_min_steps",
+          "batch_memory_budget", "min_move", "affine_share", "affine_steps", "affine_batch",
+          "affine_bisections", "affine_polyak"}) {
         NnVerifyOptions w = vnncomp_options("x");
         w.bounding_method = "zonotope-alpha";
         // one count out of range
@@ -96,6 +99,12 @@ void options_and_strategies() {
         if (field == "pgd_min_steps") w.pgd_min_steps = 0;
         if (field == "batch_memory_budget") w.batch_memory_budget = -1;
         if (field == "min_move") w.refinement_min_move = -0.1;
+        // affine-bab's counts
+        if (field == "affine_share") w.affine_bab_time_share = -0.1;
+        if (field == "affine_steps") w.affine_bab_steps = -1;
+        if (field == "affine_batch") w.affine_bab_batch = 0;
+        if (field == "affine_bisections") w.affine_bab_bisections = -1;
+        if (field == "affine_polyak") w.affine_bab_polyak = -1;
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "a wrong " + field);
     }
     vnncomp_options("cora_2024").validate();
@@ -130,6 +139,13 @@ void options_and_strategies() {
               vnncomp_options("tinyimagenet_2024").relu_bab_init_gens == 256 &&
               vnncomp_options("metaroom_2023").refinement_method == "zonotack",
           "the wide nets' preset: crown-bab");
+    // the ReLU nets among them, safenlp and the certified-training nets: the affine form first
+    bool forms = !vnncomp_options("vit_2023").affine_bab;
+    for (const std::string name : {"cifar100_2024", "tinyimagenet_2024", "safenlp_2024",
+                                   "challenging_certified_training_2026"})
+        forms = forms && vnncomp_options(name).affine_bab &&
+                vnncomp_options(name).refinement_method == "crown-bab";
+    check(forms, "the ReLU nets' preset: crown-bab with affine-bab first");
     // soundnessbench: alpha-beta-CROWN's small, momentum steps and most of the time for the attack
     const NnVerifyOptions sb = vnncomp_options("soundnessbench_2026");
     check(sb.pgd_momentum == 0.9 && sb.pgd_step_sizes.size() == 6 && sb.pgd_restarts == 512 &&

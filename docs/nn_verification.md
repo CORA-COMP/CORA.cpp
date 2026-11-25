@@ -580,6 +580,11 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     `(N, n)` float64 tensors per batch); the open nodes' bytes at most `relu_bab_frontier_bytes`,
     else the row is left open, as at the deadline or with every neuron split. Out of memory: the
     row goes to crown-bab's search (`affine_bab_oom`).
+  - **Measured (dev seed 1001, A100):** tinyimagenet_2024 17 of 20 (crown-bab alone 15; the two
+    more in 22 and 53 s), the cifar100_2024 tuning rows of 25 to 70 s in 10 to 12 s; safenlp_2024's
+    two open rows of the first 40 in 3 s each (zonotack: unknown at 20 s); one more of
+    challenging_certified_training_2026 (its root's CROWN bounds take most of the time there).
+    Presets: these four.
   - **Soundness:** fix an input `x` of the box. The root's bounds hold the true inputs `z_j(x)` of
     every layer, so with `e_i = (x_i - x_{0,i}) / r_i` and `e_j = (relu(z_j) - a_j z_j - h_j) / h_j`
     (in `[-1, 1]` by the line above) every layer's output is its line at `e`, hence every

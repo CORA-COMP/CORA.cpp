@@ -1051,6 +1051,7 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
                     // the form at this row's slopes (the chords': one table for all rows)
                     const int64_t at = lines.index.at(p);
                     std::vector<Tensor> slopes;
+                    slopes.reserve(lines.slopes.size());
                     for (const Tensor &t : lines.slopes)
                         slopes.push_back(t.defined() ? t.slice(0, at, at + 1) : t);
                     if (!lines.table.x.defined() || !slopes.empty())
