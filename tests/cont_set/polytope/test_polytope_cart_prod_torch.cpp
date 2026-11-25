@@ -25,13 +25,13 @@ int main() {
     x.insert(x.end(), B.begin(), B.end());
     test::gradcheck(
         "cart_prod",
-        [](const Inputs &x) {
-            return test::parts(test::halfspaces(x, 0).cart_prod(test::halfspaces(x, 2)));
+        [](const Inputs &xs) {
+            return test::parts(test::halfspaces(xs, 0).cart_prod(test::halfspaces(xs, 2)));
         },
         x);
     test::gradcheck(
         "cart_prod, vertices",
-        [](const Inputs &x) { return test::parts(Polytope(x[0]).cart_prod(Polytope(x[1]))); },
+        [](const Inputs &xs) { return test::parts(Polytope(xs[0]).cart_prod(Polytope(xs[1]))); },
         {torch::randn({3, 2}, torch::kDouble), torch::randn({2, 3}, torch::kDouble)});
     return test::finish("polytope cart_prod (torch)");
 }

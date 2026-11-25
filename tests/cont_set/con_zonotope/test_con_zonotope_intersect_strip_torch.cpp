@@ -29,8 +29,8 @@ int main() {
     x.push_back(torch::randn({3, 2}, torch::kDouble));
     test::gradcheck(
         "intersect_strip",
-        [](const Inputs &x) {
-            return test::parts(test::set(x, 0).intersect_strip(x[4], x[5], x[6], x[7]));
+        [](const Inputs &xs) {
+            return test::parts(test::set(xs, 0).intersect_strip(xs[4], xs[5], xs[6], xs[7]));
         },
         x);
     return test::finish("con zonotope intersect_strip (torch)");

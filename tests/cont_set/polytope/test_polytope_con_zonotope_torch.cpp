@@ -26,9 +26,9 @@ int main() {
     x.push_back(torch::rand({2}, torch::kDouble) + 1.0);
     test::gradcheck(
         "con_zonotope",
-        [](const Inputs &x) {
+        [](const Inputs &xs) {
             const ConZonotope cz =
-                test::halfspaces(x, 0).con_zonotope("exact:supportFunc", Interval(x[2], x[3]));
+                test::halfspaces(xs, 0).con_zonotope("exact:supportFunc", Interval(xs[2], xs[3]));
             return Inputs{cz.c(), cz.generators(), cz.A(), cz.b()};
         },
         x);

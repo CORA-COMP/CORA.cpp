@@ -25,20 +25,20 @@ int main() {
     x.push_back(torch::rand({3}, torch::kDouble) + 0.5);
     test::gradcheck(
         "cart_prod (point)",
-        [](const Inputs &x) { return test::parts(test::ellipsoid_of(x).cart_prod(x[2])); }, x);
+        [](const Inputs &xs) { return test::parts(test::ellipsoid_of(xs).cart_prod(xs[2])); }, x);
     test::gradcheck(
         "cart_prod (point first)",
-        [](const Inputs &x) {
-            return test::parts(Ellipsoid::cart_prod(x[2], test::ellipsoid_of(x)));
+        [](const Inputs &xs) {
+            return test::parts(Ellipsoid::cart_prod(xs[2], test::ellipsoid_of(xs)));
         },
         x);
     std::vector<torch::Tensor> y = test::random_ellipsoid_factors(2);
     for (const torch::Tensor &t : test::random_ellipsoid_factors(3)) y.push_back(t);
     test::gradcheck(
         "cart_prod (ellipsoid)",
-        [](const Inputs &x) {
+        [](const Inputs &xs) {
             // the gradient of the product
-            return test::parts(test::ellipsoid_of(x, 0).cart_prod(test::ellipsoid_of(x, 2)));
+            return test::parts(test::ellipsoid_of(xs, 0).cart_prod(test::ellipsoid_of(xs, 2)));
         },
         y);
     return test::finish("ellipsoid cart_prod (torch)");

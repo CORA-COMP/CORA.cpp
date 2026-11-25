@@ -1815,10 +1815,10 @@ void bind_zonotope(py::module_ &m) {
             "mink_diff",
             [](const Zonotope &Z, const py::object &S2, const std::optional<std::string> &method) {
                 // no method: CORA's default "approx"
-                const std::string m = method.value_or("approx");
-                if (py::isinstance<Zonotope>(S2)) return Z.mink_diff(py::cast<Zonotope>(S2), m);
-                if (py::isinstance<Interval>(S2)) return Z.mink_diff(py::cast<Interval>(S2), m);
-                return Z.mink_diff(point_of(S2, "the point"), m);
+                const std::string mode = method.value_or("approx");
+                if (py::isinstance<Zonotope>(S2)) return Z.mink_diff(py::cast<Zonotope>(S2), mode);
+                if (py::isinstance<Interval>(S2)) return Z.mink_diff(py::cast<Interval>(S2), mode);
+                return Z.mink_diff(point_of(S2, "the point"), mode);
             },
             py::arg("S2"), py::arg("method") = py::none(),
             "The Minkowski difference with a zonotope, a box or a point; methods: approx, inner, "
@@ -5249,11 +5249,11 @@ void bind_neural_network(py::module_ &m) {
             [](const NeuralNetwork &nn, const py::object &x, const py::object &t, double epsilon,
                const std::optional<py::object> &mask) {
                 // the mask as a vector
-                Tensor m;
-                if (mask) m = point_of(*mask, "mask");
-                return matrix(
-                    nn.compute_fgsm_attack(point_of(x, "x"), point_of(t, "t"), epsilon,
-                                           m.defined() ? m.reshape({m.numel()}) : Tensor()));
+                Tensor mask_vec;
+                if (mask) mask_vec = point_of(*mask, "mask");
+                return matrix(nn.compute_fgsm_attack(
+                    point_of(x, "x"), point_of(t, "t"), epsilon,
+                    mask_vec.defined() ? mask_vec.reshape({mask_vec.numel()}) : Tensor()));
             },
             py::arg("x"), py::arg("t"), py::arg("epsilon"), py::arg("mask") = py::none(),
             "CORA's computeFGSMAttack: the points x (B, in) moved by epsilon along the sign of the "
@@ -5791,7 +5791,7 @@ void bind_verify(py::module_ &m) {
         "verify",
         [](const NeuralNetwork &net, const py::object &lo, const py::object &hi,
            const std::vector<int64_t> &poly_case, const py::object &A, const py::object &b,
-           double timeout, const std::optional<NnVerifyOptions> &options,
+           double timeout, const std::optional<NnVerifyOptions> &verify_options,
            const py::object &confirm) {
             NnProperty property{tensor_of(lo, "lo"), tensor_of(hi, "hi"), poly_case,
                                 tensor_of(A, "A"), tensor_of(b, "b")};
@@ -5806,7 +5806,7 @@ void bind_verify(py::module_ &m) {
                     return py::cast<std::vector<double>>(y);
                 };
             const NnVerifyResult r =
-                net.verify(property, timeout, options.value_or(NnVerifyOptions{}), check);
+                net.verify(property, timeout, verify_options.value_or(NnVerifyOptions{}), check);
             py::dict out;
             // the verdict, the counterexample and the counts as a dict
             out["status"] = r.status;
