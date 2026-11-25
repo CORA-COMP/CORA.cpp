@@ -15,6 +15,7 @@
 #include "cora/global/tensor/tolerance.h"
 
 
+#include <array>
 #include <vector>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -35,6 +36,16 @@ Polygon thin_polygon(const Polygon &polygon, Point resolution, bool closed = tru
 /// outside, coplanar triangles merged. A flat point set gives one face, a segment a face of two
 /// points, and a single point a face of one.
 std::vector<std::vector<Point3>> hull_faces(const std::vector<Point3> &points);
+
+/// The corner for a legend of size w x h in the unit square of the axes (y up) that covers the
+/// least of the boxes {x0, x1, y0, y1} of the drawn sets: 0 upper right, 1 upper left, 2 lower
+/// left, 3 lower right, the first on a tie (as matplotlib's and pgfplots' default order).
+int legend_corner(const std::vector<std::array<double, 4>> &boxes, double w, double h);
+
+/// The boxes {x0, x1, y0, y1} of the polygons of a figure's layers in the unit square of the
+/// limits, for legend_corner.
+std::vector<std::array<double, 4>> unit_boxes(const std::vector<std::vector<Polygon>> &layers,
+                                              double x0, double x1, double y0, double y1);
 
 } // namespace cora
 

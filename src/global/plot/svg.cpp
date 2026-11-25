@@ -13,6 +13,7 @@
 
 #include "cora/global/error.h"
 #include "cora/global/plot/figure.h"
+#include "cora/global/plot/geometry.h"
 #include "cora/global/tensor/tolerance.h"
 #include "global/format.h"
 
@@ -289,36 +290,13 @@ void aux_legend(std::ostringstream &out, const Figure &fig, const Frame &f) {
     if (rows.empty()) return;
     const double margin = 8, w = 8 + 14 + 6 + text + 8,
                  h = 16 * static_cast<double>(rows.size()) + 8;
-    // the pixel boxes of the drawn polygons
-    std::vector<std::array<double, 4>> boxes;
-    for (const Figure::Layer &l : fig.layers())
-        for (const Polygon &p : l.polygons) {
-            std::array<double, 4> b = {1e300, -1e300, 1e300, -1e300};
-            for (const Point &q : p) {
-                b[0] = std::min(b[0], f.X(q[0]));
-                b[1] = std::max(b[1], f.X(q[0]));
-                b[2] = std::min(b[2], f.Y(q[1]));
-                b[3] = std::max(b[3], f.Y(q[1]));
-            }
-            if (!p.empty()) boxes.push_back(b);
-        }
-    // the corners in matplotlib's order: upper right, upper left, lower left, lower right
-    const double xr = f.left + f.pw - margin - w, xl = f.left + margin;
-    const double yt = f.top + margin, yb = f.top + f.ph - margin - h;
-    const std::array<std::array<double, 2>, 4> corners = {{{xr, yt}, {xl, yt}, {xl, yb}, {xr, yb}}};
-    double best = 1e300, x = xr, y = yt;
-    for (const auto &c : corners) {
-        double covered = 0;
-        for (const auto &b : boxes)
-            covered += std::max(0.0, std::min(c[0] + w, b[1]) - std::max(c[0], b[0])) *
-                       std::max(0.0, std::min(c[1] + h, b[3]) - std::max(c[1], b[2]));
-        // the first corner that covers least wins, so ties keep matplotlib's order
-        if (covered < best) {
-            best = covered;
-            x = c[0];
-            y = c[1];
-        }
-    }
+    // the corner, in the unit square of the axes; the legend keeps a margin to the axes
+    std::vector<std::vector<Polygon>> layers;
+    for (const Figure::Layer &l : fig.layers()) layers.push_back(l.polygons);
+    const int k = legend_corner(unit_boxes(layers, f.lim.x0, f.lim.x1, f.lim.y0, f.lim.y1),
+                                (w + 2 * margin) / f.pw, (h + 2 * margin) / f.ph);
+    const double x = k == 1 || k == 2 ? f.left + margin : f.left + f.pw - margin - w;
+    const double y = k <= 1 ? f.top + margin : f.top + f.ph - margin - h;
     out << "<rect x=\"" << x << "\" y=\"" << y << "\" width=\"" << w << "\" height=\"" << h
         << "\" rx=\"3\" fill=\"#ffffff\" fill-opacity=\"0.85\" stroke=\"#cccccc\"/>\n";
     double row = y + 4 + 16;
