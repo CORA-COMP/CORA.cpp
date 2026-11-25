@@ -17,14 +17,17 @@
 // CORA.cpp only: CORA's verify takes the zonotope's own bounds
 // Authors:       Claude Opus 5.5
 // Written:       23-November-2026
-// Last update:   ---
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "cora/global/tensor/tolerance.h"
+#include "global/tensor/device_memory.h"
+#include "nn/neural_network/private/priv_verify.h"
 #include "nn/neural_network/private/priv_zono_batch.h"
 
 #include <algorithm>
 #include <cmath>
+#include <exception>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
 
@@ -95,8 +98,9 @@ void priv_adam_slopes(std::vector<Tensor> &alpha, std::vector<Tensor> &m1, std::
 
 ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
                              const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
-                             double deadline, bool softmax_lse) {
+                             double deadline, bool softmax_lse, int64_t *backoffs) {
     const std::size_t L = net.W.size();
+    int64_t steps = iterations; // 0 once out of memory at one row
     const int64_t B = x.shape()[0];
     ZonoBounds bounds;
     bounds.l.resize(L);
@@ -124,8 +128,8 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
         }
         // the rows in chunks: Lambda (B, 2 c, widest) per layer, the slopes and Adam's 4 more
         const int64_t per_row = 8 * 2 * B * widest * (iterations > 0 ? 6 * int64_t(L) : 2);
-        const int64_t chunk = std::max<int64_t>(1, max_bytes / std::max<int64_t>(1, per_row));
-        for (std::size_t at = 0; at < idx.size(); at += std::size_t(chunk)) {
+        int64_t chunk = std::max<int64_t>(1, max_bytes / std::max<int64_t>(1, per_row));
+        for (std::size_t at = 0; at < idx.size();) {
             const std::size_t to = std::min(idx.size(), at + std::size_t(chunk));
             const std::vector<int64_t> part(idx.begin() + std::ptrdiff_t(at),
                                             idx.begin() + std::ptrdiff_t(to));
@@ -136,14 +140,31 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
             for (const int64_t i : part) part_d.push_back(double(i));
             const Tensor ids = Tensor::like(l, part_d, {c});
             const Tensor E = ids.expand_dims(-1).equal(l.arange_like(n).expand_dims(0)) + 0.0;
-            const Tensor rows = Tensor::concat({E, E.negative()}, 0);
-            const Tensor v = aux_optimized(out, net, bounds, start, k, x, rad, rows, iterations,
-                                           step, deadline, softmax_lse);
+            Tensor v;
+            try {
+                priv_oom_site("crown_bounds");
+                const Tensor rows = Tensor::concat({E, E.negative()}, 0);
+                v = aux_optimized(out, net, bounds, start, k, x, rad, rows, steps, step, deadline,
+                                  softmax_lse);
+            } catch (const std::exception &error) {
+                // out of memory: half the rows, then no slope steps, then the record's bounds
+                if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+                free_device_cache(x.device_id());
+                if (backoffs) ++*backoffs;
+                if (chunk > 1)
+                    chunk /= 2;
+                else if (steps > 0)
+                    steps = 0;
+                else
+                    at = to; // these neurons keep the record's bounds (they hold)
+                continue;
+            }
             // back to the layer's neurons (B, n): the rows' bounds where bounded, else the record's
             const Tensor hit = E.sum(0).greater(l.zeros_like({n}));
             const Tensor lo = v.slice(1, 0, c).matmul(E), hi = v.slice(1, c, 2 * c).matmul(E);
             l = Tensor::where(hit, l.maximum(lo), l);
             u = Tensor::where(hit, u.minimum(hi.negative()), u);
+            at = to;
         }
         // a bound beyond the float range or an empty intersection (the rounding): the record's
         const Tensor ok = l.isfinite().multiply(u.isfinite()).multiply(l.less_equal(u));
