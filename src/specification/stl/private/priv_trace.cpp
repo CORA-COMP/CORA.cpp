@@ -6,13 +6,12 @@
 // CORA.cpp only: CORA reads the columns of x through contains(vars, name)
 // Authors:       Claude Sonnet 5.5
 // Written:       24-November-2026
-// Last update:   ---
+// Last update:   25-November-2026
 // Reviewed:      ---
 
 #include "specification/stl/private/priv_trace.h"
 
 #include <algorithm>
-#include <cmath>
 #include <map>
 
 // ----------------------------------------  BEGIN CODE  ---------------------------------------- //
@@ -22,6 +21,8 @@ namespace cora {
 // ----------------------------------------  AUXILIARY  ----------------------------------------- //
 
 namespace {
+
+// The variables -----------------------------------------------------------------------------------
 
 /// The variables below an expression: the names, and the largest index per stem.
 void aux_expr_vars(const StlExpr &e, std::map<std::string, int64_t> &stems,
@@ -94,6 +95,8 @@ StlTrace priv_trace(const Stl &phi, const Tensor &x, const std::vector<double> &
     return tr;
 }
 
+// The values of the expressions -------------------------------------------------------------------
+
 double priv_eval(const StlExpr &e, const std::vector<std::string> &names, const double *state) {
     const StlExprKind k = e.kind();
     if (k == StlExprKind::number) return e.value();
@@ -102,7 +105,13 @@ double priv_eval(const StlExpr &e, const std::vector<std::string> &names, const 
         return state[it - names.begin()];
     }
     const double a = priv_eval(e.left(), names, state);
-    if (k == StlExprKind::pow) return std::pow(a, static_cast<double>(e.exponent()));
+    if (k == StlExprKind::pow) {
+        // the repeated product from 1, no libm pow (bit for bit with CORALean); 1/x^k below 0
+        double prod = 1;
+        const int64_t k_abs = e.exponent() < 0 ? -e.exponent() : e.exponent();
+        for (int64_t i = 0; i < k_abs; ++i) prod *= a;
+        return e.exponent() < 0 ? 1 / prod : prod;
+    }
     const double b = priv_eval(e.right(), names, state);
     if (k == StlExprKind::add) return a + b;
     if (k == StlExprKind::sub) return a - b;

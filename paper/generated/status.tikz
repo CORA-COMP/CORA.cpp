@@ -58,14 +58,13 @@
 \end{scope}
 \draw[black, line width=0.2pt] ([yshift=-5.5pt]axis cs:0,3) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:93.5493,3) -- ([yshift=5.5pt]axis cs:93.5493,3) [sharp corners] -- ([yshift=5.5pt]axis cs:0,3) -- cycle;
 \node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:93.5493,3) {95\%\hspace{0.8em}\textcolor{black!40}{+39}};
-\begin{scope}\clip([yshift=-5.5pt]axis cs:0,4) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:246.549,4) -- ([yshift=5.5pt]axis cs:246.549,4) [sharp corners] -- ([yshift=5.5pt]axis cs:0,4) -- cycle;
-\fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,4) rectangle ([yshift=5.5pt]axis cs:15.7746,4);
-\fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:15.7746,4) rectangle ([yshift=5.5pt]axis cs:31.5493,4);
-\fill[CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:31.5493,4) rectangle ([yshift=5.5pt]axis cs:99.5493,4);
-\fill[white] ([yshift=-5.5pt]axis cs:99.5493,4) rectangle ([yshift=5.5pt]axis cs:246.549,4);
+\begin{scope}\clip([yshift=-5.5pt]axis cs:0,4) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:224,4) -- ([yshift=5.5pt]axis cs:224,4) [sharp corners] -- ([yshift=5.5pt]axis cs:0,4) -- cycle;
+\fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,4) rectangle ([yshift=5.5pt]axis cs:58,4);
+\fill[CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:58,4) rectangle ([yshift=5.5pt]axis cs:77,4);
+\fill[white] ([yshift=-5.5pt]axis cs:77,4) rectangle ([yshift=5.5pt]axis cs:224,4);
 \end{scope}
-\draw[black, line width=0.2pt] ([yshift=-5.5pt]axis cs:0,4) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:246.549,4) -- ([yshift=5.5pt]axis cs:246.549,4) [sharp corners] -- ([yshift=5.5pt]axis cs:0,4) -- cycle;
-\node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:246.549,4) {1\%};
+\draw[black, line width=0.2pt] ([yshift=-5.5pt]axis cs:0,4) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:224,4) -- ([yshift=5.5pt]axis cs:224,4) [sharp corners] -- ([yshift=5.5pt]axis cs:0,4) -- cycle;
+\node[anchor=west, font=\ttfamily\scriptsize, inner sep=3pt] at (axis cs:224,4) {26\%};
 \begin{scope}\clip([yshift=-5.5pt]axis cs:0,5) [rounded corners=1.5pt] -- ([yshift=-5.5pt]axis cs:225.775,5) -- ([yshift=5.5pt]axis cs:225.775,5) [sharp corners] -- ([yshift=5.5pt]axis cs:0,5) -- cycle;
 \fill[CORAcolorReachSet] ([yshift=-5.5pt]axis cs:0,5) rectangle ([yshift=5.5pt]axis cs:32,5);
 \fill[CORAcolorReachSet!50!CORAcolorReachSet2] ([yshift=-5.5pt]axis cs:32,5) rectangle ([yshift=5.5pt]axis cs:52,5);
