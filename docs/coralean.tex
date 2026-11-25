@@ -1,4 +1,5 @@
 % CORA.cpp and CORALean: backends, bindings, and the equivalence of their results
+% (boxes as in the CORA++ paper's overview figure: the full color drawn, 20 % of it filled)
 \documentclass[tikz,border=6pt]{standalone}
 \usetikzlibrary{arrows.meta,positioning,calc}
 
@@ -10,11 +11,13 @@
 \sffamily
 \begin{tikzpicture}[
     >={Stealth[length=2.4mm]},
-    box/.style={draw=#1!70, fill=#1!7, rounded corners=3pt, thick, align=center,
+    box/.style={draw=#1, fill=#1!20, rounded corners=3pt, thick, align=center,
                 minimum height=9mm, inner sep=4pt},
-    box/.default=black,
+    neutral/.style={draw=black!60, fill=black!8, rounded corners=3pt, thick, align=center,
+                    minimum height=9mm, inner sep=4pt},
     big/.style={box=#1, minimum width=64mm, minimum height=20mm, font=\Large\bfseries},
     sub/.style={box=#1, minimum width=24mm, minimum height=10mm},
+    subn/.style={neutral, minimum width=24mm, minimum height=10mm},
     bind/.style={draw=black!30, fill=black!2, rounded corners=3pt, align=center,
                  minimum height=6mm, minimum width=20mm, inner sep=3pt, text=black!50,
                  font=\small},
@@ -39,8 +42,8 @@
 \draw[faint] (python.north) -- (matlab.south);
 
 % CORA.cpp backends
-\node[sub=black] (eigen) at (-3,-2.7) {Eigen};
-\node[sub=black] (torch) at (0,-2.7) {libtorch};
+\node[subn] (eigen) at (-3,-2.7) {Eigen};
+\node[subn] (torch) at (0,-2.7) {libtorch};
 \node[sub=CORAcolorGreen] (leanb) at (3,-2.7) {Lean};
 \node[note, below=1mm of eigen] {CPU \\ \dots};
 \node[note, below=1mm of torch] {CPU + GPU \\ auto-grad \\ \dots};
@@ -53,9 +56,9 @@
 \draw[lean, <->] (lean) -- (ccode);
 
 % rounding modes
-\node[box=black, minimum width=34mm] (nearest) at (4.3,-4.9) {Nearest};
+\node[neutral, minimum width=34mm] (nearest) at (4.3,-4.9) {Nearest};
 \node[note, below=1mm of nearest] {hardware};
-\node[box=black, minimum width=34mm] (directed) at (8,-4.9) {Directed rounding};
+\node[neutral, minimum width=34mm] (directed) at (8,-4.9) {Directed rounding};
 \node[note, below=1mm of directed] {sound};
 \draw[cpp] (leanb.south |- nearest.north) -- (leanb.south);
 \draw[lean] (5.6,-4.45) -- (5.6,-3.2);
