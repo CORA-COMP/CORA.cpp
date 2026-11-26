@@ -148,6 +148,9 @@ void options_and_strategies() {
         forms = forms && vnncomp_options(name).affine_bab &&
                 vnncomp_options(name).refinement_method == "crown-bab";
     check(forms, "the ReLU nets' preset: crown-bab with affine-bab first");
+    check(vnncomp_options("vit_2023").crown_product_steps > 0 &&
+              vnncomp_options("cifar100_2024").crown_product_steps == 0,
+          "vit's preset: the products' planes per row");
     // soundnessbench: alpha-beta-CROWN's small, momentum steps and most of the time for the attack
     const NnVerifyOptions sb = vnncomp_options("soundnessbench_2026");
     check(sb.pgd_momentum == 0.9 && sb.pgd_step_sizes.size() == 6 && sb.pgd_restarts == 512 &&
