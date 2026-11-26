@@ -106,6 +106,12 @@ if(NOT MSVC)
   set_source_files_properties("${CMAKE_SOURCE_DIR}/src/cont_set/polygon/private/priv_lean.cpp" PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
   # the facet normals of a zonotope (determinants and lengths) are CORALean's roundings too
   set_source_files_properties("${CMAKE_SOURCE_DIR}/src/cont_set/zonotope/private/priv_zonotope_facet_normals.cpp" PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+  # the host loops of the constrained polynomial zonotope round as CORALean's ConPolyZono
+  set_source_files_properties("${CMAKE_SOURCE_DIR}/src/cont_set/poly_zonotope/private/priv_get_subset.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/cont_set/con_poly_zono/reduce.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/cont_set/con_poly_zono/split.cpp"
+                              "${CMAKE_SOURCE_DIR}/src/cont_set/con_poly_zono/split_longest_gen.cpp"
+                              PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
 endif()
 
 # ------------------------------------------- tests ------------------------------------------------

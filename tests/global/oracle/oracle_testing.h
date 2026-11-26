@@ -25,6 +25,7 @@
 
 #include "cora/cont_set/interval/interval.h"
 #include "cora/global/oracle/capsule.h"
+#include "cora/global/oracle/con_poly_zono.h"
 #include "cora/global/oracle/con_zonotope.h"
 #include "cora/global/oracle/fullspace.h"
 #include "cora/global/oracle/interval.h"
@@ -364,6 +365,28 @@ inline bool agree(const std::string &what, const cora::ConZonotope &a, const lea
            same;
     same = agree(what + ".A", a.A(), other.A()) && same;
     return agree(what + ".b", a.b(), other.b()) && same;
+}
+
+/// The oracle's constrained polynomial zonotope against CORA.cpp's: c, G, GI, A, b in CORA's
+/// columns and both exponent matrices, exactly; the identifiers are not compared (a reply has
+/// none), nor the error box and the slack (at nearest they are zero, gather() checks it).
+inline bool agree(const std::string &what, const cora::ConPolyZono &a, const lean::ConPolyZono &b) {
+    const cora::ConPolyZono o = b.gather();
+    // all are reported
+    bool same = agree(what + ".c", a.c().expand_dims(-1), o.c().expand_dims(-1));
+    same =
+        agree(what + ".G", a.generators().matrix_transpose(), o.generators().matrix_transpose()) &&
+        same;
+    same = agree(what + ".GI", a.independent_generators().matrix_transpose(),
+                 o.independent_generators().matrix_transpose()) &&
+           same;
+    same = agree(what + ".A", a.A(), o.A()) && same;
+    same = agree(what + ".b", a.b().expand_dims(-1), o.b().expand_dims(-1)) && same;
+    if (a.exponents() != o.exponents() || a.constraint_exponents() != o.constraint_exponents()) {
+        std::cerr << "  " << what << ": the exponents differ\n";
+        same = false;
+    }
+    return same;
 }
 
 /// The nominal part of the oracle's matrix zonotope: the center and the generators in their order.

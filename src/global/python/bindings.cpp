@@ -31,6 +31,7 @@
 #include "cora/cont_dynamics/nonlin_das_sys/nonlin_das_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys/nonlinear_sys.h"
 #include "cora/cont_dynamics/nonlinear_sys_dt/nonlinear_sys_dt.h"
+#include "cora/cont_set/con_poly_zono/con_poly_zono.h"
 #include "cora/cont_set/level_set/level_set.h"
 #include "cora/cont_set/registry.h"
 #include "cora/cont_set/taylm/taylm.h"
@@ -3705,6 +3706,199 @@ void bind_operators(py::module_ &m) {
     }
 }
 
+// ConPolyZono -------------------------------------------------------------------------------------
+
+/// The exponents as CORA's matrix (p, cols): one column per generator or monomial.
+py::array_t<int64_t> exponents_to_python(const Exponents &E, int64_t p) {
+    const auto cols = int64_t(E.size());
+    py::array_t<int64_t> out({p, cols});
+    auto view = out.mutable_unchecked<2>();
+    for (int64_t i = 0; i < p; ++i)
+        for (int64_t j = 0; j < cols; ++j) view(i, j) = E[std::size_t(j)][std::size_t(i)];
+    return out;
+}
+
+/// The exponents of Python for `cols` columns of p entries: none is no column (p entries each).
+Exponents exponents_or_none(const py::object &E, std::size_t cols, std::size_t p) {
+    if (E.is_none() && cols == 0) return {};
+    Exponents out = exponents_from_python(E, cols);
+    // every column has an entry per factor
+    for (const std::vector<int> &col : out)
+        if (col.size() != p)
+            CORA_FAIL(Error::wrong_input_in_constructor,
+                      "ConPolyZono: every exponent column needs one entry per factor");
+    return out;
+}
+
+void bind_con_poly_zono(py::module_ &m) {
+    // the constraint object, its fields and its operations
+    py::class_<PolyLevelSet>(m, "PolyLevelSet",
+                             "Polynomial equality constraints A mu_R(x) = b on [-1, 1]^p "
+                             "(CORALean's PolyLevelSet, the constraint of a ConPolyZono)")
+        .def(py::init([](const py::object &A, const py::object &b, const py::object &R, int64_t p) {
+                 const Tensor coeff = tensor_of(A, "A");
+                 return PolyLevelSet(
+                     coeff, point_of(b, "b"),
+                     exponents_or_none(R, std::size_t(coeff.shape()[1]), std::size_t(p)), p);
+             }),
+             py::arg("A"), py::arg("b"), py::arg("R"), py::arg("p"),
+             "A (m, q), b (m), the exponents R (p, q) of the monomials, on p factors")
+        // the stored rows
+        .def_property_readonly(
+            "A", [](const PolyLevelSet &P) { return matrix(P.A()); }, "The coefficients (m, q)")
+        .def_property_readonly(
+            "b", [](const PolyLevelSet &P) { return matrix(P.b()); }, "The right-hand side (m)")
+        // the exponents as CORA's matrix
+        .def_property_readonly(
+            "R",
+            [](const PolyLevelSet &P) { return exponents_to_python(P.exponents(), P.num_vars()); },
+            "The exponents (p, q) of the monomials")
+        // the counts
+        .def_property_readonly("num_rows", &PolyLevelSet::num_rows, "The rows m")
+        .def_property_readonly("num_vars", &PolyLevelSet::num_vars, "The factors p")
+        .def("lhs", &PolyLevelSet::lhs, py::arg("ids"),
+             "A mu_R(x) - b as a polynomial zonotope of the rows over the factors ids")
+        .def("level_set", &PolyLevelSet::level_set, "The rows as a level set of the factors")
+        .def(
+            "contains",
+            [](const PolyLevelSet &P, const py::object &x, Tol tol) {
+                return P.contains(tensor_of(x, "the points"), tol);
+            },
+            py::arg("x"), py::arg("tol") = py::none(),
+            "Whether the points x (N, p) are in the box and meet every row within tol")
+        // the operations on the rows
+        .def("cart_prod", &PolyLevelSet::cart_prod, py::arg("P"),
+             "Both systems, each on its own block of factors")
+        .def("compact", &PolyLevelSet::compact, "The monomials of equal exponents merged")
+        .def("get_subset", &PolyLevelSet::get_subset, py::arg("k"), py::arg("cen"), py::arg("rad"),
+             "The rows at x_k = cen + rad x_k");
+
+    // the set, its fields, its conversions and its operations
+    py::class_<ConPolyZono, ContSet>(
+        m, "ConPolyZono",
+        "The constrained polynomial zonotope: a polynomial zonotope whose dependent factors meet "
+        "polynomial equality constraints A mu(a) = b.")
+        .def(py::init<const Zonotope &>(), py::arg("Z"), "A zonotope: its generators dependent")
+        .def(py::init<const PolyZonotope &>(), py::arg("pZ"), "A polynomial zonotope")
+        .def(py::init<const ConZonotope &>(), py::arg("cz"), "A constrained zonotope")
+        .def(py::init<const Interval &>(), py::arg("I"), "A box, a generator per side")
+        .def(py::init<PolyZonotope, PolyLevelSet>(), py::arg("pZ"), py::arg("cons"),
+             "The polynomial zonotope pZ constrained by cons")
+        .def(py::init([](const py::object &c, const py::object &G, const py::object &E,
+                         const py::object &A, const py::object &b, const py::object &EC,
+                         const py::object &GI, const py::object &id) {
+                 const Tensor center = point_of(c, "the center");
+                 const Tensor dependent = generators_from_python(G, center, "G");
+                 const auto h = std::size_t(dependent.shape()[0]);
+                 Exponents exps = exponents_from_python(E, h);
+                 // the identifiers 1..p unless they are given
+                 std::vector<int64_t> ids;
+                 if (id.is_none()) {
+                     const std::size_t p = exps.empty() ? 0 : exps.front().size();
+                     for (std::size_t i = 0; i < p; ++i) ids.push_back(int64_t(i) + 1);
+                 } else {
+                     ids = py::cast<std::vector<int64_t>>(id);
+                 }
+                 // the rows: none without A
+                 const Tensor coeff = A.is_none() ? center.zeros_like({0, 0}) : tensor_of(A, "A");
+                 const Tensor rhs = b.is_none() ? center.zeros_like({0}) : point_of(b, "b");
+                 Exponents cexps = exponents_or_none(EC, std::size_t(coeff.shape()[1]), ids.size());
+                 return ConPolyZono(center, dependent, std::move(exps), coeff, rhs,
+                                    std::move(cexps), generators_from_python(GI, center, "GI"),
+                                    ids);
+             }),
+             py::arg("c"), py::arg("G") = py::none(), py::arg("E") = py::none(),
+             py::arg("A") = py::none(), py::arg("b") = py::none(), py::arg("EC") = py::none(),
+             py::arg("GI") = py::none(), py::arg("id") = py::none(),
+             "center c (n), dependent generators G (h, n), exponents E (p, h; default the "
+             "identity), constraints A (m, q) mu_EC(a) = b (m) with EC (p, q), independent "
+             "generators GI (r, n) and identifiers id (p; default 1..p)")
+        // CORA's fields
+        .def_property_readonly(
+            "c", [](const ConPolyZono &S) { return matrix(S.c()); }, "The center c (n)")
+        .def_property_readonly(
+            "G", [](const ConPolyZono &S) { return matrix(S.generators()); },
+            "The dependent generators G (h, n), one per row")
+        .def_property_readonly(
+            "GI", [](const ConPolyZono &S) { return matrix(S.independent_generators()); },
+            "The independent generators GI (r, n), one per row")
+        .def_property_readonly(
+            "E",
+            [](const ConPolyZono &S) {
+                return exponents_to_python(S.exponents(), int64_t(S.ids().size()));
+            },
+            "The exponent matrix E (p, h)")
+        // the constraint
+        .def_property_readonly(
+            "A", [](const ConPolyZono &S) { return matrix(S.A()); }, "The constraint rows A (m, q)")
+        .def_property_readonly(
+            "b", [](const ConPolyZono &S) { return matrix(S.b()); }, "The right-hand side b (m)")
+        .def_property_readonly(
+            "EC",
+            [](const ConPolyZono &S) {
+                return exponents_to_python(S.constraint_exponents(), int64_t(S.ids().size()));
+            },
+            "The exponents EC (p, q) of the constraint's monomials")
+        .def_property_readonly(
+            "id", [](const ConPolyZono &S) { return S.ids(); }, "The identifiers (p)")
+        .def_property_readonly("poly_part", &ConPolyZono::poly_part, "The polynomial zonotope")
+        .def_property_readonly("constraints", &ConPolyZono::constraints, "The constraint")
+        .def_static("origin", &ConPolyZono::origin, py::arg("n"), "The set {0} of n dimensions")
+        .def_static("empty", &ConPolyZono::empty, py::arg("n"), "The empty set of n dimensions")
+        // the conversions
+        .def("poly_zonotope", &ConPolyZono::poly_zonotope, "The set without its constraint")
+        .def("zonotope", &ConPolyZono::zonotope, "A zonotope that holds the set")
+        // the maps, the sums and the products
+        .def(
+            "linear_map",
+            [](const ConPolyZono &S, const py::object &M) {
+                return S.linear_map(tensor_of(M, "the matrix"));
+            },
+            py::arg("M"), "M * S for a matrix M (k, n)")
+        .def(
+            "plus",
+            [](const ConPolyZono &S, const py::object &T) {
+                if (py::isinstance<ConPolyZono>(T)) return S.plus(py::cast<ConPolyZono>(T));
+                if (py::isinstance<Zonotope>(T)) return S.plus(py::cast<Zonotope>(T));
+                return S.plus(point_of(T, "the point"));
+            },
+            py::arg("S"), "The Minkowski sum with a ConPolyZono, a zonotope or a point")
+        // the sum over shared factors and the products
+        .def("exact_plus", &ConPolyZono::exact_plus, py::arg("S"),
+             "The sum over the same factors and constraint")
+        .def("cart_prod", &ConPolyZono::cart_prod, py::arg("S"), "The Cartesian product")
+        .def("intersect", &ConPolyZono::intersect, py::arg("S"), "The intersection (CORA's and)")
+        .def("linear_combination", &ConPolyZono::linear_combination, py::arg("S"),
+             "The points (1 - t)/2 x + (1 + t)/2 y of this set and S")
+        .def("convex_hull", &ConPolyZono::convex_hull, py::arg("S"),
+             "A set that holds the convex hull of this set and S")
+        .def("dependent", &ConPolyZono::dependent,
+             "The independent generators made dependent on new factors")
+        // the reductions and the splits
+        .def("compact", &ConPolyZono::compact, py::arg("method") = py::none(),
+             py::arg("tol") = py::none(), "The set without redundant columns and factors")
+        .def("reduce", &ConPolyZono::reduce, py::arg("order") = 1,
+             "A set of at most order * dim generators that holds the set (Girard)")
+        // the halves
+        .def("split", &ConPolyZono::split, py::arg("dim"), py::arg("I") = py::none(),
+             "The halves of the box I (default: the set's) along dim, with the set")
+        .def("get_subset", &ConPolyZono::get_subset, py::arg("id"), py::arg("val"),
+             "The set at the factor id restricted to the box val")
+        .def("split_dep_factor", &ConPolyZono::split_dep_factor, py::arg("id"),
+             "The halves [-1, 0] and [0, 1] of the factor id")
+        .def("split_longest_gen", &ConPolyZono::split_longest_gen,
+             "The halves along the factor of the longest generators")
+        // the predicates
+        .def(
+            "isequal",
+            [](const ConPolyZono &S, const py::object &T, Tol tol) {
+                return S.isequal(py::cast<ConPolyZono>(T), tol);
+            },
+            py::arg("S"), py::arg("tol") = py::none(), "Whether the stored data agree within tol")
+        .def("representsa", &ConPolyZono::representsa, py::arg("type"), py::arg("tol") = py::none(),
+             "Whether the set is a point or (shown) empty");
+}
+
 // Dynamics ----------------------------------------------------------------------------------------
 
 /// The time points of a simulation as one array, the time first: (steps + 1, ..., n, N).
@@ -7208,6 +7402,7 @@ PYBIND11_MODULE(_cora, m) {
     bind_ellipsoid(m);
     bind_capsule(m);
     bind_poly_zonotope(m);
+    bind_con_poly_zono(m);
     bind_mat_exp(m);
     bind_mat_zonotope(m);
     // the operators, the problems and the systems
