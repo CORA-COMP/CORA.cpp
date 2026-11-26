@@ -1133,14 +1133,14 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                 sl = Tensor::where(cross, below, on);
                 bl = zero;
                 if (opt && opt->one_slope) {
-                    // one slope a in [0, 1] below and above, the offset at the larger end
+                    // one slope in [0, 1] below and above, the offset at the larger end
                     const std::vector<Tensor> &given = *opt->one_slope;
-                    Tensor a = chord;
+                    Tensor slope = chord;
                     if (k < given.size() && given[k].defined())
-                        a = Tensor::where(given[k].less(zero), chord,
-                                          given[k].maximum(0.0).minimum(1.0));
-                    sl = su = Tensor::where(cross, a, on);
-                    bu = Tensor::where(cross, priv_relu_chord_offset(lc, uc, a), zero);
+                        slope = Tensor::where(given[k].less(zero), chord,
+                                              given[k].maximum(0.0).minimum(1.0));
+                    sl = su = Tensor::where(cross, slope, on);
+                    bu = Tensor::where(cross, priv_relu_chord_offset(lc, uc, slope), zero);
                 }
                 // the rows' Lambda, the chord's slope and offset at the asked neurons
                 if (opt && opt->affine && opt->affine_at && k < opt->affine_at->size() &&
