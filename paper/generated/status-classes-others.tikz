@@ -25,11 +25,11 @@
     legend image code/.code={\draw[#1, draw=black, line width=0.2pt, rounded corners=1pt] (0cm,-0.6ex) rectangle (1.2ex,0.6ex);}]
 \addplot[draw=none, forget plot] coordinates {(0,0) (0,11)};
 \addlegendimage{fill=CORAcolorReachSet}
-\addlegendentry{bit-identical}
+\addlegendentry{certificate tests}
 \addlegendimage{fill=CORAcolorReachSet!50!CORAcolorReachSet2}
 \addlegendentry{property tests}
 \addlegendimage{fill=CORAcolorReachSet2}
-\addlegendentry{ported}
+\addlegendentry{ported functionality}
 \addlegendimage{fill=white}
 \addlegendentry{not ported}
 \begin{scope}\clip([yshift=-2.5pt]axis cs:0,1) [rounded corners=1.25pt] -- ([yshift=-2.5pt]axis cs:4,1) -- ([yshift=2.5pt]axis cs:4,1) [sharp corners] -- ([yshift=2.5pt]axis cs:0,1) -- cycle;

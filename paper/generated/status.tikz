@@ -13,7 +13,7 @@
     anchor=north west,
     height=3.0cm,
     width=0.50\linewidth-2.55cm,
-    title={(a) CORA functions},
+    title={(a)},
     title style={at={(0.5,1)}, xshift=-1.275cm, yshift=0.5ex, anchor=south, font=\footnotesize},
     xmax=1400,
     clip=false,
@@ -85,7 +85,7 @@
     anchor=north west,
     height=1.6cm,
     width=2.47cm,
-    title={(b) ARCH-COMP rows executed},
+    title={(b)},
     title style={at={(0.5,1)}, xshift=0.103cm, yshift=0.5ex, anchor=south, font=\footnotesize},
     xmax=100,
     clip=false,
@@ -102,11 +102,11 @@
     legend image code/.code={\draw[#1, draw=black, line width=0.2pt, rounded corners=1pt] (0cm,-0.6ex) rectangle (1.2ex,0.6ex);}]
 \addplot[draw=none, forget plot] coordinates {(0,0) (0,2)};
 \addlegendimage{fill=CORAcolorReachSet}
-\addlegendentry{bit-identical}
+\addlegendentry{certificate tests}
 \addlegendimage{fill=CORAcolorReachSet!50!CORAcolorReachSet2}
 \addlegendentry{property tests}
 \addlegendimage{fill=CORAcolorReachSet2}
-\addlegendentry{ported}
+\addlegendentry{ported functionality}
 \addlegendimage{fill=white}
 \addlegendentry{not ported}
 \begin{scope}\clip[rounded corners=1.5pt] ([yshift=-5.5pt]axis cs:0,0) rectangle ([yshift=5.5pt]axis cs:101.159,0);

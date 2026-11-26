@@ -127,10 +127,13 @@ it, and `ctest` (`coverage`, the first test) fails when it is stale.
 - `scripts/paper/arch_table.py` writes `paper/generated/arch-comp-table.tex`, the paper's table of the ARCH-COMP26
   times: CORA.cpp's verdicts and times from the tables of `examples/benchmarks/README.md`, the other tools' times
   from `examples/benchmarks/data/arch26_tool_times.csv` (with the report table of each). Run it after a change of
-  either; `--check` (in `checks` of ci.yml) fails on a stale file. The paper repository copies the file as it is.
-- `scripts/paper/vnn_table.py` writes `paper/generated/vnn-comp-table.tex` and `vnn-comp-summary.tex`, the paper's
-  preliminary VNN-COMP tables, from `examples/vnncomp/results/dev_results.csv` (one row per benchmark, instance and
-  tool; a new tool adds rows). Run it after a change of the CSV; `--check` (in `checks` of ci.yml) fails on a stale file.
+  either; `--check` (in `checks` of ci.yml) fails on a stale file.
+- `scripts/paper/vnn_table.py` writes `paper/generated/vnn-comp-table.tex`, the paper's preliminary VNN-COMP table,
+  from `examples/vnncomp/results/dev_results.csv` (one row per benchmark, instance and tool; a new tool adds rows;
+  `--results` takes another CSV). Run it after a change of the CSV; `--check` (in `checks` of ci.yml) fails on a
+  stale file.
+- The generated files hold the data only; the captions are the paper's own. `scripts/paper/sync_paper.py PAPER`
+  copies them into the paper repository and keeps the caption that the paper has.
 
 ## Examples
 
