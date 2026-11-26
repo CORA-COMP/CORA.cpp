@@ -247,6 +247,7 @@ inline Set set_of(const py::handle &o) {
         };
         return Set(std::shared_ptr<const ContSet>(S, release));
     }
+    // anything else is not a set
     CORA_FAIL(
         Error::wrong_value,
         "cora: expected a set (Zonotope, ConZonotope, ZonoBundle, Polytope, Polygon, Ellipsoid, "
@@ -266,6 +267,7 @@ inline py::object object_of(const Set &S) {
         return py::cast(S.as<ZonoBundle>());
     case ClassId::polytope:
         return py::cast(S.as<Polytope>());
+    // the vertex sets, the ellipsoids and the polynomial sets
     case ClassId::polygon:
         return py::cast(S.as<Polygon>());
     case ClassId::ellipsoid:

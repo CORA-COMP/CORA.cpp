@@ -78,7 +78,7 @@ int main() {
         }
         // the plot's polygons reach x0
         double lo0 = 1e300, hi0 = -1e300, lo1 = 1e300, hi1 = -1e300;
-        for (const Polygon &P : S.vertices())
+        for (const Outline &P : S.vertices())
             for (const Point &v : P) {
                 lo0 = std::min(lo0, v[0]);
                 hi0 = std::max(hi0, v[0]);

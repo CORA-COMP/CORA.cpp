@@ -43,7 +43,7 @@ bool aux_feasible(const ConPolyZono &S) {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> ConPolyZono::vertices_impl() const {
+std::vector<Outline> ConPolyZono::vertices_impl() const {
     std::vector<ConPolyZono> pieces = {*this};
     // four rounds of halving, the pieces that cannot hold dropped
     for (int round = 0; round < 4; ++round) {
@@ -61,9 +61,9 @@ std::vector<Polygon> ConPolyZono::vertices_impl() const {
         pieces = std::move(next);
     }
     // each piece drawn as its zonotope
-    std::vector<Polygon> out;
+    std::vector<Outline> out;
     for (const ConPolyZono &S : pieces)
-        for (Polygon &P : S.zonotope().vertices()) out.push_back(std::move(P));
+        for (Outline &P : S.zonotope().vertices()) out.push_back(std::move(P));
     return out;
 }
 
