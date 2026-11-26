@@ -243,6 +243,7 @@ Problem aux_problem(const AffineTable &t, const Tensor &d, double c0, int64_t ch
 struct Ascent {
     int64_t steps = 1, bisections = 8, polyak = 0;
     double margin = 0;
+    bool rounded = true; ///< the values lowered by their sums' rounding (the search's: not)
 };
 
 /// The lower bounds (N) of the row on the nodes of sides sg (N, D) (+1: inactive, -1: active) at
@@ -267,7 +268,7 @@ Tensor aux_ascent(const Problem &P, const Tensor &sg, Tensor &p, Tensor &q, cons
     const Tensor b1 = Tensor::where(off, P.l.slice(0, 0, D) - cz, cz - P.u.slice(0, 0, D));
     const Tensor empty = b0.greater(a1 + kEmptySide).maximum(b1.greater(a1 + kEmptySide)).max(-1);
     // the rounding of a value's sums and products: 2 (n + D + 16) ulps of the terms' sizes
-    const double ulps = 2.0 * double(P.n + D + 16) * machine_eps(sg.dtype());
+    const double ulps = a.rounded ? 2.0 * double(P.n + D + 16) * machine_eps(sg.dtype()) : 0.0;
     const Tensor shift = Tensor::where(off, P.s_off.slice(0, 0, D), P.s_on.slice(0, 0, D));
     const Tensor sizes = (shift.abs() + ratio.abs().multiply(a1)).sum(-1) + (std::abs(P.c0) + P.d1);
     const auto rounding = [&] {
@@ -350,7 +351,10 @@ Tensor aux_bound(const Problem &P, const Problem *search, const Tensor &sg, Tens
     if (!search || a.steps + a.polyak <= 0) return aux_ascent(P, sg, p, q, a);
     const DType dt = search->A.dtype(), exact = P.A.dtype();
     Tensor ps = p.to(dt), qs = q.to(dt);
-    const Tensor rough = aux_ascent(*search, sg.to(dt), ps, qs, a);
+    // the search's values choose the multipliers and the candidates only: not lowered
+    Ascent heuristic = a;
+    heuristic.rounded = false;
+    const Tensor rough = aux_ascent(*search, sg.to(dt), ps, qs, heuristic);
     p = ps.to(exact).maximum(0.0);
     q = qs.to(exact).maximum(0.0);
     // the candidates: above the margin in the search dtype (not a number: none)
@@ -359,7 +363,7 @@ Tensor aux_bound(const Problem &P, const Problem *search, const Tensor &sg, Tens
     if (!above.empty()) {
         Tensor pa = p.take(above, 0), qa = q.take(above, 0);
         const std::vector<double> sure =
-            aux_ascent(P, sg.take(above, 0), pa, qa, Ascent{0, 0, 0, a.margin}).data();
+            aux_ascent(P, sg.take(above, 0), pa, qa, Ascent{0, 0, 0, a.margin, true}).data();
         for (std::size_t i = 0; i < above.size(); ++i) low[std::size_t(above[i])] = sure[i];
     }
     return Tensor::like(sg, low, {sg.shape()[0]});
@@ -462,7 +466,7 @@ Tensor priv_affine_node_bounds(const AffineTable &t, const ZonoPropagation &out,
         aux_problem(t, d.squeeze(0), (center - offset).item(), std::max<int64_t>(1, t.U));
     if (order) *order = P.order;
     Tensor p = sides.zeros_like(), q = sides.zeros_like();
-    return aux_bound(P, nullptr, sides, p, q, Ascent{steps, 8, polyak, 0.0});
+    return aux_bound(P, nullptr, sides, p, q, Ascent{steps, 8, polyak, 0.0, true});
 }
 
 // The branch and bound ----------------------------------------------------------------------------
@@ -525,7 +529,7 @@ int priv_affine_bab(const AffineTable &t, const ZonoPropagation &out, const Zono
         const int64_t N = part.sg.shape()[0];
         held -= N;
         const Tensor low = aux_bound(P, search, part.sg, part.p, part.q,
-                                     Ascent{o.steps, o.bisections, o.polyak, o.margin});
+                                     Ascent{o.steps, o.bisections, o.polyak, o.margin, true});
         // open unless its bound is above the margin (not a number: open)
         const std::vector<int64_t> open =
             (1.0 - low.greater(low.full_like({1}, o.margin))).nonzero();

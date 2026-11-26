@@ -652,7 +652,7 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     nearest for the forms, as the backward bound; a node's value is lowered by `2 (n + D + 16)`
     ulps of the sizes of its terms (the constant's, the multipliers' times their offsets and
     rows' 1-norms, the row's), which bounds the rounding of its sums and products for any
-    summation order, so large multipliers cannot verify a node by cancellation; the empty-side
+    summation order, so large multipliers cannot verify a node by cancellation (only the float64 value that decides; the search dtype's values choose multipliers and candidates and are not lowered, whose float32 ulps had hidden most candidates); the empty-side
     test has `1e-6` of slack over the forms' rounding.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the
