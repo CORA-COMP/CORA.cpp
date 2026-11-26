@@ -95,6 +95,8 @@ Tensor aux_optimized(const ZonoPropagation &out, const ZonoNet &net, const ZonoB
     }
 }
 
+// The copies of the operands of a product ---------------------------------------------------------
+
 /// Per neuron of layer k's input the first neuron with the same affine form of the earlier
 /// activations' outputs and the input (a gather's copies: a product's operands); empty: not
 /// looked for (the rows beyond max_bytes).
@@ -148,6 +150,188 @@ std::vector<int64_t> aux_same_forms(const ZonoNet &net, std::size_t k, const Ten
     return same;
 }
 
+// The windows of a convolution chain --------------------------------------------------------------
+
+/// Whether the layers 0..k are convolutions in a chain with ReLUs between them: the input of a
+/// neuron of layer k then reads only the pixels of its receptive field (its window).
+bool aux_windowable(const ZonoNet &net, std::size_t k) {
+    for (std::size_t j = 0; j <= k; ++j) {
+        if (net.maps[j].conv_pixels(true) == 0 || net.sources[j] != int64_t(j) - 1 ||
+            !net.residuals[j].empty())
+            return false;
+        if (j < k && net.activations[j] != Activation::relu) return false;
+    }
+    return true;
+}
+
+/// The values v (C P) (channel-major) at each window's pixels (W, m; -1: 0): (W, C m).
+Tensor aux_window_values(const Tensor &v, int64_t C, const std::vector<int64_t> &pixels,
+                         int64_t m) {
+    const int64_t P = v.numel() / C, W = int64_t(pixels.size()) / m;
+    std::vector<int64_t> idx(pixels.size());
+    for (std::size_t e = 0; e < pixels.size(); ++e) idx[e] = pixels[e] < 0 ? P : pixels[e];
+    const Tensor padded = Tensor::concat({v.reshape({C, P}), v.zeros_like({C, 1})}, 1);
+    return padded.take(idx, 1).reshape({C, W, m}).permute_dims({1, 0, 2}).reshape({W, C * m});
+}
+
+/// The lower and upper bounds (W, group) of layer k's input at the neurons (pixel, channels) of
+/// `entries`: priv_backward_lower on the net of their windows, the layers 0..k restricted to each
+/// entry's receptive field at the same bounds (nn_verification.md, "CROWN's windows").
+std::pair<Tensor, Tensor>
+aux_window_bounds(const ZonoNet &net, const ZonoBounds &bounds, const std::vector<Tensor> &start,
+                  std::size_t k, const Tensor &x, const Tensor &rad,
+                  const std::vector<std::pair<int64_t, std::vector<int64_t>>> &entries,
+                  int64_t group, int64_t iterations, double step, double deadline,
+                  double steps_until) {
+    const auto W = int64_t(entries.size());
+    // each window's pixels: layer k's one, then what each layer reads (pixels[0]: the input)
+    std::vector<std::vector<int64_t>> pixels(k + 2);
+    std::vector<int64_t> width(k + 2, 1);
+    for (const auto &entry : entries) pixels[k + 1].push_back(entry.first);
+    for (std::size_t j = k + 1; j-- > 0;) {
+        std::vector<std::vector<int64_t>> reads(static_cast<std::size_t>(W));
+        for (int64_t w = 0; w < W; ++w) {
+            const auto first = pixels[j + 1].begin() + std::ptrdiff_t(w * width[j + 1]);
+            reads[std::size_t(w)] = net.maps[j].conv_reads(
+                std::vector<int64_t>(first, first + std::ptrdiff_t(width[j + 1])));
+            width[j] = std::max(width[j], int64_t(reads[std::size_t(w)].size()));
+        }
+        // padded to the widest window
+        pixels[j].assign(std::size_t(W * width[j]), -1);
+        for (int64_t w = 0; w < W; ++w)
+            std::copy(reads[std::size_t(w)].begin(), reads[std::size_t(w)].end(),
+                      pixels[j].begin() + std::ptrdiff_t(w * width[j]));
+    }
+    // the windows' net: the convolutions, layer k without its ReLU, each entry's channels
+    std::vector<NeuralNetwork::Layer> layers;
+    std::vector<Activation> acts;
+    for (std::size_t j = 0; j <= k; ++j) {
+        layers.push_back(NeuralNetwork::Layer::conv_windows(net.maps[j], pixels[j + 1],
+                                                            width[j + 1], pixels[j], width[j]));
+        acts.push_back(j < k ? Activation::relu : Activation::identity);
+    }
+    const int64_t channels = net.maps[k].conv_channels(true);
+    std::vector<int64_t> picked(std::size_t(W * group), -1);
+    for (int64_t w = 0; w < W; ++w)
+        std::copy(entries[std::size_t(w)].second.begin(), entries[std::size_t(w)].second.end(),
+                  picked.begin() + std::ptrdiff_t(w * group));
+    layers.push_back(NeuralNetwork::Layer::gather_windows(picked, group, channels, x));
+    acts.push_back(Activation::identity);
+    const NeuralNetwork nn(layers, acts);
+    ZonoNet wnet(nn, 0.0, 0.0, net.poly_method, net.approx_error_order);
+    wnet.deadline = net.deadline;
+    // each window's biases, bounds, start slopes and box
+    ZonoBounds wbounds;
+    wbounds.l.resize(k + 2);
+    wbounds.u.resize(k + 2);
+    std::vector<Tensor> wstart(k + 2);
+    ZonoPropagation wout;
+    for (std::size_t j = 0; j <= k; ++j) {
+        const int64_t C = net.maps[j].conv_channels(true);
+        wnet.b[j] = aux_window_values(net.b[j], C, pixels[j + 1], width[j + 1]).expand_dims(1);
+        if (j == k) continue;
+        wbounds.l[j] = aux_window_values(bounds.l[j], C, pixels[j + 1], width[j + 1]);
+        wbounds.u[j] = aux_window_values(bounds.u[j], C, pixels[j + 1], width[j + 1]);
+        if (start[j].defined())
+            wstart[j] = aux_window_values(start[j] + 0.0, C, pixels[j + 1], width[j + 1]);
+        // the pass reads the bounds given: the record only counts the activation layers
+        ZonoLayerRecord rec;
+        rec.index = int64_t(j);
+        rec.first_id = wnet.first_ids[j];
+        rec.l = wbounds.l[j];
+        rec.u = wbounds.u[j];
+        wout.layers.push_back(rec);
+    }
+    const int64_t C0 = net.maps[0].conv_channels(false);
+    const Tensor wx = aux_window_values(x, C0, pixels[0], width[0]);
+    const Tensor wr = aux_window_values(rad, C0, pixels[0], width[0]);
+    // the rows e_g and -e_g of each entry's channels
+    const Tensor eye = x.eye_like(group);
+    const Tensor v = aux_optimized(wout, wnet, wbounds, wstart, k + 1, wx, wr,
+                                   Tensor::concat({eye, eye.negative()}, 0), iterations, step,
+                                   deadline, false, false, 1.0, steps_until);
+    return {v.slice(1, 0, group), v.slice(1, group, 2 * group).negative()};
+}
+
+// The chunks of the windows -----------------------------------------------------------------------
+
+/// aux_window_bounds for the neurons idx of layer k in chunks of the budget, their bounds
+/// intersected into l and u (1, n). Returns the neurons left unbounded (out of memory at one
+/// entry, or late).
+std::vector<int64_t> aux_windows(const ZonoNet &net, const ZonoBounds &bounds,
+                                 const std::vector<Tensor> &start, std::size_t k, const Tensor &x,
+                                 const Tensor &rad, const std::vector<int64_t> &idx, Tensor &l,
+                                 Tensor &u, int64_t iterations, double step, int64_t max_bytes,
+                                 double deadline, double steps_until, int64_t *backoffs) {
+    constexpr int64_t kGroup = 32; // the channels of one pixel bounded together
+    const int64_t P = net.maps[k].conv_pixels(true);
+    // the entries: each pixel's neurons, kGroup channels at most
+    std::vector<std::pair<int64_t, std::vector<int64_t>>> entries;
+    std::vector<std::vector<int64_t>> per(static_cast<std::size_t>(P));
+    for (const int64_t i : idx) per[std::size_t(i % P)].push_back(i / P);
+    for (int64_t p = 0; p < P; ++p)
+        for (std::size_t at = 0; at < per[std::size_t(p)].size(); at += std::size_t(kGroup)) {
+            const auto first = per[std::size_t(p)].begin() + std::ptrdiff_t(at);
+            const auto count = std::min<std::size_t>(kGroup, per[std::size_t(p)].size() - at);
+            entries.emplace_back(p, std::vector<int64_t>(first, first + std::ptrdiff_t(count)));
+        }
+    // an entry's entries per row: the windows of every layer (the middle pixel's)
+    int64_t window = 0;
+    std::vector<int64_t> reads{P / 2};
+    for (std::size_t j = k + 1; j-- > 0;) {
+        window += net.maps[j].conv_channels(true) * int64_t(reads.size());
+        reads = net.maps[j].conv_reads(reads);
+        // a convolution's patches: its offsets times the input window
+        window += net.maps[j].conv_channels(false) * int64_t(reads.size()) * 10;
+    }
+    // as many entries a chunk as the budget holds; the bounds on the host
+    const int64_t per_entry = 8 * 2 * kGroup * window * (iterations > 0 ? 3 : 1);
+    int64_t chunk = std::max<int64_t>(1, max_bytes / std::max<int64_t>(1, per_entry));
+    std::vector<double> lv = l.data(), uv = u.data();
+    std::vector<int64_t> left;
+    for (std::size_t at = 0; at < entries.size();) {
+        const std::size_t to = std::min(entries.size(), at + std::size_t(chunk));
+        const std::vector<std::pair<int64_t, std::vector<int64_t>>> part(
+            entries.begin() + std::ptrdiff_t(at), entries.begin() + std::ptrdiff_t(to));
+        const bool late = now_seconds() >= std::min(deadline, net.deadline);
+        std::vector<double> lo, hi;
+        try {
+            priv_oom_site("crown_windows");
+            if (!late) {
+                const auto [a, b] = aux_window_bounds(net, bounds, start, k, x, rad, part, kGroup,
+                                                      iterations, step, deadline, steps_until);
+                lo = a.data();
+                hi = b.data();
+            }
+        } catch (const std::exception &error) {
+            // out of memory: half the entries; at one entry these neurons go to the caller
+            if (!priv_is_oom(error)) std::rethrow_exception(std::current_exception());
+            free_device_cache(x.device_id());
+            if (backoffs) ++*backoffs;
+            if (chunk > 1) {
+                chunk /= 2;
+                continue;
+            }
+        }
+        // each entry's channels: the intersection with the bounds so far
+        for (std::size_t e = 0; e < part.size(); ++e)
+            for (std::size_t g = 0; g < part[e].second.size(); ++g) {
+                const auto i = std::size_t(part[e].second[g] * P + part[e].first);
+                if (lo.empty()) {
+                    left.push_back(int64_t(i));
+                    continue;
+                }
+                lv[i] = std::max(lv[i], lo[e * std::size_t(kGroup) + g]);
+                uv[i] = std::min(uv[i], hi[e * std::size_t(kGroup) + g]);
+            }
+        at = to;
+    }
+    l = Tensor::like(l, lv, l.shape());
+    u = Tensor::like(u, uv, u.shape());
+    std::sort(left.begin(), left.end());
+    return left;
+}
+
 } // namespace
 
 
@@ -175,7 +359,7 @@ void priv_adam_slopes(std::vector<Tensor> &alpha, std::vector<Tensor> &m1, std::
 ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
                              const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
                              double deadline, bool softmax_lse, int64_t *backoffs, bool products,
-                             double product_start, double steps_until) {
+                             double product_start, double steps_until, bool windows) {
     const std::size_t L = net.W.size();
     int64_t steps = iterations; // 0 once out of memory at one row
     const int64_t B = x.shape()[0];
@@ -207,6 +391,10 @@ ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, con
                 if (open[std::size_t(i)] > 0 && (same.empty() || same[std::size_t(i)] == i))
                     idx.push_back(i);
         }
+        // a convolution chain: each neuron's bounds on the window of its receptive field
+        if (windows && B == 1 && !idx.empty() && aux_windowable(net, k))
+            idx = aux_windows(net, bounds, start, k, x, rad, idx, l, u, steps, step, max_bytes,
+                              deadline, steps_until, backoffs); // left: by the whole layers
         // the rows in chunks: Lambda (B, 2 c, widest); with steps the reverse's and the slopes'
         int64_t stepped = 0;
         for (std::size_t j = 0; j < k && iterations > 0; ++j) {

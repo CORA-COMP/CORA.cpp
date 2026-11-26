@@ -142,6 +142,27 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   computed weights' error times `|d - d0|`; a neuron whose bounds or values are not finite, or
   `l <= 0`, keeps the two layers' lines. The slope steps' reverse pass evaluates the same line at
   the exps' inputs, so their gradient stays the bound's.
+- **CROWN's windows (`relu_bab_crown_windows`, CORA.cpp only; the challenging_certified_training
+  preset).** In a chain of convolutions with ReLUs between them, the input `z` of a neuron of
+  layer k reads only the pixels of its receptive field. `priv_crown_bounds` then bounds the
+  crossing neurons of such a layer on *windows*: per pixel of layer k (and at most 32 of its
+  channels, an entry) the layers 0..k restricted to the pixels the entry reads
+  (`Layer::conv_windows`: the same kernel on each entry's own pixel lists, a pixel outside the
+  image or the window reads 0; `Layer::gather_windows` picks the entry's channels), with each
+  entry's own copies of the biases, the earlier layers' bounds, the start slopes and the box
+  (`aux_window_bounds`). The entries are the batch axis of the same `priv_backward_lower` (and of
+  the same slope steps), so one pass bounds hundreds of pixels on a few thousand entries of
+  Lambda each instead of the whole layers' (cifar10 wide_cnn7: 19 000 against 330 000 for its
+  fourth convolution). **Soundness:** the windows' net computes exactly `z_k` at the entry's
+  neurons from the windowed inputs (a convolution's output pixel is a sum over its patch; a patch
+  entry outside the image is the padding's 0, and every in-image pixel the outputs read is in the
+  window by construction, `conv_reads`), each of its neurons is a neuron of the network with that
+  neuron's bounds, and a padding slot's Lambda is 0 (no patch entry points to it). The pass is the
+  network's pass with the zero entries of Lambda left out: the bounds agree with the whole
+  layers' to rounding (`crown_windows` test: 1e-9, with and without slope steps). Out of memory:
+  half the entries, at one entry the whole layers. Measured (dev seed 1001, 20 slope steps): the
+  root's layer bounds 111 s -> 44 s (wide_cnn7, 30 109 crossing neurons) and 56 s -> 16 s (cnn7);
+  with 5 steps 13 s and 4.5 s at the same crossing counts.
 - **The lean root check (`lean_root_check`, CORA.cpp only; the vggnet16 preset).** Before the
   branch and bound, each box is propagated once as an unrecorded zonotope (`aux_lean_root`) with a
   generator per moved input (`r_i > 0`) and, per activation layer, a slot for exactly the neurons

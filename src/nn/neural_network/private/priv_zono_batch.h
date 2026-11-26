@@ -249,14 +249,15 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                            double deadline = std::numeric_limits<double>::infinity());
 
 /// CROWN's bounds of the activation layers' inputs of a record without splits, intersected with
-/// its own (priv_zono_bounds.cpp): `iterations` steps of `step` per row, none after steps_until;
-/// products: a product's operands too, the earlier products' planes stepped from product_start.
+/// its own (priv_zono_bounds.cpp: the steps, a product's operands, a convolution chain's
+/// windows); `iterations` steps of `step` per row, none after steps_until.
 ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
                              const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
                              double deadline = std::numeric_limits<double>::infinity(),
                              bool softmax_lse = false, int64_t *backoffs = nullptr,
                              bool products = false, double product_start = 1.0,
-                             double steps_until = std::numeric_limits<double>::infinity());
+                             double steps_until = std::numeric_limits<double>::infinity(),
+                             bool windows = false);
 
 // The branch and bound with the CROWN node bound --------------------------------------------------
 
