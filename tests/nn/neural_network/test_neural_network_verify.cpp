@@ -880,6 +880,31 @@ void lean_root(const std::string &b) {
             proved += t == least - 3.0 && res.status == "unsat" ? 1 : 0;
         }
     }
+    // more moved inputs than one plan takes (16): the generators go through in parts
+    {
+        const NeuralNetwork nn = aux_network(rng, {18, 12, 2}, Activation::relu);
+        const Tensor lo = Tensor::from_data(std::vector<double>(18, -0.2), {1, 18});
+        const Tensor hi = Tensor::from_data(std::vector<double>(18, 0.3), {1, 18});
+        std::vector<double> xs(std::size_t(2000 * 18));
+        rng.uniform(xs.data(), xs.size(), -0.2, 0.3);
+        const std::vector<double> y = nn.evaluate(Tensor::from_data(xs, {2000, 18})).data();
+        double least = kInfinity, most = -kInfinity;
+        for (std::size_t i = 0; i < 2000; ++i) {
+            least = std::min(least, y[i * 2]);
+            most = std::max(most, y[i * 2]);
+        }
+        ZonoNet net(nn, 18, kInfinity, "bounds", "length");
+        net.dynamic_slot_bytes = int64_t(1) << 30;
+        const Tensor x = (lo + hi) * 0.5, r = (hi - lo) * 0.5;
+        const ZonoInput in = net.input_zonotope(x, r); // a generator per input (18)
+        const ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({1, 0}), nullptr, false);
+        const double reach =
+            out.G.abs().sum(1).data()[0] + (out.dr.defined() ? out.dr.data()[0] : 0.0);
+        check(in.G.shape()[1] == 18 && out.c.data()[0] - reach <= least + 1e-9 &&
+                  out.c.data()[0] + reach >= most - 1e-9,
+              b + ": 18 moved inputs go through in parts and the zonotope holds the samples");
+    }
     check(inside == nets, b + ": the unrecorded zonotope with dynamic slots holds the samples");
     check(wrong == 0, b + ": the lean root check is never unsat where a sample violates");
     check(lean > 0 && proved == nets, b + ": the lean root check decides wide margins at the root");
