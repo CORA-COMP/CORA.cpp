@@ -464,6 +464,9 @@ class ConZonotopeBounding : public Bounding {
     void aux_relu_bab_slots(NnProblem &problem, const Tensor &xi, const Tensor &ri,
                             std::map<std::string, double> &stats);
     std::unique_ptr<ZonoNet> aux_root_net(double gens, const std::vector<int64_t> &per) const;
+    /// Every box by one unrecorded zonotope: a generator per moved input, a slot per neuron with
+    /// an error (lean_root_check); true: every box's polytopes are excluded.
+    bool aux_lean_root(const NnProblem &problem, std::map<std::string, double> &stats) const;
     bool aux_shrink_root();
     void aux_relu_bab_crown(const Tensor &xi, const Tensor &ri, const Tensor &si,
                             ZonoPropagation &out, ZonoBounds &bounds,
@@ -821,6 +824,7 @@ std::string ConZonotopeBounding::branch_and_bound(NnProblem &problem, double dea
     if (init_gen_budget_ >= 0) stats["init_gen_budget"] = init_gen_budget_;
     if (o_.refinement_method == "relu-bab") return aux_relu_bab(problem, stats);
     if (o_.refinement_method == "crown-bab") return aux_crown_bab(problem, stats);
+    if (o_.lean_root_check && aux_lean_root(problem, stats)) return "unsat";
     Tensor xs = (problem.outer_lo + problem.outer_hi) * 0.5;
     Tensor rs = (problem.outer_hi - problem.outer_lo) * 0.5;
     Tensor cases = problem.box_case;
@@ -1360,6 +1364,50 @@ std::unique_ptr<ZonoNet> ConZonotopeBounding::aux_root_net(double gens,
         net->q += net->slots[k];
     }
     return net;
+}
+
+bool ConZonotopeBounding::aux_lean_root(const NnProblem &problem,
+                                        std::map<std::string, double> &stats) const {
+    const StepTimer timer(&stats, "lean_root_seconds", problem.outer_lo.device_id());
+    const int64_t boxes = problem.outer_lo.shape()[0];
+    const int64_t budget = aux_free_share(problem.batch_memory_budget / 4);
+    try {
+        priv_oom_site("lean_root");
+        for (int64_t i = 0; i < boxes; ++i) {
+            const auto [xi, ri, ci] = aux_box(problem, i);
+            // the moved inputs: each a generator, if they fit a layer's generators
+            const std::vector<int64_t> moved = ri.squeeze(0).greater(ri.zeros_like({1})).nonzero();
+            int64_t widest = net_->n0;
+            for (const int64_t w : net_->widths) widest = std::max(widest, w);
+            const auto p = int64_t(moved.size());
+            stats["lean_root_generators"] = double(p);
+            if (p == 0 || 8 * 2 * p * widest > budget) return false;
+            // the net: no record, a layer's slots where its errors are (the rest: the interval)
+            ZonoNet net(problem.net(), double(p), kInf, o_.poly_method, "length");
+            net.dynamic_slot_bytes = budget;
+            net.deadline = net_->deadline;
+            std::vector<double> ids;
+            ids.reserve(moved.size());
+            for (const int64_t d : moved) ids.push_back(double(d));
+            const ZonoInput in = net.input_zonotope(xi, ri, Tensor::like(xi, ids, {1, p}));
+            const ZonoPropagation out =
+                net.forward(in.c, in.dr, in.G, xi.zeros_like({1, 0}), nullptr, false);
+            stats["lean_root_factors"] = double(out.G.shape()[1]);
+            // every polytope of the box's case excluded by the zonotope's margins
+            const Tensor lower = aux_margins(out);
+            stats["lean_root_margin"] = lower.max(2).min().item();
+            if (aux_excluded_lower(lower, ci).min().item() <= 0) return false;
+        }
+    } catch (const std::exception &error) {
+        // out of memory, or the deadline: the usual branch and bound
+        if (!priv_is_oom(error) && !is_deadline(error))
+            std::rethrow_exception(std::current_exception());
+        free_device_cache(problem.outer_lo.device_id());
+        stats["lean_root_oom"] += 1;
+        return false;
+    }
+    stats["lean_root_verified"] = 1;
+    return true;
 }
 
 bool ConZonotopeBounding::aux_shrink_root() {

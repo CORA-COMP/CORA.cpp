@@ -105,6 +105,9 @@ class ZonoNet {
     std::string poly_method, approx_error_order;
     int64_t n0 = 0, q0 = 0, q = 0, num_outputs = 0, num_neurons = 0;
     bool interval_center = false;
+    /// forward without a record: a layer's slots are the neurons of an error above 0 alone (at
+    /// most slots[k], and while the generators stay within these bytes; 0: slots[k] always).
+    int64_t dynamic_slot_bytes = 0;
     /// The deadline of the passes: evaluate, sensitivity, forward and the reverse and backward
     /// passes check it once per layer (check_deadline raises, is_deadline tells).
     double deadline = std::numeric_limits<double>::infinity();

@@ -142,6 +142,20 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   computed weights' error times `|d - d0|`; a neuron whose bounds or values are not finite, or
   `l <= 0`, keeps the two layers' lines. The slope steps' reverse pass evaluates the same line at
   the exps' inputs, so their gradient stays the bound's.
+- **The lean root check (`lean_root_check`, CORA.cpp only; the vggnet16 preset).** Before the
+  branch and bound, each box is propagated once as an unrecorded zonotope (`aux_lean_root`) with a
+  generator per moved input (`r_i > 0`) and, per activation layer, a slot for exactly the neurons
+  whose line has an error (`ZonoNet::dynamic_slot_bytes`: as many as the generators' bytes allow,
+  the rest of the errors in the interval center); the generators go through a convolution 16 at a
+  time. The box is decided when the zonotope's margins exclude every polytope of its case; else,
+  or out of memory or late, the usual search follows. vggnet16_2022 moves 1 to 100 of 150 528
+  inputs by 1e-5 to 1e-3: the batch's recorded set held 1 to 18 input generators within its
+  memory and no slot, so the other moved inputs and every error went through interval arithmetic
+  (root margin -4e15); the lean zonotope has 2 to 104 factors and decides the four dev instances
+  in 0.1 to 0.7 s (15 GiB peak, 14 of them the attack's). With `root_check_first` it runs before
+  the attack. **Soundness:** the zonotope is `ZonoNet::forward`'s: which neurons get a slot is free
+  (an error without a slot is added to the interval center's radius, never dropped), and the
+  input's generators are exactly its moved dimensions, the others a point.
 - **A product's planes (`crown_product_steps`, CORA.cpp only; the vit preset).** A product layer
   `y = a b` is bounded by the line on its recorded input set (`priv_product_line`). With
   `ZonoBackward::product_mix` and `product_side` a row reads instead, per product neuron, the plane
@@ -652,7 +666,7 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
     nearest for the forms, as the backward bound; a node's value is lowered by `2 (n + D + 16)`
     ulps of the sizes of its terms (the constant's, the multipliers' times their offsets and
     rows' 1-norms, the row's), which bounds the rounding of its sums and products for any
-    summation order, so large multipliers cannot verify a node by cancellation; the empty-side
+    summation order, so large multipliers cannot verify a node by cancellation (only the float64 value that decides; the search dtype's values choose multipliers and candidates and are not lowered, whose float32 ulps had hidden most candidates); the empty-side
     test has `1e-6` of slack over the forms' rounding.
 - **relu_constraint_faces:** `triangle` adds the chord above each chosen crossing ReLU as a third row
   (CORA's `num_relu_constraints` rows are the two lower faces), so the factor system holds the

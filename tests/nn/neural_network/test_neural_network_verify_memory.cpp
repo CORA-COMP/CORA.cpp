@@ -177,6 +177,31 @@ void injected(const std::string &b) {
     check(proved > 0, b + ": a back-off that completes still proves");
 }
 
+/// The lean root check out of memory: the usual search answers, the back-off counted.
+void lean_root_out_of_memory(const std::string &b) {
+    if (b == "lean") return;
+    Rng rng(47);
+    const NeuralNetwork nn = aux_network(rng, {2, 12, 12, 2});
+    std::vector<double> xs(std::size_t(20000 * 2));
+    rng.uniform(xs.data(), xs.size(), -1.0, 1.0);
+    const std::vector<double> y = nn.evaluate(Tensor::from_data(xs, {20000, 2})).data();
+    double least = kInf;
+    for (std::size_t i = 0; i < 20000; ++i) least = std::min(least, y[i * 2]);
+    // zonotack with the lean root check, its pass out of memory
+    NnVerifyOptions o = aux_options(b);
+    o.refinement_method = "zonotack";
+    o.lean_root_check = true;
+    priv_inject_oom("lean_root", 0, 1000);
+    const NnVerifyResult r = nn.verify(aux_below(2, -1.0, 1.0, least - 0.3), kTimeout, o);
+    priv_inject_oom("lean_root", 0, 0);
+    int wrong = 0;
+    if (r.status == "unsat")
+        for (std::size_t i = 0; i < 20000; ++i) wrong += y[i * 2] <= least - 0.3 ? 1 : 0;
+    check(r.stats.count("lean_root_oom") > 0 && wrong == 0 &&
+              (r.status == "unsat" || r.status == "unknown"),
+          b + ": the lean root check out of memory leaves the usual search");
+}
+
 /// Budgets of one byte: the smallest root net, row chunks and batches of one, a sound answer.
 void tiny_budgets(const std::string &b) {
     if (b == "lean") return;
@@ -257,6 +282,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         injected(b);
         tiny_budgets(b);
+        lean_root_out_of_memory(b);
         last_resort(b);
     });
     return test::finish("neuralNetwork verify out of memory");

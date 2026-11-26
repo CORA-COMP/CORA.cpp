@@ -5931,6 +5931,7 @@ void bind_verify(py::module_ &m) {
                       "PGD: the steps of the restarts as shares of the radius, cycled");
     CORA_VERIFY_FIELD(pgd_step_decay, "PGD: the factor of the step at every step");
     CORA_VERIFY_FIELD(pgd_momentum, "PGD: the momentum of the gradient whose sign is the step");
+    // PGD's hops and polish
     CORA_VERIFY_FIELD(pgd_hops, "PGD: the hops of the best points after each round");
     CORA_VERIFY_FIELD(pgd_hop_steps, "PGD: the steps of a hop");
     CORA_VERIFY_FIELD(pgd_hop_keep, "PGD: the best points that hop");
@@ -5942,6 +5943,8 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(pgd_polish_keep, "PGD: the best points that are polished");
     CORA_VERIFY_FIELD(pgd_sign_windows,
                       "PGD: the half-width of the sign's straight-through gradient, per round");
+    CORA_VERIFY_FIELD(lean_root_check,
+                      "Each box first by one unrecorded zonotope of all its factors");
     CORA_VERIFY_FIELD(root_check_first, "The bounding's first batch before the first attack");
     CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
     CORA_VERIFY_FIELD(pgd_min_steps, "The PGD steps that the shrunk restarts fit in the time");

@@ -321,6 +321,11 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.relu_bab_crown_step = 0.5;
         o.relu_bab_crown_time_share = 0.1;
     }
+    // vggnet16: a few moved pixels of a large net, each box first by its lean zonotope
+    if (name == "vggnet16") {
+        o.lean_root_check = true;
+        o.root_check_first = true;
+    }
     // the wide nets that crown-bab closes (dev seed 1001): ReLU splits under CROWN's node bound
     const bool affine = name == "safenlp" || name == "challenging_certified_training";
     if (name == "cifar100" || name == "tinyimagenet" || name == "vit" || affine)

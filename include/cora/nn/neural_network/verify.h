@@ -104,6 +104,9 @@ struct NnVerifyOptions {
     /// attack-first: the bounding's first batch over the root boxes comes before the attack (an
     /// unsat the bounds decide at once is not left to a long attack).
     bool root_check_first = false;
+    /// Before the branch and bound, every box by one unrecorded zonotope with a generator per
+    /// moved input and a slot per neuron with an error (few moved inputs of a large net).
+    bool lean_root_check = false;
     int64_t max_candidates = 8; ///< confirm checks per attack step
     /// PGD's restarts shrink until this many steps fit in the attack's time (a slow, wide network).
     int64_t pgd_min_steps = 10;
