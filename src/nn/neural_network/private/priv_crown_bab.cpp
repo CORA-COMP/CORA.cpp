@@ -159,6 +159,7 @@ struct Pass {
     const ZonoNet *net = nullptr;
     const ZonoBounds *bounds = nullptr;
     Tensor x, rad, rows, offsets;
+    std::shared_ptr<ZonoLineCache> lines = std::make_shared<ZonoLineCache>(); ///< of its passes
 };
 
 // The search --------------------------------------------------------------------------------------
@@ -187,6 +188,21 @@ class CrownBab {
     Tensor roots() const {
         return bound(root_nodes(), root_slopes(), root_slopes() * 0.0, o_.root_steps)
             .best.squeeze(0);
+    }
+
+    /// Per row the slopes of its affine form at the root's best slopes (priv_crown_bab_slopes):
+    /// per ReLU layer (K, n), and the rows' root bounds (K).
+    std::vector<Tensor> line_slopes(Tensor *root) const {
+        const Bounded b = bound(root_nodes(), root_slopes(), root_slopes() * 0.0, o_.root_steps);
+        if (root) *root = b.best.squeeze(0);
+        // the chord (-1) where the row's Lambda is below 0: there its upper line is read
+        const Tensor below = b.score.greater(b.score.zeros_like({1}));
+        const Tensor a = Tensor::where(below, b.alpha.full_like({1}, -1.0), b.alpha);
+        std::vector<Tensor> out(space_.idx.size());
+        const Tensor chords = Tensor::concat({a.squeeze(0), a.full_like({K_, 1}, -1.0)}, -1);
+        for (std::size_t k = 0; k < space_.idx.size(); ++k)
+            if (!space_.pos[k].empty()) out[k] = chords.take(space_.idx[k], -1);
+        return out;
     }
 
   private:
@@ -243,6 +259,7 @@ Tensor CrownBab::evaluate(const Pass &p, const std::vector<Tensor> &signs, const
     opt.intercepts = ic;
     opt.corner = corner;
     opt.softmax_lse = o_.softmax_lse;
+    opt.lines = p.lines.get();
     return priv_backward_lower(*p.out, *p.net, p.x.zeros_like({N, 0}), xs, rs, p.rows, nullptr,
                                &opt) -
            p.offsets;
@@ -495,6 +512,7 @@ int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBou
                    const CrownBabOptions &o, const std::function<bool(const Tensor &)> &check,
                    std::map<std::string, double> &stats, const CrownBabSearch *search) {
     if (x.shape()[0] != 1) CORA_FAIL(Error::wrong_value, "verify: crown-bab bounds one box");
+    // one polytope's search
     CrownBab bab(out, net, bounds, x, rad, rows, offsets, o, stats, search);
     return bab.run(check);
 }
@@ -506,6 +524,20 @@ Tensor priv_crown_bab_roots(const ZonoPropagation &out, const ZonoNet &net,
     if (x.shape()[0] != 1) CORA_FAIL(Error::wrong_value, "verify: crown-bab bounds one box");
     const CrownBab bab(out, net, bounds, x, rad, rows, offsets, o, stats, search);
     return bab.roots();
+}
+
+std::vector<Tensor> priv_crown_bab_slopes(const ZonoPropagation &out, const ZonoNet &net,
+                                          const ZonoBounds &bounds, const Tensor &x,
+                                          const Tensor &rad, const Tensor &rows,
+                                          const Tensor &offsets, const CrownBabOptions &o,
+                                          std::map<std::string, double> &stats,
+                                          const CrownBabSearch *search, Tensor *root) {
+    if (x.shape()[0] != 1) CORA_FAIL(Error::wrong_value, "verify: crown-bab bounds one box");
+    // every row takes all the steps: none stops them as a polytope's verified row would
+    CrownBabOptions all = o;
+    all.margin = kInf;
+    const CrownBab bab(out, net, bounds, x, rad, rows, offsets, all, stats, search);
+    return bab.line_slopes(root);
 }
 
 // The search dtype --------------------------------------------------------------------------------

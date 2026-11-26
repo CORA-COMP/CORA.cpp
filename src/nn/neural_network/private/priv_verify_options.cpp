@@ -88,6 +88,7 @@ void NnVerifyOptions::validate() const {
     aux_one_of("refinement_method", refinement_method,
                {"zonotack", "naive", "relu-bab", "crown-bab"});
     aux_one_of("relu_bab_order", relu_bab_order, {"output", "error"});
+    aux_one_of("affine_bab_slopes", affine_bab_slopes, {"crown", "chord"});
     aux_one_of("bab_falsification_method", bab_falsification_method,
                {"zonotack", "center", "fgsm"});
     aux_one_of("approx_error_order", approx_error_order,
@@ -128,6 +129,11 @@ void NnVerifyOptions::validate() const {
     aux_at_least("crown_bab_witnesses", double(crown_bab_witnesses), 0);
     aux_at_least("crown_bab_fsb", double(crown_bab_fsb), 0);
     aux_at_least("crown_bab_memory_budget", double(crown_bab_memory_budget), 0);
+    aux_at_least("affine_bab_time_share", affine_bab_time_share, 0);
+    aux_at_least("affine_bab_steps", double(affine_bab_steps), 0);
+    aux_at_least("affine_bab_batch", double(affine_bab_batch), 1);
+    aux_at_least("affine_bab_bisections", double(affine_bab_bisections), 0);
+    aux_at_least("affine_bab_polyak", double(affine_bab_polyak), 0);
     // CROWN's bounds of the layer inputs: relu-bab's root and the check
     aux_at_least("relu_bab_crown_rounds", double(relu_bab_crown_rounds), 0);
     aux_at_least("relu_bab_crown_iterations", double(relu_bab_crown_iterations), 0);
@@ -307,8 +313,11 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.crown_softmax_lse = true;
     }
     // the wide nets that crown-bab closes (dev seed 1001): ReLU splits under CROWN's node bound
-    if (name == "cifar100" || name == "tinyimagenet" || name == "vit")
+    const bool affine = name == "safenlp" || name == "challenging_certified_training";
+    if (name == "cifar100" || name == "tinyimagenet" || name == "vit" || affine)
         o.refinement_method = "crown-bab";
+    // their ReLU nets: each open row first on the root's affine form (dev seed 1001)
+    if (name == "cifar100" || name == "tinyimagenet" || affine) o.affine_bab = true;
     if (name == "vit") o.relu_bab_crown_iterations = 0; // plain CROWN's layer bounds at the root
     if (name == "tinyimagenet") o.relu_bab_init_gens = 256; // the root net within the GPU's memory
     return o;

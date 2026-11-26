@@ -179,6 +179,23 @@ std::vector<Tensor> priv_alpha_gradients(const ZonoPropagation &out, const ZonoN
 std::vector<Tensor> priv_alpha_start(const ZonoPropagation &out, const ZonoNet &net,
                                      const Tensor &splits);
 
+// The backward pass -------------------------------------------------------------------------------
+
+/// The lines of the layers that are not ReLUs, kept between priv_backward_lower's passes on one
+/// record, bounds and splits (they depend on neither the rows nor a node's ReLU split signs).
+struct ZonoLineCache {
+    std::vector<PrivLine> line;            ///< per layer (undefined: not yet)
+    std::vector<std::vector<Tensor>> soft; ///< per layer a softmax's upper line (empty: not yet)
+};
+
+/// What priv_backward_lower's pass gives of its rows at chosen ReLU neurons (affine_at): per
+/// layer each row's Lambda at the neurons' outputs (B, R, |at|), the chords' slopes and offsets
+/// b_u there (B, |at|), and the rows' Lambda at the input (B, R, n0).
+struct ZonoAffineRows {
+    std::vector<Tensor> lambda, slope, offset;
+    Tensor input;
+};
+
 /// The options of priv_backward_lower's pass beyond the default (CROWN on the output).
 struct ZonoBackward {
     int64_t top = -1; ///< the rows (R, n_top) bound layer top's input (-1: the output)
@@ -198,6 +215,13 @@ struct ZonoBackward {
     /// neuron's share of the bound's loss (the branching score); undefined for other layers.
     std::vector<Tensor> *intercepts = nullptr;
     Tensor *corner = nullptr; ///< out: the input box's corner minimizing each row (B, R, n0)
+    /// One slope a per crossing ReLU below and above (per ReLU layer (B, n), clamped to [0, 1];
+    /// below 0 or undefined: the chord's): its output is a z + e, e in [0, max(-a l, u - a u)].
+    const std::vector<Tensor> *one_slope = nullptr;
+    /// The neurons of each ReLU layer whose Lambda `affine` gets (empty: none of the layer).
+    const std::vector<std::vector<int64_t>> *affine_at = nullptr;
+    ZonoAffineRows *affine = nullptr; ///< out: the rows' coefficients at affine_at's neurons
+    ZonoLineCache *lines = nullptr;   ///< in and out: the other layers' lines of earlier passes
 };
 
 /// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
@@ -253,6 +277,14 @@ int priv_crown_bab(const ZonoPropagation &out, const ZonoNet &net, const ZonoBou
                    const CrownBabOptions &o, const std::function<bool(const Tensor &)> &check,
                    std::map<std::string, double> &stats, const CrownBabSearch *search = nullptr);
 
+/// priv_affine_table's slopes per row of rows (R, m) minus offsets (R), per ReLU layer (R, n):
+/// the root's optimized lower slope where the row's Lambda is not below 0, else -1 (the chord).
+std::vector<Tensor>
+priv_crown_bab_slopes(const ZonoPropagation &out, const ZonoNet &net, const ZonoBounds &bounds,
+                      const Tensor &x, const Tensor &rad, const Tensor &rows, const Tensor &offsets,
+                      const CrownBabOptions &o, std::map<std::string, double> &stats,
+                      const CrownBabSearch *search = nullptr, Tensor *root = nullptr);
+
 /// The root's bounds (R) of rows (R, m) minus offsets (R) as priv_crown_bab's root: no split,
 /// o.root_steps steps on the per-row slopes, each row's best (in the record's dtype).
 Tensor priv_crown_bab_roots(const ZonoPropagation &out, const ZonoNet &net,
@@ -266,6 +298,62 @@ Tensor priv_crown_bab_roots(const ZonoPropagation &out, const ZonoNet &net,
 ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype);
 ZonoPropagation priv_record_to(const ZonoPropagation &out, DType dtype);
 ZonoBounds priv_bounds_to(const ZonoBounds &bounds, DType dtype);
+
+// The branch and bound on the root's affine form --------------------------------------------------
+
+/// The affine forms of the inputs of a ReLU net's crossing neurons (U of them, layer by layer)
+/// over one box at given bounds, each ReLU one slope (priv_affine_bab.cpp): z_j = c_j + A_j e for
+/// the factors e in [-1, 1]^n, n = n0 + U (the input's dimensions, then each neuron's error).
+struct AffineTable {
+    bool applicable = false; ///< ReLU layers only, and the rows within the budget
+    int64_t n0 = 0, U = 0;
+    std::vector<std::vector<int64_t>> pos; ///< per layer of the net its crossing neurons
+    Tensor x, rad;                         ///< the box (1, n0)
+    Tensor A, c;                           ///< (U, n), (U)
+    Tensor l, u, slope, half;              ///< (U): the bounds, the line's slope, half its offset
+    std::vector<Tensor> slopes;            ///< the slopes asked for (ZonoBackward::one_slope)
+};
+
+/// The options of priv_affine_bab (NnVerifyOptions' affine_bab_*).
+struct AffineBabOptions {
+    int64_t batch = 16384;  ///< nodes bounded at once at most (fewer if max_bytes asks)
+    int64_t steps = 0;      ///< line-search steps on a node's multipliers, after Polyak's
+    int64_t bisections = 8; ///< of a step's line search
+    int64_t polyak = 2;     ///< steps of Polyak's size toward the margin, from the parent's
+    double margin = 0;      ///< a node is verified when its bound exceeds it
+    bool search = false;    ///< the steps in search_dtype, the bound in the table's dtype
+    DType search_dtype{};   ///< the steps' dtype with `search`
+    int64_t max_bytes = int64_t(1) << 30;      ///< the bytes of one batch's bound, about
+    int64_t frontier_bytes = int64_t(1) << 30; ///< the open nodes' bytes at most (else open)
+    double deadline = std::numeric_limits<double>::infinity();
+};
+
+/// The table of the record's crossing neurons at `bounds` over the box (x, rad) (B = 1) with the
+/// ReLUs' slopes (ZonoBackward::one_slope; empty: the chords'): one priv_backward_lower pass per
+/// chunk of neurons. Not applicable: a layer that is not a ReLU, or rows beyond max_bytes.
+AffineTable priv_affine_table(const ZonoPropagation &out, const ZonoNet &net,
+                              const ZonoBounds &bounds, const Tensor &x, const Tensor &rad,
+                              const std::vector<Tensor> &slopes, int64_t max_bytes);
+
+/// The forms (R, n) and centers (R) of rows (R, m) times the output in the table's factors.
+std::pair<Tensor, Tensor> priv_affine_rows(const AffineTable &t, const ZonoPropagation &out,
+                                           const ZonoNet &net, const ZonoBounds &bounds,
+                                           const Tensor &rows);
+
+/// The bounds (N) of priv_affine_bab's nodes of sides (N, D) (+1: inactive, -1: active) on the
+/// first D neurons of the row's order (`*order`: the table's neuron of each split), `polyak`
+/// then `steps` ascent steps from multipliers 0.
+Tensor priv_affine_node_bounds(const AffineTable &t, const ZonoPropagation &out, const ZonoNet &net,
+                               const ZonoBounds &bounds, const Tensor &row, const Tensor &offset,
+                               const Tensor &sides, int64_t steps,
+                               std::vector<int64_t> *order = nullptr, int64_t polyak = 0);
+
+/// The ReLU-split branch and bound of row (1, m) times the output minus offset (1) on the
+/// table's affine forms. 1: above o.margin on the whole box, 0: open (the deadline, the
+/// frontier's bytes, every neuron split, not applicable).
+int priv_affine_bab(const AffineTable &t, const ZonoPropagation &out, const ZonoNet &net,
+                    const ZonoBounds &bounds, const Tensor &row, const Tensor &offset,
+                    const AffineBabOptions &o, std::map<std::string, double> &stats);
 
 /// One projected Adam step t >= 1 of size `step` on the slopes alpha in [0, upper] (undefined ones
 /// and those without a gradient g are held), the moments m1, m2 updated.
