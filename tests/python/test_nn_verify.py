@@ -7,10 +7,14 @@ dense layers (a max pool) is unknown with the reason; one with a layer that C++ 
 sine) is unknown at once, without reading the property; a mean masked by inputs that the
 property fixes lowers once they are folded (nn4sys' mscn), equal to the graph, and falsifies;
 masks fixed to other values in other cases fold group by group (unsat only if every group is).
+Two networks of a 2.0 query (equal-to with an inequality of inputs, isomorphic-to with equal
+inputs) are one joint network: sat with a counterexample per network that the scoring's check
+accepts, and unsat; a graph of two inputs is unknown; a property that multiplies an output with an
+input is decided by the branch and bound of boxes (sat and unsat).
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   24-November-2026
+Last update:   25-November-2026
 Reviewed:      ---
 """
 
@@ -194,6 +198,124 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(check, counterexample.CORRECT, why)
 
 
+class SeveralNetworks(unittest.TestCase):
+    """VNN-LIB 2.0's pairs: monotonic_acasxu's equal-to (one file) with X_g[0] <= X_f[0] and
+    X_g[1] == X_f[1], isomorphic_acasxu's isomorphic-to (two files) with X_g == X_f."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+        self.f = os.path.join(self.dir.name, "f.onnx")
+        self.g = os.path.join(self.dir.name, "g.onnx")
+        network(self.f)
+        network(self.g, weights=(W1 * 1.1, B1, W2, B2 + 0.05))
+
+    def write(self, relation, unsafe, related="equal-to"):
+        """X_f in [-1, 1]^2, the relations of X_g, the unsafe outputs; its path."""
+        text = (
+            "(vnnlib-version <2.0>)\n"
+            "(declare-network f\n (declare-input X_f float32 [1, 2])\n"
+            " (declare-output Y_f float32 [1, 2])\n)\n"
+            f"(declare-network g\n ({related} f)\n (declare-input X_g float32 [1, 2])\n"
+            " (declare-output Y_g float32 [1, 2])\n)\n"
+            + "".join(f"(assert (and (<= X_f[0,{i}] 1.0) (>= X_f[0,{i}] -1.0)))\n" for i in range(2))
+            + relation + unsafe
+        )
+        path = os.path.join(self.dir.name, "pair.vnnlib")
+        with open(path, "w") as out:
+            out.write(text)
+        return path
+
+    def test_monotonic(self):
+        # min over X_g[0] <= X_f[0] (X_g[0] >= -1) of Y_g[0] - Y_f[0], X_g[1] = X_f[1], on a grid
+        g = np.linspace(-1, 1, 81)
+        a, c, b = np.meshgrid(g, g, g, indexing="ij")
+        keep = b <= a
+        xf = np.stack([a[keep], c[keep]], 1)
+        xg = np.stack([b[keep], c[keep]], 1)
+        low = (outputs(xg) - outputs(xf))[:, 0].min()
+        relation = ("(assert (and (>= X_f[0,0] X_g[0,0]) (>= X_g[0,0] -1.0)))\n"
+                    "(assert (== X_f[0,1] X_g[0,1]))\n")
+        field = str([("f", self.f), ("g", self.f)])
+        sat = self.write(relation, f"(assert (<= (- Y_g[0,0] Y_f[0,0]) {float(low) + 0.05!r}))\n")
+        result = nn_verify.verify(nn_verify.load(field, sat), 30, cora.vnncomp_options("test"))
+        self.assertEqual(result.status, "sat")
+        check, why = counterexample.check_counterexample(field, sat, result.counterexample)
+        self.assertEqual(check, counterexample.CORRECT, why)
+        x = np.asarray(result.x, dtype=np.float64)
+        self.assertLessEqual(x[2], x[0])
+        self.assertEqual(x[1], x[3])
+        # the counterexample per network: X_f, Y_f, X_g, Y_g
+        heads = [line.split()[0] for line in result.counterexample.splitlines() if "[" in line]
+        self.assertEqual(heads, ["X_f", "Y_f", "X_g", "Y_g"])
+        unsat = self.write(relation, f"(assert (<= (- Y_g[0,0] Y_f[0,0]) {float(low) - 0.5!r}))\n")
+        result = nn_verify.verify(nn_verify.load(field, unsat), 30, cora.vnncomp_options("test"))
+        self.assertEqual(result.status, "unsat")
+
+    def test_isomorphic(self):
+        # X_g == X_f, two files: the largest Y_g[0] - Y_f[0] on a grid
+        relation = "".join(f"(assert (== X_f[0,{i}] X_g[0,{i}]))\n" for i in range(2))
+        g = np.linspace(-1, 1, 401)
+        x = np.stack(np.meshgrid(g, g), -1).reshape(-1, 2)
+        gap = (outputs(x, (W1 * 1.1, B1, W2, B2 + 0.05)) - outputs(x))[:, 0]
+        field = str([("f", self.f), ("g", self.g)])
+        for rhs, want in ((float(gap.max()) - 0.05, "sat"), (float(gap.max()) + 0.5, "unsat")):
+            path = self.write(relation, f"(assert (>= (- Y_g[0,0] Y_f[0,0]) {rhs!r}))\n",
+                              "isomorphic-to")
+            instance = nn_verify.load(field, path)
+            self.assertEqual(instance.network.input_dim, 2)  # X_g read from X_f
+            result = nn_verify.verify(instance, 30, cora.vnncomp_options("test"))
+            self.assertEqual(result.status, want)
+            if want == "sat":
+                check, why = counterexample.check_counterexample(field, path, result.counterexample)
+                self.assertEqual(check, counterexample.CORRECT, why)
+                # the same counterexample with X_g moved breaks X_g == X_f
+                moved = result.counterexample.replace(f"X_g float32 [1, 2]\n{float(result.x[2])!r}",
+                                                      "X_g float32 [1, 2]\n0.123", 1)
+                self.assertNotEqual(moved, result.counterexample)
+                check, _ = counterexample.check_counterexample(field, path, moved)
+                self.assertEqual(check, counterexample.SPEC_NOT_VIOLATED)
+
+    def test_several_inputs_unknown(self):
+        # a graph of two inputs: unknown with the reason, the property not read
+        path = os.path.join(self.dir.name, "two.onnx")
+        two_input_network(path)
+        instance = nn_verify.load(path, os.path.join(self.dir.name, "missing.vnnlib"))
+        result = nn_verify.verify(instance, 5)
+        self.assertEqual(result.status, "unknown")
+        self.assertIn("one input", result.stats["bounding"])
+
+
+class Nonlinear(unittest.TestCase):
+    def test_products_of_inputs_and_outputs(self):
+        # Y_0 X_0 >= c: sat below the grid's largest value, unsat above it
+        with tempfile.TemporaryDirectory() as tmp:
+            onnx_path = os.path.join(tmp, "net.onnx")
+            network(onnx_path)
+            g = np.linspace(-1, 1, 401)
+            x = np.stack(np.meshgrid(g, g), -1).reshape(-1, 2)
+            best = float((outputs(x)[:, 0] * x[:, 0]).max())
+            # each property through the branch and bound of the boxes
+            for rhs, want in ((best - 0.05, "sat"), (best + 0.5, "unsat")):
+                path = os.path.join(tmp, "nl.vnnlib")
+                with open(path, "w") as out:
+                    out.write(
+                        "(vnnlib-version <2.0>)\n(declare-network N\n"
+                        " (declare-input X float32 [1, 2])\n (declare-output Y float32 [1, 2])\n)\n"
+                        + "".join(f"(assert (<= X[0,{i}] 1.0))\n(assert (>= X[0,{i}] -1.0))\n"
+                                  for i in range(2))
+                        + f"(assert (>= (* Y[0,0] X[0,0]) {rhs!r}))\n")
+                instance = nn_verify.load(onnx_path, path)
+                self.assertIsNotNone(instance.nonlinear)
+                result = nn_verify.verify(instance, 30)
+                self.assertEqual(result.status, want)
+                self.assertEqual(result.stats["bounding"], "nonlinear-bab")
+                if want == "sat":
+                    check, why = counterexample.check_counterexample(onnx_path, path,
+                                                                     result.counterexample)
+                    self.assertEqual(check, counterexample.CORRECT, why)
+
+
 class Precision(unittest.TestCase):
     def test_tf32_off_at_first_torch_tensor(self):
         # a fresh process: the first torch tensor handed to cora turns TensorFloat-32 off
@@ -221,14 +343,15 @@ W1, B1 = RNG.standard_normal((16, 2)).astype(np.float32), RNG.standard_normal(16
 W2, B2 = RNG.standard_normal((2, 16)).astype(np.float32), RNG.standard_normal(2).astype(np.float32)
 
 
-def network(path, activation="Relu"):
-    """y = W2 relu(W1 x + b1) + b2 for x of shape (1, 2) (or another activation)."""
+def network(path, activation="Relu", weights=None):
+    """y = W2 relu(W1 x + b1) + b2 for x of shape (1, 2) (or another activation, other weights)."""
+    w1, b1, w2, b2 = (np.asarray(w, dtype=np.float32) for w in (weights or (W1, B1, W2, B2)))
     nodes = [
         helper.make_node("Gemm", ["x", "W1", "b1"], ["h"], transB=1),
         helper.make_node(activation, ["h"], ["r"]),
         helper.make_node("Gemm", ["r", "W2", "b2"], ["y"], transB=1),
     ]
-    init = [numpy_helper.from_array(a, n) for n, a in (("W1", W1), ("b1", B1), ("W2", W2), ("b2", B2))]
+    init = [numpy_helper.from_array(a, n) for n, a in (("W1", w1), ("b1", b1), ("W2", w2), ("b2", b2))]
     graph = helper.make_graph(
         nodes,
         "g",
@@ -281,8 +404,23 @@ def masked_mean(x):
     return WO.astype(np.float64) @ mean
 
 
-def outputs(x):
-    """The network on the rows x in float64."""
-    return np.maximum(x @ W1.T.astype(np.float64) + B1, 0) @ W2.T.astype(np.float64) + B2
+def outputs(x, weights=None):
+    """The network on the rows x in float64 (of other weights)."""
+    w1, b1, w2, b2 = (np.asarray(w, dtype=np.float32).astype(np.float64)
+                      for w in (weights or (W1, B1, W2, B2)))
+    return np.maximum(x @ w1.T + b1, 0) @ w2.T + b2
+
+
+def two_input_network(path):
+    """y = a + b of two inputs of shape (1, 2)."""
+    graph = helper.make_graph(
+        [helper.make_node("Add", ["a", "b"], ["y"])],
+        "g",
+        [helper.make_tensor_value_info(n, TensorProto.FLOAT, [1, 2]) for n in ("a", "b")],
+        [helper.make_tensor_value_info("y", TensorProto.FLOAT, [1, 2])],
+    )
+    m = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
+    m.ir_version = 8
+    onnx.save(m, path)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

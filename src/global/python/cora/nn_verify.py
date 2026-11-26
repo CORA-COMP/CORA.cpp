@@ -7,15 +7,21 @@ polytopes stacked (cora.vnnlib), and the scoring's counterexample check, which C
 every candidate (onnxruntime on the float32 point, then VNN-COMP's own check of the written
 counterexample). A network that C++ cannot take is "unknown" at once, with the reason, and its
 property is not read. The options are cora.NnVerifyOptions; cora.vnncomp_options(category) gives
-the preset.
+the preset. A VNN-LIB 2.0 property of several networks (the network field "[('f', 'a.onnx'),
+('g', 'b.onnx')]") or of related inputs is verified on one joint network (cora.joint_network), its
+counterexample checked on the original networks and property; a 2.0 property that is no union of
+output polytopes (products, inputs compared with outputs) by the branch and bound of
+cora.nonlinear_property.
 
 Syntax:   instance = load("net.onnx", "prop.vnnlib")
+          instance = load("[('f', 'a.onnx'), ('g', 'b.onnx')]", "pair.vnnlib")
           result = verify(instance, 60, cora.vnncomp_options("acasxu_2023"))   result.status
-See also: cora.onnx_network, cora.vnnlib, cora.counterexample, docs/nn_verification.md
+See also: cora.onnx_network, cora.vnnlib, cora.counterexample, cora.joint_network,
+          cora.nonlinear_property, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   24-November-2026
+Last update:   26-November-2026 (several networks, nonlinear properties)
 Reviewed:      ---
 """
 
@@ -26,8 +32,9 @@ import numpy as np
 import torch
 
 from . import counterexample
+from .joint_network import InputMap, joint_layers, parse_network_field
 from .onnx_network import OnnxNetwork
-from .vnnlib import Property, parse_vnnlib, read_text
+from .vnnlib import VERSION_2, Case, Property, parse_vnnlib, positional, read_text
 
 
 # -----------------------------------------  BEGIN CODE  ----------------------------------------- #
@@ -57,6 +64,8 @@ class Instance:
     backend: str = "eigen"
     parts: list = None  # [(network, case indices)] of a property folded in groups of cases
     merged_relu_pairs: int = 0  # the ReLU pairs folded into linear maps (OnnxNetwork.layers)
+    joint: object = None  # the _Joint of a property of several networks or related inputs
+    nonlinear: object = None  # (NonlinearProperty, (layers, activations)) beyond output polytopes
 
 
 def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
@@ -65,8 +74,14 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
     (choose_backend)."""
     import cora
 
+    if len(parse_network_field(onnx_path)) > 1:
+        # several networks (VNN-LIB 2.0's equal-to and isomorphic-to pairs): one joint network
+        return _load_joint(onnx_path, read_text(vnnlib_path), backend, device)
     # the network first: one the C++ verifier cannot take is unknown without reading the property
-    net = OnnxNetwork.load(onnx_path)
+    try:
+        net = OnnxNetwork.load(onnx_path)
+    except (ValueError, NotImplementedError) as error:  # a graph of several inputs
+        return Instance(str(onnx_path), None, str(error), None, "")
     lowered, why = net.layers(drop_output_softmax=True)
     groups = [(None, net, lowered)]
     if not lowered and any(r in why for r in FOLDABLE):
@@ -102,7 +117,14 @@ def load(onnx_path, vnnlib_path, backend="eigen", device="cpu"):
         network, why = build(*lowered)
         if network is not None and prop is None:
             text = read_text(vnnlib_path)
-            prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
+            try:
+                prop = parse_vnnlib(text, net.num_inputs, net.num_outputs)
+            except NotImplementedError as error:
+                # no union of output polytopes: the branch and bound of the nonlinear property
+                return _load_nonlinear(onnx_path, part, text, error)
+            if any(c.relations for c in prop.cases):
+                # input constraints that relate inputs: the network behind their InputMap
+                return _load_joint(str(onnx_path), text, backend, device)
         if network is not None and part.dropped_softmax and not _compares_outputs(prop):
             # the probabilities themselves: the output Softmax as exp and 1 / sum
             lowered, why = part.layers()
@@ -136,6 +158,8 @@ def verify(instance, timeout, options=None):
 
     if instance.network is None:
         return VerifyResult("unknown", stats={"bounding": f"none ({instance.why})"})
+    if instance.nonlinear is not None:
+        return _verify_nonlinear(instance, timeout)
     options = options or cora.NnVerifyOptions()
     changes = {}
     if instance.parts:
@@ -161,6 +185,10 @@ def verify(instance, timeout, options=None):
         stats["merged_relu_pairs"] = instance.merged_relu_pairs
     if status != "sat":
         return VerifyResult(status, stats=stats)
+    if instance.joint is not None:
+        # the counterexample that the joint confirm check took, in the original inputs
+        x, y, text = instance.joint.found
+        return VerifyResult("sat", x, y, text, stats)
     x, y = np.asarray(x, dtype=np.float32), np.asarray(y, dtype=np.float32)
     text = counterexample.write_counterexample(x, y, instance.prop)
     return VerifyResult("sat", x, y, text, stats)
@@ -173,7 +201,7 @@ def _verify_parts(instance, timeout, options):
     """(status, stats, x, y) of C++'s verify on each part of the instance: the parts of fewer
     cases first, each an equal share of the time left (the time an easy part leaves goes to the
     later, larger ones); sat as soon as one part is, unsat only if every part is."""
-    confirm = _Confirm(instance)
+    confirm = _JointConfirm(instance) if instance.joint is not None else _Confirm(instance)
     parts = sorted(instance.parts or [(instance.network, None)],
                    key=lambda p: 0 if p[1] is None else len(p[1]))
     deadline = time.monotonic() + timeout
@@ -304,5 +332,187 @@ class _Confirm:
             self.instance.onnx_path, None, text, self.instance.vnnlib_text
         )
         return y.astype(np.float64) if result == counterexample.CORRECT else None
+
+
+# Several networks ------------------------------------------------------------------------------
+
+@dataclass
+class _Joint:
+    """A property of several networks (or of related inputs) as one: the original property and
+    its text, the ONNX file of each declared network, the InputMap of the case, the networks in
+    float64 (OnnxNetwork) for the check, and the counterexample the confirm check took."""
+
+    prop: object
+    text: str
+    paths: dict
+    imap: object
+    nets: list
+    found: tuple = None
+
+
+def _load_joint(field, text, backend, device):
+    """The instance of a property of several networks: the joint network (cora.joint_network) on
+    the box of its new inputs, the unsafe polytopes those of the stacked outputs. One case (one
+    input set) is supported; a network that does not lower is unknown, with the reason."""
+    import cora
+
+    from .counterexample import model_paths
+
+    prop = parse_vnnlib(text, None, None)
+    if prop.version != 2:
+        raise NotImplementedError("nn_verify: several networks need a VNN-LIB 2.0 property")
+    if len(prop.cases) != 1:
+        raise NotImplementedError("nn_verify: a joint network of one input set is supported")
+    paths = model_paths(prop.query, field)
+    if any(len(info.inputs) != 1 or len(info.outputs) != 1 for info in prop.networks):
+        raise NotImplementedError("nn_verify: a network of one input and one output is supported")
+    # each network once per file (equal-to: the same file), lowered without the Softmax drop
+    loaded, nets, slices = {}, [], []
+    for info in prop.networks:
+        path = paths[info.name]
+        if path not in loaded:
+            net = OnnxNetwork.load(path)
+            lowered, why = net.layers()
+            loaded[path] = (net, lowered, why)
+        net, lowered, why = loaded[path]
+        if not lowered:
+            return Instance(str(field), None, why, None, "")
+        if (net.num_inputs, net.num_outputs) != (info.num_inputs, info.num_outputs):
+            raise ValueError(f"nn_verify: the network {info.name} does not match its declaration")
+        nets.append(lowered)
+        offset = info.inputs[0][2]
+        slices.append(slice(offset, offset + info.num_inputs))
+    case = prop.cases[0]
+    imap = InputMap(case.lo, case.hi, case.relations)
+    try:
+        layers, activations = joint_layers(imap, nets, slices)
+    except NotImplementedError as error:
+        return Instance(str(field), None, str(error), None, "")
+    if backend == "auto":
+        backend = choose_backend(layers, device, activations)
+    convert = (lambda a: torch.from_numpy(a).to(device)) if backend == "torch" else (lambda a: a)
+    try:
+        network = cora.NeuralNetwork([(convert(W), convert(b)) for W, b in layers], activations)
+    except (ValueError, TypeError, RuntimeError, NotImplementedError) as error:
+        return Instance(str(field), None, f"the C++ network refuses a layer: {error}", None, "")
+    # the verifier's property: the box of the new inputs, the polytopes of the stacked outputs
+    search = Property(2, imap.dim, prop.num_outputs,
+                      [Case(imap.lo, imap.hi, case.polytopes)], prop.query, prop.networks)
+    float64 = [loaded[paths[info.name]][0].cast(dtype=torch.float64) for info in prop.networks]
+    joint = _Joint(prop, text, paths, imap, float64)
+    return Instance(str(field), network, "", search, text, backend, joint=joint)
+
+
+class _JointConfirm:
+    """The check of a candidate w of the joint network: the stacked inputs of w (InputMap) in
+    float32, the written counterexample CORRECT by VNN-COMP's checker (onnxruntime on each
+    network), and every assertion of the property true for the networks in float64 as well. The
+    stacked outputs, or None; the counterexample taken in the instance's joint.found."""
+
+    def __init__(self, instance):
+        self.joint = instance.joint
+
+    def __call__(self, w):
+        joint = self.joint
+        prop = joint.prop
+        v = joint.imap.inputs(np.asarray(w, dtype=float))[0].astype(np.float32)
+        # each network's outputs by onnxruntime, as the scoring replays them
+        ys = []
+        for info in prop.networks:
+            x = v[info.inputs[0][2] : info.inputs[0][2] + info.num_inputs]
+            sess = counterexample._session_v2(joint.paths[info.name])
+            onnx_in = sess.get_inputs()[0]
+            shape = [d if isinstance(d, int) and d > 0 else 1 for d in onnx_in.shape]
+            ys.append(sess.run(None, {onnx_in.name: x.reshape(shape)})[0].reshape(-1))
+        y = np.concatenate(ys)
+        text = counterexample.write_counterexample(v, y, prop)
+        result, _ = counterexample.check_counterexample(joint.paths, None, text, joint.text)
+        if result != counterexample.CORRECT or not self._holds_float64(v):
+            return None
+        joint.found = (v, y.astype(np.float32), text)
+        return y.astype(np.float64)
+
+    def _holds_float64(self, v):
+        """Whether every assertion on outputs holds on the float32 inputs v with the networks in
+        float64 (those of the inputs alone the scoring's check decided, in float32)."""
+        joint, assignment, inputs = self.joint, {}, set()
+        for info, net in zip(joint.prop.networks, joint.nets, strict=True):
+            (name, shape, offset), = info.inputs
+            x = torch.from_numpy(v[offset : offset + info.num_inputs].astype(np.float64))
+            with torch.no_grad():
+                y = net(x.reshape(1, -1)).reshape(-1).numpy()
+            assignment[name] = x.numpy().reshape(shape)
+            inputs.add(name)
+            (out_name, out_shape, _), = info.outputs
+            assignment[out_name] = y.reshape(out_shape)
+        return all(counterexample._eval_bool(a.expr, assignment, 0.0)
+                   for a in joint.prop.query.assertions
+                   if not counterexample._variables(a.expr) <= inputs)
+
+
+# A nonlinear property ----------------------------------------------------------------------------
+
+def _load_nonlinear(onnx_path, net, text, error):
+    """The instance of a 2.0 property that is no union of output polytopes (products of
+    variables, inputs compared with outputs, !=): its NonlinearProperty on the network in float64
+    (Eigen, the output Softmax kept); a property it cannot take raises the parser's error."""
+    import vnnlib
+
+    import cora
+
+    from .nonlinear_property import NonlinearProperty
+
+    if not VERSION_2.search(text):
+        raise error
+    try:
+        prop = NonlinearProperty(vnnlib.parse_query_string(positional(text)))
+    except NotImplementedError:
+        raise error from None
+    if (prop.num_inputs, prop.num_outputs) != (net.num_inputs, net.num_outputs):
+        raise ValueError("vnnlib: the property's input or output does not match the network")
+    lowered, why = net.layers()
+    if not lowered or any(isinstance(layer, dict) for layer in lowered[0]):
+        return Instance(str(onnx_path), None, why or "nonlinear property: dense layers only",
+                        None, "")
+    layers = [(W.numpy(), b.numpy()) for W, b in lowered[0]]
+    network = cora.NeuralNetwork(layers, lowered[1])
+    return Instance(str(onnx_path), network, "", None, text, "eigen",
+                    nonlinear=(prop, (layers, list(lowered[1]))))
+
+
+def _verify_nonlinear(instance, timeout):
+    """The branch and bound of a nonlinear property; a counterexample is the scoring's CORRECT
+    (onnxruntime's float32 outputs: adaptive_cruise_control's are counterexamples by the float32
+    rounding of its clamp, which the real network only touches)."""
+    from .nonlinear_property import branch_and_bound
+
+    (prop, layers), onnx_path = instance.nonlinear, instance.onnx_path
+    session = counterexample._session_v2(onnx_path)
+    onnx_in = session.get_inputs()[0]
+    shape = [d if isinstance(d, int) and d > 0 else 1 for d in onnx_in.shape]
+    writer = Property(2, prop.num_inputs, prop.num_outputs, [], prop.query)
+    found = {}
+
+    def replay(x):
+        # the outputs of float32 points by onnxruntime, one point per run (the declared shape)
+        return np.stack([session.run(None, {onnx_in.name: p.reshape(shape)})[0].reshape(-1)
+                         for p in x]) if len(x) else np.zeros((0, prop.num_outputs), np.float32)
+
+    def check(x):
+        y = replay(x[None])[0]
+        text = counterexample.write_counterexample(x, y, writer)
+        result, _ = counterexample.check_counterexample(onnx_path, None, text, instance.vnnlib_text)
+        if result != counterexample.CORRECT:
+            return False
+        found.update(x=x, y=y.astype(np.float32), text=text)
+        return True
+
+    start = time.monotonic()
+    status, _, stats = branch_and_bound(prop, instance.network, layers, timeout, replay, check)
+    stats = {f"nonlinear_{k}": v for k, v in stats.items()}
+    stats.update(bounding="nonlinear-bab", seconds=time.monotonic() - start)
+    if status != "sat":
+        return VerifyResult(status, stats=stats)
+    return VerifyResult("sat", found["x"], found["y"], found["text"], stats)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

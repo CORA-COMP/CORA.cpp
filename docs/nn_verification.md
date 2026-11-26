@@ -235,6 +235,36 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
 - **Property.** VNN-LIB 1.0 is read with the semantics of the scoring's parser, 2.0 by the
   reference parser (`vnnlib`), every assertion in DNF and the conjunction multiplied out; the cases'
   polytopes are stacked and padded with the rows `0 <= +inf`.
+- **Several networks (VNN-COMP 2026's isomorphic_acasxu, monotonic_acasxu).** A 2.0 query may
+  declare networks `f` and `g` (`equal-to` or `isomorphic-to`); the instance's network field is
+  then a literal list `"[('f', 'a.onnx'), ('g', 'b.onnx')]"`. Their inputs and outputs are
+  stacked in the order of declaration, and an input constraint on several inputs is a relation of
+  the case. `cora.joint_network` reduces it to the single-network verify: an equality of two
+  inputs (`X_g[i] == X_f[i]`) makes one an affine image of the other, the boxes bound the
+  representatives (tightened by the inequalities), each independent inequality (`X_g[0] <=
+  X_f[0]`) is a new input (its slack, bounded by the box and its right side), and a representative
+  that an inequality determines is clamped into its box by a first ReLU layer (`lo + relu(e - lo) -
+  relu(e - hi)`). The box of the new inputs maps onto a superset of the feasible inputs (unsat is
+  sound), each point of it onto feasible inputs. The joint network is that front and the networks
+  side by side (block-diagonal layers; dense networks of the same depth and activations); the
+  unsafe polytopes are those of the stacked outputs. A candidate is checked on the original
+  property: the scoring's replay of each network (onnxruntime on the float32 inputs) must be
+  `CORRECT`, and every assertion on outputs must hold with the networks in float64 too. The
+  counterexample gives per network its inputs, then its outputs (`X_f, Y_f, X_g, Y_g`), as the
+  scoring reads it. One input set (one case) is supported.
+- **Nonlinear properties (adaptive_cruise_control_non_linear).** A 2.0 property with products of
+  variables, inputs compared with outputs or `!=` is no union of polytopes: `cora.nonlinear_property`
+  decides it on boxes of the input. The outputs on a batch of boxes are bounded by
+  `evaluate_zonotope_batch`, widened by a forward error bound of the float32 evaluation (the
+  scoring's onnxruntime replay: adaptive_cruise_control's clamp to 100.001 reaches 100.0011 in
+  float32 where the real network gives 100.001, and those are its counterexamples), and every
+  assertion is evaluated in three-valued logic on intervals as the scoring computes it (float32
+  constants, each operation widened by 2^-23). A variable compared with constants alone (`Y ==
+  0.0`, `(- X[0,1]) >= 0.0`) is split into cells (the constants and the float32 values between
+  them), so `Y == 0` and `Y != 0` never both may hold. A box where some assertion cannot hold is
+  safe; the others are halved along the widest input, their centers, corners (and one float32
+  step inside them) and random points replayed by onnxruntime, and a point that meets every
+  assertion is `sat` once the scoring's check says `CORRECT`.
 - **Check.** C++ calls the Python check back for every candidate: onnxruntime's output of the
   float32 point, then VNN-COMP's checker of the written counterexample (`cora.counterexample`); only
   a `CORRECT` one ends the search.

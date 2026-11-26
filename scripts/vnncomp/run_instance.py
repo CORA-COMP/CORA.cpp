@@ -4,7 +4,8 @@ The Python side of prepare_instance.sh and run_instance.sh (VNN-COMP's tool inte
 the network and the property once (cora.nn_verify.load), runs the C++ cora.NeuralNetwork.verify
 with the VNN-COMP preset of the category (cora.vnncomp_options) within the timeout (less the time spent
 starting), and writes the result file: "sat" and the counterexample in the format of the
-property's VNN-LIB version, "unsat", or "unknown". Next to it, RESULT.stats.json holds the time
+property's VNN-LIB version, "unsat", or "unknown". ONNX may be VNN-COMP 2026's network field of
+several networks ("[('f', 'a.onnx'), ('g', 'b.onnx')]"). Next to it, RESULT.stats.json holds the time
 and memory of the run (peak RSS, torch's peak on a GPU) and the counts of the attack and the
 branch and bound. --prepare only checks that the files load. The timeout counts from
 VNNCOMP_START (seconds since the epoch, set by run_instance.sh), else from the start of Python.
@@ -15,7 +16,7 @@ See also: scripts/vnncomp/run_instance.sh, scripts/vnncomp/run_dev_set.py, cora.
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   25-November-2026
+Last update:   26-November-2026
 Reviewed:      ---
 """
 
