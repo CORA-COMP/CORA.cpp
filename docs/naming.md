@@ -291,7 +291,7 @@ changed, and the reasons are listed below.
 | default `tol` of each function (eps, 100*eps, 1e-8, ...) | `ToleranceScope`, `set_default_tolerance`, `default_tol(dtype)` | `with cora.tolerance(1e-10):`, `cora.set_default_tolerance`, `cora.default_tol(dtype)` |
 | `CORAcolor(identifier)` | `cora_color(identifier)` | `cora.cora_color` |
 | `useCORAcolors(scheme)` | `use_cora_colors(scheme)` | `cora.use_cora_colors` |
-| `plot(S, dims, ...)` | `plot(fig, S, dims, options)` | `cora.plot(S, dims, ...)`, `S.plot(dims, ...)` |
+| `plot(S, dims, ...)` | `plot(fig, S, dims, options)`, `plot(fig, S, options)` (dims 0, 1) | `cora.plot(S, dims, ...)`, `S.plot(dims, ...)` |
 | `plotOverTime(R, dim, ...)` | `plot_over_time(fig, R, dim, options)` | `cora.plot_over_time(R, dim, ...)` |
 | `plotRandPoint(S, dims, N)` | `plot_rand_point(fig, S, dims, N, rng, options)` | `cora.plot_rand_point(S, dims, N, rng)` |
 | `FaceColor`, `EdgeColor`, `FaceAlpha`, `LineWidth`, `Unify`, `Set` | `face_color`, `edge_color`, `face_alpha`, `line_width`, `unify`, `set` | the same keywords |

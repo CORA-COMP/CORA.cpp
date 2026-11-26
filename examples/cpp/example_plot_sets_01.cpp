@@ -37,14 +37,16 @@ int main() {
     Figure bars;
     plot(bars, Z, {0}, {.label = "zonotope", .line_width = 4});
     plot(bars, I, {0}, {.label = "interval", .line_width = 4});
+    bars.legend();
     bars.save("example_plot_sets_01_1d.svg");
 
     // Two Dimensions --------------------------------------------------------------------------
 
     Figure polygons;
-    plot(polygons, Z, {0, 1}, {.label = "zonotope"});
-    plot(polygons, I, {0, 1}, {.label = "interval", .filled = false});
+    plot(polygons, Z, {.label = "zonotope"});
+    plot(polygons, I, {.label = "interval", .filled = false});
     polygons.title = "two dimensions";
+    polygons.legend();
     polygons.save("example_plot_sets_01_2d.svg");
 
     // Three Dimensions ------------------------------------------------------------------------
@@ -53,6 +55,7 @@ int main() {
     Figure faces;
     plot(faces, Z, {0, 1, 2}, {.label = "zonotope"});
     plot(faces, I, {0, 1, 2}, {.label = "interval", .face_alpha = 0.1});
+    faces.legend();
     faces.save("example_plot_sets_01_3d.svg");
     std::cout << "faces of the zonotope: " << faces.layers()[0].faces.size() << "\n";
 

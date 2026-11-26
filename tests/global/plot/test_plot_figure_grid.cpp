@@ -58,6 +58,10 @@ void the_grid_is_one_svg(const std::string &b) {
     FigureGrid grid(1, 2);
     plot(grid.at(0, 0), shifted(0), {0, 1}, {.label = "left"});
     plot(grid.at(0, 1), shifted(5), {0, 1}, {.label = "right"});
+    // the legend is off until legend(), as in matplotlib
+    grid.at(0, 0).legend();
+    // the legend is off until legend(), as in matplotlib
+    grid.at(0, 1).legend();
     const std::string svg = grid.svg();
     check(svg.rfind("<svg", 0) == 0 && count(svg, "<svg") == 1, b + ": one document");
     check(has(svg, "left") && has(svg, "right"), b + ": both legends");

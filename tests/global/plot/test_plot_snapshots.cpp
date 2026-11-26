@@ -37,6 +37,8 @@ Figure zonotope_figure() {
     plot(fig, Z, {0, 1}, {.label = "$\\mathcal{Z}$"});
     fig.xlabel = "$x_1$";
     fig.ylabel = "$x_2$";
+    // the legend is off until legend(), as in matplotlib
+    fig.legend();
     return fig;
 }
 
@@ -47,6 +49,8 @@ Figure over_time_figure() {
     // the axis labels that the snapshot must carry
     fig.xlabel = "$t$";
     fig.ylabel = "$x_1$";
+    // the legend is off until legend(), as in matplotlib
+    fig.legend();
     use_cora_colors("CORA:default");
     return fig;
 }
@@ -63,6 +67,8 @@ FigureGrid group_figure() {
     plot(phase, initial_set(), {0, 1}, {.label = "initial set"});
     phase.xlabel = "$x_1$";
     phase.ylabel = "$x_2$";
+    // the legend is off until legend(), as in matplotlib
+    phase.legend();
     phase.title = "phase plane";
     plot_over_time(grid.at(0, 1), R, 0);
     grid.at(0, 1).ylabel = "$x_1$";
@@ -76,6 +82,8 @@ FigureGrid group_figure() {
     plot_over_time(grid.at(1, 1), x, 0, 0.2, {.label = "simulation"});
     grid.at(1, 1).xlabel = "$t$";
     grid.at(1, 1).ylabel = "$x_1$";
+    // the legend is off until legend(), as in matplotlib
+    grid.at(1, 1).legend();
     use_cora_colors("CORA:default");
     return grid;
 }
@@ -88,7 +96,8 @@ Figure three_dimensional_figure() {
     fig.xlabel = "$x_1$";
     fig.ylabel = "$x_2$";
     fig.zlabel = "$x_3$";
-    // all three axes are labelled, so the snapshot has their labels
+    // all three axes are labelled and the legend is on, so the snapshot has both
+    fig.legend();
     return fig;
 }
 
@@ -98,6 +107,7 @@ void snapshots_of_the_layers() {
                    "zonotope layers", 1e-9);
     check_snapshot(dump_layers(over_time_figure()), test::snapshot_path(here, "over_time.layers"),
                    "over time layers", 1e-9);
+    // the group: every cell's layers in one snapshot
     const FigureGrid grid = group_figure();
     std::string all;
     for (int r = 0; r < 2; ++r)

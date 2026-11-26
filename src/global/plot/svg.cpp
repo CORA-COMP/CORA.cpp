@@ -372,7 +372,7 @@ std::string aux_figure(const Figure &fig, double x, double y, double width, doub
     if (!fig.title.empty())
         out << "<text x=\"" << left + f.pw / 2 << "\" y=\"22\" text-anchor=\"middle\" "
             << "font-size=\"15\">" << aux_text(fig.title) << "</text>\n";
-    aux_legend(out, fig, f);
+    if (fig.legend_on) aux_legend(out, fig, f);
     out << "</g>\n";
     return out.str();
 }

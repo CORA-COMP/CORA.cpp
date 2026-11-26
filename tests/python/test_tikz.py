@@ -51,6 +51,7 @@ class Tikz(unittest.TestCase):
         cora.plot(self.X0, ax=fig[0, 0], label="$X_0$")
         fig[0, 0].set_xlabel("$x_1$")
         fig[0, 0].set_ylabel("$x_2$")
+        fig[0, 0].legend()
         return fig
 
     def group(self):

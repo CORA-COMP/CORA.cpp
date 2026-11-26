@@ -118,6 +118,8 @@ def _take_over(ax, figure):
             setattr(figure, name + "lim", tuple(getattr(ax, f"get_{name}lim")()))
     if getattr(ax, "name", "") == "3d":
         figure.elevation, figure.azimuth = ax.elev, ax.azim + 90
+    # a legend as matplotlib shows it: only after ax.legend() / plt.legend()
+    figure.legend_on = ax.get_legend() is not None
 
 
 def subplots(nrows=1, ncols=1, *, sharex=False, sharey=False, projection=None, figsize=None, **kw):
