@@ -828,6 +828,63 @@ void product_planes(const std::string &b) {
           b + ": the gradients in a product's mix and side are the difference quotients");
 }
 
+/// The lean root check (lean_root_check): a box with few moved inputs is decided by one
+/// unrecorded zonotope with a generator per moved input and a slot per neuron with an error;
+/// that zonotope holds the sampled outputs, and no violated property is unsat.
+void lean_root(const std::string &b) {
+    Rng rng(73);
+    int wrong = 0, lean = 0, proved = 0, inside = 0, nets = 0;
+    for (int net_i = 0; net_i < 5; ++net_i) {
+        const NeuralNetwork nn = aux_network(rng, {6, 12, 12, 2}, Activation::relu);
+        // two of the six inputs move
+        NnProperty p = aux_below(6, 2, 0.0, 0.0, 0.0);
+        std::vector<double> lo(6, 0.1), hi(6, 0.1);
+        lo[1] = -0.3;
+        hi[1] = 0.5;
+        lo[4] = -0.4;
+        hi[4] = 0.2;
+        p.lo = Tensor::from_data(lo, {1, 6});
+        p.hi = Tensor::from_data(hi, {1, 6});
+        // the samples of the box and their least y_0
+        std::vector<double> xs(std::size_t(4000 * 6));
+        rng.uniform(xs.data(), xs.size(), 0.0, 1.0);
+        for (std::size_t i = 0; i < xs.size(); ++i)
+            xs[i] = lo[i % 6] + xs[i] * (hi[i % 6] - lo[i % 6]);
+        const std::vector<double> y = nn.evaluate(Tensor::from_data(xs, {4000, 6})).data();
+        double least = kInfinity, most = -kInfinity;
+        for (std::size_t i = 0; i < 4000; ++i) {
+            least = std::min(least, y[i * 2]);
+            most = std::max(most, y[i * 2]);
+        }
+        // the unrecorded zonotope with dynamic slots: its y_0 holds the samples'
+        ZonoNet net(nn, 2, kInfinity, "bounds", "length");
+        net.dynamic_slot_bytes = net_i % 2 == 0 ? int64_t(1) << 30 : 8 * 12 * 6; // or few slots
+        const Tensor x = (p.lo + p.hi) * 0.5, r = (p.hi - p.lo) * 0.5;
+        const ZonoInput in = net.input_zonotope(x, r, Tensor({{1.0, 4.0}}));
+        const ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({1, 0}), nullptr, false);
+        const double reach =
+            out.G.abs().sum(1).data()[0] + (out.dr.defined() ? out.dr.data()[0] : 0.0);
+        ++nets;
+        inside += out.c.data()[0] - reach <= least + 1e-9 && out.c.data()[0] + reach >= most - 1e-9;
+        // verify with the lean root check: far below, just below and above the least sample
+        NnVerifyOptions o = aux_options("zonotope-alpha", b);
+        o.lean_root_check = true;
+        o.falsification_order = "bound-first";
+        for (const double t : {least - 3.0, least - 0.05, least + 0.05}) {
+            p.b = Tensor::from_data(std::vector<double>{t}, {1, 1});
+            const NnVerifyResult res = nn.verify(p, 20, o);
+            if (res.status == "unsat")
+                for (std::size_t i = 0; i < 4000; ++i) wrong += y[i * 2] <= t ? 1 : 0;
+            lean += res.stats.count("lean_root_verified") ? 1 : 0;
+            proved += t == least - 3.0 && res.status == "unsat" ? 1 : 0;
+        }
+    }
+    check(inside == nets, b + ": the unrecorded zonotope with dynamic slots holds the samples");
+    check(wrong == 0, b + ": the lean root check is never unsat where a sample violates");
+    check(lean > 0 && proved == nets, b + ": the lean root check decides wide margins at the root");
+}
+
 /// priv_crown_bab on nets of other activations (a product, a softmax's exp and reciprocal): its
 /// nodes batch the lines of the root's record, a verified polytope holds every sample.
 void crown_bab_other_layers(const std::string &b) {
@@ -2010,6 +2067,7 @@ int main() {
         backward_bit_identical(b);
         crown_split_nodes(b);
         product_planes(b);
+        lean_root(b);
         affine_forms(b);
         affine_bab_verdicts(b);
         crown_bab_other_layers(b);

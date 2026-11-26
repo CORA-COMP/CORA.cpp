@@ -857,6 +857,9 @@ std::pair<Tensor, Tensor> ZonoNet::clamp(int64_t first_id, const Tensor &l, cons
 
 // The propagation ---------------------------------------------------------------------------------
 
+/// The generators that an unrecorded pass with dynamic slots maps at once.
+constexpr int64_t kLeanRows = 16;
+
 ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tensor &G_,
                                  const Tensor &splits, const std::vector<Tensor> *layer_sens,
                                  bool record, const std::vector<Tensor> *alpha,
@@ -905,7 +908,16 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
             G = from.G;
         }
         c = map(k, c) + b[k];
-        G = aux_rows_to(map(k, G), rows);
+        if (const int64_t own = G.shape()[1];
+            dynamic_slot_bytes > 0 && !record && own > kLeanRows) {
+            // few generators at once through a plan: its workspace stays small
+            std::vector<Tensor> parts;
+            for (int64_t at = 0; at < own; at += kLeanRows)
+                parts.push_back(map(k, G.slice(1, at, std::min(own, at + kLeanRows))));
+            G = aux_rows_to(Tensor::concat(parts, 1), rows);
+        } else {
+            G = aux_rows_to(map(k, G), rows);
+        }
         if (pending_values.defined()) {
             G = Tensor::concat({G, take_pending(k)}, 1);
             pending_values = Tensor();
@@ -976,7 +988,15 @@ ZonoPropagation ZonoNet::forward(const Tensor &c_, const Tensor &dr_, const Tens
         G = priv_slope_times(act, line.slope.expand_dims(1), G) + 0.0;
         if (dr.defined()) dr = priv_slope_times(act, aux_abs_slope(line.slope), dr);
         // the errors: a generator per slot neuron, the rest into the interval center
-        const int64_t B = reach.shape()[0], n = reach.shape()[1], dn = slots[k];
+        const int64_t B = reach.shape()[0], n = reach.shape()[1];
+        int64_t dn = slots[k];
+        if (dynamic_slot_bytes > 0 && !record && dn > 0) {
+            // the neurons with an error, as many as the bytes of the generators allow
+            const auto with = int64_t(reach.greater(reach.zeros_like()).sum(1).max().item());
+            const int64_t room = dynamic_slot_bytes / (8 * B * n) - G.shape()[1];
+            dn = std::max<int64_t>(0, std::min({dn, with, room}));
+        }
+        // no slot: every error into the interval center; else the slots' neurons by the order
         if (dn == 0) {
             dr = dr.defined() ? dr + reach : reach;
         } else {

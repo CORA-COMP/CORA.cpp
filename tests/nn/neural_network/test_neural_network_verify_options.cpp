@@ -148,6 +148,9 @@ void options_and_strategies() {
         forms = forms && vnncomp_options(name).affine_bab &&
                 vnncomp_options(name).refinement_method == "crown-bab";
     check(forms, "the ReLU nets' preset: crown-bab with affine-bab first");
+    check(vnncomp_options("vggnet16_2022").lean_root_check &&
+              vnncomp_options("vggnet16_2022").root_check_first && !ours.lean_root_check,
+          "vggnet16's preset: the lean root check before the attack");
     check(vnncomp_options("vit_2023").crown_product_steps > 0 &&
               vnncomp_options("cifar100_2024").crown_product_steps == 0,
           "vit's preset: the products' planes per row");
