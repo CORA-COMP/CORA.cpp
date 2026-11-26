@@ -179,6 +179,9 @@ struct NnVerifyOptions {
     double relu_bab_crown_step = 0.25; ///< Adam's step on those slopes in [0, 1]
     double relu_bab_crown_time_share =
         1.0; ///< of the time left for those steps (then plain passes)
+    /// A convolution chain's layer bounds on the window of each neuron's receptive field (the
+    /// same bounds as on the whole layers, nn_verification.md, "CROWN's windows").
+    bool relu_bab_crown_windows = false;
     // refinement_method "crown-bab": beta-CROWN's ReLU splits (nn_verification.md)
     int64_t crown_bab_steps = 20;       ///< projected Adam steps on a node's slopes and multipliers
     int64_t crown_bab_root_steps = 100; ///< the root's steps

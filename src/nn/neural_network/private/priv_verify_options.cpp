@@ -332,6 +332,11 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.refinement_method = "crown-bab";
     // their ReLU nets: each open row first on the root's affine form (dev seed 1001)
     if (name == "cifar100" || name == "tinyimagenet" || affine) o.affine_bab = true;
+    // the certified-training nets: the root's layer bounds on the windows, 5 slope steps
+    if (name == "challenging_certified_training") {
+        o.relu_bab_crown_windows = true;
+        o.relu_bab_crown_iterations = 5;
+    }
     if (name == "vit") o.relu_bab_crown_iterations = 0; // plain CROWN's layer bounds at the root
     if (name == "tinyimagenet") o.relu_bab_init_gens = 256; // the root net within the GPU's memory
     return o;

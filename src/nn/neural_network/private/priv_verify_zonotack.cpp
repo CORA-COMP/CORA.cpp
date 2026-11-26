@@ -1482,7 +1482,7 @@ void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri,
         const double round = now_seconds();
         bounds = priv_crown_bounds(out, net, xi, ri, o_.relu_bab_crown_iterations,
                                    o_.relu_bab_crown_step, chunk, deadline_, o_.crown_softmax_lse,
-                                   &backoffs, false, 0.0, steps_until);
+                                   &backoffs, false, 0.0, steps_until, o_.relu_bab_crown_windows);
         // the products' planes where a round is cheap: their operands' bounds and stepped planes
         const double took = now_seconds() - round;
         if (o_.crown_product_steps > 0 &&

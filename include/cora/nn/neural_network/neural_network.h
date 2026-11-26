@@ -305,6 +305,22 @@ class NeuralNetwork {
         static Layer gather(const std::vector<int64_t> &index, int64_t inputs, const Tensor &bias,
                             const Tensor &scale = Tensor());
 
+        /// A convolution on windows side by side (conv2d.cpp): window w maps its `m_in` input
+        /// pixels `in_pixels[w m_in + t]` (sorted, then -1: none) to its `m_out` output pixels;
+        /// rows (windows, ..., cin m_in) to (windows, ..., cout m_out), channel-major, no bias.
+        static Layer conv_windows(const Layer &conv, const std::vector<int64_t> &out_pixels,
+                                  int64_t m_out, const std::vector<int64_t> &in_pixels,
+                                  int64_t m_in);
+        /// A gather per window: output s of window w is its input `index[w m + s]` (-1: 0) of
+        /// `inputs`; rows (windows, ..., inputs) to (windows, ..., m). No bias (zeros like `like`).
+        static Layer gather_windows(const std::vector<int64_t> &index, int64_t m, int64_t inputs,
+                                    const Tensor &like);
+        /// A convolution's shape: 0 unless the layer is one (not transposed).
+        int64_t conv_channels(bool out) const;
+        int64_t conv_pixels(bool out) const;
+        /// The sorted input pixels that a convolution's output pixels read.
+        std::vector<int64_t> conv_reads(const std::vector<int64_t> &out_pixels) const;
+
         /// CORA's nnLinearLayer: W (out, in) and b (out).
         static Layer linear(const Tensor &W, const Tensor &b);
         /// CORA's nnIdentityLayer on n values.
@@ -344,6 +360,7 @@ class NeuralNetwork {
 
       private:
         Tensor aux_product(const Tensor &x, bool absolute, bool transposed) const;
+        Tensor aux_windows(const Tensor &x, bool absolute, bool transposed) const;
     };
 
     /// CORA's nonlinear layers that this port lowers to several layers (as the ONNX front end

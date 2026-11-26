@@ -6011,6 +6011,7 @@ void bind_verify(py::module_ &m) {
     CORA_VERIFY_FIELD(relu_bab_crown_step, "relu-bab: Adam's step of those slopes");
     CORA_VERIFY_FIELD(relu_bab_crown_time_share,
                       "relu-bab: the slope steps' share of the time left");
+    CORA_VERIFY_FIELD(relu_bab_crown_windows, "relu-bab: CROWN's bounds on receptive windows");
     // crown-bab: CROWN's node bound with the splits' multipliers
     CORA_VERIFY_FIELD(crown_bab_steps, "crown-bab: Adam steps on a node's slopes and multipliers");
     CORA_VERIFY_FIELD(crown_bab_root_steps, "crown-bab: the root's steps");

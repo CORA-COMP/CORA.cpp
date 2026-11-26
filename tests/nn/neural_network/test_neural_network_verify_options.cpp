@@ -148,6 +148,9 @@ void options_and_strategies() {
         forms = forms && vnncomp_options(name).affine_bab &&
                 vnncomp_options(name).refinement_method == "crown-bab";
     check(forms, "the ReLU nets' preset: crown-bab with affine-bab first");
+    check(vnncomp_options("challenging_certified_training_2026").relu_bab_crown_windows &&
+              !vnncomp_options("cifar100_2024").relu_bab_crown_windows,
+          "the certified-training nets' preset: CROWN's layer bounds on the windows");
     check(vnncomp_options("vggnet16_2022").lean_root_check &&
               vnncomp_options("vggnet16_2022").root_check_first && !ours.lean_root_check,
           "vggnet16's preset: the lean root check before the attack");

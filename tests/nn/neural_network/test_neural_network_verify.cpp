@@ -910,6 +910,87 @@ void lean_root(const std::string &b) {
     check(lean > 0 && proved == nets, b + ": the lean root check decides wide margins at the root");
 }
 
+/// CROWN's layer bounds of a convolution chain on the windows of the receptive fields
+/// (priv_crown_bounds' windows) are the whole layers' bounds, with and without slope steps, and
+/// hold the sampled layer inputs.
+void crown_windows(const std::string &b) {
+    Rng rng(79);
+    // three convolutions (the second with stride 2) and a linear layer on a 2 x 6 x 6 input
+    const auto conv = [&](int64_t cin, int64_t cout, int64_t side, int64_t stride) {
+        std::vector<double> kernel(std::size_t(cout * cin * 9));
+        rng.normal(kernel.data(), kernel.size(), 0.6 / std::sqrt(double(cin * 9)));
+        const int64_t out = (side + 2 - 3) / stride + 1;
+        std::vector<double> bias(std::size_t(cout * out * out));
+        rng.normal(bias.data(), bias.size(), 0.2);
+        // a 3 x 3 kernel with padding 1, a bias per output
+        NeuralNetwork::Conv2d spec;
+        spec.stride = {stride, stride};
+        spec.pads = {1, 1, 1, 1};
+        return NeuralNetwork::Layer::conv2d(Tensor::from_data(kernel, {cout, cin, 3, 3}),
+                                            Tensor::from_data(bias, {cout * out * out}),
+                                            {cin, side, side}, spec);
+    };
+    std::vector<NeuralNetwork::Layer> layers{conv(2, 3, 6, 1), conv(3, 4, 6, 2), conv(4, 3, 3, 1)};
+    std::vector<double> W(std::size_t(2 * 27)), c(2);
+    rng.normal(W.data(), W.size(), 0.3);
+    rng.normal(c.data(), c.size(), 0.3);
+    layers.push_back({Tensor::from_data(W, {2, 27}), Tensor::from_data(c, {2})});
+    const NeuralNetwork nn(
+        layers, {Activation::relu, Activation::relu, Activation::relu, Activation::identity});
+    // a box of different radii, the root's zonotope of few generators and slots
+    std::vector<double> xv(72), rv(72);
+    rng.uniform(xv.data(), xv.size(), -0.5, 0.5);
+    rng.uniform(rv.data(), rv.size(), 0.05, 0.3);
+    const Tensor x = Tensor::from_data(xv, {1, 72}), r = Tensor::from_data(rv, {1, 72});
+    const ZonoNet net(nn, 4, 2, "bounds", "length");
+    const ZonoInput in = net.input_zonotope(x, r);
+    const ZonoPropagation out = net.forward(in.c, in.dr, in.G, x.zeros_like({1, 0}), nullptr, true);
+    // the samples' inputs of the three ReLU layers
+    std::vector<double> pts(std::size_t(2000 * 72));
+    rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+    std::vector<Tensor> zs;
+    Tensor h = Tensor::from_data(pts, {2000, 72}).multiply(r) + x;
+    for (std::size_t k = 0; k < 3; ++k) {
+        zs.push_back(net.map(k, h) + net.b[k]);
+        h = zs.back().maximum(0.0);
+    }
+    const double inf = std::numeric_limits<double>::infinity();
+    bool same = true, holds = true, narrower = false;
+    for (const int64_t steps : {0, 4}) {
+        // the whole layers, then the windows (a budget of few entries a chunk too)
+        const ZonoBounds whole = priv_crown_bounds(out, net, x, r, steps, 0.25, int64_t(1) << 30);
+        for (const int64_t bytes : {int64_t(1) << 30, int64_t(1) << 16}) {
+            const ZonoBounds wins = priv_crown_bounds(out, net, x, r, steps, 0.25, bytes, inf,
+                                                      false, nullptr, false, 1.0, inf, true);
+            for (std::size_t k = 0; k < 3; ++k) {
+                same = same && (wins.l[k] - whole.l[k]).abs().max().item() <= 1e-9 &&
+                       (wins.u[k] - whole.u[k]).abs().max().item() <= 1e-9;
+                holds = holds && zs[k].greater_equal(wins.l[k] - 1e-9).min().item() > 0 &&
+                        zs[k].less_equal(wins.u[k] + 1e-9).min().item() > 0;
+                narrower = narrower || (wins.u[k] - wins.l[k]).sum().item() <
+                                           (out.layers[k].u - out.layers[k].l).sum().item() - 1e-6;
+            }
+        }
+    }
+    // out of memory on the windows: half the entries, then the whole layers; the same bounds
+    bool backed = true;
+    for (const int64_t count : {1, 1000}) {
+        const ZonoBounds whole = priv_crown_bounds(out, net, x, r, 0, 0.25, int64_t(1) << 30);
+        int64_t backoffs = 0;
+        priv_inject_oom("crown_windows", 0, count);
+        const ZonoBounds wins = priv_crown_bounds(out, net, x, r, 0, 0.25, int64_t(1) << 30, inf,
+                                                  false, &backoffs, false, 1.0, inf, true);
+        priv_inject_oom("crown_windows", 0, 0);
+        for (std::size_t k = 0; k < 3; ++k)
+            backed = backed && backoffs > 0 &&
+                     (wins.l[k] - whole.l[k]).abs().max().item() <= 1e-9 &&
+                     (wins.u[k] - whole.u[k]).abs().max().item() <= 1e-9;
+    }
+    check(backed, b + ": the windows out of memory back off to the whole layers' bounds");
+    check(same, b + ": CROWN's bounds on the windows are the whole layers' bounds");
+    check(holds && narrower, b + ": the windows' bounds hold the sampled inputs and narrow some");
+}
+
 /// priv_crown_bab on nets of other activations (a product, a softmax's exp and reciprocal): its
 /// nodes batch the lines of the root's record, a verified polytope holds every sample.
 void crown_bab_other_layers(const std::string &b) {
@@ -2093,6 +2174,7 @@ int main() {
         crown_split_nodes(b);
         product_planes(b);
         lean_root(b);
+        crown_windows(b);
         affine_forms(b);
         affine_bab_verdicts(b);
         crown_bab_other_layers(b);
