@@ -896,3 +896,29 @@ needs a CORALean float definition of convex clipping (Sutherland-Hodgman with it
 Not supported yet: holes. CORA reads a region inside another as a hole, while `Polygon(V)` refuses a
 nested region (`Error::not_supported`). CORALean has no boundary form of a polygon either, so a hole
 would be a set of pieces that cover the ring.
+
+## Constrained polynomial zonotopes (PR "port/con-poly-zono", part of #213)
+
+`ConPolyZono` composes a `PolyZonotope` (c, G, E, GI, id) and a `PolyLevelSet` (CORALean's
+constraint object: the rows `A mu_EC(a) = b` on the unit box), as CORALean's `ConPolyZono`. Served
+in CORALean (tag `oracle-20261125-04158bd38`, `conPolyZono.*`) and `oracle`, bit for bit on the lean
+backend (`test_lean_con_poly_zono`, `test_lean_con_poly_zono_split`):
+
+| row | op | CORA.cpp's side |
+|---|---|---|
+| `conPolyZono` (Z, pZ, cZ), `origin`, `empty`, `dim`, `center` | `ofZonotope`, `ofPolyZonotope`, `ofConZonotope`, `origin`, `empty`, `dim`, `center` | stored as given; a zonotope's generators dependent; a constrained zonotope's rows on the identity monomials, `b + 0` |
+| `mtimes`, `plus`, `exactPlus`, `cartProd_` | `mtimes`, `plus`, `exactPlus`, `cartProd` | `PolyZonotope::linear_map`; the blocks of CORALean's `plusE` and `genBlockDiag` |
+| `and_` | `and` (`ConPolyZono.intersection`) | both made dependent; the agreement rows `[G1', 0 - G2']`, `(c2 - c1) + 0` |
+| `linComb`, `convHull_` | `linComb`, `convHull` | `PolyZonotope::linear_combination`; the hull's `n + 1` copies and weight row (`convHullSingle`), the sets made dependent first |
+| `project`, `lift_` | `project`, `lift` | the coordinates taken |
+| `compact_`, `reduce` | `compact`, `reduce` (girard) | `PolyZonotope::compact_gens` and `PolyLevelSet::compact`; the stable ranking of `[G; GI]` |
+| `split`, `getSubset`, `splitDepFactor`, `splitLongestGen` | `split` with the box `I` (`ConPolyZono.splitWith`), `getSubset`, `splitDepFactor`, `splitLongestGen` | CORA.cpp's box cut at `(inf + sup) / 2`, each half's zonotope; the binomial terms of CORALean's `getSubset`, unmerged, a zero term `+0` |
+| `interval`, `zonotope`, `polyZonotope`, `isequal`, `representsa_` (point) | the same names | `c -+ sum |G| -+ sum |GI|`; both blocks side by side |
+
+Not served, and so `property` or not ported: `supportFunc_` (CORALean's bound takes a bound of the
+dependent part as an argument; CORA.cpp's is the zonotope's), `vertices_`/plot (split pieces drawn as
+zonotopes), `or` (CORALean's union has a slack row), `quadMap` (the error box absorbed),
+`minkDiff`, `rescale` (CORA's `contractPoly` as an argument), `isFullDim`, `contains_`,
+`isIntersecting_`, `enclose`, `reduceConstraints`, `randPoint_` and the conversions to
+`conZonotope`, `ellipsoid` and `polytope`. `interval -> conPolyZono` is CORA.cpp's through the box's
+zonotope; CORALean's `Interval.conPolyZono` is the point `0` with the box as its error box.

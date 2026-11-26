@@ -98,6 +98,20 @@ Tensor priv_matmul_nested(const Tensor &A, const Tensor &B);
 /// set has independent generators.
 PolyZonotope priv_multiply(const PolyZonotope &a, const PolyZonotope &b);
 
+/// The exponents of two blocks of factors side by side: the columns of E1 padded below by p2
+/// zeros, then those of E2 padded above by p1 zeros (CORALean's plusE).
+Exponents priv_block_exponents(const Exponents &E1, int64_t p1, const Exponents &E2, int64_t p2);
+
+/// The generator rows G (h, n) and exponents E with factor k replaced by cen + rad x_k, as
+/// CORALean's getSubset: column i becomes the max_e + 1 columns of its binomial terms (i slower,
+/// the power j of x_k faster), none merged; a zero term is +0.
+struct ExpandedColumns {
+    Tensor G;
+    Exponents E;
+};
+ExpandedColumns priv_get_subset_expand(const Tensor &G, const Exponents &E, std::size_t k,
+                                       double cen, double rad);
+
 } // namespace cora
 
 // ---------------------------------------  END OF CODE  ---------------------------------------- //

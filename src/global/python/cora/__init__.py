@@ -34,6 +34,7 @@ except ImportError:  # numpy and Eigen only
 from . import banner, errors
 from ._cora import (
     Capsule,
+    ConPolyZono,
     ContSet,
     ConZonotope,
     DaeReachSet,
@@ -58,6 +59,7 @@ from ._cora import (
     NonlinearSys,
     NonlinearSysDT,
     Polygon,
+    PolyLevelSet,
     Polytope,
     PolyZonotope,
     ReachProblem,
@@ -140,14 +142,14 @@ from .tensor import (
 banner.install(current_backend)
 
 __all__ = [
-    "CORAError", "CORAWarning", "Capsule", "ConZonotope", "ContSet", "DaeReachSet",
+    "CORAError", "CORAWarning", "Capsule", "ConPolyZono", "ConZonotope", "ContSet", "DaeReachSet",
     "Ellipsoid", "EmptySet", "Expr",
     "Falsification", "Figure", "Fullspace", "HybridAutomaton", "HybridReachSet", "Interval",
     "LevelSet", "LinParamSys", "LinearReset", "LinearSys", "Location",
     "LocationReachSet",
     "NeuralNetwork", "NeurNetContrSys", "NnVerifyOptions", "NonlinDASys", "NonlinearSys",
     "NonlinearSysDT",
-    "PolyZonotope", "Polygon", "Polytope",
+    "PolyLevelSet", "PolyZonotope", "Polygon", "Polytope",
     "ReachProblem",
     "ReachSet", "Rng", "Specification", "Stl", "StlExpr", "StlInterval", "Taylm", "Transition",
     "VerifyResult", "ZonoBundle",
