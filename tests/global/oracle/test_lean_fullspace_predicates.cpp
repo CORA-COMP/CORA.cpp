@@ -65,7 +65,7 @@ int main() {
         const std::vector<double> V = lean::Fullspace(2).vertices().gather().data();
         std::set<std::pair<double, double>> theirs, mine;
         for (std::size_t j = 0; j < V.size() / 2; ++j) theirs.insert({V[j], V[V.size() / 2 + j]});
-        const std::vector<Polygon> corners = Fullspace(2).vertices();
+        const std::vector<Outline> corners = Fullspace(2).vertices();
         for (const Point &p : corners[0]) mine.insert({p[0], p[1]});
         test::oracle::check(mine == theirs && theirs.size() == 4, true);
     });

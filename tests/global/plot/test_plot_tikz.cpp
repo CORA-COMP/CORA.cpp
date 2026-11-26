@@ -112,7 +112,7 @@ void standalone_documents() {
 
 void thinning_and_numbers() {
     Figure fig;
-    Polygon square;
+    Outline square;
     for (int i = 0; i < 100; ++i) square.push_back({i * 0.01, 0});
     for (int i = 0; i < 100; ++i) square.push_back({1, i * 0.01});
     for (int i = 0; i < 100; ++i) square.push_back({1 - i * 0.01, 1});
@@ -125,7 +125,7 @@ void thinning_and_numbers() {
     check(count(fig.tikz({.thin_tolerance = 1e-9}), "(") == 5,
           "collinear points go at any tolerance");
     Figure wavy;
-    Polygon curve;
+    Outline curve;
     for (int i = 0; i <= 100; ++i) curve.push_back({i * 0.01, 0.0005 * (i % 2)});
     curve.push_back({1, 1});
     wavy.add_polyline(curve, Color(0, 0, 0), 1, "");

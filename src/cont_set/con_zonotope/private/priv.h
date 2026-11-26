@@ -101,7 +101,7 @@ Tensor priv_vertex_candidates(const ConZonotope &cz);
 
 /// The convex hull of the points (2, K) as a polygon, counter-clockwise (a point or a segment for
 /// a flat set, none for K = 0).
-Polygon priv_hull_polygon(const Tensor &V);
+Outline priv_hull_polygon(const Tensor &V);
 
 // Linear programs ---------------------------------------------------------------------------------
 

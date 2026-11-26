@@ -58,7 +58,7 @@ int main() {
         for (int i = 0; i < 4; ++i) {
             const Interval I = rnd.box(2);
             std::vector<Corner> mine;
-            const std::vector<Polygon> polygons = I.vertices();
+            const std::vector<Outline> polygons = I.vertices();
             for (const auto &p : polygons[0]) mine.push_back({p[0], p[1]});
             std::sort(mine.begin(), mine.end());
             const std::vector<Corner> theirs = aux_corners(lean::Interval(I).vertices().V.gather());

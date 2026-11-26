@@ -155,8 +155,8 @@ std::string aux_style(Writer &w, const Figure::Layer &l) {
 }
 
 // The path of a polygon as the picture shows it: thinned, and closed by its first point.
-Path aux_path(const Polygon &p, bool closed, const Axes &a, const TikzOptions &o) {
-    const Polygon shown = o.thin ? thin_polygon(p,
+Path aux_path(const Outline &p, bool closed, const Axes &a, const TikzOptions &o) {
+    const Outline shown = o.thin ? thin_polygon(p,
                                                 {o.thin_tolerance * (a.lim.x1 - a.lim.x0),
                                                  o.thin_tolerance * (a.lim.y1 - a.lim.y0)},
                                                 closed)
@@ -218,7 +218,7 @@ void aux_polygon_layer(std::ostringstream &out, Writer &w, const Figure::Layer &
                        const std::string &options) {
     std::vector<Path> paths;
     std::vector<Path> dots;
-    for (const Polygon &p : l.polygons) {
+    for (const Outline &p : l.polygons) {
         if (p.size() == 1)
             dots.push_back(aux_path(p, false, a, w.options));
         else
@@ -274,11 +274,11 @@ void aux_layers(std::ostringstream &out, Writer &w, const Figure &fig, const Axe
         switch (l.kind) {
         case Figure::Kind::region: {
             // A region is a polygon: the halfspace cut to the limits of the axes.
-            const Polygon box = {{a.lim.x0, a.lim.y0},
+            const Outline box = {{a.lim.x0, a.lim.y0},
                                  {a.lim.x1, a.lim.y0},
                                  {a.lim.x1, a.lim.y1},
                                  {a.lim.x0, a.lim.y1}};
-            const Polygon r = Figure::clip_region(box, l.a, l.b, l.sign);
+            const Outline r = Figure::clip_region(box, l.a, l.b, l.sign);
             if (r.size() < 3) break;
             Figure::Layer shape = l;
             shape.filled = true;
@@ -320,7 +320,7 @@ void aux_layers(std::ostringstream &out, Writer &w, const Figure &fig, const Axe
 
 // The legend's corner of a two-dimensional axes (legend_corner, a legend of about 30% width).
 std::string aux_legend_pos(const Figure &fig, const Axes &a) {
-    std::vector<std::vector<Polygon>> layers;
+    std::vector<std::vector<Outline>> layers;
     std::size_t rows = 0;
     for (const Figure::Layer &l : fig.layers()) {
         rows += l.label.empty() ? 0 : 1;

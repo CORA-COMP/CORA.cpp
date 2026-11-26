@@ -36,14 +36,14 @@ namespace {
 
 // A convex polygon with what makes tests fast: bounds, inner and outer disc and polygon.
 struct Convex {
-    Polygon corners; // counter-clockwise
-    Polygon core;
+    Outline corners; // counter-clockwise
+    Outline core;
     std::vector<std::pair<Point, Point>> lines; // some edges, as points a -> b
     double x0 = 1e300, x1 = -1e300, y0 = 1e300, y1 = -1e300;
     Point center = {0, 0};
     double inner = 0, outer = 0;
 
-    explicit Convex(Polygon p) : corners(std::move(p)) {
+    explicit Convex(Outline p) : corners(std::move(p)) {
         // The bounds and the mean of the corners.
         for (const Point &v : corners) {
             x0 = std::min(x0, v[0]);
@@ -73,8 +73,8 @@ struct Convex {
 };
 
 // Counter-clockwise, without repeated neighbors.
-Polygon aux_ccw(const Polygon &polygon, double eps) {
-    Polygon p;
+Outline aux_ccw(const Outline &polygon, double eps) {
+    Outline p;
     for (const Point &v : polygon)
         if (p.empty() || norm(sub(v, p.back())) > eps) p.push_back(v);
     while (p.size() > 1 && norm(sub(p.front(), p.back())) <= eps) p.pop_back();
@@ -83,7 +83,7 @@ Polygon aux_ccw(const Polygon &polygon, double eps) {
 }
 
 // Whether every corner turns left, or goes straight on.
-bool aux_is_convex(const Polygon &p, double eps) {
+bool aux_is_convex(const Outline &p, double eps) {
     for (std::size_t i = 0; i < p.size(); ++i) {
         const Point &a = p[i], &b = p[(i + 1) % p.size()], &c = p[(i + 2) % p.size()];
         if (cross(sub(b, a), sub(c, b)) < -eps * norm(sub(b, a)) * norm(sub(c, b))) return false;
@@ -98,10 +98,10 @@ bool aux_in_triangle(const Point &p, const Point &a, const Point &b, const Point
 }
 
 // The triangles of a simple polygon by cutting off ears; none if it is not simple.
-std::vector<Polygon> aux_triangles(const Polygon &p, double eps) {
+std::vector<Outline> aux_triangles(const Outline &p, double eps) {
     std::vector<std::size_t> idx(p.size());
     for (std::size_t i = 0; i < p.size(); ++i) idx[i] = i;
-    std::vector<Polygon> out;
+    std::vector<Outline> out;
     while (idx.size() > 3) {
         bool cut = false;
         for (std::size_t k = 0; k < idx.size() && !cut; ++k) {
@@ -124,18 +124,18 @@ std::vector<Polygon> aux_triangles(const Polygon &p, double eps) {
 }
 
 // The convex polygons of the input, counter-clockwise; none if one cannot be cut into convex parts.
-bool aux_convex_polygons(const std::vector<Polygon> &polygons, double eps,
+bool aux_convex_polygons(const std::vector<Outline> &polygons, double eps,
                          std::vector<Convex> &out) {
-    for (const Polygon &given : polygons) {
-        const Polygon p = aux_ccw(given, eps);
+    for (const Outline &given : polygons) {
+        const Outline p = aux_ccw(given, eps);
         if (p.size() < 3 || std::abs(area(p)) <= eps * eps) continue;
         if (aux_is_convex(p, numerics::kConvexCorner)) {
             out.emplace_back(p);
             continue;
         }
-        const std::vector<Polygon> parts = aux_triangles(p, eps);
+        const std::vector<Outline> parts = aux_triangles(p, eps);
         if (parts.empty()) return false;
-        for (const Polygon &t : parts)
+        for (const Outline &t : parts)
             if (area(t) > eps * eps) out.emplace_back(t);
     }
     return true;
@@ -144,7 +144,7 @@ bool aux_convex_polygons(const std::vector<Polygon> &polygons, double eps,
 // Edges -------------------------------------------------------------------------------------------
 
 // Whether the point is inside the polygon by more than eps.
-bool aux_deep_inside(const Point &p, const Polygon &poly, double eps) {
+bool aux_deep_inside(const Point &p, const Outline &poly, double eps) {
     for (std::size_t i = 0; i < poly.size(); ++i) {
         const Point &a = poly[i], &b = poly[(i + 1) % poly.size()];
         if (cross(sub(b, a), sub(p, a)) <= eps * norm(sub(b, a))) return false;
@@ -218,7 +218,7 @@ std::vector<std::vector<std::size_t>> aux_neighbors(const std::vector<Convex> &p
 // The pieces of the edges of polygon i that no other polygon covers.
 void aux_boundary_pieces(const std::vector<Convex> &polys, const std::vector<std::size_t> &near,
                          std::size_t i, double eps, std::vector<Piece> &out) {
-    const Polygon &poly = polys[i].corners;
+    const Outline &poly = polys[i].corners;
     for (std::size_t k = 0; k < poly.size(); ++k) {
         const Point &p = poly[k], &q = poly[(k + 1) % poly.size()];
         const Point d = sub(q, p);
@@ -247,7 +247,7 @@ void aux_boundary_pieces(const std::vector<Convex> &polys, const std::vector<std
 // Loops -------------------------------------------------------------------------------------------
 
 // Chains the directed pieces into closed loops; false if one does not close.
-bool aux_chain(const std::vector<Piece> &pieces, double eps, std::vector<Polygon> &loops) {
+bool aux_chain(const std::vector<Piece> &pieces, double eps, std::vector<Outline> &loops) {
     const double cell = 8 * eps;
     auto key = [&](const Point &p) {
         return std::make_pair(static_cast<long long>(std::floor(p[0] / cell)),
@@ -276,7 +276,7 @@ bool aux_chain(const std::vector<Piece> &pieces, double eps, std::vector<Polygon
     // Start a loop at every unused piece and follow it until it comes back.
     for (std::size_t first = 0; first < pieces.size(); ++first) {
         if (used[first]) continue;
-        Polygon loop = {pieces[first].a};
+        Outline loop = {pieces[first].a};
         used[first] = true;
         Point end = pieces[first].b;
         while (norm(sub(end, loop[0])) > 4 * eps) {
@@ -298,9 +298,9 @@ bool aux_chain(const std::vector<Piece> &pieces, double eps, std::vector<Polygon
 
 // Union -------------------------------------------------------------------------------------------
 
-std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double resolution) {
+std::vector<Outline> union_polygons(const std::vector<Outline> &given, double resolution) {
     double x0 = 1e300, x1 = -1e300, y0 = 1e300, y1 = -1e300;
-    for (const Polygon &p : given)
+    for (const Outline &p : given)
         for (const Point &v : p) {
             x0 = std::min(x0, v[0]);
             x1 = std::max(x1, v[0]);
@@ -309,17 +309,17 @@ std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double re
         }
     const double eps = numerics::kUnionExtent * std::max({x1 - x0, y1 - y0, numerics::kTiny});
     // Corners that the picture cannot show are dropped first: fewer edges to test.
-    std::vector<Polygon> polygons;
+    std::vector<Outline> polygons;
     polygons.reserve(given.size());
-    for (const Polygon &p : given)
+    for (const Outline &p : given)
         polygons.push_back(thin_polygon(p, {resolution * (x1 - x0), resolution * (y1 - y0)}));
     // The polygons with an area, convex and counter-clockwise; their neighbors.
     std::vector<Convex> polys;
     const bool simple = aux_convex_polygons(polygons, eps, polys);
     if (!simple || polys.size() < 2) {
-        std::vector<Polygon> same;
-        for (const Polygon &p : polygons)
-            if (const Polygon q = aux_ccw(p, eps); q.size() >= 3) same.push_back(q);
+        std::vector<Outline> same;
+        for (const Outline &p : polygons)
+            if (const Outline q = aux_ccw(p, eps); q.size() >= 3) same.push_back(q);
         return same;
     }
     const std::vector<std::vector<std::size_t>> near = aux_neighbors(polys, eps);
@@ -327,16 +327,16 @@ std::vector<Polygon> union_polygons(const std::vector<Polygon> &given, double re
     std::vector<Piece> pieces;
     for (std::size_t i = 0; i < polys.size(); ++i)
         aux_boundary_pieces(polys, near[i], i, eps, pieces);
-    std::vector<Polygon> loops;
+    std::vector<Outline> loops;
     if (!aux_chain(pieces, eps, loops)) {
-        std::vector<Polygon> same;
+        std::vector<Outline> same;
         same.reserve(polys.size());
         for (const Convex &c : polys) same.push_back(c.corners);
         return same;
     }
-    std::vector<Polygon> out;
-    for (const Polygon &loop : loops) {
-        Polygon thin = thin_polygon(loop, {eps, eps});
+    std::vector<Outline> out;
+    for (const Outline &loop : loops) {
+        Outline thin = thin_polygon(loop, {eps, eps});
         if (thin.size() >= 3) out.push_back(std::move(thin));
     }
     return out;

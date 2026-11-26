@@ -21,7 +21,7 @@ using test::vec;
 namespace {
 
 /// Whether the polygon has the corner (x, y).
-bool aux_has(const Polygon &polygon, double x, double y) {
+bool aux_has(const Outline &polygon, double x, double y) {
     for (const Point &p : polygon)
         if (close(p[0], x, 1e-9) && close(p[1], y, 1e-9)) return true;
     return false;
@@ -32,7 +32,7 @@ bool aux_has(const Polygon &polygon, double x, double y) {
 void vertices_known(const std::string &b) {
     const Zonotope A(vec({0.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
     const Zonotope B(vec({1.0, 0.0}), Tensor({{2.0, 0.0}, {0.0, 1.0}}));
-    const Polygon square = Set(ZonoBundle({A, B}))->vertices()[0];
+    const Outline square = Set(ZonoBundle({A, B}))->vertices()[0];
     check(square.size() == 4 && aux_has(square, -1, -1) && aux_has(square, 2, -1) &&
               aux_has(square, 2, 1) && aux_has(square, -1, 1),
           b + ": the four corners of the box");

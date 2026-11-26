@@ -22,10 +22,10 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> Interval::vertices_impl() const {
+std::vector<Outline> Interval::vertices_impl() const {
     const std::vector<double> lo = inf_.data(), hi = sup_.data();
     const std::vector<uint8_t> empty = empty_.flags(batch_shape());
-    std::vector<Polygon> out;
+    std::vector<Outline> out;
     for (std::size_t b = 0; b + 1 < lo.size(); b += 2) // (x, y) of each batch member
         if (!empty[b / 2])
             out.push_back(

@@ -5,7 +5,7 @@
 // space. The empty set has none. CORA's template method is not ported. A set with constraints is
 // not a batch.
 //
-// Syntax:   std::vector<Polygon> V = cz.vertices();   auto V3 = cz.vertices_3d();
+// Syntax:   std::vector<Outline> V = cz.vertices();   auto V3 = cz.vertices_3d();
 // Inputs:   -
 // Outputs:  V - the vertices of a planar set, counter-clockwise
 //           V3 - the vertices of a set in space, in no order
@@ -44,7 +44,7 @@ std::vector<Point3> aux_points(const Tensor &V) {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> ConZonotope::vertices_impl() const {
+std::vector<Outline> ConZonotope::vertices_impl() const {
     if (A().shape()[A().ndim() - 2] == 0) return Zonotope(c_, G_).vertices();
     return {priv_hull_polygon(priv_vertex_candidates(*this))};
 }

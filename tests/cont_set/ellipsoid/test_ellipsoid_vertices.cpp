@@ -30,7 +30,7 @@ void vertices_property(const std::string &b) {
     Rng rng(139);
     for (int k = 0; k < 3; ++k) {
         const Ellipsoid E = test::random_ellipsoid(rng, 2);
-        const Polygon V = E.vertices()[0];
+        const Outline V = E.vertices()[0];
         check(V.size() == 256, b + ": 256 vertices");
         std::vector<double> flat;
         for (const Point &p : V) flat.insert(flat.end(), {p[0], p[1]});

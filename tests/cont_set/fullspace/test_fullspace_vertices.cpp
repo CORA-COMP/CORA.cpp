@@ -25,7 +25,7 @@ using test::check;
 namespace {
 
 void the_corners_are_at_infinity(const std::string &b) {
-    const std::vector<Polygon> V = Fullspace(2).vertices();
+    const std::vector<Outline> V = Fullspace(2).vertices();
     check(V.size() == 1 && V[0].size() == 4, b + ": one polygon of four corners");
     std::set<std::pair<double, double>> signs;
     for (const Point &p : V[0]) {
@@ -42,7 +42,7 @@ void the_corners_are_those_of_the_box(const std::string &b) {
     Rng rng(13);
     for (int trial = 0; trial < 10; ++trial) {
         const Zonotope Z = Zonotope::generate_random(rng, 2, std::nullopt, 4);
-        for (const Polygon &polygon : Z.vertices())
+        for (const Outline &polygon : Z.vertices())
             for (const Point &p : polygon)
                 check(Fullspace(2).contains(
                           Interval(test::vec({p[0], p[1]}), test::vec({p[0], p[1]}))),

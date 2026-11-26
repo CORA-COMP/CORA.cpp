@@ -52,9 +52,10 @@ class Interval;
 class Rng;
 class Set;
 
-/// A point of the plane, and a polygon as its vertices in counter-clockwise order.
+/// A point of the plane, and an outline: a closed loop of points in counter-clockwise order (what
+/// vertices() gives for plotting; the set class of polygons is cora::Polygon).
 using Point = std::array<double, 2>;
-using Polygon = std::vector<Point>;
+using Outline = std::vector<Point>;
 
 /// A point of space; the vertices of a three-dimensional set are listed as such.
 using Point3 = std::array<double, 3>;
@@ -133,7 +134,7 @@ class ContSet {
     Set project(const std::vector<int64_t> &dims) const;
 
     /// The vertices of a two-dimensional set, one polygon per batch member.
-    std::vector<Polygon> vertices() const;
+    std::vector<Outline> vertices() const;
 
     /// The vertices of a three-dimensional set, one list per batch member, in no particular order.
     std::vector<std::vector<Point3>> vertices_3d() const;
@@ -237,7 +238,7 @@ class ContSet {
     virtual Interval interval_impl() const = 0;
     virtual Tensor rand_point_impl(int64_t N, Rng &rng) const = 0;
     virtual Set project_impl(const std::vector<int64_t> &dims) const = 0;
-    virtual std::vector<Polygon> vertices_impl() const = 0;
+    virtual std::vector<Outline> vertices_impl() const = 0;
     virtual std::vector<std::vector<Point3>> vertices_3d_impl() const = 0;
     virtual std::string display_impl() const = 0;
 

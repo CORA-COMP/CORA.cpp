@@ -37,7 +37,7 @@ inline double segment_distance(const Point &p, const Point &a, const Point &b) {
 }
 
 /// The signed area of a polygon: positive if it runs counter-clockwise.
-inline double area(const Polygon &p) {
+inline double area(const Outline &p) {
     double a = 0;
     for (std::size_t i = 0; i < p.size(); ++i) a += cross(p[i], p[(i + 1) % p.size()]);
     return a / 2;

@@ -25,7 +25,7 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> PolyZonotope::vertices_impl() const {
+std::vector<Outline> PolyZonotope::vertices_impl() const {
     CORA_FAIL(
         Error::not_supported,
         "vertices: a polynomial zonotope has no vertices; use zonotope() to plot an enclosure");

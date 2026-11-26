@@ -137,7 +137,7 @@ std::vector<Point3> aux_merge(const std::vector<Point3> &p, const std::vector<Tr
 
 // Thinning ----------------------------------------------------------------------------------------
 
-Polygon thin_polygon(const Polygon &polygon, Point resolution, bool closed) {
+Outline thin_polygon(const Outline &polygon, Point resolution, bool closed) {
     const std::size_t n = polygon.size();
     if (n < (closed ? 4u : 3u)) return polygon;
     std::vector<Point> pts; // in units of the resolution, so that the limit is 1
@@ -159,7 +159,7 @@ Polygon thin_polygon(const Polygon &polygon, Point resolution, bool closed) {
     } else {
         aux_simplify(pts, idx, keep);
     }
-    Polygon out;
+    Outline out;
     for (std::size_t i = 0; i < n; ++i)
         if (keep[i]) out.push_back(polygon[i]);
     return closed && out.size() < 3 ? polygon : out;
@@ -240,11 +240,11 @@ std::vector<std::vector<Point3>> hull_faces(const std::vector<Point3> &p) {
 
 // Legend ------------------------------------------------------------------------------------------
 
-std::vector<std::array<double, 4>> unit_boxes(const std::vector<std::vector<Polygon>> &layers,
+std::vector<std::array<double, 4>> unit_boxes(const std::vector<std::vector<Outline>> &layers,
                                               double x0, double x1, double y0, double y1) {
     std::vector<std::array<double, 4>> boxes;
-    for (const std::vector<Polygon> &polygons : layers)
-        for (const Polygon &p : polygons) {
+    for (const std::vector<Outline> &polygons : layers)
+        for (const Outline &p : polygons) {
             if (p.empty()) continue;
             std::array<double, 4> b = {1e300, -1e300, 1e300, -1e300};
             for (const Point &q : p) {

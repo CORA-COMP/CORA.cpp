@@ -26,7 +26,7 @@ namespace {
 
 /// The square and the triangle: four and three corners, counter-clockwise.
 void planes(const std::string &b) {
-    const std::vector<Polygon> square = test::square_h().vertices();
+    const std::vector<Outline> square = test::square_h().vertices();
     check(square.size() == 1 && square[0].size() == 4, b + ": four corners");
     // counter-clockwise: the signed area is positive
     double area = 0.0;
@@ -54,7 +54,7 @@ void properties(const std::string &b) {
     bool inside = true, same_area = true;
     for (int k = 0; k < 8; ++k) {
         const Polytope P = test::random_polytope(rng, 2, 5);
-        const Polygon corners = P.vertices()[0];
+        const Outline corners = P.vertices()[0];
         // the shoelace sum over the counter-clockwise corners
         double area = 0.0;
         for (std::size_t i = 0; i < corners.size(); ++i) {

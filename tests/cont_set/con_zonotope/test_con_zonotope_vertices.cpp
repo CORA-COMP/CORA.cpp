@@ -22,7 +22,7 @@ using test::vec;
 namespace {
 
 /// Whether the polygon has the corner (x, y).
-bool aux_has(const Polygon &polygon, double x, double y) {
+bool aux_has(const Outline &polygon, double x, double y) {
     for (const Point &p : polygon)
         if (close(p[0], x, 1e-9) && close(p[1], y, 1e-9)) return true;
     return false;
@@ -30,13 +30,13 @@ bool aux_has(const Polygon &polygon, double x, double y) {
 
 /// Hand-computed: the six corners of the hexagon, the ends of a segment, the corners of a square.
 void vertices_known(const std::string &b) {
-    const Polygon hex = Set(test::hexagon())->vertices()[0];
+    const Outline hex = Set(test::hexagon())->vertices()[0];
     check(hex.size() == 6 && aux_has(hex, 1, 0) && aux_has(hex, 1, -1) && aux_has(hex, 0, -1) &&
               aux_has(hex, -1, 0) && aux_has(hex, -1, 1) && aux_has(hex, 0, 1),
           b + ": the hexagon");
     const ConZonotope segment(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {1.0, 1.0}}),
                               Tensor({{1.0, 1.0}}), vec({0.0}));
-    const Polygon ends = Set(segment)->vertices()[0];
+    const Outline ends = Set(segment)->vertices()[0];
     check(ends.size() == 2 && aux_has(ends, 0, 1) && aux_has(ends, 0, -1), b + ": a segment");
     const ConZonotope square(vec({0.0, 0.0}), Tensor({{1.0, 0.0}, {0.0, 1.0}}));
     check(Set(square)->vertices()[0].size() == 4, b + ": without constraints: the zonotope's");
@@ -51,7 +51,7 @@ void vertices_known(const std::string &b) {
 void vertices_property(const std::string &b) {
     Rng rng(74);
     const ConZonotope cz = test::random_con_zonotope(rng, 2, 4, 2);
-    const Polygon polygon = Set(cz)->vertices()[0];
+    const Outline polygon = Set(cz)->vertices()[0];
     const Tensor points = test::sample_points(cz, rng, 30);
     const std::vector<double> xy = points.data();
     bool inside = true;

@@ -29,11 +29,11 @@ namespace cora {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> Capsule::vertices_impl() const {
+std::vector<Outline> Capsule::vertices_impl() const {
     const std::vector<double> cs = cc().data(), gs = gc().data(), rs = r_.data();
     const std::vector<uint8_t> empty = empty_.flags(r_.shape());
     constexpr int kPoints = 500; // per half circle, as CORA
-    std::vector<Polygon> out;
+    std::vector<Outline> out;
     for (std::size_t b = 0; b < rs.size(); ++b) {
         if (empty[b]) continue;
         const Point c = {cs[2 * b], cs[2 * b + 1]}, g = {gs[2 * b], gs[2 * b + 1]};
@@ -44,7 +44,7 @@ std::vector<Polygon> Capsule::vertices_impl() const {
         }
         // the half circle around `from` that starts at `start` and turns by half a circle
         const double angle0 = length > 0 ? std::atan2(g[1], g[0]) : 0.0;
-        Polygon outline;
+        Outline outline;
         for (int half = 0; half < 2; ++half) {
             const double sign = half == 0 ? 1.0 : -1.0,
                          start = angle0 + (half == 0 ? -1 : 1) * std::numbers::pi / 2;

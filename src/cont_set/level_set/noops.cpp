@@ -36,7 +36,7 @@ Tensor LevelSet::rand_point_impl(int64_t, Rng &) const { priv_noops("rand_point"
 
 Set LevelSet::project_impl(const std::vector<int64_t> &) const { priv_noops("project", *this); }
 
-std::vector<Polygon> LevelSet::vertices_impl() const { priv_noops("vertices", *this); }
+std::vector<Outline> LevelSet::vertices_impl() const { priv_noops("vertices", *this); }
 
 std::vector<std::vector<Point3>> LevelSet::vertices_3d_impl() const {
     priv_noops("vertices_3d", *this);

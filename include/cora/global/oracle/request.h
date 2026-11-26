@@ -26,6 +26,7 @@
 #include "cora/global/oracle/interval.h"
 #include "cora/global/oracle/mat_zonotope.h"
 #include "cora/global/oracle/poly_zonotope.h"
+#include "cora/global/oracle/polygon.h"
 #include "cora/global/oracle/polytope.h"
 #include "cora/global/oracle/zono_bundle.h"
 #include "cora/global/oracle/zonotope.h"
@@ -66,6 +67,7 @@ struct Wire {
     Wire(const ZonoBundle &bundle);
     Wire(const PolyZonotope &P);
     Wire(const Polytope &P);
+    Wire(const Polygon &pgon);
     Wire(const Ellipsoid &E);
     Wire(const Capsule &C);
     Wire(const std::vector<Tensor> &Ts);

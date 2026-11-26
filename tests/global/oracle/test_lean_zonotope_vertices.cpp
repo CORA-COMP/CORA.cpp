@@ -28,7 +28,7 @@ namespace oracle = test::oracle;
 namespace {
 
 /// The corners of CORA.cpp as a (2, k) tensor of the same layout as the oracle's V.
-Tensor aux_columns(const Zonotope &Z, const Polygon &corners) {
+Tensor aux_columns(const Zonotope &Z, const Outline &corners) {
     std::vector<double> data(2 * corners.size());
     for (std::size_t k = 0; k < corners.size(); ++k) {
         data[k] = corners[k][0];
@@ -54,7 +54,7 @@ int main() {
     oracle::run("zonotope.vertices", [](oracle::Random &rnd) {
         for (const int m : {1, 2, 3, 5, 12, 40}) {
             const Zonotope Z = rnd.zonotope(2, m);
-            const std::vector<Polygon> mine = Z.vertices();
+            const std::vector<Outline> mine = Z.vertices();
             const Tensor theirs = lean::Zonotope(Z).vertices().V.gather();
             oracle::check("m = " + std::to_string(m), aux_columns(Z, mine[0]),
                           aux_without_repeats(theirs, m));

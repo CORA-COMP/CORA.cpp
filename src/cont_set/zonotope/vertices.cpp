@@ -28,7 +28,7 @@ namespace cora {
 namespace {
 
 // The generators, in the upper half-plane by angle, are the edges of the walk from c - sum(g).
-Polygon aux_polygon(const double *c, const double *G, int64_t m) {
+Outline aux_polygon(const double *c, const double *G, int64_t m) {
     std::vector<Point> g; // the generators (G is row-major (2, m))
     for (int64_t j = 0; j < m; ++j) {
         Point p = {G[j], G[m + j]};
@@ -63,7 +63,7 @@ Polygon aux_polygon(const double *c, const double *G, int64_t m) {
         return Point{c[0] + v[0], c[1] + v[1]};
     };
     // c - sum(g) + 2 sum_(j<k) g, the walk up to the corner c + sum(g), then its mirror image
-    Polygon out;
+    Outline out;
     for (std::size_t k = 0; k <= g.size(); ++k) out.push_back(corner(k, 1.0));
     for (std::size_t k = 1; k < g.size(); ++k) out.push_back(corner(k, -1.0));
     return out;
@@ -74,11 +74,11 @@ Polygon aux_polygon(const double *c, const double *G, int64_t m) {
 
 // ===========================================  MAIN  =========================================== //
 
-std::vector<Polygon> Zonotope::vertices_impl() const {
+std::vector<Outline> Zonotope::vertices_impl() const {
     const std::vector<double> cs = c_.data(), Gs = G_.matrix_transpose().data();
     const int64_t m = nr_generators();
     const std::size_t batch = cs.size() / 2;
-    std::vector<Polygon> out;
+    std::vector<Outline> out;
     out.reserve(batch);
     for (std::size_t b = 0; b < batch; ++b)
         out.push_back(aux_polygon(&cs[2 * b], &Gs[static_cast<std::size_t>(2 * m) * b], m));
