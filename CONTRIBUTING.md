@@ -126,8 +126,9 @@ it, and `ctest` (`coverage`, the first test) fails when it is stale.
   measured file that is gone. `--check --remeasure` runs every instance again (hours; on demand).
 - `scripts/paper/arch_table.py` writes `paper/generated/arch-comp-table.tex`, the paper's table of the ARCH-COMP26
   times: CORA.cpp's verdicts and times from the tables of `examples/benchmarks/README.md`, the other tools' times
-  from `examples/benchmarks/data/arch26_tool_times.csv` (with the report table of each). Run it after a change of
-  either; `--check` (in `checks` of ci.yml) fails on a stale file.
+  from `examples/benchmarks/data/arch26_tool_times.csv` (with the report table of each), the system dimensions from
+  `arch26_dimensions.csv` (the states of each model, clocks and constant states not counted). Run it after a change of
+  any of them; `--check` (in `checks` of ci.yml) fails on a stale file.
 - `scripts/paper/vnn_table.py` writes `paper/generated/vnn-comp-table.tex`, the paper's preliminary VNN-COMP table,
   from `examples/vnncomp/results/dev_results.csv` (one row per benchmark, instance and tool; a new tool adds rows;
   `--results` takes another CSV). Run it after a change of the CSV; `--check` (in `checks` of ci.yml) fails on a
