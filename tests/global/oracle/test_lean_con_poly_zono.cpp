@@ -62,7 +62,7 @@ int main() {
         const Zonotope Z = rnd.zonotope(3, 4);
         oracle::check("zonotope", ConPolyZono(Z), lean::ConPolyZono::from_zonotope(Z));
         const PolyZonotope P(rnd.point(3), rnd.matrix(3, 3), rnd.matrix(1, 3),
-                             oracle::random_exponents(rnd, 3, 2), {1, 2}, detail::Verbatim{});
+                             oracle::random_exponents(rnd, 3, 2), {1, 2}, cora::detail::Verbatim{});
         oracle::check("polyZonotope", ConPolyZono(P), lean::ConPolyZono::from_poly_zonotope(P));
         const ConZonotope cz = rnd.con_zonotope(3, 5, 2);
         oracle::check("conZonotope", ConPolyZono(cz), lean::ConPolyZono::from_con_zonotope(cz));
@@ -89,7 +89,7 @@ int main() {
         const ConPolyZono S = aux_set(rnd);
         const ConPolyZono T(PolyZonotope(rnd.point(3), rnd.matrix(2, 3), rnd.matrix(1, 3),
                                          oracle::random_exponents(rnd, 2, 3), S.ids(),
-                                         detail::Verbatim{}),
+                                         cora::detail::Verbatim{}),
                             S.constraints());
         oracle::check(S.exact_plus(T), lean::ConPolyZono(S).exact_plus(lean::ConPolyZono(T)));
     });
