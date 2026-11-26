@@ -1,0 +1,78 @@
+instance,n,counted
+HEAT01,125,A (125x125) of HEAT01.json
+HEAT02,1000,A of HEAT02.json
+HEAT03,8000,A of HEAT03.json
+HEAT04,125000,heat50: 50^3 grid points (benchmark_linear_reach_arch23_heat3d.cpp)
+CBC01,200,A (201x201) of CBC01.json less the constant input state (a zero row)
+CBC02,1000,A (1001x1001) less the constant input state
+CBC03,2000,A (2001x2001) less the constant input state
+CBF01,200,A of CBF01.json
+CBF02,1000,A of CBF02.json
+CBF03,2000,A of CBF03.json
+RND01,10,A of RND01.json
+RND02,50,A of RND02.json
+RND03,100,A of RND03.json
+RND04,1000,A of RND04.json
+RND05,2500,A of RND05.json
+RND06,5000,A of RND06.json
+SRNA01,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRA01,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRA02,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRA03,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRA04,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRA05,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRA06,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRA07,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRA08,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRU01,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+SRU02,4,rendezvous model: 5 states less the clock (benchmark_rendezvous_model.h)
+DTN01,11,"powertrain: 2 theta + 7 states, theta = 2 (no clock)"
+DTN02,11,"powertrain: 2 theta + 7 states, theta = 2 (no clock)"
+DTN03,11,"powertrain: 2 theta + 7 states, theta = 2 (no clock)"
+DTN04,51,"powertrain: 2 theta + 7 states, theta = 22 (no clock)"
+DTN05,51,"powertrain: 2 theta + 7 states, theta = 22 (no clock)"
+DTN06,51,"powertrain: 2 theta + 7 states, theta = 22 (no clock)"
+PLAA01-BND42,9,platoon: 9 states (benchmark_linear_param_reach_arch23_platoon.cpp)
+PLAA01-BND50,9,platoon: 9 states (benchmark_linear_param_reach_arch23_platoon.cpp)
+PLAD01-BND30,9,platoon: 9 states (benchmark_linear_param_reach_arch23_platoon.cpp)
+PLAD01-BND42,9,platoon: 9 states (benchmark_linear_param_reach_arch23_platoon.cpp)
+PLAN01,9,platoon: 9 states (benchmark_linear_param_reach_arch23_platoon.cpp)
+GRBX01,5,"gearbox: 5 states, the impulse I included (it changes at the resets)"
+GRBX02,5,gearbox: 5 states
+BRKDC01,4,"brake: the 4 plant states, the sampling clock not counted"
+BRKNC01,4,"brake: the 4 plant states, the sampling clock not counted"
+BRKNP01,4,"brake: the 4 plant states, the sampling clock not counted"
+TRAF22,10,"traffic: the car and its reference, 5 states each"
+SPRE22,4,spacecraft: 5 states less the clock
+ROBE25 (1),3,Robertson: 3 states
+ROBE25 (2),3,Robertson: 3 states
+ROBE25 (3),3,Robertson: 3 states
+CVDP23,4,coupled van der Pol: 5 states less the constant mu
+LALO20 W001,7,Laub-Loomis: 7 states
+LALO20 W005,7,Laub-Loomis: 7 states
+LALO20 W01,7,Laub-Loomis: 7 states
+TSPS25,15,IEEE 14-bus power system: 15 differential states (27 algebraic not counted)
+LOVO25,2,Lotka-Volterra: 3 states less the clock
+Unicycle,4,plant: 4 states
+ACC,6,plant: 6 states
+TORA remain,4,plant: 4 states
+TORA reach-tanh,4,plant: 4 states
+TORA reach-sigmoid,4,plant: 4 states
+Single Pendulum,2,plant: 2 states
+DP less-robust,4,plant: 4 states
+DP more-robust,4,plant: 4 states
+Airplane,12,plant: 12 states
+VCAS middle-19.5,3,"plant: 3 states (h, its rate, tau)"
+VCAS middle-22.5,3,"plant: 3 states (h, its rate, tau)"
+VCAS middle-25.5,3,"plant: 3 states (h, its rate, tau)"
+VCAS middle-28.5,3,"plant: 3 states (h, its rate, tau)"
+VCAS worst-19.5,3,"plant: 3 states (h, its rate, tau)"
+VCAS worst-22.5,3,"plant: 3 states (h, its rate, tau)"
+VCAS worst-25.5,3,"plant: 3 states (h, its rate, tau)"
+VCAS worst-28.5,3,"plant: 3 states (h, its rate, tau)"
+Attitude Control,6,plant: 6 states
+QUAD,12,plant: 12 states
+Docking,4,plant: 4 states
+NAV standard,4,plant: 4 states
+NAV robust,4,plant: 4 states
+CartPole*,4,plant: 4 states
