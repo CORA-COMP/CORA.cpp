@@ -14,11 +14,12 @@ See also: scripts/vnncomp/score.py, scripts/vnncomp/make_dev_set.py
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   25-November-2026
+Last update:   26-November-2026
 Reviewed:      ---
 """
 
 import argparse
+import ast
 import csv
 import json
 import os
@@ -103,6 +104,19 @@ def timed(command, limit, env):
     return code, time.monotonic() - start, usage.ru_maxrss / 1024
 
 
+def network_field(base, field):
+    """The onnx field of an instance with the dev set's directory in front: a path, or VNN-LIB
+    2.0's list of (name, path) pairs, each path prefixed and the list written back by repr (as
+    VNN-COMP's run_all_categories.sh does)."""
+    try:
+        pairs = ast.literal_eval(field.strip())
+    except (SyntaxError, ValueError):
+        pairs = None
+    if not isinstance(pairs, list):
+        return os.path.join(base, field.removeprefix("./"))
+    return repr([(name, os.path.join(base, path.removeprefix("./"))) for name, path in pairs])
+
+
 def run_one(args, k, row):
     """The CSV row of one instance."""
     onnx, prop, timeout = row
@@ -110,10 +124,7 @@ def run_one(args, k, row):
     if args.max_timeout:
         timeout = min(timeout, args.max_timeout)
     base = os.path.join(args.dir, args.version)
-    onnx, prop = (
-        os.path.join(base, onnx.removeprefix("./")),
-        os.path.join(base, prop.removeprefix("./")),
-    )
+    onnx, prop = network_field(base, onnx), os.path.join(base, prop.removeprefix("./"))
     category = os.path.basename(os.path.normpath(args.dir))
     result_file = os.path.join(args.results, f"{k:05d}.txt")
     env = dict(os.environ, OMP_NUM_THREADS=str(args.threads), CORACPP_NUM_THREADS=str(args.threads))

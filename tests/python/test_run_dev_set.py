@@ -2,7 +2,7 @@
 
 Authors:       Claude Opus 5.5
 Written:       25-November-2026
-Last update:   ---
+Last update:   26-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -66,6 +66,20 @@ class RunDevSetResultFile(unittest.TestCase):
         write_tool(self.tool, 'echo unsat > "$5"; exit 0')
         self.assertIn("unsat", self.run_row())
 
+
+
+class RunDevSetNetworkField(unittest.TestCase):
+    def setUp(self):
+        self.script = load_script()
+
+    def test_a_path_gets_the_directory(self):
+        self.assertEqual(self.script.network_field("d/1.0", "./onnx/a.onnx"), "d/1.0/onnx/a.onnx")
+
+    def test_every_network_of_a_list_gets_the_directory(self):
+        # VNN-LIB 2.0's field of several networks, as VNN-COMP's run_all_categories.sh writes it
+        field = "[('f', 'onnx/a.onnx'), ('g', './onnx/b.onnx')]"
+        self.assertEqual(self.script.network_field("d/2.0", field),
+                         "[('f', 'd/2.0/onnx/a.onnx'), ('g', 'd/2.0/onnx/b.onnx')]")
 
 if __name__ == "__main__":
     unittest.main()
