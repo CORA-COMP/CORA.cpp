@@ -5812,6 +5812,8 @@ void bind_verify(py::module_ &m) {
                       "relu-bab: rounds of CROWN's bounds of the root's layers");
     CORA_VERIFY_FIELD(relu_bab_crown_iterations, "relu-bab: alpha-CROWN steps of those bounds");
     CORA_VERIFY_FIELD(relu_bab_crown_step, "relu-bab: Adam's step of those slopes");
+    CORA_VERIFY_FIELD(relu_bab_crown_time_share,
+                      "relu-bab: the slope steps' share of the time left");
     // crown-bab: CROWN's node bound with the splits' multipliers
     CORA_VERIFY_FIELD(crown_bab_steps, "crown-bab: Adam steps on a node's slopes and multipliers");
     CORA_VERIFY_FIELD(crown_bab_root_steps, "crown-bab: the root's steps");
@@ -5825,6 +5827,12 @@ void bind_verify(py::module_ &m) {
                       "crown-bab: bytes of one batch's passes; 0: half the batch budget");
     CORA_VERIFY_FIELD(crown_bab_witnesses,
                       "crown-bab: open nodes per batch whose corners are checked");
+    // crown-bab: a product's planes per row
+    CORA_VERIFY_FIELD(crown_product_steps, "crown-bab: root steps on the products' planes");
+    CORA_VERIFY_FIELD(crown_product_step, "crown-bab: Adam's step on the products' planes");
+    CORA_VERIFY_FIELD(crown_product_start, "crown-bab: the planes' mix the steps start at");
+    CORA_VERIFY_FIELD(crown_product_iterations, "crown-bab: the layer bounds' steps with planes");
+    CORA_VERIFY_FIELD(crown_product_max_share, "crown-bab: planes if a plain round is this cheap");
     CORA_VERIFY_FIELD(affine_bab, "crown-bab: first the branch and bound on the affine form");
     CORA_VERIFY_FIELD(affine_bab_slopes, "affine-bab: the ReLUs' slopes, 'crown' or 'chord'");
     CORA_VERIFY_FIELD(affine_bab_time_share, "affine-bab: its share of the time left at most");

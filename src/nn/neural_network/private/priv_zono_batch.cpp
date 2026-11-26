@@ -569,6 +569,56 @@ Tensor aux_reverse(const ZonoPropagation &out, const ZonoNet &net, const Tensor 
     return acc[0].gen;
 }
 
+// A product's planes ------------------------------------------------------------------------------
+
+/// A product layer's plane per row: y = a b at least (Lambda >= 0) or at most (Lambda < 0)
+/// sa a + sb b + off, the set's line mixed with McCormick's planes; p1, p2, z: the planes mixed.
+struct ProductPlanes {
+    Tensor ly, mix, sa, sb, off; ///< (B, R, m): the outputs' Lambda, the mix, the plane
+    Tensor za, zb, zo, p1a, p1b, o1, p2a, p2b, o2;
+};
+
+/// The planes of a product layer at its bounds [lc, uc] (B, n), the set's line (slope sl, offsets
+/// bl below and bu above, (B, n)) and the rows' Lambda (B, R, n) with their mix and side.
+ProductPlanes aux_product_planes(const Tensor &lc, const Tensor &uc, const Tensor &sl,
+                                 const Tensor &bl, const Tensor &bu, const Tensor &lam,
+                                 const Tensor &mix, const Tensor &side) {
+    const auto e = [](const Tensor &t) { return priv_halves(t).first.expand_dims(1); };
+    const auto f = [](const Tensor &t) { return priv_halves(t).second.expand_dims(1); };
+    // McCormick's planes only where the four bounds are finite
+    const Tensor ok = lc.isfinite().multiply(uc.isfinite());
+    const Tensor both = e(ok).multiply(f(ok)), zero = lc.zeros_like({1});
+    const Tensor la = Tensor::where(both, e(lc), zero), ua = Tensor::where(both, e(uc), zero);
+    const Tensor lb = Tensor::where(both, f(lc), zero), ub = Tensor::where(both, f(uc), zero);
+    ProductPlanes P;
+    P.ly = priv_halves(lam).first;
+    const Tensor up = P.ly.less(zero); // the rows that read a plane above
+    // McCormick's two planes below (above): docs/nn_verification.md, "A product's planes"
+    P.p1a = Tensor::where(up, ub, lb);
+    P.p1b = la;
+    P.o1 = Tensor::where(up, la.multiply(ub), la.multiply(lb)).negative();
+    P.p2a = Tensor::where(up, lb, ub);
+    P.p2b = ua;
+    P.o2 = Tensor::where(up, ua.multiply(lb), ua.multiply(ub)).negative();
+    P.za = e(sl);
+    P.zb = f(sl);
+    P.zo = Tensor::where(up, e(bu), e(bl));
+    P.mix = Tensor::where(both, mix.maximum(0.0).minimum(1.0), zero);
+    const Tensor s = side.maximum(0.0).minimum(1.0);
+    const auto blend = [&](const Tensor &z, const Tensor &p1, const Tensor &p2) {
+        return z + P.mix.multiply(p2 + s.multiply(p1 - p2) - z);
+    };
+    P.sa = blend(P.za, P.p1a, P.p2a);
+    P.sb = blend(P.zb, P.p1b, P.p2b);
+    // the rounding of the mixed slopes and offsets: 16 ulps of the planes' sizes, outward
+    const Tensor wa = la.abs() + ua.abs(), wb = lb.abs() + ub.abs();
+    const Tensor size = wa.multiply(wb + P.za.abs()) + wb.multiply(P.zb.abs()) + P.zo.abs();
+    const Tensor widen = P.mix.multiply(size) * (16.0 * machine_eps(lc.dtype()));
+    const Tensor off = blend(P.zo, P.o1, P.o2);
+    P.off = Tensor::where(up, off + widen, off - widen);
+    return P;
+}
+
 } // namespace
 
 
@@ -1049,6 +1099,8 @@ std::vector<Tensor> priv_alpha_start(const ZonoPropagation &out, const ZonoNet &
     return alpha;
 }
 
+// The backward pass -------------------------------------------------------------------------------
+
 Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const Tensor &splits,
                            const Tensor &x, const Tensor &rad, const Tensor &rows,
                            const std::vector<Tensor> *alpha, const ZonoBackward *opt) {
@@ -1062,7 +1114,9 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     const std::vector<Tensor> *signs = opt ? opt->split_sign : nullptr;
     const std::vector<Tensor> *beta = opt ? opt->beta : nullptr;
     std::vector<Tensor> *g_beta = opt && signs && beta ? opt->g_beta : nullptr;
-    const bool reverse = g_alpha || g_beta;
+    std::vector<Tensor> *g_mix = opt ? opt->g_product_mix : nullptr;
+    std::vector<Tensor> *g_side = opt ? opt->g_product_side : nullptr;
+    const bool reverse = g_alpha || g_beta || g_mix || g_side;
     const auto sign_of = [&](std::size_t k) -> const Tensor * {
         if (!signs || k >= signs->size() || !(*signs)[k].defined()) return nullptr;
         return net.activations[k] == Activation::relu ? &(*signs)[k] : nullptr;
@@ -1089,8 +1143,9 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     // with g_alpha or g_beta, each activation layer's lines and Lambda for the reverse below
     struct Lines {
         Tensor sl, su, bl, bu, cross, lam;
-        SoftmaxLine soft; // a softmax's upper line (opt->softmax_lse)
-        Tensor sign;      // a node's split signs (opt->split_sign)
+        SoftmaxLine soft;     // a softmax's upper line (opt->softmax_lse)
+        Tensor sign;          // a node's split signs (opt->split_sign)
+        ProductPlanes planes; // a product's planes per row (opt->product_mix)
     };
     std::vector<Lines> kept(reverse ? top : 0);
     const bool split = splits.defined() && splits.shape()[1] > 0;
@@ -1184,8 +1239,16 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                 soft_lam[k - 1] = net.map_t(k, taken.negative().multiply(soft.g.expand_dims(1)))
                                       .multiply(soft.e0.expand_dims(1));
             }
-            constant = constant + pos.matmul(bl.expand_dims(-1)).squeeze(-1) +
-                       neg.matmul(bu.expand_dims(-1)).squeeze(-1);
+            // a product's planes per row (opt->product_mix), else the line's two offsets
+            ProductPlanes planes;
+            const std::vector<Tensor> *mix = opt ? opt->product_mix : nullptr;
+            if (mix && opt->product_side && net.activations[k] == Activation::product &&
+                k < mix->size() && (*mix)[k].defined())
+                planes =
+                    aux_product_planes(lc, uc, sl, bl, bu, lam, (*mix)[k], (*opt->product_side)[k]);
+            constant = planes.ly.defined() ? constant + planes.ly.multiply(planes.off).sum(-1)
+                                           : constant + pos.matmul(bl.expand_dims(-1)).squeeze(-1) +
+                                                 neg.matmul(bu.expand_dims(-1)).squeeze(-1);
             // a ReLU's lower slopes per row (opt->row_alpha) where it crosses
             const Tensor *ra = row_alpha && k < row_alpha->size() && (*row_alpha)[k].defined() &&
                                        net.activations[k] == Activation::relu
@@ -1203,11 +1266,16 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
                            ra ? cross.expand_dims(1) : Tensor(),
                            lam,
                            soft,
-                           sign && beta ? *sign : Tensor()};
-            // a product's one slope: Lambda through the line's transpose
-            lam = net.activations[k] != Activation::product
-                      ? pos.multiply(slr) + neg.multiply(su.expand_dims(1))
-                      : priv_slope_times_t(Activation::product, sl.expand_dims(1), lam);
+                           sign && beta ? *sign : Tensor(),
+                           planes};
+            // a product's one slope: Lambda through the line's transpose (or its planes')
+            if (planes.ly.defined())
+                lam = Tensor::concat({planes.ly.multiply(planes.sa), planes.ly.multiply(planes.sb)},
+                                     -1);
+            else
+                lam = net.activations[k] != Activation::product
+                          ? pos.multiply(slr) + neg.multiply(su.expand_dims(1))
+                          : priv_slope_times_t(Activation::product, sl.expand_dims(1), lam);
             if (soft_lam[k].defined()) lam = lam + soft_lam[k];
             // a split's Lagrangian term max(beta, 0) sigma z: sigma z <= 0 on the node's inputs
             if (sign && beta && k < beta->size() && (*beta)[k].defined())
@@ -1228,6 +1296,8 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
     // the reverse: each layer's input at the box's minimizing corner through the linear bounds
     if (g_alpha) g_alpha->assign(top, Tensor());
     if (g_beta) g_beta->assign(top, Tensor());
+    if (g_mix) g_mix->assign(top, Tensor());
+    if (g_side) g_side->assign(top, Tensor());
     std::vector<Tensor> gs{x.expand_dims(1) - lam.sign().multiply(rad.expand_dims(1))};
     Tensor d_in; // the input of an exp layer that a softmax's upper line reads
     for (std::size_t k = 0; k < top; ++k) {
@@ -1258,6 +1328,20 @@ Tensor priv_backward_lower(const ZonoPropagation &out, const ZonoNet &net, const
         } else if (net.activations[k] != Activation::product) {
             gs.push_back(pos.multiply(g.multiply(L.sl) + L.bl) +
                          neg.multiply(g.multiply(L.su) + L.bu));
+        } else if (L.planes.ly.defined()) {
+            // a product's planes at the corner: the gradients in mix and side, then the output
+            const ProductPlanes &P = L.planes;
+            const auto [a, b] = priv_halves(g);
+            const Tensor z = P.za.multiply(a) + P.zb.multiply(b) + P.zo;
+            const Tensor p1 = P.p1a.multiply(a) + P.p1b.multiply(b) + P.o1;
+            const Tensor p2 = P.p2a.multiply(a) + P.p2b.multiply(b) + P.o2;
+            if (g_side) (*g_side)[k] = P.ly.multiply(P.mix).multiply(p1 - p2);
+            if (g_mix && opt->product_side)
+                (*g_mix)[k] = P.ly.multiply(
+                    p2 + (*opt->product_side)[k].maximum(0.0).minimum(1.0).multiply(p1 - p2) - z);
+            const Tensor y = P.sa.multiply(a) + P.sb.multiply(b) + P.off;
+            const Tensor read = P.ly.not_equal(P.ly.zeros_like()) + 0.0;
+            gs.push_back(Tensor::concat({read.multiply(y), y.zeros_like()}, -1));
         } else {
             // a product's one slope, then the offset of the side
             const Tensor gm = priv_slope_times(Activation::product, L.su, g);

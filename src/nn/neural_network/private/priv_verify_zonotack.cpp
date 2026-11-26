@@ -524,6 +524,8 @@ class ConZonotopeBounding : public Bounding {
     double root_gens_ = -1, root_floor_ = -1;
     std::vector<int64_t> root_per_;
     double deadline_ = kInf;
+    mutable bool planes_ =
+        false; ///< the root's layer bounds hold the products' operands (their planes)
     bool timed_out_ = false;
     AttackResult *found_ = nullptr;
     std::map<std::string, double> *stats_ = nullptr;
@@ -1161,6 +1163,9 @@ CrownBabOptions ConZonotopeBounding::aux_crown_bab_options(const NnProblem &prob
     co.frontier_bytes = o_.relu_bab_frontier_bytes > 0 ? o_.relu_bab_frontier_bytes
                                                        : problem.batch_memory_budget / 4;
     co.softmax_lse = o_.crown_softmax_lse;
+    co.product_steps = planes_ ? o_.crown_product_steps : 0;
+    co.product_step = o_.crown_product_step;
+    co.product_start = o_.crown_product_start;
     co.deadline = deadline_;
     return co;
 }
@@ -1396,6 +1401,10 @@ void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri,
         double count = 0, width = 0;
         std::size_t r = 0;
         for (const ZonoLayerRecord &rec : p.layers) {
+            // every activation layer: the sum of its input bounds' widths (the finite ones)
+            const Tensor span = rec.u - rec.l;
+            stats["relu_bab_span_layer" + std::to_string(rec.index) + "_" + when] =
+                Tensor::where(span.isfinite(), span, span.zeros_like()).sum().item();
             if (net.activations[std::size_t(rec.index)] != Activation::relu) continue;
             const Tensor cross =
                 rec.l.less(rec.l.zeros_like()).multiply(rec.u.greater(rec.u.zeros_like()));
@@ -1417,13 +1426,29 @@ void ConZonotopeBounding::aux_relu_bab_crown(const Tensor &xi, const Tensor &ri,
     const ZonoInput in = net.input_zonotope(xi, ri);
     const int64_t chunk = problem_->batch_memory_budget / 8;
     int64_t backoffs = 0;
+    // the slope steps' share of the time left: after it the rows' plain passes
+    const double began = now_seconds();
+    const double steps_until = began + o_.relu_bab_crown_time_share * (deadline_ - began);
+    planes_ = false;
     for (int64_t r = 0; r < o_.relu_bab_crown_rounds && now_seconds() < deadline_; ++r) {
+        const double round = now_seconds();
         bounds = priv_crown_bounds(out, net, xi, ri, o_.relu_bab_crown_iterations,
                                    o_.relu_bab_crown_step, chunk, deadline_, o_.crown_softmax_lse,
-                                   &backoffs);
+                                   &backoffs, false, 0.0, steps_until);
+        // the products' planes where a round is cheap: their operands' bounds and stepped planes
+        const double took = now_seconds() - round;
+        if (o_.crown_product_steps > 0 &&
+            took <= o_.crown_product_max_share * (deadline_ - round)) {
+            planes_ = true;
+            bounds =
+                priv_crown_bounds(out, net, xi, ri, o_.crown_product_iterations,
+                                  o_.relu_bab_crown_step, chunk, deadline_, o_.crown_softmax_lse,
+                                  &backoffs, true, o_.crown_product_start, steps_until);
+        }
         out = ZonoPropagation(); // the old record freed before the new one (one at a time)
         out = net.forward(in.c, in.dr, in.G, si, nullptr, true, nullptr, &bounds);
     }
+    stats["crown_product_planes"] = planes_ ? 1.0 : 0.0;
     if (backoffs > 0) stats["relu_bab_crown_oom"] += double(backoffs);
     tally(out, "after");
 }

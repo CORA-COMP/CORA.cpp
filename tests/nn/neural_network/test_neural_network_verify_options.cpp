@@ -89,7 +89,7 @@ void options_and_strategies() {
     for (const std::string field :
          {"alpha_iterations", "alpha_step_size", "candidates", "pgd_min_steps",
           "batch_memory_budget", "min_move", "affine_share", "affine_steps", "affine_batch",
-          "affine_bisections", "affine_polyak"}) {
+          "affine_bisections", "affine_polyak", "product_steps", "crown_share"}) {
         NnVerifyOptions w = vnncomp_options("x");
         w.bounding_method = "zonotope-alpha";
         // one count out of range
@@ -105,6 +105,8 @@ void options_and_strategies() {
         if (field == "affine_batch") w.affine_bab_batch = 0;
         if (field == "affine_bisections") w.affine_bab_bisections = -1;
         if (field == "affine_polyak") w.affine_bab_polyak = -1;
+        if (field == "product_steps") w.crown_product_steps = -1;
+        if (field == "crown_share") w.relu_bab_crown_time_share = -0.5;
         check(test::raises([&] { w.validate(); }, Error::wrong_field_value), "a wrong " + field);
     }
     vnncomp_options("cora_2024").validate();

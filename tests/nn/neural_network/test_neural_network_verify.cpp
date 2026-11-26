@@ -746,6 +746,88 @@ void affine_bab_verdicts(const std::string &b) {
     check(open_limits == limits, b + ": affine-bab stays open at its limits");
 }
 
+/// A product layer's planes per row (ZonoBackward::product_mix): at mix 0 the bound is the set's
+/// line's, at random mixes and sides it holds every sampled output, and its gradients in mix and
+/// side are the difference quotients.
+void product_planes(const std::string &b) {
+    Rng rng(71);
+    const int64_t P = 4000, R = 2;
+    bool same = true, holds = true;
+    int64_t close = 0, compared = 0, moved = 0;
+    for (int net_i = 0; net_i < 4; ++net_i) {
+        // a product layer between ReLU layers
+        NeuralNetwork base = aux_network(rng, {3, 6, 4, 6, 2}, Activation::relu);
+        std::vector<Activation> acts = base.activations();
+        acts[1] = Activation::product;
+        const NeuralNetwork nn(base.layers(), acts);
+        const ZonoNet net(nn, 3, 2, "bounds", "length");
+        const Tensor x = Tensor({{0.1, -0.2, 0.3}}), r = Tensor({{0.5, 0.4, 0.5}});
+        const Tensor rows = Tensor({{1.0, -0.7}, {-0.3, 1.0}});
+        const ZonoInput in = net.input_zonotope(x, r);
+        const ZonoPropagation out =
+            net.forward(in.c, in.dr, in.G, x.zeros_like({1, 0}), nullptr, true);
+        const Tensor none = x.zeros_like({1, 0});
+        const std::vector<double> plain = priv_backward_lower(out, net, none, x, r, rows).data();
+        // the samples' outputs
+        std::vector<double> pts(std::size_t(P * 3));
+        rng.uniform(pts.data(), pts.size(), -1.0, 1.0);
+        const std::vector<double> y = nn.evaluate(Tensor::from_data(pts, {P, 3}).multiply(r) + x)
+                                          .matmul(rows.matrix_transpose())
+                                          .data();
+        const auto bound = [&](const std::vector<double> &mv, const std::vector<double> &sv,
+                               std::vector<Tensor> *gm, std::vector<Tensor> *gs) {
+            std::vector<Tensor> mix(net.W.size()), side(net.W.size());
+            mix[1] = Tensor::from_data(mv, {1, R, 2});
+            side[1] = Tensor::from_data(sv, {1, R, 2});
+            ZonoBackward opt;
+            opt.product_mix = &mix;
+            opt.product_side = &side;
+            opt.g_product_mix = gm;
+            opt.g_product_side = gs;
+            return priv_backward_lower(out, net, none, x, r, rows, nullptr, &opt).data();
+        };
+        // mix 0: the set's line, up to the sums' order
+        const std::vector<double> zero =
+            bound(std::vector<double>(4, 0.0), {0.3, 0.6, 0.1, 0.9}, nullptr, nullptr);
+        for (std::size_t j = 0; j < 2; ++j) same = same && std::abs(zero[j] - plain[j]) <= 1e-9;
+        for (int trial = 0; trial < 6; ++trial) {
+            // random mixes and sides (beyond [0, 1]: clamped)
+            std::vector<double> mv(4), sv(4);
+            rng.uniform(mv.data(), mv.size(), trial < 2 ? -0.2 : 0.05, trial < 2 ? 1.2 : 0.95);
+            rng.uniform(sv.data(), sv.size(), trial < 2 ? -0.2 : 0.05, trial < 2 ? 1.2 : 0.95);
+            std::vector<Tensor> gm, gs;
+            const std::vector<double> low = bound(mv, sv, &gm, &gs);
+            for (int64_t p = 0; p < P; ++p)
+                for (int64_t j = 0; j < R; ++j)
+                    holds = holds && low[std::size_t(j)] <= y[std::size_t(p * R + j)] + 1e-9;
+            for (std::size_t j = 0; j < 2; ++j) moved += std::abs(low[j] - plain[j]) > 1e-6;
+            if (trial < 2) continue;
+            // the gradients: the difference quotients where the pass is smooth
+            const std::vector<double> g1 = gm[1].data(), g2 = gs[1].data();
+            for (std::size_t i = 0; i < 4; ++i) {
+                const double h = 1e-6;
+                for (const bool in_mix : {true, false}) {
+                    // the bound at +- h in the entry of mix or side
+                    std::vector<double> up = in_mix ? mv : sv, down = up;
+                    up[i] += h;
+                    down[i] -= h;
+                    const double hi = (in_mix ? bound(up, sv, nullptr, nullptr)
+                                              : bound(mv, up, nullptr, nullptr))[i / 2];
+                    const double lo = (in_mix ? bound(down, sv, nullptr, nullptr)
+                                              : bound(mv, down, nullptr, nullptr))[i / 2];
+                    const double fd = (hi - lo) / (2 * h), g = in_mix ? g1[i] : g2[i];
+                    ++compared;
+                    close += std::abs(fd - g) <= 1e-4 * std::max(1.0, std::abs(fd)) ? 1 : 0;
+                }
+            }
+        }
+    }
+    check(same, b + ": a product's planes at mix 0 give the set's line's bound");
+    check(holds && moved > 0, b + ": a product's mixed planes hold every sampled output");
+    check(compared > 0 && 4 * close >= 3 * compared,
+          b + ": the gradients in a product's mix and side are the difference quotients");
+}
+
 /// priv_crown_bab on nets of other activations (a product, a softmax's exp and reciprocal): its
 /// nodes batch the lines of the root's record, a verified polytope holds every sample.
 void crown_bab_other_layers(const std::string &b) {
@@ -789,6 +871,8 @@ void crown_bab_other_layers(const std::string &b) {
                 o.batch = 4;
                 o.fsb = 2;
                 o.softmax_lse = lse;
+                o.product_steps = lse ? 6 : 0; // the products' planes per row, from McCormick's
+                o.product_start = gap > 0.1 ? 1.0 : 0.0;
                 o.deadline = now_seconds() + 5;
                 std::map<std::string, double> stats;
                 const Tensor rows = Tensor({{1.0, 0.0}});
@@ -1118,8 +1202,22 @@ void crown_bounds(const std::string &b) {
             {Tensor::from_data(W, {sizes[k + 1], sizes[k]}), Tensor::from_data(c, {sizes[k + 1]})});
     }
     const NeuralNetwork mixed(layers, acts);
+    // the same with copies among the product's operands (a gather's): rows 1 and 3 of its layer
+    std::vector<NeuralNetwork::Layer> twice = layers;
+    {
+        std::vector<double> W = twice[5].W.data(), c = twice[5].b.data();
+        for (int64_t j = 0; j < 6; ++j) {
+            W[std::size_t(1 * 6 + j)] = W[std::size_t(j)];
+            W[std::size_t(3 * 6 + j)] = W[std::size_t(2 * 6 + j)];
+        }
+        c[1] = c[0];
+        c[3] = c[2];
+        twice[5] = {Tensor::from_data(W, {4, 6}), Tensor::from_data(c, {4})};
+    }
+    const NeuralNetwork copies(twice, acts);
     bool holds = true, inside = true, tighter = true, outputs = true, narrower = false;
-    for (const NeuralNetwork *nn : {&relu, &mixed}) {
+    bool copied = true;
+    for (const NeuralNetwork *nn : {&relu, &mixed, &copies}) {
         // few slots and input generators: the zonotope's bounds are loose
         const ZonoNet net(*nn, 2, 2, "bounds", "length");
         const ZonoInput in = net.input_zonotope(x, r);
@@ -1127,6 +1225,17 @@ void crown_bounds(const std::string &b) {
             net.forward(in.c, in.dr, in.G, x.zeros_like({2, 0}), nullptr, true);
         const ZonoBounds crown = priv_crown_bounds(out, net, x, r, 0, 0.25, int64_t(1) << 30);
         const ZonoBounds alpha = priv_crown_bounds(out, net, x, r, 10, 0.25, 2000);
+        // a product's operands too, the earlier products' planes stepped; the steps' time over
+        const double inf = std::numeric_limits<double>::infinity();
+        const ZonoBounds planes =
+            priv_crown_bounds(out, net, x, r, 4, 0.25, int64_t(1) << 30, inf, false, nullptr, true);
+        const ZonoBounds plain = priv_crown_bounds(out, net, x, r, 4, 0.25, int64_t(1) << 30, inf,
+                                                   false, nullptr, true, 0.3, now_seconds() - 1);
+        if (nn == &copies)
+            copied = (planes.u[5].slice(1, 0, 1) - planes.u[5].slice(1, 1, 2)).abs().max().item() <=
+                         1e-9 &&
+                     (planes.l[5].slice(1, 2, 3) - planes.l[5].slice(1, 3, 4)).abs().max().item() <=
+                         1e-9;
         const ZonoPropagation with =
             net.forward(in.c, in.dr, in.G, x.zeros_like({2, 0}), nullptr, true, nullptr, &crown);
         for (int64_t i = 0; i < 2; ++i) {
@@ -1140,7 +1249,7 @@ void crown_bounds(const std::string &b) {
                 h = priv_apply(net.activations[k], z);
                 if (net.activations[k] == Activation::identity) continue;
                 const ZonoLayerRecord &rec = out.layers[next++];
-                for (const ZonoBounds *bd : {&crown, &alpha}) {
+                for (const ZonoBounds *bd : {&crown, &alpha, &planes, &plain}) {
                     const Tensor l = bd->l[k].slice(0, i, i + 1), u = bd->u[k].slice(0, i, i + 1);
                     holds = holds && z.greater_equal(l).min().item() > 0 &&
                             z.less_equal(u).min().item() > 0;
@@ -1167,6 +1276,7 @@ void crown_bounds(const std::string &b) {
     }
     check(holds, b + ": CROWN's bounds hold the sampled inputs of every activation layer");
     check(inside, b + ": CROWN's bounds lie inside the zonotope's");
+    check(copied, b + ": a product's copied operands take the bounded copy's bounds");
     check(tighter, b + ": alpha-CROWN's bounds are at least CROWN's over the same relaxations");
     check(narrower, b + ": CROWN's bounds narrow some layer's zonotope bounds");
     check(outputs, b + ": the zonotope with its lines at CROWN's bounds holds the sampled outputs");
@@ -1899,6 +2009,7 @@ int main() {
         backward_bounds(b);
         backward_bit_identical(b);
         crown_split_nodes(b);
+        product_planes(b);
         affine_forms(b);
         affine_bab_verdicts(b);
         crown_bab_other_layers(b);
