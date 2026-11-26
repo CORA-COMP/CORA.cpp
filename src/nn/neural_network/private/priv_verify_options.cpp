@@ -336,6 +336,7 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
     if (name == "challenging_certified_training") {
         o.relu_bab_crown_windows = true;
         o.relu_bab_crown_iterations = 5;
+        o.affine_bab_time_share = 0.2; // most of the time for crown-bab's stronger node bound
     }
     if (name == "vit") o.relu_bab_crown_iterations = 0; // plain CROWN's layer bounds at the root
     if (name == "tinyimagenet") o.relu_bab_init_gens = 256; // the root net within the GPU's memory
