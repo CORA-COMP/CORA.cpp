@@ -112,7 +112,7 @@ class Subplots(unittest.TestCase):
             path = os.path.join(folder, "figure.png")
             fig.savefig(path)
             self.assertGreater(os.path.getsize(path), 0)
-            fig.to_tikz(os.path.join(folder, "figure.tikz"))
+            fig.save_tikz(os.path.join(folder, "figure.tikz"))
             self.assertTrue(os.path.exists(os.path.join(folder, "figure.tikz")))
 
 

@@ -4,14 +4,14 @@ TikZ
 
     fig = cora.subplots(2, 2, sharex=True)       # like plt.subplots, but one object
     cora.plot(R, dims=(0, 1), ax=fig[0, 0])
-    fig.to_tikz("reach.tikz")                    # one pgfplots groupplot; fig.tikz() is the text
+    fig.save_tikz("reach.tikz")                    # one pgfplots groupplot; fig.tikz() is the text
     fig                                          # in Jupyter: the figure as SVG, from the C++ core
 
 `cora.subplots` returns a `Figure` that wraps the matplotlib figure (`fig.mpl`) and its axes
 (`fig[row, col]`, `fig[k]`, `fig.axes`, iteration). Everything is drawn through `cora.plot`, which
 records the layers the C++ core decided on in each axes; the TikZ and SVG text is written by the
 core from those, in the same way for every language. Titles, axis labels and limits set with
-matplotlib are taken over when the text is written. `cora.to_tikz(path)` does the same for the
+matplotlib are taken over when the text is written. `cora.save_tikz(path)` does the same for the
 current matplotlib figure, however its axes were made.
 
 Authors:       Tobias Ladner
@@ -85,7 +85,7 @@ class Figure:
         `height`."""
         return self.core().tikz(**options)
 
-    def to_tikz(self, path, **options):
+    def save_tikz(self, path, **options):
         """Writes the figure as pgfplots code to `path`; `external_data=True` also writes the
         coordinates to `<path without extension>_<k>.dat` tables. Options as in `tikz`."""
         self.core().save_tikz(str(path), **options)
@@ -141,9 +141,9 @@ def subplots(nrows=1, ncols=1, *, sharex=False, sharey=False, projection=None, f
     return Figure(mpl_figure, axes.ravel(), nrows, ncols, bool(sharex), bool(sharey))
 
 
-def to_tikz(path, fig=None, **options):
-    """Writes a matplotlib figure (the current one) as pgfplots code; see `Figure.to_tikz`."""
+def save_tikz(path, fig=None, **options):
+    """Writes a matplotlib figure (the current one) as pgfplots code; see `Figure.save_tikz`."""
     import matplotlib.pyplot as plt
-    Figure.of(plt.gcf() if fig is None else fig).to_tikz(path, **options)
+    Figure.of(plt.gcf() if fig is None else fig).save_tikz(path, **options)
 
 # ----------------------------------------  END OF CODE  ----------------------------------------- #

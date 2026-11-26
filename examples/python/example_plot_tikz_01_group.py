@@ -1,6 +1,6 @@
 """example_plot_tikz_01_group - four axes written as one pgfplots group plot
 
-cora.subplots is plt.subplots that remembers what CORA drew on each axes; to_tikz writes it as one
+cora.subplots is plt.subplots that remembers what CORA drew on each axes; save_tikz writes it as one
 groupplot with shared axes, CORA's colors by their names in cora-macs and thinned coordinates. The
 text comes from the C++ core, the same as for its own figures. Without --save the figure is shown.
 
@@ -74,8 +74,8 @@ fig[1, 1].set_zlabel("$x_3$")
 
 # A picture for \input into a paper that loads cora-macs, and a document that compiles alone.
 if args.save:
-    fig.to_tikz(f"{args.save}.tikz")
-    fig.to_tikz(f"{args.save}_standalone.tikz", standalone=True)
+    fig.save_tikz(f"{args.save}.tikz")
+    fig.save_tikz(f"{args.save}_standalone.tikz", standalone=True)
 else:
     print(fig.tikz()[:400], "...")
     plt.show()

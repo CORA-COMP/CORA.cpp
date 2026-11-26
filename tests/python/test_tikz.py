@@ -124,7 +124,7 @@ class Tikz(unittest.TestCase):
         fig = self.group()
         with tempfile.TemporaryDirectory() as folder:
             path = os.path.join(folder, "reach.tikz")
-            fig.to_tikz(path, external_data=True)
+            fig.save_tikz(path, external_data=True)
             text = read(path)
             tables = sorted(f for f in os.listdir(folder) if f.endswith(".dat"))
             self.assertEqual(len(tables), text.count("table[x=x"))
@@ -139,10 +139,10 @@ class Tikz(unittest.TestCase):
             self.one().tikz(standalon=True)
         self.assertIn("standalone", str(caught.exception))
 
-    def test_the_figure_of_the_current_axes_is_written_with_to_tikz(self):
+    def test_the_figure_of_the_current_axes_is_written_with_save_tikz(self):
         cora.plot(self.X0)
         with tempfile.TemporaryDirectory() as folder:
-            cora.to_tikz(os.path.join(folder, "a.tikz"))
+            cora.save_tikz(os.path.join(folder, "a.tikz"))
             self.assertIn("\\addplot", read(os.path.join(folder, "a.tikz")))
 
     @unittest.skipIf(latex() is None, "pdflatex with pgfplots is not installed")
@@ -154,7 +154,7 @@ class Tikz(unittest.TestCase):
             for name, fig in figures.items():
                 for coramacs in (True, False):
                     base = os.path.join(folder, f"{name}_{coramacs}")
-                    fig.to_tikz(base + ".tex", standalone=True, coramacs=coramacs)
+                    fig.save_tikz(base + ".tex", standalone=True, coramacs=coramacs)
                     # compile the output if pdflatex is there
                     done = subprocess.run(
                         [pdflatex, "-interaction=nonstopmode", "-halt-on-error",
@@ -164,7 +164,7 @@ class Tikz(unittest.TestCase):
                     self.assertTrue(os.path.exists(base + ".pdf"))
             # the tables are read from where they were written
             base = os.path.join(folder, "tables")
-            figures["group"].to_tikz(base + ".tex", standalone=True, external_data=True)
+            figures["group"].save_tikz(base + ".tex", standalone=True, external_data=True)
             done = subprocess.run(
                 [pdflatex, "-interaction=nonstopmode", "-halt-on-error", "-output-directory", folder,
                  base + ".tex"], capture_output=True, text=True, env=env, timeout=300)

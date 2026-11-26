@@ -299,7 +299,7 @@ changed, and the reasons are listed below.
 | `plotRandPoint(S, dims, N)` | `plot_rand_point(fig, S, dims, N, rng, options)` | `cora.plot_rand_point(S, dims, N, rng)` |
 | `FaceColor`, `EdgeColor`, `FaceAlpha`, `LineWidth`, `Unify`, `Set` | `face_color`, `edge_color`, `face_alpha`, `line_width`, `unify`, `set` | the same keywords |
 | `vertices(S)` (3-D) | `S.vertices_3d()` | `S.vertices_3d()` |
-| `fig2tikz`, matlab2tikz | `fig.tikz(options)`, `fig.save_tikz(path, options)` | `fig.to_tikz(path, ...)`, `cora.subplots` |
+| `fig2tikz`, matlab2tikz | `fig.tikz(options)`, `fig.save_tikz(path, options)` | `fig.save_tikz(path, ...)`, `cora.save_tikz(path)`, `cora.subplots` |
 
 ## Names that differ from the rule, and why
 
