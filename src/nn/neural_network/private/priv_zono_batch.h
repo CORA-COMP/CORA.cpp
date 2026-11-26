@@ -222,6 +222,11 @@ struct ZonoBackward {
     const std::vector<std::vector<int64_t>> *affine_at = nullptr;
     ZonoAffineRows *affine = nullptr; ///< out: the rows' coefficients at affine_at's neurons
     ZonoLineCache *lines = nullptr;   ///< in and out: the other layers' lines of earlier passes
+    /// A product's planes per row (nn_verification.md, "A product's planes"): per product layer
+    /// (B or 1, R, n / 2), mix in [0, 1] of McCormick's plane into the set's line, side in [0, 1]
+    /// between McCormick's two planes at the bounds; g_*: out, the bound's gradients in them.
+    const std::vector<Tensor> *product_mix = nullptr, *product_side = nullptr;
+    std::vector<Tensor> *g_product_mix = nullptr, *g_product_side = nullptr;
 };
 
 /// CROWN's lower bounds (B, R) of the rows (R, m) times the output over the input boxes (x, rad),
@@ -240,13 +245,15 @@ Tensor priv_backward_alpha(const ZonoPropagation &out, const ZonoNet &net, const
                            int64_t iterations, double step,
                            double deadline = std::numeric_limits<double>::infinity());
 
-/// CROWN's bounds of the activation layers' inputs over the boxes (x, rad) of a record without
-/// splits, intersected with its bounds (priv_zono_bounds.cpp): `iterations` alpha-CROWN steps of
-/// `step` per row, rows in chunks of about max_bytes; out of memory fewer (counted in *backoffs).
+/// CROWN's bounds of the activation layers' inputs of a record without splits, intersected with
+/// its own (priv_zono_bounds.cpp): `iterations` steps of `step` per row, none after steps_until;
+/// products: a product's operands too, the earlier products' planes stepped from product_start.
 ZonoBounds priv_crown_bounds(const ZonoPropagation &out, const ZonoNet &net, const Tensor &x,
                              const Tensor &rad, int64_t iterations, double step, int64_t max_bytes,
                              double deadline = std::numeric_limits<double>::infinity(),
-                             bool softmax_lse = false, int64_t *backoffs = nullptr);
+                             bool softmax_lse = false, int64_t *backoffs = nullptr,
+                             bool products = false, double product_start = 1.0,
+                             double steps_until = std::numeric_limits<double>::infinity());
 
 // The branch and bound with the CROWN node bound --------------------------------------------------
 
@@ -259,6 +266,10 @@ struct CrownBabOptions {
     int64_t max_bytes = int64_t(1) << 30; ///< the bytes of one batch's passes, about
     int64_t frontier_bytes = int64_t(1) << 30; ///< the open nodes' bytes at most (else unknown)
     bool softmax_lse = false;                  ///< ZonoBackward's
+    int64_t product_steps = 0; ///< root steps on the products' planes per row (0: the set's line)
+    double product_step = 0.2; ///< Adam's step on their mix and side in [0, 1]
+    double product_start =
+        1.0; ///< the mix they start at (1: McCormick's planes, 0: the set's line)
     double deadline = std::numeric_limits<double>::infinity();
 };
 

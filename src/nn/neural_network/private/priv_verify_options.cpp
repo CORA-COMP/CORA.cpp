@@ -129,6 +129,11 @@ void NnVerifyOptions::validate() const {
     aux_at_least("crown_bab_witnesses", double(crown_bab_witnesses), 0);
     aux_at_least("crown_bab_fsb", double(crown_bab_fsb), 0);
     aux_at_least("crown_bab_memory_budget", double(crown_bab_memory_budget), 0);
+    aux_at_least("crown_product_steps", double(crown_product_steps), 0);
+    aux_at_least("relu_bab_crown_time_share", relu_bab_crown_time_share, 0);
+    aux_at_least("crown_product_iterations", double(crown_product_iterations), 0);
+    aux_at_least("crown_product_max_share", crown_product_max_share, 0);
+    aux_at_least("crown_product_step", crown_product_step, 0);
     aux_at_least("affine_bab_time_share", affine_bab_time_share, 0);
     aux_at_least("affine_bab_steps", double(affine_bab_steps), 0);
     aux_at_least("affine_bab_batch", double(affine_bab_batch), 1);
@@ -311,6 +316,10 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.memory_budget = int64_t(32) << 30;
         o.alpha_iterations = 0;
         o.crown_softmax_lse = true;
+        // the products' planes per row where the layer bounds are cheap (dev seed 1001)
+        o.crown_product_steps = 40;
+        o.relu_bab_crown_step = 0.5;
+        o.relu_bab_crown_time_share = 0.1;
     }
     // the wide nets that crown-bab closes (dev seed 1001): ReLU splits under CROWN's node bound
     const bool affine = name == "safenlp" || name == "challenging_certified_training";

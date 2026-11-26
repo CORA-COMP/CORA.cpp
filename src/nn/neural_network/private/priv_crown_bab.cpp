@@ -209,7 +209,10 @@ class CrownBab {
     bool late() const { return now_seconds() >= std::min(o_.deadline, net_.deadline); }
     Tensor evaluate(const Pass &p, const std::vector<Tensor> &signs, const Tensor &alpha,
                     const Tensor &beta, std::vector<Tensor> *ga, std::vector<Tensor> *gb,
-                    std::vector<Tensor> *ic, Tensor *corner) const;
+                    std::vector<Tensor> *ic, Tensor *corner, std::vector<Tensor> *gm = nullptr,
+                    std::vector<Tensor> *gs = nullptr) const;
+    /// The products' planes per row, once: o_.product_steps steps at the root, the best kept.
+    void tune_planes() const;
     Bounded bound(const Tensor &S, const Tensor &alpha, const Tensor &beta, int64_t steps) const;
     Tensor choose(const Tensor &S, const Bounded &b) const;
     Tensor look_ahead(const Tensor &S, const Tensor &alpha, const Tensor &beta, const Bounded &b,
@@ -237,13 +240,17 @@ class CrownBab {
     std::map<std::string, double> &stats_;
     CrossingSpace space_;
     int64_t K_ = 0;
+    /// The products' planes of every node's pass (per layer (1, K, n / 2); empty: the set's line).
+    mutable std::vector<Tensor> mix_, side_;
+    mutable bool tuned_ = false;
 };
 
 // The node bound ----------------------------------------------------------------------------------
 
 Tensor CrownBab::evaluate(const Pass &p, const std::vector<Tensor> &signs, const Tensor &alpha,
                           const Tensor &beta, std::vector<Tensor> *ga, std::vector<Tensor> *gb,
-                          std::vector<Tensor> *ic, Tensor *corner) const {
+                          std::vector<Tensor> *ic, Tensor *corner, std::vector<Tensor> *gm,
+                          std::vector<Tensor> *gs) const {
     // the nodes' boxes, their slopes and multipliers per layer
     const int64_t N = alpha.shape()[0], n0 = p.x.shape()[1];
     const Tensor xs = p.x.broadcast_to({N, n0}) + 0.0, rs = p.rad.broadcast_to({N, n0}) + 0.0;
@@ -260,14 +267,74 @@ Tensor CrownBab::evaluate(const Pass &p, const std::vector<Tensor> &signs, const
     opt.corner = corner;
     opt.softmax_lse = o_.softmax_lse;
     opt.lines = p.lines.get();
+    // the products' planes in the pass's dtype
+    std::vector<Tensor> mix = mix_, side = side_;
+    for (std::vector<Tensor> *v : {&mix, &side})
+        for (Tensor &t : *v)
+            if (t.defined()) t = t.to(p.x.dtype());
+    if (!mix.empty()) {
+        opt.product_mix = &mix;
+        opt.product_side = &side;
+        opt.g_product_mix = gm;
+        opt.g_product_side = gs;
+    }
     return priv_backward_lower(*p.out, *p.net, p.x.zeros_like({N, 0}), xs, rs, p.rows, nullptr,
                                &opt) -
            p.offsets;
 }
 
+void CrownBab::tune_planes() const {
+    if (tuned_ || o_.product_steps <= 0) return;
+    tuned_ = true;
+    // the product layers: mix 0 (the set's line), side 1/2
+    const std::size_t L = net_.W.size();
+    std::vector<Tensor> mix(L), side(L), m_m1(L), m_m2(L), s_m1(L), s_m2(L);
+    bool any = false;
+    for (std::size_t k = 0; k < L; ++k) {
+        if (net_.activations[k] != Activation::product) continue;
+        mix[k] = x_.full_like({1, K_, net_.widths[k] / 2}, o_.product_start);
+        side[k] = mix[k] * 0.0 + 0.5;
+        any = true;
+    }
+    if (!any) return;
+    const double started = now_seconds();
+    const Tensor S = root_nodes(), beta = root_slopes() * 0.0;
+    const std::vector<Tensor> signs = aux_expand(space_, S);
+    std::vector<Tensor> a1{root_slopes()}, a_m1(1), a_m2(1), best_mix = mix, best_side = side;
+    Tensor best;
+    for (int64_t t = 0; t <= o_.product_steps; ++t) {
+        // one root pass at these planes and slopes; each row keeps the planes of its best bound
+        mix_ = mix;
+        side_ = side;
+        std::vector<Tensor> ga, gm, gs;
+        const bool more = t < o_.product_steps && !late();
+        const Tensor value = evaluate(exact_, signs, a1[0], beta, more ? &ga : nullptr, nullptr,
+                                      nullptr, nullptr, more ? &gm : nullptr, more ? &gs : nullptr);
+        const Tensor up = best.defined() ? value.greater(best).reshape({1, K_, 1}) : Tensor();
+        if (t == 0) stats_["crown_bab_planes_before"] = value.max(1).item();
+        for (std::size_t k = 0; k < L && up.defined(); ++k) {
+            if (!mix[k].defined()) continue;
+            best_mix[k] = Tensor::where(up, mix[k], best_mix[k]);
+            best_side[k] = Tensor::where(up, side[k], best_side[k]);
+        }
+        best = best.defined() ? best.maximum(value) : value;
+        if (!more) break;
+        // projected Adam on the planes and the lower slopes, all in [0, 1]
+        const std::vector<Tensor> g_a{aux_gather(space_, ga, a1[0])};
+        priv_adam_slopes(a1, a_m1, a_m2, g_a, t + 1, o_.alpha_step);
+        priv_adam_slopes(mix, m_m1, m_m2, gm, t + 1, o_.product_step);
+        priv_adam_slopes(side, s_m1, s_m2, gs, t + 1, o_.product_step);
+    }
+    mix_ = best_mix;
+    side_ = best_side;
+    stats_["crown_bab_planes_after"] = best.max(1).item();
+    stats_["crown_bab_planes_seconds"] += now_seconds() - started;
+}
+
 Bounded CrownBab::bound(const Tensor &S, const Tensor &alpha, const Tensor &beta,
                         int64_t steps) const {
     priv_oom_site("crown_bab_bound");
+    tune_planes();
     const double started = now_seconds();
     // the steps in the search's dtype (or the record's), every step's bound per row the best
     const Pass &p = searching_ ? search_ : exact_;

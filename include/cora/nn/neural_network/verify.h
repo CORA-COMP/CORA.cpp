@@ -174,6 +174,8 @@ struct NnVerifyOptions {
     int64_t relu_bab_crown_iterations =
         20;                            ///< alpha-CROWN steps on their ReLU lower slopes per row
     double relu_bab_crown_step = 0.25; ///< Adam's step on those slopes in [0, 1]
+    double relu_bab_crown_time_share =
+        1.0; ///< of the time left for those steps (then plain passes)
     // refinement_method "crown-bab": beta-CROWN's ReLU splits (nn_verification.md)
     int64_t crown_bab_steps = 20;       ///< projected Adam steps on a node's slopes and multipliers
     int64_t crown_bab_root_steps = 100; ///< the root's steps
@@ -189,6 +191,15 @@ struct NnVerifyOptions {
     int64_t crown_bab_memory_budget = 0; ///< the bytes of one batch's passes; 0: half the batch's
     int64_t crown_bab_witnesses =
         16; ///< the weakest open nodes per batch whose corners are checked
+    /// crown-bab: root steps on a product layer's planes per row, McCormick's planes mixed into
+    /// the set's line (nn_verification.md, "A product's planes"; 0: the set's line alone).
+    int64_t crown_product_steps = 0;
+    double crown_product_step = 0.2;      ///< Adam's step on the planes' mix and side in [0, 1]
+    double crown_product_start = 1.0;     ///< the mix the steps start at (0: the set's line)
+    int64_t crown_product_iterations = 5; ///< the layer bounds' steps per row with the planes
+    /// The planes only where a plain round of the root's layer bounds takes at most this share
+    /// of the time left (the operands' bounds cost several such rounds).
+    double crown_product_max_share = 0.02;
     /// crown-bab on a ReLU net: first the ReLU-split branch and bound on the root's affine form
     /// (one slope per crossing ReLU, nn_verification.md, affine-bab) of each open one-row polytope.
     bool affine_bab = false;

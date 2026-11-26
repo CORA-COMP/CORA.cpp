@@ -142,6 +142,27 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   computed weights' error times `|d - d0|`; a neuron whose bounds or values are not finite, or
   `l <= 0`, keeps the two layers' lines. The slope steps' reverse pass evaluates the same line at
   the exps' inputs, so their gradient stays the bound's.
+- **A product's planes (`crown_product_steps`, CORA.cpp only; the vit preset).** A product layer
+  `y = a b` is bounded by the line on its recorded input set (`priv_product_line`). With
+  `ZonoBackward::product_mix` and `product_side` a row reads instead, per product neuron, the plane
+  `(1 - g) Z + g (t P1 + (1 - t) P2)`: `Z` the set's line (below or above, by the sign of the row's
+  Lambda), `P1`, `P2` McCormick's two planes at the operands' bounds `[l_a, u_a]`, `[l_b, u_b]`
+  (below: `l_b a + l_a b - l_a l_b`, `u_b a + u_a b - u_a u_b`; above: `u_b a + l_a b - l_a u_b`,
+  `l_b a + u_a b - u_a l_b`), `g` (mix) and `t` (side) in `[0, 1]` per row. crown-bab steps them
+  at the root together with the lower slopes (`crown_product_steps` projected Adam steps of
+  `crown_product_step` from `crown_product_start`, 1: McCormick's planes; each row keeps the
+  planes of its best bound) and every node's pass reads them. With them CROWN's layer bounds
+  also bound each product layer's operands (one of the copies of the same affine form of the
+  earlier activations' outputs, `aux_same_forms`; the copies take its bounds 8 ulps wider) and step the
+  earlier products' planes per row (`relu_bab_crown_iterations`; `relu_bab_crown_time_share`
+  of the time left for the steps, then plain passes). **Soundness:** McCormick's planes hold on
+  the operands' box (`(a - l_a)(b - l_b) >= 0` and the three like it), the set's line on the true
+  operands, which lie in both; a convex combination of valid lower (upper) planes is one. Each
+  step's bound holds for any `g`, `t` in `[0, 1]` (clamped in the pass); where a bound is not
+  finite the set's line alone is read. Rounding: the mixed plane's offset moves outward by 16
+  ulps of the planes' sizes times `g`. Measured (vit_2023, dev seed 1001, pgd model): the root's
+  weakest row -0.61 -> -0.21 (alpha,beta-CROWN's alpha-CROWN: -0.21); from the set's line (start
+  0) the steps stay at -0.52, so they start at McCormick's planes.
 - **nn4sys (Phase 4).** A Gather's negative index counts from the end (pensieve's last entry of a
   row, index -1). lindex and the three pensieve_simple networks lower and give onnxruntime's
   output to 6e-7. pensieve_parallel's input `[12, 8]` has no batch axis: only a Reshape to a batch
