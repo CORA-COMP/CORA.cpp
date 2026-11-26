@@ -8,17 +8,20 @@ counterexamples_v2.py, MIT licensed): the written outputs are ignored, onnxrunti
 computes them from x cast to the ONNX input type, the input constraints hold exactly (CORRECT) or
 up to 1e-4 (CORRECT_UP_TO_TOLERANCE, which the scoring credits but which does not establish sat),
 and the output constraints hold with tolerance 0, compared in the scoring's dtypes (1.0: inputs in
-float32, the rows of A y in float64; 2.0: every comparison in the variables' float32).
+float32, the rows of A y in float64; 2.0: every comparison in the variables' float32). A 2.0
+query of several networks (VNN-COMP 2026's equal-to and isomorphic-to pairs) names its ONNX files
+by the network field of the instance; each network is replayed on its own inputs.
 
 Syntax:   text = write_counterexample(x, y, prop)             prop: a cora.vnnlib.Property
           result, why = check_counterexample("net.onnx", "prop.vnnlib", text)   onnx may be .gz
+          check_counterexample("[('f', 'a.onnx'), ('g', 'b.onnx')]", "prop.vnnlib", text)
 Outputs:  result - one of CORRECT, CORRECT_UP_TO_TOLERANCE, SPEC_NOT_VIOLATED, NO_CE, MALFORMED_CE,
           WRONG_SHAPE, UNSUPPORTED (the scoring's names)
 See also: cora.vnnlib, cora.nn_attack, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   23-November-2026
+Last update:   25-November-2026 (several networks)
 Reviewed:      ---
 """
 
@@ -36,22 +39,26 @@ from .vnnlib import positional
 
 def write_counterexample(x, y, prop):
     """The counterexample text of the input x and output y (flat, C order) for the property's
-    VNN-LIB version; values are float32 unless the 2.0 query declares another type."""
+    VNN-LIB version; values are float32 unless the 2.0 query declares another type. For a 2.0
+    query of several networks, x and y are their inputs and outputs stacked in the order of
+    declaration, and the text gives per network its inputs, then its outputs (as the scoring)."""
     x, y = np.asarray(x).reshape(-1), np.asarray(y).reshape(-1)
     if prop.version == 1:
         lines = [f"(X_{i} {_value_text(v, np.float32)})" for i, v in enumerate(x)]
         lines += [f"(Y_{j} {_value_text(v, np.float32)})" for j, v in enumerate(y)]
         return "(" + "\n".join(lines) + ")\n"
-    net, out = prop.query.networks[0], []
-    for definitions, values in ((net.inputs, iter(x)), (net.outputs, iter(y))):
-        for d in definitions:
-            key = d.dtype.name
-            dims = ", ".join(str(s) for s in d.shape)
-            out.append(f"{d.name} {TYPE_NAMES.get(key, 'real')} [{dims}]")
-            out += [
-                _value_text(next(values), DTYPES.get(key, np.float64))
-                for _ in range(math.prod(d.shape))
-            ]
+    xs, ys, out = iter(x), iter(y), []
+    # per network (in the order of declaration) its inputs, then its outputs
+    for net in prop.query.networks:
+        for definitions, values in ((net.inputs, xs), (net.outputs, ys)):
+            for d in definitions:
+                key = d.dtype.name
+                dims = ", ".join(str(s) for s in d.shape)
+                out.append(f"{d.name} {TYPE_NAMES.get(key, 'real')} [{dims}]")
+                out += [
+                    _value_text(next(values), DTYPES.get(key, np.float64))
+                    for _ in range(math.prod(d.shape))
+                ]
     return "\n".join(out) + "\n"
 
 
@@ -272,39 +279,43 @@ def _parse_v2(content, query):
 
 
 def _check_v2(onnx_path, vnnlib_text, content):
-    """The scoring's 2.0 replay (validate_vnnlib2_counterexample) for a query of one network."""
+    """The scoring's 2.0 replay (validate_vnnlib2_counterexample): onnx_path one ONNX file, or the
+    network field of several networks ("[('f', 'a.onnx'), ('g', 'b.onnx')]", or a dict)."""
     import vnnlib
 
     try:
         # exponents written positionally (as VNN-COMP's own 2.0 files), which the parser needs
         query = vnnlib.parse_query_string(positional(vnnlib_text))
-        if len(query.networks) != 1 or query.networks[0].hidden:
-            return UNSUPPORTED, "one network without hidden variables is supported"
+        if any(net.hidden for net in query.networks):
+            return UNSUPPORTED, "networks without hidden variables are supported"
+        paths = model_paths(query, onnx_path)
         assignment = _parse_v2(content, query)
     except ValueError as error:
         return MALFORMED_CE, str(error)
     except (NotImplementedError, vnnlib.VNNLibException) as error:
         return UNSUPPORTED, str(error)
-    # the inputs cast to the ONNX types, the outputs computed by onnxruntime
-    net, sess = query.networks[0], _session_v2(onnx_path)
-    feeds = {}
-    for d, onnx_in in zip(net.inputs, sess.get_inputs(), strict=True):
-        value = assignment[d.name].astype(ORT_DTYPES[onnx_in.type], copy=False)
-        assignment[d.name] = value
-        shape = onnx_in.shape
-        if not (
-            len(value.shape) == len(shape)
-            and all(
-                not isinstance(o, int) or o <= 0 or o == v
-                for v, o in zip(value.shape, shape, strict=True)
-            )
-        ):
-            value = value.reshape(shape)
-        feeds[onnx_in.name] = value
-    outs = sess.run([o.name for o in sess.get_outputs()][: len(net.outputs)], feeds)
-    for d, out in zip(net.outputs, outs, strict=True):
-        assignment[d.name] = np.asarray(out).reshape(d.shape)
-    inputs = {d.name for d in net.inputs}
+    # per network the inputs cast to the ONNX types, the outputs computed by onnxruntime
+    inputs = set()
+    for net in query.networks:
+        sess = _session_v2(paths[net.name])
+        feeds = {}
+        for d, onnx_in in zip(net.inputs, sess.get_inputs(), strict=True):
+            value = assignment[d.name].astype(ORT_DTYPES[onnx_in.type], copy=False)
+            assignment[d.name] = value
+            inputs.add(d.name)
+            shape = onnx_in.shape
+            if not (
+                len(value.shape) == len(shape)
+                and all(
+                    not isinstance(o, int) or o <= 0 or o == v
+                    for v, o in zip(value.shape, shape, strict=True)
+                )
+            ):
+                value = value.reshape(shape)
+            feeds[onnx_in.name] = value
+        outs = sess.run([o.name for o in sess.get_outputs()][: len(net.outputs)], feeds)
+        for d, out in zip(net.outputs, outs, strict=True):
+            assignment[d.name] = np.asarray(out).reshape(d.shape)
     for tol, result in ((0.0, CORRECT), (COUNTEREXAMPLE_ATOL, CORRECT_UP_TO_TOLERANCE)):
         if all(
             _eval_bool(
@@ -316,6 +327,41 @@ def _check_v2(onnx_path, vnnlib_text, content):
         ):
             return result, f"the replayed output violates the property (input tolerance {tol})"
     return SPEC_NOT_VIOLATED, "the replayed output does not violate the property"
+
+
+def model_paths(query, onnx_path):
+    """{network name: ONNX path} of a 2.0 query, as the scoring's _network_model_paths: one path
+    for the one network that no equal-to names, or the network field of named paths (a literal
+    list of pairs or a dict); an equal-to network without a path takes the one it equals."""
+    from .joint_network import parse_network_field
+
+    if isinstance(onnx_path, dict):
+        pairs = list(onnx_path.items())
+    else:
+        pairs = parse_network_field(onnx_path)
+    declared = {net.name for net in query.networks}
+    explicit = {}
+    if pairs[0][0] is None:
+        roots = [net.name for net in query.networks if not net.equal_to]
+        if len(roots) != 1:
+            raise ValueError("a single ONNX path can only be used with one network")
+        explicit[roots[0]] = pairs[0][1]
+    else:
+        for name, path in pairs:
+            if name not in declared:
+                raise ValueError(f"an ONNX model for the undeclared network {name}")
+            if name in explicit:
+                raise ValueError(f"several ONNX models for the network {name}")
+            explicit[name] = path
+    paths = {}
+    for net in query.networks:
+        if net.name in explicit:
+            paths[net.name] = explicit[net.name]
+        elif net.equal_to and net.equal_to in paths:
+            paths[net.name] = paths[net.equal_to]
+        else:
+            raise ValueError(f"no ONNX model for the network {net.name}")
+    return paths
 
 
 def _eval_arith(e, assignment):

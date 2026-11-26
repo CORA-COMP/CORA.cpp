@@ -2,25 +2,32 @@
 
 A property is a list of cases; a case is an input box [lo, hi] and the unsafe output set, a union
 of polytopes {y : A y <= b}. The property is violated (sat) if some input of a box maps into the
-union of its case. VNN-LIB 1.0 is read with the semantics of the VNN-COMP scoring parser
-(vnncomp2026_results/SCORING/vnnlib_v1.py: box asserts, one top-level disjunction, cases of the
-same box merged); VNN-LIB 2.0 by the reference parser (the vnnlib package), its assertions
-multiplied out into the same cases. Inputs and outputs are indexed flat, in C order of their ONNX
-shapes.
+union of its case. A 2.0 property may declare several networks (VNN-COMP 2026's equal-to and
+isomorphic-to pairs): their inputs and their outputs are stacked in the order of declaration
+(Property.networks gives the offsets), and the input constraints that relate inputs (X_f[i] ==
+X_g[i], X_g[0] <= X_f[0]) are the case's relations, sum_i a_i x_i + c <= 0 (cora.joint_network
+turns them into a box of new inputs). VNN-LIB 1.0 is read with the semantics of the VNN-COMP
+scoring parser (vnncomp2026_results/SCORING/vnnlib_v1.py: box asserts, one top-level disjunction,
+cases of the same box merged); VNN-LIB 2.0 by the reference parser (the vnnlib package), its
+assertions multiplied out into the same cases. Inputs and outputs are indexed flat, in C order of
+their ONNX shapes.
 
 Syntax:   prop = read_vnnlib("prop.vnnlib", num_inputs=5, num_outputs=5)
           prop.cases[0].lo, .hi, .polytopes          float64 arrays; [(A (k, m), b (k,))]
           prop.specifications(0)                     cora.Specification.unsafe_set per polytope
+          prop.cases[0].relations                    [({input: a_i}, c)] of sum a_i x_i + c <= 0
+          prop.networks                              [NetworkInfo] of a 2.0 query (None for 1.0)
           text = to_vnnlib2(v1_text, (1, 5), (1, 5)) the 2.0 form of a 1.0 file (as VNN-COMP's)
 See also: cora.onnx_network, cora.counterexample, docs/nn_verification.md
 
 Authors:       Claude Opus 5.5
 Written:       21-November-2026
-Last update:   23-November-2026
+Last update:   25-November-2026 (several networks, relations of inputs)
 Reviewed:      ---
 """
 
 import gzip
+import math
 import re
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -37,6 +44,27 @@ class Case:
     lo: np.ndarray
     hi: np.ndarray
     polytopes: list = field(default_factory=list)
+    relations: list = field(default_factory=list)  # [({input: a}, c)]: sum a x + c <= 0
+
+
+@dataclass
+class NetworkInfo:
+    """A network of a 2.0 query: its name, its inputs and outputs as (name, shape, offset) in the
+    stacked inputs and outputs, and the network it is equal-to or isomorphic-to (or "")."""
+
+    name: str
+    inputs: list
+    outputs: list
+    equal_to: str = ""
+    isomorphic_to: str = ""
+
+    @property
+    def num_inputs(self):
+        return sum(math.prod(shape) for _, shape, _ in self.inputs)
+
+    @property
+    def num_outputs(self):
+        return sum(math.prod(shape) for _, shape, _ in self.outputs)
 
 
 @dataclass
@@ -48,6 +76,7 @@ class Property:
     num_outputs: int
     cases: list
     query: object = None
+    networks: list = None  # [NetworkInfo] of a 2.0 query
 
     def specifications(self, case=0):
         """The unsafe sets of a case as cora.Specification objects (one per polytope)."""
@@ -77,10 +106,14 @@ def read_vnnlib(path, num_inputs, num_outputs):
 
 
 def parse_vnnlib(text, num_inputs, num_outputs):
-    """The property of a VNN-LIB text."""
+    """The property of a VNN-LIB text; for 2.0, num_inputs and num_outputs None take the stacked
+    inputs and outputs of the declared networks."""
     if VERSION_2.search(text):
-        cases, query = _read_v2(text, num_inputs, num_outputs)
-        prop = Property(2, num_inputs, num_outputs, cases, query)
+        cases, query, networks = _read_v2(text, num_inputs, num_outputs)
+        num_inputs = sum(net.num_inputs for net in networks) if num_inputs is None else num_inputs
+        num_outputs = (sum(net.num_outputs for net in networks) if num_outputs is None
+                       else num_outputs)
+        prop = Property(2, num_inputs, num_outputs, cases, query, networks)
     else:
         prop = Property(1, num_inputs, num_outputs, _read_v1(text, num_inputs, num_outputs))
     for case in prop.cases:
@@ -263,15 +296,19 @@ def _read_v1(text, n, m):
 
 
 def _read_v2(text, n, m):
-    """The cases and the query of a VNN-LIB 2.0 text: parsed and type-checked by the reference
-    parser, each assertion in disjunctive normal form, the conjunction of the assertions
-    multiplied out, and every conjunct split into its input box and its output polytope."""
+    """The cases, the query and the networks of a VNN-LIB 2.0 text: parsed and type-checked by the
+    reference parser, each assertion in disjunctive normal form, the conjunction of the assertions
+    multiplied out, and every conjunct split into its input box, its relations of inputs and its
+    output polytope. n, m: the stacked inputs and outputs (None: those of the query)."""
     import vnnlib
 
     # the reference parser refuses an exponent (1e-05): positional, as VNN-COMP's own 2.0 files
     query = vnnlib.parse_query_string(positional(text))
-    if len(query.networks) != 1 or query.networks[0].hidden:
-        raise NotImplementedError("vnnlib: one network without hidden variables is supported")
+    if any(net.hidden for net in query.networks):
+        raise NotImplementedError("vnnlib: networks without hidden variables are supported")
+    networks, offsets = _networks(query)
+    n = sum(net.num_inputs for net in networks) if n is None else n
+    m = sum(net.num_outputs for net in networks) if m is None else m
     conjuncts = [[]]
     for assertion in query.assertions:
         dnf = assertion.expr.to_dnf()
@@ -287,34 +324,64 @@ def _read_v2(text, n, m):
     merged = {}
     for atoms in conjuncts:
         case = _Case1(n)
+        case.relations = []
         for atom in atoms:
             if id(atom) not in forms:
-                forms[id(atom)] = [_atom_form(*a) for a in _linear_atoms(atom, n, m)]
+                forms[id(atom)] = [_atom_form(*a) for a in _linear_atoms(atom, n, m, offsets)]
             for form in forms[id(atom)]:
                 _add_atom(case, form)
-        key = (tuple(case.lo), tuple(case.hi))
-        merged.setdefault(key, []).append(
+        key = (tuple(case.lo), tuple(case.hi),
+               tuple((tuple(sorted(r.items())), c) for r, c in case.relations))
+        merged.setdefault(key, (case.relations, []))[1].append(
             (np.array(case.rows, dtype=float).reshape(-1, m), np.array(case.rhs, dtype=float))
         )
-    cases = [Case(np.array(lo), np.array(hi), p) for (lo, hi), p in merged.items()]
-    if not all(np.isfinite(c.lo).all() and np.isfinite(c.hi).all() for c in cases):
+    cases = [Case(np.array(lo), np.array(hi), p, rel) for (lo, hi, _), (rel, p) in merged.items()]
+    # an input bounded only through a relation (X_g[0] <= X_f[0]) is checked by cora.joint_network
+    bounded = (np.isfinite(c.lo).all() and np.isfinite(c.hi).all()
+               for c in cases if not c.relations)
+    if not all(bounded):
         raise ValueError("vnnlib: an input is unbounded")
-    return cases, query
+    return cases, query, networks
 
 
-def _linear_atoms(atom, n, m):
+def _networks(query):
+    """The NetworkInfo of each network of the query, and the offset of each variable by name in
+    the stacked inputs or outputs."""
+    networks, offsets, at = [], {}, {"inputs": 0, "outputs": 0}
+    for net in query.networks:
+        lists = {}
+        for kind in ("inputs", "outputs"):
+            lists[kind] = []
+            for d in getattr(net, kind):
+                shape = tuple(int(s) for s in d.shape)
+                lists[kind].append((d.name, shape, at[kind]))
+                offsets[d.name] = at[kind]
+                at[kind] += math.prod(shape)
+        networks.append(NetworkInfo(net.name, lists["inputs"], lists["outputs"],
+                                    net.equal_to or "", net.isometric_to or ""))
+    return networks, offsets
+
+
+def _linear_atoms(atom, n, m, offsets=None):
     """A comparison as (op, coefficients, constant, 'input' or 'output'): row . v + constant op 0
-    with op '<=' (or two of them for '=='); an input's row as {index: coefficient}."""
+    with op '<=' (or two of them for '=='); an input's row as {index: coefficient}. offsets: the
+    offset of each variable in the stacked inputs or outputs (of several networks)."""
     name = type(atom).__name__
     if name == "NotEqual":
         raise NotImplementedError("vnnlib: != is not supported")
-    lhs, rhs = atom.lhs.to_linear_expr(), atom.rhs.to_linear_expr()
+    import vnnlib
+
+    try:
+        lhs, rhs = atom.lhs.to_linear_expr(), atom.rhs.to_linear_expr()
+    except vnnlib.VNNLibException as error:  # a product of variables
+        raise NotImplementedError(f"vnnlib: a nonlinear constraint ({error})") from None
     coeffs, kinds = {}, set()
     for sign, expr in ((1.0, lhs), (-1.0, rhs)):
         for term in expr.terms:
             var = term.var
             kind = str(var.kind).split(".")[-1]
             flat = int(np.ravel_multi_index(tuple(var.indices), tuple(var.shape)))
+            flat += offsets.get(var.name, 0) if offsets else 0
             coeffs[(kind, flat)] = coeffs.get((kind, flat), 0.0) + sign * term.coeff
             kinds.add(kind)
     const = lhs.constant - rhs.constant
@@ -339,12 +406,13 @@ def _linear_atoms(atom, n, m):
 
 
 def _atom_form(op, row, const, kind):
-    """row . v + const <= 0 as ("Output", row, rhs) of A y <= b, or ("Input", i, bound, upper)."""
+    """row . v + const <= 0 as ("Output", row, rhs) of A y <= b, ("Input", i, bound, upper), or
+    ("Relation", row, const) of an input constraint on several inputs."""
     del op  # always "<=" (_linear_atoms)
     if kind == "Output":
         return ("Output", list(row), -const)
     if len(row) != 1:
-        raise NotImplementedError("vnnlib: input constraints must be box constraints")
+        return ("Relation", dict(row), float(const))
     ((i, a),) = row.items()
     return ("Input", int(i), -const / float(a), a > 0)
 
@@ -354,6 +422,9 @@ def _add_atom(case, form):
     if form[0] == "Output":
         case.rows.append(form[1])
         case.rhs.append(form[2])
+        return
+    if form[0] == "Relation":
+        case.relations.append((form[1], form[2]))
         return
     _, i, bound, upper = form
     if upper:
