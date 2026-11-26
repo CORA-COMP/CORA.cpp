@@ -5817,7 +5817,7 @@ TikzOptions tikz_options_of(const py::kwargs &kwargs) {
             o.height = py::cast<std::string>(item.second);
         else
             CORA_FAIL(Error::redundant_name_value_pair,
-                      "to_tikz: unknown option '" + key + "'" + did_you_mean(key, known));
+                      "save_tikz: unknown option '" + key + "'" + did_you_mean(key, known));
     }
     return o;
 }

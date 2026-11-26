@@ -19,7 +19,7 @@ Syntax:   X0 = cora.Zonotope(c, G)             c (..., n), G (..., m, n): one se
           R = sys.reach(initial_set=X0, t_final=2.0, alg="standard", time_step=0.1)
           vdp = cora.NonlinearSys(lambda x: [x[1], (1 - x[0]**2) * x[1] - x[0]], 2)
           net = cora.NeuralNetwork([(W1, b1), (W2, b2)])      Y = net.evaluate(X): X's outputs
-          cora.plot(R)                         or R.plot(); cora.subplots(2, 2).to_tikz(...)
+          cora.plot(R)                         or R.plot(); cora.subplots(2, 2).save_tikz(...)
 
 Authors:       Claude Sonnet 5.5, Claude Opus 5.5
 Written:       01-October-2026
@@ -109,7 +109,7 @@ from ._cora import (
 )
 from .errors import CORAError, CORAWarning
 from .extend import register_algorithm
-from .figure import Figure, subplots, to_tikz
+from .figure import Figure, save_tikz, subplots
 from .plot import plot, plot_over_time, plot_rand_point
 from .tensor import (
     Tensor,
@@ -160,10 +160,10 @@ __all__ = [
     "has_torch", "intersect", "is_intersecting", "isequal", "lean", "mat_exp", "num_threads",
     "plot",
     "plot_over_time", "plot_rand_point", "plus", "register_algorithm", "register_binary",
-    "set_checks_enabled",
+    "save_tikz", "set_checks_enabled",
     "set_default_backend", "set_default_tolerance", "set_num_threads", "strict_gradients",
     "subplots", "tensor_ops",
-    "to_tikz", "tolerance", "unite",
+    "tolerance", "unite",
     "use_cora_colors", "verify_strategies", "vnncomp_options", "cora_vnncomp_options",
     "Tensor", "cos",
     "exp", "eye", "log", "ones", "randn", "sin", "sqrt", "tan", "zeros",
