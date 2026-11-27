@@ -910,12 +910,8 @@ void lean_root(const std::string &b) {
     check(lean > 0 && proved == nets, b + ": the lean root check decides wide margins at the root");
 }
 
-/// CROWN's layer bounds of a convolution chain on the windows of the receptive fields
-/// (priv_crown_bounds' windows) are the whole layers' bounds, with and without slope steps, and
-/// hold the sampled layer inputs.
-void crown_windows(const std::string &b) {
-    Rng rng(79);
-    // three convolutions (the second with stride 2) and a linear layer on a 2 x 6 x 6 input
+/// Three convolutions (the second with stride 2) and a linear layer on a 2 x 6 x 6 input.
+NeuralNetwork aux_conv_chain(Rng &rng) {
     const auto conv = [&](int64_t cin, int64_t cout, int64_t side, int64_t stride) {
         std::vector<double> kernel(std::size_t(cout * cin * 9));
         rng.normal(kernel.data(), kernel.size(), 0.6 / std::sqrt(double(cin * 9)));
@@ -935,8 +931,52 @@ void crown_windows(const std::string &b) {
     rng.normal(W.data(), W.size(), 0.3);
     rng.normal(c.data(), c.size(), 0.3);
     layers.push_back({Tensor::from_data(W, {2, 27}), Tensor::from_data(c, {2})});
-    const NeuralNetwork nn(
-        layers, {Activation::relu, Activation::relu, Activation::relu, Activation::identity});
+    return {layers, {Activation::relu, Activation::relu, Activation::relu, Activation::identity}};
+}
+
+/// verify with native convolutions (native_conv, the float32 nets' only): crown-bab's search copy
+/// and the attack on a convolution chain give no unsat where a sample violates, prove a wide
+/// margin and find the counterexample of a violated property, as with the patches' products.
+void native_convolutions(const std::string &b) {
+    if (b == "lean") return; // many small verifications: slow on lean
+    Rng rng(83);
+    const NeuralNetwork nn = aux_conv_chain(rng);
+    std::vector<double> xs(std::size_t(8000 * 72));
+    rng.uniform(xs.data(), xs.size(), -0.2, 0.2);
+    const std::vector<double> y = nn.evaluate(Tensor::from_data(xs, {8000, 72})).data();
+    double least = kInfinity;
+    for (std::size_t i = 0; i < 8000; ++i) least = std::min(least, y[i * 2]);
+    int wrong = 0, proved = 0, sat = 0, runs = 0;
+    for (const std::string method : {"crown-bab", "zonotack"}) {
+        for (const bool native : {false, true}) {
+            NnVerifyOptions o = aux_options("zonotope-alpha", b);
+            o.refinement_method = method;
+            o.affine_bab = method == "crown-bab";
+            o.relu_bab_crown_windows = true;
+            o.native_conv = native;
+            o.crown_bab_search = native; // the search copy's steps by the native convolutions
+            // far below, just below and above the least sample
+            for (const double t : {least - 2.0, least - 0.05, least + 0.05}) {
+                const NnVerifyResult r = nn.verify(aux_below(72, 2, -0.2, 0.2, t), 30, o);
+                if (r.status == "unsat")
+                    for (std::size_t i = 0; i < 8000; ++i) wrong += y[i * 2] <= t ? 1 : 0;
+                proved += t == least - 2.0 && r.status == "unsat" ? 1 : 0;
+                sat += t == least + 0.05 && r.status == "sat" ? 1 : 0;
+            }
+            ++runs;
+        }
+    }
+    check(wrong == 0, b + ": native convolutions give no unsat where a sample violates");
+    check(proved == runs && sat == runs,
+          b + ": native convolutions prove a wide margin and find a counterexample");
+}
+
+/// CROWN's layer bounds of a convolution chain on the windows of the receptive fields
+/// (priv_crown_bounds' windows) are the whole layers' bounds, with and without slope steps, and
+/// hold the sampled layer inputs.
+void crown_windows(const std::string &b) {
+    Rng rng(79);
+    const NeuralNetwork nn = aux_conv_chain(rng);
     // a box of different radii, the root's zonotope of few generators and slots
     std::vector<double> xv(72), rv(72);
     rng.uniform(xv.data(), xv.size(), -0.5, 0.5);
@@ -2175,6 +2215,7 @@ int main() {
         product_planes(b);
         lean_root(b);
         crown_windows(b);
+        native_convolutions(b);
         affine_forms(b);
         affine_bab_verdicts(b);
         crown_bab_other_layers(b);

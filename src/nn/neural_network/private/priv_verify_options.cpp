@@ -338,6 +338,11 @@ NnVerifyOptions vnncomp_options(const std::string &category) {
         o.relu_bab_crown_iterations = 5;
         o.affine_bab_time_share = 0.2; // most of the time for crown-bab's stronger node bound
     }
+    // their convolution nets: crown-bab's steps in float32 by native convolutions (dev seed 1001)
+    if (name == "cifar100" || name == "tinyimagenet" || name == "challenging_certified_training") {
+        o.crown_bab_search = true;
+        o.native_conv = true;
+    }
     if (name == "vit") o.relu_bab_crown_iterations = 0; // plain CROWN's layer bounds at the root
     if (name == "tinyimagenet") o.relu_bab_init_gens = 256; // the root net within the GPU's memory
     return o;

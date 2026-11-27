@@ -75,6 +75,18 @@ void aux_overrides(const std::string &b) {
     for (const Norm ord : {Norm::one, Norm::inf, Norm::two})
         aux_agree(b + " vector_norm", G.vector_norm(ord, -2),
                   derived::vector_norm(G, ord, -2, false), aux_sum_bound(6));
+    // the convolution and its transpose: uneven padding, a stride, a dilation and two groups
+    Tensor::ConvSpec spec;
+    spec.stride = {2, 1};
+    spec.dilation = {1, 2};
+    spec.pads = {1, 0, 2, 1};
+    spec.groups = 2;
+    const Tensor image = rnd.matrix(3, 4 * 30).reshape({3, 4, 5, 6});
+    const Tensor kernel = rnd.matrix(6, 2 * 9).reshape({6, 2, 3, 3});
+    const Tensor maps = image.conv2d(kernel, spec);
+    aux_agree(b + " conv2d", maps, derived::conv2d(image, kernel, spec), aux_sum_bound(18));
+    aux_agree(b + " conv_transpose2d", maps.conv_transpose2d(kernel, {5, 6}, spec),
+              derived::conv_transpose2d(maps, kernel, {5, 6}, spec), aux_sum_bound(18));
     const Tensor c = rnd.vector(6);
     aux_agree(b + " diag", c.diag(), derived::diag(c), 0);
 

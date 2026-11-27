@@ -1019,7 +1019,7 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         // the steps' copy in the search dtype (the bounds that decide stay float64)
         const DType sdt = problem.options().dtype;
         const bool searching = o_.crown_bab_search && sdt != xi.dtype();
-        ZonoNet net_s = searching ? priv_zono_net_to(net, sdt) : ZonoNet(net);
+        ZonoNet net_s = searching ? priv_zono_net_to(net, sdt, o_.native_conv) : ZonoNet(net);
         const ZonoPropagation out_s = searching ? priv_record_to(out, sdt) : ZonoPropagation();
         const ZonoBounds bounds_s = searching ? priv_bounds_to(bounds, sdt) : ZonoBounds();
         net_s.deadline = net.deadline;
@@ -1028,10 +1028,11 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         // the roots of all open polytopes' rows at once: one verified row excludes its polytope
         if (open.size() > 1)
             open = aux_crown_bab_roots(out, bounds, xi, ri, open, co, search, stats);
-        // affine-bab: the one-row polytopes' slopes and root bounds at once (ReLU nets)
+        // affine-bab: the one-row polytopes' slopes and root bounds at once, in float64 (ReLU nets)
         AffineSlopes lines;
         bool affine = o_.affine_bab && !open.empty();
-        if (affine) affine = aux_affine_slopes(out, bounds, xi, ri, open, co, search, stats, lines);
+        if (affine)
+            affine = aux_affine_slopes(out, bounds, xi, ri, open, co, nullptr, stats, lines);
         for (const int64_t p : open) {
             // the polytope's real rows a_k y - b_k
             const std::vector<int64_t> real = real_row_.slice(0, p, p + 1).squeeze(0).nonzero();

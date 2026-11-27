@@ -70,6 +70,13 @@ Device aux_device(const torch::Device &d) {
     return {Device::Type::cuda, static_cast<int8_t>(d.has_index() ? d.index() : 0)};
 }
 
+/// A host buffer of doubles on a device in a dtype: copied first, cast there (a host cast of a
+/// large buffer is a threaded loop, slow on a busy machine).
+torch::Tensor aux_upload(const torch::Tensor &host, const torch::Device &device,
+                         torch::ScalarType dtype) {
+    return host.to(device, torch::kDouble, false, true).to(dtype);
+}
+
 /// A floating tensor: float64 and float32 stay, anything else becomes float64.
 torch::Tensor aux_floating(const torch::Tensor &t) {
     return t.scalar_type() == torch::kDouble || t.scalar_type() == torch::kFloat
@@ -96,7 +103,8 @@ struct TorchTensor : Tensor::Impl {
 
     // Construction and access
     std::vector<double> data() const override {
-        const torch::Tensor host = t.detach().to(torch::kCPU, torch::kDouble).contiguous();
+        // the cast on the tensor's device: a host cast of a large tensor is a threaded loop
+        const torch::Tensor host = t.detach().to(torch::kDouble).to(torch::kCPU).contiguous();
         return std::vector<double>(host.data_ptr<double>(), host.data_ptr<double>() + host.numel());
     }
     Ptr to(Device d) const override {
@@ -107,7 +115,7 @@ struct TorchTensor : Tensor::Impl {
     Ptr like(const double *v, const Shape &s) const override {
         const torch::Tensor host =
             torch::from_blob(const_cast<double *>(v), std::vector<int64_t>(s), torch::kDouble);
-        return wrap(host.to(t.device(), t.scalar_type(), false, true));
+        return wrap(aux_upload(host, t.device(), t.scalar_type()));
     }
     Ptr full(const Shape &s, double value) const override {
         return wrap(torch::full(std::vector<int64_t>(s), value, t.options().requires_grad(false)));
@@ -309,6 +317,32 @@ struct TorchTensor : Tensor::Impl {
         return wrap(std::get<0>(torch::sort(t, /*stable=*/true, axis, descending)));
     }
     Ptr diag() const override { return wrap(torch::diag_embed(t.squeeze(-1))); }
+    Ptr conv2d(const Impl &kernel, const TensorConvSpec &spec) const override {
+        // torch pads both sides alike: other padding by zeros around the input first
+        const bool even = spec.pads[0] == spec.pads[2] && spec.pads[1] == spec.pads[3];
+        const torch::Tensor x =
+            even ? t
+                 : torch::constant_pad_nd(
+                       t, {spec.pads[1], spec.pads[3], spec.pads[0], spec.pads[2]}, 0.0);
+        const std::vector<int64_t> pad{even ? spec.pads[0] : 0, even ? spec.pads[1] : 0};
+        return wrap(torch::conv2d(x, of(kernel), {}, {spec.stride[0], spec.stride[1]}, pad,
+                                  {spec.dilation[0], spec.dilation[1]}, spec.groups));
+    }
+    Ptr conv_transpose2d(const Impl &kernel, const std::array<int64_t, 2> &size,
+                         const TensorConvSpec &spec) const override {
+        // the transpose onto the padded input, of which the convolution's input is a window
+        const torch::Tensor full =
+            torch::conv_transpose2d(t, of(kernel), {}, {spec.stride[0], spec.stride[1]}, {0, 0},
+                                    {0, 0}, spec.groups, {spec.dilation[0], spec.dilation[1]});
+        // rows and columns of the padded input that no patch reads: zeros after the last one
+        const int64_t more_h = std::max<int64_t>(0, spec.pads[0] + size[0] - full.size(2));
+        const int64_t more_w = std::max<int64_t>(0, spec.pads[1] + size[1] - full.size(3));
+        const torch::Tensor whole =
+            more_h + more_w > 0 ? torch::constant_pad_nd(full, {0, more_w, 0, more_h}, 0.0) : full;
+        return wrap(whole.slice(2, spec.pads[0], spec.pads[0] + size[0])
+                        .slice(3, spec.pads[1], spec.pads[1] + size[1])
+                        .contiguous());
+    }
     Ptr matrix_norm(Norm ord) const override {
         const std::vector<int64_t> dims = {-2, -1};
         if (ord == Norm::fro) return wrap(torch::linalg_matrix_norm(t, "fro", dims, true));
@@ -346,7 +380,7 @@ struct TorchBackend : Tensor::Backend {
         const torch::Tensor host = torch::from_blob(const_cast<double *>(data.data()),
                                                     std::vector<int64_t>(shape), torch::kDouble);
         const torch::Device target = where.empty() ? device : torch_device(where);
-        return std::make_shared<TorchTensor>(host.to(target, aux_scalar(dtype), false, true),
+        return std::make_shared<TorchTensor>(aux_upload(host, target, aux_scalar(dtype)),
                                              custom_backward);
     }
 };

@@ -309,8 +309,9 @@ Tensor priv_crown_bab_roots(const ZonoPropagation &out, const ZonoNet &net,
                             const CrownBabSearch *search = nullptr);
 
 /// The net's weights, the record's layer inputs and bounds (what priv_backward_lower reads), and
-/// the bounds in another dtype, for priv_crown_bab's search.
-ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype);
+/// the bounds in another dtype, for priv_crown_bab's search (native: its convolutions by the
+/// tensors' own operation, Layer::native_convolution).
+ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype, bool native = false);
 ZonoPropagation priv_record_to(const ZonoPropagation &out, DType dtype);
 ZonoBounds priv_bounds_to(const ZonoBounds &bounds, DType dtype);
 

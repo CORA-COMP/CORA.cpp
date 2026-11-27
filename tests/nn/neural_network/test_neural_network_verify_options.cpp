@@ -151,6 +151,13 @@ void options_and_strategies() {
     check(vnncomp_options("challenging_certified_training_2026").relu_bab_crown_windows &&
               !vnncomp_options("cifar100_2024").relu_bab_crown_windows,
           "the certified-training nets' preset: CROWN's layer bounds on the windows");
+    // their convolution nets: the steps in float32 by the native convolutions
+    bool fast = !ours.native_conv && !vnncomp_options("safenlp_2024").native_conv &&
+                !vnncomp_options("vit_2023").crown_bab_search;
+    for (const std::string name :
+         {"cifar100_2024", "tinyimagenet_2024", "challenging_certified_training_2026"})
+        fast = fast && vnncomp_options(name).native_conv && vnncomp_options(name).crown_bab_search;
+    check(fast, "the convolution nets' preset: crown-bab's float32 steps, native convolutions");
     check(vnncomp_options("vggnet16_2022").lean_root_check &&
               vnncomp_options("vggnet16_2022").root_check_first && !ours.lean_root_check,
           "vggnet16's preset: the lean root check before the attack");

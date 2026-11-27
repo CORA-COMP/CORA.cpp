@@ -315,6 +315,10 @@ class NeuralNetwork {
         /// `inputs`; rows (windows, ..., inputs) to (windows, ..., m). No bias (zeros like `like`).
         static Layer gather_windows(const std::vector<int64_t> &index, int64_t m, int64_t inputs,
                                     const Tensor &like);
+        /// The layer with its convolution by Tensor::conv2d and conv_transpose2d (torch's own, on
+        /// CUDA cuDNN's) instead of the patches' products: the same map, other rounding (the
+        /// products of radii gain its slack). Another layer: itself.
+        Layer native_convolution(bool on = true) const;
         /// A convolution's shape: 0 unless the layer is one (not transposed).
         int64_t conv_channels(bool out) const;
         int64_t conv_pixels(bool out) const;

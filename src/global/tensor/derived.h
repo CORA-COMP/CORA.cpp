@@ -49,6 +49,18 @@ Tensor kron(const Tensor &A, const Tensor &B);
 Tensor matrix_norm(const Tensor &A, Tensor::Norm ord);
 Tensor vector_norm(const Tensor &x, Tensor::Norm ord, int axis, bool keepdims);
 Tensor diag(const Tensor &v);
+Tensor conv2d(const Tensor &x, const Tensor &kernel, const Tensor::ConvSpec &spec);
+Tensor conv_transpose2d(const Tensor &y, const Tensor &kernel, const std::array<int64_t, 2> &size,
+                        const Tensor::ConvSpec &spec);
+
+/// The index lists of a convolution of an input of H x W pixels with a kh x kw kernel: per
+/// (offset, output pixel), offset-major, its input pixel (`patch`; padding: H W), and per input
+/// pixel its `fold` patch entries (`col2im`; none: Ho Wo kh kw), which the transpose sums.
+struct ConvLists {
+    int64_t Ho = 0, Wo = 0, fold = 1;
+    std::vector<int64_t> patch, col2im;
+};
+ConvLists conv_lists(int64_t H, int64_t W, int64_t kh, int64_t kw, const Tensor::ConvSpec &spec);
 
 // Fused primitives
 std::pair<Tensor, Tensor> zonotope_linear_map(const Tensor &M, const Tensor &c, const Tensor &G);

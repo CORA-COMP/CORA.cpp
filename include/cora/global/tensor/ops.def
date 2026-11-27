@@ -121,6 +121,8 @@ CORA_TENSOR_OP(matrix_rank, derived, not_differentiable, exact, 0, "the number o
 CORA_TENSOR_OP(trace, derived, differentiable, sum, 1, "the sum of the diagonal, (..., 1, 1)")
 CORA_TENSOR_OP(kron, derived, differentiable, exact, 0, "the Kronecker product")
 CORA_TENSOR_OP(expm, derived, differentiable, norm, 256, "the matrix exponential (Pade 13, scaling and squaring)")
+CORA_TENSOR_OP(conv2d, derived, differentiable, norm, 64, "the 2-D convolution of (N, C, H, W) with a kernel (O, C / groups, kh, kw): stride, dilation, zero padding and groups as ONNX's Conv")
+CORA_TENSOR_OP(conv_transpose2d, derived, differentiable, norm, 64, "the transpose (adjoint) of conv2d: (N, O, Ho, Wo) back to the convolution's input (N, C, H, W)")
 CORA_TENSOR_OP(matrix_norm, derived, piecewise, sum, 2, "the 1, 2, inf or Frobenius norm of (..., n, m), (..., 1, 1)")
 CORA_TENSOR_OP(vector_norm, derived, piecewise, sum, 2, "the 1, 2 or inf norm along an axis")
 // Fused Primitives --------------------------------------------------------------------------------

@@ -327,6 +327,39 @@ std::map<std::string, Case> aux_cases() {
                      return V{o.matrix(2, 3).kron(o.matrix(3, 2)),
                               o.batch(2, 2, 2).kron(o.matrix(2, 1))};
                  }};
+    // convolutions: uneven padding, strides and dilations; two groups
+    c["conv2d"] = {27, [](O &o) {
+                       Tensor::ConvSpec spec, grouped;
+                       spec.stride = {2, 1};
+                       spec.dilation = {1, 2};
+                       spec.pads = {1, 0, 2, 1};
+                       grouped.groups = 2;
+                       grouped.pads = {1, 1, 1, 1};
+                       return V{o.batch(2, 3, 30)
+                                    .reshape({2, 3, 5, 6})
+                                    .conv2d(o.batch(4, 3, 9).reshape({4, 3, 3, 3}), spec),
+                                o.batch(2, 4, 25)
+                                    .reshape({2, 4, 5, 5})
+                                    .conv2d(o.batch(6, 2, 9).reshape({6, 2, 3, 3}), grouped)};
+                   }};
+    // the transposes of the same two
+    c["conv_transpose2d"] = {
+        27, [](O &o) {
+            Tensor::ConvSpec spec, grouped;
+            spec.stride = {2, 1};
+            spec.dilation = {1, 2};
+            spec.pads = {1, 0, 2, 1};
+            grouped.groups = 2;
+            grouped.stride = {2, 2};
+            // the outputs of inputs of 5 x 6 and of 6 x 6 pixels
+            return V{
+                o.batch(2, 4, 9)
+                    .reshape({2, 4, 3, 3})
+                    .conv_transpose2d(o.batch(4, 3, 9).reshape({4, 3, 3, 3}), {5, 6}, spec),
+                o.batch(2, 6, 4)
+                    .reshape({2, 6, 2, 2})
+                    .conv_transpose2d(o.batch(6, 2, 9).reshape({6, 2, 3, 3}), {6, 6}, grouped)};
+        }};
     c["expm"] = {
         4, [](O &o) { return V{(o.matrix(4, 4) * 0.5).expm(), (o.batch(2, 3, 3) * 3.0).expm()}; }};
     c["matrix_norm"] = {6, [](O &o) {

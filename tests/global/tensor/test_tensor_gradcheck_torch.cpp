@@ -241,6 +241,27 @@ void linear_algebra() {
     gradcheck("kron", [](const V &v) { return V{v[0].kron(v[1])}; },
               {aux_randn({2, 3}), aux_randn({2, 2})});
     gradcheck("expm", [](const V &v) { return V{v[0].expm()}; }, {aux_randn({2, 3, 3})});
+    // the convolution and its transpose, in the input and in the kernel
+    gradcheck("conv2d",
+              [](const V &v) {
+                  Tensor::ConvSpec spec;
+                  spec.stride = {2, 1};
+                  spec.pads = {1, 0, 2, 1};
+                  spec.groups = 2;
+                  return V{v[0].conv2d(v[1], spec)};
+              },
+              {aux_randn({2, 4, 5, 4}), aux_randn({4, 2, 3, 2})});
+    // the transpose with a dilation, onto a 5 x 6 input
+    gradcheck("conv_transpose2d",
+              [](const V &v) {
+                  Tensor::ConvSpec spec;
+                  spec.stride = {2, 1};
+                  spec.dilation = {1, 2};
+                  spec.pads = {1, 0, 2, 1};
+                  return V{v[0].conv_transpose2d(v[1], {5, 6}, spec)};
+              },
+              {aux_randn({2, 4, 3, 3}), aux_randn({4, 3, 3, 3})});
+    // the norms of matrices and of vectors
     gradcheck("matrix_norm",
               [](const V &v) {
                   return V{v[0].matrix_norm(Norm::one), v[0].matrix_norm(Norm::inf),

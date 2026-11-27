@@ -519,6 +519,51 @@ Tensor Tensor::kron(const Tensor &o) const {
 
 Tensor Tensor::expm() const { return Tensor(impl_->expm()); }
 
+/// The shapes of a convolution's operands, checked: the input's channels and the kernel's.
+static void aux_check_conv(const Tensor &x, const Tensor &kernel, const Tensor::ConvSpec &spec,
+                           bool transposed) {
+    const char *op = transposed ? "conv_transpose2d" : "conv2d";
+    detail::check_pair(x, kernel, op);
+    const bool positive = spec.groups >= 1 && spec.stride[0] >= 1 && spec.stride[1] >= 1 &&
+                          spec.dilation[0] >= 1 && spec.dilation[1] >= 1 && spec.pads[0] >= 0 &&
+                          spec.pads[1] >= 0 && spec.pads[2] >= 0 && spec.pads[3] >= 0;
+    if (x.ndim() != 4 || kernel.ndim() != 4 || !positive || kernel.size(0) % spec.groups != 0 ||
+        x.size(1) != (transposed ? kernel.size(0) : kernel.size(1) * spec.groups))
+        CORA_FAIL(Error::dimension_mismatch,
+                  std::string("CoraTensor::") + op +
+                      ": needs (N, C, H, W), a kernel (O, C / groups, kh, kw) whose channels fit, "
+                      "strides, dilations and groups of at least 1 and padding of at least 0");
+}
+
+/// A convolution's outputs along an axis (0: height, 1: width) of `in` inputs and `k` offsets.
+static int64_t aux_conv_out(int64_t in, int64_t k, const Tensor::ConvSpec &spec, std::size_t axis) {
+    const int64_t padded = in + spec.pads[axis] + spec.pads[axis + 2];
+    return (padded - spec.dilation[axis] * (k - 1) - 1) / spec.stride[axis] + 1;
+}
+
+Tensor Tensor::conv2d(const Tensor &kernel, const ConvSpec &spec) const {
+    aux_check_conv(*this, kernel, spec, false);
+    // the output's pixels: at least one
+    const int64_t Ho = aux_conv_out(size(2), kernel.size(2), spec, 0);
+    const int64_t Wo = aux_conv_out(size(3), kernel.size(3), spec, 1);
+    if (Ho < 1 || Wo < 1)
+        CORA_FAIL(Error::dimension_mismatch, "CoraTensor::conv2d: the output has no pixel");
+    return Tensor(impl_->conv2d(*kernel.impl_, spec));
+}
+
+Tensor Tensor::conv_transpose2d(const Tensor &kernel, const std::array<int64_t, 2> &size_,
+                                const ConvSpec &spec) const {
+    aux_check_conv(*this, kernel, spec, true);
+    // the rows: the outputs of an input of the given size
+    const int64_t Ho = aux_conv_out(size_[0], kernel.size(2), spec, 0);
+    const int64_t Wo = aux_conv_out(size_[1], kernel.size(3), spec, 1);
+    if (size_[0] < 1 || size_[1] < 1 || Ho != size(2) || Wo != size(3))
+        CORA_FAIL(Error::dimension_mismatch,
+                  "CoraTensor::conv_transpose2d: the rows are not the convolution's outputs of "
+                  "an input of the given size");
+    return Tensor(impl_->conv_transpose2d(*kernel.impl_, size_, spec));
+}
+
 // The norms as ops.def defines them.
 Tensor Tensor::matrix_norm(Norm ord) const { return Tensor(impl_->matrix_norm(ord)); }
 
