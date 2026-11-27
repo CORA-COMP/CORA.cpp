@@ -74,10 +74,11 @@ std::atomic<int64_t> &aux_oom_armed() {
 
 /// The network with its weights in the dtype, on the device (empty: where they are).
 std::shared_ptr<const NeuralNetwork> aux_network(const NeuralNetwork &net, DType dtype,
-                                                 const std::string &device) {
+                                                 const std::string &device, bool native) {
     std::vector<NeuralNetwork::Layer> layers;
     for (const NeuralNetwork::Layer &layer : net.layers())
-        layers.push_back(layer.to(dtype, device));
+        layers.push_back(native ? layer.to(dtype, device).native_convolution()
+                                : layer.to(dtype, device));
     return std::make_shared<const NeuralNetwork>(layers, net.activations());
 }
 
@@ -142,8 +143,9 @@ std::optional<std::vector<double>> aux_default_confirm(const NeuralNetwork &net,
 NnProblem::NnProblem(const NeuralNetwork &net, const NnProperty &property,
                      const NnVerifyOptions &options, ConfirmFn confirm)
     : property_(property), options_(options), confirm_(std::move(confirm)) {
-    net_ = aux_network(net, DType::float64, options.device); // NOLINT(backend): the bounds
-    net32_ = aux_network(net, options.dtype, options.device);
+    const DType exact = DType::float64; // NOLINT(backend): the bounds
+    net_ = aux_network(net, exact, options.device, false);
+    net32_ = aux_network(net, options.dtype, options.device, options.native_conv);
     memory_budget = options.memory_budget > 0 ? options.memory_budget : kBudget;
     batch_memory_budget =
         options.batch_memory_budget > 0 ? options.batch_memory_budget : memory_budget;

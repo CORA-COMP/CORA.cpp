@@ -104,6 +104,10 @@ struct NnVerifyOptions {
     /// attack-first: the bounding's first batch over the root boxes comes before the attack (an
     /// unsat the bounds decide at once is not left to a long attack).
     bool root_check_first = false;
+    /// The convolutions by the tensors' own operation (Tensor::conv2d, conv_transpose2d: torch's,
+    /// cuDNN's on CUDA) instead of the patches' products: faster and lighter, other rounding
+    /// (nn_verification.md, "Native convolutions").
+    bool native_conv = false;
     /// Before the branch and bound, every box by one unrecorded zonotope with a generator per
     /// moved input and a slot per neuron with an error (few moved inputs of a large net).
     bool lean_root_check = false;

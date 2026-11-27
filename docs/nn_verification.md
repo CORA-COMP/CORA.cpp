@@ -142,6 +142,28 @@ vnnlib file ─> cora.vnnlib.Property: cases = input box + union of polytopes {y
   computed weights' error times `|d - d0|`; a neuron whose bounds or values are not finite, or
   `l <= 0`, keeps the two layers' lines. The slope steps' reverse pass evaluates the same line at
   the exps' inputs, so their gradient stays the bound's.
+- **Native convolutions (`native_conv`, CORA.cpp only; the cifar100, tinyimagenet and
+  challenging_certified_training presets).** A convolution layer maps rows by its patches: a
+  gather of each output pixel's patch and a product with the kernel as a matrix (`conv2d.cpp`; the
+  transpose folds the patches back), nine times the layer's entries for a 3 x 3 kernel. With
+  `native_conv` the float32 networks map by the tensor operations `conv2d` and `conv_transpose2d`
+  instead (`Layer::native_convolution`; `docs/tensor.md`: torch's convolutions, cuDNN's on CUDA;
+  the portable default is the patches' product again): the attack's network and the search copy
+  of crown-bab's steps (`crown_bab_search`). The float64 network of the bounds keeps its patches:
+  every deciding bound is the patches' product bit for bit, so `priv_backward_lower`'s default
+  call is unchanged, and cuDNN's float64 convolutions are no faster than the patches' product
+  (its transposed one is slower). In float32 the native operation takes about an eighth of the
+  patches' time and holds no patches, so a batch of the steps is larger (twice from the dtype,
+  the rest from the patches; `Layer::work` counts a native layer as 4 layers, cuDNN's measured
+  workspace); the float64 pass then runs in chunks of the batch its own bytes allow
+  (`crown_bab_exact_seconds`, under a tenth of the search). Measured (dev seed 1001, A100,
+  crown-bab's nodes per second): challenging_certified_training's cnn7 63 to 209 and wide cnn7
+  41 to 86, tinyimagenet 80 to above 200. **Soundness and
+  rounding:** the search copy's steps only choose slopes and multipliers, which any values make
+  sound, and the attack's points are checked on the float64 network. A native layer's products of
+  radii (`abs_rows`: |W| r) still gain a slack of `(4 n + 256)` ulps of the largest radius times
+  the kernel's largest absolute row sum (`n` the terms of a sum), so they are not below the exact
+  product for a sum in any order (`native` test: at least the patches' product, within 1e-10).
 - **CROWN's windows (`relu_bab_crown_windows`, CORA.cpp only; the challenging_certified_training
   preset).** In a chain of convolutions with ReLUs between them, the input `z` of a neuron of
   layer k reads only the pixels of its receptive field. `priv_crown_bounds` then bounds the

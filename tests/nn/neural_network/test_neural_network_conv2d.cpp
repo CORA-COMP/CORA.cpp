@@ -78,6 +78,50 @@ std::vector<double> aux_direct(const std::vector<double> &x, int64_t N,
 /// The largest absolute difference of two tensors.
 double aux_gap(const Tensor &a, const Tensor &b) { return (a - b).abs().max().item(); }
 
+/// A layer's native convolution (Tensor::conv2d and conv_transpose2d) is the patches' products
+/// up to the rounding, for a convolution and a ConvTranspose; its products of radii are at least
+/// the exact ones (the slack) and as close.
+void native(const std::string &b) {
+    Rng rng(11);
+    NeuralNetwork::Conv2d spec;
+    spec.stride = {2, 1};
+    spec.dilation = {1, 2};
+    spec.pads = {1, 0, 2, 1};
+    spec.groups = 2;
+    const int64_t cin = 4, H = 6, W = 5, cout = 6, kh = 3, kw = 2;
+    const Tensor kernel = aux_random(rng, {cout, cin / 2, kh, kw}, 1.0);
+    const int64_t Ho = (H + 3 - (kh - 1) - 1) / 2 + 1, Wo = (W + 1 - 2 * (kw - 1) - 1) + 1;
+    const NeuralNetwork::Layer conv =
+        NeuralNetwork::Layer::conv2d(kernel, Tensor::zeros({cout * Ho * Wo}), {cin, H, W}, spec);
+    const NeuralNetwork::Layer back = NeuralNetwork::Layer::conv_transpose2d(
+        kernel, Tensor::zeros({cin * H * W}), {cin, H, W}, spec);
+    bool same = true, above = true, kept = true;
+    for (const NeuralNetwork::Layer *layer : {&conv, &back}) {
+        const NeuralNetwork::Layer fast = layer->native_convolution();
+        // rows of a batch (2, 3, n) through the layer and its transpose
+        const Tensor x = aux_random(rng, {2, 3, layer->inputs()}, 1.0);
+        const Tensor y = aux_random(rng, {2, 3, layer->outputs()}, 1.0);
+        same = same && aux_gap(fast.rows(x), layer->rows(x)) < 1e-12 &&
+               aux_gap(fast.rows_t(y), layer->rows_t(y)) < 1e-12;
+        // the radii: not below the patches' products, and within the slack of them
+        const Tensor r = x.abs(), q = y.abs();
+        const Tensor up = fast.abs_rows(r) - layer->abs_rows(r);
+        const Tensor up_t = fast.abs_rows_t(q) - layer->abs_rows_t(q);
+        above = above && up.min().item() >= 0 && up_t.min().item() >= 0 &&
+                up.max().item() < 1e-10 && up_t.max().item() < 1e-10;
+        kept = kept && fast.inputs() == layer->inputs() && fast.outputs() == layer->outputs() &&
+               aux_gap(fast.native_convolution(false).rows(x), layer->rows(x)) == 0;
+    }
+    check(same, b + ": a native convolution and its transpose are the patches' products");
+    check(above, b + ": a native product of radii is at least the patches' and as close");
+    check(kept, b + ": the native switch keeps the sizes and turns off again");
+    // a matrix layer has no convolution: itself
+    const NeuralNetwork::Layer dense{aux_random(rng, {3, 4}, 1.0), Tensor::zeros({3})};
+    const Tensor v = aux_random(rng, {2, 4}, 1.0);
+    check(aux_gap(dense.native_convolution().rows(v), dense.rows(v)) == 0,
+          b + ": a matrix layer's native switch is the layer");
+}
+
 /// A convolution's rows are its definition; its transpose, absolute value and a gather are those
 /// of the matrix.
 void layers(const std::string &b) {
@@ -291,6 +335,7 @@ int main() {
     test::for_each_backend([](const std::string &b) {
         layers(b);
         transposed_and_reshape(b);
+        native(b);
         networks(b);
     });
     // the same with the checks off

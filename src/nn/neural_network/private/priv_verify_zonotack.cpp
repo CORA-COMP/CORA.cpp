@@ -1019,7 +1019,7 @@ std::string ConZonotopeBounding::aux_crown_bab(NnProblem &problem,
         // the steps' copy in the search dtype (the bounds that decide stay float64)
         const DType sdt = problem.options().dtype;
         const bool searching = o_.crown_bab_search && sdt != xi.dtype();
-        ZonoNet net_s = searching ? priv_zono_net_to(net, sdt) : ZonoNet(net);
+        ZonoNet net_s = searching ? priv_zono_net_to(net, sdt, o_.native_conv) : ZonoNet(net);
         const ZonoPropagation out_s = searching ? priv_record_to(out, sdt) : ZonoPropagation();
         const ZonoBounds bounds_s = searching ? priv_bounds_to(bounds, sdt) : ZonoBounds();
         net_s.deadline = net.deadline;

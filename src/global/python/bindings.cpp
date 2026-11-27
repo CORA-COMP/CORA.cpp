@@ -5945,6 +5945,7 @@ void bind_verify(py::module_ &m) {
                       "PGD: the half-width of the sign's straight-through gradient, per round");
     CORA_VERIFY_FIELD(lean_root_check,
                       "Each box first by one unrecorded zonotope of all its factors");
+    CORA_VERIFY_FIELD(native_conv, "The convolutions by the tensors' own operation (cuDNN)");
     CORA_VERIFY_FIELD(root_check_first, "The bounding's first batch before the first attack");
     CORA_VERIFY_FIELD(max_candidates, "The confirm checks per attack step at most");
     CORA_VERIFY_FIELD(pgd_min_steps, "The PGD steps that the shrunk restarts fit in the time");

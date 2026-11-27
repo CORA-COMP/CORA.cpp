@@ -220,7 +220,8 @@ class CrownBab {
     /// look_ahead's pick, BaBSR's (choose) where it runs out of memory.
     Tensor branch(const Tensor &S, const Tensor &alpha, const Tensor &beta, const Bounded &b,
                   int64_t batch) const;
-    int64_t per_node_bytes() const;
+    /// A node's bytes in a pass of `net` with `item` bytes an entry.
+    int64_t per_node_bytes(const ZonoNet &net, int64_t item) const;
     Tensor root_nodes() const { return x_.zeros_like({1, space_.U}); }
     Tensor root_slopes() const {
         // CROWN's lower slopes: 1 where u > -l
@@ -243,6 +244,7 @@ class CrownBab {
     /// The products' planes of every node's pass (per layer (1, K, n / 2); empty: the set's line).
     mutable std::vector<Tensor> mix_, side_;
     mutable bool tuned_ = false;
+    mutable int64_t exact_chunk_ = int64_t(1) << 40; ///< nodes of one pass on the record
 };
 
 // The node bound ----------------------------------------------------------------------------------
@@ -380,10 +382,25 @@ Bounded CrownBab::bound(const Tensor &S, const Tensor &alpha, const Tensor &beta
         const DType de = exact_.x.dtype();
         r.alpha = r.alpha.to(de).maximum(0.0).minimum(1.0);
         r.beta = r.beta.to(de).maximum(0.0);
-        std::vector<Tensor> ic;
-        r.best = evaluate(exact_, aux_expand(space_, S), r.alpha, r.beta, nullptr, nullptr, &ic,
-                          &r.corner);
-        r.score = aux_gather(space_, ic, r.alpha);
+        // in chunks of what the record's passes hold (the search's batch may be larger)
+        const int64_t N = S.shape()[0], chunk = std::max<int64_t>(1, exact_chunk_);
+        const double exact_started = now_seconds();
+        std::vector<Tensor> bests, scores, corners;
+        for (int64_t at = 0; at < N; at += chunk) {
+            // a chunk's bound, scores and corners on the record
+            const int64_t to = std::min(N, at + chunk);
+            std::vector<Tensor> ic;
+            Tensor corner;
+            bests.push_back(evaluate(exact_, aux_expand(space_, S.slice(0, at, to)),
+                                     r.alpha.slice(0, at, to), r.beta.slice(0, at, to), nullptr,
+                                     nullptr, &ic, &corner));
+            scores.push_back(aux_gather(space_, ic, r.alpha.slice(0, at, to)));
+            corners.push_back(corner);
+        }
+        r.best = Tensor::concat(bests, 0);
+        r.score = Tensor::concat(scores, 0);
+        r.corner = Tensor::concat(corners, 0);
+        stats_["crown_bab_exact_seconds"] += now_seconds() - exact_started;
     }
     stats_["crown_bab_bound_seconds"] += now_seconds() - started;
     return r;
@@ -460,12 +477,12 @@ Tensor CrownBab::branch(const Tensor &S, const Tensor &alpha, const Tensor &beta
     }
 }
 
-int64_t CrownBab::per_node_bytes() const {
+int64_t CrownBab::per_node_bytes(const ZonoNet &net, int64_t item) const {
     // per row and neuron of every layer: Lambda, the lines, the reverse and the slopes' steps
-    int64_t width = net_.n0;
-    for (const int64_t w : net_.widths) width += w;
-    for (const NeuralNetwork::Layer &layer : net_.maps) width += layer.work();
-    return 8 * K_ * (16 * width + 12 * space_.U);
+    int64_t width = net.n0;
+    for (const int64_t w : net.widths) width += w;
+    for (const NeuralNetwork::Layer &layer : net.maps) width += layer.work();
+    return item * K_ * (16 * width + 12 * space_.U);
 }
 
 // The branch and bound ----------------------------------------------------------------------------
@@ -493,7 +510,11 @@ int CrownBab::run(const std::function<bool(const Tensor &)> &check) {
     if (U == 0) return 0; // no neuron to split: the lines are exact up to the slopes
     // the open nodes as a stack of batches, the last batch's children first
     const int64_t node_bytes = 8 * (U + 2 * K_ * U + 2);
-    const int64_t per = per_node_bytes();
+    // a batch: what the steps' passes hold (the search's, if any; the record's passes in chunks)
+    const int64_t exact = per_node_bytes(net_, 8);
+    const int64_t per =
+        searching_ ? per_node_bytes(*search_.net, search_.x.dtype() == x_.dtype() ? 8 : 4) : exact;
+    exact_chunk_ = std::max<int64_t>(1, o_.max_bytes / std::max<int64_t>(1, exact));
     int64_t batch =
         std::max<int64_t>(1, std::min(o_.batch, o_.max_bytes / std::max<int64_t>(1, per)));
     stats_["crown_bab_batch"] = double(batch);
@@ -609,7 +630,7 @@ std::vector<Tensor> priv_crown_bab_slopes(const ZonoPropagation &out, const Zono
 
 // The search dtype --------------------------------------------------------------------------------
 
-ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype) {
+ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype, bool native) {
     ZonoNet copy = net;
     const auto to = [&](std::vector<Tensor> &ts) {
         for (Tensor &t : ts)
@@ -620,10 +641,14 @@ ZonoNet priv_zono_net_to(const ZonoNet &net, DType dtype) {
     to(copy.abs_w);
     to(copy.WT);
     to(copy.abs_wT);
-    for (NeuralNetwork::Layer &layer : copy.maps) layer = layer.to(dtype);
+    // the maps (a residual's too), native where asked
+    for (NeuralNetwork::Layer &layer : copy.maps)
+        layer = native ? layer.to(dtype).native_convolution() : layer.to(dtype);
     for (std::vector<NeuralNetwork::Residual> &rs : copy.residuals)
         for (NeuralNetwork::Residual &r : rs)
-            if (r.map) r.map = std::make_shared<const NeuralNetwork::Layer>(r.map->to(dtype));
+            if (r.map)
+                r.map = std::make_shared<const NeuralNetwork::Layer>(
+                    native ? r.map->to(dtype).native_convolution() : r.map->to(dtype));
     return copy;
 }
 
