@@ -12,18 +12,19 @@ Reads:    examples/vnncomp/results/dev_results.csv, or --results (one row per be
           benchmark's input dimensions, the n of the paper)
 Writes:   paper/generated/vnn-comp-table.tex, or --output
 Checks:   --check renders the table and compares it with the committed file, writes nothing
-Updates:  --input-dims DIR writes input_dims.csv from the vnnlib files of DIR/<benchmark>/1.0/
+Updates:  --input-dims DIR writes input_dims.csv from the vnnlib files of DIR/<benchmark>/1.0/ (else 2.0/)
 Exit code: 0 if the files are written or up to date, else 1 with what is wrong.
 
 Authors:       Claude Opus 5.5
 Written:       24-November-2026
-Last update:   ---
+Last update:   27-November-2026
 Reviewed:      ---
 """
 import argparse
 import collections
 import csv
 import gzip
+import math
 import re
 import sys
 from pathlib import Path
@@ -41,6 +42,9 @@ def main():
     if args.input_dims:
         return write_input_dims(Path(args.input_dims))
     rows, problems = load(Path(args.results) if args.results else REPO / RESULTS)
+    # a CORA++ column only if the results name it (the dev results have one, the final results one per machine)
+    global TOOLS
+    TOOLS = tuple(t for t in TOOLS if t[0] not in MACHINES or any(r["tool"] == t[0] for r in rows))
     dims = load_dims(REPO / DIMS)
     problems += [f"vnn_table: {DIMS} has no row of {b}"
                  for b in sorted({r["benchmark"] for r in rows}) if b not in dims]
@@ -75,12 +79,19 @@ REPO = Path(__file__).resolve().parents[2]
 RESULTS = "examples/vnncomp/results/dev_results.csv"
 DIMS = "examples/vnncomp/results/input_dims.csv"
 OUTPUT = "paper/generated/vnn-comp-table.tex"
-# the columns: the top tools of VNN-COMP, then CORA++ (the CSV's name, the header)
+# the columns (the CSV's name, the header): the top VNN-COMP tools, then CORA++ per machine
 TOOLS = (*sorted((("alpha-beta-CROWN", r"$\alpha,\!\beta$-CROWN"), ("CORA", "CORA"), ("PyRAT", "PyRAT"),
                   ("vibecheck", "vibecheck")), key=lambda tool: tool[0].lower()),
-         ("CORA++", "CORA++"))  # the others by name; CORA++ is always last
+         ("CORA++", "CORA++"), ("CORA++ A100", "CORA++ (A100)"),
+         ("CORA++ laptop", "CORA++ (laptop)"))  # the others by name; CORA++ is always last
+# the CORA++ columns: shown only if the results name them
+MACHINES = {"CORA++", "CORA++ A100", "CORA++ laptop"}
+# the machines' columns, under one CORA++ heading
+SUB = {"CORA++ A100": "A100", "CORA++ laptop": "laptop"}
 # the short names of the long benchmark names, so that the table fits the line width
-SHORT = {"challenging_certified_training_2026": "cert_training", "traffic_signs_recognition_2023": "traffic_signs"}
+SHORT = {"challenging_certified_training_2026": "cert_training", "traffic_signs_recognition_2023": "traffic_signs",
+         "adaptive_cruise_control_non_linear_2026": "acc_non_linear", "collins_aerospace_benchmark": "collins_aero",
+         "smart_turn_multimodal_2026": "smart_turn"}
 RESULTS_KNOWN = {"unsat", "sat", "unknown", "timeout", "error", "not run"}
 # the marks of the appendix: a tool that has not run all instances of a benchmark, an incorrect result
 PARTIAL, WRONG = r"\dag", r"\ddag"
@@ -106,9 +117,14 @@ def load_dims(path):
 
 
 def write_input_dims(root):
-    """Writes input_dims.csv: per benchmark the fewest and most inputs of a property of version 1.0."""
+    """Writes input_dims.csv: per benchmark the fewest and most inputs of a property of version 1.0
+    (of 2.0 for a benchmark that has no 1.0 instances)."""
     out = []
-    for inst in sorted(root.glob("*/1.0/instances.csv")):
+    for bench in sorted(p for p in root.iterdir() if p.is_dir()):
+        versions = [bench / v / "instances.csv" for v in ("1.0", "2.0")]
+        inst = next((v for v in versions if v.exists() and v.stat().st_size), None)
+        if inst is None:
+            continue
         with inst.open(newline="", encoding="utf-8") as f:
             names = {row[1].strip() for row in csv.reader(f) if len(row) > 1}
         found = [n for n in (count_inputs(inst.parent / name) for name in sorted(names)) if n]
@@ -124,19 +140,24 @@ def write_input_dims(root):
 
 
 def count_inputs(path):
-    """The inputs X_i that a vnnlib property declares (plain or gzipped), or None without the file."""
+    """The inputs that a vnnlib property declares (plain or gzipped), or None without the file: the X_i
+    of version 1.0, or the entries of the first network's `declare-input` tensors of version 2.0."""
     for p in (path, path.with_name(path.name + ".gz")):
         if p.exists():
             opener = gzip.open if p.suffix == ".gz" else open
-            seen = set()
+            seen, entries, networks = set(), 0, 0
             with opener(p, "rt", encoding="utf-8") as f:
                 for line in f:
                     m = re.match(r"\s*\(declare-const X_(\d+)", line)
+                    shape = re.match(r"\s*\(declare-input \S+ \S+ \[([\d,\s]+)\]", line)
+                    networks += line.lstrip().startswith("(declare-network")
                     if m:
                         seen.add(int(m.group(1)))
-                    elif seen and line.lstrip().startswith("(assert"):
+                    elif shape and networks <= 1:
+                        entries += math.prod(int(d) for d in shape.group(1).split(","))
+                    elif (seen or entries) and line.lstrip().startswith("(assert"):
                         break
-            return len(seen)
+            return len(seen) or entries
     return None
 
 
@@ -177,8 +198,15 @@ def header(first, table):
     projected from the official results."""
     projected = {t for t, _ in TOOLS
                  if (ran := [table[b][t] for b in table if table[b][t]["run"]]) and all(e["projected"] for e in ran)}
-    return rf"\textbf{{{first}}} & " + " & ".join(
-        rf"\textbf{{{h}}}" + (r"$^\ast$" if t in projected else "") for t, h in TOOLS) + r" \\"
+    names = [rf"\textbf{{{h}}}" + (r"$^\ast$" if t in projected else "") for t, h in TOOLS if t not in SUB]
+    machines = [SUB[t] for t, _ in TOOLS if t in SUB]
+    if not machines:
+        return rf"\textbf{{{first}}} & " + " & ".join(names) + r" \\"
+    # one CORA++ heading over its machines' columns (they come last), the machines below it
+    start = len(names) + 3
+    return (rf"\textbf{{{first}}} & " + " & ".join(names) + rf" & \multicolumn{{{len(machines)}}}{{c@{{}}}}"
+            r"{\textbf{CORA++}} \\" + "\n" + rf"\cmidrule(l){{{start}-{start + len(machines) - 1}}}" + "\n"
+            + " & " * (len(names) + 2) + " & ".join(rf"\textbf{{{m}}}" for m in machines) + r" \\")
 
 
 def render(table, dims, source):
@@ -191,8 +219,9 @@ def render(table, dims, source):
     out = [
         f"% Generated by scripts/paper/vnn_table.py from {source}; do not edit.",
         "% Needs booktabs; the float, its caption and label are the paper's own.",
-        r"\scriptsize",
-        r"\setlength{\tabcolsep}{2pt}",
+        # with a column per machine the table only fits the LNCS line at \tiny
+        r"\tiny" if any(t in SUB for t, _ in TOOLS) else r"\scriptsize",
+        r"\setlength{\tabcolsep}{1.25pt}" if any(t in SUB for t, _ in TOOLS) else r"\setlength{\tabcolsep}{2pt}",
         r"\begin{tabular}{@{}lr" + "c" * len(TOOLS) + "@{}}",
         r"\toprule", head, r"\midrule",
     ]
