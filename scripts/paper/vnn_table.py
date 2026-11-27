@@ -1,16 +1,16 @@
 """vnn_table - the paper's tables of the preliminary VNN-COMP results: solved instances per tool
 
-One row per benchmark and, per tool, the verified, falsified and unknown instances (unsat, sat,
-the rest), each number bold where it is the (tied) best of its row, then the sums over every
-benchmark. Rows marked `projected` (official VNN-COMP shares scaled to the sample) are in italics,
-their tools starred. An incorrect result (contradicted by another tool) is never solved; it is
-marked. Tools without rows show `--`. The float and its caption are the paper's own.
+One row per benchmark, grouped by the size n of its largest input (small, medium, large), and per
+tool the verified, falsified and unknown instances (unsat, sat, the rest), bold where (tied) best of
+the row, then the sums over every benchmark; the summary sums each group. Rows marked `projected`
+(official shares scaled to the sample) are in italics, their tools starred. An incorrect result
+(contradicted by another tool) is never solved; it is marked. Tools without rows show `--`.
 
 Syntax:   python scripts/paper/vnn_table.py [--check] [--results CSV] [--output TEX]
 Reads:    examples/vnncomp/results/dev_results.csv, or --results (one row per benchmark, instance and
           tool, optionally a `projected` column), and examples/vnncomp/results/input_dims.csv (each
           benchmark's input dimensions, the n of the paper)
-Writes:   paper/generated/vnn-comp-table.tex, or --output
+Writes:   paper/generated/vnn-comp-table.tex and vnn-comp-summary.tex, or --output and the summary beside it
 Checks:   --check renders the table and compares it with the committed file, writes nothing
 Updates:  --input-dims DIR writes input_dims.csv from the vnnlib files of DIR/<benchmark>/1.0/ (else 2.0/)
 Exit code: 0 if the files are written or up to date, else 1 with what is wrong.
@@ -53,7 +53,9 @@ def main():
         return 1
     table = tally(rows)
     source = Path(args.results).name if args.results else RESULTS
-    texts = {Path(args.output) if args.output else Path(OUTPUT): render(table, dims, source)}
+    output = Path(args.output) if args.output else Path(OUTPUT)
+    texts = {output: render(table, dims, source),
+             output.with_name(Path(SUMMARY).name): render_summary(table, dims, source)}
     # the totals in the log, so that a reader sees the state without the PDF
     for tool, _ in TOOLS:
         ran = [b for b in table if table[b][tool]["run"]]
@@ -79,6 +81,11 @@ REPO = Path(__file__).resolve().parents[2]
 RESULTS = "examples/vnncomp/results/dev_results.csv"
 DIMS = "examples/vnncomp/results/input_dims.csv"
 OUTPUT = "paper/generated/vnn-comp-table.tex"
+SUMMARY = "paper/generated/vnn-comp-summary.tex"
+# a tabular wider than the line shrinks to it (graphicx), a narrower one keeps its size
+FIT = r"\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%"
+# the summary's rows: a benchmark by its largest input n, below each bound (the last without one)
+SIZES = ((r"Small ($n < 100$)", 100), (r"Medium ($100 \le n < 1\,000$)", 1000), (r"Large ($n \ge 1\,000$)", None))
 # the columns (the CSV's name, the header): the top VNN-COMP tools, then CORA++ per machine
 TOOLS = (*sorted((("alpha-beta-CROWN", r"$\alpha,\!\beta$-CROWN"), ("CORA", "CORA"), ("PyRAT", "PyRAT"),
                   ("vibecheck", "vibecheck")), key=lambda tool: tool[0].lower()),
@@ -222,12 +229,17 @@ def render(table, dims, source):
         # with a column per machine the table only fits the LNCS line at \tiny
         r"\tiny" if any(t in SUB for t, _ in TOOLS) else r"\scriptsize",
         r"\setlength{\tabcolsep}{1.25pt}" if any(t in SUB for t, _ in TOOLS) else r"\setlength{\tabcolsep}{2pt}",
-        r"\begin{tabular}{@{}lr" + "c" * len(TOOLS) + "@{}}",
+        FIT, r"\begin{tabular}{@{}lr" + "c" * len(TOOLS) + "@{}}",
         r"\toprule", head, r"\midrule",
     ]
     used = set()
-    # one row per benchmark; a benchmark that no tool has run says so across the tools
-    for b, entry in table.items():
+    # one row per benchmark under its size's heading; a benchmark that no tool has run says so across the tools
+    order = [(name, b) for name, _ in SIZES for b in table if size_of(dims[b][1]) == name]
+    for i, (group, b) in enumerate(order):
+        entry = table[b]
+        if i == 0 or order[i - 1][0] != group:
+            out += ([r"\midrule"] if i else []) + [rf"\multicolumn{{{ncols}}}{{@{{}}l}}{{\textit{{{group}}}}} \\"]
+        # the benchmark's row: its cells, or that no tool has run it
         if not any(entry[t]["run"] for t, _ in TOOLS):
             across = rf"\multicolumn{{{len(TOOLS)}}}{{c@{{}}}}{{\textit{{not run yet}}}}"
             out.append(rf"{label(b)} & {fmt_dims(dims[b])} & {across} \\")
@@ -247,15 +259,7 @@ def render(table, dims, source):
             cells.append(text + (rf"\textsuperscript{{{','.join(marks)}}}" if marks else ""))
         out.append(" & ".join([label(b), fmt_dims(dims[b]), *cells]) + r" \\")
     # the total over every benchmark; a benchmark a tool has not run counts as unsolved (VNN-COMP's rule)
-    total = sum(table[b]["instances"] for b in table)
-    sums = {}
-    for t, _ in TOOLS:
-        v = sum(table[b][t]["verified"] for b in table if table[b][t]["run"])
-        f = sum(table[b][t]["falsified"] for b in table if table[b][t]["run"])
-        ran = [table[b][t] for b in table if table[b][t]["run"]]
-        sums[t] = (v, f, total - v - f, bool(ran) and all(e["projected"] for e in ran))
-    bests = (max(x[0] for x in sums.values()), max(x[1] for x in sums.values()), min(x[2] for x in sums.values()))
-    cells = [triple(sums[t][:3], bests, sums[t][3]) for t, _ in TOOLS]
+    total, cells = sum_cells(table, list(table))
     out += [r"\midrule", " & ".join([rf"\multicolumn{{2}}{{@{{}}l}}{{All ({total} instances)}}", *cells]) + r" \\"]
     # the marks that occur, in a last row of the table
     notes = {PARTIAL: rf"\textsuperscript{{{PARTIAL}}}~{partial_note(table)}",
@@ -264,8 +268,54 @@ def render(table, dims, source):
     lines = [notes[m] for m in (PARTIAL, WRONG) if m in used]
     if lines:
         out.append(rf"\multicolumn{{{ncols}}}{{@{{}}p{{\linewidth}}@{{}}}}{{" + " ".join(lines) + r"} \\")
-    out += [r"\bottomrule", r"\end{tabular}"]
+    out += [r"\bottomrule", r"\end{tabular}}"]
     return "\n".join(out) + "\n"
+
+
+def render_summary(table, dims, source):
+    """The summary: per size of the input (and in total) the benchmarks, their instances and per tool
+    verified/falsified/unknown; a benchmark a tool has not run counts as unsolved, as in the total."""
+    groups = [(name, [b for b in table if size_of(dims[b][1]) == name]) for name, _ in SIZES]
+    # the tabular whole, a row per size and the total; the float is the paper's
+    out = [
+        f"% Generated by scripts/paper/vnn_table.py from {source}; do not edit.",
+        "% Needs booktabs; the float, its caption and label are the paper's own.",
+        r"\scriptsize" if any(t in SUB for t, _ in TOOLS) else r"\small",
+        r"\setlength{\tabcolsep}{2pt}" if any(t in SUB for t, _ in TOOLS) else r"\setlength{\tabcolsep}{4pt}",
+        FIT, r"\begin{tabular}{@{}lr" + "c" * len(TOOLS) + "@{}}",
+        r"\toprule", header("Input size", table).replace(r"\textbf{Input size} & ",
+                                                         r"\textbf{Input size} & \textbf{\#} & "),
+        r"\midrule",
+    ]
+    for i, (name, benches) in enumerate([*groups, ("All", list(table))]):
+        if not benches:
+            continue
+        if i == len(groups):
+            out.append(r"\midrule")
+        # the count column: benchmarks and their instances
+        instances, cells = sum_cells(table, benches)
+        out.append(" & ".join([name, f"{len(benches)}/{instances}", *cells]) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}}"]
+    return "\n".join(out) + "\n"
+
+
+def sum_cells(table, benches):
+    """The instances of the benchmarks and per tool its summed cell; a benchmark the tool has not run
+    counts as unsolved (VNN-COMP's rule)."""
+    instances = sum(table[b]["instances"] for b in benches)
+    sums = {}
+    for t, _ in TOOLS:
+        v = sum(table[b][t]["verified"] for b in benches if table[b][t]["run"])
+        f = sum(table[b][t]["falsified"] for b in benches if table[b][t]["run"])
+        ran = [table[b][t] for b in benches if table[b][t]["run"]]
+        sums[t] = (v, f, instances - v - f, bool(ran) and all(e["projected"] for e in ran))
+    bests = (max(x[0] for x in sums.values()), max(x[1] for x in sums.values()), min(x[2] for x in sums.values()))
+    return instances, [triple(sums[t][:3], bests, sums[t][3]) for t, _ in TOOLS]
+
+
+def size_of(n):
+    """The summary row of a benchmark whose largest input has n entries."""
+    return next(name for name, bound in SIZES if bound is None or n < bound)
 
 
 def triple(vfu, bests, projected):

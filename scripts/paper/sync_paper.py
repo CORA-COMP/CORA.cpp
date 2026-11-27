@@ -54,6 +54,7 @@ PLACES = {
     "arch-comp-table.tex": "sections/data/arch-comp-table.tex",
     "arch-comp-summary.tex": "sections/data/arch-comp-summary.tex",
     "vnn-comp-table.tex": "sections/data/vnn-comp-table.tex",
+    "vnn-comp-summary.tex": "sections/data/vnn-comp-summary.tex",
 }
 
 
