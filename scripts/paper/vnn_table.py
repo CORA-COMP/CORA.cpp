@@ -200,7 +200,7 @@ def label(benchmark):
     return SHORT.get(benchmark, re.sub(r"_?20\d\d$", "", benchmark)).replace("_", r"\_")
 
 
-def header(first, table):
+def header(first, table, lead=2):
     """The header row: the bold tool names, CORA++ last; a star on a tool whose entries are all
     projected from the official results."""
     projected = {t for t, _ in TOOLS
@@ -210,10 +210,10 @@ def header(first, table):
     if not machines:
         return rf"\textbf{{{first}}} & " + " & ".join(names) + r" \\"
     # one CORA++ heading over its machines' columns (they come last), the machines below it
-    start = len(names) + 3
+    start = len(names) + lead + 1
     return (rf"\textbf{{{first}}} & " + " & ".join(names) + rf" & \multicolumn{{{len(machines)}}}{{c@{{}}}}"
             r"{\textbf{CORA++}} \\" + "\n" + rf"\cmidrule(l){{{start}-{start + len(machines) - 1}}}" + "\n"
-            + " & " * (len(names) + 2) + " & ".join(rf"\textbf{{{m}}}" for m in machines) + r" \\")
+            + " & " * (len(names) + lead) + " & ".join(rf"\textbf{{{m}}}" for m in machines) + r" \\")
 
 
 def render(table, dims, source):
@@ -273,8 +273,8 @@ def render(table, dims, source):
 
 
 def render_summary(table, dims, source):
-    """The summary: per size of the input (and in total) the benchmarks, their instances and per tool
-    verified/falsified/unknown; a benchmark a tool has not run counts as unsolved, as in the total."""
+    """The summary: per size of the input (and in total) per tool verified/falsified/unknown; a benchmark
+    a tool has not run counts as unsolved, as in the total."""
     groups = [(name, [b for b in table if size_of(dims[b][1]) == name]) for name, _ in SIZES]
     # the tabular whole, a row per size and the total; the float is the paper's
     out = [
@@ -282,9 +282,8 @@ def render_summary(table, dims, source):
         "% Needs booktabs; the float, its caption and label are the paper's own.",
         r"\scriptsize" if any(t in SUB for t, _ in TOOLS) else r"\small",
         r"\setlength{\tabcolsep}{2pt}" if any(t in SUB for t, _ in TOOLS) else r"\setlength{\tabcolsep}{4pt}",
-        FIT, r"\begin{tabular}{@{}lr" + "c" * len(TOOLS) + "@{}}",
-        r"\toprule", header("Input size", table).replace(r"\textbf{Input size} & ",
-                                                         r"\textbf{Input size} & \textbf{\#} & "),
+        FIT, r"\begin{tabular}{@{}l" + "c" * len(TOOLS) + "@{}}",
+        r"\toprule", header("Input size", table, lead=1),
         r"\midrule",
     ]
     for i, (name, benches) in enumerate([*groups, ("All", list(table))]):
@@ -292,9 +291,9 @@ def render_summary(table, dims, source):
             continue
         if i == len(groups):
             out.append(r"\midrule")
-        # the count column: benchmarks and their instances
-        instances, cells = sum_cells(table, benches)
-        out.append(" & ".join([name, f"{len(benches)}/{instances}", *cells]) + r" \\")
+        # the group's row: per tool its sums
+        _, cells = sum_cells(table, benches)
+        out.append(" & ".join([name, *cells]) + r" \\")
     out += [r"\bottomrule", r"\end{tabular}}"]
     return "\n".join(out) + "\n"
 
