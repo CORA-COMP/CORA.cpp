@@ -124,6 +124,10 @@ it, and `ctest` (`coverage`, the first test) fails when it is stale.
   After a change of a status run `python scripts/coverage/benchmarks.py --render-only`; the nightly
   runs `--check`, which renders the committed measurement (no build) and fails on a stale report or a
   measured file that is gone. `--check --remeasure` runs every instance again (hours; on demand).
+- `scripts/coverage/vnncomp.py` does the same for VNN-COMP: one instance per benchmark (the first of its
+  `instances.csv`) runs through `scripts/vnncomp/run_instance.py` on a coverage build of the Python package
+  (`--coverage`, `-O0`, CPU), into `coverage/vnncomp.json`; `status_figure.py` shows it as the VNN-COMP row of
+  the paper's figure. Measure with `--sets DIR --build DIR [--only NAME]`; CI runs `--files`.
 - `scripts/paper/arch_table.py` writes `paper/generated/arch-comp-table.tex`, the paper's table of the ARCH-COMP26
   times: CORA.cpp's verdicts and times from the tables of `examples/benchmarks/README.md`, the other tools' times
   from `examples/benchmarks/data/arch26_tool_times.csv` (with the report table of each), the system dimensions from
