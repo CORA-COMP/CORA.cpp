@@ -135,7 +135,9 @@ Tensor aux_native(const Tensor &X, const NeuralNetwork::LinearPlan &p, bool abso
                                       .conv2d(k, p.spec)
                                       .reshape({N, p.cout * p.pixels_out});
     if (!absolute) return Y;
-    const double terms = double(std::max(p.cin, p.cout) / p.spec.groups * p.offsets);
+    // the channels of one group (an exact integer division)
+    const int64_t per_group = std::max(p.cin, p.cout) / p.spec.groups;
+    const double terms = double(per_group * p.offsets);
     const double slack =
         (4.0 * terms + 256.0) * machine_eps(X.dtype()) * (transposed ? p.mass_in : p.mass_out);
     return Y + X.abs().max(-1, true) * slack;
