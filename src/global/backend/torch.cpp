@@ -70,6 +70,13 @@ Device aux_device(const torch::Device &d) {
     return {Device::Type::cuda, static_cast<int8_t>(d.has_index() ? d.index() : 0)};
 }
 
+/// A host buffer of doubles on a device in a dtype: copied first, cast there (a host cast of a
+/// large buffer is a threaded loop, slow on a busy machine).
+torch::Tensor aux_upload(const torch::Tensor &host, const torch::Device &device,
+                         torch::ScalarType dtype) {
+    return host.to(device, torch::kDouble, false, true).to(dtype);
+}
+
 /// A floating tensor: float64 and float32 stay, anything else becomes float64.
 torch::Tensor aux_floating(const torch::Tensor &t) {
     return t.scalar_type() == torch::kDouble || t.scalar_type() == torch::kFloat
@@ -96,7 +103,8 @@ struct TorchTensor : Tensor::Impl {
 
     // Construction and access
     std::vector<double> data() const override {
-        const torch::Tensor host = t.detach().to(torch::kCPU, torch::kDouble).contiguous();
+        // the cast on the tensor's device: a host cast of a large tensor is a threaded loop
+        const torch::Tensor host = t.detach().to(torch::kDouble).to(torch::kCPU).contiguous();
         return std::vector<double>(host.data_ptr<double>(), host.data_ptr<double>() + host.numel());
     }
     Ptr to(Device d) const override {
@@ -107,7 +115,7 @@ struct TorchTensor : Tensor::Impl {
     Ptr like(const double *v, const Shape &s) const override {
         const torch::Tensor host =
             torch::from_blob(const_cast<double *>(v), std::vector<int64_t>(s), torch::kDouble);
-        return wrap(host.to(t.device(), t.scalar_type(), false, true));
+        return wrap(aux_upload(host, t.device(), t.scalar_type()));
     }
     Ptr full(const Shape &s, double value) const override {
         return wrap(torch::full(std::vector<int64_t>(s), value, t.options().requires_grad(false)));
@@ -372,7 +380,7 @@ struct TorchBackend : Tensor::Backend {
         const torch::Tensor host = torch::from_blob(const_cast<double *>(data.data()),
                                                     std::vector<int64_t>(shape), torch::kDouble);
         const torch::Device target = where.empty() ? device : torch_device(where);
-        return std::make_shared<TorchTensor>(host.to(target, aux_scalar(dtype), false, true),
+        return std::make_shared<TorchTensor>(aux_upload(host, target, aux_scalar(dtype)),
                                              custom_backward);
     }
 };
