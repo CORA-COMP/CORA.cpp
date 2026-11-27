@@ -60,6 +60,25 @@ void aux_require_matrix(const Tensor &t, const char *op) {
                   std::string("CoraTensor::") + op + ": needs a matrix (..., n, m)");
 }
 
+/// The kernel (O, C / groups, kh, kw) as the matrix (O, C kh kw) of the patches' entries
+/// (channel-major), zero between the groups.
+Tensor aux_kernel_matrix(const Tensor &kernel, int64_t C, int64_t groups) {
+    const int64_t O = kernel.size(0), KK = kernel.size(2) * kernel.size(3);
+    const int64_t cg = C / groups, og = O / groups;
+    const Tensor flat = kernel.reshape({O, cg * KK});
+    if (groups == 1) return flat;
+    // each group's outputs read its own channels
+    std::vector<Tensor> blocks;
+    for (int64_t g = 0; g < groups; ++g) {
+        std::vector<Tensor> row;
+        if (g > 0) row.push_back(flat.zeros_like({og, g * cg * KK}));
+        row.push_back(flat.slice(0, g * og, (g + 1) * og));
+        if (g + 1 < groups) row.push_back(flat.zeros_like({og, (groups - 1 - g) * cg * KK}));
+        blocks.push_back(Tensor::concat(row, 1));
+    }
+    return Tensor::concat(blocks, 0);
+}
+
 /// The Pade 13 coefficients of Higham's scaling and squaring (SIAM J. Matrix Anal. Appl. 2005).
 constexpr double kPade[14] = {64764752532480000.0,
                               32382376266240000.0,
@@ -102,6 +121,14 @@ Tensor::Ptr Tensor::Impl::vector_norm(Norm ord, int axis, bool keepdims) const {
     return derived::vector_norm(Tensor(self()), ord, axis, keepdims).ptr();
 }
 Tensor::Ptr Tensor::Impl::diag() const { return derived::diag(Tensor(self())).ptr(); }
+// the convolutions by their patches
+Tensor::Ptr Tensor::Impl::conv2d(const Impl &kernel, const ConvSpec &spec) const {
+    return derived::conv2d(Tensor(self()), Tensor(kernel.self()), spec).ptr();
+}
+Tensor::Ptr Tensor::Impl::conv_transpose2d(const Impl &kernel, const std::array<int64_t, 2> &size,
+                                           const ConvSpec &spec) const {
+    return derived::conv_transpose2d(Tensor(self()), Tensor(kernel.self()), size, spec).ptr();
+}
 
 // Scaling and squaring with the Pade approximant of degree 13; one scaling for the whole batch.
 Tensor derived::expm(const Tensor &A) {
@@ -143,6 +170,75 @@ Tensor derived::kron(const Tensor &A, const Tensor &B) {
     const Tensor b = B.reshape(aux_batch_with(B, 2, {1, p, 1, q}));
     const Tensor big = a.multiply(b);
     return big.reshape(aux_batch_with(big, 4, {n * p, m * q}));
+}
+
+// Each output pixel's patch of the input and each input pixel's entries of the patches.
+derived::ConvLists derived::conv_lists(int64_t H, int64_t W, int64_t kh, int64_t kw,
+                                       const Tensor::ConvSpec &spec) {
+    const auto [sh, sw] = spec.stride;
+    const auto [dh, dw] = spec.dilation;
+    ConvLists lists;
+    lists.Ho = (H + spec.pads[0] + spec.pads[2] - dh * (kh - 1) - 1) / sh + 1;
+    lists.Wo = (W + spec.pads[1] + spec.pads[3] - dw * (kw - 1) - 1) / sw + 1;
+    if (lists.Ho < 1 || lists.Wo < 1) return lists;
+    const int64_t P = lists.Ho * lists.Wo, KK = kh * kw, HW = H * W;
+    // the input pixel of each output pixel and offset, and the patch entries of each input pixel
+    lists.patch.assign(std::size_t(P * KK), HW);
+    std::vector<std::vector<int64_t>> entries(static_cast<std::size_t>(HW));
+    for (int64_t oh = 0; oh < lists.Ho; ++oh)
+        for (int64_t ow = 0; ow < lists.Wo; ++ow)
+            for (int64_t a = 0; a < kh; ++a)
+                for (int64_t c = 0; c < kw; ++c) {
+                    const int64_t ih = oh * sh - spec.pads[0] + a * dh;
+                    const int64_t iw = ow * sw - spec.pads[1] + c * dw;
+                    if (ih < 0 || ih >= H || iw < 0 || iw >= W) continue;
+                    // the patch entry of (offset, output pixel), offset-major
+                    const int64_t o = oh * lists.Wo + ow, i = ih * W + iw, kk = a * kw + c;
+                    lists.patch[std::size_t(kk * P + o)] = i;
+                    entries[std::size_t(i)].push_back(kk * P + o);
+                }
+    // the transpose folds the patches back: each input pixel sums its entries (P KK: none)
+    for (const std::vector<int64_t> &e : entries)
+        lists.fold = std::max(lists.fold, int64_t(e.size()));
+    lists.col2im.assign(std::size_t(HW * lists.fold), P * KK);
+    for (std::size_t i = 0; i < entries.size(); ++i)
+        for (std::size_t t = 0; t < entries[i].size(); ++t)
+            lists.col2im[i * std::size_t(lists.fold) + t] = entries[i][t];
+    return lists;
+}
+
+// The patches of every output pixel (im2col) times the kernel as a matrix.
+Tensor derived::conv2d(const Tensor &x, const Tensor &kernel, const Tensor::ConvSpec &spec) {
+    const int64_t N = x.size(0), C = x.size(1), H = x.size(2), W = x.size(3);
+    const int64_t O = kernel.size(0), kh = kernel.size(2), kw = kernel.size(3), KK = kh * kw;
+    const ConvLists lists = conv_lists(H, W, kh, kw, spec);
+    const int64_t P = lists.Ho * lists.Wo;
+    // the pixels and a zero (the padding), gathered as (N, C, KK, P)
+    const Tensor padded = Tensor::concat({x.reshape({N, C, H * W}), x.zeros_like({N, C, 1})}, 2);
+    const Tensor patches = padded.take(lists.patch, 2).reshape({N, C * KK, P});
+    return aux_kernel_matrix(kernel, C, spec.groups)
+        .matmul(patches)
+        .reshape({N, O, lists.Ho, lists.Wo});
+}
+
+// The kernel's transpose times the outputs gives the patches' values, folded onto the pixels.
+Tensor derived::conv_transpose2d(const Tensor &y, const Tensor &kernel,
+                                 const std::array<int64_t, 2> &size, const Tensor::ConvSpec &spec) {
+    const int64_t N = y.size(0), O = y.size(1), H = size[0], W = size[1];
+    const int64_t kh = kernel.size(2), kw = kernel.size(3), KK = kh * kw;
+    const int64_t C = kernel.size(1) * spec.groups;
+    const ConvLists lists = conv_lists(H, W, kh, kw, spec);
+    const int64_t P = lists.Ho * lists.Wo;
+    const Tensor cols = aux_kernel_matrix(kernel, C, spec.groups)
+                            .matrix_transpose()
+                            .matmul(y.reshape({N, O, P}))
+                            .reshape({N, C, KK * P});
+    // each input pixel sums its patch entries (and a zero for none)
+    const Tensor padded = Tensor::concat({cols, cols.zeros_like({N, C, 1})}, 2);
+    return padded.take(lists.col2im, 2)
+        .reshape({N, C, H * W, lists.fold})
+        .sum(-1)
+        .reshape({N, C, H, W});
 }
 
 // 1: the largest column sum of |A|; inf: the largest row sum; 2: the largest singular value.

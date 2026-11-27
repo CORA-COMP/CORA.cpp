@@ -37,7 +37,7 @@ must agree with the default (`tests/global/tensor/test_tensor_overrides.cpp`):
 | backend | native versions of derived and fused operations |
 |---|---|
 | eigen | `expm` (Eigen's Padé), `zonotope_linear_map`, `zonotope_interval_map`, `zonotope_linear_combination`, `interval_matmul`, `matmul_interval` (products with M⁺ and M⁻), `girard_split`, `abs_sum`, `abs_sum_rows` (in lean's order), and the sums along the last axis and `matmul` (Eigen's kernels) |
-| torch | `expm` (`matrix_exp`, or the hand-written backward with `,custom_backward`), `sort`, `diag`, `matrix_norm`, `vector_norm`, `interval_matmul`, `matmul_interval` |
+| torch | `expm` (`matrix_exp`, or the hand-written backward with `,custom_backward`), `sort`, `diag`, `conv2d`, `conv_transpose2d` (torch's convolutions: cuDNN on CUDA), `matrix_norm`, `vector_norm`, `interval_matmul`, `matmul_interval` |
 | lean | none: lean is the specification (`expm` is an error: CORALean's exponential is an interval series) |
 
 ## Gradients
@@ -192,6 +192,8 @@ carries over to the other backends up to these bounds of its primitives.
 | `trace` | derived | differentiable | sum 1 | the sum of the diagonal, (..., 1, 1) |
 | `kron` | derived | differentiable | exact | the Kronecker product |
 | `expm` | derived | differentiable | norm 256 | the matrix exponential (Pade 13, scaling and squaring) |
+| `conv2d` | derived | differentiable | norm 64 | the 2-D convolution of (N, C, H, W) with a kernel (O, C / groups, kh, kw): stride, dilation, zero padding and groups as ONNX's Conv |
+| `conv_transpose2d` | derived | differentiable | norm 64 | the transpose (adjoint) of conv2d: (N, O, Ho, Wo) back to the convolution's input (N, C, H, W) |
 | `matrix_norm` | derived | piecewise | sum 2 | the 1, 2, inf or Frobenius norm of (..., n, m), (..., 1, 1) |
 | `vector_norm` | derived | piecewise | sum 2 | the 1, 2 or inf norm along an axis |
 

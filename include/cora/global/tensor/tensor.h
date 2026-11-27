@@ -173,6 +173,14 @@ class GradientsScope {
 
 // Tensor ------------------------------------------------------------------------------------------
 
+/// A 2-D convolution as ONNX's Conv: the strides and dilations (height, width), the zero padding
+/// (top, left, bottom, right) and the groups of the channels.
+struct TensorConvSpec {
+    std::array<int64_t, 2> stride{1, 1}, dilation{1, 1};
+    std::array<int64_t, 4> pads{0, 0, 0, 0};
+    int64_t groups = 1;
+};
+
 class Tensor {
   public:
     /// The elementwise operations of two operands.
@@ -225,6 +233,8 @@ class Tensor {
     enum class Reduce : uint8_t { sum, prod, max, min, argmax, argmin };
     /// The norms of matrix_norm and vector_norm.
     enum class Norm : uint8_t { one, two, inf, fro };
+    /// The spec of conv2d and conv_transpose2d.
+    using ConvSpec = TensorConvSpec;
 
     struct Impl;
     using Ptr = std::shared_ptr<const Impl>;
@@ -301,6 +311,9 @@ class Tensor {
         virtual Ptr matrix_norm(Norm ord) const;
         virtual Ptr vector_norm(Norm ord, int axis, bool keepdims) const;
         virtual Ptr diag() const;
+        virtual Ptr conv2d(const Impl &kernel, const ConvSpec &spec) const;
+        virtual Ptr conv_transpose2d(const Impl &kernel, const std::array<int64_t, 2> &size,
+                                     const ConvSpec &spec) const;
 
         // Fused: one specification each, in the lean backend's order (src/global/tensor/fused.cpp)
         virtual std::pair<Ptr, Ptr> zonotope_linear_map(const Impl &c, const Impl &G) const;
@@ -602,6 +615,13 @@ class Tensor {
     Tensor trace() const;
     Tensor kron(const Tensor &o) const;
     Tensor expm() const;
+    /// The convolution (cross-correlation) of (N, C, H, W) with the kernel (O, C / groups, kh,
+    /// kw): (N, O, Ho, Wo), Ho = (H + top + bottom - dilation (kh - 1) - 1) / stride + 1.
+    Tensor conv2d(const Tensor &kernel, const ConvSpec &spec = ConvSpec()) const;
+    /// The transpose of that convolution (its adjoint: the map of the rows of Lambda): (N, O, Ho,
+    /// Wo) back to (N, C, H, W) for the convolution's input `size` (H, W).
+    Tensor conv_transpose2d(const Tensor &kernel, const std::array<int64_t, 2> &size,
+                            const ConvSpec &spec = ConvSpec()) const;
     /// The 1, 2, inf or Frobenius norm of (..., n, m), as (..., 1, 1).
     Tensor matrix_norm(Norm ord = Norm::fro) const;
     /// The 1, 2 or inf norm along `axis`.

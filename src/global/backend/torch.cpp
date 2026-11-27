@@ -309,6 +309,32 @@ struct TorchTensor : Tensor::Impl {
         return wrap(std::get<0>(torch::sort(t, /*stable=*/true, axis, descending)));
     }
     Ptr diag() const override { return wrap(torch::diag_embed(t.squeeze(-1))); }
+    Ptr conv2d(const Impl &kernel, const TensorConvSpec &spec) const override {
+        // torch pads both sides alike: other padding by zeros around the input first
+        const bool even = spec.pads[0] == spec.pads[2] && spec.pads[1] == spec.pads[3];
+        const torch::Tensor x =
+            even ? t
+                 : torch::constant_pad_nd(
+                       t, {spec.pads[1], spec.pads[3], spec.pads[0], spec.pads[2]}, 0.0);
+        const std::vector<int64_t> pad{even ? spec.pads[0] : 0, even ? spec.pads[1] : 0};
+        return wrap(torch::conv2d(x, of(kernel), {}, {spec.stride[0], spec.stride[1]}, pad,
+                                  {spec.dilation[0], spec.dilation[1]}, spec.groups));
+    }
+    Ptr conv_transpose2d(const Impl &kernel, const std::array<int64_t, 2> &size,
+                         const TensorConvSpec &spec) const override {
+        // the transpose onto the padded input, of which the convolution's input is a window
+        const torch::Tensor full =
+            torch::conv_transpose2d(t, of(kernel), {}, {spec.stride[0], spec.stride[1]}, {0, 0},
+                                    {0, 0}, spec.groups, {spec.dilation[0], spec.dilation[1]});
+        // rows and columns of the padded input that no patch reads: zeros after the last one
+        const int64_t more_h = std::max<int64_t>(0, spec.pads[0] + size[0] - full.size(2));
+        const int64_t more_w = std::max<int64_t>(0, spec.pads[1] + size[1] - full.size(3));
+        const torch::Tensor whole =
+            more_h + more_w > 0 ? torch::constant_pad_nd(full, {0, more_w, 0, more_h}, 0.0) : full;
+        return wrap(whole.slice(2, spec.pads[0], spec.pads[0] + size[0])
+                        .slice(3, spec.pads[1], spec.pads[1] + size[1])
+                        .contiguous());
+    }
     Ptr matrix_norm(Norm ord) const override {
         const std::vector<int64_t> dims = {-2, -1};
         if (ord == Norm::fro) return wrap(torch::linalg_matrix_norm(t, "fro", dims, true));
