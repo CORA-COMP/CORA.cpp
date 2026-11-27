@@ -85,7 +85,9 @@ jobs:
             python3 scripts/coverage/coverage.py --summary >> "$GITHUB_STEP_SUMMARY"
           else echo "scripts/coverage/coverage.py is absent: skipped"; fi
       - name: backing report files
-        run: python3 scripts/coverage/benchmarks.py --files
+        run: |
+          python3 scripts/coverage/benchmarks.py --files
+          python3 scripts/coverage/vnncomp.py --files
       - name: paper table
         run: python3 scripts/paper/arch_table.py --check
       - name: paper figures

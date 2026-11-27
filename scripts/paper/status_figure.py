@@ -2,13 +2,14 @@
 
 The overview (a) has a bar per CORA group, split by status (bit-identical to CORALean, property
 tests, ported, not ported), with the bit-identical share and "+n" out of scope after
-it; (b) has the rows the ARCH-COMP instances execute, summed per instance, per category. The
+it; (b) has the rows the ARCH-COMP instances execute, summed per instance, per category, and the
+same for one VNN-COMP instance per benchmark (`vnncomp.py`). The
 appendix has the same bars per CORA class. The numbers are those of coverage/ (`benchmarks.py`'s
 own summary), never re-derived; the colours are those of the paper's `cora-macs.sty`.
 
 Syntax:   python scripts/paper/status_figure.py [--check]
 Reads:    coverage/status.json, cora-inventory.json, coralean-status.json, out-of-scope.md,
-          benchmarks.json, and the AFF/NLN/AINNCS tables of examples/benchmarks/README.md
+          benchmarks.json, vnncomp.json, and the AFF/NLN/AINNCS tables of examples/benchmarks/README.md
 Writes:   paper/generated/status.tikz and status-classes-<group>.tikz (the data only: the
           captions and the appendix text are the paper's own)
 Checks:   --check compares the files on disk with what the tree gives now, and writes nothing
@@ -16,7 +17,7 @@ Exit code: 0 if the files are written (or current), else 1 with the stale files.
 
 Authors:       Claude Opus 5.5
 Written:       24-November-2026
-Last update:   ---
+Last update:   27-November-2026
 Reviewed:      ---
 """
 import argparse
@@ -47,8 +48,9 @@ SEGMENTS = [
 ]
 # a status shown in another one's segment (the user, 2026-11-24: no untested segment; untested is ported)
 MERGED = {"untested": "ported"}
-# the ARCH categories, and the names of the groups in the figures
+# the ARCH categories, the row of the VNN-COMP instances, and the names of the groups in the figures
 CATEGORIES = ("AFF", "NLN", "AINNCS")
+VNN = "VNN-COMP"
 LABEL = {"contSet": "Set representations", "contDynamics": "Cont. dynamics",
          "hybridDynamics": "Hybrid systems", "nn": "Neural networks",
          "specification": "Specification", "others": "Others"}
@@ -109,7 +111,13 @@ def load():
     totals = {g: count([k for k in status if k.split("/")[0] == g], status) for g in cov.GROUP_ORDER}
     measured = dict(sorted(cov.load_json(REPO / "coverage" / "benchmarks.json")["instances"].items()))
     summary = bm.summarize(measured, status, groups, REPO, lean, apart)
-    return {"classes": classes, "totals": totals, "arch": arch(summary, lean, apart)}
+    rows = arch(summary, lean, apart)
+    # the VNN-COMP instances, one per benchmark, counted as one more category
+    vnn_file = REPO / "coverage" / "vnncomp.json"
+    if vnn_file.exists():
+        vnn = bm.summarize(cov.load_json(vnn_file)["instances"], status, groups, REPO, lean, apart)
+        rows[VNN] = tally({k: s for k, s in vnn.items() if "rows" in s}, lean, apart)
+    return {"classes": classes, "totals": totals, "arch": rows}
 
 
 def count(keys, status):
@@ -152,17 +160,21 @@ def arch(summary, lean, apart):
     bit-exact and eligible rows must come out the same, else the rule here drifted from it."""
     done = {k: s for k, s in summary.items() if "rows" in s}
     which = categories(list(summary))
-    out = {c: {"instances": 0, **{s: 0 for s, *_ in SEGMENTS}} for c in CATEGORIES}
+    return {c: tally({k: s for k, s in done.items() if which[k] == c}, lean, apart) for c in CATEGORIES}
+
+
+def tally(done, lean, apart):
+    """The instances and, summed over them, the rows that can be bit-exact by status."""
+    entry = {"instances": 0, **{s: 0 for s, *_ in SEGMENTS}}
     for name, s in done.items():
         rows = {k: v for k, v in s["rows"].items() if v != cov.OUT and not bm.is_plumbing(k)
                 and k not in apart and lean.get(k, {}).get("status") != "out-of-scope"}
         if sum(v == "oracle" for v in rows.values()) != s["oracle"] or len(rows) != s["eligible"]:
             sys.exit(f"status_figure: the eligible rows of {name} differ from benchmarks.py's")
-        entry = out[which[name]]
         entry["instances"] += 1
         for v in rows.values():
             entry[MERGED.get(v, v)] += 1
-    return out
+    return entry
 
 
 def bar(i, c, scale, half, sharp_left):
@@ -258,7 +270,7 @@ def overview(data):
     # the bars of (a), one per group
     groups = [(LABEL[g], data["totals"][g], tail(data["totals"][g])) for g in cov.GROUP_ORDER]
     # (a): the groups, its width a half line less its labels
-    lab_a, lab_b = 2.55, 1.1  # the width of the row labels, in cm
+    lab_a, lab_b = 2.55, 1.45  # the width of the row labels, in cm (VNN-COMP the widest of (b))
     wa = 0.50 * LINEWIDTH_CM - lab_a
     xmax = room(groups, wa)
     a = panel("groups", groups, [f"at={{({lab_a}cm,0cm)}}", "anchor=north west", "height=3.0cm",
@@ -268,7 +280,7 @@ def overview(data):
               wa, xmax, 5.5, True)
     # (b): the categories in percent, beside (a), with the shared legend below it
     rows = []
-    for k in CATEGORIES:
+    for k in [c for c in (*CATEGORIES, VNN) if c in data["arch"]]:
         c = dict(data["arch"][k])
         total = sum(c[s] for s, *_ in SEGMENTS)
         pct = {s: 100 * c[s] / total for s, *_ in SEGMENTS}
@@ -276,7 +288,8 @@ def overview(data):
         rows.append((k, pct, f"{c['oracle']}/{total}"))
     tail_b = 3 / 28.45 + CHAR_W * max(len(t) for *_, t in rows) + 0.03
     wb = 0.40 * LINEWIDTH_CM - lab_b - tail_b
-    b = panel("arch", rows, [f"at={{(0.59\\linewidth+{lab_b}cm,0cm)}}", "anchor=north west", "height=1.6cm",
+    b = panel("arch", rows, [f"at={{(0.59\\linewidth+{lab_b}cm,0cm)}}", "anchor=north west",
+                             f"height={0.53 * len(rows):.2f}cm",
                              f"width={wb:.2f}cm", "title={(b)}",
                              f"title style={{at={{(0.5,1)}}, xshift={(tail_b - lab_b) / 2:.3f}cm, yshift=0.5ex, "
                              "anchor=south, font=\\footnotesize}"],
@@ -284,7 +297,8 @@ def overview(data):
     # the picture: (a), (b) and the legend under (b)
     return f"""{SOURCE}
 % (a) CORA functions per group by how CORA.cpp tests them, with the bit-identical share and "+n" out of
-% scope after each bar; (b) the rows the ARCH-COMP instances execute (summed per instance, constructors,
+% scope after each bar; (b) the rows the ARCH-COMP instances (and one VNN-COMP instance per benchmark)
+% execute (summed per instance, constructors,
 % accessors and the rows CORALean does not formalize left out), in percent, with "bit-identical/all"
 % after each bar. Sized in \\linewidth; no \\resizebox.
 {PREAMBLE}
