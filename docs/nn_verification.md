@@ -617,7 +617,9 @@ queue is empty, whatever the order. The 8 sample rows go from 3 sat and 5 unknow
   - **Search dtype (`crown_bab_search`):** the steps run on a copy of the net, the record's layer
     inputs and bounds in the search `dtype` (float32); each batch's best slopes and multipliers per
     row (clamped to `[0, 1]` and `>= 0`) are evaluated once more in float64 on the record itself,
-    and only that float64 bound decides, is kept and is compared with a parent's. The steps only
+    and only that float64 bound decides, is kept and is compared with a parent's. The slopes of
+    affine-bab's forms keep their float64 steps (one small pass per step; float32 slopes left one
+    held-out tinyimagenet row open that the float64 ones close). The steps only
     choose the slopes and multipliers, which any values make sound.
   - **Counterexamples:** each row's minimizing corner of the input box (`ZonoBackward::corner`) at
     the root and at the `crown_bab_witnesses` weakest open nodes of each batch goes to the
